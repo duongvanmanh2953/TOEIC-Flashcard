@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6757e5">
+  <title>VocabFlow — TOEIC Flashcards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><span class="brand-mark">V</span><span><strong>VocabFlow</strong><small>English Learning</small></span></div>
+      <div class="streak-pill"><i class="ri-fire-fill"></i> <strong id="sideStreak">0</strong> day streak</div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard"><span><i class="ri-home-5-line"></i></span> Dashboard</button>
+        <button class="nav-item" data-view="flashcards"><span><i class="ri-stack-line"></i></span> Flashcards</button>
+        <button class="nav-item" data-view="learn"><span><i class="ri-flashlight-line"></i></span> Quick Learn</button>
+        <button class="nav-item" data-view="quiz"><span><i class="ri-checkbox-circle-line"></i></span> Quiz</button>
+        <button class="nav-item" data-view="vocabulary"><span><i class="ri-book-2-line"></i></span> Vocabulary</button>
+        <button class="nav-item" data-view="mistakes"><span><i class="ri-error-warning-line"></i></span> Mistakes</button>
+        <button class="nav-item" data-view="favorites"><span><i class="ri-heart-3-line"></i></span> Favorites</button>
+        <button class="nav-item" data-view="statistics"><span><i class="ri-bar-chart-grouped-line"></i></span> Statistics</button>
+        <button class="nav-item" data-view="settings"><span><i class="ri-settings-3-line"></i></span> Settings</button>
+      </nav>
+      <button class="import-link" data-view="import">＋ Import vocabulary</button>
+      <div class="side-goal"><div><span>Daily goal</span><b id="sideGoalText">0 / 20</b></div><div class="mini-progress"><i id="sideGoalBar"></i></div></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Mở menu"><i class="ri-menu-2-line"></i></button>
+        <label class="global-search"><span><i class="ri-search-2-line"></i></span><input id="globalSearch" placeholder="Search vocabulary..." autocomplete="off"></label>
+        <div class="top-actions"><label class="language-picker" aria-label="Ngôn ngữ"><i class="ri-global-line"></i><select id="languageSelect"><option value="vi">VI</option><option value="en">EN</option></select></label><button class="icon-btn" id="themeToggle" aria-label="Đổi giao diện"><i class="ri-moon-clear-line"></i></button><button class="avatar" data-view="settings">MF</button></div>
+      </header>
+      <div id="app" class="content" aria-live="polite"></div>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="modal" class="modal" aria-hidden="true"><div class="modal-card"><button class="modal-close" data-close-modal>×</button><div id="modalContent"></div></div></div>
+  <input type="file" id="csvPicker" accept=".csv,text/csv" hidden>
+  <script src="app.js"></script>
+</body>
+</html>
