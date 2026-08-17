@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#6757e5">
-  <title>VocabFlow — TOEIC Flashcards</title>
+  <title>VocabFlow — Học tiếng Anh với Flashcard TOEIC</title>
+  <meta name="description" content="VocabFlow — học tiếng Anh và luyện từ vựng TOEIC bằng flashcard.">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/vocabflow-logo-256.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -16,7 +19,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><span class="brand-mark">V</span><span><strong>VocabFlow</strong><small>English Learning</small></span></div>
+      <div class="brand"><span class="brand-mark"><img src="assets/vocabflow-logo-256.png" alt="VocabFlow"></span><span><strong>VocabFlow</strong><small>English Learning</small></span></div>
       <div class="streak-pill"><i class="ri-fire-fill"></i> <strong id="sideStreak">0</strong> day streak</div>
       <nav id="nav">
         <button class="nav-item active" data-view="dashboard"><span><i class="ri-home-5-line"></i></span> Dashboard</button>
@@ -32,6 +35,7 @@
       <button class="import-link" data-view="import">＋ Import vocabulary</button>
       <div class="side-goal"><div><span>Daily goal</span><b id="sideGoalText">0 / 20</b></div><div class="mini-progress"><i id="sideGoalBar"></i></div></div>
     </aside>
+    <button class="mobile-overlay" id="mobileOverlay" aria-label="Đóng menu"></button>
 
     <main class="main">
       <header class="topbar">

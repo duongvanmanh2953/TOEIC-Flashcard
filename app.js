@@ -25,6 +25,9 @@
   let vocabPage = 1;
   let searchQuery = '';
   let toastTimer;
+  let activeAudio = null;
+  let audioContext = null;
+  const correctCheers=['Tuyệt lắm, bạn đang tiến bộ!','Chính xác — giữ nhịp này nhé!','Rất tốt! Thêm một từ đã được ghi nhớ.','Xuất sắc! Bạn làm đúng rồi.','Hay lắm, tiếp tục phát huy nhé!'];
   const originalText = new WeakMap();
   const vi = {
     'English Learning':'Học tiếng Anh','day streak':'ngày liên tiếp','Dashboard':'Tổng quan','Flashcards':'Thẻ ghi nhớ','Quick Learn':'Học nhanh','Quiz':'Kiểm tra','Vocabulary':'Từ vựng','Mistakes':'Từ hay sai','Favorites':'Yêu thích','Statistics':'Thống kê','Settings':'Cài đặt','Import vocabulary':'Nhập từ vựng','Daily goal':'Mục tiêu ngày',
@@ -80,16 +83,27 @@
     document.addEventListener('click', e => {
       if(!e.target.closest('.custom-dropdown')) $$('.custom-dropdown.open').forEach(x=>{x.classList.remove('open');x.querySelector('.custom-dropdown-trigger')?.setAttribute('aria-expanded','false')});
       const nav = e.target.closest('[data-view]');
-      if (nav) { navigate(nav.dataset.view); $('#sidebar').classList.remove('open'); }
+      if (nav) { navigate(nav.dataset.view); closeSidebar(); }
       if (e.target.closest('[data-close-modal]') || e.target.id === 'modal') closeModal();
     });
-    $('#menuBtn').onclick = () => $('#sidebar').classList.toggle('open');
+    $('#menuBtn').onclick = () => {
+      const open=$('#sidebar').classList.toggle('open');
+      $('#mobileOverlay').classList.toggle('open',open);
+      document.body.classList.toggle('menu-open',open);
+    };
+    $('#mobileOverlay').onclick = closeSidebar;
     $('#themeToggle').onclick = () => { meta.settings.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(); save(); };
     $('#languageSelect').onchange = e => { meta.settings.language=e.target.value; document.documentElement.lang=e.target.value; save(); navigate(currentView); localizeDOM(document.body); };
     $('#globalSearch').addEventListener('input', e => { searchQuery=e.target.value.trim(); if(searchQuery) navigate('vocabulary'); else if(currentView==='vocabulary') renderVocabulary(); });
     $('#csvPicker').onchange = e => e.target.files[0] && readFile(e.target.files[0]);
     document.addEventListener('keydown', handleKeyboard);
     matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
+  }
+
+  function closeSidebar(){
+    $('#sidebar').classList.remove('open');
+    $('#mobileOverlay').classList.remove('open');
+    document.body.classList.remove('menu-open');
   }
 
   function navigate(view, options = {}) {
@@ -174,9 +188,14 @@
 
   function updateChrome() {
     const learnedToday = meta.activity[today()] || 0;
+    const goal = meta.settings.dailyGoal;
+    const state = learnedToday===0?'goal-zero':learnedToday<goal?'goal-progress':'goal-complete';
     $('#sideStreak').textContent = meta.streak || 0;
-    $('#sideGoalText').textContent = `${learnedToday} / ${meta.settings.dailyGoal}`;
-    $('#sideGoalBar').style.width = `${clamp(learnedToday/meta.settings.dailyGoal*100,0,100)}%`;
+    $('#sideGoalText').textContent = `${learnedToday} / ${goal}`;
+    $('#sideGoalBar').style.width = `${clamp(learnedToday/goal*100,0,100)}%`;
+    $('#sideGoalBar').style.minWidth = learnedToday===0?'0':'7px';
+    $('.side-goal').classList.remove('goal-zero','goal-progress','goal-complete');
+    $('.side-goal').classList.add(state);
   }
   function updateStreak() {
     if (!meta.lastGoalDate) return updateChrome();
@@ -213,10 +232,13 @@
 
   function renderDashboard() {
     const s=stats(), activity=meta.activity[today()]||0, goal=meta.settings.dailyGoal, progress=words.length?Math.round(s.learned/words.length*100):0;
+    const goalState=activity===0?'goal-zero':activity<goal?'goal-progress':'goal-complete';
+    const encouragement=activity>=goal?'Hôm nay bạn làm rất tuyệt — mục tiêu đã hoàn thành!':activity>=goal/2?'Bạn đang có một ngày học rất tốt, cố thêm một chút nhé!':meta.streak>=3?`Chuỗi ${meta.streak} ngày thật ấn tượng — cùng giữ vững nhé!`:activity>0?'Khởi đầu tốt lắm! Mỗi từ hôm nay đều đưa bạn tiến gần mục tiêu hơn.':'Chúc bạn một buổi học thật hiệu quả — bắt đầu với một từ nhé!';
     $('#app').innerHTML = header('Ready to learn?', 'A focused review is the shortest path to remembering.', `<button class="btn outline" data-view="import">Import CSV</button><button class="btn primary" id="smartLearn">⚡ Smart Learn</button>`)+
+      `<div class="dashboard-cheer"><span><i class="ri-sparkling-2-fill"></i></span><p>${esc(encouragement)}</p></div>`+
       `<section class="grid stats-grid">${statCard('<i class="ri-stack-line"></i>',words.length,'Total words')}${statCard('<i class="ri-book-open-line"></i>',s.learned,'Words learned')}${statCard('<i class="ri-graduation-cap-line"></i>',s.mastered,'Mastered')}${statCard('<i class="ri-focus-3-line"></i>',s.accuracy+'%','Accuracy')}</section>
       <section class="grid dashboard-grid"><article class="panel"><div class="panel-title"><h2>Learning progress</h2><span>${progress}% complete</span></div><div class="progress"><i style="width:${progress}%"></i></div><p class="muted">${s.learned} reviewed · ${words.length-s.learned} waiting · ${s.wrong} mistakes</p><div class="actions"><button class="btn primary" id="continueStudy">Continue learning</button><button class="btn" data-view="vocabulary">Browse words</button></div></article>
-      <article class="panel goal-hero"><div class="panel-title"><h2>Today's goal</h2><span>${activity>=goal?'Complete!':'Keep going'}</span></div><div class="goal-number">${activity} / ${goal} words</div><div class="progress"><i style="width:${clamp(activity/goal*100,0,100)}%"></i></div><small>${activity>=goal?'Beautiful work — come back tomorrow.':Math.max(0,goal-activity)+' more to protect your streak.'}</small></article></section>
+      <article class="panel goal-hero ${goalState}"><div class="panel-title"><h2>Today's goal</h2><span>${activity>=goal?'Hoàn thành!':'Tiếp tục nhé'}</span></div><div class="goal-number">${activity} / ${goal} words</div><div class="progress"><i style="width:${clamp(activity/goal*100,0,100)}%"></i></div><small>${activity>=goal?'Tuyệt vời — bạn đã hoàn thành mục tiêu hôm nay.':activity===0?'Bắt đầu với một từ đầu tiên nhé!':`Chỉ còn ${Math.max(0,goal-activity)} từ nữa, bạn làm được!`}</small></article></section>
       <div class="panel-title" style="margin-top:32px"><h2>Choose a topic</h2><span>${topics().length} topics</span></div><section class="grid topics">${topics().slice(0,9).map(([t,n],i)=>{const visual=topicVisual(t,i);return `<article class="topic-card ${visual.tone}" data-topic="${esc(t)}"><div class="topic-top"><span class="topic-icon"><i class="${visual.icon}"></i></span><span class="topic-arrow"><i class="ri-arrow-right-line"></i></span></div><h3>${esc(t)}</h3><p>${n} words</p></article>`}).join('')}</section>`;
     $('#smartLearn').onclick = () => startSmartLearn();
     $('#continueStudy').onclick = () => startFlashcards();
@@ -288,7 +310,7 @@
       const distractors=shuffle(words.filter(x=>x.id!==w.id).map(x=>reverse?x.english:x.vietnamese).filter(Boolean)).slice(0,3);
       return {type,prompt:reverse?(w.vietnamese||w.explain):w.english,answer,options:shuffle([answer,...distractors])};
     }
-    if(type==='fill') return {type,prompt:w.example.replace(new RegExp(`\\b${escapeRegex(w.english)}\\w*`,'i'),'_______'),answer:w.english};
+    if(type==='fill') return {type,prompt:w.example.replace(new RegExp(`\\b${escapeRegex(w.english)}\\w*`,'i'),'_______'),hint:w.example_vietnamese||w.vietnamese,answer:w.english};
     if(type==='listening') return {type,prompt:'What word did you hear?',answer:w.english};
     return {type,prompt:w.vietnamese||w.explain||'Type the English word',answer:w.english};
   }
@@ -296,6 +318,7 @@
   function renderQuestion() {
     if(quiz.index>=quiz.deck.length)return finishQuiz(); const w=quiz.deck[quiz.index]; quiz.question=makeQuestion(w);const q=quiz.question;
     $('#app').innerHTML=header(quiz.quick?'Quick Learn':'Quiz','Active recall in progress')+`<section class="question-card panel"><div class="question-top"><b>Question ${quiz.index+1} / ${quiz.deck.length}</b><span>Accuracy: ${quiz.index?Math.round(quiz.correct/quiz.index*100):0}% · <i class="ri-fire-fill"></i> ${quiz.streak}</span></div><div class="progress"><i style="width:${quiz.index/quiz.deck.length*100}%"></i></div>${q.type==='listening'?`<div class="prompt"><button class="speak-btn" id="listenBtn"><i class="ri-volume-up-line"></i></button><br><small>${q.prompt}</small></div>`:`<div class="prompt">${esc(q.prompt)}</div>`}<div id="answerArea">${q.type==='mc'?`<div class="options">${q.options.map((o,i)=>`<button class="option" data-answer="${esc(o)}"><b>${String.fromCharCode(65+i)}.</b> ${esc(o)}</button>`).join('')}</div>`:`<form class="answer-input" id="answerForm"><input id="typedAnswer" autocomplete="off" placeholder="Type your answer..." autofocus><button class="btn primary">Check</button></form>`}</div><div id="feedback"></div></section>`;
+    if(q.type==='fill'&&q.hint){const hint=document.createElement('small');hint.className='fill-hint';hint.textContent=`Gợi ý tiếng Việt: ${q.hint}`;$('.prompt')?.appendChild(hint)}
     if(q.type==='listening'){setTimeout(()=>speak(w),200);$('#listenBtn').onclick=()=>speak(w)}
     $$('.option').forEach(b=>b.onclick=()=>submitAnswer(b.dataset.answer,b));
     $('#answerForm')?.addEventListener('submit',e=>{e.preventDefault();submitAnswer($('#typedAnswer').value)}); $('#typedAnswer')?.focus();
@@ -307,10 +330,11 @@
   function submitAnswer(answer, button) {
     if(quiz.locked||!answer.trim())return;quiz.locked=true; const w=quiz.deck[quiz.index], correct=equivalent(answer,quiz.question.answer), wasNew=!w.progress.lastReviewed;
     w.progress.lastReviewed=new Date().toISOString();
-    if(correct){quiz.correct++;quiz.streak++;quiz.best=Math.max(quiz.best,quiz.streak);w.progress.correct++;w.progress.level++;w.progress.nextReview=new Date(Date.now()+3*86400000).toISOString();button?.classList.add('correct')}
+    if(correct){quiz.correct++;quiz.streak++;quiz.best=Math.max(quiz.best,quiz.streak);w.progress.correct++;w.progress.level++;w.progress.nextReview=new Date(Date.now()+3*86400000).toISOString();button?.classList.add('correct');playSuccessChime()}
     else{quiz.wrong++;quiz.streak=0;w.progress.wrong++;w.progress.level=Math.max(0,w.progress.level-1);w.progress.nextReview=new Date(Date.now()+5*60000).toISOString();button?.classList.add('wrong');$$('.option').find(x=>equivalent(x.dataset.answer,quiz.question.answer))?.classList.add('correct');speak(w)}
     if(wasNew)quiz.newWords++; recordActivity(wasNew); save();
-    $('#feedback').innerHTML=`<div class="feedback ${correct?'good':'bad'}"><b>${correct?'✓ Correct!':'✕ Incorrect'}</b><div>${esc(w.english)} = ${esc(w.vietnamese)}</div>${!correct?`<small>Your answer: ${esc(answer)} · Correct: ${esc(quiz.question.answer)}</small>`:''}</div><button class="btn primary" id="nextQuestion" style="float:right;margin-top:12px">Next →</button>`;
+    const cheer=correct?correctCheers[Math.floor(Math.random()*correctCheers.length)]:'';
+    $('#feedback').innerHTML=`<div class="feedback ${correct?'good':'bad'}"><b>${correct?'✓ Correct!':'✕ Incorrect'}</b>${cheer?`<div class="answer-cheer">${esc(cheer)}</div>`:''}<div>${esc(w.english)} = ${esc(w.vietnamese)}</div>${!correct?`<small>Your answer: ${esc(answer)} · Correct: ${esc(quiz.question.answer)}</small>`:''}</div><button class="btn primary" id="nextQuestion" style="float:right;margin-top:12px">Next →</button>`;
     $('#nextQuestion').onclick=nextQuestion; if(meta.settings.quizAutoNext)setTimeout(()=>{if(quiz?.locked)nextQuestion()},correct?1000:1700);
   }
   function nextQuestion(){quiz.index++;quiz.locked=false;renderQuestion()}
@@ -338,12 +362,17 @@
   function renderSettings(){const s=meta.settings;$('#app').innerHTML=header('Settings','Tune the experience to the way you learn.')+`<div class="settings-list"><section class="setting-section"><h3>Appearance</h3>${selectSetting('Language','language',[['vi','Tiếng Việt'],['en','English']],s.language)}${selectSetting('Theme','theme',[['system','System'],['light','Light'],['dark','Dark']],s.theme)}${selectSetting('Accent color','accent',[['#6757e5','Violet'],['#147d75','Teal'],['#ce5d28','Orange']],s.accent)}</section><section class="setting-section"><h3>Pronunciation</h3>${selectSetting('Voice','voice',[['en-US','American English'],['en-GB','British English']],s.voice)}${selectSetting('Speech speed','speed',[[.75,'0.75×'],[1,'1×'],[1.25,'1.25×']],s.speed)}${toggleSetting('Auto pronunciation','autoPronounce',s.autoPronounce)}</section><section class="setting-section"><h3>Study preferences</h3>${toggleSetting('Show images','showImage',s.showImage)}${toggleSetting('Show examples','showExample',s.showExample)}${toggleSetting('Auto next in quiz','quizAutoNext',s.quizAutoNext)}${selectSetting('Daily goal','dailyGoal',[[10,'10 words'],[20,'20 words'],[30,'30 words'],[50,'50 words']],s.dailyGoal)}</section><section class="setting-section"><h3>Data</h3><div class="actions"><button class="btn danger" id="resetProgress">Reset learning progress</button><button class="btn danger" id="deleteWords">Delete vocabulary database</button><button class="btn outline" data-view="import">Import new CSV</button></div><p class="muted">Your data stays only in this browser's local storage.</p></section></div>`;$$('[data-setting]').forEach(el=>el.onchange=()=>{let v=el.type==='checkbox'?el.checked:el.value;if(['speed','dailyGoal'].includes(el.dataset.setting))v=+v;meta.settings[el.dataset.setting]=v;if(el.dataset.setting==='language'){const topLanguage=$('#languageSelect');topLanguage.value=v;topLanguage.dispatchEvent(new Event('change',{bubbles:true}))}applyTheme();save();if(el.dataset.setting==='language'){renderSettings();localizeDOM(document.body)}});$('#resetProgress').onclick=()=>{if(confirm('Reset all learning progress? Your vocabulary will be kept.')){words.forEach(w=>w.progress={correct:0,wrong:0,level:0,lastReviewed:null,nextReview:null,favorite:w.progress.favorite,hard:false});meta.activity={};meta.history=[];meta.sessions=0;meta.streak=0;save();renderSettings();toast('Learning progress reset.')}};$('#deleteWords').onclick=()=>{if(confirm('Delete the entire vocabulary database? This cannot be undone.')){words=[];localStorage.removeItem(DB_KEY);save();navigate('import');toast('Vocabulary database deleted.')}}}
   function selectSetting(label,key,options,value){return `<label class="setting-row"><span><b>${label}</b></span><select data-setting="${key}" class="btn">${options.map(([v,l])=>`<option value="${v}" ${String(v)===String(value)?'selected':''}>${l}</option>`).join('')}</select></label>`} function toggleSetting(label,key,value){return `<label class="setting-row"><b>${label}</b><span class="switch"><input type="checkbox" data-setting="${key}" ${value?'checked':''}><span></span></span></label>`}
 
-  function renderImport(){ $('#app').innerHTML=header('Import vocabulary','Use the provided TOEIC deck or bring your own CSV.')+`<section class="panel" style="max-width:850px;margin:auto"><div class="dropzone" id="dropzone"><div class="dropzone-icon">⇧</div><h2>Drag & drop CSV here</h2><p class="muted">Required columns: <b>english</b> and <b>vietnamese</b></p><button class="btn primary" id="chooseCsv">Choose CSV</button></div><div class="import-result"><h3>Expected structure</h3><div class="table-wrap"><table><tr>${FIELDS.map(f=>`<th>${f}</th>`).join('')}</tr></table></div><p class="muted">UTF-8 CSV is recommended. Quoted values and commas inside fields are supported.</p>${words.length?`<p>Current database: <b>${words.length.toLocaleString()} words</b> across <b>${topics().length} topics</b>.</p>`:''}</div></section>`;const zone=$('#dropzone');$('#chooseCsv').onclick=()=>$('#csvPicker').click();['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.add('dragging')}));['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.remove('dragging')}));zone.addEventListener('drop',e=>e.dataTransfer.files[0]&&readFile(e.dataTransfer.files[0]));}
+  function renderImport(){
+    $('#app').innerHTML=header('Import vocabulary','Use the provided TOEIC deck or bring your own CSV.')+`<div class="import-layout"><section class="panel"><div class="dropzone" id="dropzone"><div class="dropzone-icon">⇧</div><h2>Drag & drop CSV here</h2><p class="muted">Required columns: <b>english</b> and <b>vietnamese</b></p><button class="btn primary" id="chooseCsv">Choose CSV</button></div><div class="import-result"><h3>Expected structure</h3><div class="table-wrap"><table><tr>${FIELDS.map(f=>`<th>${f}</th>`).join('')}</tr></table></div><p class="muted">UTF-8 CSV is recommended. Quoted values and commas inside fields are supported.</p>${words.length?`<p>Current database: <b>${words.length.toLocaleString()} words</b> across <b>${topics().length} topics</b>.</p>`:''}</div></section><section class="panel manual-card"><div class="panel-title"><div><h2>Thêm từ thủ công</h2><span>Điền trực tiếp ngay trên web</span></div></div><form id="manualWordForm" class="manual-form"><label class="field"><span>Tiếng Anh *</span><input name="english" type="text" required autocomplete="off"></label><label class="field"><span>Nghĩa tiếng Việt *</span><input name="vietnamese" type="text" required autocomplete="off"></label><label class="field"><span>Loại từ</span><input name="type" type="text" placeholder="n., v., adj...."></label><label class="field"><span>Phiên âm</span><input name="pronounce" type="text"></label><label class="field manual-wide"><span>Giải thích</span><input name="explain" type="text"></label><label class="field manual-wide"><span>Ví dụ tiếng Anh</span><input name="example" type="text"></label><label class="field manual-wide"><span>Ví dụ tiếng Việt</span><input name="example_vietnamese" type="text"></label><label class="field"><span>Chủ đề</span><input name="topic" type="text"></label><label class="field"><span>URL âm thanh (không bắt buộc)</span><input name="audio_url" type="text" placeholder="Để trống sẽ dùng giọng trình duyệt"></label><button class="btn primary manual-wide" type="submit">＋ Thêm vào bộ từ</button></form></section></div>`;
+    const zone=$('#dropzone');$('#chooseCsv').onclick=()=>$('#csvPicker').click();['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.add('dragging')}));['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();zone.classList.remove('dragging')}));zone.addEventListener('drop',e=>e.dataTransfer.files[0]&&readFile(e.dataTransfer.files[0]));$('#manualWordForm').onsubmit=addManualWord;
+  }
+  function addManualWord(e){e.preventDefault();const data=Object.fromEntries(new FormData(e.currentTarget).entries());if(!data.english.trim()||!data.vietnamese.trim())return toast('Vui lòng nhập từ tiếng Anh và nghĩa tiếng Việt.');const word=normalizeWord(data,words.length);word.id=`${word.english.toLowerCase()}-${Date.now()}-${simpleHash(word.vietnamese)}`;words.push(word);meta.importedAt=new Date().toISOString();save();e.currentTarget.reset();toast(`Đã thêm “${word.english}” vào bộ từ.`)}
   function readFile(file){if(!file.name.toLowerCase().endsWith('.csv'))return toast('Please choose a CSV file.');if(file.size>25*1024*1024)return toast('CSV is too large (maximum 25 MB).');const reader=new FileReader();reader.onload=()=>importCSV(reader.result);reader.onerror=()=>toast('Could not read this file.');reader.readAsText(file,'UTF-8')}
   function parseCSV(text){const rows=[];let row=[],field='',quoted=false;for(let i=0;i<text.length;i++){const c=text[i],next=text[i+1];if(c==='"'){if(quoted&&next==='"'){field+='"';i++}else quoted=!quoted}else if(c===','&&!quoted){row.push(field);field=''}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&next==='\n')i++;row.push(field);if(row.some(v=>v.trim()))rows.push(row);row=[];field=''}else field+=c}row.push(field);if(row.some(v=>v.trim()))rows.push(row);return rows}
   function importCSV(text,silent=false){try{const rows=parseCSV(text.replace(/^\uFEFF/,''));if(rows.length<2)throw new Error('CSV contains no vocabulary rows.');const headers=rows[0].map(h=>h.trim().toLowerCase());const missing=['english','vietnamese'].filter(h=>!headers.includes(h));if(missing.length)throw new Error(`Missing required column: ${missing.join(', ')}`);const imported=rows.slice(1).map((r,i)=>normalizeWord(Object.fromEntries(headers.map((h,j)=>[h,r[j]||''])),i)).filter(w=>w.english&&w.vietnamese);if(!imported.length)throw new Error('No valid rows with English and Vietnamese values.');words=imported;meta.importedAt=new Date().toISOString();meta.selectedTopic='All';save();if(!silent){toast(`Imported ${words.length.toLocaleString()} words successfully.`);renderImport()}}catch(err){toast(err.message)}}
 
-  function speak(w){if(!w)return;if(w.audio_url){const audio=new Audio(w.audio_url);audio.playbackRate=meta.settings.speed;audio.play().catch(()=>speechFallback(w.english));audio.onerror=()=>speechFallback(w.english)}else speechFallback(w.english)}
+  function playSuccessChime(){try{const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;audioContext ||= new AudioCtx();const now=audioContext.currentTime;[[659.25,0],[783.99,.09]].forEach(([frequency,delay])=>{const oscillator=audioContext.createOscillator(),gain=audioContext.createGain();oscillator.type='sine';oscillator.frequency.value=frequency;gain.gain.setValueAtTime(.0001,now+delay);gain.gain.exponentialRampToValueAtTime(.075,now+delay+.018);gain.gain.exponentialRampToValueAtTime(.0001,now+delay+.18);oscillator.connect(gain).connect(audioContext.destination);oscillator.start(now+delay);oscillator.stop(now+delay+.2)})}catch(_){} }
+  function speak(w){if(!w)return;activeAudio?.pause();activeAudio=null;if('speechSynthesis'in window)speechSynthesis.cancel();if(!w.audio_url||matchMedia('(pointer:coarse)').matches)return speechFallback(w.english);const audio=new Audio();activeAudio=audio;let fellBack=false;const fallback=()=>{if(fellBack)return;fellBack=true;activeAudio=null;speechFallback(w.english)};audio.preload='auto';audio.playsInline=true;audio.playbackRate=meta.settings.speed;audio.onerror=fallback;audio.src=w.audio_url;const attempt=audio.play();if(attempt?.catch)attempt.catch(fallback)}
   function speechFallback(text){if(!('speechSynthesis'in window))return toast('Speech is not supported in this browser.');speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=meta.settings.voice;u.rate=meta.settings.speed;const voices=speechSynthesis.getVoices();u.voice=voices.find(v=>v.lang===u.lang)||voices.find(v=>v.lang.startsWith(u.lang.slice(0,2)))||null;speechSynthesis.speak(u)}
   function recordActivity(isNew){const day=today();meta.activity[day]=(meta.activity[day]||0)+1;if(isNew){}if(meta.activity[day]>=meta.settings.dailyGoal&&meta.lastGoalDate!==day){const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);const y=yesterday.toISOString().slice(0,10);meta.streak=meta.lastGoalDate===y?meta.streak+1:1;meta.longestStreak=Math.max(meta.longestStreak,meta.streak);meta.lastGoalDate=day;toast(`🔥 ${meta.streak} day streak!`)}}
   function handleKeyboard(e){if(e.target.matches('input,select,textarea'))return;if(currentView==='flashcards'&&flash.deck.length){const w=flash.deck[flash.index];if(e.code==='Space'){e.preventDefault();flash.flipped=!flash.flipped;$('#flashcard')?.classList.toggle('flipped')}if(['Digit1','Digit2','Digit3','Digit4'].includes(e.code))rateWord(w,{Digit1:'again',Digit2:'hard',Digit3:'good',Digit4:'easy'}[e.code]);if(e.key==='ArrowRight'&&flash.index<flash.deck.length-1){flash.index++;flash.flipped=false;renderFlashcard()}if(e.key==='ArrowLeft'&&flash.index>0){flash.index--;flash.flipped=false;renderFlashcard()}if(e.key.toLowerCase()==='p')speak(w);if(e.key.toLowerCase()==='f'){toggleFavorite(w);renderFlashcard()}}if(e.key==='Escape')closeModal()}
