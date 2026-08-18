@@ -528,3 +528,43 @@ body{
 .dashboard-cheer>span{flex:0 0 auto;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#8d7cf2,#6652dc);box-shadow:0 5px 12px rgba(103,87,229,.16)}
 .dashboard-cheer p{margin:0;font-size:13px;font-weight:650;line-height:1.5}
 [data-theme=dark] .dashboard-cheer{border-color:rgba(146,128,242,.14);background:linear-gradient(110deg,rgba(111,87,219,.13),rgba(49,139,151,.07));box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+
+/* Keep the two 3D faces from intercepting each other's taps (notably on iOS). */
+.card-face{-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.card-back{position:absolute;justify-content:flex-start;pointer-events:none}
+.flashcard.flipped .card-front{pointer-events:none}
+.flashcard.flipped .card-back{pointer-events:auto}
+
+/* Overlapping 3D faces must not run the shared glass-hover animation. */
+.card-face::after{display:none}
+.card-face:hover,[data-theme=dark] .card-face:hover{
+  border-color:var(--line);
+  box-shadow:var(--shadow);
+  filter:none;
+}
+.card-back,.card-back:hover,[data-theme=dark] .card-back:hover{
+  transform:rotateY(180deg)!important;
+  transition:none!important;
+  border-color:var(--line);
+  box-shadow:var(--shadow);
+  filter:none;
+}
+.back-speak-btn{margin:14px 0 2px}
+
+/* Tinted glass treatment keeps secondary actions distinct from page surfaces. */
+.btn:not(.primary):not(.danger),.icon-btn{
+  background:color-mix(in srgb,var(--surface) 84%,var(--primary) 16%);
+  border:1px solid color-mix(in srgb,var(--primary) 20%,var(--line));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.58),0 5px 14px rgba(71,57,145,.07);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.btn:not(.primary):not(.danger):hover,.icon-btn:hover{
+  background:color-mix(in srgb,var(--surface) 76%,var(--primary) 24%);
+  border-color:color-mix(in srgb,var(--primary) 38%,var(--line));
+}
+[data-theme=dark] .btn:not(.primary):not(.danger),[data-theme=dark] .icon-btn{
+  background:color-mix(in srgb,var(--surface) 82%,var(--primary) 18%);
+  border-color:color-mix(in srgb,var(--primary) 25%,var(--line));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 5px 15px rgba(0,0,0,.14);
+}
