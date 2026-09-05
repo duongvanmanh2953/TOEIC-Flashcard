@@ -1,0 +1,552 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+enum Role {
+  USER
+  PREMIUM_USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CefrLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum VocabStatus {
+  NEW
+  LEARNING
+  FAMILIAR
+  REVIEW
+  STRONG
+  MASTERED
+  DORMANT
+}
+
+enum RelationType {
+  SYNONYM
+  ANTONYM
+  COLLOCATION
+  WORD_FAMILY
+  PHRASAL_VERB
+  RELATED
+}
+
+enum SessionType {
+  SMART_REVIEW
+  PLACEMENT_TEST
+  QUICK_LEARN
+  QUIZ
+  EXAM_PRACTICE
+}
+
+enum ExerciseType {
+  MULTIPLE_CHOICE
+  MEANING_SELECTION
+  FILL_IN_BLANK
+  TYPE_THE_WORD
+  LISTENING
+  CONTEXTUAL_CHOICE
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  username     String?     @unique
+  passwordHash String
+  displayName  String
+  avatar       String?
+  timezone     String      @default("Asia/Ho_Chi_Minh")
+  locale       String      @default("vi")
+  status       UserStatus  @default(ACTIVE)
+  role         Role        @default(USER)
+  refreshToken String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  lastActiveAt DateTime    @default(now())
+
+  profile          UserProfile?
+  userVocabularies UserVocabulary[]
+  reviewEvents     ReviewEvent[]
+  studySessions    StudySession[]
+  learningGoals    LearningGoal[]
+  achievements     UserAchievement[]
+  streak           UserStreak?
+  xp               UserXP?
+  notifications    Notification[]
+  aiInteractions   AIInteraction[]
+  communityDecks   CommunityDeck[]
+  clonedDecks      DeckClone[]
+  subscriptions    Subscription[]
+  entitlementUsage EntitlementUsage[]
+  customQuizzes    CustomQuiz[]
+  quizAttempts     CustomQuizAttempt[]
+  auditLogs        AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model UserProfile {
+  id                       String    @id @default(uuid())
+  userId                   String    @unique
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nativeLanguage           String    @default("vi")
+  englishLevel             CefrLevel @default(B1)
+  targetLevel              CefrLevel @default(C1)
+  learningGoal             String?   @default("TOEIC 850+ & Business Communication")
+  dailyGoal                Int       @default(20) // Words per day
+  weeklyGoal               Int       @default(100)
+  preferredStudyTime       String    @default("20:00")
+  preferredSessionDuration Int       @default(15) // Minutes
+}
+
+model Vocabulary {
+  id              String      @id @default(uuid())
+  word            String      @unique
+  normalizedWord  String
+  lemma           String?
+  pronunciation   String?     // Audio text representation e.g. /ni'gouʃieit/
+  phonetic        String?
+  partOfSpeech    String?     // n., v., adj., adv.
+  difficulty      Float       @default(3.0) // 1.0 to 5.0
+  cefrLevel       CefrLevel   @default(B1)
+  frequencyRank   Int?
+  frequencyBand   Int?        @default(1)
+  definition      String
+  shortDefinition String?
+  etymology       String?
+  imageUrl        String?
+  audioUrl        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  meanings         VocabularyMeaning[]
+  examples         ExampleSentence[]
+  sourceRelations  WordRelation[]        @relation("SourceWord")
+  targetRelations  WordRelation[]        @relation("TargetWord")
+  topicItems       VocabularyTopicItem[]
+  userVocabularies UserVocabulary[]
+  reviewEvents     ReviewEvent[]
+  exercises        Exercise[]
+
+  @@index([normalizedWord])
+  @@index([cefrLevel])
+  @@index([difficulty])
+}
+
+model VocabularyMeaning {
+  id           String     @id @default(uuid())
+  vocabularyId String
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  meaning      String     // Nghĩa tiếng Việt
+  definition   String?    // Định nghĩa tiếng Anh
+  usage        String?
+  register     String?    // Formal, Informal, Academic
+  domain       String?    // Business, Technology, etc.
+
+  @@index([vocabularyId])
+}
+
+model ExampleSentence {
+  id           String     @id @default(uuid())
+  vocabularyId String
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  sentence     String
+  translation  String?
+  difficulty   Float      @default(3.0)
+  sourceType   String?    @default("TOEIC")
+
+  @@index([vocabularyId])
+}
+
+model WordRelation {
+  id           String       @id @default(uuid())
+  sourceWordId String
+  targetWordId String
+  relationType RelationType
+  sourceWord   Vocabulary   @relation("SourceWord", fields: [sourceWordId], references: [id], onDelete: Cascade)
+  targetWord   Vocabulary   @relation("TargetWord", fields: [targetWordId], references: [id], onDelete: Cascade)
+
+  @@index([sourceWordId])
+  @@index([targetWordId])
+}
+
+model VocabularyTopic {
+  id          String                @id @default(uuid())
+  name        String                @unique
+  slug        String                @unique
+  description String?
+  icon        String?
+  items       VocabularyTopicItem[]
+}
+
+model VocabularyTopicItem {
+  id           String          @id @default(uuid())
+  topicId      String
+  vocabularyId String
+  topic        VocabularyTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary      @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, vocabularyId])
+  @@index([topicId])
+  @@index([vocabularyId])
+}
+
+model UserVocabulary {
+  id                 String      @id @default(uuid())
+  userId             String
+  vocabularyId       String
+  status             VocabStatus @default(NEW)
+  masteryScore       Float       @default(0.0) // 0 to 100
+  familiarityScore   Float       @default(0.0)
+  recallProbability  Float       @default(0.0)
+  difficultyEstimate Float       @default(3.0)
+  stability          Float       @default(1.0) // Days
+  retrievability     Float       @default(1.0)
+  repetitionCount    Int         @default(0)
+  correctCount       Int         @default(0)
+  incorrectCount     Int         @default(0)
+  lastReviewedAt     DateTime?
+  nextReviewAt       DateTime?
+  firstLearnedAt     DateTime?
+  masteredAt         DateTime?
+  streak             Int         @default(0)
+  confidence         Int         @default(3) // 1 to 5
+  isFavorite         Boolean     @default(false)
+  isHard             Boolean     @default(false)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vocabularyId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, status])
+  @@index([vocabularyId])
+}
+
+model ReviewEvent {
+  id             String       @id @default(uuid())
+  userId         String
+  vocabularyId   String
+  sessionId      String?
+  exerciseType   ExerciseType @default(MULTIPLE_CHOICE)
+  answer         String
+  correct        Boolean
+  responseTimeMs Int          @default(2000)
+  confidence     Int          @default(3)
+  hintUsed       Boolean      @default(false)
+  skipped        Boolean      @default(false)
+  reviewedAt     DateTime     @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary    @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  studySession StudySession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, reviewedAt])
+  @@index([vocabularyId])
+}
+
+model StudySession {
+  id          String      @id @default(uuid())
+  userId      String
+  type        SessionType @default(SMART_REVIEW)
+  startedAt   DateTime    @default(now())
+  completedAt DateTime?
+  duration    Int?        // Seconds
+  score       Float?
+  xpEarned    Int         @default(0)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewEvents ReviewEvent[]
+
+  @@index([userId, startedAt])
+}
+
+model Exercise {
+  id           String       @id @default(uuid())
+  vocabularyId String
+  type         ExerciseType
+  difficulty   Float        @default(3.0)
+  payload      Json         // Question, options, sentence context
+  answer       String
+  explanation  String?
+
+  vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@index([vocabularyId])
+}
+
+model LearningGoal {
+  id              String   @id @default(uuid())
+  userId          String
+  goalType        String   @default("DAILY_WORDS")
+  target          Int      @default(20)
+  currentProgress Int      @default(0)
+  deadline        DateTime?
+  status          String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, EXPIRED
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  code        String   @unique // FIRST_WORD, STREAK_7, MASTER_100, etc.
+  name        String
+  description String
+  icon        String
+  condition   Json?
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+model UserStreak {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastStudyDate DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserXP {
+  id           String @id @default(uuid())
+  userId       String @unique
+  totalXP      Int    @default(0)
+  currentLevel Int    @default(1)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  type        String    // REVIEW_DUE, STREAK_WARNING, ACHIEVEMENT_UNLOCKED
+  title       String
+  body        String
+  readAt      DateTime?
+  scheduledAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model AIInteraction {
+  id         String   @id @default(uuid())
+  userId     String
+  type       String   // TUTOR_CHAT, SENTENCE_GEN, EXPLANATION
+  input      String
+  output     String
+  model      String   @default("gpt-4o-mini")
+  tokenUsage Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SubscriptionTier {
+  FREE
+  PLUS
+  PRO
+}
+
+model CommunityDeck {
+  id          String           @id @default(uuid())
+  userId      String
+  title       String
+  description String?
+  category    String           @default("General")
+  cefrLevel   CefrLevel        @default(B1)
+  isPublic    Boolean          @default(true)
+  status      ModerationStatus @default(PENDING)
+  cloneCount  Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  author User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  words  CommunityWord[]
+  clones DeckClone[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([cefrLevel])
+}
+
+model CommunityWord {
+  id                 String   @id @default(uuid())
+  deckId             String
+  word               String
+  phonetic           String?
+  partOfSpeech       String?
+  meaning            String
+  definition         String?
+  example            String?
+  exampleTranslation String?
+  createdAt          DateTime @default(now())
+
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@index([deckId])
+  @@index([word])
+}
+
+model DeckClone {
+  id       String   @id @default(uuid())
+  userId   String
+  deckId   String
+  clonedAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deckId])
+  @@index([userId])
+  @@index([deckId])
+}
+
+model Plan {
+  id               String           @id @default(uuid())
+  tier             SubscriptionTier @unique
+  name             String
+  priceMonthly     Float            @default(0.0)
+  aiDailyQuota     Int              @default(10) // 10 for Free, 100 for Plus, Unlimited (-1) for Pro
+  maxCustomDecks   Int              @default(3)
+  unlimitedReviews Boolean          @default(false)
+  features         Json
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id               String   @id @default(uuid())
+  userId           String
+  planId           String
+  status           String   @default("ACTIVE") // ACTIVE, CANCELED, EXPIRED
+  currentPeriodEnd DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+}
+
+model EntitlementUsage {
+  id             String   @id @default(uuid())
+  userId         String
+  date           String   // YYYY-MM-DD
+  aiUsageCount   Int      @default(0)
+  quizGenCount   Int      @default(0)
+  deckCloneCount Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model CustomQuiz {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  sourceFilter  String   // FAVORITES, WEAK_WORDS, CEFR, DECK
+  questionCount Int      @default(10)
+  questions     Json
+  createdAt     DateTime @default(now())
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts CustomQuizAttempt[]
+
+  @@index([userId])
+}
+
+model CustomQuizAttempt {
+  id             String   @id @default(uuid())
+  quizId         String
+  userId         String
+  score          Float
+  accuracy       Float
+  responseTimeMs Int
+  answers        Json
+  completedAt    DateTime @default(now())
+
+  quiz CustomQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+}
+
+model AIEvaluation {
+  id              String   @id @default(uuid())
+  interactionId   String?
+  taskType        String   // EXPLANATION, SENTENCE_GEN, TUTOR
+  targetWord      String?
+  cefrAppropriate Boolean  @default(true)
+  hallucination   Boolean  @default(false)
+  confidenceScore Float    @default(0.95)
+  notes           String?
+  createdAt       DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  action     String   // e.g. MODERATE_DECK_APPROVE, USER_SUSPEND, USER_ACTIVATE
+  targetType String   // e.g. COMMUNITY_DECK, USER
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
