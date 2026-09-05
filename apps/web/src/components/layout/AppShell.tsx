@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 export const AppShell: React.FC = () => {
-  const { user, logout, theme, toggleTheme } = useAuth();
+  const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -134,47 +134,70 @@ export const AppShell: React.FC = () => {
 
         {/* Pinned User Footer: strictly fixed at bottom */}
         <div className="shrink-0 pt-3 border-t border-slate-200/80 dark:border-slate-800/80 w-full min-w-0 space-y-2 bg-transparent">
-          {/* Account Tier Pill — positioned right above avatar & email */}
-          <div
-            onClick={() => navigate('/upgrade')}
-            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 border border-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-between cursor-pointer transition group"
-            title="Xem chi tiết gói tài khoản hoặc nâng cấp"
-          >
-            <div className="flex items-center gap-1.5 min-w-0">
-              <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-none">
-                  Gói tài khoản
-                </p>
-                <p className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 truncate leading-tight mt-0.5">
-                  {user?.subscription?.tier || 'Free Tier'}
-                </p>
+          {user?.isAnonymous ? (
+            <div className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-500/15 to-purple-500/15 border border-indigo-500/25 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                  Khách Khám Phá
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
+                Tiến độ đang lưu cục bộ. Đăng nhập để bảo lưu vĩnh viễn.
+              </p>
+              <button
+                onClick={() => promptLogin('Lưu trữ vĩnh viễn tiến độ học và các từ yêu thích')}
+                className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Đăng nhập 1-chạm</span>
+              </button>
             </div>
-            <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-md bg-indigo-600 text-white group-hover:bg-indigo-500 transition shrink-0">
-              {user?.subscription?.tier === 'PRO' ? 'PRO' : 'Nâng cấp'}
-            </span>
-          </div>
+          ) : (
+            <>
+              {/* Account Tier Pill — positioned right above avatar & email */}
+              <div
+                onClick={() => navigate('/upgrade')}
+                className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 border border-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-between cursor-pointer transition group"
+                title="Xem chi tiết gói tài khoản hoặc nâng cấp"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-none">
+                      Gói tài khoản
+                    </p>
+                    <p className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 truncate leading-tight mt-0.5">
+                      {user?.subscription?.tier || 'Free Tier'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-md bg-indigo-600 text-white group-hover:bg-indigo-500 transition shrink-0">
+                  {user?.subscription?.tier === 'PRO' ? 'PRO' : 'Nâng cấp'}
+                </span>
+              </div>
 
-          {/* User Profile Info Row with > Icon (Clickable to open profile details & guide) */}
-          <div
-            onClick={() => setProfileModalOpen(true)}
-            className="flex items-center justify-between gap-2 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition group min-w-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60"
-            title="Bấm để xem hồ sơ cá nhân & Hướng dẫn sử dụng"
-          >
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0">
-                {user?.displayName?.[0]?.toUpperCase() || 'U'}
+              {/* User Profile Info Row with > Icon (Clickable to open profile details & guide) */}
+              <div
+                onClick={() => setProfileModalOpen(true)}
+                className="flex items-center justify-between gap-2 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition group min-w-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60"
+                title="Bấm để xem hồ sơ cá nhân & Hướng dẫn sử dụng"
+              >
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0">
+                    {user?.displayName?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div className="truncate flex-1 min-w-0">
+                    <p className="text-xs font-bold truncate text-slate-900 dark:text-white leading-tight">
+                      {user?.displayName}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition shrink-0" />
               </div>
-              <div className="truncate flex-1 min-w-0">
-                <p className="text-xs font-bold truncate text-slate-900 dark:text-white leading-tight">
-                  {user?.displayName}
-                </p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition shrink-0" />
-          </div>
+            </>
+          )}
 
           {/* Theme & Logout Controls */}
           <div className="flex items-center gap-1.5 px-0.5">
@@ -287,7 +310,7 @@ export const AppShell: React.FC = () => {
       {/* User Profile & Guidance Modal — Perfectly centered, no margin-top */}
       {profileModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           onClick={() => setProfileModalOpen(false)}
         >
           <div
@@ -297,7 +320,7 @@ export const AppShell: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-black text-base flex items-center justify-center shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-base flex items-center justify-center shadow-xs">
                   {user?.displayName?.[0]?.toUpperCase() || 'U'}
                 </div>
                 <div>
@@ -321,19 +344,19 @@ export const AppShell: React.FC = () => {
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center">
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Cấp độ học</span>
-                  <p className="text-lg font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
+                  <p className="text-lg font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">
                     Lvl {user?.xp?.currentLevel || 1}
                   </p>
                 </div>
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center">
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Chuỗi ngày (Streak)</span>
-                  <p className="text-lg font-black text-amber-500 mt-0.5">
+                  <p className="text-lg font-extrabold text-amber-500 mt-0.5">
                     {user?.streak?.currentStreak || 0} ngày
                   </p>
                 </div>
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-center">
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Điểm XP tích lũy</span>
-                  <p className="text-lg font-black text-emerald-500 mt-0.5">
+                  <p className="text-lg font-extrabold text-emerald-500 mt-0.5">
                     {user?.xp?.totalXP || 0} XP
                   </p>
                 </div>
@@ -344,7 +367,7 @@ export const AppShell: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <Crown className="w-4 h-4 text-amber-500" />
-                    <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">
                       Gói dịch vụ: {user?.subscription?.tier || 'Free Tier'}
                     </span>
                   </div>
@@ -357,7 +380,7 @@ export const AppShell: React.FC = () => {
                     setProfileModalOpen(false);
                     navigate('/upgrade');
                   }}
-                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition"
+                  className="btn-glass-primary text-xs !py-1.5 !px-3.5 shadow-sm"
                 >
                   Nâng cấp gói
                 </button>
@@ -375,7 +398,7 @@ export const AppShell: React.FC = () => {
                 <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
                   <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-1">
                     <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center font-black text-[10px]">1</span>
+                      <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center font-bold text-[10px]">1</span>
                       <span>Lộ trình ôn tập ngắt quãng (SRS):</span>
                     </p>
                     <p className="text-slate-500 dark:text-slate-400 pl-6 leading-relaxed">
@@ -385,7 +408,7 @@ export const AppShell: React.FC = () => {
 
                   <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-1">
                     <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center font-black text-[10px]">2</span>
+                      <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center font-bold text-[10px]">2</span>
                       <span>Nhập từ vựng nhanh từ file Excel:</span>
                     </p>
                     <p className="text-slate-500 dark:text-slate-400 pl-6 leading-relaxed">
@@ -395,7 +418,7 @@ export const AppShell: React.FC = () => {
 
                   <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-1">
                     <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center font-black text-[10px]">3</span>
+                      <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center font-bold text-[10px]">3</span>
                       <span>Tương tác cùng Gia Sư AI:</span>
                     </p>
                     <p className="text-slate-500 dark:text-slate-400 pl-6 leading-relaxed">
@@ -413,13 +436,13 @@ export const AppShell: React.FC = () => {
                   setProfileModalOpen(false);
                   navigate('/settings');
                 }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                className="btn-glass-secondary text-xs !py-2 !px-4"
               >
                 Đi đến Cài đặt
               </button>
               <button
                 onClick={() => setProfileModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-sm"
+                className="btn-glass-primary text-xs !py-2 !px-5"
               >
                 Đã hiểu
               </button>

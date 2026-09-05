@@ -51,19 +51,26 @@ export const LandingPage: React.FC = () => {
           VocabFlow không hiển thị flashcard thụ động. Hệ thống đo lường độ bền trí nhớ, phát hiện điểm yếu, và tự động lập lịch thời điểm tối ưu bạn sắp quên từ để ôn tập.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto">
           <Link
-            to="/register"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-base shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2 transition"
+            to="/review"
+            className="btn-glass-primary w-full sm:w-auto !py-3.5 !px-8 text-base gap-2 shadow-lg"
           >
-            <span>Làm bài Placement Test</span>
-            <ArrowRight className="w-5 h-5" />
+            <Sparkles className="w-5 h-5 fill-white" />
+            <span>Trải nghiệm Smart Review</span>
+            <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
-            to="/login"
-            className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-300 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 font-semibold text-base transition"
+            to="/vocabulary"
+            className="btn-glass-secondary w-full sm:w-auto !py-3.5 !px-6 text-base"
           >
-            Trải nghiệm Demo
+            Khám phá 600+ từ vựng
+          </Link>
+          <Link
+            to="/placement-test"
+            className="btn-glass-secondary w-full sm:w-auto !py-3.5 !px-6 text-base text-indigo-600 dark:text-indigo-400"
+          >
+            Test Năng Lực (Free)
           </Link>
         </div>
 

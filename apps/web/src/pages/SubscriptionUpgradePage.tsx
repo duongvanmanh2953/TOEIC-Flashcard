@@ -196,11 +196,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
-                {t('subscriptions.plusTitle', 'LexiMind Plus')}
+                {t('subscriptions.plusTitle', 'VocabFlow Plus')}
                 <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt
+                Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt & AI thông minh
               </p>
             </div>
             <div className="flex items-baseline gap-1 my-4">
@@ -219,7 +219,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
               </li>
               <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Công cụ sinh đề kiểm tra ngẫu nhiên</span>
+                <span>Học từ văn bản bất kỳ (Learn from Anything)</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -254,11 +254,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
-                {t('subscriptions.proTitle', 'LexiMind Pro')}
+                {t('subscriptions.proTitle', 'VocabFlow Pro')}
                 <Crown className="w-4 h-4 text-amber-500 shrink-0" />
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Tối đa tiềm năng với AI Tutor phân tích chuyên sâu
+                Tối đa tiềm năng với AI Tutor phân tích chuyên sâu & không giới hạn
               </p>
             </div>
             <div className="flex items-baseline gap-1 my-4">
@@ -300,12 +300,54 @@ export const SubscriptionUpgradePage: React.FC = () => {
         </GlassCard>
       </div>
 
-      {/* Security & Commercial Commitment Banner */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-900/40 flex items-center gap-3">
-        <ShieldCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0" />
-        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-          Toàn bộ tài khoản hiện tại được sử dụng gói <strong>Learner Free</strong> đầy đủ và miễn phí trọn đời. Cổng thanh toán gói thương mại sẽ được công bố khi đạt đầy đủ chứng chỉ bảo mật thanh toán.
+      {/* Entitlement Capability Matrix Table */}
+      <GlassCard variant="liquid" className="p-6 border border-slate-200/90 dark:border-slate-800/90">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+          Bảng So Sánh Quyền Hạn Chi Tiết (Entitlement Matrix)
+        </h2>
+        <p className="text-xs text-slate-400 mb-4">
+          Minh bạch mọi đặc quyền và khả năng truy cập giữa các gói tài khoản.
         </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold tracking-wider">
+                <th className="pb-3 px-3">Khả Năng / Tính Năng</th>
+                <th className="pb-3 px-3 text-center">Gói Free (Miễn phí)</th>
+                <th className="pb-3 px-3 text-center text-indigo-600 dark:text-indigo-400 font-bold">Gói Plus ($4.99)</th>
+                <th className="pb-3 px-3 text-center text-purple-600 dark:text-purple-400 font-bold">Gói Pro ($9.99)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              {[
+                { feature: 'Học từ vựng 3D Flashcard & Thuật toán SRS', free: 'Toàn diện ✓', plus: 'Toàn diện ✓', pro: 'Toàn diện ✓' },
+                { feature: 'Lượt tương tác cùng Gia sư AI 24/7', free: '10 lượt/ngày', plus: '50 lượt/ngày', pro: 'Không giới hạn ✓' },
+                { feature: 'Học từ bất kỳ đoạn văn bản (Learn From Anything)', free: 'Thử nghiệm (3 lần/ngày)', plus: 'Không giới hạn ✓', pro: 'Không giới hạn ✓' },
+                { feature: 'Tự tạo bộ câu hỏi kiểm tra ngẫu nhiên (Custom Quiz)', free: 'Bộ tiêu chuẩn', plus: 'Tùy biến cấp độ & số câu ✓', pro: 'Tùy biến cấp độ & số câu ✓' },
+                { feature: 'Phân tích sức khỏe ghi nhớ (Word Health & Retention)', free: 'Cơ bản', plus: 'Nâng cao ✓', pro: 'Chẩn đoán AI chuyên sâu ✓' },
+                { feature: 'Sao lưu & Đồng bộ đám mây đa thiết bị', free: 'Có ✓', plus: 'Có ✓', pro: 'Ưu tiên đồng bộ tức thời ✓' },
+                { feature: 'Bảo lưu Streak linh hoạt khi bận (Streak Saver)', free: '1 ngày/tháng', plus: '3 ngày/tháng ✓', pro: 'Không giới hạn phục hồi ✓' },
+              ].map((row, i) => (
+                <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <td className="py-3 px-3 font-semibold text-slate-800 dark:text-slate-200">{row.feature}</td>
+                  <td className="py-3 px-3 text-center text-slate-500">{row.free}</td>
+                  <td className="py-3 px-3 text-center font-bold text-indigo-600 dark:text-indigo-400">{row.plus}</td>
+                  <td className="py-3 px-3 text-center font-extrabold text-purple-600 dark:text-purple-400">{row.pro}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
+
+      {/* Honest Beta Billing Commitment Banner */}
+      <div className="p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-900/40 flex items-start sm:items-center gap-3.5">
+        <ShieldCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5 sm:mt-0" />
+        <div className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+          <strong className="text-slate-900 dark:text-white font-bold block mb-0.5">Cam Kết Minh Bạch & Bảo Mật Thanh Toán:</strong>
+          VocabFlow hiện đang trong giai đoạn Beta mở rộng. Các gói dịch vụ trả phí đang mở danh sách đăng ký ưu tiên với mức giá giảm 50% khi chính thức ra mắt. Hệ thống cam kết <strong>tuyệt đối KHÔNG tự động trừ tiền</strong> và <strong>KHÔNG yêu cầu nhập thẻ tín dụng</strong> khi chưa có sự cho phép minh bạch của bạn.
+        </div>
       </div>
     </div>
   );

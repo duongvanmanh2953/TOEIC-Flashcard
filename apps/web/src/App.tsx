@@ -18,9 +18,13 @@ import { MyWordBankPage } from './pages/MyWordBankPage';
 import { CustomQuizPage } from './pages/CustomQuizPage';
 import { SubscriptionUpgradePage } from './pages/SubscriptionUpgradePage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
+  children,
+  requireAuth = false,
+}) => {
+  const { user, loading, isGuest, promptLogin } = useAuth();
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -28,6 +32,25 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       </div>
     );
   }
+
+  // If page strictly requires a saved account (e.g. personal bank)
+  if (requireAuth && isGuest) {
+    return (
+      <div className="p-8 max-w-lg mx-auto text-center space-y-4">
+        <h3 className="text-xl font-bold">Yêu cầu đăng nhập tài khoản</h3>
+        <p className="text-xs text-slate-500">
+          Tính năng này cần lưu trữ dữ liệu cá nhân hóa trên đám mây của bạn.
+        </p>
+        <button
+          onClick={() => promptLogin('Mở khóa lưu trữ kho từ vựng cá nhân')}
+          className="btn-glass-primary text-xs !py-2.5 !px-5"
+        >
+          Đăng nhập / Tạo tài khoản miễn phí
+        </button>
+      </div>
+    );
+  }
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -35,7 +58,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest } = useAuth();
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -43,7 +66,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </div>
     );
   }
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+  if (!user || isGuest || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
     return <Navigate to="/dashboard" replace />;
   }
   return <>{children}</>;
@@ -53,14 +76,15 @@ export const App: React.FC = () => {
   return (
     <I18nProvider>
       <AuthProvider>
+        <ContextualLoginModal />
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
+            {/* Public Entry Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* Protected Routes inside AppShell */}
+            {/* App Shell with Anonymous-first accessible explore routes */}
             <Route
               element={
                 <ProtectedRoute>
@@ -71,7 +95,14 @@ export const App: React.FC = () => {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/review" element={<ReviewSessionPage />} />
               <Route path="/vocabulary" element={<VocabularyExplorerPage />} />
-              <Route path="/word-bank" element={<MyWordBankPage />} />
+              <Route
+                path="/word-bank"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <MyWordBankPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/community" element={<CommunityDecksPage />} />
               <Route path="/custom-quiz" element={<CustomQuizPage />} />
               <Route path="/placement-test" element={<PlacementTestPage />} />

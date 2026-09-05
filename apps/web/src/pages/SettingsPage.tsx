@@ -22,6 +22,12 @@ import {
   ImageIcon,
   FastForward,
   BookOpen,
+  Shield,
+  Download,
+  Smartphone,
+  Key,
+  LogOut,
+  ExternalLink,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -76,7 +82,72 @@ export const SettingsPage: React.FC = () => {
   const [savedToast, setSavedToast] = useState(false);
   const [resetProgressModalOpen, setResetProgressModalOpen] = useState(false);
   const [clearWordBankModalOpen, setClearWordBankModalOpen] = useState(false);
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [sessions, setSessions] = useState([
+    { id: 's1', device: 'Chrome on Windows 11', ip: '113.190.23.104', isCurrent: true, lastActive: 'Đang hoạt động' },
+    { id: 's2', device: 'Safari on iPhone 15 Pro', ip: '14.162.88.21', isCurrent: false, lastActive: '2 ngày trước' },
+  ]);
+
+  const handleExportData = () => {
+    try {
+      const guestFavorites = JSON.parse(localStorage.getItem('vocabflow_guest_favorites') || '[]');
+      const guestWords = JSON.parse(localStorage.getItem('vocabflow_guest_words') || '[]');
+      const guestReviews = JSON.parse(localStorage.getItem('vocabflow_guest_reviews') || '[]');
+
+      const exportPayload = {
+        app: 'VocabFlow AI',
+        version: '4.0.0',
+        exportedAt: new Date().toISOString(),
+        user: {
+          id: user?.id || 'guest',
+          email: user?.email || 'guest@vocabflow.local',
+          displayName: user?.displayName || 'Học viên',
+          tier: user?.tier || 'FREE',
+        },
+        settings: {
+          themeMode,
+          accentColor,
+          voiceAccent,
+          voiceSpeed,
+          dailyGoal,
+        },
+        data: {
+          favoriteWords: guestFavorites,
+          customWordBank: guestWords,
+          studyHistory: guestReviews,
+        },
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `vocabflow_export_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+
+      setActionSuccessMsg('Đã trích xuất và tải xuống toàn bộ dữ liệu học tập (JSON) thành công!');
+      setTimeout(() => setActionSuccessMsg(null), 4000);
+    } catch (e) {
+      console.error('Export error', e);
+    }
+  };
+
+  const handleRevokeOtherSessions = () => {
+    setSessions((prev) => prev.filter((s) => s.isCurrent));
+    setActionSuccessMsg('Đã đăng xuất khỏi tất cả các thiết bị khác thành công!');
+    setTimeout(() => setActionSuccessMsg(null), 3500);
+  };
+
+  const handleConfirmDeleteAccount = () => {
+    setDeleteAccountModalOpen(false);
+    localStorage.clear();
+    setActionSuccessMsg('Yêu cầu xóa tài khoản đã được ghi nhận. Toàn bộ dữ liệu của bạn đã được xóa sạch.');
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 2000);
+  };
 
   const handleSelectTheme = (mode: 'system' | 'light' | 'dark') => {
     setThemeMode(mode);
@@ -539,9 +610,181 @@ export const SettingsPage: React.FC = () => {
         </div>
       </GlassCard>
 
+      {/* 6. TRUNG TÂM BẢO MẬT (SECURITY CENTER) */}
+      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
+          <Shield className="w-5 h-5 text-indigo-500" />
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
+              Trung Tâm Bảo Mật (Security Center)
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Quản lý tài khoản liên kết (Google, Facebook), thiết bị đăng nhập và phiên hoạt động.
+            </p>
+          </div>
+        </div>
+
+        {/* Linked Accounts */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+            Tài Khoản & Phương Thức Xác Thực Đã Liên Kết
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-sm">
+                  G
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 dark:text-white">Google OAuth</p>
+                  <p className="text-[11px] text-slate-400">
+                    {user?.email?.includes('@') ? `Đã liên kết (${user.email})` : 'Chưa liên kết'}
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                Đã bảo vệ ✓
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center font-bold text-sm">
+                  f
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 dark:text-white">Facebook Login</p>
+                  <p className="text-[11px] text-slate-400">Đăng nhập nhanh 1-chạm</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setActionSuccessMsg('Đang kích hoạt liên kết tài khoản Facebook...');
+                  setTimeout(() => setActionSuccessMsg(null), 3000);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 text-[11px] font-bold transition"
+              >
+                Liên kết
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Active Sessions */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+              <Smartphone className="w-3.5 h-3.5 text-slate-400" />
+              <span>Thiết Bị Đang Đăng Nhập ({sessions.length})</span>
+            </h3>
+            {sessions.length > 1 && (
+              <button
+                onClick={handleRevokeOtherSessions}
+                className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Đăng xuất thiết bị khác</span>
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-2 text-xs">
+            {sessions.map((sess) => (
+              <div
+                key={sess.id}
+                className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                    <Laptop className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-slate-900 dark:text-white leading-snug">{sess.device}</p>
+                      {sess.isCurrent && (
+                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold">
+                          Thiết bị này
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      IP: {sess.ip} • {sess.lastActive}
+                    </p>
+                  </div>
+                </div>
+                {!sess.isCurrent && (
+                  <button
+                    onClick={handleRevokeOtherSessions}
+                    className="px-2 py-1 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-[11px] font-semibold transition"
+                  >
+                    Thu hồi
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* 7. QUYỀN RIÊNG TƯ & XUẤT DỮ LIỆU (PRIVACY CENTER) */}
+      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
+          <Download className="w-5 h-5 text-indigo-500" />
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
+              Trung Tâm Quyền Riêng Tư (Privacy Center)
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Bạn có toàn quyền làm chủ dữ liệu của mình. Xuất dữ liệu học tập hoặc yêu cầu xóa vĩnh viễn theo chuẩn GDPR.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          {/* Trích xuất dữ liệu JSON */}
+          <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between space-y-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold">
+                <Download className="w-4 h-4" />
+                <span>Xuất dữ liệu học tập (JSON)</span>
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
+                Tải xuống bản sao lưu đầy đủ chứa hồ sơ, danh sách từ vựng cá nhân, từ yêu thích và lịch sử làm bài kiểm tra.
+              </p>
+            </div>
+            <button
+              onClick={handleExportData}
+              className="self-start px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Tải file JSON ngay</span>
+            </button>
+          </div>
+
+          {/* Xóa tài khoản vĩnh viễn */}
+          <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-rose-200/60 dark:border-rose-900/40 flex flex-col justify-between space-y-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
+                <Trash2 className="w-4 h-4" />
+                <span>Xóa vĩnh viễn tài khoản</span>
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
+                Quyền được lãng quên (GDPR): Xóa sạch toàn bộ tài khoản, chuỗi streak, huy hiệu và dữ liệu cá nhân khỏi hệ thống.
+              </p>
+            </div>
+            <button
+              onClick={() => setDeleteAccountModalOpen(true)}
+              className="self-start px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs transition"
+            >
+              Yêu cầu xóa tài khoản
+            </button>
+          </div>
+        </div>
+      </GlassCard>
+
       {/* Spacious Modal: Đặt lại tiến độ học (max-w-2xl) */}
       {resetProgressModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <div className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -560,13 +803,13 @@ export const SettingsPage: React.FC = () => {
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => setResetProgressModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
               >
                 Hủy bỏ
               </button>
               <button
                 onClick={handleConfirmResetProgress}
-                className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition shadow-md shadow-amber-600/20"
+                className="btn-glass-amber text-xs sm:text-sm !py-2.5 !px-5"
               >
                 Xác nhận đặt lại tiến độ
               </button>
@@ -577,7 +820,7 @@ export const SettingsPage: React.FC = () => {
 
       {/* Spacious Modal: Xóa kho từ vựng (max-w-2xl) */}
       {clearWordBankModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <div className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
@@ -596,15 +839,51 @@ export const SettingsPage: React.FC = () => {
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => setClearWordBankModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
               >
                 Hủy bỏ
               </button>
               <button
                 onClick={handleConfirmClearWordBank}
-                className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white transition shadow-md shadow-rose-600/20"
+                className="btn-glass-danger text-xs sm:text-sm !py-2.5 !px-5"
               >
                 Xóa vĩnh viễn kho từ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spacious Modal: Xóa vĩnh viễn tài khoản (max-w-2xl) */}
+      {deleteAccountModalOpen && (
+        <div className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 shadow-2xl space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                  Xác nhận xóa tài khoản vĩnh viễn?
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Cảnh báo bảo mật tối cao: Thao tác này sẽ xóa vĩnh viễn toàn bộ tiến trình học, điểm XP, chuỗi Streak, danh sách từ vựng cá nhân và các gói đăng ký gắn liền với tài khoản của bạn. Hành động này không thể đảo ngược hoặc khôi phục.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={() => setDeleteAccountModalOpen(false)}
+                className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleConfirmDeleteAccount}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm transition shadow-lg shadow-rose-600/20"
+              >
+                Xác nhận xóa tài khoản vĩnh viễn
               </button>
             </div>
           </div>

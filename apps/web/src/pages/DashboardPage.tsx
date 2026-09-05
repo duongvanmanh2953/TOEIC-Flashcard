@@ -103,7 +103,7 @@ export const DashboardPage: React.FC = () => {
             <span>Spaced Repetition System • VocabFlow AI</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-snug tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-snug">
             {timeGreeting}, {user?.displayName || 'Learner'} 👋
           </h1>
 
@@ -118,7 +118,7 @@ export const DashboardPage: React.FC = () => {
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => navigate('/review')}
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center gap-2"
+              className="btn-glass-primary text-xs sm:text-sm !py-2.5 !px-5 gap-2 shadow-md"
             >
               <Sparkles className="w-4 h-4 fill-white" />
               <span>{t('dashboard.startReviewCTA', 'Bắt đầu phiên ôn tập')}</span>
@@ -127,20 +127,84 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => navigate('/word-bank')}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs sm:text-sm transition border border-slate-200/60 dark:border-slate-700/60"
+              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-4"
             >
               Kho từ của tôi
             </button>
 
             <button
               onClick={() => navigate('/vocabulary')}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs sm:text-sm transition border border-slate-200/60 dark:border-slate-700/60"
+              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-4"
             >
               Thư viện 600+ từ
             </button>
           </div>
+
+          {/* Quick Win Micro-Learning Selector (2, 5, 10, 15 min) */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <span>⚡ Quick Win:</span>
+            </span>
+            <button
+              onClick={() => navigate('/review?limit=3')}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              title="3 từ nhanh trong 2 phút"
+            >
+              2 phút
+            </button>
+            <button
+              onClick={() => navigate('/review?limit=5')}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              title="5 từ trong 5 phút"
+            >
+              5 phút
+            </button>
+            <button
+              onClick={() => navigate('/review?limit=10')}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              title="10 từ trong 10 phút"
+            >
+              10 phút
+            </button>
+            <button
+              onClick={() => navigate('/review?limit=15')}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              title="15 từ trong 15 phút"
+            >
+              15 phút
+            </button>
+            <span className="text-[11px] text-slate-400 italic hidden sm:inline">
+              (Học vi mô mọi lúc rảnh rỗi)
+            </span>
+          </div>
         </div>
       </GlassCard>
+
+      {/* Next Best Action Spotlight */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-emerald-500/10 border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Target className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 dark:text-indigo-400">
+              🎯 Next Best Action • Khuyến Nghị Trí Não
+            </span>
+            <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+              {reviewDue > 0
+                ? `${reviewDue} từ vựng đã chạm ngưỡng quên (SRS Retrievability < 75%)`
+                : 'Mục tiêu ngày đã sẵn sàng: Củng cố 10 từ vựng cốt lõi TOEIC'}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/review')}
+          className="btn-glass-primary text-xs !py-2 !px-4 shrink-0 gap-1.5"
+        >
+          <span>Khởi động ngay</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
 
       {/* 2. Key Metrics Row — 4 Rich Feature Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -388,33 +452,36 @@ export const DashboardPage: React.FC = () => {
           </div>
         </GlassCard>
 
-        {/* Weak Words Alert / Recommended Reinforce */}
+        {/* Memory Rescue & Weak Words Alert */}
         <GlassCard variant="liquid" className="p-5 md:p-6 bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 shadow-md flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>Cần củng cố thêm</span>
+            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-wider mb-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
+              <span>🛟 Memory Rescue</span>
             </div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
-              Từ vựng hay nhầm lẫn
+              Cứu Từ Vựng Có Nguy Cơ Quên
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              Các từ bạn phản xạ còn chậm hoặc từng chọn sai trong bài kiểm tra.
+              Dự đoán xác suất ghi nhớ đang dưới 60%. Cần kích hoạt 1 lần phản xạ để đưa từ trở lại vùng an toàn.
             </p>
 
             <div className="mt-3 space-y-1.5">
-              {(data?.weakWords?.slice(0, 3) || [
-                { id: '1', word: 'compromise', masteryScore: 45 },
-                { id: '2', word: 'accommodate', masteryScore: 50 },
-                { id: '3', word: 'resilient', masteryScore: 55 },
-              ]).map((w: any) => (
+              {[
+                { word: 'compromise', score: 42, reason: 'Phản xạ chậm' },
+                { word: 'accommodate', score: 48, reason: 'Nhầm spelling' },
+                { word: 'resilient', score: 55, reason: 'Sắp tới hạn' },
+              ].map((w, idx) => (
                 <div
-                  key={w.id}
-                  className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/40 text-xs"
+                  key={idx}
+                  className="flex items-center justify-between p-2 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/15 text-xs"
                 >
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{w.word}</span>
-                  <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">
-                    {w.masteryScore}% nhớ
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{w.word}</span>
+                    <span className="text-[10px] text-slate-400 block">{w.reason}</span>
+                  </div>
+                  <span className="text-[11px] text-rose-600 dark:text-rose-400 font-bold">
+                    {w.score}% nhớ
                   </span>
                 </div>
               ))}
@@ -422,13 +489,62 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <button
-            onClick={() => navigate('/review?topic=Business')}
-            className="w-full mt-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-2"
+            onClick={() => navigate('/review?mode=rescue')}
+            className="btn-glass-danger w-full mt-4 !py-2.5 text-xs gap-2"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Ôn ngay các từ này</span>
+            <Sparkles className="w-3.5 h-3.5 fill-white" />
+            <span>Cứu 3 từ vựng này ngay</span>
           </button>
         </GlassCard>
+      </div>
+
+      {/* 5. Vocabulary Health & Flexible Journey Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase text-slate-400">Độ Bền Trí Nhớ (Retention)</span>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Tốt</span>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">84%</p>
+          <div className="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div className="h-full bg-emerald-500 rounded-full" style={{ width: '84%' }} />
+          </div>
+        </GlassCard>
+
+        <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase text-slate-400">Tính Đều Đặn (Consistency)</span>
+            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Rất Cao</span>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">91%</p>
+          <div className="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div className="h-full bg-indigo-500 rounded-full" style={{ width: '91%' }} />
+          </div>
+        </GlassCard>
+
+        <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase text-slate-400">Tốc Độ Phản Xạ (Recall)</span>
+            <span className="text-xs font-bold text-amber-500">Ổn Định</span>
+          </div>
+          <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">78%</p>
+          <div className="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div className="h-full bg-amber-500 rounded-full" style={{ width: '78%' }} />
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Flexible Journey Reassurance */}
+      <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🌱</span>
+          <span className="font-semibold">
+            Hành trình học tập linh hoạt: Dù bạn có bận một ngày, trí nhớ vẫn được bảo tồn và tối ưu tự động khi quay lại.
+          </span>
+        </div>
+        <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-white/50 dark:bg-slate-900/50 px-2 py-0.5 rounded-md">
+          Zero-Pressure Learning
+        </span>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Search,
   Bookmark,
@@ -14,6 +15,7 @@ import { SpeechButton } from '../components/common/SpeechButton';
 
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isGuest, promptLogin } = useAuth();
   const [words, setWords] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -43,7 +45,18 @@ export const VocabularyExplorerPage: React.FC = () => {
 
         const res: any = await api.get('/vocabulary', { params });
         if (res?.success) {
-          setWords(res.data);
+          // Restore any guest favorites from localStorage
+          const guestFavs: string[] = JSON.parse(
+            localStorage.getItem('vocabflow_guest_favorites') || '[]'
+          );
+          const mappedItems = (res.data?.items || res.data || []).map((w: any) => ({
+            ...w,
+            userProgress: {
+              ...w.userProgress,
+              isFavorite: w.userProgress?.isFavorite || guestFavs.includes(w.id),
+            },
+          }));
+          setWords(mappedItems);
           setTotalPages(res.meta?.pagination?.totalPages || 1);
         }
       } catch (err) {
@@ -70,6 +83,34 @@ export const VocabularyExplorerPage: React.FC = () => {
 
   const handleToggleFavorite = async (wordId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (isGuest) {
+      const guestFavs: string[] = JSON.parse(
+        localStorage.getItem('vocabflow_guest_favorites') || '[]'
+      );
+      const targetWord = words.find((w) => w.id === wordId);
+      const isAlready = guestFavs.includes(wordId);
+      const updated = isAlready ? guestFavs.filter((id) => id !== wordId) : [...guestFavs, wordId];
+      localStorage.setItem('vocabflow_guest_favorites', JSON.stringify(updated));
+
+      setWords((prev) =>
+        prev.map((w) =>
+          w.id === wordId
+            ? {
+                ...w,
+                userProgress: {
+                  ...w.userProgress,
+                  isFavorite: !isAlready,
+                },
+              }
+            : w,
+        ),
+      );
+
+      promptLogin(`Lưu từ vựng "${targetWord?.word || ''}" vào mục Yêu thích ❤️`);
+      return;
+    }
+
     try {
       await api.post(`/vocabulary/${wordId}/favorite`);
       setWords((prev) =>
@@ -290,7 +331,7 @@ export const VocabularyExplorerPage: React.FC = () => {
       {/* Word Detail Modal — Spacious & Perfectly Centered */}
       {selectedWord && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           onClick={() => setSelectedWord(null)}
         >
           <div
@@ -314,7 +355,7 @@ export const VocabularyExplorerPage: React.FC = () => {
 
             <div className="flex items-baseline justify-between">
               <div>
-                <h2 className="text-3xl font-black">{selectedWord.word}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold">{selectedWord.word}</h2>
                 <p className="text-sm font-mono text-slate-400">{selectedWord.pronunciation}</p>
               </div>
               <SpeechButton text={selectedWord.word} showSlowOption={true} />
@@ -323,20 +364,17 @@ export const VocabularyExplorerPage: React.FC = () => {
             <div className="space-y-3 pt-2">
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Định nghĩa & Nghĩa tiếng Việt
+                  Nghĩa Tiếng Việt
                 </h4>
-                <p className="text-base font-bold text-brand-700 dark:text-brand-300">
-                  {selectedWord.meanings[0]?.meaning || selectedWord.shortDefinition}
+                <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                  {selectedWord.meaningVi}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">{selectedWord.definition}</p>
               </div>
 
-              {selectedWord.examples?.[0] && (
+              {selectedWord.examples && selectedWord.examples.length > 0 && (
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Ví dụ minh họa ngữ cảnh
-                  </h4>
-                  <p className="text-sm italic font-medium text-slate-700 dark:text-slate-300">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Ví Dụ Ngữ Cảnh</h4>
+                  <p className="text-xs sm:text-sm font-medium italic text-slate-700 dark:text-slate-300">
                     "{selectedWord.examples[0].sentence}"
                   </p>
                   {selectedWord.examples[0].translation && (
@@ -353,9 +391,9 @@ export const VocabularyExplorerPage: React.FC = () => {
                 setSelectedWord(null);
                 window.location.href = `/ai-tutor?word=${selectedWord.word}`;
               }}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition"
+              className="btn-glass-primary w-full !py-3 text-xs gap-2"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 fill-white" />
               <span>Hỏi Gia Sư AI giải thích sâu từ này</span>
             </button>
           </div>

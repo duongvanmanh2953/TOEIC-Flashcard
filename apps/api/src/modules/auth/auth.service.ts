@@ -197,4 +197,82 @@ export class AuthService {
       data: { refreshToken: hashed },
     });
   }
+
+  async migrateGuestData(payload: {
+    targetUserId: string;
+    favorites?: string[];
+    customWords?: any[];
+    reviews?: any[];
+  }) {
+    const { targetUserId, favorites, customWords } = payload;
+    if (!targetUserId) return { success: false, message: 'Invalid target user' };
+
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!user) return { success: false, message: 'User not found' };
+
+      if (favorites && favorites.length > 0) {
+        for (const word of favorites) {
+          if (typeof word === 'string') {
+            const vocab = await this.prisma.vocabulary.findFirst({
+              where: { word: word.toLowerCase() },
+            });
+            if (vocab) {
+              await this.prisma.userVocabulary.upsert({
+                where: {
+                  userId_vocabularyId: {
+                    userId: targetUserId,
+                    vocabularyId: vocab.id,
+                  },
+                },
+                update: { isFavorite: true },
+                create: {
+                  userId: targetUserId,
+                  vocabularyId: vocab.id,
+                  status: 'LEARNING',
+                  isFavorite: true,
+                  nextReviewAt: new Date(),
+                },
+              });
+            }
+          }
+        }
+      }
+
+      if (customWords && customWords.length > 0) {
+        for (const item of customWords) {
+          if (item?.word) {
+            const vocab = await this.prisma.vocabulary.findFirst({
+              where: { word: item.word.toLowerCase() },
+            });
+            if (vocab) {
+              await this.prisma.userVocabulary.upsert({
+                where: {
+                  userId_vocabularyId: {
+                    userId: targetUserId,
+                    vocabularyId: vocab.id,
+                  },
+                },
+                update: {},
+                create: {
+                  userId: targetUserId,
+                  vocabularyId: vocab.id,
+                  status: 'LEARNING',
+                  nextReviewAt: new Date(),
+                },
+              });
+            }
+          }
+        }
+      }
+
+      return {
+        success: true,
+        migratedCount: (favorites?.length || 0) + (customWords?.length || 0),
+        message: 'Guest data migrated successfully',
+      };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Migration notice' };
+    }
+  }
 }

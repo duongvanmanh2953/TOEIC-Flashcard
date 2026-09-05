@@ -49,8 +49,8 @@
     background-color: #f8fafc;
     color: var(--text-primary);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    line-height: 1.6;
-    letter-spacing: -0.01em;
+    line-height: 1.65;
+    letter-spacing: 0.005em;
   }
 
   .dark body {
@@ -58,12 +58,33 @@
     color: var(--text-primary);
   }
 
-  /* Prevent headings colliding on multi-line wraps */
+  /* Spacious, breathable headings — Never collide Vietnamese diacritic accents */
   h1, h2, h3, h4, h5, h6 {
-    line-height: 1.35 !important;
-    letter-spacing: -0.02em;
+    line-height: 1.48 !important;
+    letter-spacing: -0.005em !important;
+    font-weight: 700;
     color: var(--text-primary);
   }
+
+  /* Neutralize aggressive tracking so Vietnamese text is airy and legible */
+  .tracking-tight,
+  .tracking-tighter {
+    letter-spacing: -0.005em !important;
+  }
+}
+
+/* ==========================================================================
+   CRITICAL FIX: Prevent Tailwind space-y-* from injecting margin-top into modals
+   ========================================================================== */
+.fixed,
+[class*="fixed"],
+[role="dialog"],
+.modal-overlay,
+[data-modal] {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 /* Glass Material Panels */
@@ -87,7 +108,9 @@
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Liquid Glass Card with Specular Gleam ("Lóe sáng") */
+/* ==========================================================================
+   LIQUID GLASS CARD & AUTHENTIC SPECULAR GLASS REFLECTION ("LÓE KÍNH")
+   ========================================================================== */
 .liquid-glass-card {
   position: relative;
   overflow: hidden;
@@ -107,15 +130,15 @@
   box-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.16);
 }
 
-/* Specular Gleam Edge Flare — Centered perfectly across top rim, no center bleed */
+/* Micro-beveled glass top edge highlight */
 .liquid-glass-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 60%;
-  height: 2px;
+  width: 55%;
+  height: 1.5px;
   background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.95) 50%, transparent 100%);
   pointer-events: none;
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
@@ -126,23 +149,42 @@
   background: linear-gradient(90deg, transparent 0%, rgba(199, 210, 254, 0.9) 50%, transparent 100%);
 }
 
-/* Subtle, sophisticated top sheen on hover without blinding the card center */
+/* Authentic Dynamic Specular Glass Gleam ("Lóe kính")
+   - Angled light beam resting completely outside the card
+   - Sweeps smoothly across the glass surface on hover without obscuring content
+*/
 .liquid-glass-card::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, transparent 100%);
+  top: -60%;
+  left: -140%;
+  width: 65%;
+  height: 220%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.45) 50%,
+    rgba(255, 255, 255, 0.05) 80%,
+    transparent 100%
+  );
+  transform: skewX(-25deg);
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.35s ease;
-  z-index: 1;
+  filter: blur(3px);
+  transition: left 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  z-index: 2;
 }
 
 .dark .liquid-glass-card::after {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 20%,
+    rgba(255, 255, 255, 0.32) 50%,
+    rgba(255, 255, 255, 0.04) 80%,
+    transparent 100%
+  );
 }
 
 .liquid-glass-card:hover {
@@ -158,10 +200,175 @@
 
 .liquid-glass-card:hover::after {
   opacity: 1;
+  left: 170%;
 }
 
 .liquid-glass-card:hover::before {
   width: 85%;
+}
+
+/* ==========================================================================
+   RICH LIQUID GLASS BUTTON SYSTEM
+   ========================================================================== */
+.btn-glass-primary,
+.btn-glass-secondary,
+.btn-glass-emerald,
+.btn-glass-amber,
+.btn-glass-danger {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  border-radius: 0.875rem;
+  padding: 0.625rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-glass-primary:active,
+.btn-glass-secondary:active,
+.btn-glass-emerald:active,
+.btn-glass-amber:active,
+.btn-glass-danger:active {
+  transform: scale(0.97);
+}
+
+/* Specular gleam glint across buttons on hover */
+.btn-glass-primary::after,
+.btn-glass-secondary::after,
+.btn-glass-emerald::after,
+.btn-glass-amber::after,
+.btn-glass-danger::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -130%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.38) 50%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  z-index: 10;
+}
+
+.btn-glass-primary:hover::after,
+.btn-glass-secondary:hover::after,
+.btn-glass-emerald:hover::after,
+.btn-glass-amber:hover::after,
+.btn-glass-danger:hover::after {
+  left: 160%;
+  opacity: 1;
+}
+
+/* Primary Glass Button: Vibrant Indigo / Violet Liquid Glass */
+.btn-glass-primary {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.92) 0%, rgba(99, 102, 241, 0.85) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px -2px rgba(79, 70, 229, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .btn-glass-primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(129, 140, 248, 0.8) 100%);
+  box-shadow: 0 4px 18px -2px rgba(99, 102, 241, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+.btn-glass-primary:hover {
+  background: linear-gradient(135deg, rgba(67, 56, 202, 0.96) 0%, rgba(79, 70, 229, 0.9) 100%);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 8px 24px -2px rgba(79, 70, 229, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  transform: translateY(-1.5px);
+}
+
+/* Secondary Glass Button: Frosted Crystal Glass */
+.btn-glass-secondary {
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--text-primary);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dark .btn-glass-secondary {
+  background: rgba(30, 41, 59, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.btn-glass-secondary:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-1.5px);
+}
+
+.dark .btn-glass-secondary:hover {
+  background: rgba(51, 65, 85, 0.8);
+  border-color: rgba(129, 140, 248, 0.4);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Emerald Glass Button: Positive / Export / Practice */
+.btn-glass-emerald {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.85) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px -2px rgba(16, 185, 129, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.btn-glass-emerald:hover {
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.95) 0%, rgba(4, 120, 87, 0.9) 100%);
+  box-shadow: 0 8px 24px -2px rgba(16, 185, 129, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  transform: translateY(-1.5px);
+}
+
+/* Amber Glass Button: Streak / Gold / VIP */
+.btn-glass-amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(217, 119, 6, 0.85) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px -2px rgba(245, 158, 11, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.btn-glass-amber:hover {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.95) 0%, rgba(180, 83, 9, 0.9) 100%);
+  box-shadow: 0 8px 22px -2px rgba(245, 158, 11, 0.55);
+  transform: translateY(-1.5px);
+}
+
+/* Danger Glass Button: Reset / Delete / Remove */
+.btn-glass-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.88) 0%, rgba(220, 38, 38, 0.8) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 4px 16px -2px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.btn-glass-danger:hover {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.95) 0%, rgba(185, 28, 28, 0.9) 100%);
+  box-shadow: 0 8px 22px -2px rgba(239, 68, 68, 0.55);
+  transform: translateY(-1.5px);
 }
 
 /* Ambient Dashboard Tinted Canvas */

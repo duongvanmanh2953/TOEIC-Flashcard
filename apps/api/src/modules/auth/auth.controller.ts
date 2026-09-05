@@ -83,4 +83,20 @@ export class AuthController {
   ) {
     return this.oauthService.handleOAuthUser(body);
   }
+
+  @Public()
+  @Post('migrate-guest')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Migrate guest offline favorites, custom words, and quiz history to authenticated user' })
+  migrateGuest(
+    @Body()
+    body: {
+      targetUserId: string;
+      favorites?: string[];
+      customWords?: any[];
+      reviews?: any[];
+    },
+  ) {
+    return this.authService.migrateGuestData(body);
+  }
 }

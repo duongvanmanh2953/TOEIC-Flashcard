@@ -202,7 +202,7 @@ export const CommunityDecksPage: React.FC = () => {
 
         <button
           onClick={handleOpenCreateModal}
-          className="self-start md:self-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-2 transition"
+          className="btn-glass-primary self-start md:self-auto text-xs !py-2.5 gap-2 shadow-md"
         >
           <Plus className="w-4 h-4" />
           <span>Tạo & Đóng góp bộ từ</span>
@@ -314,7 +314,7 @@ export const CommunityDecksPage: React.FC = () => {
       {/* Preview Deck Modal — Spacious & Perfectly Centered */}
       {selectedDeck && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           onClick={() => setSelectedDeck(null)}
         >
           <div
@@ -326,7 +326,7 @@ export const CommunityDecksPage: React.FC = () => {
                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                   {selectedDeck.category} • CEFR {selectedDeck.cefrLevel}
                 </span>
-                <h3 className="text-2xl font-black mt-1 text-slate-900 dark:text-white">{selectedDeck.title}</h3>
+                <h3 className="text-xl sm:text-2xl font-bold mt-1 text-slate-900 dark:text-white">{selectedDeck.title}</h3>
               </div>
               <button
                 onClick={() => setSelectedDeck(null)}
@@ -367,7 +367,7 @@ export const CommunityDecksPage: React.FC = () => {
                 handleClone(selectedDeck.id, selectedDeck.title);
                 setSelectedDeck(null);
               }}
-              className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition"
+              className="btn-glass-primary w-full !py-3 text-xs sm:text-sm gap-2"
             >
               <Copy className="w-4 h-4" />
               <span>Clone toàn bộ từ về kho ôn tập của tôi</span>
@@ -379,7 +379,7 @@ export const CommunityDecksPage: React.FC = () => {
       {/* Create & Share Deck Modal — Support sharing from My Personal Word Bank */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           onClick={() => setShowCreateModal(false)}
         >
           <div
@@ -603,14 +603,14 @@ export const CommunityDecksPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="btn-glass-secondary text-xs !py-2 !px-4"
                   >
                     Hủy bỏ
                   </button>
                   <button
                     type="submit"
                     disabled={creating}
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-md transition"
+                    className="btn-glass-primary text-xs !py-2.5 !px-5 disabled:opacity-50"
                   >
                     {creating ? 'Đang xuất bản...' : 'Lưu & Đăng Lên Cộng Đồng'}
                   </button>

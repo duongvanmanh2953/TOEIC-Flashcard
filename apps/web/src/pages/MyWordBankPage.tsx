@@ -210,10 +210,10 @@ export const MyWordBankPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => navigate('/review')}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
+            className="btn-glass-primary text-xs !py-2.5 gap-2 shadow-md"
           >
             <Sparkles className="w-4 h-4 fill-white" />
             <span>Ôn tập kho từ này</span>
@@ -224,9 +224,9 @@ export const MyWordBankPage: React.FC = () => {
               setActiveModalTab('excel');
               setShowAddModal(true);
             }}
-            className="px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 font-bold text-xs flex items-center gap-1.5 transition"
+            className="btn-glass-emerald text-xs !py-2.5 gap-1.5"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <FileSpreadsheet className="w-4 h-4 text-white" />
             <span>Nhập Excel / CSV</span>
           </button>
 
@@ -235,9 +235,9 @@ export const MyWordBankPage: React.FC = () => {
               setActiveModalTab('manual');
               setShowAddModal(true);
             }}
-            className="px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 font-bold text-xs flex items-center gap-1.5 transition shadow-xs"
+            className="btn-glass-secondary text-xs !py-2.5 gap-1.5"
           >
-            <Plus className="w-4 h-4 text-indigo-600" />
+            <Plus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Thêm từ mới</span>
           </button>
         </div>
@@ -384,7 +384,7 @@ export const MyWordBankPage: React.FC = () => {
       {/* Add / Import Modal — Centered without awkward margin-top */}
       {showAddModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
           onClick={() => setShowAddModal(false)}
         >
           <div
@@ -564,14 +564,14 @@ export const MyWordBankPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="btn-glass-secondary text-xs !py-2.5 !px-5"
                   >
                     Hủy bỏ
                   </button>
                   <button
                     type="submit"
                     disabled={adding}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-md transition"
+                    className="btn-glass-primary text-xs !py-2.5 !px-6 disabled:opacity-50"
                   >
                     {adding ? 'Đang lưu vào kho...' : 'Lưu Vào Kho Từ Của Tôi'}
                   </button>
@@ -707,7 +707,7 @@ export const MyWordBankPage: React.FC = () => {
                           setSelectedFile(null);
                           setParsedWords([]);
                         }}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        className="btn-glass-secondary text-xs !py-2 !px-4"
                       >
                         Chọn file khác
                       </button>
@@ -715,7 +715,7 @@ export const MyWordBankPage: React.FC = () => {
                         type="button"
                         onClick={handleConfirmBatchImport}
                         disabled={isImporting}
-                        className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
+                        className="btn-glass-emerald text-xs !py-2.5 !px-5 gap-2 disabled:opacity-50"
                       >
                         {isImporting ? (
                           <span>Đang nạp dữ liệu...</span>
