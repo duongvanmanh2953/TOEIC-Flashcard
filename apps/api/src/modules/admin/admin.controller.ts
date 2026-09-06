@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -144,5 +144,11 @@ export class AdminController {
   @ApiOperation({ summary: 'Get recent administrative and moderation audit logs' })
   getAuditLogs(@Query('limit') limit: string = '20') {
     return this.adminService.getAuditLogs(parseInt(limit, 10));
+  }
+
+  @Post('purge-mock-data')
+  @ApiOperation({ summary: 'Purge all mock operational data (tickets, feedback, fake orders, fake sessions)' })
+  purgeMockData() {
+    return this.adminService.purgeMockData();
   }
 }

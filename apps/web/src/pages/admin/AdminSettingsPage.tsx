@@ -27,6 +27,9 @@ export const AdminSettingsPage: React.FC = () => {
   const [purgeModalOpen, setPurgeModalOpen] = useState(false);
   const [purgeResult, setPurgeResult] = useState<string | null>(null);
 
+  const [purgingMock, setPurgingMock] = useState(false);
+  const [purgeMockModalOpen, setPurgeMockModalOpen] = useState(false);
+
   // Form states
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [allowRegistration, setAllowRegistration] = useState(true);
@@ -50,6 +53,21 @@ export const AdminSettingsPage: React.FC = () => {
       setPurgeResult('Không thể thực hiện dọn dẹp tin nhắn lúc này.');
     } finally {
       setPurging(false);
+    }
+  };
+
+  const handlePurgeMockData = async () => {
+    setPurgingMock(true);
+    try {
+      const res: any = await api.post('/admin/purge-mock-data');
+      const info = res?.data?.data || res?.data || res;
+      setPurgeResult(info?.message || 'Đã dọn sạch toàn bộ dữ liệu mẫu thành công. Chỉ giữ lại tài khoản người dùng và kho từ vựng.');
+      setPurgeMockModalOpen(false);
+    } catch (err) {
+      console.error('Purge mock data error:', err);
+      setPurgeResult('Không thể thực hiện xóa dữ liệu mẫu lúc này.');
+    } finally {
+      setPurgingMock(false);
     }
   };
 
@@ -177,6 +195,33 @@ export const AdminSettingsPage: React.FC = () => {
                 <span className="text-slate-400">Nhật ký Audit Logs:</span>
                 <p className="font-bold text-slate-900 dark:text-white mt-1">Bảo lưu 90 ngày</p>
               </div>
+            </div>
+          </div>
+
+          {/* Purge Mock Data Card */}
+          <div className="bg-white dark:bg-slate-800/80 p-6 rounded-2xl border border-amber-500/30 dark:border-amber-500/20 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-500" />
+                  <span>Chuyển sang Vận Hành Thực: Xóa Sạch Dữ Liệu Mẫu (Purge Mock Data)</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-xl">
+                  Xóa sạch toàn bộ tin nhắn hỗ trợ mẫu, tickets mẫu, feedback mẫu, giao dịch giả lập và thông báo mẫu. <strong>Hệ thống chỉ bảo lưu duy nhất tài khoản người dùng thực và toàn bộ kho từ vựng.</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPurgeMockModalOpen(true)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 shadow-sm transition shrink-0"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Xóa sạch data mẫu</span>
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 font-medium">
+              💡 Thao tác này giúp bạn chuyển giao hệ thống sang trạng thái vận hành dữ liệu thực 100% mà không bị lẫn lộn bất kỳ dữ liệu test/mock nào.
             </div>
           </div>
         </div>
@@ -381,6 +426,56 @@ export const AdminSettingsPage: React.FC = () => {
               >
                 {purging && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 <span>Xác nhận dọn dẹp</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purge Mock Data Modal */}
+      {purgeMockModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Xác nhận xóa sạch dữ liệu mẫu</h3>
+                <p className="text-xs text-slate-400">Chỉ Admin mới có quyền thực thi thao tác này</p>
+              </div>
+            </div>
+            <div className="text-xs text-slate-300 leading-relaxed space-y-2">
+              <p>
+                Thao tác này sẽ xóa vĩnh viễn toàn bộ dữ liệu mẫu (mock data) hiện có trong hệ thống:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-slate-400 pl-1">
+                <li>Xóa toàn bộ tin nhắn & yêu cầu hỗ trợ (tickets) mẫu</li>
+                <li>Xóa toàn bộ ý kiến đóng góp (feedbacks) mẫu</li>
+                <li>Xóa toàn bộ giao dịch & đơn hàng giả lập</li>
+                <li>Xóa toàn bộ thông báo hệ thống mẫu</li>
+              </ul>
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold">
+                🛡️ BẢO LƯU AN TOÀN: Toàn bộ danh sách Người dùng (Users) và Kho từ vựng (Vocabulary).
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={purgingMock}
+                onClick={() => setPurgeMockModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={purgingMock}
+                onClick={handlePurgeMockData}
+                className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-xl transition flex items-center gap-1.5"
+              >
+                {purgingMock && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>Xác nhận xóa sạch data mẫu</span>
               </button>
             </div>
           </div>

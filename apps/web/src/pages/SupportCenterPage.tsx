@@ -63,7 +63,32 @@ export const SupportCenterPage: React.FC = () => {
   const [creatingTicket, setCreatingTicket] = useState(false);
   const [ticketError, setTicketError] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const [hasUnreadBelow, setHasUnreadBelow] = useState(false);
+
+  const scrollToBottom = (smooth = false) => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    if (smooth) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+    setHasUnreadBelow(false);
+  };
+
+  const handleContainerScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const nearBottom = distanceFromBottom < 70;
+    isNearBottomRef.current = nearBottom;
+    if (nearBottom) {
+      setHasUnreadBelow(false);
+    }
+  };
 
   useEffect(() => {
     if (!isGuest) {
@@ -87,8 +112,16 @@ export const SupportCenterPage: React.FC = () => {
     const onNewMessage = (msg: Message) => {
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
+        // Clean up matching optimistic message if any
+        const cleaned = prev.filter((m: any) => !(m.isOptimistic && m.content === msg.content));
+        return [...cleaned, msg];
       });
+
+      if (isNearBottomRef.current) {
+        requestAnimationFrame(() => scrollToBottom(true));
+      } else {
+        setHasUnreadBelow(true);
+      }
     };
 
     socket.on('new_message', onNewMessage);
@@ -97,10 +130,6 @@ export const SupportCenterPage: React.FC = () => {
       socket.off('new_message', onNewMessage);
     };
   }, [selectedTicket?.id]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -123,11 +152,12 @@ export const SupportCenterPage: React.FC = () => {
   };
 
   const fetchMessages = async (ticketId: string) => {
-    setMessagesLoading(true);
+    if (messages.length === 0) setMessagesLoading(true);
     try {
       const res: any = await api.get(`/support/conversations/${ticketId}`);
       const conv = res?.data?.data || res?.data || res || {};
       setMessages(conv.messages || []);
+      requestAnimationFrame(() => scrollToBottom(false));
     } catch (err) {
       console.error('Failed to load messages', err);
     } finally {
@@ -153,6 +183,7 @@ export const SupportCenterPage: React.FC = () => {
       setCreateModalOpen(false);
       setNewSubject('');
       setNewMessage('');
+      requestAnimationFrame(() => scrollToBottom(false));
     } catch (err: any) {
       setTicketError(err.response?.data?.error?.message || 'Không thể gửi yêu cầu hỗ trợ.');
     } finally {
@@ -167,15 +198,18 @@ export const SupportCenterPage: React.FC = () => {
     setReplyInput('');
     setSendingReply(true);
 
-    const optimistic: Message = {
-      id: Date.now().toString(),
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Message & { isOptimistic?: boolean } = {
+      id: tempId,
       senderId: user?.id || 'me',
       senderRole: user?.role || 'USER',
       senderName: user?.displayName || user?.email || 'Học viên',
       content,
+      isOptimistic: true,
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
+    requestAnimationFrame(() => scrollToBottom(true));
 
     try {
       const res: any = await api.post(`/support/conversations/${selectedTicket.id}/messages`, {
@@ -184,9 +218,9 @@ export const SupportCenterPage: React.FC = () => {
       const saved = res?.data?.data || res?.data || res;
       setMessages((prev) => {
         if (prev.some((m) => m.id === saved.id)) {
-          return prev.filter((m) => m.id !== optimistic.id);
+          return prev.filter((m) => m.id !== tempId);
         }
-        return prev.map((m) => (m.id === optimistic.id ? saved : m));
+        return prev.map((m) => (m.id === tempId ? saved : m));
       });
     } catch (err) {
       console.error('Failed to send message', err);
@@ -393,8 +427,12 @@ export const SupportCenterPage: React.FC = () => {
               </div>
 
               {/* Chat Messages Feed */}
-              <div className="flex-1 p-3 overflow-y-auto space-y-2.5 bg-slate-50/30 dark:bg-slate-950/20">
-                {messagesLoading ? (
+              <div
+                ref={messagesContainerRef}
+                onScroll={handleContainerScroll}
+                className="flex-1 p-3 overflow-y-auto space-y-2.5 bg-slate-50/30 dark:bg-slate-950/20 relative"
+              >
+                {messagesLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
                   </div>
@@ -408,7 +446,7 @@ export const SupportCenterPage: React.FC = () => {
                     return (
                       <div
                         key={m.id}
-                        className={`flex gap-2 items-start ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
+                        className={`flex gap-2 items-start ${isMe ? 'flex-row-reverse' : 'flex-row'} animate-fade-in`}
                       >
                         <div
                           className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${
@@ -448,7 +486,20 @@ export const SupportCenterPage: React.FC = () => {
                     );
                   })
                 )}
-                <div ref={messagesEndRef} />
+
+                {hasUnreadBelow && (
+                  <div className="sticky bottom-2 left-0 right-0 flex justify-center pointer-events-none z-20">
+                    <button
+                      type="button"
+                      onClick={() => scrollToBottom(true)}
+                      className="pointer-events-auto px-3.5 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg text-[11px] font-bold flex items-center gap-1.5 transition-all transform hover:scale-105 active:scale-95 animate-bounce border border-indigo-400/40"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>Tin nhắn mới bên dưới</span>
+                      <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Chat Input Bar */}

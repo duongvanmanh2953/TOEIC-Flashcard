@@ -579,4 +579,33 @@ export class AdminService {
       },
     });
   }
+
+  /**
+   * Purge all mock/fake operational data, keeping only real users and vocabulary
+   */
+  async purgeMockData() {
+    const [msgs, convs, fbs, orders, ann, sessions, reviews] = await Promise.all([
+      this.prisma.supportMessage.deleteMany({}),
+      this.prisma.supportConversation.deleteMany({}),
+      this.prisma.feedback.deleteMany({}),
+      this.prisma.paymentOrder.deleteMany({}),
+      this.prisma.adminAnnouncement.deleteMany({}),
+      this.prisma.studySession.deleteMany({}),
+      this.prisma.reviewEvent.deleteMany({}),
+    ]);
+
+    return {
+      success: true,
+      message: 'Toàn bộ dữ liệu mẫu đã được xóa sạch. Hệ thống chỉ giữ lại tài khoản người dùng và kho từ vựng.',
+      deleted: {
+        supportMessages: msgs.count,
+        supportConversations: convs.count,
+        feedbacks: fbs.count,
+        paymentOrders: orders.count,
+        announcements: ann.count,
+        studySessions: sessions.count,
+        reviewEvents: reviews.count,
+      },
+    };
+  }
 }
