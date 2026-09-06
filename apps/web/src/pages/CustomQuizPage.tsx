@@ -117,7 +117,7 @@ export const CustomQuizPage: React.FC = () => {
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex-1 py-3 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md transition"
+              className="btn-glass-primary flex-1 !py-3 !rounded-2xl text-white font-extrabold text-xs shadow-md transition"
             >
               Về Dashboard
             </button>
@@ -198,7 +198,7 @@ export const CustomQuizPage: React.FC = () => {
             {currentIndex + 1 < totalQ ? (
               <button
                 onClick={() => setCurrentIndex((prev) => prev + 1)}
-                className="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md transition"
+                className="btn-glass-primary !px-6 !py-2.5 !rounded-xl text-white font-extrabold text-xs shadow-md transition"
               >
                 Câu tiếp theo
               </button>

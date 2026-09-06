@@ -51,10 +51,11 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     line-height: 1.65;
     letter-spacing: 0.005em;
+    min-height: 100vh;
   }
 
   .dark body {
-    background-color: #090d16;
+    background-color: #060913;
     color: var(--text-primary);
   }
 
@@ -149,60 +150,25 @@
   background: linear-gradient(90deg, transparent 0%, rgba(199, 210, 254, 0.9) 50%, transparent 100%);
 }
 
-/* Authentic Dynamic Specular Glass Gleam ("Lóe kính")
-   - Angled light beam resting completely outside the card
-   - Sweeps smoothly across the glass surface on hover without obscuring content
-*/
-.liquid-glass-card::after {
-  content: '';
-  position: absolute;
-  top: -60%;
-  left: -140%;
-  width: 65%;
-  height: 220%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.05) 20%,
-    rgba(255, 255, 255, 0.45) 50%,
-    rgba(255, 255, 255, 0.05) 80%,
-    transparent 100%
-  );
-  transform: skewX(-25deg);
-  pointer-events: none;
-  opacity: 0;
-  filter: blur(3px);
-  transition: left 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
-  z-index: 2;
-}
-
-.dark .liquid-glass-card::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.04) 20%,
-    rgba(255, 255, 255, 0.32) 50%,
-    rgba(255, 255, 255, 0.04) 80%,
-    transparent 100%
-  );
-}
-
-.liquid-glass-card:hover::after {
-  transform: rotate(32deg) translate(280%, 140%);
-}
-
 /* ==========================================================================
    AUTHENTIC SPECULAR LIGHT SWEEP & GLEAM ("LÓE SÁNG, CHUYỂN SÁNG LOẸT SÁNG")
-   - Tuyệt đối KHÔNG dùng box-shadow màu phát sáng lem nhem ra ngoài
+   - Tuyệt đối KHÔNG dùng box-shadow lem nhem ra ngoài
    - Lóe sáng chuyển tia sắc nét ngay trên bề mặt kính (trong suốt)
+   - Khi hover: Tia sáng quét dứt khoát từ TRÁI sang PHẢI cực sáng
+   - Khi bỏ chuột ra: Tia sáng biến mất ngay lập tức (opacity: 0), không trôi lùi lại
    ========================================================================== */
-.card-brand-effect {
+.card-brand-effect,
+.liquid-glass-card {
   position: relative;
   overflow: hidden !important;
   isolation: isolate;
-  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Fix border-radius overflow leak in Chromium & WebKit */
-  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  /* Giữ border nguyên vẹn khi render GPU */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
 }
 
 span.card-brand-effect,
@@ -226,38 +192,62 @@ a.card-brand-effect {
   z-index: 5;
 }
 
-/* Dải chùm tia sáng quét ngang khi hover ("Lóe sáng loẹt sáng", không lem viền) */
+/* Tia sáng lóe ngang trên bề mặt kính (Specular Flare Beam) */
+.liquid-glass-card::after,
 .card-brand-effect::after {
   content: '';
   position: absolute;
-  top: -60%;
-  left: -140%;
-  width: 55%;
-  height: 220%;
+  top: -70%;
+  left: -150%;
+  width: 60%;
+  height: 240%;
   background: linear-gradient(
     105deg,
-    transparent 15%,
-    rgba(255, 255, 255, 0.04) 30%,
-    rgba(255, 255, 255, 0.75) 50%,
-    rgba(255, 255, 255, 0.04) 70%,
-    transparent 85%
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.85) 45%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 255, 255, 0.85) 55%,
+    rgba(255, 255, 255, 0.05) 80%,
+    transparent 100%
   );
   transform: rotate(26deg);
   pointer-events: none;
   opacity: 0;
   filter: blur(1px);
-  transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
   z-index: 10;
+  /* Quan trọng: Khi bỏ hover, opacity tắt ngay và left trở về mà không animate lùi */
+  transition: opacity 0.25s ease, left 0s 0.25s;
+}
+
+.dark .liquid-glass-card::after,
+.dark .card-brand-effect::after {
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 20%,
+    rgba(255, 255, 255, 0.9) 45%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(255, 255, 255, 0.9) 55%,
+    rgba(255, 255, 255, 0.04) 80%,
+    transparent 100%
+  );
+}
+
+/* Kích hoạt chùm tia sáng quét từ trái sang phải: Lóe chậm lại, mượt mà và sang trọng hơn (1.15s) */
+.liquid-glass-card:hover::after,
+.card-brand-effect:hover::after {
+  left: 210%;
+  opacity: 1;
+  transition: left 1.15s cubic-bezier(0.2, 0.8, 0.25, 1), opacity 0.25s ease;
+}
+
+.card-brand-effect {
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06);
 }
 
 .card-brand-effect:hover {
-  transform: translateY(-2.5px);
-  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.1);
-}
-
-.card-brand-effect:hover::after {
-  opacity: 1;
-  left: 180%;
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.12);
 }
 
 .dark .card-brand-effect {
@@ -265,7 +255,7 @@ a.card-brand-effect {
 }
 
 .dark .card-brand-effect:hover {
-  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.55);
 }
 
 /* Các tiện ích trong suốt hoàn toàn (Sheer Transparency) */
@@ -338,7 +328,7 @@ a.card-brand-effect {
   transform: scale(0.97);
 }
 
-/* Specular gleam glint across buttons on hover */
+/* Specular gleam glint across buttons on hover (quét từ TRÁI sang PHẢI ngay khi hover, biến mất ngay khi rời chuột) */
 .btn-glass-primary::after,
 .btn-glass-secondary::after,
 .btn-glass-emerald::after,
@@ -347,20 +337,22 @@ a.card-brand-effect {
   content: '';
   position: absolute;
   top: -50%;
-  left: -130%;
+  left: -140%;
   width: 50%;
   height: 200%;
   background: linear-gradient(
-    90deg,
+    105deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.38) 50%,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.1) 80%,
     transparent 100%
   );
-  transform: skewX(-20deg);
+  transform: rotate(20deg);
   pointer-events: none;
   opacity: 0;
-  transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
   z-index: 10;
+  transition: opacity 0.2s ease, left 0s 0.2s;
 }
 
 .btn-glass-primary:hover::after,
@@ -368,8 +360,9 @@ a.card-brand-effect {
 .btn-glass-emerald:hover::after,
 .btn-glass-amber:hover::after,
 .btn-glass-danger:hover::after {
-  left: 160%;
+  left: 190%;
   opacity: 1;
+  transition: left 0.95s cubic-bezier(0.2, 0.8, 0.25, 1), opacity 0.25s ease;
 }
 
 /* Primary Glass Button: Vibrant Indigo / Violet Liquid Glass */

@@ -79,7 +79,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 transition"
+            className="btn-glass-primary w-full mt-2 !py-3 !rounded-xl disabled:opacity-50 text-white font-extrabold text-sm shadow-xl shadow-brand-500/25 flex items-center justify-center gap-2 transition"
           >
             {loading ? (
               <span>Đang xác thực...</span>

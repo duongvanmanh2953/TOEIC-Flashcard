@@ -73,12 +73,12 @@ export const AppShell: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex bg-slate-50/30 dark:bg-[#070b14]/50 text-slate-900 dark:text-slate-100 font-sans antialiased relative selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex bg-slate-50/20 dark:bg-transparent text-slate-900 dark:text-slate-100 font-sans antialiased relative selection:bg-indigo-500 selection:text-white">
       {/* Ambient Blurred Colored Blobs / Orbs */}
       <LiquidBackground />
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 max-w-[16rem] border-r border-slate-200/80 dark:border-slate-800/80 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl px-3.5 pt-5 pb-4 shrink-0 h-screen sticky top-0 overflow-hidden box-border z-20">
+      <aside className="hidden lg:flex flex-col w-64 max-w-[16rem] border-r border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl px-3.5 pt-5 pb-4 shrink-0 h-screen sticky top-0 overflow-hidden box-border z-20">
         {/* Scrollable Upper Navigation Area */}
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-0.5 pb-2">
           {/* Brand Header with VocabFlow Logo Asset */}

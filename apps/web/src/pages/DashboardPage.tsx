@@ -279,54 +279,69 @@ export const DashboardPage: React.FC = () => {
         </GlassCard>
       )}
 
-      {/* 2. Key Metrics Row — 4 Rich Feature Cards */}
+      {/* 2. Key Metrics Row — 4 Rich Feature Cards with Distinct Glass Palettes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Daily Goal Card */}
-        <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+        {/* 1. Daily Goal Card (Indigo / Violet Theme) */}
+        <GlassCard
+          variant="liquid"
+          className="p-4 sm:p-5 bg-gradient-to-br from-indigo-500/[0.08] via-white/85 to-purple-500/[0.05] dark:from-indigo-950/40 dark:via-slate-900/80 dark:to-purple-950/30 border border-indigo-300/40 dark:border-indigo-500/30 shadow-sm"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               {t('dashboard.dailyGoal', 'Mục tiêu ngày')}
             </span>
-            <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-1 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20">
+              <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            </div>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
               {completedToday}
             </span>
-            <span className="text-xs text-slate-400 font-semibold">/ {dailyGoal} từ</span>
+            <span className="text-xs text-indigo-600/70 dark:text-indigo-300/70 font-semibold">/ {dailyGoal} từ</span>
           </div>
-          <div className="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <div className="mt-2 h-1.5 rounded-full bg-indigo-100 dark:bg-slate-800 overflow-hidden">
             <div
-              className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+              className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full transition-all duration-300"
               style={{ width: `${goalPercent}%` }}
             />
           </div>
-          <span className="text-[10px] text-slate-400 mt-1.5 block font-semibold">{goalPercent}% hoàn thành</span>
+          <span className="text-[10px] text-indigo-600/80 dark:text-indigo-300/80 mt-1.5 block font-semibold">{goalPercent}% hoàn thành</span>
         </GlassCard>
 
-        {/* Streak Card */}
-        <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+        {/* 2. Streak Card (Warm Amber / Flame Theme) */}
+        <GlassCard
+          variant="liquid"
+          className="p-4 sm:p-5 bg-gradient-to-br from-amber-500/[0.09] via-white/85 to-orange-500/[0.05] dark:from-amber-950/40 dark:via-slate-900/80 dark:to-orange-950/30 border border-amber-400/40 dark:border-amber-500/30 shadow-sm"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
               {t('dashboard.streak', 'Chuỗi liên tiếp')}
             </span>
-            <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
+            <div className="p-1 rounded-lg bg-amber-500/10 dark:bg-amber-500/20">
+              <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
+            </div>
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
             {data?.streak?.currentStreak || 0} ngày
           </p>
-          <p className="text-[11px] text-slate-400 mt-1 font-medium">
-            Kỷ lục: <strong className="text-slate-700 dark:text-slate-200">{data?.streak?.longestStreak || 0} ngày</strong>
+          <p className="text-[11px] text-amber-600/80 dark:text-amber-300/80 mt-1 font-medium">
+            Kỷ lục: <strong className="text-amber-700 dark:text-amber-300">{data?.streak?.longestStreak || 0} ngày</strong>
           </p>
         </GlassCard>
 
-        {/* Total Mastered */}
-        <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+        {/* 3. Total Mastered (Emerald / Mint Crystal Theme) */}
+        <GlassCard
+          variant="liquid"
+          className="p-4 sm:p-5 bg-gradient-to-br from-emerald-500/[0.09] via-white/85 to-teal-500/[0.05] dark:from-emerald-950/40 dark:via-slate-900/80 dark:to-teal-950/30 border border-emerald-400/40 dark:border-emerald-500/30 shadow-sm"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               {t('dashboard.totalWords', 'Từ đã thành thạo')}
             </span>
-            <Award className="w-4 h-4 text-emerald-500" />
+            <div className="p-1 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20">
+              <Award className="w-4 h-4 text-emerald-500" />
+            </div>
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
             {data?.masteredCount || 0}
@@ -336,29 +351,35 @@ export const DashboardPage: React.FC = () => {
           </p>
         </GlassCard>
 
-        {/* Learning Level & XP */}
-        <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
+        {/* 4. Learning Level & XP (Sky / Cyan Theme) */}
+        <GlassCard
+          variant="liquid"
+          className="p-4 sm:p-5 bg-gradient-to-br from-sky-500/[0.09] via-white/85 to-cyan-500/[0.05] dark:from-sky-950/40 dark:via-slate-900/80 dark:to-cyan-950/30 border border-sky-400/40 dark:border-sky-500/30 shadow-sm"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
               {t('dashboard.level', 'Cấp độ & XP')}
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-sky-500/15 text-sky-600 dark:text-sky-300 border border-sky-400/30">
               CEFR {data?.profile?.englishLevel || 'B1'}
             </span>
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
             Lvl {user?.xp?.currentLevel || 1}
           </p>
-          <p className="text-[11px] text-slate-400 mt-1 font-medium">
-            <strong className="text-indigo-600 dark:text-indigo-400">{user?.xp?.totalXP || 0} XP</strong> tích lũy
+          <p className="text-[11px] text-sky-600/80 dark:text-sky-300/80 mt-1 font-medium">
+            <strong className="text-sky-600 dark:text-sky-400">{user?.xp?.totalXP || 0} XP</strong> tích lũy
           </p>
         </GlassCard>
       </div>
 
       {/* 3. Visual Statistical Charts Section (User Requested Charts) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Weekly Retention & Review Activity Chart */}
-        <GlassCard variant="liquid" className="lg:col-span-2 p-5 md:p-6 bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 shadow-md">
+        {/* Weekly Retention & Review Activity Chart (Violet / Indigo Accent) */}
+        <GlassCard
+          variant="liquid"
+          className="lg:col-span-2 p-5 md:p-6 bg-gradient-to-br from-indigo-500/[0.04] via-white/90 to-transparent dark:from-indigo-950/30 dark:via-slate-900/90 dark:to-transparent border border-indigo-400/30 dark:border-indigo-500/25 shadow-md"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -405,32 +426,35 @@ export const DashboardPage: React.FC = () => {
 
           {/* Chart Footnote Insights */}
           <div className="grid grid-cols-3 gap-3 pt-4 text-center">
-            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40">
+            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50">
               <span className="text-[10px] uppercase font-bold text-slate-400">Tổng từ tuần này</span>
               <p className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
                 {weeklyData.reduce((acc, curr) => acc + curr.reviews, 0)} từ
               </p>
             </div>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30">
-              <span className="text-[10px] uppercase font-bold text-emerald-600">Độ nhớ trung bình</span>
+            <div className="p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-400/30">
+              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Độ nhớ trung bình</span>
               <p className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">89.5%</p>
             </div>
-            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30">
-              <span className="text-[10px] uppercase font-bold text-indigo-600">Dự báo ngày mai</span>
+            <div className="p-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-400/30">
+              <span className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400">Dự báo ngày mai</span>
               <p className="text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5">18 từ</p>
             </div>
           </div>
         </GlassCard>
 
-        {/* CEFR Level Mastery Distribution Chart */}
-        <GlassCard variant="liquid" className="p-5 md:p-6 bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 shadow-md flex flex-col justify-between">
+        {/* CEFR Level Mastery Distribution Chart (Purple / Magenta Accent) */}
+        <GlassCard
+          variant="liquid"
+          className="p-5 md:p-6 bg-gradient-to-br from-purple-500/[0.05] via-white/90 to-transparent dark:from-purple-950/35 dark:via-slate-900/90 dark:to-transparent border border-purple-400/30 dark:border-purple-500/25 shadow-md flex flex-col justify-between"
+        >
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <span>Phân Bổ Từ Vựng CEFR</span>
               </h3>
-              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
+              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-400/30">
                 Chuẩn Quốc Tế
               </span>
             </div>
@@ -461,7 +485,7 @@ export const DashboardPage: React.FC = () => {
           <div className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
             <button
               onClick={() => navigate('/vocabulary')}
-              className="w-full py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/15 dark:bg-purple-950/40 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 text-xs font-bold border border-purple-400/20 transition flex items-center justify-center gap-1.5"
             >
               <span>Xem danh sách từ theo cấp độ</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -473,7 +497,10 @@ export const DashboardPage: React.FC = () => {
       {/* 4. Actionable Modules: Today's Plan Checklist & Weak Words Alert */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Today's Learning Plan Checklist */}
-        <GlassCard variant="liquid" className="lg:col-span-2 p-5 md:p-6 bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 shadow-md">
+        <GlassCard
+          variant="liquid"
+          className="lg:col-span-2 p-5 md:p-6 bg-gradient-to-br from-indigo-500/[0.03] via-white/90 to-transparent dark:from-indigo-950/20 dark:via-slate-900/90 dark:to-transparent border border-slate-200/80 dark:border-slate-800/80 shadow-md"
+        >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 leading-snug">
               <CalendarCheck className="w-4 h-4 text-indigo-500" />
@@ -525,8 +552,11 @@ export const DashboardPage: React.FC = () => {
           </div>
         </GlassCard>
 
-        {/* Memory Rescue & Weak Words Alert */}
-        <GlassCard variant="liquid" className="p-5 md:p-6 bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 shadow-md flex flex-col justify-between">
+        {/* Memory Rescue & Weak Words Alert (Ruby / Rose Accent) */}
+        <GlassCard
+          variant="liquid"
+          className="p-5 md:p-6 bg-gradient-to-br from-rose-500/[0.08] via-white/90 to-amber-500/[0.04] dark:from-rose-950/40 dark:via-slate-900/90 dark:to-amber-950/20 border border-rose-400/40 dark:border-rose-500/35 shadow-md flex flex-col justify-between"
+        >
           <div>
             <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-wider mb-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
@@ -547,7 +577,7 @@ export const DashboardPage: React.FC = () => {
               ].map((w, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2 rounded-xl bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/15 text-xs"
+                  className="flex items-center justify-between p-2 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/20 text-xs"
                 >
                   <div>
                     <span className="font-bold text-slate-800 dark:text-slate-200">{w.word}</span>

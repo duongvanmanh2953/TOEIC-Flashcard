@@ -114,7 +114,7 @@ export const PlacementTestPage: React.FC = () => {
 
           <button
             onClick={() => navigate('/dashboard')}
-            className="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2"
+            className="btn-glass-primary w-full !py-3.5 !rounded-2xl text-white font-extrabold text-sm shadow-xl shadow-brand-500/25 transition flex items-center justify-center gap-2"
           >
             <span>Bắt Đầu Hành Trình Học Cá Nhân Hóa</span>
             <ArrowRight className="w-4 h-4" />
@@ -184,7 +184,7 @@ export const PlacementTestPage: React.FC = () => {
         <button
           onClick={handleNext}
           disabled={!selectedOption || submitting}
-          className="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2"
+          className="btn-glass-primary w-full !py-3.5 !rounded-2xl disabled:opacity-40 text-white font-extrabold text-sm shadow-xl shadow-brand-500/20 transition flex items-center justify-center gap-2"
         >
           {submitting ? (
             <span>Đang tính toán kết quả CEFR...</span>
