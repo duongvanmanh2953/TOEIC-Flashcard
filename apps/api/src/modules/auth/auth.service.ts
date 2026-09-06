@@ -162,12 +162,29 @@ export class AuthService {
         profile: true,
         streak: true,
         xp: true,
+        subscriptions: {
+          where: { status: 'ACTIVE' },
+          include: { plan: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return user;
+    const activeSub = user.subscriptions?.[0] || null;
+    return {
+      ...user,
+      subscription: activeSub
+        ? {
+            id: activeSub.id,
+            tier: activeSub.plan?.tier || 'FREE',
+            planName: activeSub.plan?.name || 'Free',
+            currentPeriodEnd: activeSub.currentPeriodEnd,
+          }
+        : null,
+    };
   }
 
   async generateTokens(userId: string, email: string, role: string) {

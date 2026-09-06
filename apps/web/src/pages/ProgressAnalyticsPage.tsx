@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import api from '../lib/api';
-import { Award, Flame, TrendingUp, CheckCircle, Brain, Target } from 'lucide-react';
+import { Award, Flame, TrendingUp, CheckCircle, Brain, Target, LineChart } from 'lucide-react';
+import { FeatureLock } from '../components/common/FeatureLock';
+import { useAuth } from '../contexts/AuthContext';
 
 export const ProgressAnalyticsPage: React.FC = () => {
+  const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,6 +77,45 @@ export const ProgressAnalyticsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Pro Feature: Deep CEFR Analytics & Ebbinghaus Retention Curve */}
+      <FeatureLock
+        featureTitle="Phân Tích Sâu CEFR & Đường Cong Quên Lãng (Ebbinghaus Retention Curve)"
+        previewDescription="Theo dõi biểu đồ suy giảm trí nhớ thời gian thực, độ bền ghi nhớ dài hạn và chuẩn đoán cấp độ CEFR chuẩn quốc tế từ A2 đến C1 cho từng chủ đề từ vựng."
+        variant="pro"
+        previewContent={
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <LineChart className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Độ bền trí nhớ dự đoán (Predicted Retrievability):</span>
+              </span>
+              <span className="font-black text-emerald-600 dark:text-emerald-400">88.4% (Tối ưu)</span>
+            </div>
+            <div className="h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5">
+              <div className="h-full bg-gradient-to-r from-brand-600 via-indigo-500 to-emerald-500 rounded-full w-[88%]" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-center text-xs">
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">A2 Sơ Cấp</span>
+                <span className="font-extrabold text-emerald-600">96% Mastery</span>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">B1 Trung Cấp</span>
+                <span className="font-extrabold text-indigo-600">82% Mastery</span>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">B2 Nâng Cao</span>
+                <span className="font-extrabold text-amber-600">65% Mastery</span>
+              </div>
+              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">C1 Chuyên Sâu</span>
+                <span className="font-extrabold text-purple-600">42% Mastery</span>
+              </div>
+            </div>
+          </div>
+        }
+      />
+
       {/* Achievements Section (Section 29) */}
       <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
         <div className="flex items-center justify-between">
@@ -91,8 +133,8 @@ export const ProgressAnalyticsPage: React.FC = () => {
             <div
               key={ach.code}
               className={`p-4 rounded-2xl border transition flex items-center gap-3 ${ach.unlocked
-                  ? 'bg-brand-50/20 dark:bg-brand-950/30 border-brand-200 dark:border-brand-800'
-                  : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-50'
+                  ? 'card-brand-effect bg-brand-500/[0.06] dark:bg-brand-500/[0.12] border border-brand-400/40 backdrop-blur-md'
+                  : 'bg-transparent border border-slate-200/50 dark:border-slate-800/50 opacity-40'
                 }`}
             >
               <div

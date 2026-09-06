@@ -19,12 +19,15 @@ import {
   ChevronRight,
   Bookmark,
   Check,
+  Lock,
+  LockOpen,
 } from 'lucide-react';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { GlassCard } from '../components/common/GlassCard';
 
 export const TOPIC_OPTIONS = [
   { id: 'ALL', label: 'Tất cả từ cần ôn (SRS)', icon: Sparkles },
+  { id: 'MEMORY_RESCUE', label: '🚑 Giải cứu trí nhớ (Slipping Words) 🔒 [PRO]', icon: Flame },
   { id: 'Business', label: 'Business & Office (Kinh doanh)', icon: BookOpen },
   { id: 'Finance', label: 'Finance & Banking (Tài chính)', icon: Award },
   { id: 'Travel', label: 'Travel & Tourism (Du lịch)', icon: Layers },
@@ -39,7 +42,8 @@ export const ReviewSessionPage: React.FC = () => {
 
   // Mode: 3D Flashcard vs Multiple Choice Quiz
   const [studyMode, setStudyMode] = useState<'flashcard' | 'quiz'>('flashcard');
-  const [selectedTopic, setSelectedTopic] = useState<string>(searchParams.get('topic') || 'ALL');
+  const initialTopic = searchParams.get('type') === 'MEMORY_RESCUE' ? 'MEMORY_RESCUE' : (searchParams.get('topic') || 'ALL');
+  const [selectedTopic, setSelectedTopic] = useState<string>(initialTopic);
 
   // Flashcard states
   const [items, setItems] = useState<any[]>([]);
@@ -90,7 +94,17 @@ export const ReviewSessionPage: React.FC = () => {
     setSessionStats({ again: 0, hard: 0, good: 0, easy: 0, xpEarned: 0 });
 
     try {
-      if (topic === 'MY_WORDS') {
+      if (topic === 'MEMORY_RESCUE') {
+        const res: any = await api.post('/reviews/memory-rescue/session');
+        if (res?.success && res.data?.items?.length > 0) {
+          setSession(res.data.session);
+          setItems(res.data.items);
+        } else {
+          // If no words in slipping queue, fallback to ALL
+          loadStudyItems('ALL');
+          return;
+        }
+      } else if (topic === 'MY_WORDS') {
         const res: any = await api.get('/community/my-words?filter=ALL');
         const words = (res?.data || res || []).map((item: any) => {
           const v = item.vocabulary || {};
@@ -553,6 +567,28 @@ export const ReviewSessionPage: React.FC = () => {
           </select>
         </div>
       </div>
+
+      {/* Memory Rescue Special Session Banner */}
+      {selectedTopic === 'MEMORY_RESCUE' && (
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-200 text-xs font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>🚑 Phiên Giải Cứu Trí Nhớ (Memory Rescue) — Củng cố nơ-ron các từ vựng nguy cơ quên cao</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600 dark:text-rose-300 text-[10px] uppercase font-black">
+              ✨ PRO
+            </span>
+            <button
+              onClick={() => navigate('/upgrade')}
+              className="px-2.5 py-1 rounded-md bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white text-[10px] font-black uppercase flex items-center gap-1 shadow-xs transition hover:scale-105"
+            >
+              <LockOpen className="w-2.5 h-2.5" />
+              <span>Mở khóa Pro</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Progress Bar & Counter */}
       <div className="flex items-center justify-between text-xs">

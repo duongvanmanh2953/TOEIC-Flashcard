@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { StartSessionDto } from './dto/start-session.dto';
@@ -12,6 +12,18 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @ApiBearerAuth()
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
+
+  @Get('memory-rescue')
+  @ApiOperation({ summary: 'Get summary of slipping vocabulary at risk of forgetting' })
+  getMemoryRescueSummary(@CurrentUser('id') userId: string) {
+    return this.reviewsService.getMemoryRescueSummary(userId);
+  }
+
+  @Post('memory-rescue/session')
+  @ApiOperation({ summary: 'Start a targeted Memory Rescue session for slipping words' })
+  startMemoryRescueSession(@CurrentUser('id') userId: string) {
+    return this.reviewsService.createMemoryRescueSession(userId);
+  }
 
   @Post('smart-session')
   @ApiOperation({ summary: 'Initialize an adaptive spaced repetition review session' })

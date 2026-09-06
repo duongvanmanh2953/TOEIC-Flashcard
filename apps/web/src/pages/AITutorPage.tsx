@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
+import { QuotaMeter } from '../components/common/QuotaMeter';
 import { useTranslation } from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -20,6 +21,10 @@ import {
   ArrowRight,
   RefreshCw,
   XCircle,
+  BookOpen,
+  Crown,
+  Lock,
+  LockOpen,
 } from 'lucide-react';
 
 interface VocabularyCardData {
@@ -59,14 +64,17 @@ interface Message {
 
 export const AITutorPage: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialWord = searchParams.get('word') || '';
   const { t } = useTranslation();
-  const { isGuest, promptLogin } = useAuth();
+  const { isGuest, promptLogin, user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'chat' | 'extract'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'extract' | 'story'>('chat');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [addedWord, setAddedWord] = useState<string | null>(null);
+  const [quotaStatus, setQuotaStatus] = useState<any>(null);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
 
   // Instant Test from Text state
   const [pasteText, setPasteText] = useState('');
@@ -77,12 +85,18 @@ export const AITutorPage: React.FC = () => {
   } | null>(null);
   const [selectedQuizAnswers, setSelectedQuizAnswers] = useState<Record<number, string>>({});
 
+  // AI Story & Context Weaver state
+  const [storyTopic, setStoryTopic] = useState('Business Strategy');
+  const [storyWordsInput, setStoryWordsInput] = useState('');
+  const [storyResult, setStoryResult] = useState<any>(null);
+  const [generatingStory, setGeneratingStory] = useState(false);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
       content:
-        'Xin chào! Tôi là **Gia sư VocabFlow AI**. Tôi có thể giúp bạn giải thích sắc thái từ vựng theo CEFR, so sánh các từ dễ nhầm lẫn (như economic vs economical), tạo câu đố phản xạ hoặc phân tích đoạn văn bất kỳ. Bạn muốn học từ nào hôm nay?',
+        'Xin chào! Tôi là **Gia sư VocabFlow AI**. Tôi có thể giúp bạn giải thích sắc thái từ vựng theo CEFR, so sánh các từ dễ nhầm lẫn (như economic vs economical), tạo câu đố phản xạ hoặc dệt câu chuyện thực tế từ các từ bạn muốn học. Bạn muốn khám phá từ nào hôm nay?',
       createdAt: new Date(),
     },
   ]);
@@ -98,15 +112,28 @@ export const AITutorPage: React.FC = () => {
   }, [messages, loading]);
 
   useEffect(() => {
+    fetchQuota();
     if (initialWord) {
       handleExplainWord(initialWord);
     }
   }, [initialWord]);
 
+  const fetchQuota = async () => {
+    try {
+      const endpoint = isGuest ? '/subscriptions/guest-quotas' : '/subscriptions/my-quotas';
+      const res: any = await api.get(endpoint);
+      const payload = res?.data || res;
+      setQuotaStatus(payload);
+    } catch {
+      // ignore
+    }
+  };
+
   const handleSendMessage = async (customPrompt?: string, actionType?: string) => {
     const text = customPrompt || input;
     if (!text.trim() || loading) return;
 
+    setQuotaError(null);
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -120,7 +147,10 @@ export const AITutorPage: React.FC = () => {
 
     try {
       const res: any = await api.post('/ai/tutor', { message: text });
-      const data = res.data;
+      const data = res.data || res;
+
+      // Refresh quota after usage
+      fetchQuota();
 
       // Detect comparison intent or quiz intent
       let compCard: ComparisonCardData | null = null;
@@ -154,16 +184,29 @@ export const AITutorPage: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Không thể kết nối máy chủ AI lúc này. Đây là gợi ý tự động: Hãy chú ý các cặp từ dễ nhầm lẫn như "sensible" (hợp lý) và "sensitive" (nhạy cảm).',
-          createdAt: new Date(),
-        },
-      ]);
+    } catch (err: any) {
+      if (err?.response?.status === 403 || err?.response?.data?.error === 'QUOTA_EXCEEDED') {
+        setQuotaError(err?.response?.data?.message || 'Bạn đã sử dụng hết lượt hỏi Gia Sư AI hôm nay.');
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: '⚡ Bạn đã đạt giới hạn lượt hỏi AI Tutor hôm nay. Nâng cấp lên gói Plus hoặc Pro để trò chuyện không giới hạn và nhận phản hồi chi tiết bất cứ lúc nào!',
+            createdAt: new Date(),
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: 'Không thể kết nối máy chủ AI lúc này. Đây là gợi ý tự động: Hãy chú ý các cặp từ dễ nhầm lẫn như "sensible" (hợp lý) và "sensitive" (nhạy cảm).',
+            createdAt: new Date(),
+          },
+        ]);
+      }
     } finally {
       setLoading(false);
     }
@@ -193,58 +236,91 @@ export const AITutorPage: React.FC = () => {
     }
   };
 
-  // Instant Test from Text Handler
-  const handleExtractFromText = () => {
+  // Instant Test from Text Handler (Real Backend API)
+  const handleExtractFromText = async () => {
     if (!pasteText.trim()) return;
     setExtracting(true);
+    setQuotaError(null);
 
-    setTimeout(() => {
-      setExtractedData({
-        words: [
-          {
-            word: 'comprehensive',
-            cefrLevel: 'B2',
-            partOfSpeech: 'adj',
-            phonetic: '/ˌkɑːmprɪˈhensɪv/',
-            meaningVi: 'toàn diện, bao hàm nhiều khía cạnh',
-            contextSentence: 'The report provides a comprehensive overview of global trade trends.',
-          },
-          {
-            word: 'fluctuation',
-            cefrLevel: 'C1',
-            partOfSpeech: 'noun',
-            phonetic: '/ˌflʌktʃuˈeɪʃn/',
-            meaningVi: 'sự biến động, dao động thất thường',
-            contextSentence: 'Businesses must prepare for price fluctuations in raw materials.',
-          },
-          {
-            word: 'facilitate',
-            cefrLevel: 'B2',
-            partOfSpeech: 'verb',
-            phonetic: '/fəˈsɪlɪteɪt/',
-            meaningVi: 'tạo điều kiện thuận lợi, hỗ trợ thúc đẩy',
-            contextSentence: 'New technologies facilitate faster cross-border transactions.',
-          },
-        ],
-        quizzes: [
-          {
-            id: 1,
-            question: 'Từ nào mang nghĩa "toàn diện, bao hàm nhiều khía cạnh"?',
-            options: ['comprehensive', 'fluctuation', 'facilitate', 'compromise'],
-            correctAnswer: 'comprehensive',
-            explanation: '"comprehensive" diễn tả sự đầy đủ, bao quát toàn diện các chi tiết.',
-          },
-          {
-            id: 2,
-            question: 'Điền vào chỗ trống: "The government took measures to __________ trade agreements."',
-            options: ['facilitate', 'fluctuate', 'postpone', 'dismiss'],
-            correctAnswer: 'facilitate',
-            explanation: '"facilitate trade agreements" là collocation chuẩn nghĩa là thúc đẩy hiệp định thương mại.',
-          },
-        ],
-      });
+    try {
+      const res: any = await api.post('/ai/text-to-vocab', { text: pasteText });
+      const payload = res?.data || res;
+      setExtractedData(payload);
+      fetchQuota();
+    } catch (err: any) {
+      if (err?.response?.status === 403) {
+        setQuotaError(err?.response?.data?.message || 'Đã chạm hạn mức trích xuất văn bản hôm nay.');
+      } else {
+        // Fallback demo for resilience
+        setExtractedData({
+          words: [
+            {
+              word: 'comprehensive',
+              cefrLevel: 'B2',
+              partOfSpeech: 'adj',
+              phonetic: '/ˌkɑːmprɪˈhensɪv/',
+              meaningVi: 'toàn diện, bao hàm nhiều khía cạnh',
+              contextSentence: 'The report provides a comprehensive overview of global trade trends.',
+            },
+            {
+              word: 'fluctuation',
+              cefrLevel: 'C1',
+              partOfSpeech: 'noun',
+              phonetic: '/ˌflʌktʃuˈeɪʃn/',
+              meaningVi: 'sự biến động, dao động thất thường',
+              contextSentence: 'Businesses must prepare for price fluctuations in raw materials.',
+            },
+          ],
+          quizzes: [
+            {
+              id: 1,
+              question: 'Từ nào mang nghĩa "toàn diện, bao hàm nhiều khía cạnh"?',
+              options: ['comprehensive', 'fluctuation', 'facilitate', 'compromise'],
+              correctAnswer: 'comprehensive',
+              explanation: '"comprehensive" diễn tả sự đầy đủ, bao quát toàn diện các chi tiết.',
+            },
+          ],
+        });
+      }
+    } finally {
       setExtracting(false);
-    }, 800);
+    }
+  };
+
+  // AI Story Generator Handler
+  const handleGenerateStory = async () => {
+    const rawWords = storyWordsInput
+      .split(',')
+      .map((w) => w.trim())
+      .filter(Boolean);
+
+    setGeneratingStory(true);
+    setQuotaError(null);
+
+    try {
+      const res: any = await api.post('/ai/story', {
+        words: rawWords.length > 0 ? rawWords : ['negotiate', 'fluctuation', 'comprehensive'],
+        topic: storyTopic,
+      });
+      setStoryResult(res?.data || res);
+      fetchQuota();
+    } catch (err: any) {
+      if (err?.response?.status === 403) {
+        setQuotaError(err?.response?.data?.message || 'Tính năng AI Story chỉ dành cho thành viên Pro hoặc đã hết hạn mức.');
+      } else {
+        // Fallback graceful sample
+        setStoryResult({
+          title: 'The Quarterly Negotiation',
+          story: 'During the high-stakes meeting, our team had to **negotiate** terms carefully due to sudden market **fluctuation**. Fortunately, our **comprehensive** financial forecast gave us strong leverage to close the agreement.',
+          targetWords: ['negotiate', 'fluctuation', 'comprehensive'],
+          comprehensionQuestion: 'Why did the team need to negotiate carefully?',
+          options: ['Market fluctuation', 'Lack of time', 'New regulations', 'Staff turnover'],
+          correctAnswer: 'Market fluctuation',
+        });
+      }
+    } finally {
+      setGeneratingStory(false);
+    }
   };
 
   return (
@@ -271,7 +347,7 @@ export const AITutorPage: React.FC = () => {
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            <span>💬 Trò chuyện Gia sư</span>
+            <span>💬 Trò chuyện</span>
           </button>
           <button
             onClick={() => setActiveTab('extract')}
@@ -282,10 +358,56 @@ export const AITutorPage: React.FC = () => {
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>📄 Học từ văn bản bất kỳ</span>
+            <span>📄 Text-to-Vocab</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('story')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              activeTab === 'story'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>📖 AI Story</span>
+            {(!user?.subscription?.tier || user?.subscription?.tier === 'FREE') && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase">
+                <Lock className="w-2.5 h-2.5" />
+                <span>PRO</span>
+              </span>
+            )}
           </button>
         </div>
       </div>
+
+      {/* Quota Meter Header Display */}
+      {quotaStatus && (
+        <div className="shrink-0">
+          <QuotaMeter
+            feature="AI_TUTOR"
+            used={quotaStatus.aiTutor?.used || 0}
+            limit={quotaStatus.aiTutor?.limit || 10}
+            remaining={quotaStatus.aiTutor?.remaining}
+            tier={quotaStatus.tier || 'FREE'}
+            onUpgrade={() => navigate('/subscription')}
+          />
+        </div>
+      )}
+
+      {quotaError && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs font-bold flex items-center justify-between gap-3 animate-fade-in shrink-0">
+          <div className="flex items-center gap-2">
+            <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>{quotaError}</span>
+          </div>
+          <button
+            onClick={() => navigate('/subscription')}
+            className="btn-glass-primary !py-1 !px-3 text-xs shrink-0"
+          >
+            Nâng cấp ngay
+          </button>
+        </div>
+      )}
 
       {/* =========================================================================
           TAB 1: INTERACTIVE AI CHAT WITH STRUCTURED CARDS
@@ -620,6 +742,152 @@ export const AITutorPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 3: AI STORY & CONTEXT WEAVER (PRO FEATURE)
+          ========================================================================= */}
+      {activeTab === 'story' && (
+        <div className="flex-1 overflow-y-auto space-y-4 py-2">
+          <GlassCard variant="liquid" className="p-5 md:p-6 bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800/80 shadow-md space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-snug flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Dệt Câu Chuyện Ngữ Cảnh (Context Storytelling)</span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Nhập danh sách từ vựng bạn muốn ghi nhớ sâu. AI sẽ sáng tạo một câu chuyện thực tế liên kết các từ lại với nhau theo ngữ cảnh sinh động.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => navigate('/upgrade')}
+                  className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-brand-600 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white text-[11px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 transition hover:scale-105 active:scale-95"
+                >
+                  <LockOpen className="w-3.5 h-3.5 text-amber-200" />
+                  <span>Mở Khóa Pro</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Chủ đề câu chuyện:
+                </label>
+                <select
+                  value={storyTopic}
+                  onChange={(e) => setStoryTopic(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                >
+                  <option value="Business Strategy">Business Strategy (Chiến lược kinh doanh)</option>
+                  <option value="Finance & Investment">Finance & Investment (Tài chính đầu tư)</option>
+                  <option value="Workplace Negotiation">Workplace Negotiation (Đàm phán công sở)</option>
+                  <option value="Startup Pitching">Startup Pitching (Thuyết trình khởi nghiệp)</option>
+                  <option value="Daily Travel">Daily Travel (Hành trình du lịch)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Các từ muốn lồng ghép (phân cách bằng dấu phẩy):
+                </label>
+                <input
+                  type="text"
+                  value={storyWordsInput}
+                  onChange={(e) => setStoryWordsInput(e.target.value)}
+                  placeholder="Ví dụ: negotiate, fluctuation, comprehensive"
+                  className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Suggested Word Presets */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[11px] text-slate-400 font-semibold">Gợi ý nhanh:</span>
+              {[
+                'negotiate, compromise, consensus',
+                'fluctuation, inflation, revenue',
+                'comprehensive, collaborate, evaluate',
+              ].map((preset, pIdx) => (
+                <button
+                  key={pIdx}
+                  type="button"
+                  onClick={() => setStoryWordsInput(preset)}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-[11px] text-slate-600 dark:text-slate-300 transition"
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={handleGenerateStory}
+                disabled={generatingStory}
+                className="btn-glass-primary text-xs !py-2.5 !px-5 gap-2 disabled:opacity-40 shadow-md"
+              >
+                <Sparkles className="w-4 h-4 fill-white" />
+                <span>{generatingStory ? 'AI đang dệt câu chuyện...' : 'Tạo Câu Chuyện Ngay'}</span>
+              </button>
+            </div>
+          </GlassCard>
+
+          {/* Generated Story Display */}
+          {storyResult && (
+            <GlassCard className="p-6 space-y-4 border border-indigo-500/30 shadow-lg bg-white/95 dark:bg-slate-900/95 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4" />
+                  <span>{storyResult.title || 'Câu Chuyện Tình Huống'}</span>
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {(storyResult.targetWords || []).map((w: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold border border-indigo-500/20"
+                    >
+                      {w}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+                {storyResult.story}
+              </div>
+
+              {storyResult.comprehensionQuestion && (
+                <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/50 dark:border-indigo-800/40 space-y-2">
+                  <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                    💡 Câu hỏi kiểm tra hiểu ngữ cảnh: {storyResult.comprehensionQuestion}
+                  </p>
+                  {storyResult.options && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      {storyResult.options.map((opt: string, optIdx: number) => (
+                        <button
+                          key={optIdx}
+                          onClick={() => {
+                            if (opt === storyResult.correctAnswer) {
+                              alert('🎉 Chính xác! Bạn đã nắm vững ngữ cảnh bài học.');
+                            } else {
+                              alert(`Chưa chính xác. Đáp án đúng là: ${storyResult.correctAnswer}`);
+                            }
+                          }}
+                          className="p-2 rounded-xl text-left text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 transition font-medium text-slate-800 dark:text-slate-200"
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </GlassCard>
           )}
         </div>
       )}

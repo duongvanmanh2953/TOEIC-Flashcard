@@ -261,7 +261,7 @@ export const VocabularyExplorerPage: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-900">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/30">
                         {item.cefrLevel}
                       </span>
                       {item.partOfSpeech && (
@@ -340,7 +340,7 @@ export const VocabularyExplorerPage: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800">
+                <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/30">
                   {selectedWord.cefrLevel}
                 </span>
                 <span className="text-xs font-mono text-slate-400">{selectedWord.partOfSpeech}</span>

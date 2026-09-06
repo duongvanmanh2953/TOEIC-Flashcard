@@ -153,7 +153,7 @@ export const CustomQuizPage: React.FC = () => {
 
         <GlassCard className="p-6 md:p-8 space-y-6">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded-md bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-900">
+            <span className="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded-md bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/30">
               {activeQuiz.title}
             </span>
             <SpeechButton text={currentQ.word} />
@@ -173,8 +173,8 @@ export const CustomQuizPage: React.FC = () => {
                   key={idx}
                   onClick={() => handleSelectOption(currentQ.id, opt)}
                   className={`w-full p-4 rounded-2xl border text-left font-semibold text-sm transition flex items-center justify-between ${selected
-                      ? 'border-brand-600 bg-brand-50/20 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      ? 'border-2 border-brand-500 bg-brand-500/[0.08] dark:bg-brand-500/[0.16] text-brand-700 dark:text-brand-200'
+                      : 'border-slate-200/60 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 bg-transparent'
                     }`}
                 >
                   <span>{opt}</span>
@@ -221,7 +221,7 @@ export const CustomQuizPage: React.FC = () => {
   return (
     <div className="w-full space-y-8 animate-fade-in">
       <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 dark:bg-brand-950/60 border border-brand-200 dark:border-brand-900 text-brand-600 dark:text-brand-400 text-xs font-bold mb-2">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full card-brand-effect overflow-hidden bg-brand-500/[0.08] dark:bg-brand-500/[0.14] border border-brand-400/40 text-brand-600 dark:text-brand-300 text-xs font-bold mb-2">
           <FileCheck2 className="w-3.5 h-3.5" />
           <span>Auto Quiz Generator</span>
         </div>
@@ -250,8 +250,8 @@ export const CustomQuizPage: React.FC = () => {
                   type="button"
                   onClick={() => setSourceFilter(src.key as any)}
                   className={`p-4 rounded-2xl border text-left transition ${sourceFilter === src.key
-                      ? 'border-brand-600 bg-brand-50/20 dark:bg-brand-950/50 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                      ? 'card-brand-effect border-2 border-brand-500 bg-brand-500/[0.06] dark:bg-brand-500/[0.12]'
+                      : 'border-slate-200/60 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-transparent'
                     }`}
                 >
                   <p className="font-bold text-sm leading-tight text-slate-900 dark:text-slate-100">

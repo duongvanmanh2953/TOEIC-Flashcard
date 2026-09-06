@@ -35,7 +35,7 @@
 
 - **Backend**: NestJS (TypeScript), Prisma ORM, PostgreSQL, Redis, Passport JWT, Swagger OpenAPI.
 - **Frontend**: React 18, Vite, TypeScript, TailwindCSS, Lucide Icons, Axios.
-- **Data Source**: Bộ từ vựng 600+ TOEIC kèm audio và hình ảnh chuẩn từ `toeic_600_words.csv`.
+- **Data Source**: Cơ sở dữ liệu từ vựng 600+ từ TOEIC kèm audio, phiên âm IPA và hình ảnh minh họa chuẩn hóa trong PostgreSQL.
 
 ---
 

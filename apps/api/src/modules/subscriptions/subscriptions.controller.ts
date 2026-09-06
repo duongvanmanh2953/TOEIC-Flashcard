@@ -1,15 +1,29 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Headers,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SubscriptionsService } from './subscriptions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
-import { SubscriptionTier } from '@prisma/client';
+import { SubscriptionTier, PaymentMethod } from '@prisma/client';
+
+import { UsageService } from './usage.service';
 
 @ApiTags('Subscriptions & Monetization')
 @Controller('subscriptions')
 export class SubscriptionsController {
-  constructor(private readonly subService: SubscriptionsService) {}
+  constructor(
+    private readonly subService: SubscriptionsService,
+    private readonly usageService: UsageService,
+  ) {}
 
   @Public()
   @Get('plans')
@@ -27,13 +41,86 @@ export class SubscriptionsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('my-quotas')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user daily quota status across all learning features' })
+  getMyQuotas(@CurrentUser('id') userId: string) {
+    return this.usageService.getAllQuotas(userId);
+  }
+
+  @Public()
+  @Get('guest-quotas')
+  @ApiOperation({ summary: 'Get default guest access limits' })
+  getGuestQuotas() {
+    return this.usageService.getAllQuotas(null);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('upgrade')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Upgrade user account plan (Demo checkout)' })
+  @ApiOperation({ summary: 'Direct upgrade / Create payment order' })
   upgradePlan(
     @CurrentUser('id') userId: string,
     @Body('tier') tier: SubscriptionTier,
+    @Body('paymentMethod') paymentMethod?: PaymentMethod,
   ) {
-    return this.subService.upgradePlan(userId, tier);
+    return this.subService.createPaymentOrder(userId, tier, paymentMethod || PaymentMethod.VIETQR);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('create-payment')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create payment order with VietQR code and bank transfer memo' })
+  createPayment(
+    @CurrentUser('id') userId: string,
+    @Body('tier') tier: SubscriptionTier,
+    @Body('paymentMethod') paymentMethod?: PaymentMethod,
+  ) {
+    return this.subService.createPaymentOrder(userId, tier, paymentMethod || PaymentMethod.VIETQR);
+  }
+
+  @Public()
+  @Get('payments/:orderCode/status')
+  @ApiOperation({ summary: 'Check payment order status (Pending / Paid / Expired)' })
+  getPaymentStatus(@Param('orderCode', ParseIntPipe) orderCode: number) {
+    return this.subService.getPaymentStatus(orderCode);
+  }
+
+  @Public()
+  @Post('webhook/vietqr')
+  @ApiOperation({ summary: 'Webhook endpoint for VietQR / SePay / Casso / Bank sync' })
+  handleVietQRWebhook(
+    @Body() payload: any,
+    @Headers('authorization') authHeader?: string,
+  ) {
+    return this.subService.handleVietQRWebhook(payload, authHeader);
+  }
+
+  @Public()
+  @Post('webhook/sepay')
+  @ApiOperation({ summary: 'Webhook endpoint alias for SePay bank transfer notification' })
+  handleSepayWebhook(
+    @Body() payload: any,
+    @Headers('authorization') authHeader?: string,
+  ) {
+    return this.subService.handleVietQRWebhook(payload, authHeader);
+  }
+
+  @Public()
+  @Post('webhook/payos')
+  @ApiOperation({ summary: 'Webhook endpoint for PayOS payment gateway' })
+  handlePayOSWebhook(@Body() payload: any) {
+    return this.subService.handlePayOSWebhook(payload);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('simulate-payment')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Simulate instant payment confirmation for testing & sandbox' })
+  simulatePayment(
+    @CurrentUser('id') userId: string,
+    @Body('orderCode', ParseIntPipe) orderCode: number,
+  ) {
+    return this.subService.simulatePaymentSuccess(orderCode, userId);
   }
 }

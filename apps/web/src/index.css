@@ -187,6 +187,106 @@
   );
 }
 
+.liquid-glass-card:hover::after {
+  transform: rotate(32deg) translate(280%, 140%);
+}
+
+/* ==========================================================================
+   AUTHENTIC SPECULAR LIGHT SWEEP & GLEAM ("LÓE SÁNG, CHUYỂN SÁNG LOẸT SÁNG")
+   - Tuyệt đối KHÔNG dùng box-shadow màu phát sáng lem nhem ra ngoài
+   - Lóe sáng chuyển tia sắc nét ngay trên bề mặt kính (trong suốt)
+   ========================================================================== */
+.card-brand-effect {
+  position: relative;
+  overflow: hidden !important;
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* Fix border-radius overflow leak in Chromium & WebKit */
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+span.card-brand-effect,
+a.card-brand-effect {
+  display: inline-block;
+  overflow: hidden !important;
+  vertical-align: middle;
+}
+
+/* Đỉnh viền lóe sáng mảnh, sắc nét */
+.card-brand-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent 0%, rgba(167, 139, 250, 0.4) 25%, rgba(255, 255, 255, 0.9) 50%, rgba(167, 139, 250, 0.4) 75%, transparent 100%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 5;
+}
+
+/* Dải chùm tia sáng quét ngang khi hover ("Lóe sáng loẹt sáng", không lem viền) */
+.card-brand-effect::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -140%;
+  width: 55%;
+  height: 220%;
+  background: linear-gradient(
+    105deg,
+    transparent 15%,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0.04) 70%,
+    transparent 85%
+  );
+  transform: rotate(26deg);
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(1px);
+  transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  z-index: 10;
+}
+
+.card-brand-effect:hover {
+  transform: translateY(-2.5px);
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.1);
+}
+
+.card-brand-effect:hover::after {
+  opacity: 1;
+  left: 180%;
+}
+
+.dark .card-brand-effect {
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.35);
+}
+
+.dark .card-brand-effect:hover {
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.55);
+}
+
+/* Các tiện ích trong suốt hoàn toàn (Sheer Transparency) */
+.bg-glass-sheer {
+  background: transparent !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.bg-brand-sheer {
+  background: rgba(103, 87, 229, 0.06) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.dark .bg-brand-sheer {
+  background: rgba(103, 87, 229, 0.1) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
 .liquid-glass-card:hover {
   transform: translateY(-2.5px);
   border-color: rgba(99, 102, 241, 0.45);

@@ -96,6 +96,7 @@ model User {
   communityDecks   CommunityDeck[]
   clonedDecks      DeckClone[]
   subscriptions    Subscription[]
+  paymentOrders    PaymentOrder[]
   entitlementUsage EntitlementUsage[]
   customQuizzes    CustomQuiz[]
   quizAttempts     CustomQuizAttempt[]
@@ -233,6 +234,12 @@ model UserVocabulary {
   confidence         Int         @default(3) // 1 to 5
   isFavorite         Boolean     @default(false)
   isHard             Boolean     @default(false)
+
+  // Learning Brain: Active vs Passive & Memory Rescue
+  activeRecallScore  Float       @default(0.0) // 0 to 1.0 (Khả năng nhớ lại nghĩa)
+  productionScore    Float       @default(0.0) // 0 to 1.0 (Khả năng tự gõ/nói từ trong ngữ cảnh)
+  contextMastery     Json?                     // Điểm theo ngữ cảnh: { business: 0.8, academic: 0.6 }
+  slipRisk           Float       @default(0.0) // 0 to 1.0 (Nguy cơ quên phục vụ Memory Rescue)
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
@@ -459,6 +466,49 @@ model Plan {
   features         Json
 
   subscriptions Subscription[]
+  paymentOrders PaymentOrder[]
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  VIETQR
+  PAYOS
+  WEBHOOK
+}
+
+model PaymentOrder {
+  id              String           @id @default(uuid())
+  orderCode       Int              @unique
+  userId          String
+  planId          String
+  tier            SubscriptionTier
+  amount          Float
+  status          PaymentStatus    @default(PENDING)
+  paymentMethod   PaymentMethod    @default(VIETQR)
+  description     String
+  qrUrl           String?
+  checkoutUrl     String?
+  paymentLinkId   String?
+  transactionCode String?
+  webhookPayload  Json?
+  paidAt          DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([orderCode])
+  @@index([status])
 }
 
 model Subscription {
@@ -482,6 +532,8 @@ model EntitlementUsage {
   date           String   // YYYY-MM-DD
   aiUsageCount   Int      @default(0)
   quizGenCount   Int      @default(0)
+  reviewCount    Int      @default(0)
+  storyGenCount  Int      @default(0)
   deckCloneCount Int      @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -548,5 +600,13 @@ model AuditLog {
   @@index([actorId])
   @@index([action])
   @@index([createdAt])
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g. FREE_AI_DAILY_LIMIT, FREE_REVIEW_DAILY_LIMIT
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
 }
 

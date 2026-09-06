@@ -24,6 +24,8 @@ import {
   ShieldCheck,
   ChevronRight,
   UserCheck,
+  Lock,
+  LockOpen,
 } from 'lucide-react';
 
 export const AppShell: React.FC = () => {
@@ -50,7 +52,14 @@ export const AppShell: React.FC = () => {
     { to: '/ai-tutor', label: t('nav.aiTutor', 'AI Tutor'), icon: BrainCircuit },
     { to: '/placement-test', label: t('nav.placementTest', 'Placement Test'), icon: Compass },
     { to: '/progress', label: t('nav.progress', 'Progress & Stats'), icon: Award },
-    { to: '/upgrade', label: t('nav.upgrade', 'Premium Tiers'), icon: Crown, highlight: true },
+    {
+      to: '/upgrade',
+      label: t('nav.upgrade', 'Mở Khóa Premium'),
+      icon: Crown,
+      highlight: true,
+      badge: user?.subscription?.tier === 'PRO' ? 'PRO' : 'MỞ KHÓA',
+      isUnlock: user?.subscription?.tier !== 'PRO',
+    },
     ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
     { to: '/settings', label: t('nav.settings', 'Settings'), icon: Settings },
   ];
@@ -123,8 +132,15 @@ export const AppShell: React.FC = () => {
                   <span className="truncate">{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md shadow-xs ml-1">
-                    {item.badge}
+                  <span
+                    className={`shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded-md shadow-xs ml-1 flex items-center gap-1 ${
+                      (item as any).isUnlock
+                        ? 'bg-gradient-to-r from-amber-500 to-indigo-600 text-white shadow-amber-500/20'
+                        : 'bg-indigo-600 text-white'
+                    }`}
+                  >
+                    {(item as any).isUnlock && <LockOpen className="w-2.5 h-2.5 text-amber-200" />}
+                    <span>{item.badge}</span>
                   </span>
                 )}
               </NavLink>
@@ -172,8 +188,18 @@ export const AppShell: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-md bg-indigo-600 text-white group-hover:bg-indigo-500 transition shrink-0">
-                  {user?.subscription?.tier === 'PRO' ? 'PRO' : 'Nâng cấp'}
+                <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-md bg-indigo-600 text-white group-hover:bg-indigo-500 transition shrink-0 flex items-center gap-1">
+                  {user?.subscription?.tier === 'PRO' ? (
+                    <>
+                      <Crown className="w-2.5 h-2.5 text-amber-300 fill-amber-300" />
+                      <span>PRO</span>
+                    </>
+                  ) : (
+                    <>
+                      <LockOpen className="w-2.5 h-2.5 text-amber-200" />
+                      <span>Mở khóa</span>
+                    </>
+                  )}
                 </span>
               </div>
 
@@ -183,18 +209,20 @@ export const AppShell: React.FC = () => {
                 className="flex items-center justify-between gap-2 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition group min-w-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60"
                 title="Bấm để xem hồ sơ cá nhân & Hướng dẫn sử dụng"
               >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0">
-                    {user?.displayName?.[0]?.toUpperCase() || 'U'}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                    {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <div className="truncate flex-1 min-w-0">
-                    <p className="text-xs font-bold truncate text-slate-900 dark:text-white leading-tight">
-                      {user?.displayName}
+                  <div className="min-w-0 truncate">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {user?.displayName || user?.email?.split('@')[0] || 'Learner'}
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                    <p className="text-[10px] text-slate-400 truncate">
+                      {user?.email || 'Học viên'}
+                    </p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition shrink-0" />
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition shrink-0" />
               </div>
             </>
           )}
@@ -235,6 +263,15 @@ export const AppShell: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {user?.subscription?.tier !== 'PRO' && (
+              <button
+                onClick={() => navigate('/upgrade')}
+                className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[11px] font-black uppercase flex items-center gap-1 shadow-xs"
+              >
+                <LockOpen className="w-3 h-3 text-amber-200" />
+                <span>Mở khóa</span>
+              </button>
+            )}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"

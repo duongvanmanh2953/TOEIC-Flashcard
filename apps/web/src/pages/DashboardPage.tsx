@@ -4,6 +4,9 @@ import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
 import { GlassCard } from '../components/common/GlassCard';
+import { MemoryRescueCard } from '../components/dashboard/MemoryRescueCard';
+import { QuotaMeter } from '../components/common/QuotaMeter';
+import { PremiumBadge } from '../components/common/PremiumBadge';
 import {
   Sparkles,
   Flame,
@@ -22,25 +25,34 @@ import {
   Layers,
   ChevronRight,
   HelpCircle,
+  ShieldCheck,
+  LockOpen,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [heatmap, setHeatmap] = useState<any[]>([]);
+  const [memoryRescue, setMemoryRescue] = useState<any>(null);
+  const [quotas, setQuotas] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const [dashRes, heatRes]: any = await Promise.all([
+        const quotaEndpoint = isGuest ? '/subscriptions/guest-quotas' : '/subscriptions/my-quotas';
+        const [dashRes, heatRes, rescueRes, quotaRes]: any = await Promise.all([
           api.get('/dashboard').catch(() => ({ data: {} })),
           api.get('/dashboard/heatmap').catch(() => ({ data: [] })),
+          api.get('/reviews/memory-rescue').catch(() => ({ data: null })),
+          api.get(quotaEndpoint).catch(() => ({ data: null })),
         ]);
         setData(dashRes.data || dashRes || {});
         setHeatmap(heatRes.data || heatRes || []);
+        setMemoryRescue(rescueRes?.data || rescueRes || null);
+        setQuotas(quotaRes?.data || quotaRes || null);
       } catch (err) {
         console.error('Error loading dashboard data', err);
       } finally {
@@ -48,7 +60,7 @@ export const DashboardPage: React.FC = () => {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [isGuest]);
 
   if (loading) {
     return (
@@ -205,6 +217,67 @@ export const DashboardPage: React.FC = () => {
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {/* Memory Rescue Slipping Words Alert Widget */}
+      {memoryRescue && memoryRescue.rescueCount > 0 && (
+        <MemoryRescueCard
+          rescueCount={memoryRescue.rescueCount}
+          slippingWords={memoryRescue.slippingWords}
+          averageMastery={memoryRescue.averageMastery}
+          onStartRescue={() => navigate('/review?type=MEMORY_RESCUE')}
+        />
+      )}
+
+      {/* Daily Quota Balance & Entitlements Bar */}
+      {quotas && (
+        <GlassCard className="p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3 bg-white/90 dark:bg-slate-900/90">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2.5">
+            <div className="flex items-center gap-2.5">
+              <PremiumBadge tier={quotas.tier} />
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                {quotas.tier === 'FREE' ? 'Tài khoản Miễn Phí' : quotas.tier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Gói VocabFlow Pro'}
+              </span>
+            </div>
+            {quotas.tier === 'FREE' && (
+              <button
+                onClick={() => navigate('/upgrade')}
+                className="text-xs font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 flex items-center gap-1.5 self-start sm:self-auto px-3 py-1.5 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/30 hover:scale-105 transition shadow-xs"
+              >
+                <LockOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>Mở khóa toàn bộ tính năng Pro</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <QuotaMeter
+              feature="AI_TUTOR"
+              used={quotas.aiTutor?.used || 0}
+              limit={quotas.aiTutor?.limit || 10}
+              remaining={quotas.aiTutor?.remaining}
+              tier={quotas.tier}
+              onUpgrade={() => navigate('/subscription')}
+            />
+            <QuotaMeter
+              feature="TEXT_TO_VOCAB"
+              used={quotas.textToVocab?.used || 0}
+              limit={quotas.textToVocab?.limit || 3}
+              remaining={quotas.textToVocab?.remaining}
+              tier={quotas.tier}
+              onUpgrade={() => navigate('/subscription')}
+            />
+            <QuotaMeter
+              feature="STORY_GEN"
+              used={quotas.storyGen?.used || 0}
+              limit={quotas.storyGen?.limit || 1}
+              remaining={quotas.storyGen?.remaining}
+              tier={quotas.tier}
+              onUpgrade={() => navigate('/subscription')}
+            />
+          </div>
+        </GlassCard>
+      )}
 
       {/* 2. Key Metrics Row — 4 Rich Feature Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

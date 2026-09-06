@@ -131,7 +131,13 @@ async function main() {
   });
   console.log('✅ Demo & Admin users initialized from secure environment configuration.');
 
-  // 3. Parse and Seed toeic_600_words.csv
+  // 3. Parse and Seed toeic_600_words.csv (chỉ nhập nếu DB chưa có dữ liệu)
+  const existingWordCount = await prisma.vocabulary.count();
+  if (existingWordCount > 0) {
+    console.log(`✅ Cơ sở dữ liệu đã có sẵn ${existingWordCount} từ vựng Vocabulary. Bỏ qua nhập từ tệp CSV.`);
+    return;
+  }
+
   const candidatePaths = [
     '/toeic_600_words.csv',
     path.resolve(__dirname, '../../../toeic_600_words.csv'),
@@ -142,7 +148,7 @@ async function main() {
   ];
   const csvPath = candidatePaths.find((p) => fs.existsSync(p));
   if (!csvPath) {
-    console.warn(`⚠️ CSV file not found in any candidate path: ${candidatePaths.join(', ')}`);
+    console.log('ℹ️ Không có tệp CSV cục bộ (dữ liệu hiện được lưu trữ và quản lý trực tiếp trong PostgreSQL).');
     return;
   }
   console.log(`📄 Using CSV file from: ${csvPath}`);

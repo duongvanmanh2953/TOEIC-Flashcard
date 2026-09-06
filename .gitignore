@@ -42,3 +42,8 @@ postgres_data/
 
 # System generated artifacts
 .system_generated/
+
+# Local data & spreadsheet files (migrated to PostgreSQL)
+data/
+*.csv
+*.xlsx

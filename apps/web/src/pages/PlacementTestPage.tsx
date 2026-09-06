@@ -81,19 +81,19 @@ export const PlacementTestPage: React.FC = () => {
 
           {/* Key Stat Badges */}
           <div className="grid grid-cols-2 gap-4 py-3">
-            <div className="p-4 rounded-2xl bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-900 text-left">
-              <span className="text-xs font-bold uppercase text-brand-600 dark:text-brand-400">
+            <div className="card-brand-effect p-4 rounded-2xl bg-brand-500/[0.06] dark:bg-brand-500/[0.12] backdrop-blur-xl border border-brand-400/40 text-left">
+              <span className="text-xs font-black uppercase text-brand-600 dark:text-brand-400">
                 Estimated CEFR Level
               </span>
               <p className="text-3xl font-black text-brand-700 dark:text-brand-300 mt-1">
                 {result.estimatedLevel}
               </p>
             </div>
-            <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900 text-left">
-              <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400">
+            <div className="card-brand-effect p-4 rounded-2xl bg-cyan-500/[0.06] dark:bg-cyan-500/[0.12] backdrop-blur-xl border border-cyan-400/40 text-left">
+              <span className="text-xs font-black uppercase text-cyan-600 dark:text-cyan-400">
                 Vocabulary Size
               </span>
-              <p className="text-3xl font-black text-indigo-700 dark:text-indigo-300 mt-1">
+              <p className="text-3xl font-black text-cyan-700 dark:text-cyan-300 mt-1">
                 ~{result.estimatedVocabSize} <span className="text-sm font-semibold">từ</span>
               </p>
             </div>
@@ -101,14 +101,14 @@ export const PlacementTestPage: React.FC = () => {
 
           {/* Strong / Weak Breakdown */}
           <div className="text-left space-y-3 pt-2 text-xs">
-            <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300">
+            <div className="p-3.5 rounded-xl bg-emerald-500/[0.08] dark:bg-emerald-500/[0.12] border border-emerald-400/30 text-emerald-800 dark:text-emerald-300 backdrop-blur-md">
               <strong>Vùng thế mạnh:</strong> {result.strongAreas?.join(', ') || 'Nắm vững từ vựng cơ bản'}
             </div>
-            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300">
+            <div className="p-3.5 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-400/30 text-amber-800 dark:text-amber-300 backdrop-blur-md">
               <strong>Vùng cần cải thiện:</strong> {result.weakAreas?.join(', ') || 'Collocations & Phrasal Verbs'}
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
-              <strong>Khuyến nghị lộ trình:</strong> Học {result.recommendedDailyGoal} từ/ngày. Lộ trình học thông minh đã được tích hợp vào Dashboard của bạn.
+            <div className="p-3.5 rounded-xl bg-slate-500/[0.06] dark:bg-slate-500/[0.1] border border-slate-400/30 text-slate-700 dark:text-slate-300 backdrop-blur-md">
+              <strong>Chiến lược tiếp theo:</strong> Bắt đầu các bài học SRS thích ứng hàng ngày để củng cố các từ vựng chưa vững.
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export const PlacementTestPage: React.FC = () => {
             onClick={() => navigate('/dashboard')}
             className="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2"
           >
-            <span>Vào Dashboard Học Tập Ngay</span>
+            <span>Bắt Đầu Hành Trình Học Cá Nhân Hóa</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -127,28 +127,32 @@ export const PlacementTestPage: React.FC = () => {
   const currentQ = questions[currentIndex];
   if (!currentQ) return null;
 
-  const progress = Math.round(((currentIndex + 1) / questions.length) * 100);
-
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+    <div className="max-w-xl mx-auto py-8 px-4 animate-fade-in">
+      {/* Header Info */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Compass className="w-4 h-4 text-brand-600" />
-          <span>Placement Test: Câu {currentIndex + 1} / {questions.length}</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Placement Test
+          </span>
         </div>
-        <span>{progress}%</span>
+        <span className="text-xs font-bold text-slate-500">
+          Câu {currentIndex + 1} / {questions.length}
+        </span>
       </div>
 
-      <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+      {/* Progress Bar */}
+      <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 mb-6 overflow-hidden">
         <div
           className="h-full bg-brand-500 transition-all duration-300 rounded-full"
-          style={{ width: `${progress}%` }}
-        ></div>
+          style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+        />
       </div>
 
-      <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+      <div className="p-6 md:p-8 rounded-3xl bg-white/[0.05] dark:bg-slate-900/[0.3] backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800 shadow-xl space-y-6">
         <div>
-          <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-md bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-900">
+          <span className="inline-block overflow-hidden text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-md card-brand-effect bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/35">
             {currentQ.category} • CEFR {currentQ.cefrLevel}
           </span>
           <h3 className="text-xl font-bold mt-3 leading-snug">{currentQ.question}</h3>
@@ -160,14 +164,14 @@ export const PlacementTestPage: React.FC = () => {
               key={idx}
               onClick={() => setSelectedOption(opt)}
               className={`w-full p-4 rounded-2xl border text-left font-semibold text-sm transition flex items-center justify-between ${selectedOption === opt
-                  ? 'border-brand-600 bg-brand-50/20 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 shadow-sm'
+                  ? 'border-2 border-brand-500 bg-gradient-to-r from-brand-500/15 via-indigo-500/10 to-transparent dark:from-brand-500/25 dark:via-indigo-950/40 dark:to-transparent text-brand-700 dark:text-brand-200 shadow-md shadow-brand-500/10 ring-2 ring-brand-400/20'
                   : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
             >
               <span>{opt}</span>
               <div
                 className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedOption === opt
-                    ? 'border-brand-600 bg-brand-600 text-white'
+                    ? 'border-brand-600 bg-brand-600 text-white shadow-xs'
                     : 'border-slate-300 dark:border-slate-700'
                   }`}
               >

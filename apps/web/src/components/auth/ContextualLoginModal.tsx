@@ -39,7 +39,7 @@ export const ContextualLoginModal: React.FC = () => {
       onClick={closeLoginPrompt}
     >
       <div
-        className="m-auto relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6"
+        className="m-auto relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}

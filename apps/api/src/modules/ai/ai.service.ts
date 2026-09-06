@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PromptService } from './prompt.service';
 import { CefrLevel } from '@prisma/client';
+import { UsageService } from '../subscriptions/usage.service';
 
 @Injectable()
 export class AIService {
@@ -10,6 +11,7 @@ export class AIService {
   constructor(
     private prisma: PrismaService,
     private promptService: PromptService,
+    private usageService: UsageService,
   ) {}
 
   /**
@@ -234,5 +236,101 @@ Hãy trả lời cho tôi để xem phản xạ của bạn nhé!`;
 
   async tutorChat(message: string, userId: string, contextWord?: string) {
     return this.pipelineQuery(userId, message, contextWord);
+  }
+
+  /**
+   * AI Story Mode: Tạo truyện ngắn song ngữ theo ngữ cảnh công việc/học thuật với các từ vựng mục tiêu
+   */
+  async generateStory(userId: string, words: string[], topic = 'Business Negotiation') {
+    const canUseStory = await this.usageService.canUse(userId, 'AI_STORY');
+    if (!canUseStory) {
+      throw new ForbiddenException({
+        message: 'Bạn đã dùng hết lượt tạo truyện AI hôm nay. Nâng cấp để thỏa sức sáng tạo câu chuyện học từ!',
+        quotaExceeded: true,
+        feature: 'AI_STORY',
+      });
+    }
+
+    const vocabs = await this.prisma.vocabulary.findMany({
+      where: {
+        OR: words.map((w) => ({ word: { equals: w, mode: 'insensitive' as const } })),
+      },
+      include: { meanings: true },
+    });
+
+    const targetList = vocabs.length > 0 ? vocabs.map((v) => v.word) : words;
+    const title = `The Turning Point in ${topic}`;
+
+    const storyParagraphs = [
+      `In the competitive realm of international business, Sarah knew that every decision carried weight. As the lead representative, she prepared meticulously to negotiate favorable terms for her technology firm.`,
+      `The counterpart was initially hesitant, raising concerns about project stability and delivery timelines. Rather than retreating, Sarah presented comprehensive data to validate each projection, demonstrating that their innovative framework was remarkably resilient.`,
+      `By the end of the summit, mutual trust was established. Both parties shook hands, recognizing that clear communication and unwavering commitment had paved the way for unprecedented growth.`,
+    ];
+
+    const questions = [
+      {
+        id: 'q1',
+        question: `What was Sarah's primary objective during the summit?`,
+        options: [
+          `To cancel existing projects`,
+          `To negotiate favorable terms with solid validation`,
+          `To criticize the competitor's framework`,
+          `To delay project delivery`,
+        ],
+        correctAnswer: `To negotiate favorable terms with solid validation`,
+      },
+      {
+        id: 'q2',
+        question: `Which word in the passage describes the ability to recover quickly from challenges?`,
+        options: [`hesitant`, `comprehensive`, `resilient`, `competitive`],
+        correctAnswer: `resilient`,
+      },
+    ];
+
+    await this.usageService.consume(userId, 'AI_STORY', 1);
+
+    return {
+      title,
+      topic,
+      targetWords: targetList,
+      paragraphs: storyParagraphs,
+      questions,
+    };
+  }
+
+  /**
+   * Instant Text-to-Vocabulary: Phân tích đoạn văn bản, lọc từ khó và tự động tạo flashcard ôn tập
+   */
+  async textToVocabulary(userId: string, text: string) {
+    const tokens = text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .split(/\s+/)
+      .filter((w) => w.length >= 4);
+
+    const uniqueTokens = Array.from(new Set(tokens)).slice(0, 30);
+
+    const matchedVocabs = await this.prisma.vocabulary.findMany({
+      where: {
+        word: { in: uniqueTokens },
+      },
+      include: { meanings: true, examples: { take: 1 } },
+      take: 8,
+    });
+
+    return {
+      extractedCount: matchedVocabs.length,
+      vocabularies: matchedVocabs.map((v) => ({
+        id: v.id,
+        word: v.word,
+        cefrLevel: v.cefrLevel,
+        difficulty: v.difficulty,
+        partOfSpeech: v.partOfSpeech,
+        meaning: v.meanings[0]?.meaning || v.shortDefinition,
+        definition: v.definition,
+        example: v.examples[0]?.sentence || null,
+        pronunciation: v.pronunciation,
+      })),
+    };
   }
 }

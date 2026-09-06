@@ -35,7 +35,7 @@ export const LandingPage: React.FC = () => {
 
       {/* Hero Section */}
       <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-16 max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 dark:bg-brand-950/50 border border-brand-200 dark:border-brand-800 text-brand-700 dark:text-brand-300 text-xs font-semibold mb-6">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full card-brand-effect overflow-hidden bg-brand-500/[0.08] dark:bg-brand-500/[0.14] border border-brand-400/40 text-brand-700 dark:text-brand-200 text-xs font-bold mb-6 backdrop-blur-xl">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Thuật toán Lặp lại Ngắt quãng Thích ứng + Gia sư AI 24/7</span>
         </div>
@@ -76,8 +76,8 @@ export const LandingPage: React.FC = () => {
 
         {/* Features Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20 text-left w-full">
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4">
+          <div className="card-brand-effect p-6 rounded-2xl bg-white/[0.05] dark:bg-slate-900/[0.25] backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/80">
+            <div className="w-12 h-12 rounded-xl bg-brand-500/[0.12] text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4 border border-brand-500/20">
               <Brain className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg mb-2">Adaptive Spaced Repetition</h3>
@@ -86,8 +86,8 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">
+          <div className="card-brand-effect p-6 rounded-2xl bg-white/[0.05] dark:bg-slate-900/[0.25] backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/80">
+            <div className="w-12 h-12 rounded-xl bg-amber-500/[0.12] text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 border border-amber-500/20">
               <Clock className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg mb-2">600+ Từ TOEIC Thực Chiến</h3>
@@ -96,8 +96,8 @@ export const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
+          <div className="card-brand-effect p-6 rounded-2xl bg-white/[0.05] dark:bg-slate-900/[0.25] backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/80">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/[0.12] text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 border border-emerald-500/20">
               <Sparkles className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-lg mb-2">Gia Sư AI Cá Nhân Hóa</h3>

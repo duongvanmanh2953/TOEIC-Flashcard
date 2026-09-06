@@ -211,7 +211,15 @@ export class ReviewsService {
     // Atomic Transaction: update userVocab, create reviewEvent, update XP and Streak
     const result = await this.prisma.$transaction(async (tx) => {
       // 1. Upsert UserVocabulary
-      const updatedVocab = await tx.userVocabulary.upsert({
+        const currentRecall = userVocab?.activeRecallScore || 0.0;
+        const currentProd = userVocab?.productionScore || 0.0;
+        const currentSlip = userVocab?.slipRisk || 0.0;
+
+        const newRecall = Math.min(1.0, Math.max(0.0, currentRecall + (isCorrect ? 0.2 : -0.15)));
+        const newProd = isCorrect && dto.answer && dto.answer.length > 2 ? Math.min(1.0, currentProd + 0.25) : currentProd;
+        const newSlip = !isCorrect ? Math.min(1.0, currentSlip + 0.4) : Math.max(0.0, currentSlip - 0.3);
+
+        const updatedVocab = await tx.userVocabulary.upsert({
         where: {
           userId_vocabularyId: { userId, vocabularyId: dto.vocabularyId },
         },
@@ -228,6 +236,9 @@ export class ReviewsService {
           nextReviewAt: evalResult.nextReviewDate,
           confidence: dto.confidence,
           streak: isCorrect ? (userVocab?.streak || 0) + 1 : 0,
+          activeRecallScore: newRecall,
+          productionScore: newProd,
+          slipRisk: newSlip,
         },
         create: {
           userId,
@@ -244,6 +255,9 @@ export class ReviewsService {
           nextReviewAt: evalResult.nextReviewDate,
           confidence: dto.confidence,
           streak: isCorrect ? 1 : 0,
+          activeRecallScore: isCorrect ? 0.3 : 0.0,
+          productionScore: 0.0,
+          slipRisk: isCorrect ? 0.0 : 0.5,
         },
       });
 
@@ -355,6 +369,114 @@ export class ReviewsService {
       totalQuestions,
       correctCount,
       xpEarned,
+    };
+  }
+
+  /**
+   * Memory Rescue: Quét các từ vựng có nguy cơ quên cao (slipRisk >= 0.4 hoặc quá hạn mà điểm tự tin thấp)
+   */
+  async getMemoryRescueSummary(userId: string) {
+    const now = new Date();
+    const slippingWords = await this.prisma.userVocabulary.findMany({
+      where: {
+        userId,
+        OR: [
+          { slipRisk: { gte: 0.4 } },
+          { nextReviewAt: { lte: now }, confidence: { lte: 2 } },
+          { incorrectCount: { gt: 1 }, masteryScore: { lt: 45 } },
+        ],
+      },
+      include: {
+        vocabulary: {
+          select: {
+            id: true,
+            word: true,
+            partOfSpeech: true,
+            shortDefinition: true,
+            cefrLevel: true,
+            pronunciation: true,
+          },
+        },
+      },
+      orderBy: [{ slipRisk: 'desc' }, { masteryScore: 'asc' }],
+      take: 8,
+    });
+
+    return {
+      slippingCount: slippingWords.length,
+      words: slippingWords.map((uv) => ({
+        id: uv.vocabulary.id,
+        word: uv.vocabulary.word,
+        meaning: uv.vocabulary.shortDefinition,
+        partOfSpeech: uv.vocabulary.partOfSpeech,
+        cefrLevel: uv.vocabulary.cefrLevel,
+        pronunciation: uv.vocabulary.pronunciation,
+        masteryScore: uv.masteryScore,
+        slipRisk: Math.round(uv.slipRisk * 100),
+      })),
+      urgency: slippingWords.length >= 5 ? 'HIGH' : slippingWords.length > 0 ? 'MEDIUM' : 'LOW',
+    };
+  }
+
+  /**
+   * Tạo phiên giải cứu trí nhớ cấp tốc (Memory Rescue Session)
+   */
+  async createMemoryRescueSession(userId: string) {
+    const summary = await this.getMemoryRescueSummary(userId);
+    if (summary.slippingCount === 0) {
+      // Fallback nếu không có từ nguy cơ
+      return this.createSmartSession(userId, { limit: 5 });
+    }
+
+    const targetVocabIds = summary.words.map((w) => w.id);
+    const vocabs = await this.prisma.vocabulary.findMany({
+      where: { id: { in: targetVocabIds } },
+      include: { meanings: true, examples: true },
+    });
+
+    const distractors = await this.prisma.vocabulary.findMany({
+      take: 20,
+      select: { word: true, shortDefinition: true },
+    });
+
+    const session = await this.prisma.studySession.create({
+      data: {
+        userId,
+        type: SessionType.SMART_REVIEW,
+      },
+    });
+
+    const exercises = vocabs.map((vocab, index) => {
+      const meaning = vocab.meanings[0]?.meaning || vocab.shortDefinition;
+      const otherMeanings = distractors
+        .filter((d) => d.word !== vocab.word)
+        .slice(0, 3)
+        .map((d) => d.shortDefinition);
+
+      const options = [meaning, ...otherMeanings].sort(() => Math.random() - 0.5);
+
+      return {
+        id: `rescue-ex-${index + 1}`,
+        vocabularyId: vocab.id,
+        word: vocab.word,
+        pronunciation: vocab.pronunciation,
+        partOfSpeech: vocab.partOfSpeech,
+        cefrLevel: vocab.cefrLevel,
+        type: ExerciseType.MEANING_SELECTION,
+        prompt: `Nghĩa chính xác nhất của từ "${vocab.word}" là gì?`,
+        options,
+        correctAnswer: meaning,
+        exampleSentence: vocab.examples[0]?.sentence || null,
+        exampleTranslation: vocab.examples[0]?.translation || null,
+        isRescueTarget: true,
+      };
+    });
+
+    return {
+      sessionId: session.id,
+      type: 'MEMORY_RESCUE',
+      totalWords: exercises.length,
+      exercises,
     };
   }
 }

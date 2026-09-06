@@ -35,6 +35,8 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: leximind-api
     restart: always
+    env_file:
+      - .env
     environment:
       PORT: ${PORT:-4000}
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
@@ -43,6 +45,14 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-leximind_jwt_super_secure_refresh_token_secret_2026}
       INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@leximind.ai}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-admin123}
+      VIETQR_BANK_ID: ${VIETQR_BANK_ID:-VCB}
+      VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-9353421340}
+      VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-DUONG VAN MANH}
+      VIETQR_TEMPLATE: ${VIETQR_TEMPLATE:-compact2}
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
+      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-}
     ports:
       - '4000:4000'
     depends_on:

@@ -62,4 +62,27 @@ export class AIController {
   ) {
     return this.aiService.tutorChat(message, userId, contextWord);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('story')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate a short context story containing target vocabulary words' })
+  generateStory(
+    @CurrentUser('id') userId: string,
+    @Body('words') words: string[],
+    @Body('topic') topic?: string,
+  ) {
+    return this.aiService.generateStory(userId, words, topic);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('text-to-vocab')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Analyze raw text and extract high-yield vocabulary words' })
+  textToVocabulary(
+    @CurrentUser('id') userId: string,
+    @Body('text') text: string,
+  ) {
+    return this.aiService.textToVocabulary(userId, text);
+  }
 }
