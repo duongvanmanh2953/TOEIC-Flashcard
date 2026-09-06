@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SubscriptionTier } from '@prisma/client';
+import { SubscriptionTier, Role } from '@prisma/client';
 
 export type FeatureKey =
   | 'AI_TUTOR'
@@ -122,8 +122,12 @@ export class UsageService {
       };
     }
 
-    // 2. Tra cứu gói cước người dùng
-    const [sub, usageRecord] = await Promise.all([
+    // 2. Tra cứu gói cước người dùng & vai trò tài khoản
+    const [user, sub, usageRecord] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      }),
       this.prisma.subscription.findFirst({
         where: { userId, status: 'ACTIVE' },
         include: { plan: true },
@@ -134,8 +138,12 @@ export class UsageService {
       }),
     ]);
 
-    const isPro = sub?.plan.tier === SubscriptionTier.PRO;
-    const isPlus = sub?.plan.tier === SubscriptionTier.PLUS;
+    const isPro =
+      user?.role === Role.PREMIUM_USER ||
+      user?.role === Role.ADMIN ||
+      user?.role === Role.SUPER_ADMIN ||
+      sub?.plan.tier === SubscriptionTier.PRO;
+    const isPlus = !isPro && sub?.plan.tier === SubscriptionTier.PLUS;
     const isPremium = isPro || isPlus;
 
     // Premium Tiers có quyền truy cập không giới hạn cho hầu hết tính năng
@@ -237,16 +245,59 @@ export class UsageService {
       'AI_STORY',
       'MEMORY_RESCUE',
       'DEEP_ANALYTICS',
+      'TEXT_TO_VOCAB',
+      'PRONUNCIATION',
     ];
+
+    let isPro = false;
+    let isPlus = false;
+
+    if (userId) {
+      const [user, sub] = await Promise.all([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: true },
+        }),
+        this.prisma.subscription.findFirst({
+          where: { userId, status: 'ACTIVE' },
+          include: { plan: true },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      isPro =
+        user?.role === Role.PREMIUM_USER ||
+        user?.role === Role.ADMIN ||
+        user?.role === Role.SUPER_ADMIN ||
+        sub?.plan.tier === SubscriptionTier.PRO;
+      isPlus = !isPro && sub?.plan.tier === SubscriptionTier.PLUS;
+    }
 
     const results = await Promise.all(
       features.map((feat) => this.getFeatureStatus(userId, feat)),
     );
 
-    const quotaMap: Record<string, QuotaStatus> = {};
+    const quotaMap: Record<string, any> = {
+      tier: isPro ? 'PRO' : isPlus ? 'PLUS' : 'FREE',
+      isPro,
+      isPlus,
+      planName: isPro ? 'VocabFlow Pro (VIP)' : isPlus ? 'VocabFlow Plus' : 'Free Starter',
+    };
+
     results.forEach((q) => {
       quotaMap[q.feature] = q;
     });
+
+    // Seamless camelCase aliases for frontend components
+    quotaMap.aiTutor = quotaMap.AI_TUTOR;
+    quotaMap.smartReview = quotaMap.SMART_REVIEW;
+    quotaMap.customQuiz = quotaMap.CUSTOM_QUIZ;
+    quotaMap.aiStory = quotaMap.AI_STORY;
+    quotaMap.textToVocab = quotaMap.TEXT_TO_VOCAB;
+    quotaMap.storyGen = quotaMap.AI_STORY;
+    quotaMap.memoryRescue = quotaMap.MEMORY_RESCUE;
+    quotaMap.deepAnalytics = quotaMap.DEEP_ANALYTICS;
+    quotaMap.pronunciation = quotaMap.PRONUNCIATION;
 
     return quotaMap;
   }

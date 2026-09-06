@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, isProUser } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
 import { GlassCard } from '../components/common/GlassCard';
 import { MemoryRescueCard } from '../components/dashboard/MemoryRescueCard';
@@ -229,55 +229,60 @@ export const DashboardPage: React.FC = () => {
       )}
 
       {/* Daily Quota Balance & Entitlements Bar */}
-      {quotas && (
-        <GlassCard className="p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3 bg-white/90 dark:bg-slate-900/90">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2.5">
-            <div className="flex items-center gap-2.5">
-              <PremiumBadge tier={quotas.tier} />
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                {quotas.tier === 'FREE' ? 'Tài khoản Miễn Phí' : quotas.tier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Gói VocabFlow Pro'}
-              </span>
-            </div>
-            {quotas.tier === 'FREE' && (
-              <button
-                onClick={() => navigate('/upgrade')}
-                className="text-xs font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 flex items-center gap-1.5 self-start sm:self-auto px-3 py-1.5 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/30 hover:scale-105 transition shadow-xs"
-              >
-                <LockOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>Mở khóa toàn bộ tính năng Pro</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+      {quotas && (() => {
+        const isPro = isProUser(user) || quotas?.isPro || quotas?.tier === 'PRO';
+        const effectiveTier = isPro ? 'PRO' : (quotas?.tier || 'FREE');
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <QuotaMeter
-              feature="AI_TUTOR"
-              used={quotas.aiTutor?.used || 0}
-              limit={quotas.aiTutor?.limit || 10}
-              remaining={quotas.aiTutor?.remaining}
-              tier={quotas.tier}
-              onUpgrade={() => navigate('/subscription')}
-            />
-            <QuotaMeter
-              feature="TEXT_TO_VOCAB"
-              used={quotas.textToVocab?.used || 0}
-              limit={quotas.textToVocab?.limit || 3}
-              remaining={quotas.textToVocab?.remaining}
-              tier={quotas.tier}
-              onUpgrade={() => navigate('/subscription')}
-            />
-            <QuotaMeter
-              feature="STORY_GEN"
-              used={quotas.storyGen?.used || 0}
-              limit={quotas.storyGen?.limit || 1}
-              remaining={quotas.storyGen?.remaining}
-              tier={quotas.tier}
-              onUpgrade={() => navigate('/subscription')}
-            />
-          </div>
-        </GlassCard>
-      )}
+        return (
+          <GlassCard className="p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3 bg-white/90 dark:bg-slate-900/90">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2.5">
+              <div className="flex items-center gap-2.5">
+                <PremiumBadge tier={effectiveTier} />
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {isPro ? 'Gói VocabFlow Pro (VIP Trọn Đời)' : effectiveTier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Tài khoản Miễn Phí'}
+                </span>
+              </div>
+              {!isPro && effectiveTier === 'FREE' && (
+                <button
+                  onClick={() => navigate('/upgrade')}
+                  className="text-xs font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 flex items-center gap-1.5 self-start sm:self-auto px-3 py-1.5 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/30 hover:scale-105 transition shadow-xs"
+                >
+                  <LockOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>Mở khóa toàn bộ tính năng Pro</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <QuotaMeter
+                feature="AI_TUTOR"
+                used={isPro ? 0 : (quotas.aiTutor?.used ?? quotas.AI_TUTOR?.used ?? 0)}
+                limit={isPro ? -1 : (quotas.aiTutor?.limit ?? quotas.AI_TUTOR?.limit ?? 10)}
+                remaining={isPro ? 9999 : (quotas.aiTutor?.remaining ?? quotas.AI_TUTOR?.remaining)}
+                tier={effectiveTier}
+                onUpgrade={() => navigate('/subscription')}
+              />
+              <QuotaMeter
+                feature="TEXT_TO_VOCAB"
+                used={isPro ? 0 : (quotas.textToVocab?.used ?? quotas.TEXT_TO_VOCAB?.used ?? 0)}
+                limit={isPro ? -1 : (quotas.textToVocab?.limit ?? quotas.TEXT_TO_VOCAB?.limit ?? 3)}
+                remaining={isPro ? 9999 : (quotas.textToVocab?.remaining ?? quotas.TEXT_TO_VOCAB?.remaining)}
+                tier={effectiveTier}
+                onUpgrade={() => navigate('/subscription')}
+              />
+              <QuotaMeter
+                feature="STORY_GEN"
+                used={isPro ? 0 : (quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0)}
+                limit={isPro ? -1 : (quotas.storyGen?.limit ?? quotas.AI_STORY?.limit ?? 1)}
+                remaining={isPro ? 9999 : (quotas.storyGen?.remaining ?? quotas.AI_STORY?.remaining)}
+                tier={effectiveTier}
+                onUpgrade={() => navigate('/subscription')}
+              />
+            </div>
+          </GlassCard>
+        );
+      })()}
 
       {/* 2. Key Metrics Row — 4 Rich Feature Cards with Distinct Glass Palettes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -515,9 +520,8 @@ export const DashboardPage: React.FC = () => {
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2
-                  className={`w-4 h-4 ${
-                    completedToday >= 10 ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'
-                  }`}
+                  className={`w-4 h-4 ${completedToday >= 10 ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'
+                    }`}
                 />
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
                   Luyện Flashcard 10 từ vựng mục tiêu mới
@@ -529,9 +533,8 @@ export const DashboardPage: React.FC = () => {
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2
-                  className={`w-4 h-4 ${
-                    reviewDue === 0 ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'
-                  }`}
+                  className={`w-4 h-4 ${reviewDue === 0 ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'
+                    }`}
                 />
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
                   Hoàn thành phiên ôn tập ngắt quãng (SRS Review)
@@ -560,7 +563,7 @@ export const DashboardPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-wider mb-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
-              <span>🛟 Memory Rescue</span>
+              <span>Memory Rescue</span>
             </div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
               Cứu Từ Vựng Có Nguy Cơ Quên

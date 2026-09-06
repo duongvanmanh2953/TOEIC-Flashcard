@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import {
   FileCheck2,
   Sparkles,
@@ -268,16 +269,17 @@ export const CustomQuizPage: React.FC = () => {
               <label className="block text-xs font-bold uppercase text-slate-400 mb-2">
                 2. Chọn cấp độ CEFR
               </label>
-              <select
+              <CustomDropdown
                 value={cefrLevel}
-                onChange={(e) => setCefrLevel(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-sm"
-              >
-                <option value="A2">A2 — Pre-intermediate</option>
-                <option value="B1">B1 — Intermediate</option>
-                <option value="B2">B2 — Upper Intermediate</option>
-                <option value="C1">C1 — Advanced</option>
-              </select>
+                onChange={(val) => setCefrLevel(val)}
+                options={[
+                  { value: 'A2', label: 'A2 — Pre-intermediate', badge: 'A2' },
+                  { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
+                  { value: 'B2', label: 'B2 — Upper Intermediate', badge: 'B2' },
+                  { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
+                ]}
+                className="w-full"
+              />
             </div>
           )}
 

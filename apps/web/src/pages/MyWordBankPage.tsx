@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
+import { ModalPortal } from '../components/common/ModalPortal';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import {
   Bookmark,
   Plus,
@@ -269,21 +271,16 @@ export const MyWordBankPage: React.FC = () => {
           </div>
 
           {/* Topic Dropdown Filter */}
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
-            <Tag className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={topicFilter}
-              onChange={(e) => setTopicFilter(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả chủ đề</option>
-              {availableTopics.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomDropdown
+            value={topicFilter}
+            onChange={(val) => setTopicFilter(val)}
+            options={[
+              { value: 'ALL', label: 'Tất cả chủ đề' },
+              ...availableTopics.map((t) => ({ value: t, label: t })),
+            ]}
+            size="sm"
+            className="w-40 sm:w-48"
+          />
         </div>
 
         {/* Search box */}
@@ -381,16 +378,12 @@ export const MyWordBankPage: React.FC = () => {
         </div>
       )}
 
-      {/* Add / Import Modal — Centered without awkward margin-top */}
-      {showAddModal && (
+      {/* Add / Import Modal — ModalPortal to document.body */}
+      <ModalPortal isOpen={showAddModal} onClose={() => setShowAddModal(false)}>
         <div
-          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-          onClick={() => setShowAddModal(false)}
+          className="m-auto relative w-full max-w-3xl max-h-[88vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className="m-auto relative w-full max-w-3xl max-h-[88vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
             {/* Modal Header & Tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-5">
               <div>
@@ -478,57 +471,60 @@ export const MyWordBankPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs sm:text-sm">
                       Khung CEFR
                     </label>
-                    <select
+                    <CustomDropdown
                       value={cefrLevel}
-                      onChange={(e) => setCefrLevel(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white"
-                    >
-                      <option value="A2">A2 — Pre-intermediate</option>
-                      <option value="B1">B1 — Intermediate</option>
-                      <option value="B2">B2 — Upper Intermediate</option>
-                      <option value="C1">C1 — Advanced</option>
-                    </select>
+                      onChange={(val) => setCefrLevel(val)}
+                      options={[
+                        { value: 'A2', label: 'A2 — Pre-intermediate', badge: 'A2' },
+                        { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
+                        { value: 'B2', label: 'B2 — Upper Intermediate', badge: 'B2' },
+                        { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs sm:text-sm">
                       Loại từ
                     </label>
-                    <select
+                    <CustomDropdown
                       value={partOfSpeech}
-                      onChange={(e) => setPartOfSpeech(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white"
-                    >
-                      <option value="noun">Danh từ (noun)</option>
-                      <option value="verb">Động từ (verb)</option>
-                      <option value="adjective">Tính từ (adjective)</option>
-                      <option value="adverb">Trạng từ (adverb)</option>
-                      <option value="phrase">Cụm từ (phrase)</option>
-                    </select>
+                      onChange={(val) => setPartOfSpeech(val)}
+                      options={[
+                        { value: 'noun', label: 'Danh từ (noun)' },
+                        { value: 'verb', label: 'Động từ (verb)' },
+                        { value: 'adjective', label: 'Tính từ (adjective)' },
+                        { value: 'adverb', label: 'Trạng từ (adverb)' },
+                        { value: 'phrase', label: 'Cụm từ (phrase)' },
+                      ]}
+                      className="w-full"
+                    />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1 text-xs sm:text-sm">
                       Chủ đề (Topic) *
                     </label>
-                    <select
+                    <CustomDropdown
                       value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white"
-                    >
-                      <option value="Business English">Business & Office</option>
-                      <option value="Finance & Banking">Finance & Banking</option>
-                      <option value="Travel & Hospitality">Travel & Hospitality</option>
-                      <option value="Technology & IT">Technology & IT</option>
-                      <option value="Daily Communication">Daily Communication</option>
-                      <option value="Academic & IELTS">Academic English</option>
-                      <option value="Other">Khác (Nhập tùy chỉnh)</option>
-                    </select>
+                      onChange={(val) => setTopic(val)}
+                      options={[
+                        { value: 'Business English', label: 'Business & Office' },
+                        { value: 'Finance & Banking', label: 'Finance & Banking' },
+                        { value: 'Travel & Hospitality', label: 'Travel & Hospitality' },
+                        { value: 'Technology & IT', label: 'Technology & IT' },
+                        { value: 'Daily Communication', label: 'Daily Communication' },
+                        { value: 'Academic & IELTS', label: 'Academic English' },
+                        { value: 'Other', label: 'Khác (Nhập tùy chỉnh)' },
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
 
@@ -732,8 +728,7 @@ export const MyWordBankPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
-      )}
+      </ModalPortal>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import api from '../lib/api';
 import { GlassCard } from '../components/common/GlassCard';
 import { PaymentCheckoutModal } from '../components/payment/PaymentCheckoutModal';
 import { useTranslation } from '../i18n';
+import { useAuth, isProUser } from '../contexts/AuthContext';
 import {
   Check,
   Zap,
@@ -31,6 +32,7 @@ interface Entitlements {
 
 export const SubscriptionUpgradePage: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
   const [loading, setLoading] = useState(true);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
@@ -60,7 +62,8 @@ export const SubscriptionUpgradePage: React.FC = () => {
     );
   }
 
-  const currentTier = entitlements?.tier || 'FREE';
+  const isPro = isProUser(user) || entitlements?.tier === 'PRO' || (entitlements as any)?.currentPlan?.isPro;
+  const currentTier = isPro ? 'PRO' : (entitlements?.tier || 'FREE');
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-12">
@@ -95,8 +98,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 </span>
               </div>
               <p className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1 leading-snug">
-                {t('subscriptions.aiQuota', 'Lượt gọi AI hôm nay')}: {entitlements?.dailyAiUsed || 0} /{' '}
-                {entitlements?.dailyAiQuota === 9999 ? 'Không giới hạn' : entitlements?.dailyAiQuota} lượt
+                {t('subscriptions.aiQuota', 'Lượt gọi AI hôm nay')}: {isPro ? 'Không giới hạn (VIP Pro)' : `${entitlements?.dailyAiUsed || 0} / ${entitlements?.dailyAiQuota === 9999 ? 'Không giới hạn' : entitlements?.dailyAiQuota} lượt`}
               </p>
             </div>
           </div>
@@ -105,7 +107,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
             <div className="flex justify-between text-xs font-bold mb-1 text-slate-500 dark:text-slate-400">
               <span>Hạn mức sử dụng ngày</span>
               <span className="text-brand-600 dark:text-brand-400 font-extrabold">
-                {entitlements?.dailyAiRemaining} lượt còn lại
+                {isPro ? 'Không giới hạn' : `${entitlements?.dailyAiRemaining} lượt còn lại`}
               </span>
             </div>
             <div className="h-2.5 rounded-full bg-slate-200/70 dark:bg-slate-800 overflow-hidden p-0.5">
@@ -129,6 +131,25 @@ export const SubscriptionUpgradePage: React.FC = () => {
           </div>
         )}
       </GlassCard>
+
+      {isPro && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-emerald-500/15 border border-purple-500/30 flex items-center gap-4 shadow-md">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/25">
+            <Crown className="w-6 h-6 text-amber-200 fill-amber-200" />
+          </div>
+          <div>
+            <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Tài Khoản VIP Pro Trọn Đời Đang Kích Hoạt</span>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-black uppercase">
+                VIP Vĩnh Viễn
+              </span>
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+              Bạn đang sở hữu toàn quyền cao nhất trên VocabFlow: Không giới hạn tham vấn AI Tutor, thuật toán SRS độc quyền, trích xuất đề thi Text-to-Vocab và toàn bộ tính năng cao cấp mà không cần nạp thêm.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Pricing Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
@@ -238,14 +259,32 @@ export const SubscriptionUpgradePage: React.FC = () => {
             </ul>
           </div>
 
-          <button
-            onClick={() => setCheckoutTier('PLUS')}
-            className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 active:scale-[0.98]"
-          >
-            <LockOpen className="w-4 h-4" />
-            <span>Mở Khóa Gói Plus (99.000 đ)</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          {isPro ? (
+            <button
+              disabled
+              className="w-full mt-6 py-3.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 cursor-default flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700"
+            >
+              <Check className="w-4 h-4" />
+              <span>Bạn đang có gói Pro cao cấp hơn</span>
+            </button>
+          ) : currentTier === 'PLUS' ? (
+            <button
+              disabled
+              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-brand-500/20 text-brand-600 dark:text-brand-400 border border-brand-500/40 cursor-default flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Gói Bạn Đang Sử Dụng</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setCheckoutTier('PLUS')}
+              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 active:scale-[0.98]"
+            >
+              <LockOpen className="w-4 h-4" />
+              <span>Mở Khóa Gói Plus (99.000 đ)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </GlassCard>
 
         {/* PRO (Premium Card) */}
@@ -309,14 +348,24 @@ export const SubscriptionUpgradePage: React.FC = () => {
             </ul>
           </div>
 
-          <button
-            onClick={() => setCheckoutTier('PRO')}
-            className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-[0.98]"
-          >
-            <LockOpen className="w-4 h-4 text-amber-300" />
-            <span>Mở Khóa Gói Pro (199.000 đ)</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          {isPro ? (
+            <button
+              disabled
+              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 cursor-default flex items-center justify-center gap-2 shadow-sm"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Gói Bạn Đang Sở Hữu (VIP Pro Vĩnh Viễn)</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setCheckoutTier('PRO')}
+              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-[0.98]"
+            >
+              <LockOpen className="w-4 h-4 text-amber-300" />
+              <span>Mở Khóa Gói Pro (199.000 đ)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </GlassCard>
       </div>
 

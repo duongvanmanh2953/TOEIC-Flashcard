@@ -76,10 +76,10 @@ async function main() {
   const adminHash = await bcrypt.hash(adminPassword, 10);
 
   const demoUser = await prisma.user.upsert({
-    where: { email: 'learner@leximind.ai' },
+    where: { email: 'learner@vocabflow.ai' },
     update: {},
     create: {
-      email: 'learner@leximind.ai',
+      email: 'learner@vocabflow.ai',
       username: 'learner',
       displayName: 'Alex Learner',
       passwordHash,
@@ -110,6 +110,103 @@ async function main() {
     },
   });
 
+  // Also preserve learner@leximind.ai for backward compatibility
+  await prisma.user.upsert({
+    where: { email: 'learner@leximind.ai' },
+    update: {},
+    create: {
+      email: 'learner@leximind.ai',
+      username: 'learner_legacy',
+      displayName: 'Alex Learner (Legacy)',
+      passwordHash,
+      role: Role.USER,
+      status: UserStatus.ACTIVE,
+      profile: {
+        create: {
+          englishLevel: CefrLevel.B1,
+          targetLevel: CefrLevel.B2,
+          dailyGoal: 20,
+          weeklyGoal: 100,
+        },
+      },
+      streak: {
+        create: {
+          currentStreak: 5,
+          longestStreak: 12,
+          lastStudyDate: new Date(),
+        },
+      },
+      xp: {
+        create: {
+          totalXP: 1450,
+          currentLevel: 4,
+        },
+      },
+    },
+  });
+
+  // 2.1 Full PRO Account (pro@vocabflow.ai)
+  await prisma.user.upsert({
+    where: { email: 'pro@vocabflow.ai' },
+    update: {
+      role: Role.PREMIUM_USER,
+      status: UserStatus.ACTIVE,
+    },
+    create: {
+      email: 'pro@vocabflow.ai',
+      username: 'vocabflow_pro',
+      displayName: 'VocabFlow VIP Pro',
+      passwordHash,
+      role: Role.PREMIUM_USER,
+      status: UserStatus.ACTIVE,
+      profile: {
+        create: {
+          englishLevel: CefrLevel.B2,
+          targetLevel: CefrLevel.C2,
+          dailyGoal: 50,
+          weeklyGoal: 300,
+        },
+      },
+      streak: {
+        create: {
+          currentStreak: 28,
+          longestStreak: 45,
+          lastStudyDate: new Date(),
+        },
+      },
+      xp: {
+        create: {
+          totalXP: 9990,
+          currentLevel: 15,
+        },
+      },
+    },
+  });
+
+  // 2.2 System Admin Account (admin@vocabflow.ai)
+  await prisma.user.upsert({
+    where: { email: 'admin@vocabflow.ai' },
+    update: {
+      role: Role.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
+    },
+    create: {
+      email: 'admin@vocabflow.ai',
+      username: 'vocabflow_admin',
+      displayName: 'VocabFlow Administrator',
+      passwordHash: adminHash,
+      role: Role.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
+      profile: {
+        create: {
+          englishLevel: CefrLevel.C2,
+          targetLevel: CefrLevel.C2,
+          dailyGoal: 50,
+        },
+      },
+    },
+  });
+
   await prisma.user.upsert({
     where: { email: adminEmail },
     update: {},
@@ -118,7 +215,7 @@ async function main() {
       username: 'admin',
       displayName: 'System Admin',
       passwordHash: adminHash,
-      role: Role.ADMIN,
+      role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
       profile: {
         create: {
@@ -129,7 +226,7 @@ async function main() {
       },
     },
   });
-  console.log('✅ Demo & Admin users initialized from secure environment configuration.');
+  console.log('✅ Demo, Pro & Admin users initialized from secure environment configuration.');
 
   // 3. Parse and Seed toeic_600_words.csv (chỉ nhập nếu DB chưa có dữ liệu)
   const existingWordCount = await prisma.vocabulary.count();

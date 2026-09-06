@@ -16,13 +16,13 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [locale, setLocaleState] = useState<Locale>(() => {
-    const saved = localStorage.getItem('leximind_locale') as Locale;
+    const saved = (localStorage.getItem('vocabflow_locale') || localStorage.getItem('leximind_locale')) as Locale;
     return saved === 'en' || saved === 'vi' ? saved : 'vi';
   });
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem('leximind_locale', newLocale);
+    localStorage.setItem('vocabflow_locale', newLocale);
   };
 
   const t = (path: string, fallback?: string): string => {

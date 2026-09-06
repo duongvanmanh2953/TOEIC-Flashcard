@@ -2,7 +2,7 @@ import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'learner@leximind.ai' })
+  @ApiProperty({ example: 'learner@vocabflow.ai' })
   @IsEmail({}, { message: 'Invalid email address' })
   email: string;
 

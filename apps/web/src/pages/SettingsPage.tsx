@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
 import { GlassCard } from '../components/common/GlassCard';
+import { ModalPortal } from '../components/common/ModalPortal';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import {
   Globe,
   Sun,
@@ -28,6 +30,7 @@ import {
   Key,
   LogOut,
   ExternalLink,
+  MessageCircle,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
@@ -36,46 +39,50 @@ export const SettingsPage: React.FC = () => {
 
   // 1. Giao diện settings
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>(() => {
-    return (localStorage.getItem('leximind_theme_mode') as any) || (theme || 'system');
+    return (localStorage.getItem('vocabflow_theme_mode') as any) || (localStorage.getItem('leximind_theme_mode') as any) || (theme || 'system');
   });
 
   const [accentColor, setAccentColor] = useState<'violet' | 'indigo' | 'emerald' | 'amber' | 'rose' | 'slate'>(() => {
-    return (localStorage.getItem('leximind_accent') as any) || 'violet';
+    return (localStorage.getItem('vocabflow_accent') as any) || (localStorage.getItem('leximind_accent') as any) || 'violet';
   });
 
   // 2. Phiên âm & Giọng đọc
   const [showPhonetic, setShowPhonetic] = useState<boolean>(() => {
-    return localStorage.getItem('leximind_show_phonetic') !== 'false';
+    return (localStorage.getItem('vocabflow_show_phonetic') || localStorage.getItem('leximind_show_phonetic')) !== 'false';
   });
 
   const [voiceAccent, setVoiceAccent] = useState<'en-US' | 'en-GB' | 'en-AU'>(() => {
-    return (localStorage.getItem('leximind_voice') as any) || 'en-US';
+    return (localStorage.getItem('vocabflow_voice') as any) || (localStorage.getItem('leximind_voice') as any) || 'en-US';
   });
 
   const [voiceSpeed, setVoiceSpeed] = useState<number>(() => {
-    return parseFloat(localStorage.getItem('leximind_voice_speed') || '1.0');
+    return parseFloat(localStorage.getItem('vocabflow_voice_speed') || localStorage.getItem('leximind_voice_speed') || '1.0');
   });
 
   const [autoPlayAudio, setAutoPlayAudio] = useState<boolean>(() => {
-    return localStorage.getItem('leximind_auto_audio') === 'true';
+    return (localStorage.getItem('vocabflow_auto_audio') || localStorage.getItem('leximind_auto_audio')) === 'true';
   });
 
   // 3. Tùy chọn học
   const [showImages, setShowImages] = useState<boolean>(() => {
-    return localStorage.getItem('leximind_show_images') !== 'false';
+    return (localStorage.getItem('vocabflow_show_images') || localStorage.getItem('leximind_show_images')) !== 'false';
   });
 
   const [showExamples, setShowExamples] = useState<boolean>(() => {
-    return localStorage.getItem('leximind_show_examples') !== 'false';
+    return (localStorage.getItem('vocabflow_show_examples') || localStorage.getItem('leximind_show_examples')) !== 'false';
   });
 
   const [autoAdvance, setAutoAdvance] = useState<boolean>(() => {
-    return localStorage.getItem('leximind_auto_advance') === 'true';
+    return (localStorage.getItem('vocabflow_auto_advance') || localStorage.getItem('leximind_auto_advance')) === 'true';
+  });
+
+  const [showSupportBtn, setShowSupportBtn] = useState<boolean>(() => {
+    return (localStorage.getItem('vocabflow_show_support_btn') || localStorage.getItem('leximind_show_support_btn')) !== 'false';
   });
 
   // 4. Mục tiêu ngày
   const [dailyGoal, setDailyGoal] = useState<number>(() => {
-    return parseInt(localStorage.getItem('leximind_daily_goal') || '20', 10);
+    return parseInt(localStorage.getItem('vocabflow_daily_goal') || localStorage.getItem('leximind_daily_goal') || '20', 10);
   });
 
   // Notifications & Modals
@@ -151,7 +158,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleSelectTheme = (mode: 'system' | 'light' | 'dark') => {
     setThemeMode(mode);
-    localStorage.setItem('leximind_theme_mode', mode);
+    localStorage.setItem('vocabflow_theme_mode', mode);
     if (mode === 'system') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if ((prefersDark && theme !== 'dark') || (!prefersDark && theme === 'dark')) {
@@ -165,15 +172,17 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleSaveAll = () => {
-    localStorage.setItem('leximind_accent', accentColor);
-    localStorage.setItem('leximind_show_phonetic', showPhonetic ? 'true' : 'false');
-    localStorage.setItem('leximind_voice', voiceAccent);
-    localStorage.setItem('leximind_voice_speed', voiceSpeed.toString());
-    localStorage.setItem('leximind_auto_audio', autoPlayAudio ? 'true' : 'false');
-    localStorage.setItem('leximind_show_images', showImages ? 'true' : 'false');
-    localStorage.setItem('leximind_show_examples', showExamples ? 'true' : 'false');
-    localStorage.setItem('leximind_auto_advance', autoAdvance ? 'true' : 'false');
-    localStorage.setItem('leximind_daily_goal', dailyGoal.toString());
+    localStorage.setItem('vocabflow_accent', accentColor);
+    localStorage.setItem('vocabflow_show_phonetic', showPhonetic ? 'true' : 'false');
+    localStorage.setItem('vocabflow_voice', voiceAccent);
+    localStorage.setItem('vocabflow_voice_speed', voiceSpeed.toString());
+    localStorage.setItem('vocabflow_auto_audio', autoPlayAudio ? 'true' : 'false');
+    localStorage.setItem('vocabflow_show_images', showImages ? 'true' : 'false');
+    localStorage.setItem('vocabflow_show_examples', showExamples ? 'true' : 'false');
+    localStorage.setItem('vocabflow_auto_advance', autoAdvance ? 'true' : 'false');
+    localStorage.setItem('vocabflow_daily_goal', dailyGoal.toString());
+    localStorage.setItem('vocabflow_show_support_btn', showSupportBtn ? 'true' : 'false');
+    window.dispatchEvent(new Event('storage'));
 
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 2500);
@@ -351,6 +360,29 @@ export const SettingsPage: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Bật/Tắt nút Hỗ trợ khách hàng nổi */}
+          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 dark:text-slate-200">Hiển thị nút Hỗ trợ nổi</p>
+                <p className="text-[11px] text-slate-400">Nút tròn liên hệ hỗ trợ 24/7 ở góc dưới màn hình</p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={showSupportBtn}
+              onChange={(e) => {
+                setShowSupportBtn(e.target.checked);
+                localStorage.setItem('leximind_show_support_btn', e.target.checked ? 'true' : 'false');
+                window.dispatchEvent(new Event('storage'));
+              }}
+              className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
+            />
+          </div>
         </div>
       </GlassCard>
 
@@ -384,32 +416,34 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           {/* Giọng đọc */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-1.5">
-            <label className="font-bold text-slate-800 dark:text-slate-200">Giọng đọc</label>
-            <select
+          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-2">
+            <label className="font-bold text-slate-800 dark:text-slate-200 text-sm">Giọng đọc bản ngữ</label>
+            <CustomDropdown
               value={voiceAccent}
-              onChange={(e) => setVoiceAccent(e.target.value as any)}
-              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none"
-            >
-              <option value="en-US">🇺🇸 Anh - Mỹ</option>
-              <option value="en-GB">🇬🇧 Anh - Anh</option>
-              <option value="en-AU">🇦🇺 Anh - Úc</option>
-            </select>
+              onChange={(val) => setVoiceAccent(val as any)}
+              options={[
+                { value: 'en-US', label: '🇺🇸 Tiếng Anh - Giọng Mỹ (US)' },
+                { value: 'en-GB', label: '🇬🇧 Tiếng Anh - Giọng Anh (UK)' },
+                { value: 'en-AU', label: '🇦🇺 Tiếng Anh - Giọng Úc (AU)' },
+              ]}
+              className="w-full"
+            />
           </div>
 
           {/* Tốc độ đọc */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-1.5">
-            <label className="font-bold text-slate-800 dark:text-slate-200">Tốc độ đọc</label>
-            <select
+          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-2">
+            <label className="font-bold text-slate-800 dark:text-slate-200 text-sm">Tốc độ phát âm</label>
+            <CustomDropdown
               value={voiceSpeed}
-              onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))}
-              className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none"
-            >
-              <option value={0.75}>0.75×</option>
-              <option value={1.0}>1×</option>
-              <option value={1.25}>1.25×</option>
-              <option value={1.5}>1.5×</option>
-            </select>
+              onChange={(val) => setVoiceSpeed(parseFloat(val))}
+              options={[
+                { value: 0.75, label: '0.75× (Chậm rãi, rõ ràng)' },
+                { value: 1.0, label: '1.0× (Tự nhiên chuẩn bản ngữ)' },
+                { value: 1.25, label: '1.25× (Nhanh vừa phải)' },
+                { value: 1.5, label: '1.5× (Nhanh nâng cao)' },
+              ]}
+              className="w-full"
+            />
           </div>
 
           {/* Tự động phát âm */}
@@ -782,113 +816,116 @@ export const SettingsPage: React.FC = () => {
         </div>
       </GlassCard>
 
-      {/* Spacious Modal: Đặt lại tiến độ học (max-w-2xl) */}
-      {resetProgressModalOpen && (
-        <div className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  Xác nhận đặt lại tiến độ học?
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Thao tác này sẽ làm mới bộ nhớ đệm ôn tập và đồng bộ lại trạng thái học từ máy chủ. Tài khoản và cấp độ của bạn vẫn được giữ nguyên an toàn.
-                </p>
-              </div>
+      {/* Modal: Đặt lại tiến độ học — ModalPortal to document.body */}
+      <ModalPortal isOpen={resetProgressModalOpen} onClose={() => setResetProgressModalOpen(false)}>
+        <div
+          className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6" />
             </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={() => setResetProgressModalOpen(false)}
-                className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleConfirmResetProgress}
-                className="btn-glass-amber text-xs sm:text-sm !py-2.5 !px-5"
-              >
-                Xác nhận đặt lại tiến độ
-              </button>
+            <div className="space-y-1">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                Xác nhận đặt lại tiến độ học?
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                Thao tác này sẽ làm mới bộ nhớ đệm ôn tập và đồng bộ lại trạng thái học từ máy chủ. Tài khoản và cấp độ của bạn vẫn được giữ nguyên an toàn.
+              </p>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Spacious Modal: Xóa kho từ vựng (max-w-2xl) */}
-      {clearWordBankModalOpen && (
-        <div className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  Xác nhận xóa toàn bộ kho từ vựng cá nhân?
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Cảnh báo: Thao tác này sẽ xóa tất cả các từ vựng tự nhập và từ bạn đã thêm vào kho từ vựng cá nhân. Hành động này không thể hoàn tác.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={() => setClearWordBankModalOpen(false)}
-                className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleConfirmClearWordBank}
-                className="btn-glass-danger text-xs sm:text-sm !py-2.5 !px-5"
-              >
-                Xóa vĩnh viễn kho từ
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              onClick={() => setResetProgressModalOpen(false)}
+              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={handleConfirmResetProgress}
+              className="btn-glass-amber text-xs sm:text-sm !py-2.5 !px-5"
+            >
+              Xác nhận đặt lại tiến độ
+            </button>
           </div>
         </div>
-      )}
+      </ModalPortal>
 
-      {/* Spacious Modal: Xóa vĩnh viễn tài khoản (max-w-2xl) */}
-      {deleteAccountModalOpen && (
-        <div className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 shadow-2xl space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  Xác nhận xóa tài khoản vĩnh viễn?
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Cảnh báo bảo mật tối cao: Thao tác này sẽ xóa vĩnh viễn toàn bộ tiến trình học, điểm XP, chuỗi Streak, danh sách từ vựng cá nhân và các gói đăng ký gắn liền với tài khoản của bạn. Hành động này không thể đảo ngược hoặc khôi phục.
-                </p>
-              </div>
+      {/* Modal: Xóa kho từ vựng — ModalPortal to document.body */}
+      <ModalPortal isOpen={clearWordBankModalOpen} onClose={() => setClearWordBankModalOpen(false)}>
+        <div
+          className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <Trash2 className="w-6 h-6" />
             </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={() => setDeleteAccountModalOpen(false)}
-                className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleConfirmDeleteAccount}
-                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm transition shadow-lg shadow-rose-600/20"
-              >
-                Xác nhận xóa tài khoản vĩnh viễn
-              </button>
+            <div className="space-y-1">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                Xác nhận xóa toàn bộ kho từ vựng cá nhân?
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                Cảnh báo: Thao tác này sẽ xóa tất cả các từ vựng tự nhập và từ bạn đã thêm vào kho từ vựng cá nhân. Hành động này không thể hoàn tác.
+              </p>
             </div>
           </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              onClick={() => setClearWordBankModalOpen(false)}
+              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={handleConfirmClearWordBank}
+              className="btn-glass-danger text-xs sm:text-sm !py-2.5 !px-5"
+            >
+              Xóa vĩnh viễn kho từ
+            </button>
+          </div>
         </div>
-      )}
+      </ModalPortal>
+
+      {/* Modal: Xóa vĩnh viễn tài khoản — ModalPortal to document.body */}
+      <ModalPortal isOpen={deleteAccountModalOpen} onClose={() => setDeleteAccountModalOpen(false)}>
+        <div
+          className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 shadow-2xl space-y-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                Xác nhận xóa tài khoản vĩnh viễn?
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                Cảnh báo bảo mật tối cao: Thao tác này sẽ xóa vĩnh viễn toàn bộ tiến trình học, điểm XP, chuỗi Streak, danh sách từ vựng cá nhân và các gói đăng ký gắn liền với tài khoản của bạn. Hành động này không thể đảo ngược hoặc khôi phục.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              onClick={() => setDeleteAccountModalOpen(false)}
+              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={handleConfirmDeleteAccount}
+              className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm transition shadow-lg shadow-rose-600/20"
+            >
+              Xác nhận xóa tài khoản vĩnh viễn
+            </button>
+          </div>
+        </div>
+      </ModalPortal>
     </div>
   );
 };

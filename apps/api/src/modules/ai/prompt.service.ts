@@ -4,7 +4,7 @@ import { CefrLevel } from '@prisma/client';
 @Injectable()
 export class PromptService {
   buildExplainPrompt(word: string, cefrLevel: CefrLevel): string {
-    return `You are LexiMind AI Vocabulary Tutor.
+    return `You are VocabFlow AI Vocabulary Tutor.
 Explain the word "${word}" for an English learner at CEFR level ${cefrLevel}.
 Format your response clearly:
 1. Core definition and nuances.
@@ -23,7 +23,7 @@ Include Vietnamese translation and key grammar pattern for each.`;
   }
 
   buildTutorPrompt(userMessage: string, cefrLevel: CefrLevel, contextWord?: string): string {
-    return `You are LexiMind AI Personal English Tutor.
+    return `You are VocabFlow AI Personal English Tutor.
 Learner CEFR Level: ${cefrLevel}.
 Target word context: ${contextWord || 'General'}.
 Learner query: "${userMessage}".

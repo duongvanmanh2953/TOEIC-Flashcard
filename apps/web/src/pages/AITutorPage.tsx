@@ -4,8 +4,9 @@ import api from '../lib/api';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { QuotaMeter } from '../components/common/QuotaMeter';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import { useTranslation } from '../i18n';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, isProUser } from '../contexts/AuthContext';
 import {
   Send,
   BrainCircuit,
@@ -68,6 +69,8 @@ export const AITutorPage: React.FC = () => {
   const initialWord = searchParams.get('word') || '';
   const { t } = useTranslation();
   const { isGuest, promptLogin, user } = useAuth();
+  const isPro = isProUser(user) || quotaStatus?.isPro || quotaStatus?.tier === 'PRO';
+  const effectiveTier = isPro ? 'PRO' : (quotaStatus?.tier || 'FREE');
 
   const [activeTab, setActiveTab] = useState<'chat' | 'extract' | 'story'>('chat');
   const [input, setInput] = useState('');
@@ -324,7 +327,7 @@ export const AITutorPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-fade-in flex flex-col h-[calc(100vh-8.5rem)]">
+    <div className="max-w-4xl mx-auto space-y-4 animate-fade-in flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] overflow-hidden">
       {/* Top Header & Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 shrink-0">
         <div>
@@ -370,7 +373,7 @@ export const AITutorPage: React.FC = () => {
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>📖 AI Story</span>
-            {(!user?.subscription?.tier || user?.subscription?.tier === 'FREE') && (
+            {!isPro && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase">
                 <Lock className="w-2.5 h-2.5" />
                 <span>PRO</span>
@@ -385,16 +388,16 @@ export const AITutorPage: React.FC = () => {
         <div className="shrink-0">
           <QuotaMeter
             feature="AI_TUTOR"
-            used={quotaStatus.aiTutor?.used || 0}
-            limit={quotaStatus.aiTutor?.limit || 10}
-            remaining={quotaStatus.aiTutor?.remaining}
-            tier={quotaStatus.tier || 'FREE'}
+            used={isPro ? 0 : (quotaStatus.aiTutor?.used ?? quotaStatus.AI_TUTOR?.used ?? 0)}
+            limit={isPro ? -1 : (quotaStatus.aiTutor?.limit ?? quotaStatus.AI_TUTOR?.limit ?? 10)}
+            remaining={isPro ? 9999 : (quotaStatus.aiTutor?.remaining ?? quotaStatus.AI_TUTOR?.remaining)}
+            tier={effectiveTier}
             onUpgrade={() => navigate('/subscription')}
           />
         </div>
       )}
 
-      {quotaError && (
+      {!isPro && quotaError && (
         <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs font-bold flex items-center justify-between gap-3 animate-fade-in shrink-0">
           <div className="flex items-center gap-2">
             <Crown className="w-4 h-4 text-amber-500 shrink-0" />
@@ -779,17 +782,19 @@ export const AITutorPage: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Chủ đề câu chuyện:
                 </label>
-                <select
+                <CustomDropdown
                   value={storyTopic}
-                  onChange={(e) => setStoryTopic(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                >
-                  <option value="Business Strategy">Business Strategy (Chiến lược kinh doanh)</option>
-                  <option value="Finance & Investment">Finance & Investment (Tài chính đầu tư)</option>
-                  <option value="Workplace Negotiation">Workplace Negotiation (Đàm phán công sở)</option>
-                  <option value="Startup Pitching">Startup Pitching (Thuyết trình khởi nghiệp)</option>
-                  <option value="Daily Travel">Daily Travel (Hành trình du lịch)</option>
-                </select>
+                  onChange={(val) => setStoryTopic(val)}
+                  options={[
+                    { value: 'Business Strategy', label: 'Business Strategy (Chiến lược kinh doanh)' },
+                    { value: 'Finance & Investment', label: 'Finance & Investment (Tài chính đầu tư)' },
+                    { value: 'Workplace Negotiation', label: 'Workplace Negotiation (Đàm phán)' },
+                    { value: 'Startup Pitching', label: 'Startup Pitching (Thuyết trình khởi nghiệp)' },
+                    { value: 'Daily Travel', label: 'Daily Travel (Hành trình du lịch)' },
+                  ]}
+                  size="sm"
+                  className="w-full"
+                />
               </div>
 
               <div>

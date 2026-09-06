@@ -5,7 +5,9 @@ import {
   signInWithGoogle,
   signInWithFacebook,
   getOrCreateAnonymousUid,
+  isFirebaseConfigured as checkFirebaseConfigured,
 } from '../lib/firebase';
+import { FirebaseConfigModal } from '../components/auth/FirebaseConfigModal';
 
 export type AuthState = 'AUTH_LOADING' | 'GUEST' | 'AUTHENTICATED' | 'AUTH_ERROR';
 
@@ -16,6 +18,13 @@ export interface User {
   avatar?: string;
   role: string;
   isAnonymous?: boolean;
+  tier?: 'FREE' | 'PLUS' | 'PRO';
+  subscription?: {
+    id?: string;
+    tier: 'FREE' | 'PLUS' | 'PRO';
+    planName: string;
+    currentPeriodEnd?: string | Date;
+  } | null;
   profile?: {
     englishLevel: string;
     targetLevel: string;
@@ -31,6 +40,55 @@ export interface User {
   };
 }
 
+export function isProUser(u: User | null | undefined): boolean {
+  if (!u) return false;
+  return (
+    u.role === 'PREMIUM_USER' ||
+    u.role === 'ADMIN' ||
+    u.role === 'SUPER_ADMIN' ||
+    u.tier === 'PRO' ||
+    u.subscription?.tier === 'PRO'
+  );
+}
+
+export function normalizeUser(rawUser: any): User {
+  if (!rawUser) return rawUser;
+  const isPro =
+    rawUser.role === 'PREMIUM_USER' ||
+    rawUser.role === 'ADMIN' ||
+    rawUser.role === 'SUPER_ADMIN' ||
+    rawUser.tier === 'PRO' ||
+    rawUser.subscription?.tier === 'PRO';
+
+  const isPlus =
+    !isPro && (rawUser.tier === 'PLUS' || rawUser.subscription?.tier === 'PLUS');
+
+  const resolvedTier: 'FREE' | 'PLUS' | 'PRO' = isPro ? 'PRO' : isPlus ? 'PLUS' : 'FREE';
+
+  return {
+    ...rawUser,
+    tier: resolvedTier,
+    subscription: isPro
+      ? {
+          id: rawUser.subscription?.id || 'pro-active',
+          tier: 'PRO',
+          planName: rawUser.subscription?.planName || 'VocabFlow Pro (Unlimited)',
+          currentPeriodEnd: rawUser.subscription?.currentPeriodEnd || '2099-12-31T23:59:59.000Z',
+        }
+      : isPlus
+      ? {
+          id: rawUser.subscription?.id || 'plus-active',
+          tier: 'PLUS',
+          planName: rawUser.subscription?.planName || 'VocabFlow Plus',
+          currentPeriodEnd: rawUser.subscription?.currentPeriodEnd,
+        }
+      : rawUser.subscription || {
+          tier: 'FREE',
+          planName: 'Free',
+        },
+  };
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -39,6 +97,10 @@ interface AuthContextType {
   theme: 'light' | 'dark';
   loginPromptOpen: boolean;
   loginPromptReason: string;
+  firebaseConfigModalOpen: boolean;
+  isFirebaseConfigured: boolean;
+  openFirebaseConfigModal: () => void;
+  closeFirebaseConfigModal: () => void;
   toggleTheme: () => void;
   promptLogin: (reason?: string) => void;
   closeLoginPrompt: () => void;
@@ -59,10 +121,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
   const [loginPromptReason, setLoginPromptReason] = useState('');
+  const [firebaseConfigModalOpen, setFirebaseConfigModalOpen] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(() => checkFirebaseConfigured());
+
+  const openFirebaseConfigModal = () => setFirebaseConfigModalOpen(true);
+  const closeFirebaseConfigModal = () => {
+    setFirebaseConfigModalOpen(false);
+    setIsConfigured(checkFirebaseConfigured());
+  };
 
   // Initialize theme
   useEffect(() => {
     const savedTheme =
+      (localStorage.getItem('vocabflow_theme') as 'light' | 'dark') ||
       (localStorage.getItem('leximind_theme') as 'light' | 'dark') ||
       (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     setTheme(savedTheme);
@@ -72,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
-    localStorage.setItem('leximind_theme', nextTheme);
+    localStorage.setItem('vocabflow_theme', nextTheme);
     document.documentElement.classList.toggle('dark', nextTheme === 'dark');
   };
 
@@ -119,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res: any = await api.get('/auth/me');
       if (res?.success && res.data) {
-        setUser({ ...res.data, isAnonymous: false });
+        setUser(normalizeUser({ ...res.data, isAnonymous: false }));
         setAuthState('AUTHENTICATED');
         return;
       }
@@ -154,7 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Restore session on app load
   useEffect(() => {
-    const token = localStorage.getItem('leximind_access_token');
+    const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('leximind_access_token');
     if (token) {
       refreshProfile().finally(() => {
         // Handled in refreshProfile
@@ -190,22 +261,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: { email: string; password: string }) => {
     const res: any = await api.post('/auth/login', credentials);
     if (res?.success) {
-      localStorage.setItem('leximind_access_token', res.data.accessToken);
-      localStorage.setItem('leximind_refresh_token', res.data.refreshToken);
-      setUser({ ...res.data.user, isAnonymous: false });
+      localStorage.setItem('vocabflow_access_token', res.data.accessToken);
+      localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
+      setUser(normalizeUser({ ...res.data.user, isAnonymous: false }));
       setAuthState('AUTHENTICATED');
       await migrateGuestData(res.data.user.id);
+      refreshProfile().catch(() => {});
     }
   };
 
   const register = async (data: { email: string; password: string; displayName: string }) => {
     const res: any = await api.post('/auth/register', data);
     if (res?.success) {
-      localStorage.setItem('leximind_access_token', res.data.accessToken);
-      localStorage.setItem('leximind_refresh_token', res.data.refreshToken);
-      setUser({ ...res.data.user, isAnonymous: false });
+      localStorage.setItem('vocabflow_access_token', res.data.accessToken);
+      localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
+      setUser(normalizeUser({ ...res.data.user, isAnonymous: false }));
       setAuthState('AUTHENTICATED');
       await migrateGuestData(res.data.user.id);
+      refreshProfile().catch(() => {});
     }
   };
 
@@ -222,22 +295,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (res?.data || res?.user) {
         const payload = res.data || res;
-        localStorage.setItem('leximind_access_token', payload.accessToken);
-        localStorage.setItem('leximind_refresh_token', payload.refreshToken);
-        setUser({ ...payload.user, isAnonymous: false });
+        localStorage.setItem('vocabflow_access_token', payload.accessToken);
+        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
+        setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
         setAuthState('AUTHENTICATED');
         await migrateGuestData(payload.user.id);
+        refreshProfile().catch(() => {});
       }
     } catch {
       // Local graceful fallback if API is in offline mode
-      setUser({
+      setUser(normalizeUser({
         id: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName || 'Google Learner',
         avatar: firebaseUser.photoURL || undefined,
         role: 'USER',
         isAnonymous: false,
-      });
+      }));
       setAuthState('AUTHENTICATED');
     }
   };
@@ -255,21 +329,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (res?.data || res?.user) {
         const payload = res.data || res;
-        localStorage.setItem('leximind_access_token', payload.accessToken);
-        localStorage.setItem('leximind_refresh_token', payload.refreshToken);
-        setUser({ ...payload.user, isAnonymous: false });
+        localStorage.setItem('vocabflow_access_token', payload.accessToken);
+        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
+        setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
         setAuthState('AUTHENTICATED');
         await migrateGuestData(payload.user.id);
+        refreshProfile().catch(() => {});
       }
     } catch {
-      setUser({
+      setUser(normalizeUser({
         id: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName || 'Facebook Learner',
         avatar: firebaseUser.photoURL || undefined,
         role: 'USER',
         isAnonymous: false,
-      });
+      }));
       setAuthState('AUTHENTICATED');
     }
   };
@@ -280,6 +355,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Ignored
     } finally {
+      localStorage.removeItem('vocabflow_access_token');
+      localStorage.removeItem('vocabflow_refresh_token');
       localStorage.removeItem('leximind_access_token');
       localStorage.removeItem('leximind_refresh_token');
       // Revert to Anonymous Guest session without reload
@@ -305,6 +382,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         theme,
         loginPromptOpen,
         loginPromptReason,
+        firebaseConfigModalOpen,
+        isFirebaseConfigured: isConfigured,
+        openFirebaseConfigModal,
+        closeFirebaseConfigModal,
         toggleTheme,
         promptLogin,
         closeLoginPrompt,
@@ -318,6 +399,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }}
     >
       {children}
+      <FirebaseConfigModal
+        isOpen={firebaseConfigModalOpen}
+        onClose={closeFirebaseConfigModal}
+        onSuccess={closeFirebaseConfigModal}
+      />
     </AuthContext.Provider>
   );
 };

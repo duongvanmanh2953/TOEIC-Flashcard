@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, isProUser } from '../../contexts/AuthContext';
 import { useTranslation } from '../../i18n';
 import { LiquidBackground } from '../common/LiquidBackground';
+import { ModalPortal } from '../common/ModalPortal';
 import {
   LayoutDashboard,
   Sparkles,
@@ -26,21 +27,160 @@ import {
   UserCheck,
   Lock,
   LockOpen,
+  MessageCircle,
+  Headphones,
+  RotateCcw,
+  Send,
+  Bot,
+  CheckCheck,
+  Bell,
+  MessageSquare,
 } from 'lucide-react';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 export const AppShell: React.FC = () => {
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [showSupportBtn, setShowSupportBtn] = useState(() => {
+    return (
+      localStorage.getItem('vocabflow_show_support_btn') !== 'false' &&
+      localStorage.getItem('leximind_show_support_btn') !== 'false'
+    );
+  });
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const handleStorage = () => {
+      setShowSupportBtn(
+        localStorage.getItem('vocabflow_show_support_btn') !== 'false' &&
+        localStorage.getItem('leximind_show_support_btn') !== 'false'
+      );
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const [supportTab, setSupportTab] = useState<'quick' | 'chat'>('chat');
+  
+  // Draggable CSKH Support Button State
+  const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number; moved: boolean } | null>(null);
+
+  const handleDragStart = (clientX: number, clientY: number) => {
+    const defaultX = window.innerWidth - 68;
+    const defaultY = window.innerHeight - 88;
+    const currentX = btnPos ? btnPos.x : defaultX;
+    const currentY = btnPos ? btnPos.y : defaultY;
+    dragStartRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initX: currentX,
+      initY: currentY,
+      moved: false,
+    };
+  };
+
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!dragStartRef.current) return;
+    const dx = clientX - dragStartRef.current.startX;
+    const dy = clientY - dragStartRef.current.startY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      dragStartRef.current.moved = true;
+      setIsDragging(true);
+      const newX = Math.max(16, Math.min(window.innerWidth - 64, dragStartRef.current.initX + dx));
+      const newY = Math.max(16, Math.min(window.innerHeight - 64, dragStartRef.current.initY + dy));
+      setBtnPos({ x: newX, y: newY });
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setTimeout(() => {
+      dragStartRef.current = null;
+    }, 50);
+  };
+
+  const handleSupportBtnClick = () => {
+    if (dragStartRef.current?.moved) return;
+    // Nếu vị trí đã bị kéo đi nơi khác, click sẽ tự động nhảy về vị trí mặc định ban đầu!
+    if (btnPos !== null) {
+      setBtnPos(null);
+    }
+    setSupportModalOpen((prev) => !prev);
+  };
+  const [supportMessages, setSupportMessages] = useState<Array<{ id: string; sender: 'user' | 'support'; text: string; time: string }>>(() => {
+    const saved = localStorage.getItem('vocabflow_support_chat_history') || localStorage.getItem('leximind_support_chat_history');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return [
+      {
+        id: 'welcome',
+        sender: 'support',
+        text: 'Xin chào! Đội ngũ VocabFlow Support đang trực tuyến. Bạn cần hỗ trợ về tài khoản, thanh toán VietQR hay tính năng học tập nào ạ?',
+        time: 'Vừa xong',
+      },
+    ];
+  });
+  const [chatInput, setChatInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    const userMsg = {
+      id: Date.now().toString(),
+      sender: 'user' as const,
+      text: chatInput.trim(),
+      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    };
+    const newMsgs = [...supportMessages, userMsg];
+    setSupportMessages(newMsgs);
+    localStorage.setItem('vocabflow_support_chat_history', JSON.stringify(newMsgs));
+    setChatInput('');
+    setIsTyping(true);
+
+    // Phản hồi realtime từ Support / AI Companion
+    setTimeout(() => {
+      let replyText = 'Cảm ơn bạn đã gửi tin nhắn! Nhân viên hỗ trợ đã tiếp nhận và đang kiểm tra thông tin để phản hồi bạn ngay.';
+      const lower = userMsg.text.toLowerCase();
+      if (lower.includes('thanh toán') || lower.includes('qr') || lower.includes('vietcombank') || lower.includes('tiền')) {
+        replyText = 'Về giao dịch thanh toán VietQR: Hệ thống tự động kích hoạt gói học trong 30s sau khi Napas chuyển tiền. Bạn vui lòng kiểm tra xem nội dung chuyển khoản đã đúng mã đơn hàng chưa nhé!';
+      } else if (lower.includes('pro') || lower.includes('plus') || lower.includes('gói') || lower.includes('nâng cấp')) {
+        replyText = 'Gói Pro mở khóa 100% quyền hạn AI Tutor, không giới hạn Smart Review và phân tích biểu đồ CEFR. Bạn có thể kích hoạt tại mục Mở Khóa Premium.';
+      }
+
+      const supportReply = {
+        id: (Date.now() + 1).toString(),
+        sender: 'support' as const,
+        text: replyText,
+        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      };
+      setIsTyping(false);
+      setSupportMessages((prev) => {
+        const updated = [...prev, supportReply];
+        localStorage.setItem('vocabflow_support_chat_history', JSON.stringify(updated));
+        return updated;
+      });
+    }, 1200);
+  };
+
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    try {
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isPro = isProUser(user);
 
   const navItems = [
     { to: '/dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard },
@@ -54,12 +194,15 @@ export const AppShell: React.FC = () => {
     { to: '/progress', label: t('nav.progress', 'Progress & Stats'), icon: Award },
     {
       to: '/upgrade',
-      label: t('nav.upgrade', 'Mở Khóa Premium'),
+      label: isPro ? 'VocabFlow VIP Pro' : t('nav.upgrade', 'Mở Khóa Premium'),
       icon: Crown,
       highlight: true,
-      badge: user?.subscription?.tier === 'PRO' ? 'PRO' : 'MỞ KHÓA',
-      isUnlock: user?.subscription?.tier !== 'PRO',
+      badge: isPro ? 'PRO' : 'MỞ KHÓA',
+      isUnlock: !isPro,
     },
+    { to: '/notifications', label: 'Thông báo', icon: Bell },
+    { to: '/support', label: 'CSKH Hỗ trợ', icon: Headphones },
+    { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
     ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
     { to: '/settings', label: t('nav.settings', 'Settings'), icon: Settings },
   ];
@@ -184,12 +327,12 @@ export const AppShell: React.FC = () => {
                       Gói tài khoản
                     </p>
                     <p className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 truncate leading-tight mt-0.5">
-                      {user?.subscription?.tier || 'Free Tier'}
+                      {isPro ? 'VocabFlow Pro (VIP)' : (user?.subscription?.tier || 'Free Tier')}
                     </p>
                   </div>
                 </div>
                 <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-md bg-indigo-600 text-white group-hover:bg-indigo-500 transition shrink-0 flex items-center gap-1">
-                  {user?.subscription?.tier === 'PRO' ? (
+                  {isPro ? (
                     <>
                       <Crown className="w-2.5 h-2.5 text-amber-300 fill-amber-300" />
                       <span>PRO</span>
@@ -263,15 +406,16 @@ export const AppShell: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {user?.subscription?.tier !== 'PRO' && (
+            {!isPro && (
               <button
                 onClick={() => navigate('/upgrade')}
                 className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[11px] font-black uppercase flex items-center gap-1 shadow-xs"
               >
-                <LockOpen className="w-3 h-3 text-amber-200" />
+                <LockOpen className="w-3.5 h-3.5 text-amber-200" />
                 <span>Mở khóa</span>
               </button>
             )}
+            <NotificationBell />
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -318,6 +462,48 @@ export const AppShell: React.FC = () => {
           </div>
         )}
 
+        {/* Desktop Top Header Bar */}
+        <header className="hidden lg:flex items-center justify-between px-8 py-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-slate-500 tracking-wide">
+              VocabFlow AI • Nền tảng học từ vựng thông minh
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <NavLink
+              to="/feedback"
+              className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Góp ý & Roadmap</span>
+            </NavLink>
+
+            <NavLink
+              to="/support"
+              className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            >
+              <Headphones className="w-3.5 h-3.5" />
+              <span>CSKH Hỗ trợ</span>
+            </NavLink>
+
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shadow-xs"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Admin Command Center</span>
+              </NavLink>
+            )}
+
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+
+            {/* Notification Bell with Badge & Dropdown */}
+            <NotificationBell />
+          </div>
+        </header>
+
         {/* Routed Pages Container — Expanded & Unconstrained */}
         <main className="flex-1 p-4 md:p-6 lg:p-8 w-full max-w-none">
           <Outlet />
@@ -344,16 +530,12 @@ export const AppShell: React.FC = () => {
         </div>
       </div>
 
-      {/* User Profile & Guidance Modal — Perfectly centered, no margin-top */}
-      {profileModalOpen && (
+      {/* User Profile & Guidance Modal — ModalPortal to document.body */}
+      <ModalPortal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)}>
         <div
-          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-          onClick={() => setProfileModalOpen(false)}
+          className="m-auto relative w-full max-w-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div
-            className="m-auto relative w-full max-w-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex items-center gap-3">
@@ -405,22 +587,28 @@ export const AppShell: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Crown className="w-4 h-4 text-amber-500" />
                     <span className="font-bold text-sm text-slate-900 dark:text-white">
-                      Gói dịch vụ: {user?.subscription?.tier || 'Free Tier'}
+                      Gói dịch vụ: {isPro ? 'VocabFlow Pro (VIP Trọn Đời)' : (user?.subscription?.tier || 'Free Tier')}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Trạng thái: Hoạt động • Không giới hạn lượt ôn tập SRS & AI
+                    {isPro ? 'Trạng thái: Hoạt động vĩnh viễn • Không giới hạn lượt ôn tập SRS & AI' : 'Trạng thái: Hoạt động • Nâng cấp để mở khóa AI không giới hạn'}
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setProfileModalOpen(false);
-                    navigate('/upgrade');
-                  }}
-                  className="btn-glass-primary text-xs !py-1.5 !px-3.5 shadow-sm"
-                >
-                  Nâng cấp gói
-                </button>
+                {isPro ? (
+                  <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-500 text-xs font-black border border-emerald-500/30">
+                    VIP Pro
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setProfileModalOpen(false);
+                      navigate('/upgrade');
+                    }}
+                    className="btn-glass-primary text-xs !py-1.5 !px-3.5 shadow-sm"
+                  >
+                    Nâng cấp gói
+                  </button>
+                )}
               </div>
 
               {/* Guidance & Effective Learning Tips Section */}
@@ -485,8 +673,254 @@ export const AppShell: React.FC = () => {
               </button>
             </div>
           </div>
+      </ModalPortal>
+
+      {/* Draggable CSKH Support Button (Kéo thả mọi vị trí, click nhảy về vị trí mặc định) */}
+      {showSupportBtn && (
+        <div
+          style={
+            btnPos
+              ? { left: `${btnPos.x}px`, top: `${btnPos.y}px`, right: 'auto', bottom: 'auto' }
+              : undefined
+          }
+          className={`fixed z-40 touch-none select-none transition-shadow ${
+            btnPos ? '' : 'bottom-20 lg:bottom-6 right-5'
+          } ${isDragging ? 'cursor-grabbing scale-110' : 'cursor-grab'}`}
+          onMouseDown={(e) => {
+            handleDragStart(e.clientX, e.clientY);
+            const onMouseMove = (moveEvent: MouseEvent) => {
+              handleDragMove(moveEvent.clientX, moveEvent.clientY);
+            };
+            const onMouseUp = () => {
+              handleDragEnd();
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          }}
+          onTouchStart={(e) => {
+            const touch = e.touches[0];
+            handleDragStart(touch.clientX, touch.clientY);
+          }}
+          onTouchMove={(e) => {
+            const touch = e.touches[0];
+            handleDragMove(touch.clientX, touch.clientY);
+          }}
+          onTouchEnd={handleDragEnd}
+        >
+          <button
+            onClick={handleSupportBtnClick}
+            className="group relative h-12 pl-2.5 pr-4 rounded-2xl bg-slate-900/90 hover:bg-slate-900 backdrop-blur-2xl border border-cyan-500/40 hover:border-cyan-400/80 shadow-[0_10px_30px_rgba(0,0,0,0.6),0_0_25px_rgba(6,182,212,0.25)] hover:shadow-[0_14px_40px_rgba(0,0,0,0.7),0_0_35px_rgba(6,182,212,0.4)] flex items-center gap-3 transition-all duration-300 active:scale-95 text-white"
+            aria-label="Trung tâm Chăm sóc khách hàng CSKH"
+            title={btnPos ? 'Bấm để hoàn về vị trí gốc & mở Chat' : 'Kéo thả tới bất kỳ vị trí nào trên màn hình'}
+          >
+            {/* Glowing Icon Container */}
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500/25 to-indigo-500/35 border border-cyan-400/50 flex items-center justify-center text-cyan-300 group-hover:text-cyan-100 transition-colors relative overflow-hidden shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+              <Headphones className="w-4.5 h-4.5 text-cyan-300 group-hover:scale-110 transition-transform" />
+            </div>
+
+            {/* Label & Status */}
+            <div className="flex flex-col text-left leading-none">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] font-extrabold text-white tracking-wide group-hover:text-cyan-200 transition-colors">
+                  Hỗ trợ CSKH
+                </span>
+                {btnPos && (
+                  <span className="text-[9px] font-bold text-amber-300 bg-amber-400/15 border border-amber-400/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                    <RotateCcw className="w-2.5 h-2.5" /> Hoàn vị trí
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 text-[10px] text-cyan-300/90 font-medium">
+                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
+                </span>
+                <span>24/7 Trực tuyến</span>
+              </div>
+            </div>
+          </button>
         </div>
       )}
+
+      {/* Customer Support Floating Chat Widget (Nền rõ nét, không trong suốt mờ mịt) */}
+      {supportModalOpen && (
+        <div
+          style={
+            btnPos
+              ? {
+                  left: `${Math.min(window.innerWidth - 415, Math.max(12, btnPos.x - 340))}px`,
+                  top: `${Math.min(window.innerHeight - 560, Math.max(12, btnPos.y - 480))}px`,
+                  right: 'auto',
+                  bottom: 'auto',
+                }
+              : undefined
+          }
+          className={`fixed z-50 animate-scale-up ${
+            btnPos ? '' : 'bottom-24 lg:bottom-20 right-5'
+          }`}
+        >
+          <div
+            className="w-[calc(100vw-2rem)] sm:w-[400px] rounded-3xl bg-slate-900 border border-slate-700/80 shadow-[0_25px_60px_rgba(0,0,0,0.6)] p-5 space-y-3.5 flex flex-col max-h-[82vh] sm:max-h-[560px] overflow-hidden text-slate-100"
+          >
+            {/* Header with Title and Online status */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shadow-xs border border-indigo-500/30">
+                  <Headphones className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-extrabold text-white leading-snug">
+                    VocabFlow CSKH 24/7
+                  </h4>
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>Đội ngũ CSKH đang trực tuyến</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSupportModalOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                aria-label="Đóng"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+          {/* Support Navigation Tabs */}
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-800/90 text-xs font-bold border border-slate-700/70">
+            <button
+              type="button"
+              onClick={() => setSupportTab('chat')}
+              className={`py-1.5 rounded-xl transition ${
+                supportTab === 'chat'
+                  ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              💬 Chat trực tiếp
+            </button>
+            <button
+              type="button"
+              onClick={() => setSupportTab('quick')}
+              className={`py-1.5 rounded-xl transition ${
+                supportTab === 'quick'
+                  ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              ⚡ Kênh liên hệ
+            </button>
+          </div>
+
+          {/* Tab 1: Realtime Support Chat */}
+          {supportTab === 'chat' ? (
+            <div className="flex-1 flex flex-col min-h-0 space-y-3">
+              {/* Messages Scroll Area */}
+              <div className="h-56 overflow-y-auto space-y-2.5 pr-1 text-xs">
+                {supportMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                  >
+                    <div
+                      className={`max-w-[85%] p-3 rounded-2xl leading-relaxed ${
+                        msg.sender === 'user'
+                          ? 'btn-glass-primary !border-cyan-400/40 rounded-tr-none text-white'
+                          : 'bg-slate-800 text-slate-200 border border-slate-700/80 rounded-tl-none'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1 px-1 flex items-center gap-1">
+                      <span>{msg.time}</span>
+                      {msg.sender === 'user' && <CheckCheck className="w-3 h-3 text-cyan-400" />}
+                    </span>
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 italic">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-100"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-200"></span>
+                    <span>VocabFlow Support đang nhập phản hồi...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Composer Input */}
+              <div className="pt-2 border-t border-slate-800 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSendMessage();
+                  }}
+                  placeholder="Nhập câu hỏi của bạn..."
+                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim()}
+                  className="p-2.5 rounded-xl btn-glass-primary disabled:opacity-50 text-white shrink-0"
+                  aria-label="Gửi tin nhắn"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Tab 2: Quick Links / Facebook / FAQ */
+            <div className="space-y-3 pt-1">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Bạn có thể liên hệ trực tiếp tới fanpage Facebook chính thức của VocabFlow hoặc tra cứu các thắc mắc thông dụng.
+              </p>
+
+              <div className="space-y-2">
+                <a
+                  href="https://facebook.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3.5 rounded-2xl bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/30 text-[#3891ff] font-bold text-xs flex items-center justify-between transition group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="/facebook-logo.png"
+                      alt="Facebook Logo"
+                      className="w-5 h-5 object-contain rounded-full"
+                    />
+                    <span>Contact us on Facebook</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
+
+                <button
+                  onClick={() => {
+                    setSupportModalOpen(false);
+                    navigate('/settings');
+                  }}
+                  className="w-full py-2.5 px-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-between border border-slate-700/80 transition"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span>📚</span>
+                    <span>Câu hỏi thường gặp (FAQ)</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 text-center text-[11px] text-slate-400 border-t border-slate-800">
+            🔒 Kết nối bảo mật • Không bao giờ yêu cầu mật khẩu hay mã OTP
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

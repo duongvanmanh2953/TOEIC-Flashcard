@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
+import { ModalPortal } from '../components/common/ModalPortal';
+import { CustomDropdown } from '../components/common/CustomDropdown';
+import * as XLSX from 'xlsx';
 import {
   Users,
   Copy,
@@ -18,6 +21,10 @@ import {
   CheckSquare,
   Square,
   ArrowRight,
+  Download,
+  HardDrive,
+  Database,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export const CommunityDecksPage: React.FC = () => {
@@ -97,16 +104,84 @@ export const CommunityDecksPage: React.FC = () => {
     }
   };
 
-  const handleClone = async (deckId: string, deckTitle: string) => {
+  const [cloneActionDeck, setCloneActionDeck] = useState<any | null>(null);
+  const [cloningOnline, setCloningOnline] = useState(false);
+
+  const handleCloneToWordBank = async (deck: any) => {
+    setCloningOnline(true);
     try {
-      const res: any = await api.post(`/community/decks/${deckId}/clone`);
+      const res: any = await api.post(`/community/decks/${deck.id}/clone`);
       if (res?.success) {
-        setCloneSuccess(`Đã clone thành công bộ từ "${deckTitle}" về kho học!`);
+        setCloneSuccess(`Đã lưu thành công bộ từ "${deck.title}" vào Kho từ vựng cá nhân!`);
         fetchDecks();
-        setTimeout(() => setCloneSuccess(null), 3500);
+        setCloneActionDeck(null);
+        setTimeout(() => setCloneSuccess(null), 4000);
       }
     } catch (err: any) {
-      alert(err?.message || 'Không thể clone bộ từ.');
+      alert(err?.message || 'Không thể clone bộ từ vào kho cá nhân.');
+    } finally {
+      setCloningOnline(false);
+    }
+  };
+
+  const handleExportDeckToFile = (deck: any, format: 'xlsx' | 'csv' | 'json') => {
+    try {
+      const words = deck.words || [];
+      const sanitizedTitle = (deck.title || 'bo-tu-vung')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/_+/g, '_');
+
+      if (format === 'json') {
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(deck, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute('href', dataStr);
+        downloadAnchor.setAttribute('download', `${sanitizedTitle}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        setCloneSuccess(`Đã tải file JSON của bộ từ "${deck.title}" về máy thành công!`);
+        setCloneActionDeck(null);
+        setTimeout(() => setCloneSuccess(null), 4000);
+        return;
+      }
+
+      // Format tabular data for Excel & CSV
+      const rows = words.map((w: any, idx: number) => ({
+        STT: idx + 1,
+        'Từ vựng (Word)': w.word,
+        'Phiên âm (Phonetic)': w.phonetic || '',
+        'Ý nghĩa (Meaning)': w.meaning || '',
+        'Ví dụ (Example)': w.example || '',
+        'Chủ đề (Topic)': deck.category || '',
+        'Cấp độ (CEFR)': deck.cefrLevel || '',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [
+        { wch: 6 },
+        { wch: 20 },
+        { wch: 18 },
+        { wch: 35 },
+        { wch: 45 },
+        { wch: 20 },
+        { wch: 12 },
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Vocabulary_Deck');
+
+      if (format === 'csv') {
+        XLSX.writeFile(wb, `${sanitizedTitle}.csv`, { bookType: 'csv' });
+      } else {
+        XLSX.writeFile(wb, `${sanitizedTitle}.xlsx`, { bookType: 'xlsx' });
+      }
+
+      setCloneSuccess(`Đã tải file ${format.toUpperCase()} của bộ từ "${deck.title}" về máy tính thành công!`);
+      setCloneActionDeck(null);
+      setTimeout(() => setCloneSuccess(null), 4000);
+    } catch (err: any) {
+      alert('Không thể xuất file: ' + (err?.message || 'Đã có lỗi xảy ra.'));
     }
   };
 
@@ -298,11 +373,11 @@ export const CommunityDecksPage: React.FC = () => {
                     Xem trước
                   </button>
                   <button
-                    onClick={() => handleClone(deck.id, deck.title)}
+                    onClick={() => setCloneActionDeck(deck)}
                     className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Clone về máy</span>
+                    <span>Lưu / Tải về</span>
                   </button>
                 </div>
               </div>
@@ -311,12 +386,9 @@ export const CommunityDecksPage: React.FC = () => {
         </div>
       )}
 
-      {/* Preview Deck Modal — Spacious & Perfectly Centered */}
-      {selectedDeck && (
-        <div
-          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-          onClick={() => setSelectedDeck(null)}
-        >
+      {/* Preview Deck Modal — ModalPortal to document.body */}
+      <ModalPortal isOpen={Boolean(selectedDeck)} onClose={() => setSelectedDeck(null)}>
+        {selectedDeck && (
           <div
             className="m-auto relative max-w-3xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl max-h-[88vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
@@ -362,30 +434,133 @@ export const CommunityDecksPage: React.FC = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                handleClone(selectedDeck.id, selectedDeck.title);
-                setSelectedDeck(null);
-              }}
-              className="btn-glass-primary w-full !py-3 text-xs sm:text-sm gap-2"
-            >
-              <Copy className="w-4 h-4" />
-              <span>Clone toàn bộ từ về kho ôn tập của tôi</span>
-            </button>
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => {
+                  const deck = selectedDeck;
+                  setSelectedDeck(null);
+                  setCloneActionDeck(deck);
+                }}
+                className="btn-glass-primary w-full !py-3 text-xs sm:text-sm gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                <span>Tùy chọn Lưu về Kho hoặc Tải file về máy</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
 
-      {/* Create & Share Deck Modal — Support sharing from My Personal Word Bank */}
-      {showCreateModal && (
-        <div
-          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-          onClick={() => setShowCreateModal(false)}
-        >
+      {/* DUAL CLONE ACTION MODAL: Lưu vào Kho từ vựng vs Tải file về máy tính */}
+      <ModalPortal isOpen={Boolean(cloneActionDeck)} onClose={() => setCloneActionDeck(null)}>
+        {cloneActionDeck && (
           <div
-            className="m-auto relative max-w-3xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-5 shadow-2xl max-h-[88vh] overflow-y-auto"
+            className="m-auto relative max-w-lg w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold border border-indigo-200 dark:border-indigo-900 mb-2">
+                  <Copy className="w-3 h-3" />
+                  <span>Sao chép bộ từ vựng</span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug">
+                  {cloneActionDeck.title}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Bộ từ gồm <strong className="text-indigo-600 dark:text-indigo-400">{cloneActionDeck.words?.length || 0} từ</strong> ({cloneActionDeck.category} • CEFR {cloneActionDeck.cefrLevel}). Bạn muốn lưu vào đâu?
+                </p>
+              </div>
+              <button
+                onClick={() => setCloneActionDeck(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold transition shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* TWO MAIN OPTIONS */}
+            <div className="space-y-3.5">
+              {/* Option 1: Save into personal online word bank */}
+              <div
+                onClick={() => handleCloneToWordBank(cloneActionDeck)}
+                className="group p-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-r from-indigo-50/70 to-blue-50/50 dark:from-indigo-950/30 dark:to-blue-950/20 hover:border-indigo-400 dark:hover:border-indigo-700 cursor-pointer transition shadow-xs flex items-start gap-3.5"
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                      Lưu vào Kho từ vựng của tôi (Online)
+                    </h4>
+                    <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 shrink-0">
+                      Khuyên dùng
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    Tự động đồng bộ toàn bộ từ vào Kho từ vựng của bạn để kích hoạt thuật toán ôn tập thông minh (SRS) & Gia sư AI.
+                  </p>
+                  <div className="mt-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1">
+                    <span>{cloningOnline ? 'Đang đồng bộ...' : 'Đồng bộ ngay vào tài khoản'}</span>
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Option 2: Export directly to computer as file */}
+              <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 space-y-3">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <HardDrive className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                      Tải về máy tính (Offline File)
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      Xuất toàn bộ từ vựng, phiên âm, định nghĩa và ví dụ thành file lưu trữ trực tiếp trên thiết bị của bạn.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <button
+                    onClick={() => handleExportDeckToFile(cloneActionDeck, 'xlsx')}
+                    className="py-2 px-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>File Excel (.xlsx)</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleExportDeckToFile(cloneActionDeck, 'csv')}
+                    className="py-2 px-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    <span>File CSV</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleExportDeckToFile(cloneActionDeck, 'json')}
+                    className="py-2 px-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <Download className="w-3.5 h-3.5 text-amber-500" />
+                    <span>File JSON</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </ModalPortal>
+
+      {/* Create & Share Deck Modal — ModalPortal to document.body */}
+      <ModalPortal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
+        <div
+          className="m-auto relative max-w-3xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-5 shadow-2xl max-h-[88vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug">
@@ -423,32 +598,34 @@ export const CommunityDecksPage: React.FC = () => {
                   <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
                     Chủ đề
                   </label>
-                  <select
+                  <CustomDropdown
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white"
-                  >
-                    <option value="Business English">Business English (Kinh doanh & Công sở)</option>
-                    <option value="Technology">Technology & AI (Công nghệ)</option>
-                    <option value="IELTS Prep">IELTS Academic (Luyện thi)</option>
-                    <option value="Daily Life">Daily Conversation (Giao tiếp đời sống)</option>
-                    <option value="Travel & Hospitality">Travel & Hospitality (Du lịch)</option>
-                  </select>
+                    onChange={(val) => setCategory(val)}
+                    options={[
+                      { value: 'Business English', label: 'Business English (Kinh doanh)' },
+                      { value: 'Technology', label: 'Technology & AI (Công nghệ)' },
+                      { value: 'IELTS Prep', label: 'IELTS Academic (Luyện thi)' },
+                      { value: 'Daily Life', label: 'Daily Conversation (Đời sống)' },
+                      { value: 'Travel & Hospitality', label: 'Travel & Hospitality (Du lịch)' },
+                    ]}
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
                     Khung CEFR
                   </label>
-                  <select
+                  <CustomDropdown
                     value={cefrLevel}
-                    onChange={(e) => setCefrLevel(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white"
-                  >
-                    <option value="A2">A2 — Pre-intermediate</option>
-                    <option value="B1">B1 — Intermediate</option>
-                    <option value="B2">B2 — Upper Intermediate</option>
-                    <option value="C1">C1 — Advanced</option>
-                  </select>
+                    onChange={(val) => setCefrLevel(val)}
+                    options={[
+                      { value: 'A2', label: 'A2 — Pre-intermediate', badge: 'A2' },
+                      { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
+                      { value: 'B2', label: 'B2 — Upper Intermediate', badge: 'B2' },
+                      { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
 
@@ -618,8 +795,7 @@ export const CommunityDecksPage: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
-      )}
+      </ModalPortal>
     </div>
   );
 };

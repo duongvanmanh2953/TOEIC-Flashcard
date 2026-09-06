@@ -6,7 +6,7 @@
   :root {
     --primary: #4f46e5;
     --primary-hover: #4338ca;
-    
+
     /* Surfaces */
     --surface-1: rgba(255, 255, 255, 0.85);
     --surface-2: rgba(248, 250, 252, 0.8);
@@ -60,10 +60,14 @@
   }
 
   /* Spacious, breathable headings — Never collide Vietnamese diacritic accents */
-  h1, h2, h3, h4, h5, h6 {
-    line-height: 1.48 !important;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.4 !important;
     letter-spacing: -0.005em !important;
-    font-weight: 700;
     color: var(--text-primary);
   }
 
@@ -71,6 +75,23 @@
   .tracking-tight,
   .tracking-tighter {
     letter-spacing: -0.005em !important;
+  }
+
+  /* Protect bold text and tight line-heights from squishing Vietnamese accents */
+  .leading-tight {
+    line-height: 1.38 !important;
+  }
+
+  .leading-none {
+    line-height: 1.25 !important;
+  }
+
+  /* Ensure bold elements maintain vertical breathing room */
+  .font-bold,
+  .font-extrabold,
+  .font-black,
+  .font-semibold {
+    letter-spacing: 0.005em;
   }
 }
 
@@ -192,7 +213,10 @@ a.card-brand-effect {
   z-index: 5;
 }
 
-/* Tia sáng lóe ngang trên bề mặt kính (Specular Flare Beam) */
+/* Tia sáng lóe ngang trên bề mặt kính (Specular Flare Beam)
+   - Giảm 10% độ chói trắng gắt (đạt độ trong trẻo tinh tế 0.90 max)
+   - Lướt chậm rãi, êm ái hơn (1.45s) trên tất cả card có tính chất glass
+*/
 .liquid-glass-card::after,
 .card-brand-effect::after {
   content: '';
@@ -201,45 +225,41 @@ a.card-brand-effect {
   left: -150%;
   width: 60%;
   height: 240%;
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.05) 20%,
-    rgba(255, 255, 255, 0.85) 45%,
-    rgba(255, 255, 255, 1) 50%,
-    rgba(255, 255, 255, 0.85) 55%,
-    rgba(255, 255, 255, 0.05) 80%,
-    transparent 100%
-  );
+  background: linear-gradient(105deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.04) 20%,
+      rgba(255, 255, 255, 0.76) 45%,
+      rgba(255, 255, 255, 0.90) 50%,
+      rgba(255, 255, 255, 0.76) 55%,
+      rgba(255, 255, 255, 0.04) 80%,
+      transparent 100%);
   transform: rotate(26deg);
   pointer-events: none;
   opacity: 0;
-  filter: blur(1px);
+  filter: blur(1.5px);
   z-index: 10;
   /* Quan trọng: Khi bỏ hover, opacity tắt ngay và left trở về mà không animate lùi */
-  transition: opacity 0.25s ease, left 0s 0.25s;
+  transition: opacity 0.3s ease, left 0s 0.3s;
 }
 
 .dark .liquid-glass-card::after,
 .dark .card-brand-effect::after {
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.04) 20%,
-    rgba(255, 255, 255, 0.9) 45%,
-    rgba(255, 255, 255, 1) 50%,
-    rgba(255, 255, 255, 0.9) 55%,
-    rgba(255, 255, 255, 0.04) 80%,
-    transparent 100%
-  );
+  background: linear-gradient(105deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.03) 20%,
+      rgba(255, 255, 255, 0.81) 45%,
+      rgba(255, 255, 255, 0.90) 50%,
+      rgba(255, 255, 255, 0.81) 55%,
+      rgba(255, 255, 255, 0.03) 80%,
+      transparent 100%);
 }
 
-/* Kích hoạt chùm tia sáng quét từ trái sang phải: Lóe chậm lại, mượt mà và sang trọng hơn (1.15s) */
+/* Kích hoạt chùm tia sáng quét từ trái sang phải: Lóe chậm lại hơn (1.45s) cực êm và sang trọng */
 .liquid-glass-card:hover::after,
 .card-brand-effect:hover::after {
   left: 210%;
   opacity: 1;
-  transition: left 1.15s cubic-bezier(0.2, 0.8, 0.25, 1), opacity 0.25s ease;
+  transition: left 1.45s cubic-bezier(0.25, 0.85, 0.3, 1), opacity 0.3s ease;
 }
 
 .card-brand-effect {
@@ -340,19 +360,17 @@ a.card-brand-effect {
   left: -140%;
   width: 50%;
   height: 200%;
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 20%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.1) 80%,
-    transparent 100%
-  );
+  background: linear-gradient(105deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 20%,
+      rgba(255, 255, 255, 0.80) 50%,
+      rgba(255, 255, 255, 0.08) 80%,
+      transparent 100%);
   transform: rotate(20deg);
   pointer-events: none;
   opacity: 0;
   z-index: 10;
-  transition: opacity 0.2s ease, left 0s 0.2s;
+  transition: opacity 0.25s ease, left 0s 0.25s;
 }
 
 .btn-glass-primary:hover::after,
@@ -362,29 +380,48 @@ a.card-brand-effect {
 .btn-glass-danger:hover::after {
   left: 190%;
   opacity: 1;
-  transition: left 0.95s cubic-bezier(0.2, 0.8, 0.25, 1), opacity 0.25s ease;
+  transition: left 1.25s cubic-bezier(0.25, 0.85, 0.3, 1), opacity 0.3s ease;
 }
 
-/* Primary Glass Button: Vibrant Indigo / Violet Liquid Glass */
+/* Primary Glass Button: Liquid Glass trong suốt ánh xanh nhẹ màu đậm */
 .btn-glass-primary {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.92) 0%, rgba(99, 102, 241, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(29, 78, 216, 0.8) 45%, rgba(14, 116, 144, 0.82) 100%);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 16px -2px rgba(79, 70, 229, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 4px 18px -2px rgba(14, 116, 144, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .dark .btn-glass-primary {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(129, 140, 248, 0.8) 100%);
-  box-shadow: 0 4px 18px -2px rgba(99, 102, 241, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  background: linear-gradient(135deg, rgba(8, 15, 30, 0.9) 0%, rgba(30, 64, 175, 0.82) 45%, rgba(8, 145, 178, 0.84) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 22px -2px rgba(8, 145, 178, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
 }
 
 .btn-glass-primary:hover {
-  background: linear-gradient(135deg, rgba(67, 56, 202, 0.96) 0%, rgba(79, 70, 229, 0.9) 100%);
-  border-color: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 8px 24px -2px rgba(79, 70, 229, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
-  transform: translateY(-1.5px);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.94) 0%, rgba(37, 99, 235, 0.88) 45%, rgba(6, 182, 212, 0.9) 100%);
+  border-color: rgba(125, 211, 252, 0.75);
+  box-shadow: 0 6px 26px -2px rgba(14, 116, 144, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Biến đổi .bg-brand-600 thô đặc thành Liquid Glass ánh xanh nhẹ màu đậm */
+.bg-brand-600 {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 64, 175, 0.8) 50%, rgba(14, 116, 144, 0.82) 100%) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+.bg-brand-600:hover {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(37, 99, 235, 0.88) 50%, rgba(6, 182, 212, 0.9) 100%) !important;
+  border-color: rgba(125, 211, 252, 0.65) !important;
+}
+
+.dark .bg-brand-600 {
+  background: linear-gradient(135deg, rgba(8, 15, 30, 0.88) 0%, rgba(29, 78, 216, 0.8) 50%, rgba(8, 145, 178, 0.84) 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.38) !important;
 }
 
 /* Secondary Glass Button: Frosted Crystal Glass */
@@ -392,7 +429,7 @@ a.card-brand-effect {
   background: rgba(255, 255, 255, 0.75);
   color: var(--text-primary);
   border: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: none;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -400,86 +437,89 @@ a.card-brand-effect {
 .dark .btn-glass-secondary {
   background: rgba(30, 41, 59, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-shadow: none;
 }
 
 .btn-glass-secondary:hover {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
-  transform: translateY(-1.5px);
+  box-shadow: none;
+  transform: translateY(-1px);
 }
 
 .dark .btn-glass-secondary:hover {
   background: rgba(51, 65, 85, 0.8);
   border-color: rgba(129, 140, 248, 0.4);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: none;
 }
 
 /* Emerald Glass Button: Positive / Export / Practice */
 .btn-glass-emerald {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.92) 0%, rgba(5, 150, 105, 0.9) 100%);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 16px -2px rgba(16, 185, 129, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .btn-glass-emerald:hover {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.95) 0%, rgba(4, 120, 87, 0.9) 100%);
-  box-shadow: 0 8px 24px -2px rgba(16, 185, 129, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
-  transform: translateY(-1.5px);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.98) 0%, rgba(4, 120, 87, 0.95) 100%);
+  box-shadow: none;
+  transform: translateY(-1px);
 }
 
 /* Amber Glass Button: Streak / Gold / VIP */
 .btn-glass-amber {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(217, 119, 6, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.92) 0%, rgba(217, 119, 6, 0.9) 100%);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 16px -2px rgba(245, 158, 11, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .btn-glass-amber:hover {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.95) 0%, rgba(180, 83, 9, 0.9) 100%);
-  box-shadow: 0 8px 22px -2px rgba(245, 158, 11, 0.55);
-  transform: translateY(-1.5px);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.98) 0%, rgba(180, 83, 9, 0.95) 100%);
+  box-shadow: none;
+  transform: translateY(-1px);
 }
 
 /* Danger Glass Button: Reset / Delete / Remove */
 .btn-glass-danger {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.88) 0%, rgba(220, 38, 38, 0.8) 100%);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.92) 0%, rgba(220, 38, 38, 0.88) 100%);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 4px 16px -2px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .btn-glass-danger:hover {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.95) 0%, rgba(185, 28, 28, 0.9) 100%);
-  box-shadow: 0 8px 22px -2px rgba(239, 68, 68, 0.55);
-  transform: translateY(-1.5px);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.98) 0%, rgba(185, 28, 28, 0.95) 100%);
+  box-shadow: none;
+  transform: translateY(-1px);
 }
 
 /* Ambient Dashboard Tinted Canvas */
 .dashboard-canvas {
   background: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.06) 0px, transparent 50%),
-              radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.06) 0px, transparent 50%),
-              radial-gradient(at 50% 100%, rgba(59, 130, 246, 0.04) 0px, transparent 50%),
-              rgba(241, 245, 249, 0.65);
+    radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.06) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(59, 130, 246, 0.04) 0px, transparent 50%),
+    rgba(241, 245, 249, 0.65);
   border-radius: 1.75rem;
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .dark .dashboard-canvas {
-  background: radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.1) 0px, transparent 55%),
+  /* background: radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.1) 0px, transparent 55%),
               radial-gradient(at 90% 10%, rgba(139, 92, 246, 0.08) 0px, transparent 55%),
               radial-gradient(at 50% 95%, rgba(30, 41, 59, 0.4) 0px, transparent 50%),
               rgba(11, 17, 32, 0.75);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(51, 65, 85, 0.5); */
+  background-color: transparent;
+  padding: 0px;
+  border: none;
 }
 
 /* Glass Shine Reflection Hover Effect */
@@ -490,24 +530,20 @@ a.card-brand-effect {
   left: -150%;
   width: 300%;
   height: 300%;
-  background: linear-gradient(
-    45deg,
-    transparent 45%,
-    rgba(255, 255, 255, 0.12) 50%,
-    transparent 55%
-  );
+  background: linear-gradient(45deg,
+      transparent 45%,
+      rgba(255, 255, 255, 0.12) 50%,
+      transparent 55%);
   transform: rotate(30deg);
   pointer-events: none;
   transition: transform 0.65s ease;
 }
 
 .dark .glass-panel-interactive::after {
-  background: linear-gradient(
-    45deg,
-    transparent 45%,
-    rgba(255, 255, 255, 0.08) 50%,
-    transparent 55%
-  );
+  background: linear-gradient(45deg,
+      transparent 45%,
+      rgba(255, 255, 255, 0.08) 50%,
+      transparent 55%);
 }
 
 .glass-panel-interactive:hover {
@@ -525,22 +561,28 @@ a.card-brand-effect {
   width: 5px;
   height: 5px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
 }
+
 .dark ::-webkit-scrollbar-thumb {
   background: #334155;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
@@ -549,13 +591,16 @@ a.card-brand-effect {
 .perspective-1000 {
   perspective: 1000px;
 }
+
 .transform-style-3d {
   transform-style: preserve-3d;
 }
+
 .backface-hidden {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
 .rotate-y-180 {
   transform: rotateY(180deg);
 }

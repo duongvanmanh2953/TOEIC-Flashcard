@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { ModalPortal } from '../common/ModalPortal';
 import { X, Sparkles, Heart, Bookmark, Brain, CheckCircle2 } from 'lucide-react';
 
 export const ContextualLoginModal: React.FC = () => {
+  const navigate = useNavigate();
   const { loginPromptOpen, loginPromptReason, closeLoginPrompt, loginWithGoogle, loginWithFacebook } =
     useAuth();
   const [loadingProvider, setLoadingProvider] = useState<'google' | 'facebook' | null>(null);
@@ -34,10 +37,7 @@ export const ContextualLoginModal: React.FC = () => {
   };
 
   return (
-    <div
-      className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
-      onClick={closeLoginPrompt}
-    >
+    <ModalPortal isOpen={loginPromptOpen} onClose={closeLoginPrompt}>
       <div
         className="m-auto relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6"
         onClick={(e) => e.stopPropagation()}
@@ -125,25 +125,46 @@ export const ContextualLoginModal: React.FC = () => {
             disabled={loadingProvider !== null}
             className="w-full py-3 px-4 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-3 transition disabled:opacity-50"
           >
-            <svg className="w-4 h-4 fill-white shrink-0" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
+            <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 rounded-full object-contain shrink-0" />
             <span>
               {loadingProvider === 'facebook' ? 'Đang kết nối Facebook...' : 'Tiếp tục với Facebook'}
             </span>
           </button>
 
+          {/* Email / Password Options */}
+          <div className="pt-2 flex items-center justify-center gap-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <button
+              onClick={() => {
+                closeLoginPrompt();
+                navigate('/login');
+              }}
+              className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition"
+            >
+              Đăng nhập với Email
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => {
+                closeLoginPrompt();
+                navigate('/register');
+              }}
+              className="text-indigo-600 dark:text-indigo-400 hover:underline transition font-bold"
+            >
+              Tạo tài khoản mới
+            </button>
+          </div>
+
           {/* Maybe Later Button (Dismiss without friction) */}
-          <div className="pt-2 text-center">
+          <div className="pt-1 text-center">
             <button
               onClick={closeLoginPrompt}
-              className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+              className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
             >
               Để sau (Tiếp tục học thử)
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 };

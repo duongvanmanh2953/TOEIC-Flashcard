@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { ModalPortal } from '../common/ModalPortal';
 import {
   X,
   QrCode,
@@ -15,6 +16,7 @@ import {
   ExternalLink,
   AlertCircle,
   Building2,
+  MessageSquare,
 } from 'lucide-react';
 
 interface PaymentOrderData {
@@ -198,8 +200,8 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-hidden">
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden card-brand-effect my-auto">
+    <ModalPortal isOpen={isOpen} onClose={onClose}>
+      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden card-brand-effect my-auto" onClick={(e) => e.stopPropagation()}>
         {/* Top Header Bar (Cố định ở đỉnh, thoáng đãng) */}
         <div className="shrink-0 flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800/90 bg-slate-50/70 dark:bg-slate-900/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
@@ -274,11 +276,10 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setMethod('VIETQR')}
-                  className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 ${
-                    method === 'VIETQR'
-                      ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 ${method === 'VIETQR'
+                    ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
                 >
                   <QrCode className="w-4 h-4" />
                   <span>VietQR Ngân Hàng 24/7</span>
@@ -289,11 +290,10 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setMethod('PAYOS')}
-                  className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 ${
-                    method === 'PAYOS'
-                      ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 ${method === 'PAYOS'
+                    ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
                 >
                   <Zap className="w-4 h-4" />
                   <span>Cổng Webhook PayOS</span>
@@ -370,24 +370,37 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
 
                     {/* Cột Chi Tiết Chuyển Khoản (Phải: lg:col-span-7, rộng rãi, các action thưa gọn) */}
                     <div className="lg:col-span-7 flex flex-col justify-between space-y-3.5">
-                      {/* Ngân hàng thụ hưởng */}
-                      <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md flex items-center justify-between gap-4 shadow-xs">
+                      {/* Ngân hàng thụ hưởng với nhận diện thương hiệu Vietcombank */}
+                      <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/60 border border-emerald-500/25 dark:border-emerald-500/30 backdrop-blur-md flex items-center justify-between gap-4 shadow-xs">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
-                            <Building2 className="w-5 h-5" />
+                          {/* Vietcombank Official Logo Asset */}
+                          <div className="h-11 px-2.5 py-1 rounded-xl bg-white dark:bg-white border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden relative shadow-xs">
+                            {order.bankId === 'VCB' ? (
+                              <img
+                                src="/vietcombank-logo.png"
+                                alt="Vietcombank Logo"
+                                className="h-7 w-auto object-contain"
+                              />
+                            ) : (
+                              <Building2 className="w-5 h-5 text-brand-600" />
+                            )}
                           </div>
                           <div>
-                            <span className="text-[11px] uppercase font-bold text-slate-400 block tracking-wider">
-                              Ngân hàng thụ hưởng
-                            </span>
-                            <span className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
+                                Ngân hàng thụ hưởng
+                              </span>
+                              {order.bankId === 'VCB' && (
+                                <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                  Chính thức
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                               {order.bankName}
                             </span>
                           </div>
                         </div>
-                        <span className="text-xs font-mono px-3 py-1 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold border border-brand-500/20">
-                          {order.bankId}
-                        </span>
                       </div>
 
                       {/* Số tài khoản */}
@@ -508,11 +521,26 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
           )}
         </div>
 
-        {/* Footer info (Cố định ở đáy) */}
-        <div className="shrink-0 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>Xác thực mã hóa an toàn • Chuẩn NAPAS / VietQR</span>
+        {/* Footer info (Cố định ở đáy, tích hợp hỗ trợ khách hàng nhanh) */}
+        <div className="shrink-0 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Xác thực mã hóa an toàn • Chuẩn NAPAS / VietQR</span>
+            </div>
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-200 hover:text-[#1877F2] dark:hover:text-[#3891ff] font-bold transition"
+            >
+              <img
+                src="/facebook-logo.png"
+                alt="Facebook Logo"
+                className="w-4 h-4 object-contain rounded-full"
+              />
+              <span>Cần trợ giúp thanh toán? Chat qua Facebook</span>
+            </a>
           </div>
           <button
             type="button"
@@ -523,6 +551,6 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 };

@@ -12,6 +12,9 @@ import {
   Heart,
 } from 'lucide-react';
 import { SpeechButton } from '../components/common/SpeechButton';
+import { ModalPortal } from '../components/common/ModalPortal';
+import { CustomDropdown } from '../components/common/CustomDropdown';
+import { idbSetCache, idbGetCache, idbSaveWords, idbGetWords } from '../lib/idb';
 
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,17 +29,34 @@ export const VocabularyExplorerPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
 
-  // Load Topics
+  // Load Topics with IndexedDB caching
   useEffect(() => {
+    idbGetCache('vocab_topics').then((cachedTopics) => {
+      if (cachedTopics) setTopics(cachedTopics);
+    });
+
     api.get('/vocabulary/topics').then((res: any) => {
-      if (res?.success) setTopics(res.data);
+      if (res?.success) {
+        setTopics(res.data);
+        idbSetCache('vocab_topics', res.data, 24 * 3600 * 1000);
+      }
     });
   }, []);
 
-  // Fetch Vocabulary with search & filters
+  // Fetch Vocabulary with search & filters (IndexedDB cache-first + live sync)
   useEffect(() => {
     const fetchVocab = async () => {
       setLoading(true);
+      const cacheKey = `vocab_p${page}_${search}_${selectedCefr}_${selectedTopic}`;
+
+      // 1. Check IndexedDB cache first for instant 0ms render
+      const cached = await idbGetCache(cacheKey);
+      if (cached) {
+        setWords(cached.items);
+        setTotalPages(cached.totalPages);
+        setLoading(false);
+      }
+
       try {
         const params: any = { page, limit: 18 };
         if (search) params.search = search;
@@ -57,7 +77,12 @@ export const VocabularyExplorerPage: React.FC = () => {
             },
           }));
           setWords(mappedItems);
-          setTotalPages(res.meta?.pagination?.totalPages || 1);
+          const pages = res.meta?.pagination?.totalPages || 1;
+          setTotalPages(pages);
+
+          // Save to IndexedDB asynchronously
+          idbSetCache(cacheKey, { items: mappedItems, totalPages: pages }, 30 * 60 * 1000);
+          idbSaveWords(mappedItems);
         }
       } catch (err) {
         console.error('Failed to load vocabulary', err);
@@ -66,7 +91,7 @@ export const VocabularyExplorerPage: React.FC = () => {
       }
     };
 
-    const timer = setTimeout(fetchVocab, 250);
+    const timer = setTimeout(fetchVocab, 200);
     return () => clearTimeout(timer);
   }, [search, selectedCefr, selectedTopic, page]);
 
@@ -202,38 +227,40 @@ export const VocabularyExplorerPage: React.FC = () => {
           />
         </div>
 
-        {/* CEFR Level Filter */}
-        <select
+        {/* CEFR Level Custom Dropdown */}
+        <CustomDropdown
           value={selectedCefr}
-          onChange={(e) => {
-            setSelectedCefr(e.target.value);
+          onChange={(val) => {
+            setSelectedCefr(val);
             setPage(1);
           }}
-          className="px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500"
-        >
-          <option value="">Tất cả cấp độ CEFR</option>
-          <option value="A2">A2 — Sơ cấp</option>
-          <option value="B1">B1 — Trung cấp</option>
-          <option value="B2">B2 — Trung cao cấp</option>
-          <option value="C1">C1 — Nâng cao</option>
-        </select>
+          options={[
+            { value: '', label: 'Tất cả cấp độ CEFR' },
+            { value: 'A2', label: 'A2 — Sơ cấp', badge: 'A2' },
+            { value: 'B1', label: 'B1 — Trung cấp', badge: 'B1' },
+            { value: 'B2', label: 'B2 — Trung cao cấp', badge: 'B2' },
+            { value: 'C1', label: 'C1 — Nâng cao', badge: 'C1' },
+          ]}
+          className="w-full sm:w-56 shrink-0"
+        />
 
-        {/* Topic Filter */}
-        <select
+        {/* Topic Custom Dropdown */}
+        <CustomDropdown
           value={selectedTopic}
-          onChange={(e) => {
-            setSelectedTopic(e.target.value);
+          onChange={(val) => {
+            setSelectedTopic(val);
             setPage(1);
           }}
-          className="px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500"
-        >
-          <option value="">Tất cả chủ đề</option>
-          {topics.map((t) => (
-            <option key={t.slug} value={t.slug}>
-              {t.name} ({t._count?.items || 0})
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: '', label: 'Tất cả chủ đề' },
+            ...topics.map((t) => ({
+              value: t.slug,
+              label: t.name,
+              badge: t._count?.items || 0,
+            })),
+          ]}
+          className="w-full sm:w-60 shrink-0"
+        />
       </div>
 
       {/* Vocabulary Grid */}
@@ -328,12 +355,9 @@ export const VocabularyExplorerPage: React.FC = () => {
         </div>
       )}
 
-      {/* Word Detail Modal — Spacious & Perfectly Centered */}
-      {selectedWord && (
-        <div
-          className="fixed inset-0 !m-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-          onClick={() => setSelectedWord(null)}
-        >
+      {/* Word Detail Modal — ModalPortal to document.body */}
+      <ModalPortal isOpen={Boolean(selectedWord)} onClose={() => setSelectedWord(null)}>
+        {selectedWord && (
           <div
             className="m-auto relative max-w-2xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
@@ -397,8 +421,8 @@ export const VocabularyExplorerPage: React.FC = () => {
               <span>Hỏi Gia Sư AI giải thích sâu từ này</span>
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </ModalPortal>
     </div>
   );
 };

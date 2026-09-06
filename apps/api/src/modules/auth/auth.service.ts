@@ -8,7 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
-import { CefrLevel, Role } from '@prisma/client';
+import { CefrLevel, Role, SubscriptionTier } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -78,6 +78,12 @@ export class AuthService {
         profile: true,
         streak: true,
         xp: true,
+        subscriptions: {
+          where: { status: 'ACTIVE' },
+          include: { plan: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -99,6 +105,15 @@ export class AuthService {
       data: { lastActiveAt: new Date() },
     });
 
+    const activeSub = user.subscriptions?.[0] || null;
+    const isPro =
+      user.role === Role.PREMIUM_USER ||
+      user.role === Role.ADMIN ||
+      user.role === Role.SUPER_ADMIN ||
+      activeSub?.plan?.tier === SubscriptionTier.PRO;
+    const isPlus = !isPro && activeSub?.plan?.tier === SubscriptionTier.PLUS;
+    const tier = isPro ? 'PRO' : isPlus ? 'PLUS' : 'FREE';
+
     return {
       user: {
         id: user.id,
@@ -106,6 +121,25 @@ export class AuthService {
         displayName: user.displayName,
         avatar: user.avatar,
         role: user.role,
+        tier,
+        subscription: isPro
+          ? {
+              id: activeSub?.id || 'pro-active',
+              tier: 'PRO',
+              planName: activeSub?.plan?.name || 'VocabFlow Pro (Unlimited)',
+              currentPeriodEnd: activeSub?.currentPeriodEnd || new Date('2099-12-31T23:59:59.000Z'),
+            }
+          : activeSub
+          ? {
+              id: activeSub.id,
+              tier: activeSub.plan?.tier || 'FREE',
+              planName: activeSub.plan?.name || 'Free',
+              currentPeriodEnd: activeSub.currentPeriodEnd,
+            }
+          : {
+              tier: 'FREE',
+              planName: 'Free',
+            },
         profile: user.profile,
         streak: user.streak,
         xp: user.xp,
@@ -174,16 +208,35 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
     const activeSub = user.subscriptions?.[0] || null;
+    const isPro =
+      user.role === Role.PREMIUM_USER ||
+      user.role === Role.ADMIN ||
+      user.role === Role.SUPER_ADMIN ||
+      activeSub?.plan?.tier === SubscriptionTier.PRO;
+    const isPlus = !isPro && activeSub?.plan?.tier === SubscriptionTier.PLUS;
+    const tier = isPro ? 'PRO' : isPlus ? 'PLUS' : 'FREE';
+
     return {
       ...user,
-      subscription: activeSub
+      tier,
+      subscription: isPro
+        ? {
+            id: activeSub?.id || 'pro-active',
+            tier: 'PRO',
+            planName: activeSub?.plan?.name || 'VocabFlow Pro (Unlimited)',
+            currentPeriodEnd: activeSub?.currentPeriodEnd || new Date('2099-12-31T23:59:59.000Z'),
+          }
+        : activeSub
         ? {
             id: activeSub.id,
             tier: activeSub.plan?.tier || 'FREE',
             planName: activeSub.plan?.name || 'Free',
             currentPeriodEnd: activeSub.currentPeriodEnd,
           }
-        : null,
+        : {
+            tier: 'FREE',
+            planName: 'Free',
+          },
     };
   }
 

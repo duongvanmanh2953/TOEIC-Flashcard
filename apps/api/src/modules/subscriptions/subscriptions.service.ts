@@ -119,7 +119,11 @@ export class SubscriptionsService implements OnModuleInit {
   async getUserEntitlements(userId: string) {
     const today = new Date().toISOString().slice(0, 10);
 
-    const [subscription, usage, plans] = await Promise.all([
+    const [user, subscription, usage, plans] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      }),
       this.prisma.subscription.findFirst({
         where: { userId, status: 'ACTIVE' },
         include: { plan: true },
@@ -131,6 +135,21 @@ export class SubscriptionsService implements OnModuleInit {
       this.prisma.plan.findMany(),
     ]);
 
+    const isRolePro =
+      user?.role === Role.PREMIUM_USER ||
+      user?.role === Role.ADMIN ||
+      user?.role === Role.SUPER_ADMIN;
+
+    const proPlan = plans.find((p) => p.tier === SubscriptionTier.PRO) || {
+      tier: SubscriptionTier.PRO,
+      name: 'VocabFlow Pro (Unlimited)',
+      priceMonthly: 199000,
+      aiDailyQuota: -1,
+      maxCustomDecks: 999,
+      unlimitedReviews: true,
+      features: ['Unlimited AI', 'VIP Features'],
+    };
+
     const defaultPlan = plans.find((p) => p.tier === SubscriptionTier.FREE) || {
       tier: SubscriptionTier.FREE,
       name: 'Free Starter',
@@ -140,36 +159,41 @@ export class SubscriptionsService implements OnModuleInit {
       unlimitedReviews: false,
     };
 
-    const currentPlan = subscription?.plan || defaultPlan;
+    const currentPlan = isRolePro
+      ? (proPlan || subscription?.plan || defaultPlan)
+      : (subscription?.plan || defaultPlan);
+    const isPro = isRolePro || currentPlan.tier === SubscriptionTier.PRO;
+    const isPlus = !isPro && currentPlan.tier === SubscriptionTier.PLUS;
     const aiUsed = usage?.aiUsageCount || 0;
-    const aiQuota = currentPlan.aiDailyQuota;
+    const aiQuota = isPro ? -1 : currentPlan.aiDailyQuota;
     const aiRemaining = aiQuota === -1 ? 9999 : Math.max(0, aiQuota - aiUsed);
 
     return {
-      tier: currentPlan.tier,
+      tier: isPro ? SubscriptionTier.PRO : currentPlan.tier,
       dailyAiQuota: aiQuota === -1 ? 9999 : aiQuota,
-      dailyAiUsed: aiUsed,
+      dailyAiUsed: isPro ? 0 : aiUsed,
       dailyAiRemaining: aiRemaining,
       features: {
-        canCreateCustomDecks: currentPlan.maxCustomDecks > 3,
-        hasAdvancedAnalytics: currentPlan.tier !== SubscriptionTier.FREE,
-        unlimitedAiTutor: aiQuota === -1,
+        canCreateCustomDecks: isPro || currentPlan.maxCustomDecks > 3,
+        hasAdvancedAnalytics: isPro || currentPlan.tier !== SubscriptionTier.FREE,
+        unlimitedAiTutor: isPro || aiQuota === -1,
       },
       currentPlan: {
-        tier: currentPlan.tier,
-        name: currentPlan.name,
+        tier: isPro ? SubscriptionTier.PRO : currentPlan.tier,
+        name: isPro ? 'VocabFlow Pro (Unlimited)' : currentPlan.name,
         priceMonthly: currentPlan.priceMonthly,
-        isPro: currentPlan.tier === SubscriptionTier.PRO,
-        isPlus: currentPlan.tier === SubscriptionTier.PLUS,
-        isFree: currentPlan.tier === SubscriptionTier.FREE,
-        currentPeriodEnd: subscription?.currentPeriodEnd || null,
+        isPro,
+        isPlus,
+        isFree: !isPro && !isPlus,
+        currentPeriodEnd:
+          subscription?.currentPeriodEnd || (isPro ? new Date('2099-12-31T23:59:59.000Z') : null),
       },
       usageToday: {
         date: today,
-        aiUsed,
+        aiUsed: isPro ? 0 : aiUsed,
         aiQuota: aiQuota === -1 ? 'Không giới hạn' : aiQuota,
         aiRemaining,
-        canUseAI: aiRemaining > 0,
+        canUseAI: true,
       },
     };
   }

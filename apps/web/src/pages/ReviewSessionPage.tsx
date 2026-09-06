@@ -22,6 +22,7 @@ import {
   Lock,
   LockOpen,
 } from 'lucide-react';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { GlassCard } from '../components/common/GlassCard';
 
@@ -548,23 +549,22 @@ export const ReviewSessionPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Topic Selector Dropdown */}
+        {/* Topic Selector Custom Dropdown */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-bold uppercase text-slate-400 shrink-0">Chủ đề:</span>
-          <select
+          <CustomDropdown
             value={selectedTopic}
-            onChange={(e) => {
-              setSelectedTopic(e.target.value);
-              setSearchParams({ topic: e.target.value });
+            onChange={(val) => {
+              setSelectedTopic(val);
+              setSearchParams({ topic: val });
             }}
-            className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-          >
-            {TOPIC_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            options={TOPIC_OPTIONS.map((opt) => ({
+              value: opt.id,
+              label: opt.label,
+            }))}
+            size="sm"
+            className="w-44 sm:w-52"
+          />
         </div>
       </div>
 

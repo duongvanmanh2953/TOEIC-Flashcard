@@ -32,8 +32,8 @@ async function bootstrap() {
 
   // OpenAPI Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('LexiMind AI API')
-    .setDescription('Production-ready API for LexiMind AI: Spaced Repetition, Adaptive Learning, Vocabulary Explorer & AI Tutor')
+    .setTitle('VocabFlow AI API')
+    .setDescription('Production-ready API for VocabFlow AI: Spaced Repetition, Adaptive Learning, Vocabulary Explorer & AI Tutor')
     .setVersion('1.0.0')
     .addBearerAuth()
     .addTag('Authentication')
@@ -48,7 +48,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port);
-  logger.log(`🚀 LexiMind API running on: http://localhost:${port}/api/v1`);
+  logger.log(`🚀 VocabFlow API running on: http://localhost:${port}/api/v1`);
   logger.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
 }
 

@@ -66,7 +66,7 @@ export const FeatureLock: React.FC<FeatureLockProps> = ({
       {/* Action Footer */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
         <span className="text-[11px] text-slate-400 font-medium">
-          Mở khóa toàn bộ quyền hạn cùng LexiMind {variant.toUpperCase()}
+          Mở khóa toàn bộ quyền hạn cùng VocabFlow {variant.toUpperCase()}
         </span>
         <button
           type="button"
