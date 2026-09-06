@@ -71,40 +71,40 @@ export const AdminAIPage: React.FC = () => {
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>Total Tokens Consumed</span>
+            <span>Tổng số Token tiêu thụ</span>
             <Zap className="w-4 h-4 text-amber-500" />
           </div>
           <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-            {stats?.totalTokens?.toLocaleString() || '1.24M'}
+            {stats?.totalTokens ? stats.totalTokens.toLocaleString() : 0}
           </p>
           <span className="text-xs text-slate-400 mt-2 block">
-            Prompt + Completion
+            Prompt + Completion (Lưu trong DB)
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>Avg Response Latency</span>
+            <span>Độ trễ trung bình</span>
             <Clock className="w-4 h-4 text-cyan-500" />
           </div>
           <p className="text-3xl font-bold text-cyan-600 dark:text-cyan-400 mt-2">
-            {stats?.avgLatencyMs || 640}ms
+            {stats?.avgLatencyMs ?? 0}ms
           </p>
           <span className="text-xs text-emerald-500 mt-2 block">
-            p95: 1,120ms (Streaming enabled)
+            Gemini 1.5 Streaming API
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>Estimated LLM Cost</span>
+            <span>Ước tính chi phí LLM</span>
             <DollarSign className="w-4 h-4 text-emerald-500" />
           </div>
           <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
-            ${stats?.estimatedCostUsd || '4.18'}
+            ${stats?.estimatedCostUsd ?? 0}
           </p>
           <span className="text-xs text-slate-400 mt-2 block">
-            Gemini 1.5 Flash blended rate
+            Đơn giá $0.000002 / token
           </span>
         </div>
       </div>

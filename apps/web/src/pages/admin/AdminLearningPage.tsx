@@ -60,53 +60,53 @@ export const AdminLearningPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>Study Sessions Completed</span>
+            <span>Phiên học đã hoàn thành</span>
             <Clock className="w-4 h-4 text-indigo-500" />
           </div>
           <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-            {stats?.totalSessions?.toLocaleString() || 0}
+            {stats?.totalSessions ? stats.totalSessions.toLocaleString() : 0}
           </p>
           <span className="text-xs text-emerald-500 flex items-center gap-1 mt-2">
-            <TrendingUp className="w-3.5 h-3.5" /> +14% vs last week
+            <TrendingUp className="w-3.5 h-3.5" /> Dữ liệu StudySession thực tế
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>Cards Recalled (SRS)</span>
+            <span>Lượt ôn tập thẻ (ReviewEvent)</span>
             <Zap className="w-4 h-4 text-amber-500" />
           </div>
           <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-            {stats?.totalCardsReviewed?.toLocaleString() || 0}
+            {stats?.totalCardsReviewed ? stats.totalCardsReviewed.toLocaleString() : 0}
           </p>
           <span className="text-xs text-slate-400 mt-2 block">
-            Average 22 cards / session
+            Ghi nhận từ thuật toán FSRS
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>Overall SRS Accuracy</span>
+            <span>Độ chính xác SRS trung bình</span>
             <CheckCircle className="w-4 h-4 text-emerald-500" />
           </div>
           <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
-            {stats?.overallAccuracy || 84.5}%
+            {stats?.overallAccuracy ?? 0}%
           </p>
           <span className="text-xs text-slate-400 mt-2 block">
-            Target retention zone: 80% - 90%
+            Tỷ lệ trả lời đúng thực tế
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-            <span>Active Learners (7d)</span>
+            <span>Học viên hoạt động (7 ngày)</span>
             <Flame className="w-4 h-4 text-rose-500" />
           </div>
           <p className="text-3xl font-bold text-rose-500 mt-2">
-            {stats?.activeLearners7d?.toLocaleString() || 0}
+            {stats?.activeLearners7d ? stats.activeLearners7d.toLocaleString() : 0}
           </p>
           <span className="text-xs text-emerald-500 flex items-center gap-1 mt-2">
-            <TrendingUp className="w-3.5 h-3.5" /> High engagement
+            <TrendingUp className="w-3.5 h-3.5" /> Hoạt động thực tế gần nhất
           </span>
         </div>
       </div>

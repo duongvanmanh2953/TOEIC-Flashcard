@@ -22,7 +22,10 @@ import {
   Flame,
   Award,
   Zap,
+  Trash2,
 } from 'lucide-react';
+
+import { getSocket } from '../../lib/socket';
 
 export const AdminSupportPage: React.FC = () => {
   const { user } = useAuth();
@@ -38,8 +41,49 @@ export const AdminSupportPage: React.FC = () => {
   const [replyText, setReplyText] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [sending, setSending] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanModalOpen, setCleanModalOpen] = useState(false);
+  const [cleanResult, setCleanResult] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Global socket listener for new tickets / conversations updates
+  useEffect(() => {
+    const socket = getSocket();
+    socket.emit('join_admin_support');
+
+    const onConvUpdated = () => {
+      fetchConversations();
+    };
+
+    socket.on('conversation_updated', onConvUpdated);
+
+    return () => {
+      socket.off('conversation_updated', onConvUpdated);
+    };
+  }, []);
+
+  // Socket listener for active ticket messages
+  useEffect(() => {
+    if (!selectedConv?.id) return;
+    const socket = getSocket();
+    socket.emit('join_conversation', { conversationId: selectedConv.id });
+
+    const onNewMsg = (msg: any) => {
+      setSelectedConv((prev: any) => {
+        if (!prev || prev.id !== msg.conversationId) return prev;
+        const currentMsgs = prev.messages || [];
+        if (currentMsgs.some((m: any) => m.id === msg.id)) return prev;
+        return { ...prev, messages: [...currentMsgs, msg] };
+      });
+    };
+
+    socket.on('new_message', onNewMsg);
+
+    return () => {
+      socket.off('new_message', onNewMsg);
+    };
+  }, [selectedConv?.id]);
 
   useEffect(() => {
     fetchConversations();
@@ -104,13 +148,18 @@ export const AdminSupportPage: React.FC = () => {
         : `/support/admin/conversations/${selectedConv.id}/messages`;
 
       const res: any = await api.post(endpoint, { content });
-      const savedMsg = res?.data || res;
+      const savedMsg = res?.data?.data || res?.data || res;
 
-      setSelectedConv((prev: any) => ({
-        ...prev,
-        status: isInternalNote ? prev.status : 'WAITING',
-        messages: [...(prev.messages || []), savedMsg],
-      }));
+      setSelectedConv((prev: any) => {
+        if (!prev) return prev;
+        const currentMsgs = prev.messages || [];
+        if (currentMsgs.some((m: any) => m.id === savedMsg.id)) return prev;
+        return {
+          ...prev,
+          status: isInternalNote ? prev.status : 'WAITING',
+          messages: [...currentMsgs, savedMsg],
+        };
+      });
 
       // Update conversations list in left column
       setConversations((prev) =>
@@ -197,6 +246,14 @@ export const AdminSupportPage: React.FC = () => {
             </button>
           ))}
           <button
+            onClick={() => setCleanModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition"
+            title="Chỉ Admin có quyền: Tự động dọn dẹp tin nhắn cũ hơn 3 ngày"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Dọn tin nhắn &gt;3 ngày</span>
+          </button>
+          <button
             onClick={fetchConversations}
             className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition"
             title="Tải lại danh sách"
@@ -205,6 +262,66 @@ export const AdminSupportPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {cleanResult && (
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl flex items-center justify-between">
+          <span>{cleanResult}</span>
+          <button onClick={() => setCleanResult(null)} className="font-bold underline text-xs">Đóng</button>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Message Purge */}
+      {cleanModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Xác nhận dọn dẹp tin nhắn cũ</h3>
+                <p className="text-xs text-slate-400">Chỉ Admin mới có quyền thực thi thao tác này</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Thao tác này sẽ xóa sạch toàn bộ nội dung tin nhắn được tạo <strong>cũ hơn 3 ngày</strong> nhằm tối ưu dung lượng Database.
+              <br/><br/>
+              <span className="text-emerald-400 font-semibold">Lưu ý:</span> Toàn bộ <strong>danh sách yêu cầu (Tickets)</strong> và thông tin lịch sử của người dùng vẫn được bảo lưu an toàn.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCleanModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={cleaning}
+                onClick={async () => {
+                  setCleaning(true);
+                  try {
+                    const res: any = await api.post('/support/admin/cleanup-old-messages', { days: 3 });
+                    setCleanResult(res?.data?.data?.message || 'Đã dọn dẹp sạch tin nhắn cũ hơn 3 ngày thành công.');
+                    setCleanModalOpen(false);
+                    if (selectedConv?.id) fetchDetail(selectedConv.id);
+                  } catch (err) {
+                    console.error('Failed to cleanup messages', err);
+                    setCleanResult('Không thể thực hiện dọn dẹp lúc này.');
+                  } finally {
+                    setCleaning(false);
+                  }
+                }}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition flex items-center gap-1.5"
+              >
+                {cleaning && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>Xác nhận xóa</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2-COLUMN INBOX LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">

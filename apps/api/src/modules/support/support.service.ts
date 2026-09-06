@@ -394,4 +394,26 @@ export class SupportService {
       },
     });
   }
+
+  /**
+   * Admin purges support messages older than X days (default 3 days)
+   * Tickets/conversations are strictly preserved to maintain operational records and request history!
+   */
+  async cleanupOldMessages(days = 3) {
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const result = await this.prisma.supportMessage.deleteMany({
+      where: {
+        createdAt: {
+          lt: cutoff,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      deletedCount: result.count,
+      cutoffDate: cutoff.toISOString(),
+      message: `Đã dọn dẹp thành công ${result.count} tin nhắn cũ hơn ${days} ngày. Toàn bộ yêu cầu hỗ trợ vẫn được bảo lưu an toàn.`,
+    };
+  }
 }

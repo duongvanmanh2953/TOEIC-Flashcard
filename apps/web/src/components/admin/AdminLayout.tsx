@@ -63,6 +63,7 @@ export const AdminLayout: React.FC = () => {
     { to: '/admin/billing', label: 'Billing & MRR', icon: CreditCard },
     { to: '/admin/system', label: 'System Health', icon: Activity },
     { to: '/admin/security', label: 'Security & Roles', icon: ShieldCheck },
+    { to: '/admin/settings', label: 'Cài Đặt / Settings', icon: Settings },
   ];
 
   return (

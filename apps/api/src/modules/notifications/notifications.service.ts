@@ -202,4 +202,34 @@ export class NotificationsService {
       take: 20,
     });
   }
+
+  async getAdminAllNotifications(page = 1, limit = 30) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              displayName: true,
+              role: true,
+            },
+          },
+        },
+      }),
+      this.prisma.notification.count(),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 }

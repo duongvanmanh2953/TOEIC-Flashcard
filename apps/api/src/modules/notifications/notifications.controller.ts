@@ -135,4 +135,18 @@ export class NotificationsController {
   getAnnouncementsAlias() {
     return this.notificationsService.getAnnouncements();
   }
+
+  @Get('admin/all')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: List all system notifications with user context' })
+  getAdminAllNotifications(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationsService.getAdminAllNotifications(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 30,
+    );
+  }
 }

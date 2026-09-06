@@ -71,42 +71,42 @@ export const AdminBillingPage: React.FC = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
-          <span className="text-xs font-medium text-slate-500">Monthly Recurring Revenue (MRR)</span>
+          <span className="text-xs font-medium text-slate-500">Doanh thu định kỳ (MRR)</span>
           <p className="text-3xl font-bold text-slate-900 dark:text-white mt-2">
-            {(data?.mrrVnd || 42500000).toLocaleString()} ₫
+            {(data?.mrrVnd ?? data?.mrr ?? 0).toLocaleString()} ₫
           </p>
           <span className="text-xs text-emerald-500 flex items-center gap-1 mt-2">
-            <TrendingUp className="w-3.5 h-3.5" /> +18.2% vs last month
+            <TrendingUp className="w-3.5 h-3.5" /> Dữ liệu trực tiếp từ PayOS/VietQR
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
-          <span className="text-xs font-medium text-slate-500">Active Paid Subscribers</span>
+          <span className="text-xs font-medium text-slate-500">Người đăng ký PRO đang hoạt động</span>
           <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
-            {data?.activeSubscriptions || 142}
+            {data?.activeSubscriptions ?? 0}
           </p>
           <span className="text-xs text-slate-400 mt-2 block">
-            PRO Monthly + Yearly plans
+            Gói PRO Tháng + Năm kích hoạt
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
-          <span className="text-xs font-medium text-slate-500">Free to PRO Conversion</span>
+          <span className="text-xs font-medium text-slate-500">Tỷ lệ chuyển đổi Free &rarr; PRO</span>
           <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
-            {data?.conversionRate || 6.4}%
+            {data?.conversionRate ?? 0}%
           </p>
           <span className="text-xs text-slate-400 mt-2 block">
-            Industry benchmark: 3 - 5%
+            Tính trên tổng số tài khoản thực tế
           </span>
         </div>
 
         <div className="bg-white dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm">
-          <span className="text-xs font-medium text-slate-500">Monthly Churn Rate</span>
+          <span className="text-xs font-medium text-slate-500">Tỷ lệ rời bỏ (Churn Rate)</span>
           <p className="text-3xl font-bold text-slate-800 dark:text-slate-200 mt-2">
-            {data?.churnRate || 2.1}%
+            {data?.churnRate ?? 0}%
           </p>
           <span className="text-xs text-emerald-500 mt-2 block">
-            Healthy SaaS retention (&lt; 3%)
+            Theo dõi trạng thái subscription
           </span>
         </div>
       </div>

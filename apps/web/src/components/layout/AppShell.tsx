@@ -37,6 +37,8 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
+import api from '../../lib/api';
+import { getSocket } from '../../lib/socket';
 
 export const AppShell: React.FC = () => {
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
@@ -110,64 +112,103 @@ export const AppShell: React.FC = () => {
     if (btnPos !== null) {
       setBtnPos(null);
     }
-    setSupportModalOpen((prev) => !prev);
+    setSupportModalOpen((prev) => {
+      const next = !prev;
+      if (next && user) {
+        fetchUserChat();
+      }
+      return next;
+    });
   };
-  const [supportMessages, setSupportMessages] = useState<Array<{ id: string; sender: 'user' | 'support'; text: string; time: string }>>(() => {
-    const saved = localStorage.getItem('vocabflow_support_chat_history') || localStorage.getItem('leximind_support_chat_history');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {}
-    }
-    return [
-      {
-        id: 'welcome',
-        sender: 'support',
-        text: 'Xin chào! Đội ngũ VocabFlow Support đang trực tuyến. Bạn cần hỗ trợ về tài khoản, thanh toán VietQR hay tính năng học tập nào ạ?',
-        time: 'Vừa xong',
-      },
-    ];
-  });
+
+  // Realtime Sync CSKH Support State (Backbone synced with SupportCenterPage & AdminSupportPage)
+  const [activeConv, setActiveConv] = useState<any>(null);
+  const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [loadingChat, setLoadingChat] = useState(false);
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return;
-    const userMsg = {
-      id: Date.now().toString(),
-      sender: 'user' as const,
-      text: chatInput.trim(),
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    };
-    const newMsgs = [...supportMessages, userMsg];
-    setSupportMessages(newMsgs);
-    localStorage.setItem('vocabflow_support_chat_history', JSON.stringify(newMsgs));
-    setChatInput('');
-    setIsTyping(true);
-
-    // Phản hồi realtime từ Support / AI Companion
-    setTimeout(() => {
-      let replyText = 'Cảm ơn bạn đã gửi tin nhắn! Nhân viên hỗ trợ đã tiếp nhận và đang kiểm tra thông tin để phản hồi bạn ngay.';
-      const lower = userMsg.text.toLowerCase();
-      if (lower.includes('thanh toán') || lower.includes('qr') || lower.includes('vietcombank') || lower.includes('tiền')) {
-        replyText = 'Về giao dịch thanh toán VietQR: Hệ thống tự động kích hoạt gói học trong 30s sau khi Napas chuyển tiền. Bạn vui lòng kiểm tra xem nội dung chuyển khoản đã đúng mã đơn hàng chưa nhé!';
-      } else if (lower.includes('pro') || lower.includes('plus') || lower.includes('gói') || lower.includes('nâng cấp')) {
-        replyText = 'Gói Pro mở khóa 100% quyền hạn AI Tutor, không giới hạn Smart Review và phân tích biểu đồ CEFR. Bạn có thể kích hoạt tại mục Mở Khóa Premium.';
+  // Auto-fetch latest user ticket and messages
+  const fetchUserChat = async () => {
+    if (!user) return;
+    setLoadingChat(true);
+    try {
+      const res: any = await api.get('/support/conversations');
+      const payload = res?.data?.data || res?.data || res || [];
+      const items = payload.items || (Array.isArray(payload) ? payload : []);
+      if (items.length > 0) {
+        const latest = items[0];
+        setActiveConv(latest);
+        const detailRes: any = await api.get(`/support/conversations/${latest.id}`);
+        const conv = detailRes?.data?.data || detailRes?.data || detailRes || {};
+        setSupportMessages(conv.messages || []);
       }
+    } catch (err) {
+      console.error('Failed to load user CSKH conversation:', err);
+    } finally {
+      setLoadingChat(false);
+    }
+  };
 
-      const supportReply = {
-        id: (Date.now() + 1).toString(),
-        sender: 'support' as const,
-        text: replyText,
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      };
-      setIsTyping(false);
+  useEffect(() => {
+    if (user) {
+      fetchUserChat();
+    }
+  }, [user]);
+
+  // Socket.io Realtime Listener for active conversation
+  useEffect(() => {
+    if (!activeConv?.id) return;
+    const socket = getSocket();
+    socket.emit('join_conversation', { conversationId: activeConv.id, userId: user?.id });
+
+    const onNewMessage = (msg: any) => {
       setSupportMessages((prev) => {
-        const updated = [...prev, supportReply];
-        localStorage.setItem('vocabflow_support_chat_history', JSON.stringify(updated));
-        return updated;
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
       });
-    }, 1200);
+    };
+
+    socket.on('new_message', onNewMessage);
+    return () => {
+      socket.off('new_message', onNewMessage);
+    };
+  }, [activeConv?.id]);
+
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || sendingMsg) return;
+    if (!user) {
+      promptLogin();
+      return;
+    }
+
+    const content = chatInput.trim();
+    setChatInput('');
+    setSendingMsg(true);
+
+    try {
+      if (activeConv?.id) {
+        const res: any = await api.post(`/support/conversations/${activeConv.id}/messages`, {
+          content,
+        });
+        const savedMsg = res?.data?.data || res?.data || res;
+        setSupportMessages((prev) => (prev.some((m) => m.id === savedMsg.id) ? prev : [...prev, savedMsg]));
+      } else {
+        const res: any = await api.post('/support/conversations', {
+          subject: 'Hỗ trợ trực tuyến VocabFlow CSKH',
+          message: content,
+          tags: ['LIVE_CHAT'],
+        });
+        const created = res?.data?.data || res?.data || res;
+        setActiveConv(created);
+        setSupportMessages(created.messages || []);
+      }
+    } catch (err) {
+      console.error('Failed to send support message:', err);
+    } finally {
+      setSendingMsg(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -762,39 +803,51 @@ export const AppShell: React.FC = () => {
           }`}
         >
           <div
-            className="w-[calc(100vw-2rem)] sm:w-[400px] rounded-3xl bg-slate-900 border border-slate-700/80 shadow-[0_25px_60px_rgba(0,0,0,0.6)] p-5 space-y-3.5 flex flex-col max-h-[82vh] sm:max-h-[560px] overflow-hidden text-slate-100"
+            className="w-[calc(100vw-2rem)] sm:w-[330px] rounded-2xl bg-slate-900 border border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-3.5 space-y-2.5 flex flex-col max-h-[80vh] sm:max-h-[460px] overflow-hidden text-slate-100"
           >
-            {/* Header with Title and Online status */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shadow-xs border border-indigo-500/30">
-                  <Headphones className="w-5 h-5 text-indigo-400" />
+            {/* Header with Title, Online status & Fullscreen link */}
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shadow-xs border border-indigo-500/30">
+                  <Headphones className="w-4 h-4 text-indigo-400" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-extrabold text-white leading-snug">
+                  <h4 className="text-xs font-black text-white leading-snug">
                     VocabFlow CSKH 24/7
                   </h4>
-                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold">
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span>Đội ngũ CSKH đang trực tuyến</span>
+                    <span>Đang trực tuyến</span>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setSupportModalOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                aria-label="Đóng"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    setSupportModalOpen(false);
+                    navigate('/support');
+                  }}
+                  className="px-2 py-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 hover:bg-slate-800 rounded-md transition"
+                  title="Mở toàn màn hình"
+                >
+                  Toàn màn hình &rarr;
+                </button>
+                <button
+                  onClick={() => setSupportModalOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  aria-label="Đóng"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
           {/* Support Navigation Tabs */}
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-800/90 text-xs font-bold border border-slate-700/70">
+          <div className="grid grid-cols-2 p-0.5 rounded-xl bg-slate-800/90 text-[11px] font-bold border border-slate-700/70">
             <button
               type="button"
               onClick={() => setSupportTab('chat')}
-              className={`py-1.5 rounded-xl transition ${
+              className={`py-1 rounded-lg transition ${
                 supportTab === 'chat'
                   ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
                   : 'text-slate-400 hover:text-white'
@@ -805,7 +858,7 @@ export const AppShell: React.FC = () => {
             <button
               type="button"
               onClick={() => setSupportTab('quick')}
-              className={`py-1.5 rounded-xl transition ${
+              className={`py-1 rounded-lg transition ${
                 supportTab === 'quick'
                   ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
                   : 'text-slate-400 hover:text-white'
@@ -817,41 +870,62 @@ export const AppShell: React.FC = () => {
 
           {/* Tab 1: Realtime Support Chat */}
           {supportTab === 'chat' ? (
-            <div className="flex-1 flex flex-col min-h-0 space-y-3">
+            <div className="flex-1 flex flex-col min-h-0 space-y-2">
               {/* Messages Scroll Area */}
-              <div className="h-56 overflow-y-auto space-y-2.5 pr-1 text-xs">
-                {supportMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                  >
-                    <div
-                      className={`max-w-[85%] p-3 rounded-2xl leading-relaxed ${
-                        msg.sender === 'user'
-                          ? 'btn-glass-primary !border-cyan-400/40 rounded-tr-none text-white'
-                          : 'bg-slate-800 text-slate-200 border border-slate-700/80 rounded-tl-none'
-                      }`}
-                    >
-                      {msg.text}
+              <div className="h-44 overflow-y-auto space-y-2 pr-1 text-xs">
+                {loadingChat ? (
+                  <div className="py-12 text-center text-xs text-slate-400">Đang tải tin nhắn...</div>
+                ) : supportMessages.length === 0 ? (
+                  <div className="py-6 px-3 text-center space-y-2">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 mx-auto flex items-center justify-center">
+                      <Headphones className="w-4 h-4" />
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-1 px-1 flex items-center gap-1">
-                      <span>{msg.time}</span>
-                      {msg.sender === 'user' && <CheckCheck className="w-3 h-3 text-cyan-400" />}
-                    </span>
+                    <p className="text-xs text-slate-200 font-bold">Chào mừng bạn đến với VocabFlow CSKH!</p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Bạn cần hỗ trợ về tài khoản, thanh toán VietQR hay tính năng học tập nào? Hãy gửi tin nhắn bên dưới nhé.
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  supportMessages.map((msg) => {
+                    const isUser = msg.senderRole === 'USER' || msg.senderId === user?.id;
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] p-2 rounded-xl text-[11.5px] leading-relaxed ${
+                            isUser
+                              ? 'bg-indigo-600 border border-indigo-500 rounded-tr-none text-white'
+                              : 'bg-slate-800 text-slate-200 border border-slate-700/80 rounded-tl-none'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                        <span className="text-[9px] text-slate-400 mt-0.5 px-1 flex items-center gap-0.5">
+                          <span>
+                            {msg.createdAt
+                              ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                              : 'Vừa xong'}
+                          </span>
+                          {isUser && <CheckCheck className="w-2.5 h-2.5 text-cyan-400" />}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
                 {isTyping && (
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 italic">
+                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 italic">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"></span>
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-100"></span>
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-200"></span>
-                    <span>VocabFlow Support đang nhập phản hồi...</span>
+                    <span>Hỗ trợ viên đang soạn tin...</span>
                   </div>
                 )}
               </div>
 
               {/* Chat Composer Input */}
-              <div className="pt-2 border-t border-slate-800 flex items-center gap-2">
+              <div className="pt-1.5 border-t border-slate-800 flex items-center gap-1.5">
                 <input
                   type="text"
                   value={chatInput}
@@ -859,17 +933,18 @@ export const AppShell: React.FC = () => {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSendMessage();
                   }}
-                  placeholder="Nhập câu hỏi của bạn..."
-                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                  disabled={sendingMsg}
+                  placeholder={user ? "Nhập tin nhắn..." : "Đăng nhập để gửi tin nhắn..."}
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 disabled:opacity-50"
                 />
                 <button
                   type="button"
                   onClick={handleSendMessage}
-                  disabled={!chatInput.trim()}
-                  className="p-2.5 rounded-xl btn-glass-primary disabled:opacity-50 text-white shrink-0"
+                  disabled={!chatInput.trim() || sendingMsg}
+                  className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white shrink-0 transition"
                   aria-label="Gửi tin nhắn"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className={`w-3.5 h-3.5 ${sendingMsg ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             </div>

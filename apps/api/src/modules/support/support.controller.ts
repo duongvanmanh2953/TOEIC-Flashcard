@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SupportService } from './support.service';
+import { SupportGateway } from './support.gateway';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -21,7 +22,10 @@ import { Role, SupportStatus, SupportPriority } from '@prisma/client';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class SupportController {
-  constructor(private readonly supportService: SupportService) {}
+  constructor(
+    private readonly supportService: SupportService,
+    private readonly supportGateway: SupportGateway,
+  ) {}
 
   // =========================================================================
   // USER ROUTES
@@ -59,12 +63,14 @@ export class SupportController {
 
   @Post('conversations/:id/messages')
   @ApiOperation({ summary: 'User: Send message in conversation' })
-  userSendMessage(
+  async userSendMessage(
     @CurrentUser('id') userId: string,
     @Param('id') conversationId: string,
     @Body('content') content: string,
   ) {
-    return this.supportService.userSendMessage(userId, conversationId, content);
+    const msg = await this.supportService.userSendMessage(userId, conversationId, content);
+    this.supportGateway.broadcastNewMessage(conversationId, msg);
+    return msg;
   }
 
   @Post('conversations/:id/resolve')
@@ -132,12 +138,14 @@ export class SupportController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Admin: Reply to user conversation' })
-  adminSendMessage(
+  async adminSendMessage(
     @CurrentUser('id') adminId: string,
     @Param('id') conversationId: string,
     @Body('content') content: string,
   ) {
-    return this.supportService.adminSendMessage(adminId, conversationId, content, false);
+    const msg = await this.supportService.adminSendMessage(adminId, conversationId, content, false);
+    this.supportGateway.broadcastNewMessage(conversationId, msg);
+    return msg;
   }
 
   @Post('admin/conversations/:id/note')
@@ -184,5 +192,13 @@ export class SupportController {
     @Body('assignedAdminId') assignedAdminId: string | null,
   ) {
     return this.supportService.assignAdmin(conversationId, assignedAdminId);
+  }
+
+  @Post('admin/cleanup-old-messages')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: Purge messages older than 3 days while keeping ticket requests' })
+  cleanupOldMessages(@Body('days') days?: number) {
+    return this.supportService.cleanupOldMessages(days || 3);
   }
 }

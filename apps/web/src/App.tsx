@@ -37,6 +37,7 @@ import { AdminAIPage } from './pages/admin/AdminAIPage';
 import { AdminBillingPage } from './pages/admin/AdminBillingPage';
 import { AdminSystemPage } from './pages/admin/AdminSystemPage';
 import { AdminSecurityPage } from './pages/admin/AdminSecurityPage';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
   children,
@@ -157,6 +158,7 @@ export const App: React.FC = () => {
               <Route path="billing" element={<AdminBillingPage />} />
               <Route path="system" element={<AdminSystemPage />} />
               <Route path="security" element={<AdminSecurityPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 
             {/* Catch-all redirect */}
