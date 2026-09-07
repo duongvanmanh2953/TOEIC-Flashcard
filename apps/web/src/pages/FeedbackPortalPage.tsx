@@ -153,9 +153,9 @@ export const FeedbackPortalPage: React.FC = () => {
             <Lightbulb className="w-3.5 h-3.5" />
             <span>Community Feedback & Ideas</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Đóng Góp Ý Kiến & Lộ Trình Phát Triển
-          </h1>
+          </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Cùng xây dựng VocabFlow thông minh hơn. Đề xuất tính năng, báo lỗi hoặc bình chọn cho ý kiến cộng đồng.
           </p>

@@ -58,9 +58,9 @@ export const AdminOverviewPage: React.FC = () => {
             <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
             <span>Mission Control Center</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
             Tổng Quan Hệ Thống (Ultra Overview)
-          </h1>
+          </h2>
           <p className="text-xs text-slate-400 mt-0.5">
             Dữ liệu vận hành thời gian thực từ toàn bộ dịch vụ VocabFlow AI.
           </p>

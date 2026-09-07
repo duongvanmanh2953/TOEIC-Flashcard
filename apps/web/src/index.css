@@ -579,12 +579,28 @@ a.card-brand-effect {
   background: #94a3b8;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+/* Chat-specific high visibility scrollbar */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 rgba(15, 23, 42, 0.5);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: 9999px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 9999px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 /* 3D Flip Flashcard Engine */

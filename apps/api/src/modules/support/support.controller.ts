@@ -33,7 +33,7 @@ export class SupportController {
 
   @Post('conversations')
   @ApiOperation({ summary: 'User: Create a support ticket' })
-  createTicket(
+  async createTicket(
     @CurrentUser('id') userId: string,
     @Body()
     dto: {
@@ -43,7 +43,11 @@ export class SupportController {
       tags?: string[];
     },
   ) {
-    return this.supportService.createTicket(userId, dto);
+    const conv = await this.supportService.createTicket(userId, dto);
+    if (conv?.messages?.[0]) {
+      this.supportGateway.broadcastNewMessage(conv.id, conv.messages[0], userId);
+    }
+    return conv;
   }
 
   @Get('conversations')
@@ -69,7 +73,7 @@ export class SupportController {
     @Body('content') content: string,
   ) {
     const msg = await this.supportService.userSendMessage(userId, conversationId, content);
-    this.supportGateway.broadcastNewMessage(conversationId, msg);
+    this.supportGateway.broadcastNewMessage(conversationId, msg, userId);
     return msg;
   }
 
@@ -80,6 +84,19 @@ export class SupportController {
     @Param('id') conversationId: string,
   ) {
     return this.supportService.userResolveTicket(userId, conversationId);
+  }
+
+  @Post('conversations/:id/read')
+  @ApiOperation({ summary: 'User: Mark conversation as read' })
+  async userMarkAsRead(
+    @CurrentUser('id') userId: string,
+    @Param('id') conversationId: string,
+  ) {
+    const result = await this.supportService.userMarkAsRead(userId, conversationId);
+    if (result.count > 0) {
+      this.supportGateway.broadcastMessagesRead(conversationId, 'USER');
+    }
+    return result;
   }
 
   // =========================================================================
@@ -144,7 +161,8 @@ export class SupportController {
     @Body('content') content: string,
   ) {
     const msg = await this.supportService.adminSendMessage(adminId, conversationId, content, false);
-    this.supportGateway.broadcastNewMessage(conversationId, msg);
+    const recipientUserId = (msg as any)?.recipientUserId;
+    this.supportGateway.broadcastNewMessage(conversationId, msg, recipientUserId);
     return msg;
   }
 
@@ -200,5 +218,17 @@ export class SupportController {
   @ApiOperation({ summary: 'Admin: Purge messages older than 3 days while keeping ticket requests' })
   cleanupOldMessages(@Body('days') days?: number) {
     return this.supportService.cleanupOldMessages(days || 3);
+  }
+
+  @Post('admin/conversations/:id/read')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: Mark conversation messages as read' })
+  async adminMarkAsRead(@Param('id') conversationId: string) {
+    const result = await this.supportService.adminMarkAsRead(conversationId);
+    if (result.count > 0) {
+      this.supportGateway.broadcastMessagesRead(conversationId, 'ADMIN');
+    }
+    return result;
   }
 }

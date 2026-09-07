@@ -219,9 +219,9 @@ export const SettingsPage: React.FC = () => {
             <Sliders className="w-3.5 h-3.5" />
             <span>Preferences & Settings</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-snug">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-snug">
             Cài Đặt & Tùy Chọn Trải Nghiệm
-          </h1>
+          </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
             Tùy biến giao diện, âm thanh, tùy chọn học từ và quản lý dữ liệu cá nhân theo ý bạn.
           </p>

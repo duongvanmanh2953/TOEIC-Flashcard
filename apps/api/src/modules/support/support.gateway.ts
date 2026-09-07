@@ -50,8 +50,28 @@ export class SupportGateway
   ) {
     const room = `conv_${data.conversationId}`;
     client.join(room);
-    this.logger.log(`Socket ${client.id} joined room ${room}`);
+    if (data.userId) {
+      client.join(`user_${data.userId}`);
+    }
+    this.logger.log(`Socket ${client.id} joined room ${room} (user: ${data.userId || 'anon'})`);
     return { status: 'joined', room };
+  }
+
+  /**
+   * User joins their personal room for realtime support alerts & updates
+   */
+  @SubscribeMessage('join_user')
+  handleJoinUser(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { userId: string },
+  ) {
+    if (data?.userId) {
+      const room = `user_${data.userId}`;
+      client.join(room);
+      this.logger.log(`Socket ${client.id} joined personal user room ${room}`);
+      return { status: 'joined_user', room };
+    }
+    return { status: 'ignored' };
   }
 
   /**
@@ -139,15 +159,40 @@ export class SupportGateway
   /**
    * Helper to broadcast a message to the conversation room and notify admin inbox
    */
-  broadcastNewMessage(conversationId: string, message: any) {
+  broadcastNewMessage(conversationId: string, message: any, userId?: string) {
     if (this.server) {
       this.server.to(`conv_${conversationId}`).emit('new_message', message);
+      if (userId) {
+        this.server.to(`user_${userId}`).emit('new_message', message);
+      }
       this.server.to('admin_support_inbox').emit('conversation_updated', {
         conversationId,
         lastMessage: message,
         timestamp: new Date().toISOString(),
       });
     }
+  }
+
+  /**
+   * Helper to broadcast read receipts to conversation room
+   */
+  broadcastMessagesRead(conversationId: string, readerRole: string) {
+    if (this.server) {
+      this.server.to(`conv_${conversationId}`).emit('messages_read', {
+        conversationId,
+        readerRole,
+        readAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  @SubscribeMessage('mark_read')
+  handleMarkRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { conversationId: string; role?: string },
+  ) {
+    this.broadcastMessagesRead(data.conversationId, data.role || 'USER');
+    return { status: 'marked_read' };
   }
 
   /**

@@ -86,10 +86,10 @@ export const AdminSettingsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-            <Settings className="w-7 h-7 text-indigo-500" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Settings className="w-6 h-6 text-indigo-500" />
             {t('adminSettings.title', 'Cài Đặt Hệ Thống & Cấu Hình Quản Trị')}
-          </h1>
+          </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {t('adminSettings.subtitle', 'Quản lý chính sách lưu trữ DB, mô hình AI, cổng thanh toán và thông số vận hành VocabFlow.')}
           </p>

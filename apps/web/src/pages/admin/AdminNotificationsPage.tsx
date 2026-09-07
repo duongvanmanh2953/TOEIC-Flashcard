@@ -122,10 +122,10 @@ export const AdminNotificationsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-            <Bell className="w-7 h-7 text-indigo-500" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Bell className="w-6 h-6 text-indigo-500" />
             {t('adminNotifications.title', 'Trung Tâm Phát Thanh & Nhật Ký Thông Báo')}
-          </h1>
+          </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {t('adminNotifications.subtitle', 'Quản lý thông báo đẩy toàn hệ thống, tin tức khuyến mãi và nhật ký thông báo học viên.')}
           </p>

@@ -45,10 +45,10 @@ export const AdminBillingPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-            <CreditCard className="w-7 h-7 text-emerald-500" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+            <CreditCard className="w-6 h-6 text-emerald-500" />
             Billing, MRR & PayOS Gateway
-          </h1>
+          </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Track monthly recurring revenue, VietQR transactions, subscription conversions and churn
           </p>

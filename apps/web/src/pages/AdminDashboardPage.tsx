@@ -122,9 +122,9 @@ export const AdminDashboardPage: React.FC = () => {
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>{t('admin.title', 'Trung Tâm Quản Trị & Vận Hành')}</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-snug">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-snug">
             Giám Sát Hệ Thống & Kiểm Duyệt Nội Dung
-          </h1>
+          </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
             {t('admin.subtitle', 'Theo dõi sức khỏe hệ thống, hàng đợi duyệt và phân tích học viên.')}
           </p>

@@ -130,7 +130,7 @@ export const App: React.FC = () => {
               <Route path="/upgrade" element={<SubscriptionUpgradePage />} />
               
               {/* User Support, Feedback & Notifications */}
-              <Route path="/support" element={<SupportCenterPage />} />
+              <Route path="/support" element={<Navigate to="/dashboard" replace />} />
               <Route path="/feedback" element={<FeedbackPortalPage />} />
               <Route path="/notifications" element={<NotificationCenterPage />} />
 
