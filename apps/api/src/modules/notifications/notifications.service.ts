@@ -232,4 +232,20 @@ export class NotificationsService {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  async adminClearAllNotifications(adminId?: string) {
+    const deleted = await this.prisma.notification.deleteMany({});
+    if (adminId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: 'CLEAR_ALL_NOTIFICATIONS',
+          targetType: 'NOTIFICATION',
+          targetId: 'ALL',
+          metadata: { count: deleted.count },
+        },
+      });
+    }
+    return { success: true, count: deleted.count };
+  }
 }

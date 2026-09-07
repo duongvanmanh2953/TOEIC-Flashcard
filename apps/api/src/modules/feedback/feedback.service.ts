@@ -8,6 +8,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { FeedbackType, FeedbackStatus, SupportPriority } from '@prisma/client';
 
+import { SupportGateway } from '../support/support.gateway';
+
 @Injectable()
 export class FeedbackService {
   private readonly logger = new Logger(FeedbackService.name);
@@ -15,6 +17,7 @@ export class FeedbackService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private supportGateway: SupportGateway,
   ) {}
 
   // =========================================================================
@@ -30,7 +33,7 @@ export class FeedbackService {
       priority?: SupportPriority;
     },
   ) {
-    return this.prisma.feedback.create({
+    const feedback = await this.prisma.feedback.create({
       data: {
         userId,
         type: dto.type || FeedbackType.GENERAL,
@@ -43,6 +46,24 @@ export class FeedbackService {
         user: { select: { id: true, displayName: true, email: true } },
       },
     });
+
+    // Operational Admin Alert via Realtime Gateway
+    const isBug = dto.type === FeedbackType.BUG_REPORT;
+    const isFeature = dto.type === FeedbackType.FEATURE_REQUEST;
+    const alertType = isBug ? 'NEW_BUG_REPORT' : isFeature ? 'NEW_FEATURE_REQUEST' : 'NEW_FEEDBACK';
+    const alertPriority = isBug ? 'HIGH' : 'MEDIUM';
+    const alertTitle = isBug ? 'Báo cáo sự cố mới' : isFeature ? 'Đề xuất tính năng mới' : 'Ý kiến đóng góp mới';
+
+    this.supportGateway.broadcastAdminEvent({
+      type: alertType,
+      priority: alertPriority as any,
+      title: alertTitle,
+      message: `${feedback.user?.displayName || feedback.user?.email || 'Học viên'}: "${dto.title.slice(0, 60)}"`,
+      targetType: 'FEEDBACK',
+      targetId: feedback.id,
+    });
+
+    return feedback;
   }
 
   async getMyFeedback(userId: string) {

@@ -47,6 +47,14 @@ export class SupportController {
     if (conv?.messages?.[0]) {
       this.supportGateway.broadcastNewMessage(conv.id, conv.messages[0], userId);
     }
+    this.supportGateway.broadcastAdminEvent({
+      type: 'NEW_CONVERSATION',
+      priority: dto.priority === 'URGENT' || dto.priority === 'HIGH' ? 'HIGH' : 'MEDIUM',
+      title: 'Hội thoại hỗ trợ mới',
+      message: `${conv.ticketId}: "${dto.subject}"`,
+      targetType: 'CONVERSATION',
+      targetId: conv.id,
+    });
     return conv;
   }
 

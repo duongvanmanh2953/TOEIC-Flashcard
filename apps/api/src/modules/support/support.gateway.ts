@@ -203,4 +203,26 @@ export class SupportGateway
       this.server.emit('notification:new', notification);
     }
   }
+
+  /**
+   * Helper to broadcast operational admin events (FEEDBACK_CREATED, CONVERSATION_CREATED, etc.)
+   */
+  broadcastAdminEvent(event: {
+    type: string;
+    priority: 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    title: string;
+    message: string;
+    targetType?: string;
+    targetId?: string;
+    timestamp?: string;
+  }) {
+    if (this.server) {
+      const payload = {
+        ...event,
+        timestamp: event.timestamp || new Date().toISOString(),
+      };
+      this.server.to('admin_support_inbox').emit('admin_event:new', payload);
+      this.server.to('admin_support_inbox').emit('admin_badge_update');
+    }
+  }
 }

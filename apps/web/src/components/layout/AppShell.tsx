@@ -381,6 +381,23 @@ export const AppShell: React.FC = () => {
               </NavLink>
             ))}
           </nav>
+
+          {isAdmin && (
+            <div className="pt-2 px-1">
+              <NavLink
+                to="/admin"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 transition group shadow-xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>🛠 Admin Center</span>
+                </div>
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">
+                  ADM
+                </span>
+              </NavLink>
+            </div>
+          )}
         </div>
 
         {/* Pinned User Footer: strictly fixed at bottom */}
@@ -544,6 +561,21 @@ export const AppShell: React.FC = () => {
                 )}
               </NavLink>
             ))}
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/25"
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>🛠 Admin Center</span>
+                </div>
+                <span className="text-[9px] uppercase font-black px-1.5 py-0.5 bg-amber-500 text-slate-950 rounded-md">
+                  ADMIN
+                </span>
+              </NavLink>
+            )}
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
@@ -574,10 +606,10 @@ export const AppShell: React.FC = () => {
             {isAdmin && (
               <NavLink
                 to="/admin"
-                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shadow-xs"
+                className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shadow-xs"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin Command Center</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                <span>🛠 Admin Center</span>
               </NavLink>
             )}
 
@@ -737,6 +769,19 @@ export const AppShell: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setProfileModalOpen(false);
+                  navigate('/admin');
+                }}
+                className="w-full mb-3 py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-amber-500/25 transition shadow-xs"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-500" />
+                <span>Mở 🛠 Admin Center (Quản Trị Hệ Thống)</span>
+              </button>
+            )}
 
             {/* Footer Buttons */}
             <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">

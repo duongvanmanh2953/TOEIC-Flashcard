@@ -35,9 +35,13 @@ import { AdminLearningPage } from './pages/admin/AdminLearningPage';
 import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
 import { AdminAIPage } from './pages/admin/AdminAIPage';
 import { AdminBillingPage } from './pages/admin/AdminBillingPage';
+import { AdminFinancePage } from './pages/admin/AdminFinancePage';
 import { AdminSystemPage } from './pages/admin/AdminSystemPage';
 import { AdminSecurityPage } from './pages/admin/AdminSecurityPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { AdminSharedVocabularyPage } from './pages/admin/AdminSharedVocabularyPage';
+import { AdminPricingPage } from './pages/admin/AdminPricingPage';
+import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
   children,
@@ -85,8 +89,11 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </div>
     );
   }
-  if (!user || isGuest || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
-    return <Navigate to="/dashboard" replace />;
+  if (!user || isGuest) {
+    return <Navigate to="/login" replace />;
+  }
+  if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    return <NotAuthorizedPage />;
   }
   return <>{children}</>;
 };
@@ -147,15 +154,20 @@ export const App: React.FC = () => {
               }
             >
               <Route index element={<AdminOverviewPage />} />
-              <Route path="overview" element={<AdminOverviewPage />} />
+              <Route path="dashboard" element={<Navigate to="/admin" replace />} />
+              <Route path="overview" element={<Navigate to="/admin" replace />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="support" element={<AdminSupportPage />} />
+              <Route path="conversations" element={<AdminSupportPage />} />
               <Route path="feedback" element={<AdminFeedbackPage />} />
               <Route path="vocabulary" element={<AdminVocabularyPage />} />
+              <Route path="shared-vocabulary" element={<AdminSharedVocabularyPage />} />
               <Route path="learning" element={<AdminLearningPage />} />
               <Route path="notifications" element={<AdminNotificationsPage />} />
               <Route path="ai" element={<AdminAIPage />} />
               <Route path="billing" element={<AdminBillingPage />} />
+              <Route path="finance" element={<AdminFinancePage />} />
+              <Route path="pricing" element={<AdminPricingPage />} />
               <Route path="system" element={<AdminSystemPage />} />
               <Route path="security" element={<AdminSecurityPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />

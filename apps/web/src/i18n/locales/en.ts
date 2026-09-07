@@ -1,3 +1,8 @@
+import { enFinance } from './en/finance';
+import { enFeedback } from './en/feedback';
+import { enSupport } from './en/support';
+import { enAdmin } from './en/admin';
+
 export const en = {
   common: {
     appName: 'VocabFlow',
@@ -85,33 +90,10 @@ export const en = {
     registerInterest: 'Join Early Access List',
     aiQuota: 'Daily AI Consultations',
   },
-  admin: {
-    title: 'Admin Operations & Telemetry',
-    subtitle: 'System health, moderation queues, and learner analytics.',
-    healthCard: 'System Health',
-    totalUsers: 'Total Registered Learners',
-    activeToday: 'Active Today (DAU)',
-    totalReviews: 'Reviews Executed',
-    accuracy: 'Platform Accuracy',
-    moderationQueue: 'Deck Moderation Queue',
-    userDirectory: 'Learner Directory',
-    auditLogs: 'Audit Trail Records',
-  },
-  support: {
-    title: 'Customer Support Desk',
-    online: 'Online',
-    offline: 'Offline',
-    typing: 'Specialist is typing...',
-    placeholder: 'Type a message...',
-    loginPrompt: 'Please log in to send a support message',
-    welcomeTitle: 'Welcome to VocabFlow CSKH!',
-    welcomeBody: 'How can we help you today with your account, VietQR billing, or study features? Send us a message below.',
-    fullscreen: 'Full Screen',
-    cleanMessagesBtn: 'Purge Messages >3 Days',
-    cleanModalTitle: 'Confirm Message Purge',
-    cleanModalDesc: 'This will purge message contents older than 3 days to optimize database storage. All support tickets and user request logs are safely preserved.',
-    cleanSuccess: 'Purged messages older than 3 days successfully.',
-  },
+  admin: enAdmin,
+  support: enSupport,
+  feedback: enFeedback,
+  finance: enFinance,
   adminNotifications: {
     title: 'Broadcast Center & Notification Feed',
     subtitle: 'Manage platform broadcasts, targeted cohort alerts, and real-time learner notification feeds.',

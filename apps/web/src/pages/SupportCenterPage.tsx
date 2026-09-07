@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { getSocket } from '../lib/socket';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 interface Ticket {
   id: string;
@@ -587,16 +588,17 @@ export const SupportCenterPage: React.FC = () => {
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
                   Danh mục
                 </label>
-                <select
+                <CustomSelect
                   value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none"
-                >
-                  <option value="GENERAL">Tư vấn chung</option>
-                  <option value="BILLING">Thanh toán VietQR / PayOS</option>
-                  <option value="TECH">Lỗi kỹ thuật / Đồng bộ Flashcard</option>
-                  <option value="AI_TUTOR">Trợ lý AI & Lộ trình TOEIC</option>
-                </select>
+                  onChange={(val) => setNewCategory(val)}
+                  options={[
+                    { value: 'GENERAL', label: 'Tư vấn chung' },
+                    { value: 'BILLING', label: 'Thanh toán VietQR / PayOS' },
+                    { value: 'TECH', label: 'Lỗi kỹ thuật / Đồng bộ Flashcard' },
+                    { value: 'AI_TUTOR', label: 'Trợ lý AI & Lộ trình TOEIC' },
+                  ]}
+                  size="sm"
+                />
               </div>
 
               <div>

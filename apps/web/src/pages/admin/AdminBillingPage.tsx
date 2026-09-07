@@ -3,7 +3,7 @@ import {
   CreditCard, DollarSign, TrendingUp, Users, ArrowUpRight, 
   CheckCircle2, Clock, XCircle, Download, RefreshCw, QrCode
 } from 'lucide-react';
-import api from '../../lib/api';
+import api, { extractApiData } from '../../lib/api';
 
 interface BillingOverview {
   mrrVnd: number;
@@ -23,14 +23,24 @@ interface BillingOverview {
 export const AdminBillingPage: React.FC = () => {
   const [data, setData] = useState<BillingOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchBilling = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await api.get('/admin/billing-stats');
-      setData(res.data?.data || null);
-    } catch (err) {
+      const res: any = await api.get('/admin/billing-stats');
+      const raw = extractApiData<any>(res, {});
+      setData({
+        mrrVnd: raw.mrrVnd ?? raw.mrr ?? 0,
+        activeSubscriptions: raw.activeSubscriptions ?? 0,
+        churnRate: raw.churnRate ?? 0,
+        conversionRate: raw.conversionRate ?? 0,
+        recentTransactions: raw.recentTransactions ?? [],
+      });
+    } catch (err: any) {
       console.error('Failed to load billing stats:', err);
+      setError('Unable to load billing telemetry.');
     } finally {
       setLoading(false);
     }

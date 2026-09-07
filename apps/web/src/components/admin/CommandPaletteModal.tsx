@@ -28,17 +28,20 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({ isOpen
   const [query, setQuery] = useState('');
 
   const commands = [
-    { title: 'Bảng Điều Khiển Tổng Quan (Overview)', desc: 'KPI, Needs Attention, Live Activity', route: '/admin/dashboard', icon: LayoutDashboard },
+    { title: 'Bảng Điều Khiển Tổng Quan (Overview)', desc: 'KPIs, Critical Alerts, Live Activity', route: '/admin', icon: LayoutDashboard },
     { title: 'Quản Lý Người Dùng (Users)', desc: 'Danh sách học viên, phân quyền, trạng thái', route: '/admin/users', icon: Users },
-    { title: 'Sức Khỏe Kho Từ Vựng (Vocabulary Health)', desc: 'Từ có tỷ lệ sai cao, hiệu chuẩn CEFR', route: '/admin/vocabulary', icon: BookOpen },
+    { title: 'Quản Trị Từ Vựng Hệ Thống (Master Vocabulary)', desc: 'Thêm, sửa, xóa, tìm kiếm, nạp CSV/JSON', route: '/admin/vocabulary', icon: BookOpen },
+    { title: 'Kho Từ Vựng Học Viên (Learner Shared Vault)', desc: 'Kiểm duyệt bộ từ cộng đồng, AI Quality Score', route: '/admin/shared-vocabulary', icon: BookOpen },
     { title: 'Phân Tích Học Tập (Learning Analytics)', desc: 'Phiên học, độ chính xác SRS, Cohort', route: '/admin/learning', icon: GraduationCap },
-    { title: 'Hộp Thư Hỗ Trợ Khách Hàng (Support Inbox)', desc: 'Xử lý ticket CSKH, trả lời realtime, ghi chú nội bộ', route: '/admin/support', icon: Headphones },
-    { title: 'Ban Quản Lý Góp Ý (Feedback & Roadmap)', desc: 'Kanban board, duyệt đề xuất tính năng, trả lời công khai', route: '/admin/feedback', icon: MessageSquarePlus },
-    { title: 'Trung Tâm Thông Báo & Phát Sóng (Notifications)', desc: 'Soạn thông báo broadcast, chọn tệp đối tượng', route: '/admin/notifications', icon: Bell },
+    { title: 'Hội Thoại CSKH (Support Conversations)', desc: 'Xử lý ticket CSKH, trả lời realtime, ghi chú nội bộ', route: '/admin/conversations', icon: Headphones },
+    { title: 'Góp Ý & Lộ Trình (Feedback & Roadmap)', desc: 'Duyệt đề xuất tính năng, phản hồi học viên', route: '/admin/feedback', icon: MessageSquarePlus },
+    { title: 'Báo Cáo Tài Chính & Doanh Thu (Financial Intelligence)', desc: 'Sổ cái giao dịch, MRR, ARR, ARPU', route: '/admin/finance', icon: CreditCard },
+    { title: 'Bảng Giá & Mô Hình Chi Phí (Smart Pricing Engine)', desc: 'Mô phỏng chi phí biến đổi, tính giá khuyến nghị, Quota', route: '/admin/pricing', icon: CreditCard },
+    { title: 'Gói Cước & PayOS (Billing & Orders)', desc: 'Gói Pro/Plus, đơn hàng VietQR, PayOS', route: '/admin/billing', icon: CreditCard },
+    { title: 'Trung Tâm Thông Báo & Cảnh Báo (Notifications)', desc: 'Cảnh báo vận hành, thông báo broadcast', route: '/admin/notifications', icon: Bell },
     { title: 'Giám Sát Mô Hình AI (AI Telemetry)', desc: 'Latency, token usage, tỷ lệ thành công', route: '/admin/ai', icon: Cpu },
-    { title: 'Doanh Thu & Gói Cước (Billing & MRR)', desc: 'Gói Pro/Plus, đơn hàng VietQR, PayOS, MRR', route: '/admin/billing', icon: CreditCard },
     { title: 'Hạ Tầng & Sức Khỏe Hệ Thống (System Health)', desc: 'PostgreSQL, Redis, RAM heap, lỗi gần đây', route: '/admin/system', icon: Activity },
-    { title: 'Bảo Mật & Phân Quyền (Security & Audit)', desc: 'Ma trận quyền hạn, nhật ký kiểm toán Audit Logs', route: '/admin/security', icon: ShieldCheck },
+    { title: 'Bảo Mật & Phân Quyền (Security & Roles)', desc: 'Ma trận quyền hạn, nhật ký kiểm toán Audit Logs', route: '/admin/security', icon: ShieldCheck },
     { title: 'Quay Lại Giao Diện Học Tập (User Learning App)', desc: 'Trở về màn hình Dashboard của học viên', route: '/dashboard', icon: ExternalLink },
   ];
 
