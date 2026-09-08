@@ -28,6 +28,7 @@ import {
 import api from '../../lib/api';
 import { useI18n } from '../../i18n';
 import { NumberInput } from '../../components/common/NumberInput';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 interface Plan {
   id: string;
@@ -316,7 +317,7 @@ export const AdminPlansPage: React.FC = () => {
           </button>
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="btn-glass-primary !shadow-none flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Tạo Gói Mới</span>
@@ -766,21 +767,20 @@ export const AdminPlansPage: React.FC = () => {
                 <div className="space-y-4 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        Mã Gói (Tier) *
-                      </label>
-                      <select
+                      <CustomSelect
+                        label="Mã Gói (Tier) *"
                         value={formData.tier}
                         disabled={Boolean(editingPlan)}
-                        onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="FREE">FREE</option>
-                        <option value="PLUS">PLUS</option>
-                        <option value="PRO">PRO</option>
-                        <option value="ENTERPRISE">ENTERPRISE</option>
-                        <option value="CUSTOM">CUSTOM</option>
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, tier: String(val) })}
+                        options={[
+                          { value: 'FREE', label: 'FREE' },
+                          { value: 'PLUS', label: 'PLUS' },
+                          { value: 'PRO', label: 'PRO' },
+                          { value: 'ENTERPRISE', label: 'ENTERPRISE' },
+                          { value: 'CUSTOM', label: 'CUSTOM' },
+                        ]}
+                        size="sm"
+                      />
                     </div>
 
                     <div>
@@ -813,18 +813,17 @@ export const AdminPlansPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        Trạng Thái Hoạt Động
-                      </label>
-                      <select
+                      <CustomSelect
+                        label="Trạng Thái Hoạt Động"
                         value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="ACTIVE">ACTIVE (Kích hoạt công khai)</option>
-                        <option value="INACTIVE">INACTIVE (Ẩn khỏi trang mua)</option>
-                        <option value="ARCHIVED">ARCHIVED (Lưu trữ không bán mới)</option>
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, status: val as any })}
+                        options={[
+                          { value: 'ACTIVE', label: 'ACTIVE (Kích hoạt công khai)' },
+                          { value: 'INACTIVE', label: 'INACTIVE (Ẩn khỏi trang mua)' },
+                          { value: 'ARCHIVED', label: 'ARCHIVED (Lưu trữ không bán mới)' },
+                        ]}
+                        size="sm"
+                      />
                     </div>
 
                     <div>
@@ -906,17 +905,16 @@ export const AdminPlansPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        Chu Kỳ Mặc Định
-                      </label>
-                      <select
+                      <CustomSelect
+                        label="Chu Kỳ Mặc Định"
                         value={formData.billingCycle}
-                        onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                      >
-                        <option value="MONTHLY">Hàng tháng (Monthly)</option>
-                        <option value="YEARLY">Hàng năm (Yearly)</option>
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, billingCycle: String(val) })}
+                        options={[
+                          { value: 'MONTHLY', label: 'Hàng tháng (Monthly)' },
+                          { value: 'YEARLY', label: 'Hàng năm (Yearly)' },
+                        ]}
+                        size="sm"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1079,7 +1077,7 @@ export const AdminPlansPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all disabled:opacity-50"
+                  className="btn-glass-primary !shadow-none flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                 >
                   {isSubmitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>{editingPlan ? 'Cập Nhật Gói' : 'Tạo Gói Mới'}</span>

@@ -27,6 +27,8 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { FilterSelect } from '../../components/ui/FilterSelect';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 interface LearningResource {
   id: string;
@@ -288,7 +290,7 @@ export const AdminResourcesPage: React.FC = () => {
           </button>
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm shadow-md shadow-violet-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm shadow-md shadow-violet-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span>Thêm Tài Nguyên Mới</span>
@@ -388,56 +390,45 @@ export const AdminResourcesPage: React.FC = () => {
           </span>
 
           {/* Type Dropdown */}
-          <select
+          <FilterSelect
             value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-          >
-            {RESOURCE_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedType(String(val))}
+            options={RESOURCE_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+            label="Loại"
+          />
 
           {/* CEFR Level Dropdown */}
-          <select
+          <FilterSelect
             value={selectedLevel}
-            onChange={(e) => setSelectedLevel(e.target.value)}
-            className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-          >
-            {CEFR_LEVELS.map((lvl) => (
-              <option key={lvl} value={lvl}>
-                Level: {lvl === 'ALL' ? 'Tất cả cấp độ' : lvl}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedLevel(String(val))}
+            options={CEFR_LEVELS.map((lvl) => ({
+              value: lvl,
+              label: lvl === 'ALL' ? 'Tất cả cấp độ' : lvl,
+            }))}
+            label="Level"
+          />
 
           {/* Required Plan */}
-          <select
+          <FilterSelect
             value={selectedPlan}
-            onChange={(e) => setSelectedPlan(e.target.value)}
-            className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-          >
-            {REQUIRED_PLANS.map((p) => (
-              <option key={p} value={p}>
-                Gói: {p === 'ALL' ? 'Tất cả gói' : p}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedPlan(String(val))}
+            options={REQUIRED_PLANS.map((p) => ({
+              value: p,
+              label: p === 'ALL' ? 'Tất cả gói' : p,
+            }))}
+            label="Gói"
+          />
 
           {/* Status */}
-          <select
+          <FilterSelect
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                Status: {s === 'ALL' ? 'Tất cả trạng thái' : s}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedStatus(String(val))}
+            options={STATUSES.map((s) => ({
+              value: s,
+              label: s === 'ALL' ? 'Tất cả trạng thái' : s,
+            }))}
+            label="Status"
+          />
 
           {(selectedType !== 'ALL' || selectedLevel !== 'ALL' || selectedPlan !== 'ALL' || selectedStatus !== 'ALL' || search) && (
             <button
@@ -561,21 +552,16 @@ export const AdminResourcesPage: React.FC = () => {
 
                   {/* Status */}
                   <td className="p-4 text-center">
-                    <select
+                    <FilterSelect
                       value={item.status}
-                      onChange={(e) => handleStatusChange(item, e.target.value)}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-black border cursor-pointer ${
-                        item.status === 'PUBLISHED'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                          : item.status === 'ARCHIVED'
-                          ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300'
-                          : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400'
-                      }`}
-                    >
-                      <option value="PUBLISHED">PUBLISHED</option>
-                      <option value="DRAFT">DRAFT</option>
-                      <option value="ARCHIVED">ARCHIVED</option>
-                    </select>
+                      onChange={(val) => handleStatusChange(item, String(val))}
+                      options={[
+                        { value: 'PUBLISHED', label: 'PUBLISHED' },
+                        { value: 'DRAFT', label: 'DRAFT' },
+                        { value: 'ARCHIVED', label: 'ARCHIVED' },
+                      ]}
+                      size="xs"
+                    />
                   </td>
 
                   {/* Actions */}
@@ -681,40 +667,32 @@ export const AdminResourcesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Loại Tài Nguyên *
-                  </label>
-                  <select
+                  <CustomSelect
+                    label="Loại Tài Nguyên *"
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    {RESOURCE_TYPES.filter((t) => t.value !== 'ALL').map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormData({ ...formData, type: String(val) })}
+                    options={RESOURCE_TYPES.filter((t) => t.value !== 'ALL').map((t) => ({
+                      value: t.value,
+                      label: t.label,
+                    }))}
+                    size="sm"
+                  />
                 </div>
               </div>
 
               {/* Row 2: CEFR, Category, Plan, Status */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    CEFR Level
-                  </label>
-                  <select
+                  <CustomSelect
+                    label="CEFR Level"
                     value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                  >
-                    {CEFR_LEVELS.filter((l) => l !== 'ALL').map((lvl) => (
-                      <option key={lvl} value={lvl}>
-                        {lvl}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormData({ ...formData, level: String(val) })}
+                    options={CEFR_LEVELS.filter((l) => l !== 'ALL').map((lvl) => ({
+                      value: lvl,
+                      label: lvl,
+                    }))}
+                    size="sm"
+                  />
                 </div>
 
                 <div>
@@ -731,39 +709,37 @@ export const AdminResourcesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Yêu Cầu Gói
-                  </label>
-                  <select
+                  <CustomSelect
+                    label="Yêu Cầu Gói"
                     value={formData.requiredPlan}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setFormData({
                         ...formData,
-                        requiredPlan: e.target.value,
-                        isPremium: e.target.value !== 'FREE',
+                        requiredPlan: String(val),
+                        isPremium: val !== 'FREE',
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                  >
-                    <option value="FREE">FREE (Miễn phí)</option>
-                    <option value="PLUS">PLUS</option>
-                    <option value="PRO">PRO</option>
-                  </select>
+                    options={[
+                      { value: 'FREE', label: 'FREE (Miễn phí)' },
+                      { value: 'PLUS', label: 'PLUS' },
+                      { value: 'PRO', label: 'PRO' },
+                    ]}
+                    size="sm"
+                  />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Trạng Thái
-                  </label>
-                  <select
+                  <CustomSelect
+                    label="Trạng Thái"
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold"
-                  >
-                    <option value="PUBLISHED">PUBLISHED</option>
-                    <option value="DRAFT">DRAFT</option>
-                    <option value="ARCHIVED">ARCHIVED</option>
-                  </select>
+                    onChange={(val) => setFormData({ ...formData, status: val as any })}
+                    options={[
+                      { value: 'PUBLISHED', label: 'PUBLISHED' },
+                      { value: 'DRAFT', label: 'DRAFT' },
+                      { value: 'ARCHIVED', label: 'ARCHIVED' },
+                    ]}
+                    size="sm"
+                  />
                 </div>
               </div>
 

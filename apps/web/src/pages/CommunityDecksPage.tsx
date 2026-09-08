@@ -374,7 +374,7 @@ export const CommunityDecksPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setCloneActionDeck(deck)}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition"
+                    className="btn-glass-primary !shadow-none px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>Lưu / Tải về</span>

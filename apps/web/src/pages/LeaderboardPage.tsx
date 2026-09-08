@@ -387,7 +387,7 @@ export const LeaderboardPage: React.FC = () => {
 
           <Link
             to="/review"
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center justify-center gap-2 transition shrink-0"
+            className="btn-glass-primary !shadow-none w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition shrink-0"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
             <span>Ôn Tập & Bứt Phá Rank</span>

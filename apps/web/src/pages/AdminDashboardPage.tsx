@@ -433,7 +433,7 @@ export const AdminDashboardPage: React.FC = () => {
                   </p>
                   <button
                     onClick={() => setActiveTab('moderation')}
-                    className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs"
+                    className="btn-glass-primary !shadow-none w-full py-2 rounded-xl text-xs font-bold transition"
                   >
                     Xem xét hàng đợi ngay
                   </button>
@@ -645,7 +645,7 @@ export const AdminDashboardPage: React.FC = () => {
                           {item.status === 'CRITICAL' ? (
                             <button
                               onClick={() => alert(`AI đang sinh lại câu ví dụ và câu đố cho từ "${item.word}"`)}
-                              className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition"
+                              className="btn-glass-primary !shadow-none px-2.5 py-1 rounded-lg text-[11px] font-semibold transition"
                             >
                               AI Viết Lại Ví Dụ
                             </button>

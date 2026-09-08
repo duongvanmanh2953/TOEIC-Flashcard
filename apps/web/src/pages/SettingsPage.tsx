@@ -229,7 +229,7 @@ export const SettingsPage: React.FC = () => {
 
         <button
           onClick={handleSaveAll}
-          className="self-start sm:self-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition"
+          className="self-start sm:self-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-glass-primary !shadow-none font-bold text-xs transition"
         >
           {savedToast ? <Check className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
           <span>{savedToast ? 'Đã lưu tất cả thiết lập!' : 'Lưu tất cả thay đổi'}</span>
@@ -788,7 +788,7 @@ export const SettingsPage: React.FC = () => {
             </div>
             <button
               onClick={handleExportData}
-              className="self-start px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5"
+              className="self-start px-4 py-2 rounded-xl btn-glass-primary !shadow-none font-bold text-xs transition flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Tải file JSON ngay</span>

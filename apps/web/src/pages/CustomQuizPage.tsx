@@ -308,7 +308,7 @@ export const CustomQuizPage: React.FC = () => {
         <button
           onClick={handleStartQuiz}
           disabled={generating}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 disabled:opacity-50 text-white font-extrabold text-base shadow-xl shadow-brand-500/20 flex items-center justify-center gap-2 transition"
+          className="w-full py-4 rounded-2xl btn-glass-primary !shadow-none disabled:opacity-50 text-white font-extrabold text-base flex items-center justify-center gap-2 transition hover:border-cyan-300"
         >
           {generating ? (
             <span>Đang tổng hợp đề thi thích ứng...</span>

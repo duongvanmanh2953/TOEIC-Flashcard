@@ -854,7 +854,7 @@ export const AdminFeedbackPage: React.FC = () => {
                     key={st.key}
                     disabled={submittingAction || selectedItem.status === st.key}
                     onClick={() => handleUpdateStatus(selectedItem.id, st.key)}
-                    className={`p-2 rounded-xl border transition ${
+                    className={`p-2 rounded-xl border transition whitespace-nowrap text-center ${
                       selectedItem.status === st.key
                         ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-500'
@@ -889,7 +889,7 @@ export const AdminFeedbackPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submittingAction || !replyText.trim()}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50"
+                  className="btn-glass-primary !shadow-none px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap shrink-0"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{locale === 'vi' ? 'Gửi phản hồi chính thức' : 'Send Public Reply'}</span>
@@ -919,7 +919,7 @@ export const AdminFeedbackPage: React.FC = () => {
                   type="button"
                   onClick={handleSaveInternalNotes}
                   disabled={submittingAction}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold transition"
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold transition whitespace-nowrap shrink-0 shadow-xs"
                 >
                   {locale === 'vi' ? 'Lưu ghi chú nội bộ' : 'Save Notes'}
                 </button>

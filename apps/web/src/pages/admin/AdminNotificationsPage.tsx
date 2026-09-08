@@ -388,7 +388,7 @@ export const AdminNotificationsPage: React.FC = () => {
 
           <button
             onClick={() => setShowBroadcastModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+            className="btn-glass-primary !shadow-none flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
             <span>Soạn Phát Sóng</span>
@@ -497,7 +497,7 @@ export const AdminNotificationsPage: React.FC = () => {
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                 <button
                   onClick={() => handleOpenDestination(alert)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                  className="btn-glass-primary !shadow-none flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Xem chi tiết</span>
@@ -622,7 +622,7 @@ export const AdminNotificationsPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={broadcasting}
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-2"
+                  className="btn-glass-primary !shadow-none px-5 py-2 rounded-xl font-bold transition flex items-center gap-2"
                 >
                   {broadcasting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>Phát Sóng Ngay</span>

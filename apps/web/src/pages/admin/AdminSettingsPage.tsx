@@ -475,7 +475,7 @@ export const AdminSettingsPage: React.FC = () => {
                 type="button"
                 onClick={() => handleSaveSection(activeSection)}
                 disabled={savingSection === activeSection}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs shrink-0 self-start sm:self-auto disabled:opacity-50"
+                className="btn-glass-primary !shadow-none px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shrink-0 self-start sm:self-auto disabled:opacity-50"
               >
                 {savingSection === activeSection ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />

@@ -70,35 +70,29 @@ export const AppShell: React.FC = () => {
 
   const [supportTab, setSupportTab] = useState<'quick' | 'chat'>('chat');
   
-  // Draggable CSKH Support Button State
-  const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(null);
+  // Vertical-only Draggable CSKH Support Button State (Docked to right margin)
+  const [btnPosY, setBtnPosY] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number; moved: boolean } | null>(null);
+  const dragStartRef = useRef<{ startY: number; initY: number; moved: boolean } | null>(null);
 
-  const handleDragStart = (clientX: number, clientY: number) => {
-    const defaultX = window.innerWidth - 68;
-    const defaultY = window.innerHeight - 88;
-    const currentX = btnPos ? btnPos.x : defaultX;
-    const currentY = btnPos ? btnPos.y : defaultY;
+  const handleDragStart = (clientY: number) => {
+    const defaultY = Math.round(window.innerHeight * 0.7);
+    const currentY = btnPosY ?? defaultY;
     dragStartRef.current = {
-      startX: clientX,
       startY: clientY,
-      initX: currentX,
       initY: currentY,
       moved: false,
     };
   };
 
-  const handleDragMove = (clientX: number, clientY: number) => {
+  const handleDragMove = (clientY: number) => {
     if (!dragStartRef.current) return;
-    const dx = clientX - dragStartRef.current.startX;
     const dy = clientY - dragStartRef.current.startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+    if (Math.abs(dy) > 4) {
       dragStartRef.current.moved = true;
       setIsDragging(true);
-      const newX = Math.max(16, Math.min(window.innerWidth - 64, dragStartRef.current.initX + dx));
-      const newY = Math.max(16, Math.min(window.innerHeight - 64, dragStartRef.current.initY + dy));
-      setBtnPos({ x: newX, y: newY });
+      const newY = Math.max(60, Math.min(window.innerHeight - 80, dragStartRef.current.initY + dy));
+      setBtnPosY(newY);
     }
   };
 
@@ -111,10 +105,6 @@ export const AppShell: React.FC = () => {
 
   const handleSupportBtnClick = () => {
     if (dragStartRef.current?.moved) return;
-    // Nếu vị trí đã bị kéo đi nơi khác, click sẽ tự động nhảy về vị trí mặc định ban đầu!
-    if (btnPos !== null) {
-      setBtnPos(null);
-    }
     setSupportModalOpen((prev) => {
       const next = !prev;
       if (next && user) {
@@ -839,21 +829,19 @@ export const AppShell: React.FC = () => {
           </div>
       </ModalPortal>
 
-      {/* Draggable CSKH Support Button (Hidden for Admin because Admin has Support Inbox) */}
+      {/* Right-Docked Vertical-Drag CSKH Support Button (Hidden for Admin) */}
       {showSupportBtn && !isAdmin && (
         <div
-          style={
-            btnPos
-              ? { left: `${btnPos.x}px`, top: `${btnPos.y}px`, right: 'auto', bottom: 'auto' }
-              : undefined
-          }
-          className={`fixed z-40 touch-none select-none transition-shadow ${
-            btnPos ? '' : 'bottom-20 lg:bottom-6 right-5'
-          } ${isDragging ? 'cursor-grabbing scale-110' : 'cursor-grab'}`}
+          style={{
+            top: btnPosY ? `${btnPosY}px` : '70vh',
+          }}
+          className={`fixed right-0 z-40 touch-none select-none transition-shadow ${
+            isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab'
+          }`}
           onMouseDown={(e) => {
-            handleDragStart(e.clientX, e.clientY);
+            handleDragStart(e.clientY);
             const onMouseMove = (moveEvent: MouseEvent) => {
-              handleDragMove(moveEvent.clientX, moveEvent.clientY);
+              handleDragMove(moveEvent.clientY);
             };
             const onMouseUp = () => {
               handleDragEnd();
@@ -864,49 +852,46 @@ export const AppShell: React.FC = () => {
             window.addEventListener('mouseup', onMouseUp);
           }}
           onTouchStart={(e) => {
-            const touch = e.touches[0];
-            handleDragStart(touch.clientX, touch.clientY);
+            handleDragStart(e.touches[0].clientY);
           }}
           onTouchMove={(e) => {
-            const touch = e.touches[0];
-            handleDragMove(touch.clientX, touch.clientY);
+            handleDragMove(e.touches[0].clientY);
           }}
           onTouchEnd={handleDragEnd}
         >
           <button
             onClick={handleSupportBtnClick}
-            className="group relative h-12 pl-2.5 pr-4 rounded-2xl bg-slate-900/90 hover:bg-slate-900 backdrop-blur-2xl border border-cyan-500/40 hover:border-cyan-400/80 shadow-[0_10px_30px_rgba(0,0,0,0.6),0_0_25px_rgba(6,182,212,0.25)] hover:shadow-[0_14px_40px_rgba(0,0,0,0.7),0_0_35px_rgba(6,182,212,0.4)] flex items-center gap-3 transition-all duration-300 active:scale-95 text-white"
+            className="group relative h-10 rounded-l-2xl rounded-r-none bg-slate-900/95 hover:bg-slate-900 backdrop-blur-2xl border-y border-l border-r-0 border-cyan-500/40 hover:border-cyan-400/80 shadow-[-4px_6px_16px_rgba(0,0,0,0.5),-1px_0_10px_rgba(6,182,212,0.25)] hover:shadow-[-6px_10px_24px_rgba(0,0,0,0.65),-3px_0_16px_rgba(6,182,212,0.4)] flex items-center justify-end p-1 transition-all duration-300 active:scale-95 text-white max-w-[42px] hover:max-w-[220px] overflow-hidden"
             aria-label="Trung tâm Chăm sóc khách hàng CSKH"
-            title={btnPos ? 'Bấm để hoàn về vị trí gốc & mở Chat' : 'Kéo thả tới bất kỳ vị trí nào trên màn hình'}
+            title="Kéo trượt dọc mép phải màn hình • Rê chuột để xem chi tiết & mở Chat"
           >
-            {/* Glowing Icon Container */}
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500/25 to-indigo-500/35 border border-cyan-400/50 flex items-center justify-center text-cyan-300 group-hover:text-cyan-100 transition-colors relative overflow-hidden shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
-              <Headphones className="w-4.5 h-4.5 text-cyan-300 group-hover:scale-110 transition-transform" />
-            </div>
-
-            {/* Label & Status */}
-            <div className="flex flex-col text-left leading-none">
+            {/* Expanding Label & Status (Hidden by default, slides out smoothly on hover to the left) */}
+            <div className="flex flex-col text-left leading-none opacity-0 group-hover:opacity-100 max-w-0 group-hover:max-w-[160px] overflow-hidden whitespace-nowrap transition-all duration-300 px-0 group-hover:px-2.5 shrink-0 pointer-events-none group-hover:pointer-events-auto">
               <div className="flex items-center gap-1.5">
-                <span className="text-[12px] font-extrabold text-white tracking-wide group-hover:text-cyan-200 transition-colors">
+                <span className="text-[11px] font-extrabold text-white tracking-wide group-hover:text-cyan-200 transition-colors whitespace-nowrap">
                   Hỗ trợ CSKH
                 </span>
-                {unreadSupportCount > 0 ? (
+                {unreadSupportCount > 0 && (
                   <span className="text-[9px] font-bold text-white bg-rose-500 px-1.5 py-0.2 rounded-full animate-pulse">
                     {unreadSupportCount}
                   </span>
-                ) : btnPos && (
-                  <span className="text-[9px] font-bold text-amber-300 bg-amber-400/15 border border-amber-400/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                    <RotateCcw className="w-2.5 h-2.5" /> Hoàn vị trí
-                  </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 mt-1 text-[10px] text-cyan-300/90 font-medium">
+              <div className="flex items-center gap-1 mt-1 text-[9px] text-cyan-300/90 font-medium whitespace-nowrap">
                 <span className="relative flex h-1.5 w-1.5 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
                 </span>
                 <span>24/7 Trực tuyến</span>
               </div>
+            </div>
+
+            {/* Glowing Headphone Icon (Docked snuggly against right edge) */}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500/30 to-indigo-500/40 border border-cyan-400/60 flex items-center justify-center text-cyan-300 group-hover:text-cyan-100 transition-colors relative shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+              <Headphones className="w-4 h-4 text-cyan-300 group-hover:scale-110 transition-transform" />
+              {unreadSupportCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
+              )}
             </div>
           </button>
         </div>
@@ -915,19 +900,12 @@ export const AppShell: React.FC = () => {
       {/* Customer Support Floating Chat Widget (Hidden for Admin) */}
       {supportModalOpen && !isAdmin && (
         <div
-          style={
-            btnPos
-              ? {
-                  left: `${Math.min(window.innerWidth - 415, Math.max(12, btnPos.x - 340))}px`,
-                  top: `${Math.min(window.innerHeight - 560, Math.max(12, btnPos.y - 480))}px`,
-                  right: 'auto',
-                  bottom: 'auto',
-                }
-              : undefined
-          }
-          className={`fixed z-50 animate-scale-up ${
-            btnPos ? '' : 'bottom-24 lg:bottom-20 right-5'
-          }`}
+          style={{
+            top: btnPosY ? `${Math.min(window.innerHeight - 500, Math.max(20, btnPosY - 220))}px` : undefined,
+            bottom: btnPosY ? undefined : '80px',
+            right: '16px',
+          }}
+          className="fixed z-50 animate-scale-up"
         >
           <div
             className="w-[calc(100vw-2rem)] sm:w-[330px] rounded-2xl bg-slate-900 border border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-3.5 space-y-2.5 flex flex-col max-h-[80vh] sm:max-h-[460px] overflow-hidden text-slate-100"

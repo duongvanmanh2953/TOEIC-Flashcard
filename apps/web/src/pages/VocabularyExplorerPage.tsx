@@ -171,7 +171,7 @@ export const VocabularyExplorerPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/review' + (selectedTopic ? `?topic=${selectedTopic}` : ''))}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-2 transition self-start md:self-auto"
+          className="btn-glass-primary !shadow-none px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition self-start md:self-auto"
         >
           <Sparkles className="w-4 h-4 fill-white" />
           <span>Học Flashcard {selectedTopic ? `Chủ đề ${selectedTopic}` : 'bộ từ này'}</span>
