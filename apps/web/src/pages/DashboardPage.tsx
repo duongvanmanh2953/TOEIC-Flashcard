@@ -107,9 +107,9 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="w-full space-y-5 animate-fade-in">
-      {/* 1. Hero / Today's Plan — High Contrast Translucent Card */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 relative overflow-hidden bg-white/95 dark:bg-slate-900/95 border-2 border-indigo-500/25 dark:border-indigo-500/30 shadow-xl rounded-3xl">
-        <div className="max-w-3xl relative z-10 space-y-3">
+      {/* 1. Hero / Today's Plan — High Contrast Translucent Card (Compact & Focused) */}
+      <GlassCard variant="liquid" className="p-4 sm:p-5 md:p-6 relative overflow-hidden bg-white/95 dark:bg-slate-900/95 border border-indigo-500/25 dark:border-indigo-500/30 shadow-lg rounded-2xl">
+        <div className="max-w-3xl relative z-10 space-y-2.5">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Spaced Repetition System • VocabFlow AI</span>
@@ -119,7 +119,7 @@ export const DashboardPage: React.FC = () => {
             {timeGreeting}, {user?.displayName || 'Learner'} 👋
           </h1>
 
-          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
             Hôm nay bạn có{' '}
             <strong className="text-indigo-600 dark:text-indigo-400 font-black">
               {reviewDue} từ vựng
@@ -284,20 +284,20 @@ export const DashboardPage: React.FC = () => {
         );
       })()}
 
-      {/* 2. Key Metrics Row — 4 Rich Feature Cards with Distinct Glass Palettes */}
+      {/* 2. Key Metrics Row — 4 Rich Feature Cards with Distinct Liquid Glass Palettes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Daily Goal Card (Indigo / Violet Theme) */}
-        <div className="card-metric-indigo p-5 rounded-3xl transition-transform hover:-translate-y-1">
+        <div className="liquid-glass-card card-metric-indigo p-5 rounded-3xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               {t('dashboard.dailyGoal', 'Mục tiêu ngày')}
             </span>
-            <div className="p-2 rounded-xl bg-indigo-500 text-white shadow-md shadow-indigo-500/30">
+            <div className="p-2 rounded-xl bg-indigo-500 text-white">
               <Target className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-3xl font-black text-slate-900 dark:text-white leading-tight">
+            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">
               {completedToday}
             </span>
             <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">/ {dailyGoal} từ</span>
@@ -312,17 +312,17 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* 2. Streak Card (Warm Amber / Flame Theme) */}
-        <div className="card-metric-amber p-5 rounded-3xl transition-transform hover:-translate-y-1">
+        <div className="liquid-glass-card card-metric-amber p-5 rounded-3xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
               {t('dashboard.streak', 'Chuỗi liên tiếp')}
             </span>
-            <div className="p-2 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/30 animate-pulse">
+            <div className="p-2 rounded-xl bg-amber-500 text-white animate-pulse">
               <Flame className="w-4 h-4 fill-white" />
             </div>
           </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white leading-tight mt-1">
-            {data?.streak?.currentStreak || 0} <span className="text-lg font-bold text-amber-600 dark:text-amber-400">ngày 🔥</span>
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
+            {data?.streak?.currentStreak || 0} <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">ngày 🔥</span>
           </p>
           <p className="text-xs text-amber-700 dark:text-amber-300 mt-3 font-semibold">
             Kỷ lục cao nhất: <strong className="font-black text-amber-800 dark:text-amber-200">{data?.streak?.longestStreak || 0} ngày</strong>
@@ -330,17 +330,17 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* 3. Total Mastered (Emerald / Mint Crystal Theme) */}
-        <div className="card-metric-emerald p-5 rounded-3xl transition-transform hover:-translate-y-1">
+        <div className="liquid-glass-card card-metric-emerald p-5 rounded-3xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               {t('dashboard.totalWords', 'Từ đã thành thạo')}
             </span>
-            <div className="p-2 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/30">
+            <div className="p-2 rounded-xl bg-emerald-500 text-white">
               <Award className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white leading-tight mt-1">
-            {data?.masteredCount || 0} <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">từ</span>
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
+            {data?.masteredCount || 0} <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">từ</span>
           </p>
           <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-3 font-semibold">
             Độ bền trí nhớ SRS &gt; 85%
@@ -348,16 +348,16 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* 4. Learning Level & XP (Sky / Cyan Theme) */}
-        <div className="card-metric-cyan p-5 rounded-3xl transition-transform hover:-translate-y-1">
+        <div className="liquid-glass-card card-metric-cyan p-5 rounded-3xl">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
               {t('dashboard.level', 'Cấp độ & XP')}
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500 text-white shadow-xs">
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500 text-white">
               CEFR {data?.profile?.englishLevel || 'B1'}
             </span>
           </div>
-          <p className="text-3xl font-black text-slate-900 dark:text-white leading-tight mt-1">
+          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
             Lvl {user?.xp?.currentLevel || 1}
           </p>
           <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-3 font-semibold">

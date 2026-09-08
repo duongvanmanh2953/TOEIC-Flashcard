@@ -35,7 +35,14 @@ export class SubscriptionsService implements OnModuleInit {
         {
           tier: SubscriptionTier.FREE,
           name: 'Learner Free',
+          slug: 'free',
+          description: 'Nền tảng học từ vựng TOEIC vững chắc, thuật toán lặp lại ngắt quãng SRS và phát âm bản xứ.',
           priceMonthly: 0,
+          priceYearly: 0,
+          currency: 'VND',
+          billingCycle: 'MONTHLY',
+          status: 'ACTIVE',
+          displayOrder: 1,
           aiDailyQuota: 10,
           maxCustomDecks: 3,
           unlimitedReviews: false,
@@ -43,42 +50,116 @@ export class SubscriptionsService implements OnModuleInit {
             '600+ Từ Vựng TOEIC Tiêu Chuẩn',
             'Thuật toán Spaced Repetition (SRS)',
             'Phát âm giọng bản ngữ US/UK',
-            '10 Lượt Tham Vấn AI Tutor / Ngày',
+            '10 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
+            '3 Lượt Trích Xuất Text-to-Vocab / Ngày',
             'Duyệt bộ thẻ học cộng đồng công khai',
           ],
+          limits: {
+            aiChat: 10,
+            voiceAiMinutes: 5,
+            pronunciation: 5,
+            textToVocab: 3,
+            storyGen: 1,
+          },
+          permissions: {
+            aiChat: true,
+            voiceAi: false,
+            personalMemory: false,
+            pronunciationCoach: true,
+            speakingAnalysis: false,
+            roleplay: false,
+            personalizedLearning: false,
+            spacedRepetition: true,
+            advancedAnalytics: false,
+            englishTwin: false,
+          },
         },
         {
           tier: SubscriptionTier.PLUS,
           name: 'VocabFlow Plus',
-          priceMonthly: 99000, // 99,000 VND / tháng (~ $4.99)
+          slug: 'plus',
+          description: 'Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt, hạn mức AI rộng rãi và bảo lưu chuỗi Streak.',
+          priceMonthly: 99000,
+          priceYearly: 828000,
+          currency: 'VND',
+          billingCycle: 'MONTHLY',
+          status: 'ACTIVE',
+          displayOrder: 2,
           aiDailyQuota: 50,
           maxCustomDecks: 20,
           unlimitedReviews: true,
           features: [
             'Tất cả tính năng trong gói Free',
-            '50 Lượt Tham Vấn AI Tutor / Ngày',
-            'Học từ văn bản bất kỳ (Learn from Anything)',
-            'Kho từ cá nhân & Fork bộ thẻ cộng đồng',
-            'Tạo và chia sẻ bộ thẻ học cho cộng đồng',
+            '50 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
+            '15 Lượt Trích Xuất Text-to-Vocab / Ngày',
+            '5 Lượt Dệt Câu Chuyện AI Story / Ngày',
+            '🚑 Memory Rescue cảnh báo từ vựng sắp quên',
             'Bảo lưu chuỗi Streak 3 ngày/tháng',
+            'Gia hạn theo chu kỳ (Tháng hoặc Năm)',
           ],
+          limits: {
+            aiChat: 50,
+            voiceAiMinutes: 30,
+            pronunciation: 25,
+            textToVocab: 15,
+            storyGen: 5,
+          },
+          permissions: {
+            aiChat: true,
+            voiceAi: true,
+            personalMemory: true,
+            pronunciationCoach: true,
+            speakingAnalysis: true,
+            roleplay: true,
+            personalizedLearning: true,
+            spacedRepetition: true,
+            advancedAnalytics: false,
+            englishTwin: false,
+          },
         },
         {
           tier: SubscriptionTier.PRO,
           name: 'VocabFlow Pro',
-          priceMonthly: 199000, // 199,000 VND / tháng (~ $9.99)
-          aiDailyQuota: 200, // 200 lượt AI / ngày (Reset 00:00 hàng ngày)
+          slug: 'pro',
+          description: 'Tối đa tiềm năng với AI Tutor phân tích chuyên sâu, 200 lượt AI/ngày, chẩn đoán CEFR và English Twin.',
+          priceMonthly: 199000,
+          priceYearly: 1548000,
+          currency: 'VND',
+          billingCycle: 'MONTHLY',
+          status: 'ACTIVE',
+          displayOrder: 3,
+          aiDailyQuota: 200,
           maxCustomDecks: 999,
           unlimitedReviews: true,
           features: [
             'Tất cả tính năng trong gói Plus',
             '200 Lượt Tham Vấn AI Chuyên Sâu / Ngày (Reset 00:00)',
+            '50 Lượt Trích Xuất Text-to-Vocab / Ngày',
+            '20 Lượt Dệt Câu Chuyện AI Story / Ngày',
             'Phân tích chuẩn đoán CEFR & AI Coach cá nhân hóa',
-            'Không giới hạn trích xuất Text-to-Vocab & AI Story',
             'Ưu tiên băng thông máy chủ mô hình AI tốc độ cao',
             'Không giới hạn phục hồi chuỗi Streak',
             'Hỗ trợ chuyên gia học tập 24/7',
           ],
+          limits: {
+            aiChat: 200,
+            voiceAiMinutes: 60,
+            pronunciation: 50,
+            textToVocab: 50,
+            storyGen: 20,
+          },
+          permissions: {
+            aiChat: true,
+            voiceAi: true,
+            personalMemory: true,
+            pronunciationCoach: true,
+            speakingAnalysis: true,
+            roleplay: true,
+            personalizedLearning: true,
+            spacedRepetition: true,
+            advancedAnalytics: true,
+            englishTwin: true,
+          },
         },
       ];
 
@@ -87,24 +168,40 @@ export class SubscriptionsService implements OnModuleInit {
           where: { tier: p.tier },
           update: {
             name: p.name,
+            slug: p.slug,
+            description: p.description,
             priceMonthly: p.priceMonthly,
+            priceYearly: p.priceYearly,
+            status: p.status,
+            displayOrder: p.displayOrder,
             aiDailyQuota: p.aiDailyQuota,
             maxCustomDecks: p.maxCustomDecks,
             unlimitedReviews: p.unlimitedReviews,
             features: p.features,
+            limits: p.limits,
+            permissions: p.permissions,
           },
           create: {
             tier: p.tier,
             name: p.name,
+            slug: p.slug,
+            description: p.description,
             priceMonthly: p.priceMonthly,
+            priceYearly: p.priceYearly,
+            currency: p.currency,
+            billingCycle: p.billingCycle,
+            status: p.status,
+            displayOrder: p.displayOrder,
             aiDailyQuota: p.aiDailyQuota,
             maxCustomDecks: p.maxCustomDecks,
             unlimitedReviews: p.unlimitedReviews,
             features: p.features,
+            limits: p.limits,
+            permissions: p.permissions,
           },
         });
       }
-      this.logger.log('Default subscription plans verified.');
+      this.logger.log('Default subscription plans verified with dynamic limits and permissions.');
     } catch (err) {
       this.logger.warn(`Could not seed default plans: ${err.message}`);
     }
@@ -113,7 +210,8 @@ export class SubscriptionsService implements OnModuleInit {
   async getPlans() {
     await this.ensureDefaultPlans();
     return this.prisma.plan.findMany({
-      orderBy: { priceMonthly: 'asc' },
+      where: { status: 'ACTIVE' },
+      orderBy: { displayOrder: 'asc' },
     });
   }
 
@@ -239,11 +337,7 @@ export class SubscriptionsService implements OnModuleInit {
     // Tính toán số tiền dựa trên chu kỳ thanh toán
     let amount = plan.priceMonthly;
     if (billingCycle === 'yearly') {
-      if (tier === SubscriptionTier.PLUS) {
-        amount = 828000; // 69.000đ/tháng * 12 tháng (tiết kiệm 360.000đ)
-      } else if (tier === SubscriptionTier.PRO) {
-        amount = 1548000; // 129.000đ/tháng * 12 tháng (tiết kiệm 840.000đ)
-      }
+      amount = plan.priceYearly > 0 ? plan.priceYearly : Math.round(plan.priceMonthly * 10);
     }
 
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 phút đếm ngược
@@ -659,5 +753,151 @@ export class SubscriptionsService implements OnModuleInit {
 
   async upgradePlan(userId: string, tier: SubscriptionTier) {
     return this.createPaymentOrder(userId, tier, PaymentMethod.VIETQR);
+  }
+
+  // =========================================================================
+  // ADMIN PLAN & SUBSCRIPTION MANAGEMENT
+  // =========================================================================
+
+  async adminGetAllPlans() {
+    await this.ensureDefaultPlans();
+    const plans = await this.prisma.plan.findMany({
+      orderBy: { displayOrder: 'asc' },
+      include: {
+        _count: {
+          select: {
+            subscriptions: { where: { status: 'ACTIVE' } },
+            paymentOrders: { where: { status: PaymentStatus.PAID } },
+          },
+        },
+      },
+    });
+
+    return plans.map((p) => ({
+      ...p,
+      activeUsersCount: p._count.subscriptions,
+      totalPaidOrders: p._count.paymentOrders,
+    }));
+  }
+
+  async adminCreatePlan(dto: any, actorId?: string) {
+    const {
+      tier,
+      name,
+      slug,
+      description,
+      priceMonthly,
+      priceYearly,
+      currency = 'VND',
+      billingCycle = 'MONTHLY',
+      status = 'ACTIVE',
+      displayOrder = 0,
+      aiDailyQuota = 10,
+      maxCustomDecks = 5,
+      features = [],
+      limits,
+      permissions,
+    } = dto;
+
+    if (!tier || !name) {
+      throw new BadRequestException('Vui lòng cung cấp mã gói (tier) và tên gói (name)');
+    }
+
+    const cleanSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const existing = await this.prisma.plan.findFirst({
+      where: {
+        OR: [{ tier }, { slug: cleanSlug }],
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(`Gói với tier ${tier} hoặc slug ${cleanSlug} đã tồn tại`);
+    }
+
+    return this.prisma.plan.create({
+      data: {
+        tier,
+        name,
+        slug: cleanSlug,
+        description,
+        priceMonthly: Number(priceMonthly) || 0,
+        priceYearly: Number(priceYearly) || 0,
+        currency,
+        billingCycle,
+        status,
+        displayOrder: Number(displayOrder) || 0,
+        aiDailyQuota: Number(aiDailyQuota) || 10,
+        maxCustomDecks: Number(maxCustomDecks) || 5,
+        features: Array.isArray(features) ? features : [],
+        limits: limits || {},
+        permissions: permissions || {},
+      },
+    });
+  }
+
+  async adminUpdatePlan(id: string, dto: any, actorId?: string) {
+    const plan = await this.prisma.plan.findUnique({ where: { id } });
+    if (!plan) throw new NotFoundException('Không tìm thấy gói cước cần cập nhật');
+
+    const dataToUpdate: any = {};
+    if (dto.name !== undefined) dataToUpdate.name = dto.name;
+    if (dto.slug !== undefined) dataToUpdate.slug = dto.slug;
+    if (dto.description !== undefined) dataToUpdate.description = dto.description;
+    if (dto.priceMonthly !== undefined) dataToUpdate.priceMonthly = Number(dto.priceMonthly);
+    if (dto.priceYearly !== undefined) dataToUpdate.priceYearly = Number(dto.priceYearly);
+    if (dto.currency !== undefined) dataToUpdate.currency = dto.currency;
+    if (dto.billingCycle !== undefined) dataToUpdate.billingCycle = dto.billingCycle;
+    if (dto.status !== undefined) dataToUpdate.status = dto.status;
+    if (dto.displayOrder !== undefined) dataToUpdate.displayOrder = Number(dto.displayOrder);
+    if (dto.aiDailyQuota !== undefined) dataToUpdate.aiDailyQuota = Number(dto.aiDailyQuota);
+    if (dto.maxCustomDecks !== undefined) dataToUpdate.maxCustomDecks = Number(dto.maxCustomDecks);
+    if (dto.features !== undefined) dataToUpdate.features = dto.features;
+    if (dto.limits !== undefined) dataToUpdate.limits = dto.limits;
+    if (dto.permissions !== undefined) dataToUpdate.permissions = dto.permissions;
+
+    return this.prisma.plan.update({
+      where: { id },
+      data: dataToUpdate,
+    });
+  }
+
+  async adminDeletePlan(id: string, actorId?: string) {
+    const plan = await this.prisma.plan.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            subscriptions: { where: { status: 'ACTIVE' } },
+          },
+        },
+      },
+    });
+
+    if (!plan) throw new NotFoundException('Không tìm thấy gói cước');
+
+    if (plan._count.subscriptions > 0) {
+      throw new BadRequestException(
+        `Plan "${plan.name}" đang có ${plan._count.subscriptions} học viên sử dụng. Hãy chuyển trạng thái sang Archive thay vì xóa cứng!`,
+      );
+    }
+
+    if (plan.tier === SubscriptionTier.FREE) {
+      throw new BadRequestException('Không thể xóa gói mặc định Learner Free');
+    }
+
+    return this.prisma.plan.delete({ where: { id } });
+  }
+
+  async adminArchivePlan(id: string, actorId?: string) {
+    const plan = await this.prisma.plan.findUnique({ where: { id } });
+    if (!plan) throw new NotFoundException('Không tìm thấy gói cước');
+    if (plan.tier === SubscriptionTier.FREE) {
+      throw new BadRequestException('Không thể lưu trữ gói mặc định Learner Free');
+    }
+
+    return this.prisma.plan.update({
+      where: { id },
+      data: { status: 'ARCHIVED' },
+    });
   }
 }

@@ -277,30 +277,50 @@ export const AppShell: React.FC = () => {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isPro = isProUser(user);
 
-  const navItems = [
-    { to: '/dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard },
-    { to: '/coach', label: 'AI Personal Coach', icon: Mic, highlight: true, badge: 'VOICE' },
-    { to: '/leaderboard', label: 'Bảng Xếp Hạng', icon: Trophy, badge: 'FAIR-PLAY' },
-    { to: '/review', label: t('nav.review', 'Smart Review'), icon: Sparkles, badge: 'SRS' },
-    { to: '/vocabulary', label: t('nav.vocabulary', 'Vocab Explorer'), icon: BookOpen },
-    { to: '/word-bank', label: t('nav.wordBank', 'My Word Bank'), icon: Bookmark },
-    { to: '/community', label: t('nav.community', 'Community Decks'), icon: Share2 },
-    { to: '/custom-quiz', label: t('nav.customQuiz', 'Dynamic Quiz'), icon: HelpCircle },
-    { to: '/ai-tutor', label: t('nav.aiTutor', 'AI Tutor Studio'), icon: BrainCircuit },
-    { to: '/placement-test', label: t('nav.placementTest', 'Placement Test'), icon: Compass },
-    { to: '/progress', label: t('nav.progress', 'Progress & Stats'), icon: Award },
+  const navSections = [
     {
-      to: '/upgrade',
-      label: isPro ? 'VocabFlow VIP Pro' : t('nav.upgrade', 'Mở Khóa Premium'),
-      icon: Crown,
-      highlight: true,
-      badge: isPro ? 'PRO' : 'MỞ KHÓA',
-      isUnlock: !isPro,
+      title: 'HỌC TẬP & PHẢN XẠ',
+      items: [
+        { to: '/dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard },
+        { to: '/coach', label: 'AI Personal Coach', icon: Mic, highlight: true, badge: 'VOICE' },
+        { to: '/leaderboard', label: 'Bảng Xếp Hạng', icon: Trophy, badge: 'FAIR-PLAY' },
+        { to: '/review', label: t('nav.review', 'Smart Review'), icon: Sparkles, badge: 'SRS' },
+      ],
     },
-    { to: '/notifications', label: 'Thông báo', icon: Bell },
-    { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
-    ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
-    { to: '/settings', label: t('nav.settings', 'Settings'), icon: Settings },
+    {
+      title: 'KHO TỪ & LUYỆN TẬP',
+      items: [
+        { to: '/vocabulary', label: t('nav.vocabulary', 'Vocab Explorer'), icon: BookOpen },
+        { to: '/word-bank', label: t('nav.wordBank', 'My Word Bank'), icon: Bookmark },
+        { to: '/custom-quiz', label: t('nav.customQuiz', 'Dynamic Quiz'), icon: HelpCircle },
+        { to: '/community', label: t('nav.community', 'Community Decks'), icon: Share2 },
+      ],
+    },
+    {
+      title: 'AI & NĂNG LỰC',
+      items: [
+        { to: '/ai-tutor', label: t('nav.aiTutor', 'AI Tutor Studio'), icon: BrainCircuit },
+        { to: '/placement-test', label: t('nav.placementTest', 'Placement Test'), icon: Compass },
+        { to: '/progress', label: t('nav.progress', 'Progress & Stats'), icon: Award },
+      ],
+    },
+    {
+      title: 'TÀI KHOẢN & HỆ THỐNG',
+      items: [
+        {
+          to: '/upgrade',
+          label: isPro ? 'VocabFlow VIP Pro' : t('nav.upgrade', 'Mở Khóa Premium'),
+          icon: Crown,
+          highlight: true,
+          badge: isPro ? 'PRO' : 'MỞ KHÓA',
+          isUnlock: !isPro,
+        },
+        { to: '/notifications', label: 'Thông báo', icon: Bell },
+        { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
+        { to: '/settings', label: t('nav.settings', 'Settings'), icon: Settings },
+        ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
+      ],
+    },
   ];
 
   const mobileBottomItems = [
@@ -319,14 +339,14 @@ export const AppShell: React.FC = () => {
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 max-w-[16rem] border-r border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl px-3.5 pt-5 pb-4 shrink-0 h-screen sticky top-0 overflow-hidden box-border z-20">
         {/* Scrollable Upper Navigation Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-0.5 pb-2">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-0.5 pb-2 scrollbar-none">
           {/* Brand Header with VocabFlow Logo Asset */}
-          <div className="flex items-center justify-between mb-5 px-1 w-full min-w-0">
+          <div className="flex items-center justify-between mb-4 px-1 w-full min-w-0">
             <div className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden">
               <img
                 src="/vocabflow-logo-256.png"
                 alt="VocabFlow Logo"
-                className="w-9 h-9 rounded-xl object-contain shadow-xs shrink-0"
+                className="w-9 h-9 rounded-xl object-contain shrink-0"
               />
               <div className="min-w-0 flex-1 truncate">
                 <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
@@ -338,7 +358,7 @@ export const AppShell: React.FC = () => {
           </div>
 
           {/* User Streak Pill */}
-          <div className="mb-4 p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0 overflow-hidden">
+          <div className="mb-3.5 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0 overflow-hidden">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs min-w-0 truncate">
               <Flame className="w-4 h-4 fill-amber-500 shrink-0" />
               <span className="truncate">{user?.streak?.currentStreak || 0} Day Streak</span>
@@ -348,60 +368,52 @@ export const AppShell: React.FC = () => {
             </span>
           </div>
 
-          {/* Nav Links */}
-          <nav className="space-y-1 w-full min-w-0 overflow-hidden">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 overflow-hidden ${
-                    isActive
-                      ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
-                      : item.admin
-                      ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
-                      : item.highlight
-                      ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`
-                }
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1 truncate mr-1.5">
-                  <item.icon className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{item.label}</span>
+          {/* Categorized Nav Sections (Organized like Admin) */}
+          <div className="space-y-4 w-full min-w-0">
+            {navSections.map((section) => (
+              <div key={section.title} className="space-y-1">
+                <p className="px-2.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  {section.title}
+                </p>
+                <div className="space-y-0.5">
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 overflow-hidden ${
+                          isActive
+                            ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
+                            : (item as any).admin
+                            ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                            : item.highlight
+                            ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                        }`
+                      }
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 truncate mr-1.5">
+                        <item.icon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span
+                          className={`shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded-md shadow-xs ml-1 flex items-center gap-1 ${
+                            (item as any).isUnlock
+                              ? 'bg-gradient-to-r from-amber-500 to-indigo-600 text-white'
+                              : 'bg-indigo-600 text-white'
+                          }`}
+                        >
+                          {(item as any).isUnlock && <LockOpen className="w-2.5 h-2.5 text-amber-200" />}
+                          <span>{item.badge}</span>
+                        </span>
+                      )}
+                    </NavLink>
+                  ))}
                 </div>
-                {item.badge && (
-                  <span
-                    className={`shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded-md shadow-xs ml-1 flex items-center gap-1 ${
-                      (item as any).isUnlock
-                        ? 'bg-gradient-to-r from-amber-500 to-indigo-600 text-white shadow-amber-500/20'
-                        : 'bg-indigo-600 text-white'
-                    }`}
-                  >
-                    {(item as any).isUnlock && <LockOpen className="w-2.5 h-2.5 text-amber-200" />}
-                    <span>{item.badge}</span>
-                  </span>
-                )}
-              </NavLink>
+              </div>
             ))}
-          </nav>
-
-          {isAdmin && (
-            <div className="pt-2 px-1">
-              <NavLink
-                to="/admin"
-                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 transition group shadow-xs"
-              >
-                <div className="flex items-center gap-2.5">
-                  <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span>🛠 Admin Center</span>
-                </div>
-                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">
-                  ADM
-                </span>
-              </NavLink>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Pinned User Footer: strictly fixed at bottom */}
@@ -546,40 +558,40 @@ export const AppShell: React.FC = () => {
 
         {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-4 py-3 space-y-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className="w-4 h-4 shrink-0" />
-                  <span>{item.label}</span>
+          <div className="lg:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-4 py-3 space-y-3 max-h-[75vh] overflow-y-auto">
+            {navSections.map((section) => (
+              <div key={section.title} className="space-y-1">
+                <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  {section.title}
+                </p>
+                <div className="space-y-0.5">
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
+                          isActive
+                            ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`
+                      }
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <item.icon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
+                          {item.badge}
+                        </span>
+                      )}
+                    </NavLink>
+                  ))}
                 </div>
-                {item.badge && (
-                  <span className="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
-                    {item.badge}
-                  </span>
-                )}
-              </NavLink>
+              </div>
             ))}
-            {isAdmin && (
-              <NavLink
-                to="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/25"
-              >
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
-                  <span>🛠 Admin Center</span>
-                </div>
-                <span className="text-[9px] uppercase font-black px-1.5 py-0.5 bg-amber-500 text-slate-950 rounded-md">
-                  ADMIN
-                </span>
-              </NavLink>
-            )}
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
@@ -590,19 +602,19 @@ export const AppShell: React.FC = () => {
           </div>
         )}
 
-        {/* Desktop Top Header Bar — Streamlined & Compact to save screen height */}
-        <header className="hidden lg:flex items-center justify-between px-6 py-2 h-12 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 sticky top-0 z-20">
+        {/* Desktop Top Header Bar — Balanced, Symmetrical & Polished */}
+        <header className="hidden lg:flex items-center justify-between px-6 lg:px-8 h-14 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 sticky top-0 z-20">
           <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-bold text-slate-500 tracking-tight">
-              VocabFlow AI • Personal English Coach
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-xs shadow-emerald-500/50" />
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-tight">
+              VocabFlow AI <span className="text-slate-400 dark:text-slate-500 font-normal mx-1">•</span> Personal English Coach
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <NavLink
               to="/coach"
-              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 flex items-center gap-1.5 px-3 py-1 rounded-lg transition"
+              className="h-8 px-3 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs"
             >
               <Mic className="w-3.5 h-3.5" />
               <span>Voice Coach</span>
@@ -610,7 +622,7 @@ export const AppShell: React.FC = () => {
 
             <NavLink
               to="/leaderboard"
-              className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 flex items-center gap-1.5 px-3 py-1 rounded-lg transition"
+              className="h-8 px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 flex items-center gap-1.5 transition shadow-xs"
             >
               <Trophy className="w-3.5 h-3.5" />
               <span>Bảng Xếp Hạng</span>
@@ -620,7 +632,7 @@ export const AppShell: React.FC = () => {
 
             <NavLink
               to="/feedback"
-              className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="h-8 px-3 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Góp ý</span>
@@ -629,7 +641,7 @@ export const AppShell: React.FC = () => {
             {isAdmin && (
               <NavLink
                 to="/admin"
-                className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shadow-xs"
+                className="h-8 px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 transition shadow-xs"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
                 <span>🛠 Admin Center</span>

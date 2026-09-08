@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useI18n } from '../../i18n';
+import { NumberInput } from '../../components/common/NumberInput';
 
 interface Plan {
   id: string;
@@ -225,70 +226,46 @@ export const AdminPricingPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Chi phí AI Tutor / User</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={config.aiCostPerUser}
-                    onChange={(e) =>
-                      setConfig({ ...config, aiCostPerUser: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">
-                    ₫
-                  </span>
-                </div>
+                <NumberInput
+                  value={config.aiCostPerUser}
+                  onChange={(val) => setConfig({ ...config, aiCostPerUser: val })}
+                  className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
+                  suffix="₫"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Hạ tầng máy chủ (Hosting / Infra)</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={config.hostingCostPerUser}
-                    onChange={(e) =>
-                      setConfig({ ...config, hostingCostPerUser: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">
-                    ₫
-                  </span>
-                </div>
+                <NumberInput
+                  value={config.hostingCostPerUser}
+                  onChange={(val) => setConfig({ ...config, hostingCostPerUser: val })}
+                  className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
+                  suffix="₫"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Database & Storage / User</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={config.databaseCostPerUser}
-                    onChange={(e) =>
-                      setConfig({ ...config, databaseCostPerUser: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">
-                    ₫
-                  </span>
-                </div>
+                <NumberInput
+                  value={config.databaseCostPerUser}
+                  onChange={(val) => setConfig({ ...config, databaseCostPerUser: val })}
+                  className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
+                  suffix="₫"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Hỗ trợ CSKH & Vận hành / User</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={config.supportCostPerUser}
-                    onChange={(e) =>
-                      setConfig({ ...config, supportCostPerUser: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">
-                    ₫
-                  </span>
-                </div>
+                <NumberInput
+                  value={config.supportCostPerUser}
+                  onChange={(val) => setConfig({ ...config, supportCostPerUser: val })}
+                  className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
+                  suffix="₫"
+                />
               </div>
             </div>
 
@@ -296,54 +273,43 @@ export const AdminPricingPage: React.FC = () => {
             <div className="pt-3 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Phí Cổng Thanh Toán (%)</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.05"
-                    value={config.paymentProviderFeePercent}
-                    onChange={(e) =>
-                      setConfig({ ...config, paymentProviderFeePercent: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">
-                    %
-                  </span>
-                </div>
+                <NumberInput
+                  allowDecimal={true}
+                  value={config.paymentProviderFeePercent}
+                  onChange={(val) =>
+                    setConfig({ ...config, paymentProviderFeePercent: val })
+                  }
+                  className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
+                  suffix="%"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Phí Cố Định Giao Dịch</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={config.paymentFixedFee}
-                    onChange={(e) =>
-                      setConfig({ ...config, paymentFixedFee: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">
-                    ₫
-                  </span>
-                </div>
+                <NumberInput
+                  value={config.paymentFixedFee}
+                  onChange={(val) =>
+                    setConfig({ ...config, paymentFixedFee: val })
+                  }
+                  className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
+                  suffix="₫"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Biên Lợi Nhuận Mục Tiêu</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={config.targetGrossMarginPercent}
-                    onChange={(e) =>
-                      setConfig({ ...config, targetGrossMarginPercent: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]">
-                    %
-                  </span>
-                </div>
+                <NumberInput
+                  allowDecimal={true}
+                  value={config.targetGrossMarginPercent}
+                  onChange={(val) =>
+                    setConfig({ ...config, targetGrossMarginPercent: val })
+                  }
+                  className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
+                  suffix="%"
+                />
               </div>
             </div>
           </div>
@@ -373,7 +339,7 @@ export const AdminPricingPage: React.FC = () => {
                 <p className="text-[10px] text-slate-500">Margin ~0% (Bảo toàn chi phí)</p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-indigo-600/15 border border-indigo-500/40 space-y-1 text-center shadow-lg shadow-indigo-500/10">
+              <div className="p-4 rounded-2xl bg-indigo-600/15 border border-indigo-500/40 space-y-1 text-center">
                 <span className="text-[10px] uppercase font-black text-indigo-400 flex items-center justify-center gap-1">
                   <Crown className="w-3 h-3" />
                   Khuyến Nghị (Recommended)
@@ -382,7 +348,7 @@ export const AdminPricingPage: React.FC = () => {
                   {formatVND(recommendedMonthly)}
                 </p>
                 <p className="text-[10px] text-indigo-300 font-semibold">
-                  Đạt chuẩn Margin {config.targetGrossMarginPercent}%
+                  Đạt chuẩn Margin {(Number(config.targetGrossMarginPercent) || 0).toLocaleString()}%
                 </p>
               </div>
 
@@ -410,61 +376,61 @@ export const AdminPricingPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Guest: AI Tutor / Ngày</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={config.quotas?.guestAiDailyQuota || 3}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setConfig({
                       ...config,
-                      quotas: { ...config.quotas, guestAiDailyQuota: Number(e.target.value) },
+                      quotas: { ...config.quotas, guestAiDailyQuota: val },
                     })
                   }
                   className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Free Tier: AI Tutor / Ngày</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={config.quotas?.freeAiDailyQuota || 10}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setConfig({
                       ...config,
-                      quotas: { ...config.quotas, freeAiDailyQuota: Number(e.target.value) },
+                      quotas: { ...config.quotas, freeAiDailyQuota: val },
                     })
                   }
                   className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Free Tier: Lượt Ôn Tập / Ngày</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={config.quotas?.freeReviewDailyQuota || 20}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setConfig({
                       ...config,
-                      quotas: { ...config.quotas, freeReviewDailyQuota: Number(e.target.value) },
+                      quotas: { ...config.quotas, freeReviewDailyQuota: val },
                     })
                   }
                   className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400 font-medium">Free Tier: Tối Đa Từ Yêu Thích</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={config.quotas?.freeFavoritesMax || 50}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setConfig({
                       ...config,
-                      quotas: { ...config.quotas, freeFavoritesMax: Number(e.target.value) },
+                      quotas: { ...config.quotas, freeFavoritesMax: val },
                     })
                   }
                   className="w-full px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -609,19 +575,18 @@ export const AdminPricingPage: React.FC = () => {
                   {/* Editable monthly price */}
                   <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
                     <span className="text-slate-400 font-medium">Chỉnh giá tháng:</span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
+                    <div className="flex items-center gap-2 w-36">
+                      <NumberInput
                         value={p.priceMonthly}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
+                        onChange={(val) => {
                           setPlans(
                             plans.map((pl) => (pl.id === p.id ? { ...pl, priceMonthly: val } : pl)),
                           );
                         }}
-                        className="w-28 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-right font-mono text-xs focus:border-indigo-500 focus:outline-hidden"
+                        className="w-full px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-right font-mono text-xs focus:border-indigo-500 focus:outline-hidden"
+                        placeholder="0"
+                        suffix="₫"
                       />
-                      <span className="text-slate-500 text-[11px]">₫/tháng</span>
                     </div>
                   </div>
                 </div>

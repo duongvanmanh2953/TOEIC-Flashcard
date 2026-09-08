@@ -406,6 +406,8 @@ enum SubscriptionTier {
   FREE
   PLUS
   PRO
+  ENTERPRISE
+  CUSTOM
 }
 
 model CommunityDeck {
@@ -466,14 +468,28 @@ model Plan {
   id               String           @id @default(uuid())
   tier             SubscriptionTier @unique
   name             String
+  slug             String?          @unique
+  description      String?
   priceMonthly     Float            @default(0.0)
-  aiDailyQuota     Int              @default(10) // 10 for Free, 100 for Plus, Unlimited (-1) for Pro
+  priceYearly      Float            @default(0.0)
+  currency         String           @default("VND")
+  billingCycle     String           @default("MONTHLY") // MONTHLY, YEARLY
+  status           String           @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
+  displayOrder     Int              @default(0)
+  aiDailyQuota     Int              @default(10) // requests/day
   maxCustomDecks   Int              @default(3)
   unlimitedReviews Boolean          @default(false)
   features         Json
+  limits           Json?            // e.g. { aiChat: 10, voiceAiMinutes: 5, pronunciation: 5, textToVocab: 3, storyGen: 1 }
+  permissions      Json?            // e.g. { aiChat: true, voiceAi: false, personalMemory: false, roleplay: false, ... }
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @default(now()) @updatedAt
 
   subscriptions Subscription[]
   paymentOrders PaymentOrder[]
+
+  @@index([status])
+  @@index([displayOrder])
 }
 
 enum PaymentStatus {
@@ -736,5 +752,32 @@ model AdminAnnouncement {
   sentAt      DateTime? @default(now())
   createdAt   DateTime  @default(now())
 }
+
+model LearningResource {
+  id           String      @id @default(uuid())
+  title        String
+  description  String?
+  type         String      // VOCABULARY, GRAMMAR, PRONUNCIATION, LESSON, EXERCISE, SCENARIO, READING, LISTENING
+  level        CefrLevel   @default(B1) // A1, A2, B1, B2, C1, C2
+  category     String?     @default("General")
+  content      String      // Markdown / JSON / plain text
+  audioUrl     String?
+  imageUrl     String?
+  language     String      @default("en")
+  status       String      @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  isPremium    Boolean     @default(false)
+  requiredPlan String      @default("FREE") // FREE, PLUS, PRO, ALL
+  tags         String[]    @default([])
+  metadata     Json?
+  authorId     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([type])
+  @@index([level])
+  @@index([status])
+  @@index([requiredPlan])
+}
+
 
 

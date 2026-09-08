@@ -43,6 +43,8 @@ import { AdminSecurityPage } from './pages/admin/AdminSecurityPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminSharedVocabularyPage } from './pages/admin/AdminSharedVocabularyPage';
 import { AdminPricingPage } from './pages/admin/AdminPricingPage';
+import { AdminPlansPage } from './pages/admin/AdminPlansPage';
+import { AdminResourcesPage } from './pages/admin/AdminResourcesPage';
 import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
@@ -167,8 +169,10 @@ export const App: React.FC = () => {
               <Route path="vocabulary" element={<AdminVocabularyPage />} />
               <Route path="shared-vocabulary" element={<AdminSharedVocabularyPage />} />
               <Route path="learning" element={<AdminLearningPage />} />
+              <Route path="resources" element={<AdminResourcesPage />} />
               <Route path="notifications" element={<AdminNotificationsPage />} />
               <Route path="ai" element={<AdminAIPage />} />
+              <Route path="plans" element={<AdminPlansPage />} />
               <Route path="billing" element={<AdminBillingPage />} />
               <Route path="finance" element={<AdminFinancePage />} />
               <Route path="pricing" element={<AdminPricingPage />} />

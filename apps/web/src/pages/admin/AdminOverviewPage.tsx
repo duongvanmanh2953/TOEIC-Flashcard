@@ -105,28 +105,35 @@ export const AdminOverviewPage: React.FC = () => {
         </div>
       )}
 
-      {/* 12 ULTRA KPI METRIC CARDS */}
+      {/* 12 ULTRA KPI METRIC CARDS — 4 Group Identities (Indigo, Emerald, Violet, Amber) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: 'Tổng Học Viên', val: kpis.totalUsers?.value ?? 0, change: kpis.totalUsers?.change, icon: Users, color: 'text-indigo-400', route: '/admin/users' },
-          { label: 'Hoạt Động Hôm Nay', val: kpis.activeToday?.value ?? 0, change: kpis.activeToday?.change, icon: Flame, color: 'text-emerald-400', route: '/admin/users' },
-          { label: 'Hoạt Động 7 Ngày', val: kpis.active7d?.value ?? 0, change: kpis.active7d?.change, icon: TrendingUp, color: 'text-sky-400', route: '/admin/learning' },
-          { label: 'Tỷ Lệ Chuyển Đổi', val: kpis.conversionRate?.value ?? '0%', change: kpis.conversionRate?.change, icon: Sparkles, color: 'text-purple-400', route: '/admin/billing' },
-          { label: 'Học Viên VIP Pro', val: kpis.premiumUsers?.value ?? 0, change: kpis.premiumUsers?.change, icon: CreditCard, color: 'text-amber-400', route: '/admin/billing' },
-          { label: 'Doanh Thu Ước Tính (MRR)', val: kpis.mrr?.value ?? '0 đ', change: kpis.mrr?.change, icon: CreditCard, color: 'text-emerald-400', route: '/admin/billing' },
-          { label: 'Lượt Ôn Tập SRS', val: kpis.totalReviews?.value ?? 0, change: kpis.totalReviews?.change, icon: BookOpen, color: 'text-indigo-400', route: '/admin/learning' },
-          { label: 'Độ Chính Xác', val: kpis.accuracyRate?.value ?? '0%', change: kpis.accuracyRate?.change, icon: CheckCircle2, color: 'text-emerald-400', route: '/admin/learning' },
-          { label: 'Lượt Gọi AI Tutor', val: kpis.aiRequests?.value ?? 0, change: kpis.aiRequests?.change, icon: Cpu, color: 'text-purple-400', route: '/admin/ai' },
-          { label: 'Yêu Cầu CSKH Chờ', val: kpis.openSupport?.value ?? 0, change: kpis.openSupport?.change, icon: Headphones, color: 'text-sky-400', route: '/admin/support' },
-          { label: 'Góp Ý Chờ Xử Lý', val: kpis.unreadFeedback?.value ?? 0, change: kpis.unreadFeedback?.change, icon: AlertTriangle, color: 'text-amber-400', route: '/admin/feedback' },
-          { label: 'Kho Từ Chuẩn', val: kpis.totalVocab?.value ?? 0, change: '600+ TOEIC', icon: BookOpen, color: 'text-slate-300', route: '/admin/vocabulary' },
+          // USER GROWTH GROUP (Indigo)
+          { label: 'Tổng Học Viên', val: kpis.totalUsers?.value ?? 0, change: kpis.totalUsers?.change, icon: Users, color: 'text-indigo-400', cardBg: 'bg-indigo-950/25 border-indigo-800/40 hover:border-indigo-700/60', route: '/admin/users' },
+          { label: 'Hoạt Động Hôm Nay', val: kpis.activeToday?.value ?? 0, change: kpis.activeToday?.change, icon: Flame, color: 'text-indigo-400', cardBg: 'bg-indigo-950/25 border-indigo-800/40 hover:border-indigo-700/60', route: '/admin/users' },
+          { label: 'Hoạt Động 7 Ngày', val: kpis.active7d?.value ?? 0, change: kpis.active7d?.change, icon: TrendingUp, color: 'text-indigo-400', cardBg: 'bg-indigo-950/25 border-indigo-800/40 hover:border-indigo-700/60', route: '/admin/learning' },
+
+          // REVENUE & BUSINESS GROUP (Emerald)
+          { label: 'Tỷ Lệ Chuyển Đổi', val: kpis.conversionRate?.value ?? '0%', change: kpis.conversionRate?.change, icon: Sparkles, color: 'text-emerald-400', cardBg: 'bg-emerald-950/25 border-emerald-800/40 hover:border-emerald-700/60', route: '/admin/billing' },
+          { label: 'Học Viên VIP Pro', val: kpis.premiumUsers?.value ?? 0, change: kpis.premiumUsers?.change, icon: CreditCard, color: 'text-emerald-400', cardBg: 'bg-emerald-950/25 border-emerald-800/40 hover:border-emerald-700/60', route: '/admin/billing' },
+          { label: 'Doanh Thu (MRR)', val: kpis.mrr?.value ?? '0 đ', change: kpis.mrr?.change, icon: CreditCard, color: 'text-emerald-400', cardBg: 'bg-emerald-950/25 border-emerald-800/40 hover:border-emerald-700/60', route: '/admin/finance' },
+
+          // LEARNING & ACADEMIC GROUP (Violet)
+          { label: 'Lượt Ôn Tập SRS', val: kpis.totalReviews?.value ?? 0, change: kpis.totalReviews?.change, icon: BookOpen, color: 'text-violet-400', cardBg: 'bg-violet-950/25 border-violet-800/40 hover:border-violet-700/60', route: '/admin/learning' },
+          { label: 'Độ Chính Xác', val: kpis.accuracyRate?.value ?? '0%', change: kpis.accuracyRate?.change, icon: CheckCircle2, color: 'text-violet-400', cardBg: 'bg-violet-950/25 border-violet-800/40 hover:border-violet-700/60', route: '/admin/learning' },
+          { label: 'Kho Từ Chuẩn', val: kpis.totalVocab?.value ?? 0, change: '600+ TOEIC', icon: BookOpen, color: 'text-violet-400', cardBg: 'bg-violet-950/25 border-violet-800/40 hover:border-violet-700/60', route: '/admin/vocabulary' },
+
+          // AI USAGE & OPS GROUP (Amber)
+          { label: 'Lượt Gọi AI Tutor', val: kpis.aiRequests?.value ?? 0, change: kpis.aiRequests?.change, icon: Cpu, color: 'text-amber-400', cardBg: 'bg-amber-950/25 border-amber-800/40 hover:border-amber-700/60', route: '/admin/ai' },
+          { label: 'Yêu Cầu CSKH Chờ', val: kpis.openSupport?.value ?? 0, change: kpis.openSupport?.change, icon: Headphones, color: 'text-sky-400', cardBg: 'bg-sky-950/25 border-sky-800/40 hover:border-sky-700/60', route: '/admin/support' },
+          { label: 'Góp Ý Chờ Xử Lý', val: kpis.unreadFeedback?.value ?? 0, change: kpis.unreadFeedback?.change, icon: AlertTriangle, color: 'text-amber-400', cardBg: 'bg-amber-950/25 border-amber-800/40 hover:border-amber-700/60', route: '/admin/feedback' },
         ].map((kpi, idx) => {
           const Icon = kpi.icon;
           return (
             <div
               key={idx}
               onClick={() => navigate(kpi.route)}
-              className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-slate-700 cursor-pointer transition space-y-1.5 shadow-sm group hover:-translate-y-0.5"
+              className={`p-3.5 rounded-2xl ${kpi.cardBg} border cursor-pointer transition space-y-1.5 shadow-sm group hover:-translate-y-0.5`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-400 truncate">{kpi.label}</span>
@@ -156,6 +163,22 @@ export const AdminOverviewPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
+              {
+                title: 'Quản Lý Gói Cước & Feature Matrix',
+                desc: 'Thiết lập biểu phí theo tháng/năm, quota AI và ma trận quyền.',
+                route: '/admin/plans',
+                icon: CreditCard,
+                badge: 'Mới nâng cấp',
+                color: 'text-indigo-400',
+              },
+              {
+                title: 'Kho Tài Nguyên & Kịch Bản AI',
+                desc: 'Quản lý bài giảng, bài đọc, từ vựng theo khung CEFR quốc tế.',
+                route: '/admin/resources',
+                icon: BookOpen,
+                badge: 'Content Hub',
+                color: 'text-violet-400',
+              },
               {
                 title: 'Hộp Thư Hỗ Trợ CSKH',
                 desc: 'Inbox 2 cột, trả lời thời gian thực & ghi chú nội bộ.',

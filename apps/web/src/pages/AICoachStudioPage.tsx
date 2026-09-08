@@ -345,27 +345,26 @@ export const AICoachStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Top Product Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white shadow-2xl relative overflow-hidden">
-          <div className="space-y-1.5 z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-black uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+    <div className="space-y-6">
+        {/* Top Product Header (Compact & Streamlined) */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden">
+          <div className="space-y-1 z-10">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-black uppercase tracking-wider">
+              <Sparkles className="w-3 h-3 text-amber-400" />
               <span>Next-Gen AI Personal English Coach</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
               A Personal English Coach That Learns You
             </h1>
-            <p className="text-xs sm:text-sm text-indigo-200/80 max-w-xl">
+            <p className="text-xs text-indigo-200/80 max-w-xl">
               Huấn luyện viên ghi nhớ lịch sử, tìm nguyên nhân gốc rễ và tự động may đo lộ trình phản xạ cho riêng bạn.
             </p>
           </div>
 
-          <div className="z-10 flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-center">
-              <span className="text-[10px] uppercase font-bold text-indigo-300 block">English Power</span>
-              <span className="text-2xl font-black text-amber-400">764</span>
+          <div className="z-10 flex items-center gap-2.5 self-end sm:self-auto">
+            <div className="px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-center">
+              <span className="text-[10px] uppercase font-bold text-indigo-300 block leading-tight">English Power</span>
+              <span className="text-xl sm:text-2xl font-black text-amber-400 leading-tight">764</span>
             </div>
           </div>
         </div>
@@ -1077,6 +1076,5 @@ export const AICoachStudioPage: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
   );
 };

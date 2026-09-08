@@ -30,6 +30,8 @@ import {
   TrendingUp,
   DollarSign,
   Layers,
+  FileText,
+  Package,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
@@ -123,47 +125,58 @@ export const AdminLayout: React.FC = () => {
 
   const navSections = [
     {
-      title: 'OVERVIEW',
+      title: 'TỔNG QUAN & PHÂN TÍCH',
       items: [
         { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, badge: 'Live' },
+        { to: '/admin/users', label: 'Học Viên (Users)', icon: Users },
+        { to: '/admin/learning', label: 'Tiến Trình Học', icon: GraduationCap },
+        { to: '/admin/ai', label: 'Phân Tích AI', icon: Cpu },
       ],
     },
     {
-      title: 'ANALYTICS',
+      title: 'KHO NỘI DUNG',
       items: [
-        { to: '/admin/users', label: 'Users', icon: Users },
-        { to: '/admin/learning', label: 'Learning', icon: GraduationCap },
-        { to: '/admin/ai', label: 'AI Analytics', icon: Cpu },
+        { to: '/admin/vocabulary', label: 'Từ Vựng (Vocab)', icon: BookOpen },
+        { to: '/admin/shared-vocabulary', label: 'Kho Dùng Chung', icon: Layers },
+        { to: '/admin/resources', label: 'Tài Nguyên Học Liệu', icon: FileText },
       ],
     },
     {
-      title: 'CONTENT',
+      title: 'KINH DOANH & GÓI CƯỚC',
       items: [
-        { to: '/admin/vocabulary', label: 'Vocabulary', icon: BookOpen },
-        { to: '/admin/shared-vocabulary', label: 'Shared Vault', icon: Layers },
+        { to: '/admin/plans', label: 'Quản Lý Gói Pro', icon: Package },
+        { to: '/admin/pricing', label: 'Định Giá Thông Minh', icon: DollarSign },
+        {
+          to: '/admin/finance',
+          label: 'Doanh Thu & Dòng Tiền',
+          icon: TrendingUp,
+          count: badgeCounts.payments > 0 ? badgeCounts.payments : undefined,
+          badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+        },
+        { to: '/admin/billing', label: 'Đơn Hàng & Giao Dịch', icon: CreditCard },
       ],
     },
     {
-      title: 'OPERATIONS',
+      title: 'VẬN HÀNH & CHĂM SÓC',
       items: [
         {
           to: '/admin/conversations',
           aliasTo: '/admin/support',
-          label: 'Conversations',
+          label: 'Hỗ Trợ CSKH',
           icon: Headphones,
           count: badgeCounts.conversations,
           badgeColor: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
         },
         {
           to: '/admin/feedback',
-          label: 'Feedback',
+          label: 'Đóng Góp Ý Kiến',
           icon: MessageSquarePlus,
           count: badgeCounts.feedback,
           badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
         },
         {
           to: '/admin/notifications',
-          label: 'Notifications',
+          label: 'Thông Báo Hệ Thống',
           icon: Bell,
           count: badgeCounts.notifications,
           badgeColor: 'bg-rose-500/20 text-rose-400 border border-rose-500/30',
@@ -171,25 +184,11 @@ export const AdminLayout: React.FC = () => {
       ],
     },
     {
-      title: 'BUSINESS',
+      title: 'HỆ THỐNG & BẢO MẬT',
       items: [
-        {
-          to: '/admin/finance',
-          label: 'Finance & Revenue',
-          icon: TrendingUp,
-          count: badgeCounts.payments > 0 ? badgeCounts.payments : undefined,
-          badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-        },
-        { to: '/admin/billing', label: 'Billing & Orders', icon: CreditCard },
-        { to: '/admin/pricing', label: 'Smart Pricing', icon: DollarSign },
-      ],
-    },
-    {
-      title: 'SYSTEM',
-      items: [
-        { to: '/admin/system', label: 'System Health', icon: Activity },
-        { to: '/admin/security', label: 'Security & Roles', icon: ShieldCheck },
-        { to: '/admin/settings', label: 'Settings', icon: Settings },
+        { to: '/admin/system', label: 'Sức Khỏe Hệ Thống', icon: Activity },
+        { to: '/admin/security', label: 'Bảo Mật & Phân Quyền', icon: ShieldCheck },
+        { to: '/admin/settings', label: 'Cài Đặt Chung', icon: Settings },
       ],
     },
   ];
@@ -225,9 +224,11 @@ export const AdminLayout: React.FC = () => {
         {/* Brand & Command Center Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md">
-              VF
-            </div>
+            <img
+              src="/vocabflow-logo-256.png"
+              alt="VocabFlow"
+              className="w-9 h-9 rounded-xl object-contain shadow-md shrink-0"
+            />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-sm tracking-tight text-white">VocabFlow</span>
@@ -417,61 +418,61 @@ export const AdminLayout: React.FC = () => {
           </div>
         )}
 
-        {/* Dedicated Admin Topbar */}
-        <header className="sticky top-0 z-30 h-12 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-3 sm:px-5 flex items-center justify-between gap-3 shrink-0">
+        {/* Dedicated Admin Topbar — Balanced, Spacious & Symmetric */}
+        <header className="sticky top-0 z-30 h-14 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
             >
-              <Menu className="w-4 h-4" />
+              <Menu className="w-5 h-5" />
             </button>
 
             {/* Quick Search Shortcut */}
             <div
               onClick={() => setPaletteOpen(true)}
-              className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-slate-200 text-[11px] cursor-pointer transition w-56 shadow-xs"
+              className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-slate-200 text-xs cursor-pointer transition w-60 shadow-xs"
             >
-              <Search className="w-3 h-3" />
+              <Search className="w-3.5 h-3.5 shrink-0" />
               <span className="flex-1">Tìm kiếm nhanh...</span>
-              <kbd className="px-1.5 py-0.2 rounded bg-slate-900 text-[9px] font-mono border border-slate-700">
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-900 text-[10px] font-mono border border-slate-700 text-slate-300">
                 Ctrl+K
               </kbd>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Live Status Indicator (click opens /admin/system) */}
             <div
               onClick={() => navigate('/admin/system')}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold cursor-pointer transition shadow-xs"
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-400 text-xs font-bold cursor-pointer transition shadow-xs"
               title="Xem Báo cáo sức khỏe hệ thống (System Health)"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>All systems operational</span>
+              <span>Hệ thống hoạt động tốt</span>
             </div>
 
             {/* Support Shortcut with unread badge */}
             <button
               onClick={() => navigate('/admin/conversations')}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 relative transition"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 relative transition"
               title="Hội thoại CSKH"
             >
               <Headphones className="w-4 h-4" />
               {badgeCounts.conversations > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-slate-900" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-slate-900" />
               )}
             </button>
 
             {/* Notification Bell with live count */}
             <button
               onClick={() => navigate('/admin/notifications')}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 relative transition"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 relative transition"
               title="Thông báo quản trị"
             >
               <Bell className="w-4 h-4" />
               {badgeCounts.notifications > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
               )}
             </button>
           </div>
@@ -481,8 +482,8 @@ export const AdminLayout: React.FC = () => {
         <main
           className={`flex-1 min-w-0 ${
             isLockedHeightRoute
-              ? 'p-1 sm:p-1.5 overflow-hidden flex flex-col h-[calc(100vh-48px)] max-h-[calc(100vh-48px)] min-h-0'
-              : 'p-3 sm:p-4 lg:p-5 space-y-4'
+              ? 'p-1 sm:p-1.5 overflow-hidden flex flex-col h-[calc(100vh-56px)] max-h-[calc(100vh-56px)] min-h-0'
+              : 'p-4 sm:p-5 lg:p-6 space-y-6'
           }`}
         >
           <Outlet />

@@ -8,6 +8,7 @@ import {
   FeedbackStatus,
   SubscriptionTier,
   SupportPriority,
+  CefrLevel,
 } from '@prisma/client';
 
 @Injectable()
@@ -1223,6 +1224,295 @@ export class AdminService {
     });
 
     return { success: true, message: 'Cập nhật cấu hình giá và mô hình chi phí thành công!' };
+  }
+
+  /**
+   * 15. LEARNING CONTENT & RESOURCE MANAGEMENT
+   */
+  async ensureDefaultResources() {
+    const count = await this.prisma.learningResource.count();
+    if (count > 0) return;
+
+    const seedResources = [
+      {
+        title: 'Mastering Essential Business Vocabulary (CEFR B2)',
+        description: 'Key business vocabulary and collocations frequently tested in TOEIC Speaking & Writing and workplace communications.',
+        type: 'VOCABULARY',
+        level: CefrLevel.B2,
+        category: 'Business English',
+        content: `# Essential Business Collocations
+
+### 1. Facilitate a meeting
+- **Meaning**: To make a process or meeting easier or run more smoothly.
+- **Example**: *The project manager facilitated the cross-functional sprint planning session.*
+- **Synonyms**: Coordinate, expedite, moderate.
+
+### 2. Streamline operations
+- **Meaning**: To improve the efficiency of a process, business, or organization by simplifying or eliminating unnecessary steps.
+- **Example**: *We invested in AI automation to streamline customer service operations.*
+
+### 3. Reach a consensus
+- **Meaning**: To arrive at an agreement accepted by all members of a team.
+- **Example**: *After two hours of deliberation, the board reached a consensus on the expansion plan.*`,
+        audioUrl: '',
+        imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop&q=80',
+        language: 'en',
+        status: 'PUBLISHED',
+        isPremium: false,
+        requiredPlan: 'FREE',
+        tags: ['Business', 'TOEIC', 'Vocabulary', 'Intermediate'],
+        metadata: { readingTimeMinutes: 5, totalWords: 240 },
+      },
+      {
+        title: 'Inversion in Advanced English Grammar',
+        description: 'Master inverted conditional sentences, negative adverb inversions, and high-scoring structures for TOEIC and IELTS.',
+        type: 'GRAMMAR',
+        level: CefrLevel.C1,
+        category: 'Advanced Grammar',
+        content: `# Inversion Structures for High-Score Writing
+
+### Rule 1: Negative and Limiting Adverbs
+When sentences begin with negative or restrictive expressions (*Hardly, Scarcely, Seldom, Rarely, Under no circumstances*), inverted word order is required.
+
+- **Formula**: *Negative word + Auxiliary verb + Subject + Main verb*
+- **Standard**: *He had rarely witnessed such exemplary dedication.*
+- **Inverted**: *Rarely had he witnessed such exemplary dedication.*
+
+### Rule 2: Inverted Conditionals
+- **Type 1**: *Should you require further assistance, do not hesitate to reach out.*
+- **Type 2**: *Were the company to adopt this policy, efficiency would double.*
+- **Type 3**: *Had we forecasted the market downturn, we would have hedged our investments.*`,
+        audioUrl: '',
+        imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600&auto=format&fit=crop&q=80',
+        language: 'en',
+        status: 'PUBLISHED',
+        isPremium: true,
+        requiredPlan: 'PLUS',
+        tags: ['Grammar', 'Inversion', 'C1', 'Writing'],
+        metadata: { readingTimeMinutes: 7, totalWords: 380 },
+      },
+      {
+        title: 'Workplace Conflict Resolution Roleplay Scenario',
+        description: 'Interactive scenario for handling deadline disagreements with cross-functional stakeholders politely and effectively.',
+        type: 'SCENARIO',
+        level: CefrLevel.B2,
+        category: 'Interactive Coaching',
+        content: `# Scenario: Overdue Milestone Discussion
+
+### Background
+You are leading the digital transformation initiative. The backend API team informed you that the integration milestone is delayed by 10 days, threatening your product launch.
+
+### Objectives
+1. Acknowledge their technical roadblock with empathy.
+2. Propose a phased release or scope de-escalation.
+3. Establish a mutually agreed revised deadline without escalating conflict.
+
+### Suggested Key Phrases
+- *"I understand the architectural complexity you're grappling with..."*
+- *"Could we consider delivering the core authentication endpoints first?"*
+- *"Let's align on a realistic timeline that does not compromise system stability."*`,
+        audioUrl: '',
+        imageUrl: 'https://images.unsplash.com/photo-1522071823999-974249a589f8?w=600&auto=format&fit=crop&q=80',
+        language: 'en',
+        status: 'PUBLISHED',
+        isPremium: true,
+        requiredPlan: 'PRO',
+        tags: ['Roleplay', 'Speaking', 'Workplace', 'AI Coach'],
+        metadata: { readingTimeMinutes: 4, scenarioTurns: 6 },
+      },
+    ];
+
+    for (const r of seedResources) {
+      await this.prisma.learningResource.create({ data: r });
+    }
+    this.logger.log('Default learning resources seeded successfully.');
+  }
+
+  async getResources(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    type?: string;
+    level?: CefrLevel;
+    requiredPlan?: string;
+    status?: string;
+  }) {
+    await this.ensureDefaultResources();
+
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 15));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.search && query.search.trim()) {
+      const s = query.search.trim();
+      where.OR = [
+        { title: { contains: s, mode: 'insensitive' } },
+        { description: { contains: s, mode: 'insensitive' } },
+        { category: { contains: s, mode: 'insensitive' } },
+      ];
+    }
+    if (query.type && query.type !== 'ALL') {
+      where.type = query.type;
+    }
+    if (query.level) {
+      where.level = query.level;
+    }
+    if (query.requiredPlan && query.requiredPlan !== 'ALL') {
+      where.requiredPlan = query.requiredPlan;
+    }
+    if (query.status && query.status !== 'ALL') {
+      where.status = query.status;
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.learningResource.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.learningResource.count({ where }),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getResourceById(id: string) {
+    const resource = await this.prisma.learningResource.findUnique({
+      where: { id },
+    });
+    if (!resource) {
+      throw new NotFoundException(`Learning resource with ID ${id} not found`);
+    }
+    return resource;
+  }
+
+  async createResource(dto: any, actorId?: string) {
+    const resource = await this.prisma.learningResource.create({
+      data: {
+        title: dto.title,
+        description: dto.description || null,
+        type: dto.type || 'VOCABULARY',
+        level: dto.level || CefrLevel.B1,
+        category: dto.category || 'General',
+        content: dto.content || '',
+        audioUrl: dto.audioUrl || null,
+        imageUrl: dto.imageUrl || null,
+        language: dto.language || 'en',
+        status: dto.status || 'PUBLISHED',
+        isPremium: Boolean(dto.isPremium),
+        requiredPlan: dto.requiredPlan || 'FREE',
+        tags: Array.isArray(dto.tags) ? dto.tags : [],
+        metadata: dto.metadata || {},
+        authorId: actorId || null,
+      },
+    });
+
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: 'RESOURCE_CREATE',
+          targetType: 'LEARNING_RESOURCE',
+          targetId: resource.id,
+          metadata: { title: resource.title, type: resource.type },
+        },
+      });
+    }
+
+    return resource;
+  }
+
+  async updateResource(id: string, dto: any, actorId?: string) {
+    await this.getResourceById(id);
+
+    const updated = await this.prisma.learningResource.update({
+      where: { id },
+      data: {
+        title: dto.title !== undefined ? dto.title : undefined,
+        description: dto.description !== undefined ? dto.description : undefined,
+        type: dto.type !== undefined ? dto.type : undefined,
+        level: dto.level !== undefined ? dto.level : undefined,
+        category: dto.category !== undefined ? dto.category : undefined,
+        content: dto.content !== undefined ? dto.content : undefined,
+        audioUrl: dto.audioUrl !== undefined ? dto.audioUrl : undefined,
+        imageUrl: dto.imageUrl !== undefined ? dto.imageUrl : undefined,
+        language: dto.language !== undefined ? dto.language : undefined,
+        status: dto.status !== undefined ? dto.status : undefined,
+        isPremium: dto.isPremium !== undefined ? Boolean(dto.isPremium) : undefined,
+        requiredPlan: dto.requiredPlan !== undefined ? dto.requiredPlan : undefined,
+        tags: Array.isArray(dto.tags) ? dto.tags : undefined,
+        metadata: dto.metadata !== undefined ? dto.metadata : undefined,
+      },
+    });
+
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: 'RESOURCE_UPDATE',
+          targetType: 'LEARNING_RESOURCE',
+          targetId: id,
+          metadata: { title: updated.title, type: updated.type },
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  async deleteResource(id: string, actorId?: string) {
+    const resource = await this.getResourceById(id);
+
+    await this.prisma.learningResource.delete({
+      where: { id },
+    });
+
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: 'RESOURCE_DELETE',
+          targetType: 'LEARNING_RESOURCE',
+          targetId: id,
+          metadata: { title: resource.title, type: resource.type },
+        },
+      });
+    }
+
+    return { success: true, message: `Resource "${resource.title}" deleted successfully.` };
+  }
+
+  async updateResourceStatus(id: string, status: string, actorId?: string) {
+    const resource = await this.getResourceById(id);
+
+    const updated = await this.prisma.learningResource.update({
+      where: { id },
+      data: { status },
+    });
+
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: 'RESOURCE_STATUS_UPDATE',
+          targetType: 'LEARNING_RESOURCE',
+          targetId: id,
+          metadata: { previousStatus: resource.status, newStatus: status },
+        },
+      });
+    }
+
+    return updated;
   }
 }
 

@@ -17,6 +17,8 @@ import {
   LockOpen,
   Calendar,
   Percent,
+  Layers,
+  Star,
 } from 'lucide-react';
 
 interface Entitlements {
@@ -36,30 +38,62 @@ interface Entitlements {
   };
 }
 
+interface PlanItem {
+  id: string;
+  tier: string;
+  name: string;
+  slug: string;
+  description?: string;
+  priceMonthly: number;
+  priceYearly: number;
+  currency: string;
+  billingCycle: string;
+  status: string;
+  displayOrder: number;
+  aiDailyQuota: number;
+  maxCustomDecks: number;
+  unlimitedReviews: boolean;
+  features: string[];
+  limits?: Record<string, number>;
+  permissions?: Record<string, boolean>;
+}
+
 export const SubscriptionUpgradePage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
+  const [plans, setPlans] = useState<PlanItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
-  const [checkoutTier, setCheckoutTier] = useState<'PLUS' | 'PRO' | null>(null);
+  const [checkoutTier, setCheckoutTier] = useState<any | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
-  useEffect(() => {
-    fetchEntitlements();
-  }, []);
-
-  const fetchEntitlements = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const res: any = await api.get('/subscriptions/my-status');
-      setEntitlements(res.data);
+      const [statusRes, plansRes]: any = await Promise.all([
+        api.get('/subscriptions/my-status').catch(() => ({ data: null })),
+        api.get('/subscriptions/plans').catch(() => ({ data: null })),
+      ]);
+
+      if (statusRes?.data) {
+        setEntitlements(statusRes.data);
+      }
+
+      const planList = plansRes?.data?.data || plansRes?.data || plansRes;
+      if (Array.isArray(planList) && planList.length > 0) {
+        setPlans(planList);
+      }
     } catch (err) {
-      console.error('Failed to fetch entitlements', err);
+      console.error('Failed to fetch subscriptions data', err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   if (loading) {
     return (
@@ -72,6 +106,90 @@ export const SubscriptionUpgradePage: React.FC = () => {
   const isPro = isProUser(user) || entitlements?.tier === 'PRO' || (entitlements as any)?.currentPlan?.isPro;
   const currentTier = isPro ? 'PRO' : (entitlements?.tier || 'FREE');
   const periodEnd = entitlements?.currentPlan?.currentPeriodEnd;
+
+  // Sắp xếp các gói theo displayOrder
+  const displayPlans = plans.length > 0 ? plans : [
+    {
+      id: 'default-free',
+      tier: 'FREE',
+      name: 'Learner Free',
+      slug: 'free',
+      description: 'Nền tảng học từ vựng vững chắc miễn phí',
+      priceMonthly: 0,
+      priceYearly: 0,
+      currency: 'VND',
+      billingCycle: 'MONTHLY',
+      status: 'ACTIVE',
+      displayOrder: 1,
+      aiDailyQuota: 10,
+      maxCustomDecks: 3,
+      unlimitedReviews: false,
+      features: [
+        '600+ Từ Vựng TOEIC Tiêu Chuẩn',
+        'Thuật toán lặp lại Spaced Repetition (SRS)',
+        'Phát âm giọng đọc chuẩn bản xứ US/UK',
+        '10 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
+        '3 Lượt Trích Xuất Text-to-Vocab / Ngày',
+        'Duyệt bộ thẻ học cộng đồng công khai',
+      ],
+      limits: { aiChat: 10, voiceAiMinutes: 0 },
+      permissions: { aiChat: true, spacedRepetition: true },
+    },
+    {
+      id: 'default-plus',
+      tier: 'PLUS',
+      name: 'VocabFlow Plus',
+      slug: 'plus',
+      description: 'Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt & AI Tutor mỗi ngày',
+      priceMonthly: 99000,
+      priceYearly: 828000,
+      currency: 'VND',
+      billingCycle: 'MONTHLY',
+      status: 'ACTIVE',
+      displayOrder: 2,
+      aiDailyQuota: 50,
+      maxCustomDecks: 10,
+      unlimitedReviews: true,
+      features: [
+        'Tất cả tính năng trong gói Free',
+        '50 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
+        '15 Lượt Trích Xuất Văn Bản (Text-to-Vocab) / Ngày',
+        '5 Lượt Dệt Câu Chuyện (AI Story) / Ngày',
+        '🚑 Memory Rescue cảnh báo từ vựng sắp quên',
+        'Bảo lưu chuỗi Streak 3 ngày/tháng',
+      ],
+      limits: { aiChat: 50, voiceAiMinutes: 15 },
+      permissions: { aiChat: true, voiceAi: true, personalMemory: true, roleplay: true },
+    },
+    {
+      id: 'default-pro',
+      tier: 'PRO',
+      name: 'VocabFlow Pro',
+      slug: 'pro',
+      description: 'Tối đa tiềm năng với AI Tutor phân tích chuyên sâu & hạn mức cao nhất',
+      priceMonthly: 199000,
+      priceYearly: 1548000,
+      currency: 'VND',
+      billingCycle: 'MONTHLY',
+      status: 'ACTIVE',
+      displayOrder: 3,
+      aiDailyQuota: 200,
+      maxCustomDecks: 999,
+      unlimitedReviews: true,
+      features: [
+        'Tất cả tính năng trong gói Plus',
+        '200 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
+        '50 Lượt Trích Xuất Text-to-Vocab / Ngày',
+        '20 Lượt Dệt Câu Chuyện AI Story / Ngày',
+        '🚑 Memory Rescue toàn diện chuyên sâu',
+        'Phân tích chuẩn đoán CEFR & Đường cong quên lãng',
+        'Ưu tiên băng thông máy chủ mô hình AI tốc độ cao',
+        'Không giới hạn phục hồi chuỗi Streak',
+      ],
+      limits: { aiChat: 200, voiceAiMinutes: 60 },
+      permissions: { aiChat: true, voiceAi: true, personalMemory: true, pronunciationCoach: true, advancedAnalytics: true, englishTwin: true },
+    },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-7 animate-fade-in pb-12">
@@ -192,283 +310,206 @@ export const SubscriptionUpgradePage: React.FC = () => {
             <span>Theo Năm</span>
             <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black uppercase tracking-wider flex items-center gap-0.5 shadow-xs">
               <Percent className="w-2.5 h-2.5" />
-              <span>Tiết kiệm 35%</span>
+              <span>Tiết kiệm đến 35%</span>
             </span>
           </button>
         </div>
         <p className="text-[11px] text-slate-500 dark:text-slate-400">
           {billingCycle === 'yearly'
-            ? '🔥 Gói theo năm tiết kiệm lên đến 840.000 đ so với thanh toán từng tháng'
+            ? '🔥 Gói theo năm tiết kiệm chi phí vượt trội so với thanh toán từng tháng'
             : 'Linh hoạt gia hạn từng tháng, có thể hủy bất kỳ lúc nào'}
         </p>
       </div>
 
-      {/* Pricing Cards Grid */}
+      {/* Dynamic Pricing Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        {/* FREE */}
-        <GlassCard variant="subtle" className="p-6 flex flex-col justify-between border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-400 dark:hover:border-slate-600 transition">
-          <div>
-            <div className="mb-4">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cơ bản</span>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white mt-1 leading-snug">
-                {t('subscriptions.freeTitle', 'Learner Free')}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Nền tảng học từ vựng vững chắc miễn phí
-              </p>
-            </div>
-            <div className="flex items-baseline gap-1 my-4">
-              <span className="text-3xl font-black text-slate-900 dark:text-white">0 đ</span>
-              <span className="text-xs text-slate-400">/ miễn phí cơ bản</span>
-            </div>
+        {displayPlans.map((plan) => {
+          const isFree = plan.priceMonthly === 0;
+          const isPlanPro = plan.tier === 'PRO';
+          const isPlanPlus = plan.tier === 'PLUS';
 
-            <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>600+ Từ Vựng TOEIC Tiêu Chuẩn</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Thuật toán lặp lại Spaced Repetition (SRS)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Phát âm giọng đọc chuẩn bản xứ US/UK</span>
-              </li>
-              <li className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>10 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>3 Lượt Trích Xuất Text-to-Vocab / Ngày</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Duyệt bộ thẻ học cộng đồng công khai</span>
-              </li>
-            </ul>
-          </div>
+          const yearlyTotal = plan.priceYearly > 0 ? plan.priceYearly : Math.round(plan.priceMonthly * 10);
+          const monthlyEffective = billingCycle === 'yearly' && !isFree ? Math.round(yearlyTotal / 12) : plan.priceMonthly;
+          const savings =
+            plan.priceMonthly > 0 && yearlyTotal > 0
+              ? Math.max(0, Math.round((1 - yearlyTotal / (plan.priceMonthly * 12)) * 100))
+              : 0;
 
-          <button
-            disabled
-            className="w-full mt-6 py-3 rounded-xl text-xs font-bold bg-transparent border border-slate-300/50 dark:border-slate-800 text-slate-400 dark:text-slate-500 cursor-default"
-          >
-            {currentTier === 'FREE' ? 'Đang kích hoạt' : 'Gói mặc định'}
-          </button>
-        </GlassCard>
+          const isCurrentActive =
+            (isPlanPro && isPro) ||
+            (isPlanPlus && currentTier === 'PLUS' && !isPro) ||
+            (isFree && currentTier === 'FREE');
 
-        {/* PLUS (Card Brand Effect Highlight) */}
-        <GlassCard
-          variant="brandGlow"
-          className="p-6 flex flex-col justify-between relative shadow-2xl group border-2 border-brand-500/40"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-2.5 py-0.5 rounded-full bg-brand-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
-                <Flame className="w-3 h-3 fill-white" />
-                <span>Phổ biến nhất</span>
-              </span>
-              {billingCycle === 'yearly' && (
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase">
-                  Tiết kiệm 30%
-                </span>
-              )}
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
-                {t('subscriptions.plusTitle', 'VocabFlow Plus')}
-                <Sparkles className="w-4 h-4 text-brand-500 shrink-0" />
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt & AI Tutor mỗi ngày
-              </p>
-            </div>
+          const isLowerTierThanCurrent = isPro && (isPlanPlus || isFree);
 
-            {/* Dynamic Price Display */}
-            <div className="my-4">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-black text-brand-600 dark:text-brand-400">
-                  {billingCycle === 'yearly' ? '69.000 đ' : '99.000 đ'}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">/ tháng</span>
+          return (
+            <GlassCard
+              key={plan.id}
+              variant={isPlanPro ? 'premium' : isPlanPlus ? 'brandGlow' : 'subtle'}
+              className={`p-6 flex flex-col justify-between relative shadow-xl transition-all duration-200 ${
+                isPlanPro
+                  ? 'border-2 border-purple-500/50'
+                  : isPlanPlus
+                  ? 'border-2 border-brand-500/40'
+                  : 'border border-slate-200/80 dark:border-slate-800/80'
+              }`}
+            >
+              <div>
+                {/* Header Badge */}
+                <div className="flex items-center justify-between mb-3">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1 ${
+                      isPlanPro
+                        ? 'bg-gradient-to-r from-purple-600 to-amber-500 text-white'
+                        : isPlanPlus
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                    }`}
+                  >
+                    {isPlanPro ? (
+                      <>
+                        <Crown className="w-3 h-3 text-amber-200 fill-amber-200" />
+                        <span>VIP Chuyên Nghiệp</span>
+                      </>
+                    ) : isPlanPlus ? (
+                      <>
+                        <Flame className="w-3 h-3 fill-white" />
+                        <span>Phổ biến nhất</span>
+                      </>
+                    ) : (
+                      <span>Cơ bản</span>
+                    )}
+                  </span>
+
+                  {!isFree && billingCycle === 'yearly' && savings > 0 && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                        isPlanPro
+                          ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300'
+                          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
+                      Tiết kiệm {savings}%
+                    </span>
+                  )}
+                </div>
+
+                {/* Plan Title & Subtitle */}
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
+                    {plan.name}
+                    {isPlanPro ? (
+                      <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                    ) : isPlanPlus ? (
+                      <Sparkles className="w-4 h-4 text-brand-500 shrink-0" />
+                    ) : null}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    {plan.description || 'Nâng cấp trải nghiệm học ngoại ngữ với trợ lý AI'}
+                  </p>
+                </div>
+
+                {/* Pricing Display */}
+                <div className="my-4">
+                  <div className="flex items-baseline gap-1.5">
+                    <span
+                      className={`text-3xl font-black ${
+                        isPlanPro
+                          ? 'text-purple-600 dark:text-purple-400'
+                          : isPlanPlus
+                          ? 'text-brand-600 dark:text-brand-400'
+                          : 'text-slate-900 dark:text-white'
+                      }`}
+                    >
+                      {isFree ? '0 đ' : `${monthlyEffective.toLocaleString()} đ`}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {isFree ? '/ miễn phí' : '/ tháng'}
+                    </span>
+                  </div>
+
+                  {!isFree && (
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1">
+                      {billingCycle === 'yearly'
+                        ? `Thanh toán ${yearlyTotal.toLocaleString()} đ/năm (Tiết kiệm ${(
+                            plan.priceMonthly * 12 -
+                            yearlyTotal
+                          ).toLocaleString()} đ)`
+                        : `Gia hạn từng tháng (${plan.priceMonthly.toLocaleString()} đ/tháng, hủy bất cứ lúc nào)`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Bullets */}
+                <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
+                  {plan.features?.map((f, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <Check
+                        className={`w-4 h-4 shrink-0 ${
+                          isPlanPro
+                            ? 'text-purple-600 dark:text-purple-400'
+                            : isPlanPlus
+                            ? 'text-brand-600 dark:text-brand-400'
+                            : 'text-emerald-600 dark:text-emerald-400'
+                        }`}
+                      />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                  {!isFree && (
+                    <li className="flex items-center gap-2 text-slate-400 text-[11px]">
+                      <Check className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>Chu kỳ {billingCycle === 'yearly' ? 'Hàng năm' : 'Hàng tháng'}</span>
+                    </li>
+                  )}
+                </ul>
               </div>
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1">
-                {billingCycle === 'yearly'
-                  ? 'Thanh toán 828.000 đ/năm (Tiết kiệm 360.000 đ so với theo tháng)'
-                  : 'Gia hạn từng tháng (99.000 đ/tháng, hủy bất cứ lúc nào)'}
-              </p>
-            </div>
 
-            <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
-              <li className="flex items-center gap-2 font-semibold">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Tất cả tính năng trong gói Free</span>
-              </li>
-              <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
-                <span>50 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)</span>
-              </li>
-              <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
-                <span>15 Lượt Trích Xuất Văn Bản (Text-to-Vocab) / Ngày</span>
-              </li>
-              <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
-                <span>5 Lượt Dệt Câu Chuyện (AI Story) / Ngày</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>🚑 Memory Rescue cảnh báo từ vựng sắp quên</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Bảo lưu chuỗi Streak 3 ngày/tháng</span>
-              </li>
-              <li className="flex items-center gap-2 text-slate-500">
-                <Check className="w-4 h-4 text-brand-500 shrink-0" />
-                <span>Gia hạn theo chu kỳ ({billingCycle === 'yearly' ? 'Hàng năm' : 'Hàng tháng'})</span>
-              </li>
-            </ul>
-          </div>
-
-          {isPro ? (
-            <button
-              disabled
-              className="w-full mt-6 py-3.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 cursor-default flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700"
-            >
-              <Check className="w-4 h-4" />
-              <span>Bạn đang có gói Pro cao cấp hơn</span>
-            </button>
-          ) : currentTier === 'PLUS' ? (
-            <button
-              disabled
-              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-brand-500/20 text-brand-600 dark:text-brand-400 border border-brand-500/40 cursor-default flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Gói Bạn Đang Sử Dụng</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setCheckoutTier('PLUS')}
-              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 active:scale-[0.98]"
-            >
-              <LockOpen className="w-4 h-4" />
-              <span>
-                {billingCycle === 'yearly'
-                  ? 'Mở Khóa Gói Plus (828.000 đ/năm)'
-                  : 'Mở Khóa Gói Plus (99.000 đ/tháng)'}
-              </span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </GlassCard>
-
-        {/* PRO (Premium Card) */}
-        <GlassCard
-          variant="premium"
-          className="p-6 flex flex-col justify-between relative shadow-2xl group border-2 border-purple-500/50"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-600 to-amber-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
-                <Crown className="w-3 h-3 text-amber-200 fill-amber-200" />
-                <span>VIP Chuyên Nghiệp</span>
-              </span>
-              {billingCycle === 'yearly' && (
-                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-300 text-[10px] font-black uppercase">
-                  Tiết kiệm 35%
-                </span>
+              {/* Action Button */}
+              {isFree ? (
+                <button
+                  disabled
+                  className="w-full mt-6 py-3 rounded-xl text-xs font-bold bg-transparent border border-slate-300/50 dark:border-slate-800 text-slate-400 dark:text-slate-500 cursor-default"
+                >
+                  {isCurrentActive ? 'Đang kích hoạt' : 'Gói mặc định'}
+                </button>
+              ) : isLowerTierThanCurrent ? (
+                <button
+                  disabled
+                  className="w-full mt-6 py-3.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 cursor-default flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Bạn đang có gói cao cấp hơn</span>
+                </button>
+              ) : isCurrentActive ? (
+                <button
+                  disabled
+                  className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 cursor-default flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <span>Gói Bạn Đang Sở Hữu ({plan.name})</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setCheckoutTier(plan.tier)}
+                  className={`w-full mt-6 py-3.5 rounded-xl text-xs font-black text-white transition flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
+                    isPlanPro
+                      ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/25'
+                      : 'bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 shadow-brand-500/25'
+                  }`}
+                >
+                  <LockOpen className="w-4 h-4" />
+                  <span>
+                    {billingCycle === 'yearly'
+                      ? `Mở Khóa ${plan.name} (${yearlyTotal.toLocaleString()} đ/năm)`
+                      : `Mở Khóa ${plan.name} (${plan.priceMonthly.toLocaleString()} đ/tháng)`}
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               )}
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
-                {t('subscriptions.proTitle', 'VocabFlow Pro')}
-                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Tối đa tiềm năng với AI Tutor phân tích chuyên sâu & hạn mức cao nhất
-              </p>
-            </div>
-
-            {/* Dynamic Price Display */}
-            <div className="my-4">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-black text-purple-600 dark:text-purple-400">
-                  {billingCycle === 'yearly' ? '129.000 đ' : '199.000 đ'}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">/ tháng</span>
-              </div>
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1">
-                {billingCycle === 'yearly'
-                  ? 'Thanh toán 1.548.000 đ/năm (Tiết kiệm 840.000 đ so với theo tháng)'
-                  : 'Gia hạn từng tháng (199.000 đ/tháng, hủy bất cứ lúc nào)'}
-              </p>
-            </div>
-
-            <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
-              <li className="flex items-center gap-2 font-semibold">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Tất cả tính năng trong gói Plus</span>
-              </li>
-              <li className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>200 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)</span>
-              </li>
-              <li className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>50 Lượt Trích Xuất Text-to-Vocab / Ngày</span>
-              </li>
-              <li className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>20 Lượt Dệt Câu Chuyện AI Story / Ngày</span>
-              </li>
-              <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>🚑 Memory Rescue toàn diện chuyên sâu</span>
-              </li>
-              <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>Phân tích chuẩn đoán CEFR & Đường cong quên lãng</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Ưu tiên băng thông máy chủ mô hình AI tốc độ cao</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Không giới hạn phục hồi chuỗi Streak</span>
-              </li>
-              <li className="flex items-center gap-2 text-slate-500">
-                <Check className="w-4 h-4 text-purple-500 shrink-0" />
-                <span>Gia hạn theo chu kỳ ({billingCycle === 'yearly' ? 'Hàng năm' : 'Hàng tháng'})</span>
-              </li>
-            </ul>
-          </div>
-
-          {isPro ? (
-            <button
-              disabled
-              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 cursor-default flex items-center justify-center gap-2 shadow-sm"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>Gói Bạn Đang Sở Hữu (Pro Active)</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setCheckoutTier('PRO')}
-              className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-[0.98]"
-            >
-              <LockOpen className="w-4 h-4 text-amber-300" />
-              <span>
-                {billingCycle === 'yearly'
-                  ? 'Mở Khóa Gói Pro (1.548.000 đ/năm)'
-                  : 'Mở Khóa Gói Pro (199.000 đ/tháng)'}
-              </span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </GlassCard>
+            </GlassCard>
+          );
+        })}
       </div>
 
       {/* Entitlement Capability Matrix Table */}
@@ -485,77 +526,80 @@ export const SubscriptionUpgradePage: React.FC = () => {
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold tracking-wider">
                 <th className="pb-3 px-3">Khả Năng / Quyền Lợi</th>
-                <th className="pb-3 px-3 text-center">Gói Free (Miễn phí)</th>
-                <th className="pb-3 px-3 text-center text-brand-600 dark:text-brand-400 font-black">
-                  Gói Plus ({billingCycle === 'yearly' ? '69k/tháng' : '99k/tháng'})
-                </th>
-                <th className="pb-3 px-3 text-center text-purple-600 dark:text-purple-400 font-black">
-                  Gói Pro ({billingCycle === 'yearly' ? '129k/tháng' : '199k/tháng'})
-                </th>
+                {displayPlans.map((p) => (
+                  <th
+                    key={p.id}
+                    className={`pb-3 px-3 text-center ${
+                      p.tier === 'PRO'
+                        ? 'text-purple-600 dark:text-purple-400 font-black'
+                        : p.tier === 'PLUS'
+                        ? 'text-brand-600 dark:text-brand-400 font-black'
+                        : ''
+                    }`}
+                  >
+                    {p.name}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {[
                 {
-                  feature: 'Học từ vựng Flashcard & Thuật toán SRS',
-                  free: 'Toàn diện ✓',
-                  plus: 'Toàn diện ✓',
-                  pro: 'Toàn diện ✓',
-                },
-                {
                   feature: 'Hạn mức tham vấn Gia sư AI (Reset 00:00 hàng ngày)',
-                  free: '10 lượt/ngày',
-                  plus: '50 lượt/ngày',
-                  pro: '200 lượt/ngày ✓',
+                  getVal: (p: PlanItem) => `${p.aiDailyQuota || p.limits?.aiChat || 10} lượt/ngày`,
                 },
                 {
-                  feature: 'Trích xuất từ vựng từ văn bản (Text-to-Vocab)',
-                  free: '3 lượt/ngày',
-                  plus: '15 lượt/ngày ✓',
-                  pro: '50 lượt/ngày ✓',
+                  feature: 'Thời lượng Voice AI Đàm thoại nói',
+                  getVal: (p: PlanItem) =>
+                    p.limits?.voiceAiMinutes === -1
+                      ? 'Unlimited ✓'
+                      : p.limits?.voiceAiMinutes
+                      ? `${p.limits.voiceAiMinutes} phút/ngày`
+                      : 'Không hỗ trợ',
                 },
                 {
-                  feature: 'Dệt câu chuyện ngữ cảnh (AI Story Generator)',
-                  free: '1 lượt/ngày',
-                  plus: '5 lượt/ngày ✓',
-                  pro: '20 lượt/ngày ✓',
+                  feature: 'Kiểm tra & Chấm điểm phát âm chi tiết',
+                  getVal: (p: PlanItem) =>
+                    p.permissions?.pronunciationCoach ? 'Chấm điểm từng âm vị ✓' : 'Cơ bản',
                 },
                 {
-                  feature: 'Tự tạo bộ câu hỏi kiểm tra ngẫu nhiên (Custom Quiz)',
-                  free: 'Bộ tiêu chuẩn',
-                  plus: 'Tùy biến cấp độ & số câu ✓',
-                  pro: 'Tùy biến cấp độ & số câu ✓',
+                  feature: 'Phân tích chuẩn đoán CEFR & Kịch bản thực chiến',
+                  getVal: (p: PlanItem) =>
+                    p.permissions?.advancedAnalytics ? 'Radar CEFR AI ✓' : 'Không hỗ trợ',
                 },
                 {
-                  feature: 'Phân tích sức khỏe ghi nhớ (Word Health & Retention)',
-                  free: 'Cơ bản',
-                  plus: 'Nâng cao ✓',
-                  pro: 'Chẩn đoán AI chuyên sâu ✓',
+                  feature: 'Số bộ từ vựng tự tạo (Custom Decks)',
+                  getVal: (p: PlanItem) => `${p.maxCustomDecks || 3} bộ`,
                 },
                 {
-                  feature: 'Bảo lưu Streak linh hoạt khi bận (Streak Saver)',
-                  free: '1 ngày/tháng',
-                  plus: '3 ngày/tháng ✓',
-                  pro: 'Không giới hạn phục hồi ✓',
+                  feature: 'Bảo lưu chuỗi học Streak linh hoạt',
+                  getVal: (p: PlanItem) =>
+                    p.tier === 'PRO' ? 'Không giới hạn phục hồi ✓' : p.tier === 'PLUS' ? '3 ngày/tháng ✓' : '1 ngày/tháng',
                 },
                 {
-                  feature: 'Hình thức gia hạn & cam kết chu kỳ',
-                  free: 'Miễn phí vĩnh viễn',
-                  plus: 'Thuê bao Tháng / Năm (Hủy tùy ý)',
-                  pro: 'Thuê bao Tháng / Năm (Hủy tùy ý)',
+                  feature: 'Chu kỳ gia hạn & Cam kết',
+                  getVal: (p: PlanItem) =>
+                    p.priceMonthly === 0 ? 'Miễn phí vĩnh viễn' : 'Thuê bao Tháng / Năm (Hủy tùy ý)',
                 },
               ].map((row, i) => (
                 <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                   <td className="py-3.5 px-3 font-semibold text-slate-800 dark:text-slate-200">
                     {row.feature}
                   </td>
-                  <td className="py-3.5 px-3 text-center text-slate-500">{row.free}</td>
-                  <td className="py-3.5 px-3 text-center font-bold text-brand-600 dark:text-brand-400">
-                    {row.plus}
-                  </td>
-                  <td className="py-3.5 px-3 text-center font-black text-purple-600 dark:text-purple-400">
-                    {row.pro}
-                  </td>
+                  {displayPlans.map((p) => (
+                    <td
+                      key={p.id}
+                      className={`py-3.5 px-3 text-center ${
+                        p.tier === 'PRO'
+                          ? 'font-black text-purple-600 dark:text-purple-400'
+                          : p.tier === 'PLUS'
+                          ? 'font-bold text-brand-600 dark:text-brand-400'
+                          : 'text-slate-500'
+                      }`}
+                    >
+                      {row.getVal(p)}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -582,7 +626,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
           billingCycle={billingCycle}
           onClose={() => setCheckoutTier(null)}
           onSuccess={() => {
-            fetchEntitlements();
+            fetchData();
             setInfoMsg('Giao dịch thành công! Tài khoản của bạn đã được nâng cấp quyền hạn.');
           }}
         />

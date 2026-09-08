@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { FeedbackService } from '../feedback/feedback.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Role, FeedbackStatus, FeedbackType, SupportPriority } from '@prisma/client';
+import { Role, FeedbackStatus, FeedbackType, SupportPriority, CefrLevel } from '@prisma/client';
 
 @ApiTags('Admin Command Center')
 @Controller('admin')
@@ -17,6 +18,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly feedbackService: FeedbackService,
+    private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   @Get('feedback')
@@ -296,6 +298,123 @@ export class AdminController {
     @CurrentUser('id') actorId: string,
   ) {
     return this.adminService.savePricingIntelligence(payload, actorId);
+  }
+
+  // =========================================================================
+  // SUBSCRIPTION PLANS CRUD & FEATURE MATRIX
+  // =========================================================================
+
+  @Get('plans')
+  @ApiOperation({ summary: 'List all plans for admin management (active, inactive, archived)' })
+  adminGetPlans() {
+    return this.subscriptionsService.adminGetAllPlans();
+  }
+
+  @Post('plans')
+  @ApiOperation({ summary: 'Create a new subscription plan with features and quota limits' })
+  adminCreatePlan(
+    @Body() dto: any,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.subscriptionsService.adminCreatePlan(dto, actorId);
+  }
+
+  @Patch('plans/:id')
+  @ApiOperation({ summary: 'Update plan details, features, status, or quota limits' })
+  adminUpdatePlan(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.subscriptionsService.adminUpdatePlan(id, dto, actorId);
+  }
+
+  @Delete('plans/:id')
+  @ApiOperation({ summary: 'Safely delete plan (rejected if active subscribers exist)' })
+  adminDeletePlan(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.subscriptionsService.adminDeletePlan(id, actorId);
+  }
+
+  @Patch('plans/:id/archive')
+  @ApiOperation({ summary: 'Archive plan when delete is prevented due to active subscribers' })
+  adminArchivePlan(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.subscriptionsService.adminArchivePlan(id, actorId);
+  }
+
+  // =========================================================================
+  // LEARNING RESOURCES & CONTENT MANAGEMENT
+  // =========================================================================
+
+  @Get('resources')
+  @ApiOperation({ summary: 'List learning resources with pagination, search, and filters' })
+  adminGetResources(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('type') type?: string,
+    @Query('level') level?: CefrLevel,
+    @Query('requiredPlan') requiredPlan?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.getResources({
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 15,
+      search,
+      type,
+      level,
+      requiredPlan,
+      status,
+    });
+  }
+
+  @Post('resources')
+  @ApiOperation({ summary: 'Create a new learning resource' })
+  adminCreateResource(
+    @Body() dto: any,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.adminService.createResource(dto, actorId);
+  }
+
+  @Get('resources/:id')
+  @ApiOperation({ summary: 'Get learning resource details by ID' })
+  adminGetResourceById(@Param('id') id: string) {
+    return this.adminService.getResourceById(id);
+  }
+
+  @Patch('resources/:id')
+  @ApiOperation({ summary: 'Update learning resource' })
+  adminUpdateResource(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.adminService.updateResource(id, dto, actorId);
+  }
+
+  @Delete('resources/:id')
+  @ApiOperation({ summary: 'Delete learning resource' })
+  adminDeleteResource(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.adminService.deleteResource(id, actorId);
+  }
+
+  @Patch('resources/:id/status')
+  @ApiOperation({ summary: 'Quick toggle learning resource status (PUBLISHED, DRAFT, ARCHIVED)' })
+  adminUpdateResourceStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.adminService.updateResourceStatus(id, status, actorId);
   }
 }
 

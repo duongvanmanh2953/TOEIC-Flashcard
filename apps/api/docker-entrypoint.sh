@@ -8,7 +8,7 @@ until nc -z -v -w30 postgres 5432; do
 done
 
 echo "🔄 Pushing database schema via Prisma..."
-npx prisma db push --skip-generate
+npx prisma db push --skip-generate --accept-data-loss
 
 echo "🌱 Running database seed (600+ TOEIC vocabulary & demo accounts)..."
 if [ -f "dist/prisma/seed.js" ]; then
