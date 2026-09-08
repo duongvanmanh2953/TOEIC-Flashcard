@@ -226,7 +226,60 @@ async function main() {
       },
     },
   });
-  console.log('✅ Demo, Pro & Admin users initialized from secure environment configuration.');
+  // 2.3 Attach Full PRO Lifetime Subscriptions
+  const proPlan = await prisma.plan.upsert({
+    where: { tier: SubscriptionTier.PRO },
+    update: {
+      name: 'VocabFlow Pro (Unlimited)',
+      priceMonthly: 199000,
+      aiDailyQuota: -1,
+      maxCustomDecks: 999,
+      unlimitedReviews: true,
+      features: [
+        'Không giới hạn lượt trò chuyện & giải thích cùng AI Tutor',
+        'Thuật toán Spaced Repetition (SRS) không giới hạn',
+        'Tạo không giới hạn kho từ cá nhân & bộ thẻ riêng',
+        'Phân tích ngữ cảnh chuyên sâu CEFR A1-C2',
+        'Xuất/Nhập dữ liệu từ vựng Anki, CSV, Quizlet',
+        'Toàn quyền truy cập mọi tính năng Pro vĩnh viễn',
+      ],
+    },
+    create: {
+      tier: SubscriptionTier.PRO,
+      name: 'VocabFlow Pro (Unlimited)',
+      priceMonthly: 199000,
+      aiDailyQuota: -1,
+      maxCustomDecks: 999,
+      unlimitedReviews: true,
+      features: [
+        'Không giới hạn lượt trò chuyện & giải thích cùng AI Tutor',
+        'Thuật toán Spaced Repetition (SRS) không giới hạn',
+        'Tạo không giới hạn kho từ cá nhân & bộ thẻ riêng',
+        'Phân tích ngữ cảnh chuyên sâu CEFR A1-C2',
+        'Xuất/Nhập dữ liệu từ vựng Anki, CSV, Quizlet',
+        'Toàn quyền truy cập mọi tính năng Pro vĩnh viễn',
+      ],
+    },
+  });
+
+  const lifetimeEnd = new Date('2099-12-31T23:59:59.000Z');
+  const proEmails = ['pro@vocabflow.ai', 'admin@vocabflow.ai', 'learner@vocabflow.ai', 'admin@leximind.ai'];
+  for (const email of proEmails) {
+    const u = await prisma.user.findUnique({ where: { email } });
+    if (u) {
+      await prisma.subscription.deleteMany({ where: { userId: u.id } });
+      await prisma.subscription.create({
+        data: {
+          userId: u.id,
+          planId: proPlan.id,
+          status: 'ACTIVE',
+          currentPeriodEnd: lifetimeEnd,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Demo, Pro & Admin users initialized with Active PRO subscriptions.');
 
   // 3. Parse and Seed toeic_600_words.csv (chỉ nhập nếu DB chưa có dữ liệu)
   const existingWordCount = await prisma.vocabulary.count();

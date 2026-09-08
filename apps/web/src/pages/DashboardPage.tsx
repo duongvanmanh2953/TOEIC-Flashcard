@@ -106,22 +106,22 @@ export const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full space-y-6 animate-fade-in dashboard-canvas p-4 sm:p-6 lg:p-8">
+    <div className="w-full space-y-5 animate-fade-in">
       {/* 1. Hero / Today's Plan — High Contrast Translucent Card */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 relative overflow-hidden bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800/90 shadow-lg">
+      <GlassCard variant="liquid" className="p-6 md:p-8 relative overflow-hidden bg-white/95 dark:bg-slate-900/95 border-2 border-indigo-500/25 dark:border-indigo-500/30 shadow-xl rounded-3xl">
         <div className="max-w-3xl relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider border border-indigo-500/20">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Spaced Repetition System • VocabFlow AI</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-snug">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-snug tracking-tight">
             {timeGreeting}, {user?.displayName || 'Learner'} 👋
-          </h2>
+          </h1>
 
-          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
             Hôm nay bạn có{' '}
-            <strong className="text-indigo-600 dark:text-indigo-400 font-bold">
+            <strong className="text-indigo-600 dark:text-indigo-400 font-black">
               {reviewDue} từ vựng
             </strong>{' '}
             {t('dashboard.heroSubtitle', 'đang trong thời điểm vàng cần kích hoạt trí nhớ dài hạn.')}
@@ -130,7 +130,7 @@ export const DashboardPage: React.FC = () => {
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => navigate('/review')}
-              className="btn-glass-primary text-xs sm:text-sm !py-2.5 !px-5 gap-2 shadow-md"
+              className="btn-glass-primary text-xs sm:text-sm !py-2.5 !px-5 gap-2 shadow-lg shadow-indigo-500/25"
             >
               <Sparkles className="w-4 h-4 fill-white" />
               <span>{t('dashboard.startReviewCTA', 'Bắt đầu phiên ôn tập')}</span>
@@ -159,28 +159,28 @@ export const DashboardPage: React.FC = () => {
             </span>
             <button
               onClick={() => navigate('/review?limit=3')}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
               title="3 từ nhanh trong 2 phút"
             >
               2 phút
             </button>
             <button
               onClick={() => navigate('/review?limit=5')}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
               title="5 từ trong 5 phút"
             >
               5 phút
             </button>
             <button
               onClick={() => navigate('/review?limit=10')}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
               title="10 từ trong 10 phút"
             >
               10 phút
             </button>
             <button
               onClick={() => navigate('/review?limit=15')}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition"
               title="15 từ trong 15 phút"
             >
               15 phút
@@ -193,16 +193,16 @@ export const DashboardPage: React.FC = () => {
       </GlassCard>
 
       {/* Next Best Action Spotlight */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-emerald-500/10 border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-emerald-500/15 border-2 border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/30">
             <Target className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 dark:text-indigo-400">
+            <span className="text-[10px] uppercase font-black tracking-wider text-indigo-600 dark:text-indigo-400">
               🎯 Next Best Action • Khuyến Nghị Trí Não
             </span>
-            <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+            <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">
               {reviewDue > 0
                 ? `${reviewDue} từ vựng đã chạm ngưỡng quên (SRS Retrievability < 75%)`
                 : 'Mục tiêu ngày đã sẵn sàng: Củng cố 10 từ vựng cốt lõi TOEIC'}
@@ -211,7 +211,7 @@ export const DashboardPage: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/review')}
-          className="btn-glass-primary text-xs !py-2 !px-4 shrink-0 gap-1.5"
+          className="btn-glass-primary text-xs !py-2 !px-4 shrink-0 gap-1.5 shadow-sm"
         >
           <span>Khởi động ngay</span>
           <ChevronRight className="w-3.5 h-3.5" />
@@ -239,7 +239,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 <PremiumBadge tier={effectiveTier} />
                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  {isPro ? 'Gói VocabFlow Pro (VIP Trọn Đời)' : effectiveTier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Tài khoản Miễn Phí'}
+                  {isPro ? 'Gói VocabFlow Pro (Đang kích hoạt)' : effectiveTier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Tài khoản Miễn Phí'}
                 </span>
               </div>
               {!isPro && effectiveTier === 'FREE' && (
@@ -257,25 +257,25 @@ export const DashboardPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <QuotaMeter
                 feature="AI_TUTOR"
-                used={isPro ? 0 : (quotas.aiTutor?.used ?? quotas.AI_TUTOR?.used ?? 0)}
-                limit={isPro ? -1 : (quotas.aiTutor?.limit ?? quotas.AI_TUTOR?.limit ?? 10)}
-                remaining={isPro ? 9999 : (quotas.aiTutor?.remaining ?? quotas.AI_TUTOR?.remaining)}
+                used={quotas.aiTutor?.used ?? quotas.AI_TUTOR?.used ?? 0}
+                limit={isPro ? 200 : (quotas.aiTutor?.limit ?? quotas.AI_TUTOR?.limit ?? 10)}
+                remaining={isPro ? Math.max(0, 200 - (quotas.aiTutor?.used ?? quotas.AI_TUTOR?.used ?? 0)) : (quotas.aiTutor?.remaining ?? quotas.AI_TUTOR?.remaining ?? 10)}
                 tier={effectiveTier}
                 onUpgrade={() => navigate('/subscription')}
               />
               <QuotaMeter
                 feature="TEXT_TO_VOCAB"
-                used={isPro ? 0 : (quotas.textToVocab?.used ?? quotas.TEXT_TO_VOCAB?.used ?? 0)}
-                limit={isPro ? -1 : (quotas.textToVocab?.limit ?? quotas.TEXT_TO_VOCAB?.limit ?? 3)}
-                remaining={isPro ? 9999 : (quotas.textToVocab?.remaining ?? quotas.TEXT_TO_VOCAB?.remaining)}
+                used={quotas.textToVocab?.used ?? quotas.TEXT_TO_VOCAB?.used ?? 0}
+                limit={isPro ? 50 : (quotas.textToVocab?.limit ?? quotas.TEXT_TO_VOCAB?.limit ?? 3)}
+                remaining={isPro ? Math.max(0, 50 - (quotas.textToVocab?.used ?? quotas.TEXT_TO_VOCAB?.used ?? 0)) : (quotas.textToVocab?.remaining ?? quotas.TEXT_TO_VOCAB?.remaining ?? 3)}
                 tier={effectiveTier}
                 onUpgrade={() => navigate('/subscription')}
               />
               <QuotaMeter
                 feature="STORY_GEN"
-                used={isPro ? 0 : (quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0)}
-                limit={isPro ? -1 : (quotas.storyGen?.limit ?? quotas.AI_STORY?.limit ?? 1)}
-                remaining={isPro ? 9999 : (quotas.storyGen?.remaining ?? quotas.AI_STORY?.remaining)}
+                used={quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0}
+                limit={isPro ? 20 : (quotas.storyGen?.limit ?? quotas.AI_STORY?.limit ?? 1)}
+                remaining={isPro ? Math.max(0, 20 - (quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0)) : (quotas.storyGen?.remaining ?? quotas.AI_STORY?.remaining ?? 1)}
                 tier={effectiveTier}
                 onUpgrade={() => navigate('/subscription')}
               />
@@ -287,95 +287,83 @@ export const DashboardPage: React.FC = () => {
       {/* 2. Key Metrics Row — 4 Rich Feature Cards with Distinct Glass Palettes */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Daily Goal Card (Indigo / Violet Theme) */}
-        <GlassCard
-          variant="liquid"
-          className="p-4 sm:p-5 bg-gradient-to-br from-indigo-500/[0.08] via-white/85 to-purple-500/[0.05] dark:from-indigo-950/40 dark:via-slate-900/80 dark:to-purple-950/30 border border-indigo-300/40 dark:border-indigo-500/30 shadow-sm"
-        >
+        <div className="card-metric-indigo p-5 rounded-3xl transition-transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
               {t('dashboard.dailyGoal', 'Mục tiêu ngày')}
             </span>
-            <div className="p-1 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20">
-              <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-2 rounded-xl bg-indigo-500 text-white shadow-md shadow-indigo-500/30">
+              <Target className="w-4 h-4" />
             </div>
           </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
+          <div className="flex items-baseline gap-1 mt-1">
+            <span className="text-3xl font-black text-slate-900 dark:text-white leading-tight">
               {completedToday}
             </span>
-            <span className="text-xs text-indigo-600/70 dark:text-indigo-300/70 font-semibold">/ {dailyGoal} từ</span>
+            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">/ {dailyGoal} từ</span>
           </div>
-          <div className="mt-2 h-1.5 rounded-full bg-indigo-100 dark:bg-slate-800 overflow-hidden">
+          <div className="mt-3 h-2 rounded-full bg-indigo-100 dark:bg-slate-800 overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full transition-all duration-300"
               style={{ width: `${goalPercent}%` }}
             />
           </div>
-          <span className="text-[10px] text-indigo-600/80 dark:text-indigo-300/80 mt-1.5 block font-semibold">{goalPercent}% hoàn thành</span>
-        </GlassCard>
+          <span className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-2 block font-extrabold">{goalPercent}% hoàn thành</span>
+        </div>
 
         {/* 2. Streak Card (Warm Amber / Flame Theme) */}
-        <GlassCard
-          variant="liquid"
-          className="p-4 sm:p-5 bg-gradient-to-br from-amber-500/[0.09] via-white/85 to-orange-500/[0.05] dark:from-amber-950/40 dark:via-slate-900/80 dark:to-orange-950/30 border border-amber-400/40 dark:border-amber-500/30 shadow-sm"
-        >
+        <div className="card-metric-amber p-5 rounded-3xl transition-transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
               {t('dashboard.streak', 'Chuỗi liên tiếp')}
             </span>
-            <div className="p-1 rounded-lg bg-amber-500/10 dark:bg-amber-500/20">
-              <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
+            <div className="p-2 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/30 animate-pulse">
+              <Flame className="w-4 h-4 fill-white" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
-            {data?.streak?.currentStreak || 0} ngày
+          <p className="text-3xl font-black text-slate-900 dark:text-white leading-tight mt-1">
+            {data?.streak?.currentStreak || 0} <span className="text-lg font-bold text-amber-600 dark:text-amber-400">ngày 🔥</span>
           </p>
-          <p className="text-[11px] text-amber-600/80 dark:text-amber-300/80 mt-1 font-medium">
-            Kỷ lục: <strong className="text-amber-700 dark:text-amber-300">{data?.streak?.longestStreak || 0} ngày</strong>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-3 font-semibold">
+            Kỷ lục cao nhất: <strong className="font-black text-amber-800 dark:text-amber-200">{data?.streak?.longestStreak || 0} ngày</strong>
           </p>
-        </GlassCard>
+        </div>
 
         {/* 3. Total Mastered (Emerald / Mint Crystal Theme) */}
-        <GlassCard
-          variant="liquid"
-          className="p-4 sm:p-5 bg-gradient-to-br from-emerald-500/[0.09] via-white/85 to-teal-500/[0.05] dark:from-emerald-950/40 dark:via-slate-900/80 dark:to-teal-950/30 border border-emerald-400/40 dark:border-emerald-500/30 shadow-sm"
-        >
+        <div className="card-metric-emerald p-5 rounded-3xl transition-transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               {t('dashboard.totalWords', 'Từ đã thành thạo')}
             </span>
-            <div className="p-1 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20">
-              <Award className="w-4 h-4 text-emerald-500" />
+            <div className="p-2 rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/30">
+              <Award className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
-            {data?.masteredCount || 0}
+          <p className="text-3xl font-black text-slate-900 dark:text-white leading-tight mt-1">
+            {data?.masteredCount || 0} <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">từ</span>
           </p>
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-            Độ bền trí nhớ &gt; 85%
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-3 font-semibold">
+            Độ bền trí nhớ SRS &gt; 85%
           </p>
-        </GlassCard>
+        </div>
 
         {/* 4. Learning Level & XP (Sky / Cyan Theme) */}
-        <GlassCard
-          variant="liquid"
-          className="p-4 sm:p-5 bg-gradient-to-br from-sky-500/[0.09] via-white/85 to-cyan-500/[0.05] dark:from-sky-950/40 dark:via-slate-900/80 dark:to-cyan-950/30 border border-sky-400/40 dark:border-sky-500/30 shadow-sm"
-        >
+        <div className="card-metric-cyan p-5 rounded-3xl transition-transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+            <span className="text-[11px] font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
               {t('dashboard.level', 'Cấp độ & XP')}
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-sky-500/15 text-sky-600 dark:text-sky-300 border border-sky-400/30">
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500 text-white shadow-xs">
               CEFR {data?.profile?.englishLevel || 'B1'}
             </span>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
+          <p className="text-3xl font-black text-slate-900 dark:text-white leading-tight mt-1">
             Lvl {user?.xp?.currentLevel || 1}
           </p>
-          <p className="text-[11px] text-sky-600/80 dark:text-sky-300/80 mt-1 font-medium">
-            <strong className="text-sky-600 dark:text-sky-400">{user?.xp?.totalXP || 0} XP</strong> tích lũy
+          <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-3 font-semibold">
+            <strong className="font-black text-cyan-800 dark:text-cyan-200">{user?.xp?.totalXP || 0} XP</strong> tích lũy
           </p>
-        </GlassCard>
+        </div>
       </div>
 
       {/* 3. Visual Statistical Charts Section (User Requested Charts) */}

@@ -42,6 +42,7 @@ interface PaymentCheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   tier: 'PLUS' | 'PRO';
+  billingCycle?: 'monthly' | 'yearly';
   onSuccess?: () => void;
 }
 
@@ -49,6 +50,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   isOpen,
   onClose,
   tier,
+  billingCycle = 'yearly',
   onSuccess,
 }) => {
   const { refreshProfile } = useAuth();
@@ -64,7 +66,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   const pollTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
 
-  // Khởi tạo đơn hàng khi mở modal hoặc đổi tier/method
+  // Khởi tạo đơn hàng khi mở modal hoặc đổi tier/method/billingCycle
   useEffect(() => {
     if (isOpen) {
       createOrder(method);
@@ -72,7 +74,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
       cleanup();
     }
     return () => cleanup();
-  }, [isOpen, tier, method]);
+  }, [isOpen, tier, method, billingCycle]);
 
   const cleanup = () => {
     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
@@ -89,6 +91,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
       const res: any = await api.post('/subscriptions/create-payment', {
         tier,
         paymentMethod: selectedMethod,
+        billingCycle,
       });
 
       // Hỗ trợ cả 2 định dạng response: trực tiếp hoặc bọc qua interceptor data wrapper
@@ -242,7 +245,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                   Tài Khoản Đã Được Kích Hoạt!
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
-                  Chúc mừng bạn đã sở hữu gói <strong>{order?.planName}</strong> với 30 ngày trải nghiệm toàn diện và đầy đủ quyền hạn AI không giới hạn.
+                  Chúc mừng bạn đã nâng cấp thành công gói <strong>{order?.planName}</strong> với {billingCycle === 'yearly' ? '1 năm (365 ngày)' : '30 ngày'} trải nghiệm toàn diện và đầy đủ quyền hạn AI mỗi ngày.
                 </p>
               </div>
 
@@ -256,8 +259,10 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                   <span className="font-extrabold text-brand-600 dark:text-brand-400">{order?.planName}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-medium">Thời hạn:</span>
-                  <span className="font-semibold text-emerald-600">30 ngày (Gia hạn sau 1 tháng)</span>
+                  <span className="text-slate-400 font-medium">Chu kỳ:</span>
+                  <span className="font-semibold text-emerald-600">
+                    {billingCycle === 'yearly' ? 'Theo Năm (365 ngày - Tự động gia hạn)' : 'Theo Tháng (30 ngày - Tự động gia hạn)'}
+                  </span>
                 </div>
               </div>
 

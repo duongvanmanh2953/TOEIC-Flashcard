@@ -15,6 +15,7 @@ import { HealthModule } from './modules/health/health.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SupportModule } from './modules/support/support.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
+import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
@@ -37,6 +38,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     NotificationsModule,
     SupportModule,
     FeedbackModule,
+    LeaderboardModule,
   ],
   providers: [
     {

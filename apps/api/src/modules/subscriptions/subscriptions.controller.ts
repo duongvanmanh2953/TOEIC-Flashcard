@@ -63,8 +63,14 @@ export class SubscriptionsController {
     @CurrentUser('id') userId: string,
     @Body('tier') tier: SubscriptionTier,
     @Body('paymentMethod') paymentMethod?: PaymentMethod,
+    @Body('billingCycle') billingCycle?: 'monthly' | 'yearly',
   ) {
-    return this.subService.createPaymentOrder(userId, tier, paymentMethod || PaymentMethod.VIETQR);
+    return this.subService.createPaymentOrder(
+      userId,
+      tier,
+      paymentMethod || PaymentMethod.VIETQR,
+      billingCycle || 'monthly',
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -75,8 +81,14 @@ export class SubscriptionsController {
     @CurrentUser('id') userId: string,
     @Body('tier') tier: SubscriptionTier,
     @Body('paymentMethod') paymentMethod?: PaymentMethod,
+    @Body('billingCycle') billingCycle?: 'monthly' | 'yearly',
   ) {
-    return this.subService.createPaymentOrder(userId, tier, paymentMethod || PaymentMethod.VIETQR);
+    return this.subService.createPaymentOrder(
+      userId,
+      tier,
+      paymentMethod || PaymentMethod.VIETQR,
+      billingCycle || 'monthly',
+    );
   }
 
   @Public()

@@ -17,6 +17,8 @@ import { CommunityDecksPage } from './pages/CommunityDecksPage';
 import { MyWordBankPage } from './pages/MyWordBankPage';
 import { CustomQuizPage } from './pages/CustomQuizPage';
 import { SubscriptionUpgradePage } from './pages/SubscriptionUpgradePage';
+import { LeaderboardPage } from './pages/LeaderboardPage';
+import { AICoachStudioPage } from './pages/AICoachStudioPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
 
 // User Portal Pages
@@ -132,7 +134,9 @@ export const App: React.FC = () => {
               <Route path="/community" element={<CommunityDecksPage />} />
               <Route path="/custom-quiz" element={<CustomQuizPage />} />
               <Route path="/placement-test" element={<PlacementTestPage />} />
-              <Route path="/ai-tutor" element={<AITutorPage />} />
+              <Route path="/ai-tutor" element={<AICoachStudioPage />} />
+              <Route path="/coach" element={<AICoachStudioPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/progress" element={<ProgressAnalyticsPage />} />
               <Route path="/upgrade" element={<SubscriptionUpgradePage />} />
               

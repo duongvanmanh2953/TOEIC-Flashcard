@@ -22,6 +22,9 @@ else
     node "$SEED_FILE" || true
   fi
 fi
+if [ -f "prisma/create-accounts.js" ]; then
+  node prisma/create-accounts.js || true
+fi
 
 echo "🚀 Starting LexiMind AI NestJS Backend..."
 if [ -f "dist/main.js" ]; then

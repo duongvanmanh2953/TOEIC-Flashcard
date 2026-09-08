@@ -85,4 +85,63 @@ export class AIController {
   ) {
     return this.aiService.textToVocabulary(userId, text);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sound-better')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Transform sentence into Correct, Natural, Professional, and Native-style expressions' })
+  makeMeSoundBetter(
+    @Body('sentence') sentence: string,
+    @Body('topic') topic?: string,
+  ) {
+    return this.aiService.makeMeSoundBetter(sentence, topic);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('roleplay')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Execute multi-turn real-world simulation and roleplay conversation' })
+  roleplay(
+    @CurrentUser('id') userId: string,
+    @Body('scenarioId') scenarioId: string,
+    @Body('message') message: string,
+    @Body('history') history?: Array<{ role: string; content: string }>,
+  ) {
+    return this.aiService.roleplayStep(userId, scenarioId, message, history);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('pronunciation')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Evaluate pronunciation with phoneme analysis, stress, and articulation guide' })
+  evaluatePronunciation(
+    @Body('word') word: string,
+    @Body('spokenText') spokenText: string,
+  ) {
+    return this.aiService.evaluatePronunciation(word, spokenText);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('error-bank')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Retrieve user root-cause error bank and weakness heatmap' })
+  getErrorBank(@CurrentUser('id') userId: string) {
+    return this.aiService.getErrorBankAndHeatmap(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('smart-content')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Extract interactive smart transcript and practice from URL or text' })
+  smartContent(@Body('source') source: string) {
+    return this.aiService.smartContentExtract(source);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('power-score')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get holistic English Power Score (0-1000) and weekly AI coach report' })
+  getPowerScore(@CurrentUser('id') userId: string) {
+    return this.aiService.getEnglishPowerScoreAndReport(userId);
+  }
 }

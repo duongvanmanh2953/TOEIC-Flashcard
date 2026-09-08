@@ -67,16 +67,17 @@ export class SubscriptionsService implements OnModuleInit {
           tier: SubscriptionTier.PRO,
           name: 'VocabFlow Pro',
           priceMonthly: 199000, // 199,000 VND / tháng (~ $9.99)
-          aiDailyQuota: -1, // Không giới hạn
+          aiDailyQuota: 200, // 200 lượt AI / ngày (Reset 00:00 hàng ngày)
           maxCustomDecks: 999,
           unlimitedReviews: true,
           features: [
             'Tất cả tính năng trong gói Plus',
-            'Không giới hạn tham vấn AI chuyên sâu',
-            'Phân tích chuẩn đoán CEFR cá nhân hóa',
-            'Ưu tiên băng thông máy chủ mô hình AI',
+            '200 Lượt Tham Vấn AI Chuyên Sâu / Ngày (Reset 00:00)',
+            'Phân tích chuẩn đoán CEFR & AI Coach cá nhân hóa',
+            'Không giới hạn trích xuất Text-to-Vocab & AI Story',
+            'Ưu tiên băng thông máy chủ mô hình AI tốc độ cao',
             'Không giới hạn phục hồi chuỗi Streak',
-            'Hỗ trợ ưu tiên chuyên gia ngôn ngữ 24/7',
+            'Hỗ trợ chuyên gia học tập 24/7',
           ],
         },
       ];
@@ -142,12 +143,12 @@ export class SubscriptionsService implements OnModuleInit {
 
     const proPlan = plans.find((p) => p.tier === SubscriptionTier.PRO) || {
       tier: SubscriptionTier.PRO,
-      name: 'VocabFlow Pro (Unlimited)',
+      name: 'VocabFlow Pro',
       priceMonthly: 199000,
-      aiDailyQuota: -1,
+      aiDailyQuota: 200,
       maxCustomDecks: 999,
       unlimitedReviews: true,
-      features: ['Unlimited AI', 'VIP Features'],
+      features: ['200 AI Daily', 'VIP Features'],
     };
 
     const defaultPlan = plans.find((p) => p.tier === SubscriptionTier.FREE) || {
@@ -165,46 +166,58 @@ export class SubscriptionsService implements OnModuleInit {
     const isPro = isRolePro || currentPlan.tier === SubscriptionTier.PRO;
     const isPlus = !isPro && currentPlan.tier === SubscriptionTier.PLUS;
     const aiUsed = usage?.aiUsageCount || 0;
-    const aiQuota = isPro ? -1 : currentPlan.aiDailyQuota;
-    const aiRemaining = aiQuota === -1 ? 9999 : Math.max(0, aiQuota - aiUsed);
+    const aiQuota = isPro
+      ? (currentPlan.aiDailyQuota > 0 ? currentPlan.aiDailyQuota : 200)
+      : currentPlan.aiDailyQuota;
+    const aiRemaining = Math.max(0, aiQuota - aiUsed);
+
+    const isAdmin = user?.role === Role.ADMIN || user?.role === Role.SUPER_ADMIN;
+    const currentPeriodEnd = subscription?.currentPeriodEnd
+      ? subscription.currentPeriodEnd
+      : isAdmin
+      ? new Date('2099-12-31T23:59:59.000Z')
+      : isPro || isPlus
+      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      : null;
 
     return {
       tier: isPro ? SubscriptionTier.PRO : currentPlan.tier,
-      dailyAiQuota: aiQuota === -1 ? 9999 : aiQuota,
-      dailyAiUsed: isPro ? 0 : aiUsed,
+      dailyAiQuota: aiQuota,
+      dailyAiUsed: aiUsed,
       dailyAiRemaining: aiRemaining,
       features: {
         canCreateCustomDecks: isPro || currentPlan.maxCustomDecks > 3,
         hasAdvancedAnalytics: isPro || currentPlan.tier !== SubscriptionTier.FREE,
-        unlimitedAiTutor: isPro || aiQuota === -1,
+        unlimitedAiTutor: false, // Giới hạn theo ngày để bảo vệ tài nguyên AI
       },
       currentPlan: {
         tier: isPro ? SubscriptionTier.PRO : currentPlan.tier,
-        name: isPro ? 'VocabFlow Pro (Unlimited)' : currentPlan.name,
+        name: isPro ? 'VocabFlow Pro' : currentPlan.name,
         priceMonthly: currentPlan.priceMonthly,
         isPro,
         isPlus,
         isFree: !isPro && !isPlus,
-        currentPeriodEnd:
-          subscription?.currentPeriodEnd || (isPro ? new Date('2099-12-31T23:59:59.000Z') : null),
+        currentPeriodEnd,
       },
       usageToday: {
         date: today,
-        aiUsed: isPro ? 0 : aiUsed,
-        aiQuota: aiQuota === -1 ? 'Không giới hạn' : aiQuota,
+        aiUsed,
+        aiQuota,
         aiRemaining,
-        canUseAI: true,
+        canUseAI: aiRemaining > 0,
       },
     };
   }
 
   /**
    * Tạo đơn hàng thanh toán (VietQR hoặc PayOS Gateway)
+   * Hỗ trợ chu kỳ thanh toán: monthly (hàng tháng) hoặc yearly (theo năm - tiết kiệm ~35%)
    */
   async createPaymentOrder(
     userId: string,
     tier: SubscriptionTier,
     method: PaymentMethod = PaymentMethod.VIETQR,
+    billingCycle: 'monthly' | 'yearly' = 'monthly',
   ) {
     const plan = await this.prisma.plan.findUnique({ where: { tier } });
     if (!plan) throw new NotFoundException('Gói cước không tồn tại');
@@ -222,7 +235,17 @@ export class SubscriptionsService implements OnModuleInit {
     }
 
     const description = `VF${orderCode}`;
-    const amount = plan.priceMonthly;
+
+    // Tính toán số tiền dựa trên chu kỳ thanh toán
+    let amount = plan.priceMonthly;
+    if (billingCycle === 'yearly') {
+      if (tier === SubscriptionTier.PLUS) {
+        amount = 828000; // 69.000đ/tháng * 12 tháng (tiết kiệm 360.000đ)
+      } else if (tier === SubscriptionTier.PRO) {
+        amount = 1548000; // 129.000đ/tháng * 12 tháng (tiết kiệm 840.000đ)
+      }
+    }
+
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 phút đếm ngược
 
     // Thông tin tài khoản ngân hàng nhận VietQR
@@ -539,7 +562,10 @@ export class SubscriptionsService implements OnModuleInit {
     webhookPayload: any,
   ) {
     const now = new Date();
-    const currentPeriodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 ngày sử dụng
+    // Kiểm tra chu kỳ dựa trên số tiền: Gói năm (>= 500.000 VND) hưởng 365 ngày, gói tháng hưởng 30 ngày
+    const isYearly = order.amount >= 500000;
+    const durationDays = isYearly ? 365 : 30;
+    const currentPeriodEnd = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
     await this.prisma.$transaction([
       // 1. Cập nhật trạng thái đơn hàng sang PAID

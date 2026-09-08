@@ -14,8 +14,9 @@ import {
   QrCode,
   ArrowRight,
   Flame,
-  Lock,
   LockOpen,
+  Calendar,
+  Percent,
 } from 'lucide-react';
 
 interface Entitlements {
@@ -28,6 +29,11 @@ interface Entitlements {
     hasAdvancedAnalytics: boolean;
     unlimitedAiTutor: boolean;
   };
+  currentPlan?: {
+    tier: string;
+    name: string;
+    currentPeriodEnd?: string | null;
+  };
 }
 
 export const SubscriptionUpgradePage: React.FC = () => {
@@ -37,6 +43,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [checkoutTier, setCheckoutTier] = useState<'PLUS' | 'PRO' | null>(null);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
   useEffect(() => {
     fetchEntitlements();
@@ -64,25 +71,26 @@ export const SubscriptionUpgradePage: React.FC = () => {
 
   const isPro = isProUser(user) || entitlements?.tier === 'PRO' || (entitlements as any)?.currentPlan?.isPro;
   const currentTier = isPro ? 'PRO' : (entitlements?.tier || 'FREE');
+  const periodEnd = entitlements?.currentPlan?.currentPeriodEnd;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-12">
-      {/* Header with relaxed line-height */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full card-brand-effect overflow-hidden bg-brand-500/[0.06] dark:bg-brand-500/[0.12] text-brand-600 dark:text-brand-300 text-xs font-black uppercase tracking-wider border border-brand-400/40 backdrop-blur-xl">
+    <div className="max-w-6xl mx-auto space-y-7 animate-fade-in pb-12">
+      {/* Header with compact badge & title */}
+      <div className="text-center space-y-2.5">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-500/[0.08] dark:bg-brand-500/[0.15] text-brand-600 dark:text-brand-300 text-xs font-black uppercase tracking-wider border border-brand-400/40 backdrop-blur-xl">
           <QrCode className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
           <span>Thanh toán VietQR & Cổng Webhook Tự Động Kích Hoạt 24/7</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
           {t('subscriptions.title', 'Nâng Cấp Trải Nghiệm Học Cùng VocabFlow')}
-        </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-          Mở khóa toàn diện tiềm năng học từ vựng TOEIC với AI Tutor không giới hạn, phân tích chuẩn đoán CEFR và kho đề tự động.
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+          Tăng tốc phản xạ và điểm số TOEIC với AI Tutor chuyên sâu, hạn mức theo ngày tối ưu và gói thuê bao linh hoạt.
         </p>
       </div>
 
       {/* Current Quota Status */}
-      <GlassCard variant="brand" className="p-5 md:p-6 shadow-md">
+      <GlassCard variant="brand" className="p-5 md:p-6 shadow-md border border-brand-500/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-brand-500/25">
@@ -96,9 +104,15 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 <span className="px-2.5 py-0.5 rounded-md bg-brand-600 text-white text-[11px] font-black uppercase shadow-xs">
                   {currentTier}
                 </span>
+                {periodEnd && (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Hạn dùng: {new Date(periodEnd).toLocaleDateString('vi-VN')}</span>
+                  </span>
+                )}
               </div>
               <p className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1 leading-snug">
-                {t('subscriptions.aiQuota', 'Lượt gọi AI hôm nay')}: {isPro ? 'Không giới hạn (VIP Pro)' : `${entitlements?.dailyAiUsed || 0} / ${entitlements?.dailyAiQuota === 9999 ? 'Không giới hạn' : entitlements?.dailyAiQuota} lượt`}
+                {t('subscriptions.aiQuota', 'Lượt gọi AI hôm nay')}: {entitlements?.dailyAiUsed || 0} / {entitlements?.dailyAiQuota || (isPro ? 200 : 10)} lượt (Reset 00:00)
               </p>
             </div>
           </div>
@@ -107,7 +121,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
             <div className="flex justify-between text-xs font-bold mb-1 text-slate-500 dark:text-slate-400">
               <span>Hạn mức sử dụng ngày</span>
               <span className="text-brand-600 dark:text-brand-400 font-extrabold">
-                {isPro ? 'Không giới hạn' : `${entitlements?.dailyAiRemaining} lượt còn lại`}
+                {entitlements?.dailyAiRemaining ?? (isPro ? 200 : 10)} lượt còn lại
               </span>
             </div>
             <div className="h-2.5 rounded-full bg-slate-200/70 dark:bg-slate-800 overflow-hidden p-0.5">
@@ -132,24 +146,62 @@ export const SubscriptionUpgradePage: React.FC = () => {
         )}
       </GlassCard>
 
+      {/* Pro Active Notice */}
       {isPro && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-emerald-500/15 border border-purple-500/30 flex items-center gap-4 shadow-md">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/25">
-            <Crown className="w-6 h-6 text-amber-200 fill-amber-200" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-500/15 via-indigo-500/15 to-emerald-500/15 border border-purple-500/30 flex items-center gap-4 shadow-md">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/25">
+            <Crown className="w-5 h-5 text-amber-200 fill-amber-200" />
           </div>
           <div>
             <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Tài Khoản VIP Pro Trọn Đời Đang Kích Hoạt</span>
+              <span>Tài Khoản VocabFlow Pro Đang Kích Hoạt</span>
               <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-black uppercase">
-                VIP Vĩnh Viễn
+                Đang Sử Dụng
               </span>
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-              Bạn đang sở hữu toàn quyền cao nhất trên VocabFlow: Không giới hạn tham vấn AI Tutor, thuật toán SRS độc quyền, trích xuất đề thi Text-to-Vocab và toàn bộ tính năng cao cấp mà không cần nạp thêm.
+              Bạn đang sở hữu đặc quyền Pro cao cấp với 200 lượt AI mỗi ngày, trích xuất Text-to-Vocab, phân tích chuẩn đoán CEFR và thuật toán SRS độc quyền. Gói tự động bảo lưu chuỗi học.
             </p>
           </div>
         </div>
       )}
+
+      {/* Interactive Billing Cycle Toggle: Monthly vs Yearly */}
+      <div className="flex flex-col items-center justify-center gap-2 pt-2">
+        <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 inline-flex items-center shadow-xs">
+          <button
+            type="button"
+            onClick={() => setBillingCycle('monthly')}
+            className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all ${
+              billingCycle === 'monthly'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-md'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Hàng Tháng
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingCycle('yearly')}
+            className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 ${
+              billingCycle === 'yearly'
+                ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-md'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span>Theo Năm</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black uppercase tracking-wider flex items-center gap-0.5 shadow-xs">
+              <Percent className="w-2.5 h-2.5" />
+              <span>Tiết kiệm 35%</span>
+            </span>
+          </button>
+        </div>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+          {billingCycle === 'yearly'
+            ? '🔥 Gói theo năm tiết kiệm lên đến 840.000 đ so với thanh toán từng tháng'
+            : 'Linh hoạt gia hạn từng tháng, có thể hủy bất kỳ lúc nào'}
+        </p>
+      </div>
 
       {/* Pricing Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
@@ -162,12 +214,12 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 {t('subscriptions.freeTitle', 'Learner Free')}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Nền tảng học từ vựng vững chắc trọn đời
+                Nền tảng học từ vựng vững chắc miễn phí
               </p>
             </div>
             <div className="flex items-baseline gap-1 my-4">
               <span className="text-3xl font-black text-slate-900 dark:text-white">0 đ</span>
-              <span className="text-xs text-slate-400">/ miễn phí trọn đời</span>
+              <span className="text-xs text-slate-400">/ miễn phí cơ bản</span>
             </div>
 
             <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
@@ -183,9 +235,13 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>Phát âm giọng đọc chuẩn bản xứ US/UK</span>
               </li>
+              <li className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>10 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)</span>
+              </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>10 Lượt Tham Vấn AI Tutor / Ngày</span>
+                <span>3 Lượt Trích Xuất Text-to-Vocab / Ngày</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -205,7 +261,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
         {/* PLUS (Card Brand Effect Highlight) */}
         <GlassCard
           variant="brandGlow"
-          className="p-6 flex flex-col justify-between relative shadow-2xl group"
+          className="p-6 flex flex-col justify-between relative shadow-2xl group border-2 border-brand-500/40"
         >
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -213,9 +269,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 <Flame className="w-3 h-3 fill-white" />
                 <span>Phổ biến nhất</span>
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase">
-                Kích hoạt tức thì
-              </span>
+              {billingCycle === 'yearly' && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase">
+                  Tiết kiệm 30%
+                </span>
+              )}
             </div>
             <div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
@@ -223,12 +281,23 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 <Sparkles className="w-4 h-4 text-brand-500 shrink-0" />
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt & AI Tutor thông minh
+                Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt & AI Tutor mỗi ngày
               </p>
             </div>
-            <div className="flex items-baseline gap-1.5 my-4">
-              <span className="text-3xl font-black text-brand-600 dark:text-brand-400">99.000 đ</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">/ tháng (~$4.99)</span>
+
+            {/* Dynamic Price Display */}
+            <div className="my-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-black text-brand-600 dark:text-brand-400">
+                  {billingCycle === 'yearly' ? '69.000 đ' : '99.000 đ'}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">/ tháng</span>
+              </div>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1">
+                {billingCycle === 'yearly'
+                  ? 'Thanh toán 828.000 đ/năm (Tiết kiệm 360.000 đ so với theo tháng)'
+                  : 'Gia hạn từng tháng (99.000 đ/tháng, hủy bất cứ lúc nào)'}
+              </p>
             </div>
 
             <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
@@ -238,11 +307,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
               </li>
               <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
-                <span>50 Lượt Tham Vấn AI Tutor / Ngày</span>
+                <span>50 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)</span>
               </li>
               <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
-                <span>10 Lượt Trích Xuất Văn Bản (Text-to-Vocab) / Ngày</span>
+                <span>15 Lượt Trích Xuất Văn Bản (Text-to-Vocab) / Ngày</span>
               </li>
               <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
@@ -255,6 +324,10 @@ export const SubscriptionUpgradePage: React.FC = () => {
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>Bảo lưu chuỗi Streak 3 ngày/tháng</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-500">
+                <Check className="w-4 h-4 text-brand-500 shrink-0" />
+                <span>Gia hạn theo chu kỳ ({billingCycle === 'yearly' ? 'Hàng năm' : 'Hàng tháng'})</span>
               </li>
             </ul>
           </div>
@@ -281,7 +354,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
               className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 active:scale-[0.98]"
             >
               <LockOpen className="w-4 h-4" />
-              <span>Mở Khóa Gói Plus (99.000 đ)</span>
+              <span>
+                {billingCycle === 'yearly'
+                  ? 'Mở Khóa Gói Plus (828.000 đ/năm)'
+                  : 'Mở Khóa Gói Plus (99.000 đ/tháng)'}
+              </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
@@ -290,7 +367,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
         {/* PRO (Premium Card) */}
         <GlassCard
           variant="premium"
-          className="p-6 flex flex-col justify-between relative shadow-2xl group border-2 border-purple-500/40"
+          className="p-6 flex flex-col justify-between relative shadow-2xl group border-2 border-purple-500/50"
         >
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -298,9 +375,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 <Crown className="w-3 h-3 text-amber-200 fill-amber-200" />
                 <span>VIP Chuyên Nghiệp</span>
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-300 text-[10px] font-black uppercase">
-                Toàn quyền
-              </span>
+              {billingCycle === 'yearly' && (
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-300 text-[10px] font-black uppercase">
+                  Tiết kiệm 35%
+                </span>
+              )}
             </div>
             <div>
               <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-1.5 leading-snug">
@@ -308,12 +387,23 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 <Crown className="w-4 h-4 text-amber-500 shrink-0" />
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                Tối đa tiềm năng với AI Tutor phân tích chuyên sâu & không giới hạn
+                Tối đa tiềm năng với AI Tutor phân tích chuyên sâu & hạn mức cao nhất
               </p>
             </div>
-            <div className="flex items-baseline gap-1.5 my-4">
-              <span className="text-3xl font-black text-purple-600 dark:text-purple-400">199.000 đ</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">/ tháng (~$9.99)</span>
+
+            {/* Dynamic Price Display */}
+            <div className="my-4">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-black text-purple-600 dark:text-purple-400">
+                  {billingCycle === 'yearly' ? '129.000 đ' : '199.000 đ'}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">/ tháng</span>
+              </div>
+              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1">
+                {billingCycle === 'yearly'
+                  ? 'Thanh toán 1.548.000 đ/năm (Tiết kiệm 840.000 đ so với theo tháng)'
+                  : 'Gia hạn từng tháng (199.000 đ/tháng, hủy bất cứ lúc nào)'}
+              </p>
             </div>
 
             <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
@@ -323,15 +413,19 @@ export const SubscriptionUpgradePage: React.FC = () => {
               </li>
               <li className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>Không giới hạn tham vấn AI Tutor 24/7</span>
+                <span>200 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)</span>
               </li>
               <li className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>Không giới hạn Text-to-Vocab & AI Story</span>
+                <span>50 Lượt Trích Xuất Text-to-Vocab / Ngày</span>
+              </li>
+              <li className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
+                <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                <span>20 Lượt Dệt Câu Chuyện AI Story / Ngày</span>
               </li>
               <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
-                <span>🚑 Memory Rescue toàn diện không giới hạn</span>
+                <span>🚑 Memory Rescue toàn diện chuyên sâu</span>
               </li>
               <li className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
                 <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
@@ -339,11 +433,15 @@ export const SubscriptionUpgradePage: React.FC = () => {
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Ưu tiên băng thông máy chủ mô hình AI</span>
+                <span>Ưu tiên băng thông máy chủ mô hình AI tốc độ cao</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>Không giới hạn phục hồi chuỗi Streak</span>
+              </li>
+              <li className="flex items-center gap-2 text-slate-500">
+                <Check className="w-4 h-4 text-purple-500 shrink-0" />
+                <span>Gia hạn theo chu kỳ ({billingCycle === 'yearly' ? 'Hàng năm' : 'Hàng tháng'})</span>
               </li>
             </ul>
           </div>
@@ -354,7 +452,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
               className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 cursor-default flex items-center justify-center gap-2 shadow-sm"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>Gói Bạn Đang Sở Hữu (VIP Pro Vĩnh Viễn)</span>
+              <span>Gói Bạn Đang Sở Hữu (Pro Active)</span>
             </button>
           ) : (
             <button
@@ -362,7 +460,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
               className="w-full mt-6 py-3.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 active:scale-[0.98]"
             >
               <LockOpen className="w-4 h-4 text-amber-300" />
-              <span>Mở Khóa Gói Pro (199.000 đ)</span>
+              <span>
+                {billingCycle === 'yearly'
+                  ? 'Mở Khóa Gói Pro (1.548.000 đ/năm)'
+                  : 'Mở Khóa Gói Pro (199.000 đ/tháng)'}
+              </span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
@@ -375,42 +477,48 @@ export const SubscriptionUpgradePage: React.FC = () => {
           Bảng So Sánh Quyền Hạn Chi Tiết (Entitlement Matrix)
         </h2>
         <p className="text-xs text-slate-400 mb-4">
-          Minh bạch mọi đặc quyền và khả năng truy cập giữa các gói tài khoản.
+          Minh bạch mọi đặc quyền, hạn mức hàng ngày và chu kỳ thuê bao giữa các gói tài khoản.
         </p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold tracking-wider">
-                <th className="pb-3 px-3">Khả Năng / Tính Năng</th>
+                <th className="pb-3 px-3">Khả Năng / Quyền Lợi</th>
                 <th className="pb-3 px-3 text-center">Gói Free (Miễn phí)</th>
                 <th className="pb-3 px-3 text-center text-brand-600 dark:text-brand-400 font-black">
-                  Gói Plus (99.000 đ)
+                  Gói Plus ({billingCycle === 'yearly' ? '69k/tháng' : '99k/tháng'})
                 </th>
                 <th className="pb-3 px-3 text-center text-purple-600 dark:text-purple-400 font-black">
-                  Gói Pro (199.000 đ)
+                  Gói Pro ({billingCycle === 'yearly' ? '129k/tháng' : '199k/tháng'})
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {[
                 {
-                  feature: 'Học từ vựng 3D Flashcard & Thuật toán SRS',
+                  feature: 'Học từ vựng Flashcard & Thuật toán SRS',
                   free: 'Toàn diện ✓',
                   plus: 'Toàn diện ✓',
                   pro: 'Toàn diện ✓',
                 },
                 {
-                  feature: 'Lượt tương tác cùng Gia sư AI 24/7',
+                  feature: 'Hạn mức tham vấn Gia sư AI (Reset 00:00 hàng ngày)',
                   free: '10 lượt/ngày',
                   plus: '50 lượt/ngày',
-                  pro: 'Không giới hạn ✓',
+                  pro: '200 lượt/ngày ✓',
                 },
                 {
-                  feature: 'Học từ bất kỳ đoạn văn bản (Learn From Anything)',
-                  free: 'Thử nghiệm (3 lần/ngày)',
-                  plus: 'Không giới hạn ✓',
-                  pro: 'Không giới hạn ✓',
+                  feature: 'Trích xuất từ vựng từ văn bản (Text-to-Vocab)',
+                  free: '3 lượt/ngày',
+                  plus: '15 lượt/ngày ✓',
+                  pro: '50 lượt/ngày ✓',
+                },
+                {
+                  feature: 'Dệt câu chuyện ngữ cảnh (AI Story Generator)',
+                  free: '1 lượt/ngày',
+                  plus: '5 lượt/ngày ✓',
+                  pro: '20 lượt/ngày ✓',
                 },
                 {
                   feature: 'Tự tạo bộ câu hỏi kiểm tra ngẫu nhiên (Custom Quiz)',
@@ -425,16 +533,16 @@ export const SubscriptionUpgradePage: React.FC = () => {
                   pro: 'Chẩn đoán AI chuyên sâu ✓',
                 },
                 {
-                  feature: 'Sao lưu & Đồng bộ đám mây đa thiết bị',
-                  free: 'Có ✓',
-                  plus: 'Có ✓',
-                  pro: 'Ưu tiên đồng bộ tức thời ✓',
-                },
-                {
                   feature: 'Bảo lưu Streak linh hoạt khi bận (Streak Saver)',
                   free: '1 ngày/tháng',
                   plus: '3 ngày/tháng ✓',
                   pro: 'Không giới hạn phục hồi ✓',
+                },
+                {
+                  feature: 'Hình thức gia hạn & cam kết chu kỳ',
+                  free: 'Miễn phí vĩnh viễn',
+                  plus: 'Thuê bao Tháng / Năm (Hủy tùy ý)',
+                  pro: 'Thuê bao Tháng / Năm (Hủy tùy ý)',
                 },
               ].map((row, i) => (
                 <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
@@ -462,7 +570,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
           <strong className="text-slate-900 dark:text-white font-bold block mb-0.5">
             Cam Kết Minh Bạch & Bảo Mật Thanh Toán VietQR 24/7:
           </strong>
-          Hệ thống sử dụng cổng xác nhận chuyển khoản tức thì chuẩn NAPAS 24/7. Bạn chỉ cần quét mã QR trên bất kỳ App Ngân Hàng nào, hệ thống tự động ghi nhận và cấp quyền tài khoản ngay khi giao dịch thành công mà <strong>không thu bất kỳ phụ phí nào</strong>.
+          Gói cước có chu kỳ rõ ràng theo tháng hoặc năm, <strong>không cam kết vĩnh viễn phi thực tế</strong>. Hệ thống sử dụng cổng xác nhận chuyển khoản tức thì chuẩn NAPAS 24/7. Bạn chỉ cần quét mã QR trên bất kỳ App Ngân Hàng nào, hệ thống tự động ghi nhận và cấp quyền tài khoản ngay khi giao dịch thành công.
         </div>
       </div>
 
@@ -471,6 +579,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
         <PaymentCheckoutModal
           isOpen={Boolean(checkoutTier)}
           tier={checkoutTier}
+          billingCycle={billingCycle}
           onClose={() => setCheckoutTier(null)}
           onSuccess={() => {
             fetchEntitlements();

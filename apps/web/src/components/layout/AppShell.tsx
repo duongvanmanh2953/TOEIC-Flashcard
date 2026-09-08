@@ -35,6 +35,8 @@ import {
   CheckCheck,
   Bell,
   MessageSquare,
+  Trophy,
+  Mic,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import api from '../../lib/api';
@@ -277,12 +279,14 @@ export const AppShell: React.FC = () => {
 
   const navItems = [
     { to: '/dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard },
+    { to: '/coach', label: 'AI Personal Coach', icon: Mic, highlight: true, badge: 'VOICE' },
+    { to: '/leaderboard', label: 'Bảng Xếp Hạng', icon: Trophy, badge: 'FAIR-PLAY' },
     { to: '/review', label: t('nav.review', 'Smart Review'), icon: Sparkles, badge: 'SRS' },
     { to: '/vocabulary', label: t('nav.vocabulary', 'Vocab Explorer'), icon: BookOpen },
     { to: '/word-bank', label: t('nav.wordBank', 'My Word Bank'), icon: Bookmark },
     { to: '/community', label: t('nav.community', 'Community Decks'), icon: Share2 },
     { to: '/custom-quiz', label: t('nav.customQuiz', 'Dynamic Quiz'), icon: HelpCircle },
-    { to: '/ai-tutor', label: t('nav.aiTutor', 'AI Tutor'), icon: BrainCircuit },
+    { to: '/ai-tutor', label: t('nav.aiTutor', 'AI Tutor Studio'), icon: BrainCircuit },
     { to: '/placement-test', label: t('nav.placementTest', 'Placement Test'), icon: Compass },
     { to: '/progress', label: t('nav.progress', 'Progress & Stats'), icon: Award },
     {
@@ -301,9 +305,9 @@ export const AppShell: React.FC = () => {
 
   const mobileBottomItems = [
     { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
+    { to: '/coach', label: 'Coach', icon: Mic },
+    { to: '/leaderboard', label: 'BXH', icon: Trophy },
     { to: '/review', label: 'Review', icon: Sparkles },
-    { to: '/vocabulary', label: 'Vocab', icon: BookOpen },
-    { to: '/ai-tutor', label: 'AI', icon: BrainCircuit },
     { to: '/word-bank', label: 'Saved', icon: Bookmark },
   ];
 
@@ -586,21 +590,40 @@ export const AppShell: React.FC = () => {
           </div>
         )}
 
-        {/* Desktop Top Header Bar */}
-        <header className="hidden lg:flex items-center justify-between px-8 py-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-slate-500 tracking-wide">
-              VocabFlow AI • Nền tảng học từ vựng thông minh
+        {/* Desktop Top Header Bar — Streamlined & Compact to save screen height */}
+        <header className="hidden lg:flex items-center justify-between px-6 py-2 h-12 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 sticky top-0 z-20">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-slate-500 tracking-tight">
+              VocabFlow AI • Personal English Coach
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <NavLink
+              to="/coach"
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 flex items-center gap-1.5 px-3 py-1 rounded-lg transition"
+            >
+              <Mic className="w-3.5 h-3.5" />
+              <span>Voice Coach</span>
+            </NavLink>
+
+            <NavLink
+              to="/leaderboard"
+              className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 flex items-center gap-1.5 px-3 py-1 rounded-lg transition"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              <span>Bảng Xếp Hạng</span>
+            </NavLink>
+
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
+
             <NavLink
               to="/feedback"
-              className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Góp ý & Roadmap</span>
+              <span>Góp ý</span>
             </NavLink>
 
             {isAdmin && (
@@ -613,15 +636,15 @@ export const AppShell: React.FC = () => {
               </NavLink>
             )}
 
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
 
             {/* Notification Bell with Badge & Dropdown */}
             <NotificationBell />
           </div>
         </header>
 
-        {/* Routed Pages Container — Responsive & Laptop-Optimized */}
-        <main className="flex-1 p-3 sm:p-4 lg:p-5 w-full max-w-none">
+        {/* Routed Pages Container — Full Width & Space-Optimized */}
+        <main className="flex-1 p-3 sm:p-5 lg:p-6 w-full max-w-[1680px] mx-auto">
           <Outlet />
         </main>
 
