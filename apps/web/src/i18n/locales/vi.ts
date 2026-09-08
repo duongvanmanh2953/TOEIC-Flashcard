@@ -1,3 +1,8 @@
+import { viFinance } from './vi/finance';
+import { viFeedback } from './vi/feedback';
+import { viSupport } from './vi/support';
+import { viAdmin } from './vi/admin';
+
 export const vi = {
   common: {
     appName: 'VocabFlow',
@@ -85,33 +90,10 @@ export const vi = {
     registerInterest: 'Nhận thông báo ưu tiên',
     aiQuota: 'Số lượt tham vấn AI hàng ngày',
   },
-  admin: {
-    title: 'Trung Tâm Quản Trị & Vận Hành',
-    subtitle: 'Theo dõi sức khỏe hệ thống, hàng đợi duyệt và phân tích học viên.',
-    healthCard: 'Tình Trạng Hệ Thống',
-    totalUsers: 'Tổng học viên đăng ký',
-    activeToday: 'Học viên hôm nay (DAU)',
-    totalReviews: 'Tổng lượt ôn tập đã thực hiện',
-    accuracy: 'Độ chính xác toàn nền tảng',
-    moderationQueue: 'Hàng đợi duyệt bộ thẻ cộng đồng',
-    userDirectory: 'Danh bạ học viên',
-    auditLogs: 'Nhật ký kiểm toán hệ thống',
-  },
-  support: {
-    title: 'Hỗ Trợ & Chăm Sóc Khách Hàng',
-    online: 'Đang trực tuyến',
-    offline: 'Ngoại tuyến',
-    typing: 'Đang soạn tin nhắn...',
-    placeholder: 'Nhập tin nhắn hỗ trợ...',
-    loginPrompt: 'Vui lòng đăng nhập để gửi tin nhắn hỗ trợ',
-    welcomeTitle: 'Chào mừng bạn đến với VocabFlow CSKH!',
-    welcomeBody: 'Bạn cần hỗ trợ về tài khoản, thanh toán VietQR hay tính năng học tập nào? Hãy gửi tin nhắn bên dưới nhé.',
-    fullscreen: 'Toàn màn hình',
-    cleanMessagesBtn: 'Dọn tin nhắn >3 ngày',
-    cleanModalTitle: 'Xác nhận dọn dẹp tin nhắn cũ',
-    cleanModalDesc: 'Thao tác này sẽ xóa sạch toàn bộ nội dung tin nhắn được tạo cũ hơn 3 ngày nhằm tối ưu dung lượng Database. Danh sách yêu cầu (tickets) vẫn được bảo lưu.',
-    cleanSuccess: 'Đã dọn dẹp sạch tin nhắn cũ hơn 3 ngày thành công.',
-  },
+  admin: viAdmin,
+  support: viSupport,
+  feedback: viFeedback,
+  finance: viFinance,
   adminNotifications: {
     title: 'Trung Tâm Phát Thanh & Nhật Ký Thông Báo',
     subtitle: 'Quản lý thông báo đẩy toàn hệ thống, tin tức khuyến mãi và nhật ký thông báo học viên.',

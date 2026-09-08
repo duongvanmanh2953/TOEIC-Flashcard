@@ -409,6 +409,165 @@ export class AdminService {
   }
 
   /**
+   * Dedicated Financial Intelligence Report (No Fake Data)
+   */
+  async getFinancialReport(range: string = '30d') {
+    const now = new Date();
+    let startDate = new Date();
+    if (range === 'Today' || range === 'today') {
+      startDate.setHours(0, 0, 0, 0);
+    } else if (range === '7d') {
+      startDate.setDate(now.getDate() - 7);
+    } else if (range === '90d' || range === 'quarter') {
+      startDate.setDate(now.getDate() - 90);
+    } else if (range === 'year') {
+      startDate.setFullYear(now.getFullYear() - 1);
+    } else {
+      // 30d default
+      startDate.setDate(now.getDate() - 30);
+    }
+
+    const [orders, subscriptions, totalUsers] = await Promise.all([
+      this.prisma.paymentOrder.findMany({
+        where: {
+          createdAt: { gte: startDate },
+        },
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { id: true, displayName: true, email: true } }, plan: true },
+      }),
+      this.prisma.subscription.findMany({
+        where: { status: 'ACTIVE' },
+        include: { plan: true },
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    const paidOrders = orders.filter((o) => o.status === 'PAID');
+    const failedOrders = orders.filter((o) => o.status === 'FAILED' || o.status === 'CANCELED' || o.status === 'EXPIRED');
+    const pendingOrders = orders.filter((o) => o.status === 'PENDING');
+
+    const grossRevenue = paidOrders.reduce((sum, o) => sum + o.amount, 0);
+    const netRevenue = Math.round(grossRevenue * 0.985); // minus estimated provider transaction fees (1.5%)
+
+    // Real MRR strictly computed from active paid subscriptions
+    const activePaidSubs = subscriptions.filter((s) => s.plan && s.plan.tier !== SubscriptionTier.FREE);
+    const mrr = activePaidSubs.reduce((sum, s) => sum + (s.plan.priceMonthly || 0), 0);
+    const arr = mrr > 0 ? mrr * 12 : 0;
+
+    const paidUsersCount = new Set(paidOrders.map((o) => o.userId)).size;
+    const arpu = paidUsersCount > 0 ? Math.round(grossRevenue / paidUsersCount) : 0;
+    const paymentSuccessRate = orders.length > 0 ? Number(((paidOrders.length / orders.length) * 100).toFixed(1)) : 100;
+
+    // Daily revenue buckets for trend charts
+    const dailyMap = new Map<string, { gross: number; count: number }>();
+    paidOrders.forEach((o) => {
+      const dayKey = o.createdAt.toISOString().slice(5, 10);
+      const existing = dailyMap.get(dayKey) || { gross: 0, count: 0 };
+      existing.gross += o.amount;
+      existing.count += 1;
+      dailyMap.set(dayKey, existing);
+    });
+
+    const revenueTrend = Array.from(dailyMap.entries()).map(([date, val]) => ({
+      date,
+      gross: val.gross,
+      net: Math.round(val.gross * 0.985),
+      transactions: val.count,
+    }));
+
+    const planBreakdown = [
+      {
+        plan: 'VocabFlow PLUS',
+        revenue: paidOrders.filter((o) => o.tier === SubscriptionTier.PLUS).reduce((s, o) => s + o.amount, 0),
+        count: paidOrders.filter((o) => o.tier === SubscriptionTier.PLUS).length,
+      },
+      {
+        plan: 'VocabFlow PRO',
+        revenue: paidOrders.filter((o) => o.tier === SubscriptionTier.PRO).reduce((s, o) => s + o.amount, 0),
+        count: paidOrders.filter((o) => o.tier === SubscriptionTier.PRO).length,
+      },
+    ];
+
+    const hasData = orders.length > 0 || subscriptions.length > 0;
+
+    return {
+      hasData,
+      timeframe: range,
+      metrics: {
+        grossRevenue,
+        netRevenue,
+        mrr,
+        arr,
+        arpu,
+        paidUsersCount,
+        totalOrdersCount: orders.length,
+        paidOrdersCount: paidOrders.length,
+        failedOrdersCount: failedOrders.length,
+        pendingOrdersCount: pendingOrders.length,
+        paymentSuccessRate,
+      },
+      revenueTrend,
+      planBreakdown,
+      recentTransactions: orders.map((o) => ({
+        id: o.id,
+        orderCode: o.orderCode,
+        userId: o.userId,
+        userEmail: o.user?.email || 'learner@vocabflow.ai',
+        userName: o.user?.displayName || 'Learner',
+        planName: o.plan?.name || o.tier,
+        tier: o.tier,
+        amount: o.amount,
+        currency: 'VND',
+        status: o.status,
+        paymentMethod: o.paymentMethod,
+        transactionCode: o.transactionCode,
+        paidAt: o.paidAt?.toISOString() || null,
+        createdAt: o.createdAt.toISOString(),
+      })),
+      failedPayments: failedOrders.map((o) => ({
+        id: o.id,
+        orderCode: o.orderCode,
+        userEmail: o.user?.email || 'N/A',
+        amount: o.amount,
+        status: o.status,
+        reason: o.status === 'EXPIRED' ? 'Hết hạn phiên thanh toán VietQR' : 'Người dùng huỷ thanh toán',
+        createdAt: o.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  /**
+   * Realtime Admin Unread Badges
+   */
+  async getAdminBadgeCounts() {
+    const [openConversations, newFeedback, newBugReports, pendingPayments, unreadNotifications] = await Promise.all([
+      this.prisma.supportConversation.count({
+        where: { status: 'OPEN' },
+      }),
+      this.prisma.feedback.count({
+        where: { status: 'NEW', type: { not: 'BUG_REPORT' } },
+      }),
+      this.prisma.feedback.count({
+        where: { status: 'NEW', type: 'BUG_REPORT' },
+      }),
+      this.prisma.paymentOrder.count({
+        where: { status: 'PENDING' },
+      }),
+      this.prisma.notification.count({
+        where: { readAt: null },
+      }),
+    ]);
+
+    return {
+      conversations: openConversations,
+      feedback: newFeedback,
+      bugReports: newBugReports,
+      payments: pendingPayments,
+      notifications: unreadNotifications,
+    };
+  }
+
+  /**
    * 7. SYSTEM MONITORING & HEALTH
    */
   async getSystemHealth() {
@@ -608,4 +767,462 @@ export class AdminService {
       },
     };
   }
+
+  /**
+   * 9. STRUCTURED SETTINGS CONTROL PLANE
+   */
+  async getSettings() {
+    const configs = await this.prisma.systemConfig.findMany();
+    const map: Record<string, any> = {};
+    configs.forEach((c) => {
+      try {
+        map[c.key] = JSON.parse(c.value);
+      } catch {
+        map[c.key] = c.value;
+      }
+    });
+
+    return {
+      general: map['CONFIG_GENERAL'] || {
+        siteName: 'VocabFlow AI',
+        supportEmail: 'support@vocabflow.ai',
+        timezone: 'Asia/Ho_Chi_Minh',
+        defaultCurrency: 'VND',
+        allowRegistration: true,
+      },
+      branding: map['CONFIG_BRANDING'] || {
+        appName: 'VocabFlow',
+        brandAccent: '#6366f1',
+        defaultTheme: 'dark',
+      },
+      localization: map['CONFIG_LOCALIZATION'] || {
+        defaultLocale: 'vi',
+        enabledLocales: ['vi', 'en'],
+        fallbackLocale: 'en',
+      },
+      learning: map['CONFIG_LEARNING'] || {
+        dailyGoalWords: 20,
+        maxDailyReviews: 150,
+        streakGraceHours: 24,
+        xpPerReview: 10,
+        fsrsWeights: '0.4, 0.6, 2.4, 5.8',
+      },
+      ai: map['CONFIG_AI'] || {
+        primaryProvider: 'gemini',
+        defaultModel: 'gpt-4o',
+        temperature: 0.7,
+        freeDailyQuota: 5,
+        plusDailyQuota: 50,
+        maxTokensPerResponse: 1024,
+      },
+      notifications: map['CONFIG_NOTIFICATIONS'] || {
+        enablePush: true,
+        enableEmail: true,
+        quietHoursStart: '22:00',
+        quietHoursEnd: '07:00',
+      },
+      support: map['CONFIG_SUPPORT'] || {
+        supportEnabled: true,
+        autoAssignEnabled: true,
+        slaMinutes: 30,
+        offlineAutoReply: 'Cảm ơn bạn đã liên hệ. Đội ngũ CSKH sẽ phản hồi sớm nhất!',
+      },
+      feedback: map['CONFIG_FEEDBACK'] || {
+        allowFeatureRequests: true,
+        allowBugReports: true,
+        requireLogin: true,
+        publicRoadmapEnabled: true,
+      },
+      billing: map['CONFIG_BILLING'] || {
+        currency: 'VND',
+        taxPercent: 0,
+        trialDays: 7,
+        gracePeriodDays: 3,
+      },
+      security: map['CONFIG_SECURITY'] || {
+        sessionLifetimeHours: 72,
+        loginRateLimit: 5,
+        require2FAForAdmin: true,
+      },
+      users_roles: map['CONFIG_USERS_ROLES'] || {
+        defaultRole: 'USER',
+        moderatorCanManageDecks: true,
+      },
+      feature_flags: map['CONFIG_FEATURE_FLAGS'] || {
+        aiTutor: true,
+        placementTest: true,
+        communityDecks: true,
+        voiceSpeech: true,
+      },
+      system: map['CONFIG_SYSTEM'] || {
+        maintenanceMode: false,
+        cacheTtlSeconds: 3600,
+        retentionDaysMessages: 3,
+      },
+    };
+  }
+
+  async updateSectionSettings(section: string, data: any, adminId: string) {
+    const key = `CONFIG_${section.toUpperCase()}`;
+    const value = typeof data === 'string' ? data : JSON.stringify(data);
+
+    const config = await this.prisma.systemConfig.upsert({
+      where: { key },
+      create: { key, value, description: `Settings for ${section}` },
+      update: { value, updatedAt: new Date() },
+    });
+
+    // Audit log
+    await this.prisma.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: 'SETTINGS_UPDATE',
+        targetType: 'SYSTEM_SETTINGS',
+        targetId: section,
+        metadata: { section, payload: data },
+      },
+    });
+
+    return { success: true, section, config };
+  }
+
+  /**
+   * 10. LEARNER SHARED VOCABULARY VAULT
+   */
+  async getSharedVocabularyDecks(query: {
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.status && query.status !== 'ALL') {
+      where.status = query.status as ModerationStatus;
+    }
+    if (query.search) {
+      where.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { author: { displayName: { contains: query.search, mode: 'insensitive' } } },
+        { author: { email: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.communityDeck.findMany({
+        where,
+        include: {
+          author: { select: { id: true, displayName: true, email: true } },
+          words: true,
+          _count: { select: { clones: true, words: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.communityDeck.count({ where }),
+    ]);
+
+    // Enhance each deck with AI quality score calculation and content flags
+    const enhanced = items.map((deck) => {
+      const words = deck.words || [];
+      const totalWords = words.length;
+      let completeCount = 0;
+      let missingDef = 0;
+      let missingExample = 0;
+      let missingPhonetic = 0;
+
+      words.forEach((w) => {
+        if (w.definition || w.meaning) completeCount += 0.5;
+        else missingDef++;
+
+        if (w.example) completeCount += 0.3;
+        else missingExample++;
+
+        if (w.phonetic) completeCount += 0.2;
+        else missingPhonetic++;
+      });
+
+      const rawScore = totalWords > 0 ? Math.round((completeCount / totalWords) * 100) : 0;
+      const qualityScore = Math.min(100, Math.max(0, rawScore));
+
+      const flags: string[] = [];
+      if (totalWords === 0) flags.push('EMPTY_DECK');
+      if (missingDef > 0) flags.push(`MISSING_DEF_${missingDef}`);
+      if (missingExample > 0) flags.push(`MISSING_EX_${missingExample}`);
+      if (missingPhonetic > 0) flags.push(`MISSING_IPA_${missingPhonetic}`);
+
+      return {
+        ...deck,
+        qualityScore,
+        flags,
+      };
+    });
+
+    return {
+      items: enhanced,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async moderateSharedDeck(
+    deckId: string,
+    action: 'APPROVE' | 'REJECT',
+    reason?: string,
+    actorId?: string,
+  ) {
+    const deck = await this.prisma.communityDeck.findUnique({
+      where: { id: deckId },
+      include: { author: true },
+    });
+    if (!deck) throw new NotFoundException('Shared deck not found');
+
+    const status = action === 'APPROVE' ? ModerationStatus.APPROVED : ModerationStatus.REJECTED;
+    const updated = await this.prisma.communityDeck.update({
+      where: { id: deckId },
+      data: { status, updatedAt: new Date() },
+    });
+
+    // Send in-app notification to contributor
+    await this.prisma.notification.create({
+      data: {
+        userId: deck.userId,
+        type: 'SYSTEM',
+        title:
+          action === 'APPROVE'
+            ? 'Bộ từ vựng đóng góp đã được phê duyệt!'
+            : 'Phản hồi về bộ từ vựng đóng góp',
+        body:
+          action === 'APPROVE'
+            ? `Chúc mừng! Bộ từ vựng "${deck.title}" của bạn đã được kiểm duyệt và công khai trên hệ thống.`
+            : `Bộ từ vựng "${deck.title}" chưa được xuất bản. ${
+                reason ? 'Góp ý từ quản trị viên: ' + reason : 'Vui lòng kiểm tra lại chất lượng ví dụ câu và định nghĩa.'
+              }`,
+      },
+    });
+
+    // Audit log
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: `MODERATE_SHARED_DECK_${action}`,
+          targetType: 'COMMUNITY_DECK',
+          targetId: deckId,
+          metadata: { deckTitle: deck.title, newStatus: status, reason },
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  async publishDeckToMaster(deckId: string, actorId?: string) {
+    const deck = await this.prisma.communityDeck.findUnique({
+      where: { id: deckId },
+      include: { words: true },
+    });
+    if (!deck) throw new NotFoundException('Deck not found');
+
+    let publishedCount = 0;
+    for (const w of deck.words) {
+      const normalized = w.word.trim().toLowerCase();
+      try {
+        await this.prisma.vocabulary.upsert({
+          where: { word: w.word.trim() },
+          create: {
+            word: w.word.trim(),
+            normalizedWord: normalized,
+            definition: w.definition || w.meaning,
+            phonetic: w.phonetic,
+            partOfSpeech: w.partOfSpeech || 'n.',
+            cefrLevel: deck.cefrLevel,
+            difficulty: 3.0,
+          },
+          update: {
+            definition: w.definition || w.meaning,
+            phonetic: w.phonetic || undefined,
+            partOfSpeech: w.partOfSpeech || undefined,
+          },
+        });
+        publishedCount++;
+      } catch (err) {
+        this.logger.warn(`Failed to publish word "${w.word}" to master: ${err}`);
+      }
+    }
+
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: 'PUBLISH_DECK_TO_MASTER',
+          targetType: 'COMMUNITY_DECK',
+          targetId: deckId,
+          metadata: { deckTitle: deck.title, publishedCount },
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: `Đã xuất bản thành công ${publishedCount} từ vựng vào từ điển hệ thống!`,
+      publishedCount,
+    };
+  }
+
+  /**
+   * 11. SMART PRICING & COST MODEL INTELLIGENCE
+   */
+  async getPricingIntelligence() {
+    const [plans, pricingConfigRecord] = await Promise.all([
+      this.prisma.plan.findMany({ orderBy: { priceMonthly: 'asc' } }),
+      this.prisma.systemConfig.findUnique({ where: { key: 'CONFIG_PRICING' } }),
+    ]);
+
+    let pricingConfig = {
+      annualDiscountPercent: 20, // 15% - 25% target discount
+      paymentProviderFeePercent: 3.65, // configurable gateway fee %
+      paymentFixedFee: 2000, // VND
+      aiCostPerUser: 25000, // VND / active user / month
+      hostingCostPerUser: 10000, // VND / user / month
+      databaseCostPerUser: 5000,
+      supportCostPerUser: 5000,
+      targetGrossMarginPercent: 70, // 70% target margin
+      expectedUsers: 1000,
+      quotas: {
+        guestAiDailyQuota: 3,
+        guestQuizDailyQuota: 3,
+        freeAiDailyQuota: 10,
+        freeReviewDailyQuota: 20,
+        freeQuizDailyQuota: 3,
+        freeFavoritesMax: 50,
+        plusAiDailyQuota: 50,
+        proAiDailyQuota: -1,
+      },
+    };
+
+    if (pricingConfigRecord?.value) {
+      try {
+        pricingConfig = { ...pricingConfig, ...JSON.parse(pricingConfigRecord.value) };
+      } catch {
+        // use defaults
+      }
+    }
+
+    // Dynamic cost model calculations
+    const variableCostPerUser =
+      pricingConfig.aiCostPerUser +
+      pricingConfig.hostingCostPerUser +
+      pricingConfig.databaseCostPerUser +
+      pricingConfig.supportCostPerUser;
+
+    // Pricing scenarios calculation
+    // Price = (VariableCost + FixedFee) / (1 - FeePercent - TargetMargin)
+    const feeRate = pricingConfig.paymentProviderFeePercent / 100;
+    const targetMargin = pricingConfig.targetGrossMarginPercent / 100;
+
+    const denominator = Math.max(0.05, 1 - feeRate - targetMargin);
+    const recommendedPrice = Math.round(
+      (variableCostPerUser + pricingConfig.paymentFixedFee) / denominator,
+    );
+    const minSustainablePrice = Math.round(
+      (variableCostPerUser + pricingConfig.paymentFixedFee) / Math.max(0.05, 1 - feeRate),
+    );
+    const comfortablePrice = Math.round(recommendedPrice * 1.25);
+
+    const scenarios = {
+      conservative: {
+        name: 'Conservative (Cao Cấp / Margin 80%)',
+        monthlyPrice: Math.round(recommendedPrice * 1.35),
+        annualPrice: Math.round(
+          recommendedPrice * 1.35 * 12 * (1 - pricingConfig.annualDiscountPercent / 100),
+        ),
+        targetMargin: 80,
+      },
+      balanced: {
+        name: 'Balanced (Khuyến Nghị / Margin 70%)',
+        monthlyPrice: recommendedPrice,
+        annualPrice: Math.round(
+          recommendedPrice * 12 * (1 - pricingConfig.annualDiscountPercent / 100),
+        ),
+        targetMargin: pricingConfig.targetGrossMarginPercent,
+      },
+      growth: {
+        name: 'Growth (Tăng Trưởng Nhanh / Margin 50%)',
+        monthlyPrice: Math.round(minSustainablePrice * 1.2),
+        annualPrice: Math.round(
+          minSustainablePrice * 1.2 * 12 * (1 - pricingConfig.annualDiscountPercent / 100),
+        ),
+        targetMargin: 50,
+      },
+    };
+
+    return {
+      plans,
+      config: pricingConfig,
+      calculator: {
+        variableCostPerUser,
+        minSustainablePrice,
+        recommendedPrice,
+        comfortablePrice,
+        annualDiscountPercent: pricingConfig.annualDiscountPercent,
+        scenarios,
+      },
+    };
+  }
+
+  async savePricingIntelligence(payload: any, actorId: string) {
+    const { config, plans } = payload;
+
+    if (config) {
+      await this.prisma.systemConfig.upsert({
+        where: { key: 'CONFIG_PRICING' },
+        create: {
+          key: 'CONFIG_PRICING',
+          value: JSON.stringify(config),
+          description: 'Pricing Engine & Cost Model Configuration',
+        },
+        update: {
+          value: JSON.stringify(config),
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    if (Array.isArray(plans)) {
+      for (const p of plans) {
+        if (p.id) {
+          await this.prisma.plan.update({
+            where: { id: p.id },
+            data: {
+              name: p.name,
+              priceMonthly: Number(p.priceMonthly),
+              aiDailyQuota: Number(p.aiDailyQuota),
+              features: p.features,
+            },
+          });
+        }
+      }
+    }
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorId,
+        action: 'PRICING_MODEL_UPDATE',
+        targetType: 'SYSTEM_SETTINGS',
+        targetId: 'CONFIG_PRICING',
+        metadata: { payload },
+      },
+    });
+
+    return { success: true, message: 'Cập nhật cấu hình giá và mô hình chi phí thành công!' };
+  }
 }
+

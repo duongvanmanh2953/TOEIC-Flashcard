@@ -106,12 +106,12 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Hero Title with Generous, Breathable Line-Height */}
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-normal leading-[1.3] sm:leading-[1.25] mb-6 max-w-4xl text-slate-900 dark:text-white">
+        <h2 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-normal leading-[1.3] sm:leading-[1.25] mb-6 max-w-4xl text-slate-900 dark:text-white">
           Học ít từ hơn. <br className="hidden sm:block" />
           <span className="inline-block mt-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 dark:from-sky-400 dark:via-blue-400 dark:to-cyan-300 bg-clip-text text-transparent">
             Ghi nhớ trọn đời.
           </span>
-        </h1>
+        </h2>
 
         {/* Hero Subtitle */}
         <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">

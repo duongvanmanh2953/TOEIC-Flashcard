@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { getSocket } from '../lib/socket';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 interface Ticket {
   id: string;
@@ -294,25 +295,29 @@ export const SupportCenterPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 animate-fade-in p-2 sm:p-4 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800 pb-3">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-wider mb-1 border border-indigo-500/20">
-            <LifeBuoy className="w-3 h-3" />
-            <span>Realtime CSKH Helpdesk</span>
+    <div className="max-w-5xl mx-auto space-y-2.5 animate-fade-in p-1 sm:p-2">
+      {/* Header — Compact & Laptop Friendly */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800 pb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <Headphones className="w-3.5 h-3.5" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Hỗ Trợ Học Viên & Kỹ Thuật 24/7
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Chat trực tiếp với đội ngũ hỗ trợ. Cập nhật trạng thái Realtime qua Socket.io.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight">
+                Hỗ Trợ Học Viên & CSKH 24/7
+              </h2>
+              <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Trực tuyến
+              </span>
+            </div>
+          </div>
         </div>
 
         <button
           onClick={() => setCreateModalOpen(true)}
-          className="btn-glass-primary text-xs !py-2 !px-3.5 self-start sm:self-auto flex items-center gap-1.5 shadow-sm"
+          className="btn-glass-primary text-xs !py-1.5 !px-3 flex items-center gap-1.5 shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Gửi yêu cầu mới</span>
@@ -320,11 +325,11 @@ export const SupportCenterPage: React.FC = () => {
       </div>
 
       {/* Main Support Grid (Left: Ticket List, Right: Ticket Thread) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch h-[calc(100vh-175px)] min-h-[460px] max-h-[660px]">
         {/* Left: Tickets List */}
-        <div className="lg:col-span-4 space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider">
+        <div className="lg:col-span-4 flex flex-col h-full min-h-0 bg-white/70 dark:bg-slate-900/70 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-2 space-y-2 overflow-hidden shadow-xs">
+          <div className="flex items-center justify-between px-1 shrink-0">
+            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
               Yêu cầu của bạn ({tickets.length})
             </span>
             <button
@@ -332,7 +337,7 @@ export const SupportCenterPage: React.FC = () => {
               className="text-slate-400 hover:text-indigo-600 transition p-1 rounded-md"
               title="Tải lại danh sách"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
 
@@ -341,7 +346,7 @@ export const SupportCenterPage: React.FC = () => {
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
             </div>
           ) : tickets.length === 0 ? (
-            <GlassCard className="p-6 text-center space-y-2">
+            <GlassCard className="p-6 text-center space-y-2 my-auto">
               <MessageSquare className="w-7 h-7 text-slate-400 mx-auto" />
               <p className="text-xs text-slate-500">Bạn chưa có yêu cầu hỗ trợ nào.</p>
               <button
@@ -352,14 +357,14 @@ export const SupportCenterPage: React.FC = () => {
               </button>
             </GlassCard>
           ) : (
-            <div className="space-y-1.5 max-h-[500px] overflow-y-auto pr-1">
+            <div className="flex-1 min-h-0 space-y-1.5 overflow-y-auto pr-1">
               {tickets.map((t) => {
                 const isSelected = selectedTicket?.id === t.id;
                 return (
                   <div
                     key={t.id}
                     onClick={() => setSelectedTicket(t)}
-                    className={`p-2.5 rounded-xl border transition cursor-pointer ${
+                    className={`p-2 rounded-xl border transition cursor-pointer ${
                       isSelected
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                         : 'bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40'
@@ -384,7 +389,7 @@ export const SupportCenterPage: React.FC = () => {
                     </h4>
                     <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-200/40 dark:border-slate-800/40 text-[9px]">
                       <span className={isSelected ? 'text-indigo-200' : 'text-slate-400'}>
-                        {new Date(t.lastMessageAt).toLocaleDateString()}
+                        {new Date(t.lastMessageAt).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}
                       </span>
                       <span className={`capitalize ${isSelected ? 'text-indigo-200' : 'text-slate-500'}`}>
                         {t.tags?.[0] || 'Chung'}
@@ -398,19 +403,19 @@ export const SupportCenterPage: React.FC = () => {
         </div>
 
         {/* Right: Selected Ticket Detail & Chat Thread */}
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 h-full min-h-0">
           {selectedTicket ? (
-            <GlassCard className="p-0 overflow-hidden flex flex-col h-[520px] shadow-md border border-slate-200/80 dark:border-slate-800">
+            <GlassCard className="p-0 overflow-hidden flex flex-col h-full min-h-0 shadow-md border border-slate-200/80 dark:border-slate-800">
               {/* Thread Header */}
-              <div className="p-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 flex items-center justify-between gap-2">
+              <div className="p-2.5 px-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 flex items-center justify-between gap-2 shrink-0">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
                       {selectedTicket.ticketId}
                     </span>
                     {getStatusBadge(selectedTicket.status)}
                   </div>
-                  <h3 className="text-xs font-black text-slate-900 dark:text-white truncate mt-0.5">
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate mt-0.5">
                     {selectedTicket.subject}
                   </h3>
                 </div>
@@ -418,7 +423,7 @@ export const SupportCenterPage: React.FC = () => {
                 {selectedTicket.status !== 'RESOLVED' && (
                   <button
                     onClick={handleResolveTicket}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition flex items-center gap-1 shrink-0"
+                    className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition flex items-center gap-1 shrink-0"
                   >
                     <CheckCircle2 className="w-3 h-3" />
                     <span>Xong</span>
@@ -430,7 +435,7 @@ export const SupportCenterPage: React.FC = () => {
               <div
                 ref={messagesContainerRef}
                 onScroll={handleContainerScroll}
-                className="flex-1 p-3 overflow-y-auto space-y-2.5 bg-slate-50/30 dark:bg-slate-950/20 relative"
+                className="flex-1 min-h-0 p-3 overflow-y-auto space-y-2 bg-slate-50/30 dark:bg-slate-950/20 relative"
               >
                 {messagesLoading && messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
@@ -505,7 +510,7 @@ export const SupportCenterPage: React.FC = () => {
               {/* Chat Input Bar */}
               <form
                 onSubmit={handleSendMessage}
-                className="p-2.5 border-t border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 flex items-center gap-2"
+                className="p-2 border-t border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 flex items-center gap-2 shrink-0"
               >
                 <input
                   type="text"
@@ -516,19 +521,19 @@ export const SupportCenterPage: React.FC = () => {
                       ? 'Yêu cầu đã được giải quyết. Gửi thêm phản hồi để mở lại...'
                       : 'Nhập tin nhắn trao đổi với tư vấn viên...'
                   }
-                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <button
                   type="submit"
                   disabled={!replyInput.trim() || sendingReply}
-                  className="p-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm shrink-0"
+                  className="p-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm shrink-0"
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
               </form>
             </GlassCard>
           ) : (
-            <GlassCard className="p-12 text-center space-y-2 h-[520px] flex flex-col items-center justify-center">
+            <GlassCard className="p-8 text-center space-y-2 h-full flex flex-col items-center justify-center border border-slate-200/80 dark:border-slate-800">
               <Headphones className="w-10 h-10 text-slate-400" />
               <h3 className="font-bold text-sm text-slate-900 dark:text-white">
                 Chọn một yêu cầu để xem cuộc hội thoại
@@ -583,16 +588,17 @@ export const SupportCenterPage: React.FC = () => {
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
                   Danh mục
                 </label>
-                <select
+                <CustomSelect
                   value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none"
-                >
-                  <option value="GENERAL">Tư vấn chung</option>
-                  <option value="BILLING">Thanh toán VietQR / PayOS</option>
-                  <option value="TECH">Lỗi kỹ thuật / Đồng bộ Flashcard</option>
-                  <option value="AI_TUTOR">Trợ lý AI & Lộ trình TOEIC</option>
-                </select>
+                  onChange={(val) => setNewCategory(val)}
+                  options={[
+                    { value: 'GENERAL', label: 'Tư vấn chung' },
+                    { value: 'BILLING', label: 'Thanh toán VietQR / PayOS' },
+                    { value: 'TECH', label: 'Lỗi kỹ thuật / Đồng bộ Flashcard' },
+                    { value: 'AI_TUTOR', label: 'Trợ lý AI & Lộ trình TOEIC' },
+                  ]}
+                  size="sm"
+                />
               </div>
 
               <div>

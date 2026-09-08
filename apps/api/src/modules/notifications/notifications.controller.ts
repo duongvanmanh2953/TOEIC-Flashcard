@@ -149,4 +149,12 @@ export class NotificationsController {
       limit ? parseInt(limit, 10) : 30,
     );
   }
+
+  @Delete('admin/all')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: Clear all notifications from system' })
+  clearAllNotificationsAdmin(@CurrentUser('id') adminId: string) {
+    return this.notificationsService.adminClearAllNotifications(adminId);
+  }
 }

@@ -39,6 +39,7 @@ import {
 import { NotificationBell } from '../notifications/NotificationBell';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
+import { VirtualChatPane } from '../chat/VirtualChatPane';
 
 export const AppShell: React.FC = () => {
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
@@ -121,13 +122,15 @@ export const AppShell: React.FC = () => {
     });
   };
 
-  // Realtime Sync CSKH Support State (Backbone synced with SupportCenterPage & AdminSupportPage)
+  // Realtime Sync CSKH Support State (Backbone synced with AdminSupportPage)
   const [activeConv, setActiveConv] = useState<any>(null);
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+  const modalMessagesRef = useRef<HTMLDivElement>(null);
 
   // Auto-fetch latest user ticket and messages
   const fetchUserChat = async () => {
@@ -157,24 +160,73 @@ export const AppShell: React.FC = () => {
     }
   }, [user]);
 
-  // Socket.io Realtime Listener for active conversation
+  // Socket.io Realtime Listener for active conversation & personal user room
   useEffect(() => {
-    if (!activeConv?.id) return;
+    if (!user?.id) return;
     const socket = getSocket();
-    socket.emit('join_conversation', { conversationId: activeConv.id, userId: user?.id });
+
+    const joinRooms = () => {
+      socket.emit('join_user', { userId: user.id });
+      if (activeConv?.id) {
+        socket.emit('join_conversation', { conversationId: activeConv.id, userId: user.id });
+      }
+    };
+
+    joinRooms();
+    socket.on('connect', joinRooms);
 
     const onNewMessage = (msg: any) => {
-      setSupportMessages((prev) => {
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
+      if (!msg) return;
+      if (activeConv?.id && msg.conversationId === activeConv.id) {
+        setSupportMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      } else if (!activeConv?.id) {
+        fetchUserChat();
+      }
+      if (!supportModalOpen && (msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPER_ADMIN')) {
+        setUnreadSupportCount((prev) => prev + 1);
+      }
     };
 
     socket.on('new_message', onNewMessage);
-    return () => {
-      socket.off('new_message', onNewMessage);
+
+    const onMessagesRead = (data: any) => {
+      if (data?.conversationId === activeConv?.id) {
+        setSupportMessages((prev) =>
+          prev.map((m) =>
+            m.senderRole === 'USER' ? { ...m, readAt: m.readAt || data.readAt } : m
+          )
+        );
+      }
     };
-  }, [activeConv?.id]);
+    socket.on('messages_read', onMessagesRead);
+
+    return () => {
+      socket.off('connect', joinRooms);
+      socket.off('new_message', onNewMessage);
+      socket.off('messages_read', onMessagesRead);
+    };
+  }, [user?.id, activeConv?.id, supportModalOpen]);
+
+  const handleMarkUserRead = async () => {
+    if (!activeConv?.id) return;
+    try {
+      await api.post(`/support/conversations/${activeConv.id}/read`);
+      const socket = getSocket();
+      socket.emit('mark_read', { conversationId: activeConv.id, role: 'USER' });
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    if (supportModalOpen && activeConv?.id) {
+      handleMarkUserRead();
+      setUnreadSupportCount(0);
+    }
+  }, [supportModalOpen, activeConv?.id]);
 
   const handleSendMessage = async () => {
     if (!chatInput.trim() || sendingMsg) return;
@@ -242,7 +294,6 @@ export const AppShell: React.FC = () => {
       isUnlock: !isPro,
     },
     { to: '/notifications', label: 'Thông báo', icon: Bell },
-    { to: '/support', label: 'CSKH Hỗ trợ', icon: Headphones },
     { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
     ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
     { to: '/settings', label: t('nav.settings', 'Settings'), icon: Settings },
@@ -274,9 +325,9 @@ export const AppShell: React.FC = () => {
                 className="w-9 h-9 rounded-xl object-contain shadow-xs shrink-0"
               />
               <div className="min-w-0 flex-1 truncate">
-                <h1 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
+                <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
                   VocabFlow
-                </h1>
+                </h2>
                 <p className="text-[11px] text-slate-400 font-medium truncate">Smart Adaptive English</p>
               </div>
             </div>
@@ -330,6 +381,23 @@ export const AppShell: React.FC = () => {
               </NavLink>
             ))}
           </nav>
+
+          {isAdmin && (
+            <div className="pt-2 px-1">
+              <NavLink
+                to="/admin"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/25 transition group shadow-xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>🛠 Admin Center</span>
+                </div>
+                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">
+                  ADM
+                </span>
+              </NavLink>
+            </div>
+          )}
         </div>
 
         {/* Pinned User Footer: strictly fixed at bottom */}
@@ -493,6 +561,21 @@ export const AppShell: React.FC = () => {
                 )}
               </NavLink>
             ))}
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/25"
+              >
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>🛠 Admin Center</span>
+                </div>
+                <span className="text-[9px] uppercase font-black px-1.5 py-0.5 bg-amber-500 text-slate-950 rounded-md">
+                  ADMIN
+                </span>
+              </NavLink>
+            )}
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
@@ -520,21 +603,13 @@ export const AppShell: React.FC = () => {
               <span>Góp ý & Roadmap</span>
             </NavLink>
 
-            <NavLink
-              to="/support"
-              className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <Headphones className="w-3.5 h-3.5" />
-              <span>CSKH Hỗ trợ</span>
-            </NavLink>
-
             {isAdmin && (
               <NavLink
                 to="/admin"
-                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shadow-xs"
+                className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition shadow-xs"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin Command Center</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+                <span>🛠 Admin Center</span>
               </NavLink>
             )}
 
@@ -545,8 +620,8 @@ export const AppShell: React.FC = () => {
           </div>
         </header>
 
-        {/* Routed Pages Container — Expanded & Unconstrained */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 w-full max-w-none">
+        {/* Routed Pages Container — Responsive & Laptop-Optimized */}
+        <main className="flex-1 p-3 sm:p-4 lg:p-5 w-full max-w-none">
           <Outlet />
         </main>
 
@@ -695,6 +770,19 @@ export const AppShell: React.FC = () => {
               </div>
             </div>
 
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setProfileModalOpen(false);
+                  navigate('/admin');
+                }}
+                className="w-full mb-3 py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-amber-500/25 transition shadow-xs"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-500" />
+                <span>Mở 🛠 Admin Center (Quản Trị Hệ Thống)</span>
+              </button>
+            )}
+
             {/* Footer Buttons */}
             <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
@@ -716,8 +804,8 @@ export const AppShell: React.FC = () => {
           </div>
       </ModalPortal>
 
-      {/* Draggable CSKH Support Button (Kéo thả mọi vị trí, click nhảy về vị trí mặc định) */}
-      {showSupportBtn && (
+      {/* Draggable CSKH Support Button (Hidden for Admin because Admin has Support Inbox) */}
+      {showSupportBtn && !isAdmin && (
         <div
           style={
             btnPos
@@ -767,7 +855,11 @@ export const AppShell: React.FC = () => {
                 <span className="text-[12px] font-extrabold text-white tracking-wide group-hover:text-cyan-200 transition-colors">
                   Hỗ trợ CSKH
                 </span>
-                {btnPos && (
+                {unreadSupportCount > 0 ? (
+                  <span className="text-[9px] font-bold text-white bg-rose-500 px-1.5 py-0.2 rounded-full animate-pulse">
+                    {unreadSupportCount}
+                  </span>
+                ) : btnPos && (
                   <span className="text-[9px] font-bold text-amber-300 bg-amber-400/15 border border-amber-400/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
                     <RotateCcw className="w-2.5 h-2.5" /> Hoàn vị trí
                   </span>
@@ -785,8 +877,8 @@ export const AppShell: React.FC = () => {
         </div>
       )}
 
-      {/* Customer Support Floating Chat Widget (Nền rõ nét, không trong suốt mờ mịt) */}
-      {supportModalOpen && (
+      {/* Customer Support Floating Chat Widget (Hidden for Admin) */}
+      {supportModalOpen && !isAdmin && (
         <div
           style={
             btnPos
@@ -805,7 +897,7 @@ export const AppShell: React.FC = () => {
           <div
             className="w-[calc(100vw-2rem)] sm:w-[330px] rounded-2xl bg-slate-900 border border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-3.5 space-y-2.5 flex flex-col max-h-[80vh] sm:max-h-[460px] overflow-hidden text-slate-100"
           >
-            {/* Header with Title, Online status & Fullscreen link */}
+            {/* Header with Title & Online status */}
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shadow-xs border border-indigo-500/30">
@@ -822,16 +914,6 @@ export const AppShell: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => {
-                    setSupportModalOpen(false);
-                    navigate('/support');
-                  }}
-                  className="px-2 py-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 hover:bg-slate-800 rounded-md transition"
-                  title="Mở toàn màn hình"
-                >
-                  Toàn màn hình &rarr;
-                </button>
                 <button
                   onClick={() => setSupportModalOpen(false)}
                   className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
@@ -871,57 +953,18 @@ export const AppShell: React.FC = () => {
           {/* Tab 1: Realtime Support Chat */}
           {supportTab === 'chat' ? (
             <div className="flex-1 flex flex-col min-h-0 space-y-2">
-              {/* Messages Scroll Area */}
-              <div className="h-44 overflow-y-auto space-y-2 pr-1 text-xs">
-                {loadingChat ? (
-                  <div className="py-12 text-center text-xs text-slate-400">Đang tải tin nhắn...</div>
-                ) : supportMessages.length === 0 ? (
-                  <div className="py-6 px-3 text-center space-y-2">
-                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 mx-auto flex items-center justify-center">
-                      <Headphones className="w-4 h-4" />
-                    </div>
-                    <p className="text-xs text-slate-200 font-bold">Chào mừng bạn đến với VocabFlow CSKH!</p>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      Bạn cần hỗ trợ về tài khoản, thanh toán VietQR hay tính năng học tập nào? Hãy gửi tin nhắn bên dưới nhé.
-                    </p>
-                  </div>
-                ) : (
-                  supportMessages.map((msg) => {
-                    const isUser = msg.senderRole === 'USER' || msg.senderId === user?.id;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-                      >
-                        <div
-                          className={`max-w-[85%] p-2 rounded-xl text-[11.5px] leading-relaxed ${
-                            isUser
-                              ? 'bg-indigo-600 border border-indigo-500 rounded-tr-none text-white'
-                              : 'bg-slate-800 text-slate-200 border border-slate-700/80 rounded-tl-none'
-                          }`}
-                        >
-                          {msg.content}
-                        </div>
-                        <span className="text-[9px] text-slate-400 mt-0.5 px-1 flex items-center gap-0.5">
-                          <span>
-                            {msg.createdAt
-                              ? new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-                              : 'Vừa xong'}
-                          </span>
-                          {isUser && <CheckCheck className="w-2.5 h-2.5 text-cyan-400" />}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-                {isTyping && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 italic">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-100"></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce delay-200"></span>
-                    <span>Hỗ trợ viên đang soạn tin...</span>
-                  </div>
-                )}
+              {/* Virtualized Messages Scroll Area with Scroll Loading, Worker Processing & Read Receipts */}
+              <div className="h-56 min-h-0 bg-slate-950/50 rounded-xl overflow-hidden text-xs relative border border-slate-800/80">
+                <VirtualChatPane
+                  conversationId={activeConv?.id || 'new_chat'}
+                  rawMessages={supportMessages}
+                  currentUserId={user?.id}
+                  currentUserRole="USER"
+                  isLoading={loadingChat}
+                  emptyPlaceholder="Chào mừng bạn đến với CSKH 24/7! Hãy gửi tin nhắn bên dưới để nhận hỗ trợ."
+                  onMarkRead={handleMarkUserRead}
+                  isCompact={true}
+                />
               </div>
 
               {/* Chat Composer Input */}

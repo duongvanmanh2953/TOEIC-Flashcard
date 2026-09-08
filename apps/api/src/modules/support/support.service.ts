@@ -346,7 +346,7 @@ export class SupportService {
       );
     }
 
-    return msg;
+    return Object.assign(msg, { recipientUserId: conv.userId });
   }
 
   /**
@@ -415,5 +415,46 @@ export class SupportService {
       cutoffDate: cutoff.toISOString(),
       message: `Đã dọn dẹp thành công ${result.count} tin nhắn cũ hơn ${days} ngày. Toàn bộ yêu cầu hỗ trợ vẫn được bảo lưu an toàn.`,
     };
+  }
+
+  /**
+   * User marks messages from admin as read
+   */
+  async userMarkAsRead(userId: string, conversationId: string) {
+    const conv = await this.prisma.supportConversation.findUnique({
+      where: { id: conversationId },
+    });
+    if (!conv || conv.userId !== userId) return { count: 0 };
+
+    const res = await this.prisma.supportMessage.updateMany({
+      where: {
+        conversationId,
+        readAt: null,
+        senderRole: { in: ['ADMIN', 'SUPER_ADMIN'] },
+      },
+      data: {
+        readAt: new Date(),
+      },
+    });
+
+    return { count: res.count, conversationId };
+  }
+
+  /**
+   * Admin marks messages from user as read
+   */
+  async adminMarkAsRead(conversationId: string) {
+    const res = await this.prisma.supportMessage.updateMany({
+      where: {
+        conversationId,
+        readAt: null,
+        senderRole: 'USER',
+      },
+      data: {
+        readAt: new Date(),
+      },
+    });
+
+    return { count: res.count, conversationId };
   }
 }

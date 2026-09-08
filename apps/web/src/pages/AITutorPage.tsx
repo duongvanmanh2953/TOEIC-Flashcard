@@ -335,9 +335,9 @@ export const AITutorPage: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5" />
             <span>AI Vocabulary Tutor 24/7</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-snug">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-snug">
             Gia Sư Trí Tuệ Nhân Tạo & Luyện Tập Ngữ Cảnh
-          </h1>
+          </h2>
         </div>
 
         {/* Tab Switcher */}

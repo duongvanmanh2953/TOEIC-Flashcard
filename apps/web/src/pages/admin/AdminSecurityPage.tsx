@@ -16,10 +16,10 @@ export const AdminSecurityPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-          <ShieldCheck className="w-7 h-7 text-indigo-500" />
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+          <ShieldCheck className="w-6 h-6 text-indigo-500" />
           Security, Audit Logs & RBAC Matrix
-        </h1>
+        </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Access control policies, administrative activity audit trail, and rate protection
         </p>

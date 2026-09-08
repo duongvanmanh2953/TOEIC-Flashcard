@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Settings,
   Database,
@@ -10,49 +10,317 @@ import {
   ShieldCheck,
   CheckCircle2,
   RefreshCw,
-  AlertTriangle,
-  Radio,
   Globe,
   Lock,
+  Palette,
+  BookOpen,
+  Bell,
+  MessageSquare,
+  Users,
+  Flag,
+  Server,
+  Search,
+  AlertTriangle,
+  Save,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
+import { CustomSelect } from '../../components/ui/CustomSelect';
+
+type SettingSectionKey =
+  | 'general'
+  | 'branding'
+  | 'localization'
+  | 'learning'
+  | 'ai'
+  | 'notifications'
+  | 'support'
+  | 'feedback'
+  | 'billing'
+  | 'security'
+  | 'users_roles'
+  | 'feature_flags'
+  | 'system';
+
+interface SectionConfig {
+  id: SettingSectionKey;
+  labelEn: string;
+  labelVi: string;
+  descEn: string;
+  descVi: string;
+  icon: React.ElementType;
+}
+
+const SECTIONS: SectionConfig[] = [
+  {
+    id: 'general',
+    labelEn: 'General Platform',
+    labelVi: 'Cấu hình Chung',
+    descEn: 'Platform identity, maintenance state, and membership registrations.',
+    descVi: 'Tên nền tảng, trạng thái bảo trì và chính sách tiếp nhận học viên.',
+    icon: Sliders,
+  },
+  {
+    id: 'branding',
+    labelEn: 'Brand & Visual Theme',
+    labelVi: 'Thương hiệu & Giao diện',
+    descEn: 'Logo, primary accent color palette, and default theme modes.',
+    descVi: 'Logo nhận diện, bảng màu chủ đạo và chế độ hiển thị mặc định.',
+    icon: Palette,
+  },
+  {
+    id: 'localization',
+    labelEn: 'Localization & Regional',
+    labelVi: 'Ngôn ngữ & Vùng miền',
+    descEn: 'Default language, platform timezone, and date format standards.',
+    descVi: 'Ngôn ngữ mặc định, múi giờ vận hành và định dạng ngày tháng.',
+    icon: Globe,
+  },
+  {
+    id: 'learning',
+    labelEn: 'Learning Engine & SRS',
+    labelVi: 'Thuật toán SRS & Học tập',
+    descEn: 'Spaced repetition algorithms, daily study goals, and audio playback.',
+    descVi: 'Thuật toán lặp lại ngắt quãng, mục tiêu từ vựng hàng ngày và phát âm.',
+    icon: BookOpen,
+  },
+  {
+    id: 'ai',
+    labelEn: 'AI Tutor & Intelligence',
+    labelVi: 'Mô hình AI & Trí tuệ nhân tạo',
+    descEn: 'Default LLM provider, prompt temperature, free quotas, and token safety.',
+    descVi: 'Nhà cung cấp LLM, độ sáng tạo temperature và hạn mức câu hỏi miễn phí.',
+    icon: Cpu,
+  },
+  {
+    id: 'notifications',
+    labelEn: 'Notifications & Alerts',
+    labelVi: 'Thông báo & Cảnh báo',
+    descEn: 'In-app chimes, sound alerts, email digests, and quiet hours.',
+    descVi: 'Âm thanh thông báo, chuông cảnh báo, email tổng hợp và giờ yên tĩnh.',
+    icon: Bell,
+  },
+  {
+    id: 'support',
+    labelEn: 'Customer Support & SLA',
+    labelVi: 'Hỗ trợ Học viên & SLA',
+    descEn: 'Live chat gateway, automatic assignment, SLA targets, and auto-replies.',
+    descVi: 'Kênh chat hỗ trợ trực tiếp, phân bổ tự động, mục tiêu SLA và tin nhắn chờ.',
+    icon: Headphones,
+  },
+  {
+    id: 'feedback',
+    labelEn: 'Feedback & Bug Tracker',
+    labelVi: 'Góp ý & Báo lỗi',
+    descEn: 'Public community roadmap, upvoting, bug submissions, and moderation.',
+    descVi: 'Lộ trình phát triển công khai, bình chọn tính năng và tiếp nhận báo lỗi.',
+    icon: MessageSquare,
+  },
+  {
+    id: 'billing',
+    labelEn: 'Billing & Pricing',
+    labelVi: 'Thanh toán & Gói cước',
+    descEn: 'Currencies, VAT tax rates, trial periods, and grace intervals.',
+    descVi: 'Đơn vị tiền tệ, thuế GTGT, số ngày dùng thử và gia hạn ân hạn.',
+    icon: CreditCard,
+  },
+  {
+    id: 'security',
+    labelEn: 'Security & Access Control',
+    labelVi: 'Bảo mật & Kiểm soát Truy cập',
+    descEn: 'Session lifetime, brute-force rate limits, and 2FA enforcement.',
+    descVi: 'Thời hạn phiên đăng nhập, giới hạn tốc độ và bắt buộc xác thực 2 lớp.',
+    icon: ShieldCheck,
+  },
+  {
+    id: 'users_roles',
+    labelEn: 'User Roles & Permissions',
+    labelVi: 'Vai trò & Phân quyền',
+    descEn: 'Default registration roles, moderation permissions, and deck publishing.',
+    descVi: 'Phân quyền mặc định, quyền kiểm duyệt và chia sẻ bộ từ cộng đồng.',
+    icon: Users,
+  },
+  {
+    id: 'feature_flags',
+    labelEn: 'Feature Flags & Toggles',
+    labelVi: 'Công tắc Tính năng (Flags)',
+    descEn: 'Toggle live feature availability without deploying code.',
+    descVi: 'Bật/tắt các tính năng hệ thống tức thời không cần khởi động lại server.',
+    icon: Flag,
+  },
+  {
+    id: 'system',
+    labelEn: 'System, DB & Maintenance',
+    labelVi: 'Hệ thống, DB & Bảo trì',
+    descEn: 'Cache TTL, chat history retention, and database maintenance purges.',
+    descVi: 'Bộ nhớ đệm TTL, thời gian lưu tin nhắn và công cụ dọn dẹp dữ liệu.',
+    icon: Server,
+  },
+];
 
 export const AdminSettingsPage: React.FC = () => {
   const { t, locale, setLocale } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'retention' | 'general' | 'ai' | 'gateway'>('retention');
+  const [activeSection, setActiveSection] = useState<SettingSectionKey>('general');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [savingSection, setSavingSection] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // Purge state
-  const [purging, setPurging] = useState(false);
+  // Maintenance & Purge Modals
   const [purgeModalOpen, setPurgeModalOpen] = useState(false);
-  const [purgeResult, setPurgeResult] = useState<string | null>(null);
-
-  const [purgingMock, setPurgingMock] = useState(false);
+  const [purgingMessages, setPurgingMessages] = useState(false);
   const [purgeMockModalOpen, setPurgeMockModalOpen] = useState(false);
+  const [purgingMock, setPurgingMock] = useState(false);
 
-  // Form states
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [allowRegistration, setAllowRegistration] = useState(true);
-  const [aiModel, setAiModel] = useState('gpt-4o');
-  const [aiTemp, setAiTemp] = useState(0.7);
-  const [aiDailyQuota, setAiDailyQuota] = useState(5);
-  const [soundAlerts, setSoundAlerts] = useState(true);
-  const [autoAssign, setAutoAssign] = useState(false);
+  // Settings State State Record
+  const [settings, setSettings] = useState<Record<string, any>>({
+    general: {
+      siteName: 'LexiMind AI - TOEIC Master',
+      tagline: 'Làm chủ từ vựng TOEIC với Spaced Repetition & AI Tutor',
+      supportEmail: 'support@vocabflow.edu.vn',
+      maintenanceMode: false,
+      allowRegistration: true,
+    },
+    branding: {
+      logoUrl: '/favicon.ico',
+      accentColor: 'indigo',
+      defaultDarkMode: true,
+    },
+    localization: {
+      defaultLanguage: locale || 'vi',
+      timezone: 'Asia/Ho_Chi_Minh',
+      dateFormat: 'DD/MM/YYYY',
+    },
+    learning: {
+      dailyGoalWords: 15,
+      algorithm: 'FSRS_4_5',
+      maxDailyReviews: 100,
+      autoPronounce: true,
+    },
+    ai: {
+      model: 'gpt-4o',
+      temperature: 0.7,
+      freeDailyQuota: 5,
+      maxTokenCeiling: 2048,
+    },
+    notifications: {
+      soundAlerts: true,
+      enableEmail: true,
+      quietHoursStart: '22:00',
+      quietHoursEnd: '07:00',
+    },
+    support: {
+      supportEnabled: true,
+      autoAssignEnabled: true,
+      slaMinutes: 30,
+      offlineAutoReply: 'Cảm ơn bạn đã liên hệ. Đội ngũ CSKH sẽ phản hồi sớm nhất!',
+    },
+    feedback: {
+      allowFeatureRequests: true,
+      allowBugReports: true,
+      requireLogin: true,
+      publicRoadmapEnabled: true,
+    },
+    billing: {
+      currency: 'VND',
+      taxPercent: 0,
+      trialDays: 7,
+      gracePeriodDays: 3,
+    },
+    security: {
+      sessionLifetimeHours: 72,
+      loginRateLimit: 5,
+      require2FAForAdmin: true,
+    },
+    users_roles: {
+      defaultRole: 'USER',
+      moderatorCanManageDecks: true,
+    },
+    feature_flags: {
+      aiTutor: true,
+      placementTest: true,
+      communityDecks: true,
+      voiceSpeech: true,
+    },
+    system: {
+      maintenanceMode: false,
+      cacheTtlSeconds: 3600,
+      retentionDaysMessages: 3,
+    },
+  });
 
-  const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState('');
+  // Fetch unified settings from backend
+  useEffect(() => {
+    let mounted = true;
+    const fetchSettings = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/admin/settings');
+        const data = res.data?.data || res.data;
+        if (mounted && data && typeof data === 'object') {
+          setSettings((prev) => ({
+            ...prev,
+            ...data,
+          }));
+        }
+      } catch (err) {
+        console.warn('Could not load remote admin settings, using local configuration defaults', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    fetchSettings();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleUpdateField = (section: SettingSectionKey, field: string, value: any) => {
+    setSettings((prev) => ({
+      ...prev,
+      [section]: {
+        ...(prev[section] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveSection = async (section: SettingSectionKey) => {
+    setSavingSection(section);
+    setStatusMessage(null);
+    try {
+      const payload = settings[section];
+      await api.post(`/admin/settings/${section}`, payload);
+      setStatusMessage({
+        text: locale === 'vi' ? `Đã lưu thành công nhóm cấu hình ${section.toUpperCase()}!` : `Successfully saved ${section.toUpperCase()} settings!`,
+        type: 'success',
+      });
+      setTimeout(() => setStatusMessage(null), 3500);
+    } catch (err: any) {
+      console.error(`Failed to save settings for ${section}:`, err);
+      setStatusMessage({
+        text: locale === 'vi' ? 'Không thể lưu cài đặt lúc này. Vui lòng thử lại.' : 'Failed to save settings. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setSavingSection(null);
+    }
+  };
 
   const handlePurgeMessages = async () => {
-    setPurging(true);
+    setPurgingMessages(true);
     try {
-      const res: any = await api.post('/support/admin/cleanup-old-messages', { days: 3 });
-      setPurgeResult(res?.data?.data?.message || t('adminSettings.purgeSuccess', 'Đã dọn dẹp sạch tin nhắn cũ hơn 3 ngày thành công!'));
+      const res: any = await api.post('/support/admin/cleanup-old-messages', {
+        days: settings.system?.retentionDaysMessages || 3,
+      });
+      const msg = res?.data?.data?.message || (locale === 'vi' ? 'Đã dọn dẹp sạch tin nhắn cũ hơn 3 ngày thành công!' : 'Cleaned messages older than 3 days successfully!');
+      setStatusMessage({ text: msg, type: 'success' });
       setPurgeModalOpen(false);
     } catch (err) {
       console.error('Purge error:', err);
-      setPurgeResult('Không thể thực hiện dọn dẹp tin nhắn lúc này.');
+      setStatusMessage({ text: locale === 'vi' ? 'Không thể dọn dẹp tin nhắn lúc này.' : 'Purge action failed.', type: 'error' });
     } finally {
-      setPurging(false);
+      setPurgingMessages(false);
     }
   };
 
@@ -61,354 +329,1014 @@ export const AdminSettingsPage: React.FC = () => {
     try {
       const res: any = await api.post('/admin/purge-mock-data');
       const info = res?.data?.data || res?.data || res;
-      setPurgeResult(info?.message || 'Đã dọn sạch toàn bộ dữ liệu mẫu thành công. Chỉ giữ lại tài khoản người dùng và kho từ vựng.');
+      const msg = info?.message || (locale === 'vi' ? 'Đã dọn sạch toàn bộ dữ liệu mẫu thành công. Chỉ giữ lại tài khoản người dùng và kho từ vựng.' : 'Cleaned all mock data successfully.');
+      setStatusMessage({ text: msg, type: 'success' });
       setPurgeMockModalOpen(false);
     } catch (err) {
       console.error('Purge mock data error:', err);
-      setPurgeResult('Không thể thực hiện xóa dữ liệu mẫu lúc này.');
+      setStatusMessage({ text: locale === 'vi' ? 'Không thể xóa dữ liệu mẫu lúc này.' : 'Failed to purge mock data.', type: 'error' });
     } finally {
       setPurgingMock(false);
     }
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      setSaveSuccess(t('adminSettings.savedSuccess', 'Đã cập nhật cài đặt thành công!'));
-      setTimeout(() => setSaveSuccess(''), 3000);
-    }, 400);
-  };
+  // Filter sections by search query
+  const filteredSections = useMemo(() => {
+    if (!searchQuery.trim()) return SECTIONS;
+    const q = searchQuery.toLowerCase();
+    return SECTIONS.filter(
+      (s) =>
+        s.labelEn.toLowerCase().includes(q) ||
+        s.labelVi.toLowerCase().includes(q) ||
+        s.descEn.toLowerCase().includes(q) ||
+        s.descVi.toLowerCase().includes(q) ||
+        s.id.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  const activeSectionConfig = SECTIONS.find((s) => s.id === activeSection) || SECTIONS[0];
+  const ActiveIcon = activeSectionConfig.icon;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-            <Settings className="w-7 h-7 text-indigo-500" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Settings className="w-6 h-6 text-indigo-500" />
             {t('adminSettings.title', 'Cài Đặt Hệ Thống & Cấu Hình Quản Trị')}
-          </h1>
+          </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {t('adminSettings.subtitle', 'Quản lý chính sách lưu trữ DB, mô hình AI, cổng thanh toán và thông số vận hành VocabFlow.')}
+            {t(
+              'adminSettings.subtitle',
+              'Trung tâm điều hành 13 phân hệ cấu hình: Nhận diện, AI Tutor, Học tập SRS, CSKH, Thanh toán và Bảo mật.'
+            )}
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs font-bold overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('retention')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-              activeTab === 'retention'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>{t('adminSettings.tabRetention', 'Chính Sách Lưu Trữ & DB')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('general')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-              activeTab === 'general'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>{t('adminSettings.tabGeneral', 'Cấu Hình Nền Tảng')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('ai')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-              activeTab === 'ai'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>{t('adminSettings.tabAI', 'Mô Hình AI Tutor')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('gateway')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-              activeTab === 'gateway'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            <span>{t('adminSettings.tabGateway', 'CSKH & Thanh Toán')}</span>
-          </button>
+        {/* Global Search Bar */}
+        <div className="relative w-full md:w-72">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={locale === 'vi' ? 'Tìm cài đặt, tham số...' : 'Search configuration...'}
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-xs"
+          />
         </div>
       </div>
 
-      {saveSuccess && (
-        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-xl flex items-center gap-2 text-xs font-bold animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          <span>{saveSuccess}</span>
+      {/* Global Status Banner */}
+      {statusMessage && (
+        <div
+          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-bold animate-in fade-in ${
+            statusMessage.type === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+              : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {statusMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            )}
+            <span>{statusMessage.text}</span>
+          </div>
+          <button onClick={() => setStatusMessage(null)} className="underline ml-4 text-[11px]">
+            {locale === 'vi' ? 'Đóng' : 'Dismiss'}
+          </button>
         </div>
       )}
 
-      {purgeResult && (
-        <div className="p-3.5 bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 text-cyan-800 dark:text-cyan-300 rounded-xl flex items-center justify-between text-xs font-bold animate-in fade-in">
-          <span>{purgeResult}</span>
-          <button onClick={() => setPurgeResult(null)} className="underline">Đóng</button>
-        </div>
-      )}
+      {/* Main Grid: Left Navigation / Right Form Plane */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Navigation Sidebar */}
+        <div className="lg:col-span-4 xl:col-span-3 space-y-1 bg-white dark:bg-slate-800/90 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-xs">
+          <div className="px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            {locale === 'vi' ? '13 Phân Hệ Quản Trị' : '13 Setting Domains'}
+          </div>
 
-      {/* TAB 1: RETENTION & DB OPTIMIZATION */}
-      {activeTab === 'retention' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Database className="w-4 h-4 text-indigo-500" />
-                  {t('adminSettings.purgeMessagesTitle', 'Tối ưu hóa Database: Dọn dẹp tin nhắn CSKH')}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-xl">
-                  {t('adminSettings.purgeMessagesDesc', 'Xóa toàn bộ nội dung tin nhắn cũ hơn 3 ngày. Giữ nguyên 100% hồ sơ yêu cầu (ticket) của học viên để đối soát.')}
-                </p>
+          <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+            {filteredSections.map((sec) => {
+              const Icon = sec.icon;
+              const isActive = activeSection === sec.id;
+              return (
+                <button
+                  key={sec.id}
+                  onClick={() => setActiveSection(sec.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition ${
+                    isActive
+                      ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <div className="truncate">
+                    <div className="truncate">{locale === 'vi' ? sec.labelVi : sec.labelEn}</div>
+                    <div className={`text-[10px] truncate ${isActive ? 'text-indigo-100' : 'text-slate-400'}`}>
+                      {sec.id}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
+            {filteredSections.length === 0 && (
+              <div className="p-4 text-center text-xs text-slate-400">
+                {locale === 'vi' ? 'Không tìm thấy phân hệ phù hợp.' : 'No settings sections found.'}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Configuration Plane */}
+        <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+          <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-xs p-6">
+            {/* Section Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-100 dark:border-slate-700/60 gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <ActiveIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {locale === 'vi' ? activeSectionConfig.labelVi : activeSectionConfig.labelEn}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {locale === 'vi' ? activeSectionConfig.descVi : activeSectionConfig.descEn}
+                  </p>
+                </div>
+              </div>
+
+              {/* Per-section Save Button */}
               <button
                 type="button"
-                onClick={() => setPurgeModalOpen(true)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 shadow-sm transition shrink-0"
+                onClick={() => handleSaveSection(activeSection)}
+                disabled={savingSection === activeSection}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs shrink-0 self-start sm:self-auto disabled:opacity-50"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>{t('adminSettings.purgeMessagesBtn', 'Dọn dẹp sạch tin nhắn > 3 ngày')}</span>
+                {savingSection === activeSection ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {locale === 'vi' ? 'Lưu thay đổi phân hệ' : 'Save Section'}
+                </span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-slate-700/50 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                <span className="text-slate-400">Tin nhắn CSKH:</span>
-                <p className="font-bold text-slate-900 dark:text-white mt-1">Lưu trữ tối đa 3 ngày</p>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                <span className="text-slate-400">Hồ sơ Tickets & Feedback:</span>
-                <p className="font-bold text-slate-900 dark:text-white mt-1">Bảo lưu vĩnh viễn</p>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                <span className="text-slate-400">Nhật ký Audit Logs:</span>
-                <p className="font-bold text-slate-900 dark:text-white mt-1">Bảo lưu 90 ngày</p>
-              </div>
-            </div>
-          </div>
+            {/* Form Fields by Section */}
+            <div className="pt-6 space-y-5">
+              {/* 1. GENERAL */}
+              {activeSection === 'general' && (
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Tên Ứng Dụng (Brand Site Name)' : 'Application Site Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.general?.siteName || ''}
+                      onChange={(e) => handleUpdateField('general', 'siteName', e.target.value)}
+                      className="w-full sm:w-96 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                    />
+                  </div>
 
-          {/* Purge Mock Data Card */}
-          <div className="bg-white dark:bg-slate-800/80 p-6 rounded-2xl border border-amber-500/30 dark:border-amber-500/20 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-amber-500" />
-                  <span>Chuyển sang Vận Hành Thực: Xóa Sạch Dữ Liệu Mẫu (Purge Mock Data)</span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed max-w-xl">
-                  Xóa sạch toàn bộ tin nhắn hỗ trợ mẫu, tickets mẫu, feedback mẫu, giao dịch giả lập và thông báo mẫu. <strong>Hệ thống chỉ bảo lưu duy nhất tài khoản người dùng thực và toàn bộ kho từ vựng.</strong>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPurgeMockModalOpen(true)}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 shadow-sm transition shrink-0"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Xóa sạch data mẫu</span>
-              </button>
-            </div>
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Khẩu Hiệu / Tagline' : 'Platform Tagline'}
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.general?.tagline || ''}
+                      onChange={(e) => handleUpdateField('general', 'tagline', e.target.value)}
+                      className="w-full sm:w-96 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                    />
+                  </div>
 
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 font-medium">
-              💡 Thao tác này giúp bạn chuyển giao hệ thống sang trạng thái vận hành dữ liệu thực 100% mà không bị lẫn lộn bất kỳ dữ liệu test/mock nào.
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Email Hỗ Trợ Chính Thức' : 'Official Support Email'}
+                    </label>
+                    <input
+                      type="email"
+                      value={settings.general?.supportEmail || ''}
+                      onChange={(e) => handleUpdateField('general', 'supportEmail', e.target.value)}
+                      className="w-full sm:w-96 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Chế độ bảo trì hệ thống' : 'Maintenance Mode'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Khi kích hoạt, chỉ quản trị viên có quyền truy cập giao diện học tập.'
+                          : 'When enabled, only administrative users can access the platform.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.general?.maintenanceMode}
+                      onChange={(e) => handleUpdateField('general', 'maintenanceMode', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Cho phép học viên tự do đăng ký' : 'Allow Public User Registration'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Mở cổng tiếp nhận học viên đăng ký tài khoản mới tự do.'
+                          : 'Allow new students to register accounts publicly.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.general?.allowRegistration}
+                      onChange={(e) => handleUpdateField('general', 'allowRegistration', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 2. BRANDING */}
+              {activeSection === 'branding' && (
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Đường dẫn Logo URL' : 'Brand Logo URL'}
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.branding?.logoUrl || ''}
+                      onChange={(e) => handleUpdateField('branding', 'logoUrl', e.target.value)}
+                      className="w-full sm:w-96 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Màu Sắc Chủ Đạo (Accent Theme)' : 'Primary Accent Palette'}
+                    </label>
+                    <div className="w-full sm:w-80">
+                      <CustomSelect
+                        value={settings.branding?.accentColor || 'indigo'}
+                        onChange={(val) => handleUpdateField('branding', 'accentColor', val)}
+                        options={[
+                          { value: 'indigo', label: 'Indigo Royal (VocabFlow Standard)' },
+                          { value: 'violet', label: 'Violet Electric (Modern AI)' },
+                          { value: 'emerald', label: 'Emerald Mint (Academic High-Pass)' },
+                          { value: 'amber', label: 'Amber Warmth (Dynamic)' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Chế độ Tối (Dark Theme) mặc định' : 'Default to Dark Theme'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Tự động kích hoạt Dark Mode cho người dùng chưa đăng nhập.'
+                          : 'Automatically serve dark palette to unauthenticated visitors.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.branding?.defaultDarkMode}
+                      onChange={(e) => handleUpdateField('branding', 'defaultDarkMode', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 3. LOCALIZATION */}
+              {activeSection === 'localization' && (
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Ngôn Ngữ Hệ Thống Mặc Định' : 'Default Platform Language'}
+                    </label>
+                    <div className="w-full sm:w-80">
+                      <CustomSelect
+                        value={locale}
+                        onChange={(val) => {
+                          setLocale(val as any);
+                          handleUpdateField('localization', 'defaultLanguage', val);
+                        }}
+                        options={[
+                          { value: 'vi', label: 'Tiếng Việt (VI) - Ngôn ngữ chính' },
+                          { value: 'en', label: 'English (EN) - Global standard' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Múi Giờ Vận Hành' : 'Platform Timezone'}
+                    </label>
+                    <div className="w-full sm:w-80">
+                      <CustomSelect
+                        value={settings.localization?.timezone || 'Asia/Ho_Chi_Minh'}
+                        onChange={(val) => handleUpdateField('localization', 'timezone', val)}
+                        options={[
+                          { value: 'Asia/Ho_Chi_Minh', label: 'Asia/Ho_Chi_Minh (UTC+07:00)' },
+                          { value: 'UTC', label: 'Coordinated Universal Time (UTC)' },
+                          { value: 'America/New_York', label: 'America/New_York (EST)' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Định Dạng Ngày Tháng' : 'Date Format Standard'}
+                    </label>
+                    <div className="w-full sm:w-80">
+                      <CustomSelect
+                        value={settings.localization?.dateFormat || 'DD/MM/YYYY'}
+                        onChange={(val) => handleUpdateField('localization', 'dateFormat', val)}
+                        options={[
+                          { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY (Chuẩn Việt Nam)' },
+                          { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD (Chuẩn ISO 8601)' },
+                          { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY (Chuẩn US)' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. LEARNING & SRS */}
+              {activeSection === 'learning' && (
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Thuật Toán Lặp Lại Ngắt Quãng (SRS)' : 'Spaced Repetition Algorithm'}
+                    </label>
+                    <div className="w-full sm:w-96">
+                      <CustomSelect
+                        value={settings.learning?.algorithm || 'FSRS_4_5'}
+                        onChange={(val) => handleUpdateField('learning', 'algorithm', val)}
+                        options={[
+                          { value: 'FSRS_4_5', label: 'Free Spaced Repetition Scheduler (FSRS v4.5) - Tối ưu 2026' },
+                          { value: 'SM_2', label: 'SuperMemo 2 (SM-2 Anki Standard)' },
+                          { value: 'LEITNER', label: 'Hệ thống Hộp Leitner Cổ điển' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {locale === 'vi'
+                        ? 'FSRS v4.5 giúp giảm 30% số lần ôn tập không cần thiết so với SM-2 cũ.'
+                        : 'FSRS v4.5 yields 30% fewer reviews with equivalent memory retention.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Mục tiêu từ mới mỗi ngày mặc định' : 'Default Daily New Words'}
+                      </label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="50"
+                        value={settings.learning?.dailyGoalWords || 15}
+                        onChange={(e) => handleUpdateField('learning', 'dailyGoalWords', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Giới hạn số thẻ ôn tập tối đa / ngày' : 'Max Daily Review Cards'}
+                      </label>
+                      <input
+                        type="number"
+                        min="20"
+                        max="500"
+                        value={settings.learning?.maxDailyReviews || 100}
+                        onChange={(e) => handleUpdateField('learning', 'maxDailyReviews', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Tự động phát âm từ vựng khi lật thẻ' : 'Auto Pronounce Card Words'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Tự động đọc Audio giọng bản xứ Anh-Mỹ khi học viên lật mặt flashcard.'
+                          : 'Play native US pronunciation audio when flipping flashcards.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.learning?.autoPronounce}
+                      onChange={(e) => handleUpdateField('learning', 'autoPronounce', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 5. AI TUTOR */}
+              {activeSection === 'ai' && (
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Mô hình AI Tutor Mặc Định' : 'Default AI Tutor LLM'}
+                    </label>
+                    <div className="w-full sm:w-96">
+                      <CustomSelect
+                        value={settings.ai?.model || 'gpt-4o'}
+                        onChange={(val) => handleUpdateField('ai', 'model', val)}
+                        options={[
+                          { value: 'gpt-4o', label: 'OpenAI GPT-4o (Độ sắc bén & tốc độ cao)' },
+                          { value: 'claude-3-5-sonnet', label: 'Anthropic Claude 3.5 Sonnet (Văn phong mượt mà)' },
+                          { value: 'deepseek-v3', label: 'DeepSeek-V3 TOEIC Specialist (Chi phí tối ưu)' },
+                          { value: 'gemini-1.5-pro', label: 'Google Gemini 1.5 Pro (Context cửa sổ lớn)' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Nhiệt độ sáng tạo (Temperature)' : 'Temperature'}: {settings.ai?.temperature ?? 0.7}
+                      </label>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.2"
+                      max="1.0"
+                      step="0.05"
+                      value={settings.ai?.temperature ?? 0.7}
+                      onChange={(e) => handleUpdateField('ai', 'temperature', parseFloat(e.target.value))}
+                      className="w-full sm:w-80 accent-indigo-600"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {locale === 'vi'
+                        ? '0.7 là mức khuyến nghị cho giải thích từ vựng học thuật TOEIC chính xác.'
+                        : '0.7 is recommended for calibrated academic accuracy without hallucination.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Hạn mức câu hỏi AI miễn phí / ngày' : 'Free AI Queries / Day'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="50"
+                        value={settings.ai?.freeDailyQuota ?? 5}
+                        onChange={(e) => handleUpdateField('ai', 'freeDailyQuota', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Trần Token Tối Đa Mỗi Yêu Cầu' : 'Max Token Safety Ceiling'}
+                      </label>
+                      <input
+                        type="number"
+                        min="512"
+                        max="4096"
+                        step="256"
+                        value={settings.ai?.maxTokenCeiling ?? 2048}
+                        onChange={(e) => handleUpdateField('ai', 'maxTokenCeiling', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 6. NOTIFICATIONS */}
+              {activeSection === 'notifications' && (
+                <div className="space-y-4 text-xs">
+                  <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Âm thanh thông báo (In-App Sound Chimes)' : 'In-App Sound Chimes'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Phát chuông thông báo nhẹ nhàng khi có tin nhắn CSKH hoặc thông báo mới.'
+                          : 'Play audio chimes when receiving live support messages or notifications.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.notifications?.soundAlerts}
+                      onChange={(e) => handleUpdateField('notifications', 'soundAlerts', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Email tổng hợp tiến độ học tập tuần' : 'Weekly Email Digest'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Gửi báo cáo tổng kết chuỗi học và số từ ghi nhớ vào sáng thứ Hai.'
+                          : 'Send weekly mastery summaries to active students on Monday mornings.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.notifications?.enableEmail}
+                      onChange={(e) => handleUpdateField('notifications', 'enableEmail', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Giờ yên tĩnh: Bắt đầu' : 'Quiet Hours: Start'}
+                      </label>
+                      <input
+                        type="time"
+                        value={settings.notifications?.quietHoursStart || '22:00'}
+                        onChange={(e) => handleUpdateField('notifications', 'quietHoursStart', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Giờ yên tĩnh: Kết thúc' : 'Quiet Hours: End'}
+                      </label>
+                      <input
+                        type="time"
+                        value={settings.notifications?.quietHoursEnd || '07:00'}
+                        onChange={(e) => handleUpdateField('notifications', 'quietHoursEnd', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 7. SUPPORT */}
+              {activeSection === 'support' && (
+                <div className="space-y-4 text-xs">
+                  <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Bật Kênh CSKH Trực Tiếp' : 'Enable Customer Support Gateway'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Hiển thị nút chat hỗ trợ trực tuyến trên toàn bộ giao diện học viên.'
+                          : 'Render live support chat widget across the student web application.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.support?.supportEnabled}
+                      onChange={(e) => handleUpdateField('support', 'supportEnabled', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Tự động phân bổ hội thoại cho CSKH online' : 'Auto Assign Incoming Chats'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Tự động gán ticket mới cho nhân viên Admin/Support đang trực tuyến.'
+                          : 'Assign incoming tickets round-robin to currently active administrators.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.support?.autoAssignEnabled}
+                      onChange={(e) => handleUpdateField('support', 'autoAssignEnabled', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Mục tiêu thời gian phản hồi SLA (Phút)' : 'SLA Target Response Time (Minutes)'}
+                    </label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="1440"
+                      value={settings.support?.slaMinutes || 30}
+                      onChange={(e) => handleUpdateField('support', 'slaMinutes', parseInt(e.target.value, 10))}
+                      className="w-40 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Tin nhắn trả lời tự động ngoài giờ làm việc' : 'Offline Auto-Reply Message'}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={settings.support?.offlineAutoReply || ''}
+                      onChange={(e) => handleUpdateField('support', 'offlineAutoReply', e.target.value)}
+                      className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 8. FEEDBACK */}
+              {activeSection === 'feedback' && (
+                <div className="space-y-4 text-xs">
+                  <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Tiếp nhận Yêu cầu Tính năng (Feature Requests)' : 'Allow Feature Requests'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Cho phép học viên gửi đề xuất tính năng mới trực tiếp từ thanh công cụ.'
+                          : 'Permit users to submit product feature requests.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.feedback?.allowFeatureRequests}
+                      onChange={(e) => handleUpdateField('feedback', 'allowFeatureRequests', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Tiếp nhận Báo lỗi Hệ thống (Bug Reports)' : 'Allow Bug Reports'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Học viên có thể báo cáo lỗi sai nghĩa từ vựng hoặc trục trặc giao diện.'
+                          : 'Permit users to file technical bug reports.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.feedback?.allowBugReports}
+                      onChange={(e) => handleUpdateField('feedback', 'allowBugReports', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Bật Bảng Lộ Trình Công Khai (Public Roadmap)' : 'Public Community Roadmap'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Cho phép cộng đồng xem các tính năng đang phát triển và bình chọn (upvote).'
+                          : 'Show upcoming roadmap items and permit community voting.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.feedback?.publicRoadmapEnabled}
+                      onChange={(e) => handleUpdateField('feedback', 'publicRoadmapEnabled', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 9. BILLING */}
+              {activeSection === 'billing' && (
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Tiền Tệ Thanh Toán Chính' : 'Primary Billing Currency'}
+                    </label>
+                    <div className="w-full sm:w-80">
+                      <CustomSelect
+                        value={settings.billing?.currency || 'VND'}
+                        onChange={(val) => handleUpdateField('billing', 'currency', val)}
+                        options={[
+                          { value: 'VND', label: 'Việt Nam Đồng (VND / ₫) - VietQR' },
+                          { value: 'USD', label: 'US Dollar (USD / $) - Stripe' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Thuế GTGT VAT (%)' : 'VAT Tax Rate (%)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="25"
+                        value={settings.billing?.taxPercent ?? 0}
+                        onChange={(e) => handleUpdateField('billing', 'taxPercent', parseFloat(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Số ngày dùng thử Free Trial' : 'Trial Days'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="30"
+                        value={settings.billing?.trialDays ?? 7}
+                        onChange={(e) => handleUpdateField('billing', 'trialDays', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Thời gian ân hạn Grace (Ngày)' : 'Grace Period (Days)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="14"
+                        value={settings.billing?.gracePeriodDays ?? 3}
+                        onChange={(e) => handleUpdateField('billing', 'gracePeriodDays', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 10. SECURITY */}
+              {activeSection === 'security' && (
+                <div className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Thời hạn phiên đăng nhập (Giờ)' : 'Session Lifetime (Hours)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="720"
+                        value={settings.security?.sessionLifetimeHours ?? 72}
+                        onChange={(e) => handleUpdateField('security', 'sessionLifetimeHours', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Giới hạn lần thử đăng nhập sai' : 'Login Rate Limit Threshold'}
+                      </label>
+                      <input
+                        type="number"
+                        min="3"
+                        max="20"
+                        value={settings.security?.loginRateLimit ?? 5}
+                        onChange={(e) => handleUpdateField('security', 'loginRateLimit', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Bắt buộc xác thực 2 bước (2FA) cho Admin' : 'Require 2FA for Administrators'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Bắt buộc các tài khoản ADMIN và SUPER_ADMIN phải cài đặt OTP Authenticator.'
+                          : 'Enforce two-factor authenticator setup for administrative roles.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.security?.require2FAForAdmin}
+                      onChange={(e) => handleUpdateField('security', 'require2FAForAdmin', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 11. USERS & ROLES */}
+              {activeSection === 'users_roles' && (
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                      {locale === 'vi' ? 'Vai Trò Mặc Định Khi Tạo Mới' : 'Default Registered Role'}
+                    </label>
+                    <div className="w-full sm:w-80">
+                      <CustomSelect
+                        value={settings.users_roles?.defaultRole || 'USER'}
+                        onChange={(val) => handleUpdateField('users_roles', 'defaultRole', val)}
+                        options={[
+                          { value: 'USER', label: 'USER (Học viên tiêu chuẩn)' },
+                          { value: 'PREMIUM_USER', label: 'PREMIUM_USER (Học viên trả phí mặc định)' },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-slate-100 dark:border-slate-700/50">
+                    <div>
+                      <h4 className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? 'Moderator có quyền duyệt bộ từ cộng đồng' : 'Moderator Can Moderate Decks'}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {locale === 'vi'
+                          ? 'Cho phép cấp quyền cho kiểm duyệt viên phê duyệt các bộ thẻ đóng góp.'
+                          : 'Allow moderators to approve or reject submitted community flashcard decks.'}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={!!settings.users_roles?.moderatorCanManageDecks}
+                      onChange={(e) => handleUpdateField('users_roles', 'moderatorCanManageDecks', e.target.checked)}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 12. FEATURE FLAGS */}
+              {activeSection === 'feature_flags' && (
+                <div className="space-y-3 text-xs">
+                  {[
+                    { key: 'aiTutor', labelVi: 'Trợ lý AI Tutor tương tác trực tiếp', labelEn: 'AI Tutor Interactive Chat' },
+                    { key: 'placementTest', labelVi: 'Bài thi kiểm tra đầu vào TOEIC Placement Test', labelEn: 'Placement Diagnostic Test' },
+                    { key: 'communityDecks', labelVi: 'Bộ thẻ đóng góp cộng đồng (Community Decks)', labelEn: 'Community Flashcard Decks' },
+                    { key: 'voiceSpeech', labelVi: 'Nhận diện giọng nói & Chấm điểm phát âm', labelEn: 'Voice Speech Recognition & Scoring' },
+                  ].map((flag) => (
+                    <div
+                      key={flag.key}
+                      className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800"
+                    >
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {locale === 'vi' ? flag.labelVi : flag.labelEn}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={!!settings.feature_flags?.[flag.key]}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            feature_flags: {
+                              ...(prev.feature_flags || {}),
+                              [flag.key]: e.target.checked,
+                            },
+                          }))
+                        }
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 13. SYSTEM & MAINTENANCE */}
+              {activeSection === 'system' && (
+                <div className="space-y-6 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Bộ nhớ đệm Redis Cache TTL (Giây)' : 'Cache TTL (Seconds)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="60"
+                        max="86400"
+                        value={settings.system?.cacheTtlSeconds ?? 3600}
+                        onChange={(e) => handleUpdateField('system', 'cacheTtlSeconds', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-slate-900 dark:text-white mb-1">
+                        {locale === 'vi' ? 'Thời hạn lưu tin nhắn CSKH (Ngày)' : 'Support Message Retention (Days)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={settings.system?.retentionDaysMessages ?? 3}
+                        onChange={(e) => handleUpdateField('system', 'retentionDaysMessages', parseInt(e.target.value, 10))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Actions Area */}
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-700/50 space-y-4">
+                    {/* Purge Messages */}
+                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <Trash2 className="w-4 h-4 text-rose-500" />
+                          {locale === 'vi' ? 'Dọn dẹp nội dung tin nhắn CSKH cũ' : 'Purge Old Support Messages'}
+                        </h4>
+                        <p className="text-[11px] text-slate-400 mt-1 max-w-lg">
+                          {locale === 'vi'
+                            ? 'Xóa toàn bộ nội dung tin nhắn cũ hơn thời hạn quy định nhằm giải phóng Database. Bảo lưu 100% hồ sơ ticket của học viên.'
+                            : 'Purges chat content older than the retention threshold while preserving all tickets.'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPurgeModalOpen(true)}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 shadow-xs transition shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{locale === 'vi' ? 'Dọn dẹp tin nhắn > 3 ngày' : 'Purge Messages'}</span>
+                      </button>
+                    </div>
+
+                    {/* Purge Mock Data */}
+                    <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h4 className="font-bold text-amber-300 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-amber-400" />
+                          {locale === 'vi' ? 'Chuyển sang Vận Hành Thực: Xóa Sạch Dữ Liệu Mẫu' : 'Zero Fake Data Purge'}
+                        </h4>
+                        <p className="text-[11px] text-amber-200/80 mt-1 max-w-lg">
+                          {locale === 'vi'
+                            ? 'Xóa toàn bộ tin nhắn mẫu, ticket mẫu, feedback mẫu và giao dịch giả lập. Bảo lưu an toàn tài khoản người dùng và kho từ vựng.'
+                            : 'Permanently deletes all mock operational items. User accounts and vocabulary are safely kept intact.'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPurgeMockModalOpen(true)}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 shadow-xs transition shrink-0"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>{locale === 'vi' ? 'Xóa sạch mock data' : 'Purge Mock Data'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* TAB 2: GENERAL SETTINGS */}
-      {activeTab === 'general' && (
-        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                  {t('adminSettings.maintenanceMode', 'Chế độ bảo trì hệ thống')}
-                </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {t('adminSettings.maintenanceDesc', 'Khi bật, chỉ tài khoản Admin mới có thể đăng nhập vào ứng dụng.')}
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={maintenanceMode}
-                onChange={(e) => setMaintenanceMode(e.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-700/50">
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                  {t('adminSettings.userReg', 'Cho phép đăng ký học viên mới')}
-                </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">Mở cổng tiếp nhận học viên đăng ký tài khoản tự do</p>
-              </div>
-              <input
-                type="checkbox"
-                checked={allowRegistration}
-                onChange={(e) => setAllowRegistration(e.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                  {t('adminSettings.defaultLang', 'Ngôn ngữ hệ thống')}
-                </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">Chuyển đổi giao diện song ngữ Tiếng Việt / English</p>
-              </div>
-              <select
-                value={locale}
-                onChange={(e) => setLocale(e.target.value as any)}
-                className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-bold"
-              >
-                <option value="vi">Tiếng Việt (VI)</option>
-                <option value="en">English (EN)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-700/50">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5"
-            >
-              {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              <span>{t('adminSettings.saveBtn', 'Lưu thay đổi cấu hình')}</span>
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* TAB 3: AI TUTOR ENGINE */}
-      {activeTab === 'ai' && (
-        <form onSubmit={handleSaveSettings} className="bg-white dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1">
-                {t('adminSettings.aiModel', 'Mô hình AI mặc định')}
-              </label>
-              <select
-                value={aiModel}
-                onChange={(e) => setAiModel(e.target.value)}
-                className="w-full sm:w-80 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-semibold"
-              >
-                <option value="gpt-4o">OpenAI GPT-4o (Độ chính xác cao, giải thích sắc bén)</option>
-                <option value="claude-3-5-sonnet">Anthropic Claude 3.5 Sonnet (Văn phong tự nhiên)</option>
-                <option value="local-deepseek">DeepSeek TOEIC Specialist (Mô hình tối ưu chi phí)</option>
-              </select>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-900 dark:text-white">
-                  {t('adminSettings.aiTemp', 'Nhiệt độ sáng tạo (Temperature)')}: {aiTemp}
-                </label>
-              </div>
-              <input
-                type="range"
-                min="0.2"
-                max="1.0"
-                step="0.05"
-                value={aiTemp}
-                onChange={(e) => setAiTemp(parseFloat(e.target.value))}
-                className="w-full sm:w-80 accent-indigo-600"
-              />
-              <p className="text-[10px] text-slate-400 mt-1">Mức 0.7 được khuyến nghị cho ngữ cảnh luyện thi TOEIC chuẩn học thuật.</p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1">
-                {t('adminSettings.aiQuota', 'Hạn mức câu hỏi AI miễn phí mỗi ngày')}
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={aiDailyQuota}
-                onChange={(e) => setAiDailyQuota(parseInt(e.target.value, 10))}
-                className="w-32 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white font-bold"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-700/50">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5"
-            >
-              {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              <span>{t('adminSettings.saveBtn', 'Lưu thay đổi cấu hình')}</span>
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* TAB 4: GATEWAYS (SOCKET & BILLING) */}
-      {activeTab === 'gateway' && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-800/80 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Headphones className="w-4 h-4 text-indigo-500" />
-              <span>Kênh CSKH & Socket.io Gateway</span>
-            </h3>
-
-            <div className="space-y-3 pt-2 text-xs">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-white">WebSocket Port :4000</span>
-                  <p className="text-[11px] text-slate-400">Kết nối thời gian thực 2 chiều cho Widget CSKH & Admin Inbox</p>
-                </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-[10px] flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  ĐANG HOẠT ĐỘNG
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
-                <div>
-                  <span className="font-bold text-slate-900 dark:text-white">Cổng Thanh Toán VietQR & PayOS</span>
-                  <p className="text-[11px] text-slate-400">Ngân hàng Vietcombank (9353421340 - DUONG VAN MANH)</p>
-                </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-[10px]">
-                  TỰ ĐỘNG KHỚP LỆNH
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Purge Modal */}
+      {/* Purge Messages Modal */}
       {purgeModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-scale-in">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">{t('adminSettings.cleanModalTitle', 'Xác nhận dọn dẹp tin nhắn cũ')}</h3>
-                <p className="text-xs text-slate-400">Chỉ Admin mới có quyền thực thi thao tác này</p>
+                <h3 className="text-sm font-bold text-white">
+                  {locale === 'vi' ? 'Xác nhận dọn dẹp tin nhắn CSKH' : 'Confirm Support Messages Purge'}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {locale === 'vi' ? 'Quyền thực thi dành cho Quản trị viên' : 'Administrator Authorization Required'}
+                </p>
               </div>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              {t('adminSettings.cleanModalDesc', 'Thao tác này sẽ xóa sạch toàn bộ nội dung tin nhắn được tạo cũ hơn 3 ngày nhằm tối ưu dung lượng Database. Danh sách yêu cầu (tickets) vẫn được bảo lưu an toàn.')}
+              {locale === 'vi'
+                ? `Thao tác này sẽ xóa vĩnh viễn nội dung tin nhắn được gửi cũ hơn ${settings.system?.retentionDaysMessages || 3} ngày. Danh sách hồ sơ ticket vẫn được bảo lưu an toàn.`
+                : `This action will permanently delete message contents older than ${settings.system?.retentionDaysMessages || 3} days. Tickets and audit records remain intact.`}
             </p>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
@@ -416,16 +1344,16 @@ export const AdminSettingsPage: React.FC = () => {
                 onClick={() => setPurgeModalOpen(false)}
                 className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
               >
-                Hủy bỏ
+                {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
               </button>
               <button
                 type="button"
-                disabled={purging}
+                disabled={purgingMessages}
                 onClick={handlePurgeMessages}
                 className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition flex items-center gap-1.5"
               >
-                {purging && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>Xác nhận dọn dẹp</span>
+                {purgingMessages && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{locale === 'vi' ? 'Xác nhận dọn dẹp' : 'Confirm Purge'}</span>
               </button>
             </div>
           </div>
@@ -441,22 +1369,28 @@ export const AdminSettingsPage: React.FC = () => {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Xác nhận xóa sạch dữ liệu mẫu</h3>
-                <p className="text-xs text-slate-400">Chỉ Admin mới có quyền thực thi thao tác này</p>
+                <h3 className="text-sm font-bold text-white">
+                  {locale === 'vi' ? 'Xác nhận xóa sạch dữ liệu mẫu' : 'Purge All Mock Data'}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {locale === 'vi' ? 'Quyền thực thi dành cho Quản trị viên' : 'Administrator Authorization Required'}
+                </p>
               </div>
             </div>
             <div className="text-xs text-slate-300 leading-relaxed space-y-2">
               <p>
-                Thao tác này sẽ xóa vĩnh viễn toàn bộ dữ liệu mẫu (mock data) hiện có trong hệ thống:
+                {locale === 'vi'
+                  ? 'Thao tác này sẽ xóa vĩnh viễn toàn bộ dữ liệu mẫu (mock data) hiện có trong hệ thống:'
+                  : 'Permanently deletes all simulated mock items:'}
               </p>
               <ul className="list-disc list-inside space-y-1 text-slate-400 pl-1">
-                <li>Xóa toàn bộ tin nhắn & yêu cầu hỗ trợ (tickets) mẫu</li>
-                <li>Xóa toàn bộ ý kiến đóng góp (feedbacks) mẫu</li>
-                <li>Xóa toàn bộ giao dịch & đơn hàng giả lập</li>
-                <li>Xóa toàn bộ thông báo hệ thống mẫu</li>
+                <li>{locale === 'vi' ? 'Xóa toàn bộ tin nhắn & tickets hỗ trợ mẫu' : 'Delete all mock support tickets & messages'}</li>
+                <li>{locale === 'vi' ? 'Xóa toàn bộ ý kiến đóng góp & báo lỗi mẫu' : 'Delete all mock feedback items'}</li>
+                <li>{locale === 'vi' ? 'Xóa toàn bộ giao dịch giả lập' : 'Delete mock payment orders'}</li>
+                <li>{locale === 'vi' ? 'Xóa toàn bộ thông báo hệ thống mẫu' : 'Delete mock notifications'}</li>
               </ul>
               <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold">
-                🛡️ BẢO LƯU AN TOÀN: Toàn bộ danh sách Người dùng (Users) và Kho từ vựng (Vocabulary).
+                🛡️ {locale === 'vi' ? 'BẢO LƯU AN TOÀN: 100% Người dùng (Users) và Kho từ vựng (Vocabulary).' : 'SAFE: All Users and Vocabulary records are untouched.'}
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 pt-2">
@@ -466,7 +1400,7 @@ export const AdminSettingsPage: React.FC = () => {
                 onClick={() => setPurgeMockModalOpen(false)}
                 className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
               >
-                Hủy bỏ
+                {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
               </button>
               <button
                 type="button"
@@ -475,7 +1409,7 @@ export const AdminSettingsPage: React.FC = () => {
                 className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-xl transition flex items-center gap-1.5"
               >
                 {purgingMock && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>Xác nhận xóa sạch data mẫu</span>
+                <span>{locale === 'vi' ? 'Xác nhận xóa sạch data mẫu' : 'Confirm Mock Purge'}</span>
               </button>
             </div>
           </div>

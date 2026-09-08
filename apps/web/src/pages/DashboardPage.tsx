@@ -115,9 +115,9 @@ export const DashboardPage: React.FC = () => {
             <span>Spaced Repetition System • VocabFlow AI</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-snug">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-snug">
             {timeGreeting}, {user?.displayName || 'Learner'} 👋
-          </h1>
+          </h2>
 
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             Hôm nay bạn có{' '}

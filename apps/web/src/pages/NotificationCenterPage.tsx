@@ -150,9 +150,9 @@ export const NotificationCenterPage: React.FC = () => {
             <Bell className="w-3.5 h-3.5" />
             <span>Notification Center</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Thông Báo Hệ Thống
-          </h1>
+          </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Cập nhật tức thì phản hồi CSKH, nhắc nhở SRS thời điểm vàng và đặc quyền tài khoản.
           </p>

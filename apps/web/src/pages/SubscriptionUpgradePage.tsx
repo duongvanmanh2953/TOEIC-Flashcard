@@ -73,9 +73,9 @@ export const SubscriptionUpgradePage: React.FC = () => {
           <QrCode className="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" />
           <span>Thanh toán VietQR & Cổng Webhook Tự Động Kích Hoạt 24/7</span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
           {t('subscriptions.title', 'Nâng Cấp Trải Nghiệm Học Cùng VocabFlow')}
-        </h1>
+        </h2>
         <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
           Mở khóa toàn diện tiềm năng học từ vựng TOEIC với AI Tutor không giới hạn, phân tích chuẩn đoán CEFR và kho đề tự động.
         </p>

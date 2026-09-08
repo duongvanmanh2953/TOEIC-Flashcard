@@ -267,9 +267,9 @@ export const CommunityDecksPage: React.FC = () => {
             <Users className="w-3.5 h-3.5" />
             <span>Kho Tri Thức Mở Cộng Đồng</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-snug">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-snug">
             Khám Phá & Đóng Góp Bộ Từ Vựng Cộng Đồng
-          </h1>
+          </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
             Duyệt các bộ từ vựng thực chiến được đóng góp bởi học viên, 1-click clone về kho học của bạn hoặc chia sẻ từ kho cá nhân.
           </p>

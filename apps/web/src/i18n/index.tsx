@@ -63,3 +63,5 @@ export const useTranslation = () => {
   }
   return context;
 };
+
+export const useI18n = useTranslation;
