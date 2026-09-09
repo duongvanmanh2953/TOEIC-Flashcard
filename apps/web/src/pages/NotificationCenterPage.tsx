@@ -211,7 +211,7 @@ export const NotificationCenterPage: React.FC = () => {
         </div>
       ) : isGuest ? (
         <GlassCard className="p-10 text-center space-y-4 max-w-md mx-auto border-amber-500/30">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30">
             <Bell className="w-7 h-7" />
           </div>
           <div>

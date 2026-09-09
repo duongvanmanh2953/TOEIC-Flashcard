@@ -71,7 +71,7 @@ export const FeatureLock: React.FC<FeatureLockProps> = ({
         <button
           type="button"
           onClick={handleUnlock}
-          className="relative overflow-hidden px-4 py-2.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-xl border border-amber-400/60 hover:border-amber-300 text-amber-950 dark:text-amber-100 font-black text-xs flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:shadow-[0_0_22px_rgba(245,158,11,0.45)] transition hover:scale-105 active:scale-95 group"
+          className="relative overflow-hidden px-4 py-2.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-xl border border-amber-400/60 hover:border-amber-300 text-amber-950 dark:text-amber-100 font-black text-xs flex items-center justify-center gap-1.5 transition hover:scale-105 active:scale-95 group"
         >
           <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
           <span>Mở Khóa Ngay</span>

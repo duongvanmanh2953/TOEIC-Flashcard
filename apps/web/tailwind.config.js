@@ -21,6 +21,17 @@ export default {
           900: '#3c2e8c',
         },
       },
+      boxShadow: {
+        DEFAULT: 'none',
+        sm: 'none',
+        md: 'none',
+        lg: 'none',
+        xl: 'none',
+        '2xl': 'none',
+        inner: 'none',
+        none: 'none',
+        xs: 'none',
+      },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
       },

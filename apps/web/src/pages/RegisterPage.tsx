@@ -190,7 +190,7 @@ export const RegisterPage: React.FC = () => {
             <span
               className={`w-2 h-2 rounded-full ${
                 isFirebaseConfigured
-                  ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]'
+                  ? 'bg-emerald-500'
                   : 'bg-amber-400'
               }`}
             />

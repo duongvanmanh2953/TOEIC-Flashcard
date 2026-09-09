@@ -400,12 +400,12 @@ export const AppShell: React.FC = () => {
                     {item.badge && (
                       (item as any).isUnlock ? (
                         /* Liquid Glass Gold Badge */
-                        <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider shadow-[0_0_10px_rgba(245,158,11,0.25)] group-hover:border-amber-300 transition-all shrink-0">
+                        <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0">
                           <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
                           <span>MỞ KHÓA</span>
                         </span>
                       ) : (
-                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md shadow-xs">
+                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
                           {item.badge}
                         </span>
                       )
@@ -432,7 +432,7 @@ export const AppShell: React.FC = () => {
               </p>
               <button
                 onClick={() => promptLogin('Lưu trữ vĩnh viễn tiến độ học và mở khóa đầy đủ tính năng')}
-                className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+                className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Đăng nhập 1-chạm</span>
@@ -443,7 +443,7 @@ export const AppShell: React.FC = () => {
               {/* Account Tier Card — Redesigned with Liquid Glass Gold */}
               <div
                 onClick={() => navigate('/upgrade')}
-                className="relative p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 dark:border-amber-400/30 hover:border-amber-400/80 shadow-[0_4px_18px_rgba(245,158,11,0.15)] hover:shadow-[0_4px_25px_rgba(245,158,11,0.3)] cursor-pointer transition-all duration-300 group overflow-hidden"
+                className="relative p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 dark:border-amber-400/30 hover:border-amber-400/80 cursor-pointer transition-all duration-300 group overflow-hidden"
                 title="Xem chi tiết gói tài khoản hoặc nâng cấp"
               >
                 {/* Specular Liquid Sheen Reflection */}
@@ -451,7 +451,7 @@ export const AppShell: React.FC = () => {
 
                 <div className="flex items-center justify-between min-w-0 relative z-10">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                    <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
                       <Crown className="w-4 h-4 text-amber-500 dark:text-amber-300 fill-amber-400" />
                     </div>
                     <div className="min-w-0">
@@ -465,7 +465,7 @@ export const AppShell: React.FC = () => {
                   </div>
 
                   {/* Liquid Glass Gold Action Pill */}
-                  <span className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-amber-300/30 via-yellow-400/20 to-amber-500/30 hover:from-amber-300/45 hover:to-amber-500/45 border border-amber-400/60 dark:border-amber-400/50 text-amber-900 dark:text-amber-100 text-[10px] font-black uppercase tracking-wide shadow-[0_0_10px_rgba(245,158,11,0.25)] flex items-center gap-1 shrink-0 group-hover:scale-105 transition-transform duration-200">
+                  <span className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-amber-300/30 via-yellow-400/20 to-amber-500/30 hover:from-amber-300/45 hover:to-amber-500/45 border border-amber-400/60 dark:border-amber-400/50 text-amber-900 dark:text-amber-100 text-[10px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0 group-hover:scale-105 transition-transform duration-200">
                     {isPro ? (
                       <>
                         <Crown className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
@@ -540,9 +540,9 @@ export const AppShell: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-0 overflow-x-hidden relative z-10">
-        {/* Mobile Header */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-0 relative z-10">
+        {/* Mobile Header — Sticky fixed at top */}
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors">
           <div className="flex items-center gap-2.5">
             <img
               src="/vocabflow-logo-256.png"
@@ -557,7 +557,7 @@ export const AppShell: React.FC = () => {
             {!isPro && (
               <button
                 onClick={() => navigate('/upgrade')}
-                className="relative overflow-hidden px-2.5 py-1 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-[0_0_10px_rgba(245,158,11,0.25)] hover:border-amber-300 transition-all group"
+                className="relative overflow-hidden px-2.5 py-1 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 hover:border-amber-300 transition-all group"
               >
                 <Crown className="w-3 h-3 text-amber-500 dark:text-amber-300 fill-amber-400" />
                 <span>Mở khóa</span>
@@ -607,7 +607,7 @@ export const AppShell: React.FC = () => {
                       </div>
                       {item.badge && (
                         (item as any).isUnlock ? (
-                          <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider shadow-[0_0_10px_rgba(245,158,11,0.25)]">
+                          <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider">
                             <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
                             <span>MỞ KHÓA</span>
                           </span>
@@ -647,8 +647,8 @@ export const AppShell: React.FC = () => {
           </div>
         )}
 
-        {/* Desktop Top Header Bar — Balanced, Symmetrical & Polished */}
-        <header className="hidden lg:flex items-center justify-between px-6 lg:px-8 h-14 bg-white/75 dark:bg-slate-900/75 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 sticky top-0 z-20">
+        {/* Desktop Top Header Bar — Sticky fixed at top, balanced & polished */}
+        <header className="hidden lg:flex items-center justify-between px-6 lg:px-8 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors">
           <div className="flex items-center gap-2.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-xs shadow-emerald-500/50" />
             <span className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-tight">
@@ -916,7 +916,7 @@ export const AppShell: React.FC = () => {
         >
           <button
             onClick={handleSupportBtnClick}
-            className="group relative h-10 rounded-l-2xl rounded-r-none bg-slate-900/95 hover:bg-slate-900 backdrop-blur-2xl border-y border-l border-r-0 border-cyan-500/40 hover:border-cyan-400/80 shadow-[-4px_6px_16px_rgba(0,0,0,0.5),-1px_0_10px_rgba(6,182,212,0.25)] hover:shadow-[-6px_10px_24px_rgba(0,0,0,0.65),-3px_0_16px_rgba(6,182,212,0.4)] flex items-center justify-end p-1 transition-all duration-300 active:scale-95 text-white max-w-[42px] hover:max-w-[220px] overflow-hidden"
+            className="group relative h-10 rounded-l-2xl rounded-r-none bg-slate-900/95 hover:bg-slate-900 backdrop-blur-2xl border-y border-l border-r-0 border-cyan-500/40 hover:border-cyan-400/80 flex items-center justify-end p-1 transition-all duration-300 active:scale-95 text-white max-w-[42px] hover:max-w-[220px] overflow-hidden"
             aria-label="Trung tâm Chăm sóc khách hàng CSKH"
             title="Kéo trượt dọc mép phải màn hình • Rê chuột để xem chi tiết & mở Chat"
           >
@@ -942,7 +942,7 @@ export const AppShell: React.FC = () => {
             </div>
 
             {/* Glowing Headphone Icon (Docked snuggly against right edge) */}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500/30 to-indigo-500/40 border border-cyan-400/60 flex items-center justify-center text-cyan-300 group-hover:text-cyan-100 transition-colors relative shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500/30 to-indigo-500/40 border border-cyan-400/60 flex items-center justify-center text-cyan-300 group-hover:text-cyan-100 transition-colors relative shrink-0">
               <Headphones className="w-4 h-4 text-cyan-300 group-hover:scale-110 transition-transform" />
               {unreadSupportCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
@@ -963,12 +963,12 @@ export const AppShell: React.FC = () => {
           className="fixed z-50 animate-scale-up"
         >
           <div
-            className="w-[calc(100vw-2rem)] sm:w-[330px] rounded-2xl bg-slate-900 border border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.6)] p-3.5 space-y-2.5 flex flex-col max-h-[80vh] sm:max-h-[460px] overflow-hidden text-slate-100"
+            className="w-[calc(100vw-2rem)] sm:w-[330px] rounded-2xl bg-slate-900 border border-slate-700/80 p-3.5 space-y-2.5 flex flex-col max-h-[80vh] sm:max-h-[460px] overflow-hidden text-slate-100"
           >
             {/* Header with Title & Online status */}
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold shadow-xs border border-indigo-500/30">
+                <div className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold border border-indigo-500/30">
                   <Headphones className="w-4 h-4 text-indigo-400" />
                 </div>
                 <div>

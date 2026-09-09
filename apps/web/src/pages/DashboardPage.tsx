@@ -36,6 +36,7 @@ export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [memoryRescue, setMemoryRescue] = useState<any>(null);
+  const [quotas, setQuotas] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSpotlight, setShowSpotlight] = useState(() => {
     return localStorage.getItem('leximind_hide_dash_spotlight') !== 'true';
@@ -261,7 +262,7 @@ export const DashboardPage: React.FC = () => {
               {!isPro && effectiveTier === 'FREE' && (
                 <button
                   onClick={() => navigate('/upgrade')}
-                  className="relative overflow-hidden text-xs font-black text-amber-900 dark:text-amber-100 flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 hover:border-amber-300 hover:scale-105 transition shadow-[0_0_12px_rgba(245,158,11,0.25)] group"
+                  className="relative overflow-hidden text-xs font-black text-amber-900 dark:text-amber-100 flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 hover:border-amber-300 hover:scale-105 transition group"
                 >
                   <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
                   <span>Mở khóa toàn bộ tính năng Pro</span>

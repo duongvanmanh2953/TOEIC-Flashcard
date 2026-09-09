@@ -140,7 +140,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
       <div
-        className="relative w-full max-w-xl rounded-3xl bg-slate-900 border border-slate-700/80 shadow-[0_25px_60px_rgba(0,0,0,0.7)] p-6 sm:p-7 space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-xl rounded-3xl bg-slate-900 border border-slate-700/80 p-6 sm:p-7 space-y-5 text-slate-100 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

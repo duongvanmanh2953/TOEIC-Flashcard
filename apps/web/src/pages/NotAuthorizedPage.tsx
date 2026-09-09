@@ -13,8 +13,8 @@ export const NotAuthorizedPage: React.FC = () => {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-md w-full glass-card p-8 text-center relative z-10 border border-rose-500/20 bg-slate-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl">
-        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto mb-6 text-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.2)]">
+      <div className="max-w-md w-full glass-card p-8 text-center relative z-10 border border-rose-500/20 bg-slate-900/80 backdrop-blur-2xl rounded-3xl">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto mb-6 text-rose-400">
           <ShieldAlert className="w-8 h-8" />
         </div>
 
