@@ -32,6 +32,7 @@ import {
   Layers,
   FileText,
   Package,
+  Gamepad2,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
@@ -136,6 +137,7 @@ export const AdminLayout: React.FC = () => {
     {
       title: 'KHO NỘI DUNG',
       items: [
+        { to: '/admin/games', label: 'Quản Trị Games & Đề', icon: Gamepad2 },
         { to: '/admin/vocabulary', label: 'Từ Vựng (Vocab)', icon: BookOpen },
         { to: '/admin/shared-vocabulary', label: 'Kho Dùng Chung', icon: Layers },
         { to: '/admin/resources', label: 'Tài Nguyên Học Liệu', icon: FileText },

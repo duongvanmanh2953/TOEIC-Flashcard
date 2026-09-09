@@ -81,6 +81,62 @@ export class DashboardService {
     const masteredCount = userVocabs.filter((v) => v.status === 'MASTERED').length;
     const learningCount = userVocabs.filter((v) => v.status === 'LEARNING' || v.status === 'REVIEW').length;
 
+    // 6. Real 7-day activity (last 7 days from review events)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const weekEvents = await this.prisma.reviewEvent.findMany({
+      where: {
+        userId,
+        reviewedAt: { gte: sevenDaysAgo },
+      },
+      select: { reviewedAt: true, correct: true },
+    });
+
+    const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const weeklyData = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sevenDaysAgo);
+      d.setDate(d.getDate() + i);
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+      const dayEvts = weekEvents.filter((e) => e.reviewedAt >= dayStart && e.reviewedAt <= dayEnd);
+      const totalReviews = dayEvts.length;
+      const correctReviews = dayEvts.filter((e) => e.correct).length;
+      const retention = totalReviews > 0 ? Math.round((correctReviews / totalReviews) * 100) : 0;
+
+      weeklyData.push({
+        day: dayNames[d.getDay()],
+        date: `${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`,
+        reviews: totalReviews,
+        retention,
+      });
+    }
+
+    // 7. Real CEFR Distribution for user
+    const cefrCountMap = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0 };
+    const vocabIds = userVocabs.map((uv) => uv.vocabulary.id);
+    if (vocabIds.length > 0) {
+      const vocabs = await this.prisma.vocabulary.findMany({
+        where: { id: { in: vocabIds } },
+        select: { cefrLevel: true },
+      });
+      for (const v of vocabs) {
+        if (v.cefrLevel in cefrCountMap) {
+          cefrCountMap[v.cefrLevel as keyof typeof cefrCountMap]++;
+        }
+      }
+    }
+    const totalVocabCount = Math.max(1, vocabIds.length);
+    const cefrStats = [
+      { level: 'A2', count: cefrCountMap.A2 + cefrCountMap.A1, percent: Math.round(((cefrCountMap.A2 + cefrCountMap.A1) / totalVocabCount) * 100), color: 'bg-emerald-500' },
+      { level: 'B1', count: cefrCountMap.B1, percent: Math.round((cefrCountMap.B1 / totalVocabCount) * 100), color: 'bg-indigo-500' },
+      { level: 'B2', count: cefrCountMap.B2, percent: Math.round((cefrCountMap.B2 / totalVocabCount) * 100), color: 'bg-amber-500' },
+      { level: 'C1', count: cefrCountMap.C1 + cefrCountMap.C2, percent: Math.round(((cefrCountMap.C1 + cefrCountMap.C2) / totalVocabCount) * 100), color: 'bg-rose-500' },
+    ];
+
     return {
       user: {
         id: user?.id,
@@ -102,6 +158,8 @@ export class DashboardService {
         mastered: masteredCount,
         learning: learningCount,
       },
+      weeklyData,
+      cefrStats,
       weakWords,
       strongWords,
     };

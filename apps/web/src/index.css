@@ -18,10 +18,10 @@
     --glass-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
     --glass-shadow-hover: 0 16px 36px rgba(15, 23, 42, 0.1);
 
-    /* Text Contrast System */
-    --text-primary: #0f172a;
-    --text-secondary: #334155;
-    --text-muted: #64748b;
+    /* Text Contrast System - Optimized for high legibility */
+    --text-primary: #090d16;
+    --text-secondary: #1e293b;
+    --text-muted: #334155;
   }
 
   .dark {
@@ -39,10 +39,25 @@
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
     --glass-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.5);
 
-    /* Dark Text Contrast System */
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    /* Dark Text Contrast System - Crisp, high contrast silver/white */
+    --text-primary: #ffffff;
+    --text-secondary: #f1f5f9;
+    --text-muted: #cbd5e1;
+  }
+
+  /* Universal High-Contrast Overrides for Gray/Muted Classes */
+  .text-slate-400, .text-gray-400, .text-zinc-400 {
+    color: #475569 !important;
+  }
+  .dark .text-slate-400, .dark .text-gray-400, .dark .text-zinc-400 {
+    color: #cbd5e1 !important;
+  }
+
+  .text-slate-500, .text-gray-500, .text-zinc-500 {
+    color: #334155 !important;
+  }
+  .dark .text-slate-500, .dark .text-gray-500, .dark .text-zinc-500 {
+    color: #e2e8f0 !important;
   }
 
   body {

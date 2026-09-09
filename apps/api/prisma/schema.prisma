@@ -106,6 +106,7 @@ model User {
   supportMessages  SupportMessage[]
   feedbacks        Feedback[]
   feedbackVotes    FeedbackVote[]
+  gameResults      GameResult[]
 
   @@index([email])
   @@index([role])
@@ -779,5 +780,79 @@ model LearningResource {
   @@index([requiredPlan])
 }
 
+// =============================================================================
+// REALTIME ENGLISH GAMES & COMPETITIVE LEADERBOARDS
+// =============================================================================
 
+enum GameModeType {
+  TRANSLATION_RUSH
+  WORD_BLITZ
+  SENTENCE_SPRINT
+  LISTENING_RUSH
+  SYNONYM_BATTLE
+  MISSING_WORD
+  FIX_SENTENCE
+  GUESS_WORD
+}
 
+model GameConfig {
+  id              String       @id @default(uuid())
+  gameMode        GameModeType @unique
+  title           String
+  description     String
+  scheduleTime    String       @default("20:00")
+  durationMinutes Int          @default(15)
+  questionCount   Int          @default(15)
+  difficulty      String       @default("INTERMEDIATE")
+  scoreMultiplier Float        @default(1.0)
+  isActive        Boolean      @default(true)
+  rulesJson       Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model GameQuestion {
+  id              String       @id @default(uuid())
+  gameMode        GameModeType @default(TRANSLATION_RUSH)
+  prompt          String
+  direction       String       @default("EN_VI")
+  correctAnswer   String
+  acceptedAnswers String[]     @default([])
+  explanation     String?
+  difficulty      Float        @default(3.0)
+  cefrLevel       CefrLevel    @default(B1)
+  category        String       @default("General")
+  audioUrl        String?
+  tags            String[]     @default([])
+  status          String       @default("PUBLISHED")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([gameMode])
+  @@index([status])
+  @@index([cefrLevel])
+}
+
+model GameResult {
+  id           String       @id @default(uuid())
+  gameId       String
+  gameMode     GameModeType @default(TRANSLATION_RUSH)
+  roomCode     String
+  date         String
+  userId       String
+  rank         Int
+  score        Int
+  correctCount Int          @default(0)
+  totalRounds  Int          @default(0)
+  accuracy     Float        @default(0.0)
+  bestStreak   Int          @default(0)
+  durationSec  Int          @default(0)
+  createdAt    DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+  @@index([gameMode])
+  @@index([rank])
+}

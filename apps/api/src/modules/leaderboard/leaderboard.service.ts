@@ -125,13 +125,30 @@ export class LeaderboardService {
       take: limit,
     });
 
+    const userIds = users.map((u) => u.id);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const weeklySessions = await this.prisma.studySession.groupBy({
+      by: ['userId'],
+      where: {
+        userId: { in: userIds },
+        startedAt: { gte: sevenDaysAgo },
+      },
+      _sum: {
+        xpEarned: true,
+      },
+    });
+    const weeklyXpMap = new Map(weeklySessions.map((s) => [s.userId, s._sum.xpEarned || 0]));
+
     return users.map((u, idx) => {
       const antiCheat = this.antiCheatRegistry.get(u.id);
       const fairPlay = antiCheat ? antiCheat.fairPlayScore : 100;
       const isVerified = fairPlay >= 80;
 
-      // Mock slightly adjusted weekly delta for rich visual experience
-      const weeklyGain = Math.round((u.xp?.totalXP || 0) * (timeframe === 'weekly' ? 0.35 : 1));
+      // Real weekly XP earned from completed sessions, falling back to totalXP if new
+      const realWeeklyGain = weeklyXpMap.get(u.id) || (u.xp?.totalXP || 0);
+      const displayScore = timeframe === 'weekly' ? realWeeklyGain : (u.xp?.totalXP || 0);
 
       return {
         rank: idx + 1,
@@ -141,7 +158,7 @@ export class LeaderboardService {
         avatar: u.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.id}`,
         role: u.role,
         englishLevel: u.profile?.englishLevel || 'B1',
-        score: weeklyGain,
+        score: displayScore,
         totalXP: u.xp?.totalXP || 0,
         level: u.xp?.currentLevel || 1,
         fairPlayScore: fairPlay,

@@ -16,6 +16,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SupportModule } from './modules/support/support.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
+import { GamesModule } from './modules/games/games.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
@@ -39,6 +40,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     SupportModule,
     FeedbackModule,
     LeaderboardModule,
+    GamesModule,
   ],
   providers: [
     {

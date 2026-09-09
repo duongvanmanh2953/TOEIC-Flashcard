@@ -84,25 +84,25 @@ export const DashboardPage: React.FC = () => {
   const goalPercent = Math.min(100, Math.round((completedToday / dailyGoal) * 100));
   const reviewDue = data?.reviewDue || 0;
 
-  // 7-day activity mock / real data
-  const weeklyData = [
-    { day: 'T2', reviews: 18, retention: 84 },
-    { day: 'T3', reviews: 25, retention: 88 },
-    { day: 'T4', reviews: 20, retention: 86 },
-    { day: 'T5', reviews: 32, retention: 91 },
-    { day: 'T6', reviews: 28, retention: 89 },
-    { day: 'T7', reviews: 40, retention: 94 },
-    { day: 'CN', reviews: completedToday > 0 ? completedToday : 22, retention: 92 },
+  // Real 7-day activity data from API
+  const weeklyData = data?.weeklyData && data.weeklyData.length > 0 ? data.weeklyData : [
+    { day: 'T2', reviews: 0, retention: 0 },
+    { day: 'T3', reviews: 0, retention: 0 },
+    { day: 'T4', reviews: 0, retention: 0 },
+    { day: 'T5', reviews: 0, retention: 0 },
+    { day: 'T6', reviews: 0, retention: 0 },
+    { day: 'T7', reviews: 0, retention: 0 },
+    { day: 'CN', reviews: completedToday, retention: data?.accuracy || 100 },
   ];
 
-  const maxWeeklyReviews = Math.max(...weeklyData.map((d) => d.reviews), 40);
+  const maxWeeklyReviews = Math.max(...weeklyData.map((d: any) => d.reviews), 10);
 
-  // CEFR Distribution mock / computed
-  const cefrStats = [
-    { level: 'A2', count: 120, percent: 95, color: 'bg-emerald-500' },
-    { level: 'B1', count: 240, percent: 80, color: 'bg-indigo-500' },
-    { level: 'B2', count: 180, percent: 62, color: 'bg-amber-500' },
-    { level: 'C1', count: 60, percent: 38, color: 'bg-rose-500' },
+  // Real CEFR Distribution from API
+  const cefrStats = data?.cefrStats && data.cefrStats.length > 0 ? data.cefrStats : [
+    { level: 'A2', count: 0, percent: 0, color: 'bg-emerald-500' },
+    { level: 'B1', count: 0, percent: 0, color: 'bg-indigo-500' },
+    { level: 'B2', count: 0, percent: 0, color: 'bg-amber-500' },
+    { level: 'C1', count: 0, percent: 0, color: 'bg-rose-500' },
   ];
 
   return (

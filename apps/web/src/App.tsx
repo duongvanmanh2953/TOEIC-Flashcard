@@ -45,6 +45,9 @@ import { AdminSharedVocabularyPage } from './pages/admin/AdminSharedVocabularyPa
 import { AdminPricingPage } from './pages/admin/AdminPricingPage';
 import { AdminPlansPage } from './pages/admin/AdminPlansPage';
 import { AdminResourcesPage } from './pages/admin/AdminResourcesPage';
+import { AdminGamesPage } from './pages/admin/AdminGamesPage';
+import { GameLobbyPage } from './pages/games/GameLobbyPage';
+import { RealtimeGameRoomPage } from './pages/games/RealtimeGameRoomPage';
 import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
@@ -138,6 +141,8 @@ export const App: React.FC = () => {
               <Route path="/placement-test" element={<PlacementTestPage />} />
               <Route path="/ai-tutor" element={<AICoachStudioPage />} />
               <Route path="/coach" element={<AICoachStudioPage />} />
+              <Route path="/games" element={<GameLobbyPage />} />
+              <Route path="/games/room/:roomId" element={<RealtimeGameRoomPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/progress" element={<ProgressAnalyticsPage />} />
               <Route path="/upgrade" element={<SubscriptionUpgradePage />} />
@@ -163,6 +168,7 @@ export const App: React.FC = () => {
               <Route path="dashboard" element={<Navigate to="/admin" replace />} />
               <Route path="overview" element={<Navigate to="/admin" replace />} />
               <Route path="users" element={<AdminUsersPage />} />
+              <Route path="games" element={<AdminGamesPage />} />
               <Route path="support" element={<AdminSupportPage />} />
               <Route path="conversations" element={<AdminSupportPage />} />
               <Route path="feedback" element={<AdminFeedbackPage />} />
