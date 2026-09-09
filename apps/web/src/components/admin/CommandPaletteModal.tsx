@@ -73,7 +73,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({ isOpen
             placeholder="Tìm kiếm phân hệ quản trị hoặc phím tắt... (VD: users, support, ai)"
             className="flex-1 bg-transparent border-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
           />
-          <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-200 dark:border-slate-700">
+          <kbd className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] tabular-nums text-slate-400 border border-slate-200 dark:border-slate-700">
             ESC
           </kbd>
         </div>

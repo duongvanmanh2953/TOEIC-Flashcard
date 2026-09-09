@@ -768,7 +768,7 @@ export const AdminResourcesPage: React.FC = () => {
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   placeholder="Viết nội dung dạng Markdown (# Tiêu đề, - gạch đầu dòng, **in đậm**...)"
-                  className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 tabular-nums text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
               </div>
 
@@ -783,7 +783,7 @@ export const AdminResourcesPage: React.FC = () => {
                     value={formData.imageUrl}
                     onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[11px]"
+                    className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 tabular-nums text-[11px]"
                   />
                 </div>
 
@@ -796,7 +796,7 @@ export const AdminResourcesPage: React.FC = () => {
                     value={formData.audioUrl}
                     onChange={(e) => setFormData({ ...formData, audioUrl: e.target.value })}
                     placeholder="https://cdn.example.com/audio.mp3"
-                    className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-[11px]"
+                    className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 tabular-nums text-[11px]"
                   />
                 </div>
 

@@ -497,7 +497,7 @@ export const AdminPlansPage: React.FC = () => {
                     {plan.name}
                   </h3>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                    Slug: <span className="font-mono">{plan.slug || 'n/a'}</span> | Order: {plan.displayOrder}
+                    Slug: <span className="tabular-nums">{plan.slug || 'n/a'}</span> | Order: {plan.displayOrder}
                   </p>
 
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-2 min-h-[32px]">
@@ -808,7 +808,7 @@ export const AdminPlansPage: React.FC = () => {
                         value={formData.slug}
                         onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                         placeholder="pro, plus, enterprise..."
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
 

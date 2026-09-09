@@ -510,7 +510,7 @@ export const AdminSupportPage: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <span className="text-[10px] font-mono font-bold text-indigo-400">
+                      <span className="text-[10px] tabular-nums font-bold text-indigo-400">
                         {c.ticketId}
                       </span>
                       <div className="flex items-center gap-1">
@@ -544,7 +544,7 @@ export const AdminSupportPage: React.FC = () => {
             {/* Header */}
             <div className="p-2.5 px-3 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between gap-2 shrink-0">
               <div className="min-w-0 flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-indigo-400 shrink-0">
+                <span className="text-xs tabular-nums font-bold text-indigo-400 shrink-0">
                   {selectedConv.ticketId}
                 </span>
                 <span
@@ -706,7 +706,7 @@ export const AdminSupportPage: React.FC = () => {
               </div>
               <div>
                 <span className="text-[9px] text-slate-500 uppercase font-bold">Email</span>
-                <p className="font-mono text-slate-300 text-[10px] truncate">
+                <p className="tabular-nums text-slate-300 text-[10px] truncate">
                   {selectedConv.user?.email || 'N/A'}
                 </p>
               </div>

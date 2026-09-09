@@ -168,7 +168,7 @@ export const CustomQuizPage: React.FC = () => {
 
           <div className="text-center py-2 space-y-1">
             <h3 className="text-2xl sm:text-3xl font-black">{currentQ.word}</h3>
-            {currentQ.phonetic && <p className="text-xs font-mono text-slate-400">{currentQ.phonetic}</p>}
+            {currentQ.phonetic && <p className="text-xs tabular-nums text-slate-400">{currentQ.phonetic}</p>}
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300 pt-2">{currentQ.prompt}</p>
           </div>
 
@@ -185,7 +185,7 @@ export const CustomQuizPage: React.FC = () => {
                     }`}
                 >
                   <span>{opt}</span>
-                  <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-400">
+                  <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs tabular-nums font-bold text-slate-400">
                     {idx + 1}
                   </span>
                 </button>

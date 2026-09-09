@@ -432,7 +432,7 @@ export const CommunityDecksPage: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{w.word}</span>
-                        {w.phonetic && <span className="font-mono text-slate-400">{w.phonetic}</span>}
+                        {w.phonetic && <span className="tabular-nums text-slate-400">{w.phonetic}</span>}
                       </div>
                       <p className="font-semibold text-indigo-700 dark:text-indigo-300 mt-0.5">{w.meaning}</p>
                       {w.example && <p className="text-slate-500 italic mt-0.5">"{w.example}"</p>}
@@ -741,7 +741,7 @@ export const CommunityDecksPage: React.FC = () => {
                                 )}
                                 <span className="font-bold">{v?.word}</span>
                                 {v?.phonetic && (
-                                  <span className="font-mono text-[11px] text-slate-400">{v.phonetic}</span>
+                                  <span className="tabular-nums text-[11px] text-slate-400">{v.phonetic}</span>
                                 )}
                                 <span className="text-slate-500 dark:text-slate-400 truncate">
                                   {v?.shortDefinition || v?.definition}
@@ -769,7 +769,7 @@ export const CommunityDecksPage: React.FC = () => {
                       value={wordsText}
                       onChange={(e) => setWordsText(e.target.value)}
                       placeholder="synergy | /ˈsɪnədʒi/ | sự cộng hưởng, hiệp đồng | The team synergy was great."
-                      className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-900 dark:text-white"
+                      className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 tabular-nums text-xs text-slate-900 dark:text-white"
                     ></textarea>
                   </div>
                 )}

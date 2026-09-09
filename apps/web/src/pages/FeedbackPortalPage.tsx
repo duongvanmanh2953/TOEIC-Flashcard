@@ -247,7 +247,7 @@ export const FeedbackPortalPage: React.FC = () => {
                 <GlassCard key={item.id} className="p-5 flex flex-col justify-between space-y-3 shadow-xs border border-slate-200/80 dark:border-slate-800">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+                      <span className="text-[10px] tabular-nums font-bold text-slate-400 uppercase">
                         [{item.type}]
                       </span>
                       {getStatusBadge(item.status)}
@@ -336,7 +336,7 @@ export const FeedbackPortalPage: React.FC = () => {
               {myItems.map((item) => (
                 <GlassCard key={item.id} className="p-5 border border-slate-200/80 dark:border-slate-800 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+                    <span className="text-[10px] tabular-nums font-bold text-slate-400 uppercase">
                       [{item.type}] • {new Date(item.createdAt).toLocaleDateString()}
                     </span>
                     {getStatusBadge(item.status)}

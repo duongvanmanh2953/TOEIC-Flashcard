@@ -35,6 +35,7 @@ import {
   FileText,
   Package,
   Gamepad2,
+  BarChart3,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
@@ -169,6 +170,7 @@ export const AdminLayout: React.FC = () => {
           count: badgeCounts.payments > 0 ? badgeCounts.payments : undefined,
           badgeColor: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
         },
+        { to: '/admin/reports', label: 'Báo Cáo Tài Chính', icon: BarChart3 },
         { to: '/admin/billing', label: 'Đơn Hàng & Giao Dịch', icon: CreditCard },
       ],
     },
@@ -215,7 +217,7 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen flex bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white ${
+      className={`min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white ${
         isLockedHeightRoute ? 'h-screen max-h-screen overflow-hidden' : ''
       }`}
     >
@@ -233,12 +235,12 @@ export const AdminLayout: React.FC = () => {
           1. DEDICATED ADMIN SIDEBAR
           ======================================================================= */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen z-50 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`fixed lg:sticky top-0 h-screen z-50 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? 'w-[68px] px-1.5' : 'w-64 px-3'
         } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand & Command Center Header */}
-        <div className={`py-3.5 border-b border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-1'}`}>
+        <div className={`py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-1'}`}>
           <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
             <img
               src="/vocabflow-logo-256.png"
@@ -250,19 +252,19 @@ export const AdminLayout: React.FC = () => {
             {!sidebarCollapsed && (
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm tracking-tight text-white">VocabFlow</span>
-                  <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30">
+                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">VocabFlow</span>
+                  <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30">
                     ADMIN
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium">Command Center v7.0</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Command Center v7.0</p>
               </div>
             )}
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={toggleSidebarCollapse}
-              className="hidden lg:flex p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="hidden lg:flex p-1.5 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               title={sidebarCollapsed ? 'Mở rộng thanh quản trị' : 'Thu gọn thanh quản trị (Chỉ hiện icon)'}
             >
               {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
@@ -293,7 +295,7 @@ export const AdminLayout: React.FC = () => {
             </div>
             <kbd
               onClick={() => setPaletteOpen(true)}
-              className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300 border border-slate-700 cursor-pointer hover:bg-slate-700"
+              className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] tabular-nums text-slate-300 border border-slate-700 cursor-pointer hover:bg-slate-700"
             >
               Ctrl+K
             </kbd>
@@ -330,21 +332,21 @@ export const AdminLayout: React.FC = () => {
                         : 'justify-between px-2.5 py-2'
                     } ${
                       isActive
-                        ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md font-bold'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                        ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 font-semibold'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
                     }`}
                   >
                     <div className={`flex items-center min-w-0 ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
                       {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                     </div>
                     {item.count !== undefined && item.count > 0 ? (
                       sidebarCollapsed ? (
-                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-slate-900" />
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
                       ) : (
                         <span
                           className={`px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase shrink-0 ${
-                            item.badgeColor || 'bg-indigo-500 text-white'
+                            item.badgeColor || 'bg-indigo-600 text-white'
                           }`}
                         >
                           {item.count}
@@ -352,13 +354,13 @@ export const AdminLayout: React.FC = () => {
                       )
                     ) : item.badge ? (
                       sidebarCollapsed ? (
-                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-400 ring-2 ring-slate-900" />
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-slate-900" />
                       ) : (
                         <span
                           className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase shrink-0 ${
                             isActive
-                              ? 'bg-white/20 text-white'
-                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                              ? 'bg-indigo-100 dark:bg-white/20 text-indigo-700 dark:text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                           }`}
                         >
                           {item.badge}
@@ -373,22 +375,22 @@ export const AdminLayout: React.FC = () => {
         </nav>
 
         {/* Bottom Actions: User App Switch & Admin Info */}
-        <div className="py-2.5 border-t border-slate-800 space-y-1.5">
+        <div className="py-2.5 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
           <button
             onClick={() => navigate('/dashboard')}
-            className={`rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center shadow-xs border border-slate-700/60 ${
+            className={`rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center border border-slate-200 dark:border-slate-700/60 ${
               sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
             }`}
             title="Quay lại giao diện học tập của học viên"
           >
             <div className="flex items-center gap-2">
-              <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+              <ExternalLink className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               {!sidebarCollapsed && <span>Sang Học Viên</span>}
             </div>
             {!sidebarCollapsed && <span className="text-[10px] text-slate-400">&rarr;</span>}
           </button>
 
-          <div className={`flex items-center rounded-xl bg-slate-900/80 border border-slate-800 ${
+          <div className={`flex items-center rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 ${
             sidebarCollapsed ? 'flex-col gap-1.5 p-1 w-9 mx-auto' : 'justify-between p-2'
           }`}>
             <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
@@ -397,17 +399,17 @@ export const AdminLayout: React.FC = () => {
               </div>
               {!sidebarCollapsed && (
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate leading-tight">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate leading-tight">
                     {user?.displayName || 'Admin'}
                   </p>
-                  <p className="text-[10px] text-slate-400 truncate">{user?.role || 'ADMIN'}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.role || 'ADMIN'}</p>
                 </div>
               )}
             </div>
 
             <button
               onClick={toggleTheme}
-              className={`rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center justify-center ${
+              className={`rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition flex items-center justify-center ${
                 sidebarCollapsed ? 'w-7 h-7 p-0' : 'p-1.5'
               }`}
               title="Đổi giao diện"
@@ -483,11 +485,11 @@ export const AdminLayout: React.FC = () => {
         )}
 
         {/* Dedicated Admin Topbar — Balanced, Spacious & Symmetric */}
-        <header className="sticky top-0 z-30 h-14 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 shrink-0">
+        <header className="sticky top-0 z-30 h-14 bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="lg:hidden p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -495,11 +497,11 @@ export const AdminLayout: React.FC = () => {
             {/* Quick Search Shortcut */}
             <div
               onClick={() => setPaletteOpen(true)}
-              className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-slate-400 hover:text-slate-200 text-xs cursor-pointer transition w-60 shadow-xs"
+              className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-xs cursor-pointer transition w-60 shadow-xs"
             >
               <Search className="w-3.5 h-3.5 shrink-0" />
               <span className="flex-1">Tìm kiếm nhanh...</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-900 text-[10px] font-mono border border-slate-700 text-slate-300">
+              <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-slate-900 text-[10px] tabular-nums border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
                 Ctrl+K
               </kbd>
             </div>
@@ -509,34 +511,34 @@ export const AdminLayout: React.FC = () => {
             {/* Live Status Indicator (click opens /admin/system) */}
             <div
               onClick={() => navigate('/admin/system')}
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-400 text-xs font-bold cursor-pointer transition shadow-xs"
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs font-bold cursor-pointer transition shadow-xs"
               title="Xem Báo cáo sức khỏe hệ thống (System Health)"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
               <span>Hệ thống hoạt động tốt</span>
             </div>
 
             {/* Support Shortcut with unread badge */}
             <button
               onClick={() => navigate('/admin/conversations')}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 relative transition"
+              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 relative transition"
               title="Hội thoại CSKH"
             >
               <Headphones className="w-4 h-4" />
               {badgeCounts.conversations > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-slate-900" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-slate-900" />
               )}
             </button>
 
             {/* Notification Bell with live count */}
             <button
               onClick={() => navigate('/admin/notifications')}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 relative transition"
+              className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 relative transition"
               title="Thông báo quản trị"
             >
               <Bell className="w-4 h-4" />
               {badgeCounts.notifications > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
               )}
             </button>
           </div>

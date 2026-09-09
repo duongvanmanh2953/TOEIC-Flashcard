@@ -279,7 +279,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
               <h1 className="font-black text-base text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-md">
                 {roomTitle}
               </h1>
-              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+              <span className="tabular-nums text-xs font-bold px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                 #{roomCode}
               </span>
             </div>
@@ -291,7 +291,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           {/* Latency Meter */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs tabular-nums font-bold text-slate-700 dark:text-slate-300">
             <span
               className={`w-2 h-2 rounded-full ${
                 latency < 80
@@ -324,7 +324,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
               <span className="text-xs font-black tracking-widest text-indigo-500 uppercase">
                 {t('games.statusStarting', 'Chuẩn bị bắt đầu...')}
               </span>
-              <div className="text-7xl sm:text-9xl font-black font-mono text-indigo-600 dark:text-indigo-400 animate-pulse">
+              <div className="text-7xl sm:text-9xl font-black tabular-nums text-indigo-600 dark:text-indigo-400 animate-pulse">
                 {countdown}
               </div>
               <p className="text-sm text-slate-500 font-medium">
@@ -399,7 +399,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
               {/* Round Timer Ring */}
               <div
-                className={`flex items-center gap-1.5 font-mono font-black text-sm px-3 py-1 rounded-full ${
+                className={`flex items-center gap-1.5 tabular-nums font-black text-sm px-3 py-1 rounded-full ${
                   timerRemaining <= 5
                     ? 'bg-rose-500 text-white animate-pulse'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
@@ -436,7 +436,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 )}
                 <span>{evaluation.feedbackText}</span>
                 {evaluation.score > 0 && (
-                  <span className="px-2 py-0.5 rounded-lg bg-emerald-500 text-white font-mono font-black text-xs">
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-500 text-white tabular-nums font-black text-xs">
                     +{evaluation.score} XP
                   </span>
                 )}
@@ -579,7 +579,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
             <Trophy className="w-4 h-4 text-amber-500" />
             <span>{t('games.liveRanking', 'BẢNG XẾP HẠNG TRỰC TIẾP')}</span>
           </h3>
-          <span className="text-xs text-slate-400 font-mono">Top {players.length} người chơi</span>
+          <span className="text-xs text-slate-400 tabular-nums">Top {players.length} người chơi</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -619,7 +619,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                     {p.streak}
                   </span>
                 )}
-                <span className="font-mono font-black text-xs text-slate-900 dark:text-white">
+                <span className="tabular-nums font-black text-xs text-slate-900 dark:text-white">
                   {p.score.toLocaleString()} XP
                 </span>
               </div>

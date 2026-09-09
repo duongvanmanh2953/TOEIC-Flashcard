@@ -292,7 +292,7 @@ export const VocabularyExplorerPage: React.FC = () => {
                         {item.cefrLevel}
                       </span>
                       {item.partOfSpeech && (
-                        <span className="text-xs font-mono text-slate-400">{item.partOfSpeech}</span>
+                        <span className="text-xs tabular-nums text-slate-400">{item.partOfSpeech}</span>
                       )}
                     </div>
                     <button
@@ -312,7 +312,7 @@ export const VocabularyExplorerPage: React.FC = () => {
                     {item.word}
                   </h3>
                   {item.pronunciation && (
-                    <p className="text-xs font-mono text-slate-400 mt-0.5">{item.pronunciation}</p>
+                    <p className="text-xs tabular-nums text-slate-400 mt-0.5">{item.pronunciation}</p>
                   )}
 
                   <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200 line-clamp-2">
@@ -367,7 +367,7 @@ export const VocabularyExplorerPage: React.FC = () => {
                 <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/30">
                   {selectedWord.cefrLevel}
                 </span>
-                <span className="text-xs font-mono text-slate-400">{selectedWord.partOfSpeech}</span>
+                <span className="text-xs tabular-nums text-slate-400">{selectedWord.partOfSpeech}</span>
               </div>
               <button
                 onClick={() => setSelectedWord(null)}
@@ -380,7 +380,7 @@ export const VocabularyExplorerPage: React.FC = () => {
             <div className="flex items-baseline justify-between">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold">{selectedWord.word}</h2>
-                <p className="text-sm font-mono text-slate-400">{selectedWord.pronunciation}</p>
+                <p className="text-sm tabular-nums text-slate-400">{selectedWord.pronunciation}</p>
               </div>
               <SpeechButton text={selectedWord.word} showSlowOption={true} />
             </div>

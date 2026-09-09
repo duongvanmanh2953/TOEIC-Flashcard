@@ -48,7 +48,7 @@ export const QuotaMeter: React.FC<QuotaMeterProps> = ({
           )}
         </div>
 
-        <div className="font-mono text-xs font-black">
+        <div className="tabular-nums text-xs font-black">
           {isUnlimited ? (
             <span className="text-emerald-600 dark:text-emerald-400">Đã dùng {used}</span>
           ) : (

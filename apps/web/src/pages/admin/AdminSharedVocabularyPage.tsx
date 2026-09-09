@@ -472,7 +472,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-white text-sm">{w.word}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">
+                          <span className="text-[10px] text-slate-500 tabular-nums">
                             {w.phonetic || '/.../'} • {w.partOfSpeech || 'n.'}
                           </span>
                         </div>

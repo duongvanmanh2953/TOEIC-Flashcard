@@ -780,12 +780,123 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
+    const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
+      USER: [],
+      PREMIUM_USER: [],
+      MODERATOR: ['MODERATE_COMMUNITY', 'SUPPORT_AGENT'],
+      ADMIN: [
+        'MANAGE_USERS',
+        'MANAGE_GAMES',
+        'MANAGE_FINANCE',
+        'VIEW_FINANCIAL_REPORTS',
+        'SMART_PRICING',
+        'MANAGE_VOCABULARY',
+        'MANAGE_AI_CONFIG',
+        'SUPPORT_AGENT',
+        'MODERATE_COMMUNITY',
+        'MANAGE_SYSTEM',
+      ],
+      SUPER_ADMIN: [
+        'MANAGE_USERS',
+        'MANAGE_GAMES',
+        'MANAGE_FINANCE',
+        'VIEW_FINANCIAL_REPORTS',
+        'SMART_PRICING',
+        'MANAGE_VOCABULARY',
+        'MANAGE_AI_CONFIG',
+        'SUPPORT_AGENT',
+        'MODERATE_COMMUNITY',
+        'MANAGE_SYSTEM',
+      ],
+    };
+
+    const enrichedItems = items.map((u) => {
+      const custom = this.customUserPermissions.get(u.id);
+      const perms = custom || ROLE_DEFAULT_PERMISSIONS[u.role] || [];
+      return {
+        ...u,
+        permissions: perms,
+      };
+    });
+
     return {
-      items,
+      items: enrichedItems,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  private customUserPermissions: Map<string, string[]> = new Map();
+
+  async updateUserRole(userId: string, role: string, actorId?: string) {
+    const validRoles = ['USER', 'PREMIUM_USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
+    const targetRole = validRoles.includes(role) ? (role as Role) : Role.USER;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: targetRole },
+    });
+
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: 'USER_UPDATE_ROLE',
+          targetType: 'USER',
+          targetId: userId,
+          metadata: { previousRole: user.role, newRole: targetRole },
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  async updateUserPermissions(userId: string, role?: string, permissions?: string[], actorId?: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    let updatedUser = user;
+    if (role) {
+      const validRoles = ['USER', 'PREMIUM_USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
+      const targetRole = validRoles.includes(role) ? (role as Role) : undefined;
+      if (targetRole && targetRole !== user.role) {
+        updatedUser = await this.prisma.user.update({
+          where: { id: userId },
+          data: { role: targetRole },
+        });
+      }
+    }
+
+    if (Array.isArray(permissions)) {
+      this.customUserPermissions.set(userId, permissions);
+    }
+
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: 'USER_UPDATE_PERMISSIONS',
+          targetType: 'USER',
+          targetId: userId,
+          metadata: {
+            role: updatedUser.role,
+            permissions: permissions || this.customUserPermissions.get(userId) || [],
+          },
+        },
+      });
+    }
+
+    return {
+      success: true,
+      userId,
+      role: updatedUser.role,
+      permissions: permissions || this.customUserPermissions.get(userId) || [],
     };
   }
 

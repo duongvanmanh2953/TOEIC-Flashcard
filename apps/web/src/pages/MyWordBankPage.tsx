@@ -358,7 +358,7 @@ export const MyWordBankPage: React.FC = () => {
                   </div>
 
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-snug">{wordText}</h3>
-                  {v.phonetic && <p className="text-xs font-mono text-slate-400">{v.phonetic}</p>}
+                  {v.phonetic && <p className="text-xs tabular-nums text-slate-400">{v.phonetic}</p>}
                   <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mt-2 line-clamp-2 leading-relaxed">
                     {meaningText}
                   </p>
@@ -445,7 +445,7 @@ export const MyWordBankPage: React.FC = () => {
                     value={phonetic}
                     onChange={(e) => setPhonetic(e.target.value)}
                     placeholder="Ví dụ: /ˈkɒmprəmaɪz/"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 tabular-nums text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -675,7 +675,7 @@ export const MyWordBankPage: React.FC = () => {
                         <div className="min-w-0">
                           <span className="font-bold text-slate-900 dark:text-white mr-2">{item.word}</span>
                           {item.phonetic && (
-                            <span className="font-mono text-[11px] text-slate-400 mr-2">{item.phonetic}</span>
+                            <span className="tabular-nums text-[11px] text-slate-400 mr-2">{item.phonetic}</span>
                           )}
                           <span className="text-slate-600 dark:text-slate-300">{item.meaning}</span>
                         </div>

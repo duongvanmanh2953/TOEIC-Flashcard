@@ -65,28 +65,28 @@ export const AdminSecurityPage: React.FC = () => {
                     {row.free ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
                     ) : (
-                      <span className="text-slate-400 font-mono text-[11px]">—</span>
+                      <span className="text-slate-400 tabular-nums text-[11px]">—</span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-center">
                     {row.pro ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
                     ) : (
-                      <span className="text-slate-400 font-mono text-[11px]">—</span>
+                      <span className="text-slate-400 tabular-nums text-[11px]">—</span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-center">
                     {row.admin ? (
                       <CheckCircle2 className="w-4 h-4 text-indigo-500 mx-auto" />
                     ) : (
-                      <span className="text-slate-400 font-mono text-[11px]">—</span>
+                      <span className="text-slate-400 tabular-nums text-[11px]">—</span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-center">
                     {row.super ? (
                       <CheckCircle2 className="w-4 h-4 text-purple-600 mx-auto" />
                     ) : (
-                      <span className="text-slate-400 font-mono text-[11px]">—</span>
+                      <span className="text-slate-400 tabular-nums text-[11px]">—</span>
                     )}
                   </td>
                 </tr>
@@ -110,7 +110,7 @@ export const AdminSecurityPage: React.FC = () => {
           {logs.map((log) => (
             <div key={log.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-700/20">
               <div className="flex items-center gap-3">
-                <span className={`px-2 py-0.5 rounded font-mono font-bold ${
+                <span className={`px-2 py-0.5 rounded tabular-nums font-bold ${
                   log.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-rose-50 text-rose-700'
                 }`}>
                   {log.action}
@@ -118,7 +118,7 @@ export const AdminSecurityPage: React.FC = () => {
                 <span className="font-medium text-slate-700 dark:text-slate-300">
                   {log.user}
                 </span>
-                <span className="text-slate-400 font-mono">
+                <span className="text-slate-400 tabular-nums">
                   IP: {log.ip}
                 </span>
               </div>

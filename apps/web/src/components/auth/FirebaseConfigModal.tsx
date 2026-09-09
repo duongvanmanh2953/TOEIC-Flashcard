@@ -249,7 +249,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
                 value={pasteSnippet}
                 onChange={(e) => handleParseSnippet(e.target.value)}
                 placeholder={`const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "vocabflow.firebaseapp.com",\n  projectId: "vocabflow",\n  appId: "1:..."\n};`}
-                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-700/80 font-mono text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-700/80 tabular-nums text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
               />
               <p className="text-[11px] text-slate-400 mt-1">
                 💡 Hệ thống sẽ tự động quét và điền các trường `apiKey`, `projectId`, `authDomain`...
@@ -267,7 +267,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
                   value={config.apiKey}
                   onChange={(e) => setConfig({ ...config, apiKey: e.target.value.trim() })}
                   placeholder="AIzaSy..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 tabular-nums text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
@@ -281,7 +281,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
                   value={config.projectId}
                   onChange={(e) => setConfig({ ...config, projectId: e.target.value.trim() })}
                   placeholder="my-vocab-project"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 tabular-nums text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
@@ -294,7 +294,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
                   value={config.authDomain}
                   onChange={(e) => setConfig({ ...config, authDomain: e.target.value.trim() })}
                   placeholder="my-project.firebaseapp.com"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 tabular-nums text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
@@ -307,7 +307,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
                   value={config.appId || ''}
                   onChange={(e) => setConfig({ ...config, appId: e.target.value.trim() })}
                   placeholder="1:123456:web:..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 font-mono text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 tabular-nums text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
                 />
               </div>
             </div>
@@ -320,17 +320,17 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
             </div>
             <div className="flex items-center justify-between">
               <span>API Key:</span>
-              <span className="font-mono text-cyan-400">
+              <span className="tabular-nums text-cyan-400">
                 {config.apiKey ? `${config.apiKey.substring(0, 10)}...` : 'Chưa có'}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span>Project ID:</span>
-              <span className="font-mono text-cyan-400">{config.projectId || 'Chưa có'}</span>
+              <span className="tabular-nums text-cyan-400">{config.projectId || 'Chưa có'}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Auth Domain:</span>
-              <span className="font-mono text-cyan-400">{config.authDomain || 'Chưa có'}</span>
+              <span className="tabular-nums text-cyan-400">{config.authDomain || 'Chưa có'}</span>
             </div>
           </div>
 

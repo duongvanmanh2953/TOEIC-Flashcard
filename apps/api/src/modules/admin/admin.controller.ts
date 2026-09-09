@@ -213,6 +213,27 @@ export class AdminController {
     return this.adminService.toggleUserStatus(userId, actorId);
   }
 
+  @Patch('users/:id/role')
+  @ApiOperation({ summary: 'Update user role' })
+  updateUserRole(
+    @Param('id') userId: string,
+    @Body('role') role: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.adminService.updateUserRole(userId, role, actorId);
+  }
+
+  @Patch('users/:id/permissions')
+  @ApiOperation({ summary: 'Update granular custom user permissions' })
+  updateUserPermissions(
+    @Param('id') userId: string,
+    @Body('role') role?: string,
+    @Body('permissions') permissions?: string[],
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.updateUserPermissions(userId, role, permissions, actorId);
+  }
+
   @Get('audit-logs')
   @ApiOperation({ summary: 'Get recent administrative and moderation audit logs' })
   getAuditLogs(@Query('limit') limit: string = '20') {

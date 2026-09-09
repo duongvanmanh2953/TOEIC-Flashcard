@@ -658,7 +658,7 @@ export const ReviewSessionPage: React.FC = () => {
                     {currentItem.word}
                   </h2>
                   {currentItem.pronunciation && (
-                    <p className="text-base font-mono text-slate-400 font-medium tracking-wide">
+                    <p className="text-base tabular-nums text-slate-400 font-medium tracking-wide">
                       {currentItem.pronunciation}
                     </p>
                   )}
@@ -691,7 +691,7 @@ export const ReviewSessionPage: React.FC = () => {
                     <span className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
                       {currentItem.word}
                     </span>
-                    <span className="text-xs font-mono text-slate-400">{currentItem.pronunciation}</span>
+                    <span className="text-xs tabular-nums text-slate-400">{currentItem.pronunciation}</span>
                   </div>
                   <SpeechButton text={currentItem.word} />
                 </div>
@@ -817,7 +817,7 @@ export const ReviewSessionPage: React.FC = () => {
               {currentItem.word}
             </h2>
             {currentItem.pronunciation && (
-              <p className="text-sm font-mono text-slate-400 font-semibold">{currentItem.pronunciation}</p>
+              <p className="text-sm tabular-nums text-slate-400 font-semibold">{currentItem.pronunciation}</p>
             )}
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300 pt-2">
               Chọn nghĩa đúng nhất của từ vựng trên trong ngữ cảnh:
@@ -849,7 +849,7 @@ export const ReviewSessionPage: React.FC = () => {
                   className={`p-4 rounded-2xl border text-left text-xs sm:text-sm transition flex items-center justify-between ${btnClass}`}
                 >
                   <span>{opt}</span>
-                  <span className="text-xs font-mono font-bold text-slate-400">[{idx + 1}]</span>
+                  <span className="text-xs tabular-nums font-bold text-slate-400">[{idx + 1}]</span>
                 </button>
               );
             })}

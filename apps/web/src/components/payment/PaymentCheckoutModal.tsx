@@ -252,7 +252,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
               <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-left text-sm space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400 font-medium">Mã đơn hàng:</span>
-                  <span className="font-bold text-slate-900 dark:text-white font-mono">VF{order?.orderCode}</span>
+                  <span className="font-bold text-slate-900 dark:text-white tabular-nums">VF{order?.orderCode}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400 font-medium">Gói tài khoản:</span>
@@ -366,7 +366,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                         <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
                           <Clock className="w-4 h-4 text-amber-500" />
                           <span>Hết hạn trong:</span>
-                          <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">
+                          <span className="tabular-nums font-bold text-amber-600 dark:text-amber-400 text-sm">
                             {formatTimer(timeLeft)}
                           </span>
                         </div>
@@ -414,7 +414,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                           <span className="text-[11px] uppercase font-bold text-slate-400 block tracking-wider">
                             Số tài khoản
                           </span>
-                          <span className="text-base sm:text-lg font-black font-mono text-slate-900 dark:text-white tracking-wider">
+                          <span className="text-base sm:text-lg font-black tabular-nums text-slate-900 dark:text-white tracking-wider">
                             {order.accountNo}
                           </span>
                         </div>
@@ -467,7 +467,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                             <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
                             <span>Nội dung chuyển khoản (Bắt buộc giữ nguyên)</span>
                           </span>
-                          <span className="text-lg sm:text-xl font-black font-mono text-slate-900 dark:text-white tracking-widest block">
+                          <span className="text-lg sm:text-xl font-black tabular-nums text-slate-900 dark:text-white tracking-widest block">
                             {order.transferContent}
                           </span>
                         </div>

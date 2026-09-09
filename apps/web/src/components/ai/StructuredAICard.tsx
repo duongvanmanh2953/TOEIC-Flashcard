@@ -77,7 +77,7 @@ export const StructuredAICard: React.FC<StructuredAICardProps> = ({
               </div>
 
               {vocabularyCard.pronunciation && (
-                <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2 text-xs tabular-nums text-slate-500 dark:text-slate-400">
                   <span>{vocabularyCard.pronunciation}</span>
                   <SpeechButton text={vocabularyCard.word} />
                 </div>

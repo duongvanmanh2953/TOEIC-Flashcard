@@ -46,6 +46,7 @@ import { AdminPricingPage } from './pages/admin/AdminPricingPage';
 import { AdminPlansPage } from './pages/admin/AdminPlansPage';
 import { AdminResourcesPage } from './pages/admin/AdminResourcesPage';
 import { AdminGamesPage } from './pages/admin/AdminGamesPage';
+import { AdminFinancialReportsPage } from './pages/admin/AdminFinancialReportsPage';
 import { GameLobbyPage } from './pages/games/GameLobbyPage';
 import { RealtimeGameRoomPage } from './pages/games/RealtimeGameRoomPage';
 import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
@@ -181,6 +182,7 @@ export const App: React.FC = () => {
               <Route path="plans" element={<AdminPlansPage />} />
               <Route path="billing" element={<AdminBillingPage />} />
               <Route path="finance" element={<AdminFinancePage />} />
+              <Route path="reports" element={<AdminFinancialReportsPage />} />
               <Route path="pricing" element={<AdminPricingPage />} />
               <Route path="system" element={<AdminSystemPage />} />
               <Route path="security" element={<AdminSecurityPage />} />

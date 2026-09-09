@@ -26,6 +26,7 @@ import {
 import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { AdminToggle } from '../../components/admin/ui/AdminToggle';
 
 type SettingSectionKey =
   | 'general'
@@ -540,11 +541,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'When enabled, only administrative users can access the platform.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.general?.maintenanceMode}
-                      onChange={(e) => handleUpdateField('general', 'maintenanceMode', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('general', 'maintenanceMode', checked)}
                     />
                   </div>
 
@@ -559,11 +558,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Allow new students to register accounts publicly.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.general?.allowRegistration}
-                      onChange={(e) => handleUpdateField('general', 'allowRegistration', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('general', 'allowRegistration', checked)}
                     />
                   </div>
                 </div>
@@ -614,11 +611,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Automatically serve dark palette to unauthenticated visitors.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.branding?.defaultDarkMode}
-                      onChange={(e) => handleUpdateField('branding', 'defaultDarkMode', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('branding', 'defaultDarkMode', checked)}
                     />
                   </div>
                 </div>
@@ -751,11 +746,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Play native US pronunciation audio when flipping flashcards.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.learning?.autoPronounce}
-                      onChange={(e) => handleUpdateField('learning', 'autoPronounce', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('learning', 'autoPronounce', checked)}
                     />
                   </div>
                 </div>
@@ -851,11 +844,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Play audio chimes when receiving live support messages or notifications.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.notifications?.soundAlerts}
-                      onChange={(e) => handleUpdateField('notifications', 'soundAlerts', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('notifications', 'soundAlerts', checked)}
                     />
                   </div>
 
@@ -870,11 +861,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Send weekly mastery summaries to active students on Monday mornings.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.notifications?.enableEmail}
-                      onChange={(e) => handleUpdateField('notifications', 'enableEmail', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('notifications', 'enableEmail', checked)}
                     />
                   </div>
 
@@ -919,11 +908,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Render live support chat widget across the student web application.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.support?.supportEnabled}
-                      onChange={(e) => handleUpdateField('support', 'supportEnabled', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('support', 'supportEnabled', checked)}
                     />
                   </div>
 
@@ -938,11 +925,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Assign incoming tickets round-robin to currently active administrators.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.support?.autoAssignEnabled}
-                      onChange={(e) => handleUpdateField('support', 'autoAssignEnabled', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('support', 'autoAssignEnabled', checked)}
                     />
                   </div>
 
@@ -988,11 +973,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Permit users to submit product feature requests.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.feedback?.allowFeatureRequests}
-                      onChange={(e) => handleUpdateField('feedback', 'allowFeatureRequests', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('feedback', 'allowFeatureRequests', checked)}
                     />
                   </div>
 
@@ -1007,11 +990,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Permit users to file technical bug reports.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.feedback?.allowBugReports}
-                      onChange={(e) => handleUpdateField('feedback', 'allowBugReports', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('feedback', 'allowBugReports', checked)}
                     />
                   </div>
 
@@ -1026,11 +1007,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Show upcoming roadmap items and permit community voting.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.feedback?.publicRoadmapEnabled}
-                      onChange={(e) => handleUpdateField('feedback', 'publicRoadmapEnabled', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('feedback', 'publicRoadmapEnabled', checked)}
                     />
                   </div>
                 </div>
@@ -1143,11 +1122,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Enforce two-factor authenticator setup for administrative roles.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.security?.require2FAForAdmin}
-                      onChange={(e) => handleUpdateField('security', 'require2FAForAdmin', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('security', 'require2FAForAdmin', checked)}
                     />
                   </div>
                 </div>
@@ -1184,11 +1161,9 @@ export const AdminSettingsPage: React.FC = () => {
                           : 'Allow moderators to approve or reject submitted community flashcard decks.'}
                       </p>
                     </div>
-                    <input
-                      type="checkbox"
+                    <AdminToggle
                       checked={!!settings.users_roles?.moderatorCanManageDecks}
-                      onChange={(e) => handleUpdateField('users_roles', 'moderatorCanManageDecks', e.target.checked)}
-                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      onChange={(checked) => handleUpdateField('users_roles', 'moderatorCanManageDecks', checked)}
                     />
                   </div>
                 </div>
@@ -1205,24 +1180,22 @@ export const AdminSettingsPage: React.FC = () => {
                   ].map((flag) => (
                     <div
                       key={flag.key}
-                      className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800"
+                      className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800"
                     >
                       <span className="font-bold text-slate-900 dark:text-white">
                         {locale === 'vi' ? flag.labelVi : flag.labelEn}
                       </span>
-                      <input
-                        type="checkbox"
+                      <AdminToggle
                         checked={!!settings.feature_flags?.[flag.key]}
-                        onChange={(e) =>
+                        onChange={(checked) =>
                           setSettings((prev) => ({
                             ...prev,
                             feature_flags: {
                               ...(prev.feature_flags || {}),
-                              [flag.key]: e.target.checked,
+                              [flag.key]: checked,
                             },
                           }))
                         }
-                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
                       />
                     </div>
                   ))}

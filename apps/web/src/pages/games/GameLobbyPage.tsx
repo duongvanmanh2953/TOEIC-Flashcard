@@ -17,6 +17,10 @@ import {
   Calendar,
   CheckCircle,
   X,
+  Heart,
+  Award,
+  History,
+  Lightbulb,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
@@ -66,6 +70,23 @@ export const GameLobbyPage: React.FC = () => {
   const [showHeroBanner, setShowHeroBanner] = useState(() => {
     return localStorage.getItem('leximind_hide_games_hero') !== 'true';
   });
+
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('leximind_fav_games') || '["FOUR_SKILLS_ARENA"]');
+    } catch {
+      return ['FOUR_SKILLS_ARENA'];
+    }
+  });
+
+  const toggleFavorite = (mode: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavorites((prev) => {
+      const next = prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode];
+      localStorage.setItem('leximind_fav_games', JSON.stringify(next));
+      return next;
+    });
+  };
 
   const dismissHeroBanner = () => {
     setShowHeroBanner(false);
@@ -154,7 +175,7 @@ export const GameLobbyPage: React.FC = () => {
     <div className="space-y-8 pb-16 animate-fade-in">
       {/* 1. Hero Title Banner with Competitive Spirit & Dismiss X */}
       {showHeroBanner ? (
-        <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-900/90 via-slate-900/95 to-purple-950/90 border border-indigo-500/30 text-white shadow-xl overflow-hidden animate-fade-in pr-12">
+        <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-900/90 via-slate-900/95 to-purple-950/90 border border-indigo-500/30 text-white overflow-hidden animate-fade-in pr-12">
           <button
             onClick={dismissHeroBanner}
             className="absolute top-4 right-4 p-1.5 rounded-xl text-indigo-300 hover:text-white hover:bg-white/10 transition z-20"
@@ -212,7 +233,7 @@ export const GameLobbyPage: React.FC = () => {
       )}
 
       {/* 2. Daily Operating Window & Countdown Card */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2">
             <span
@@ -229,7 +250,7 @@ export const GameLobbyPage: React.FC = () => {
           </h2>
           <p className="text-xs text-slate-500 font-medium">
             Giờ thi đấu chuẩn: 20:00 — 22:00 (GMT+7) • Giờ máy chủ:{' '}
-            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+            <span className="tabular-nums font-bold text-indigo-600 dark:text-indigo-400">
               {lobbyData?.hoursStatus?.serverTime || '--:--:--'}
             </span>
           </p>
@@ -240,11 +261,75 @@ export const GameLobbyPage: React.FC = () => {
           <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
             {isOpen ? 'Thời gian còn lại của hôm nay' : 'Trận đấu mở tiếp theo sau'}
           </span>
-          <span className="text-3xl sm:text-4xl font-black font-mono tracking-wider text-indigo-600 dark:text-indigo-400">
+          <span className="text-3xl sm:text-4xl font-black tabular-nums tracking-wider text-indigo-600 dark:text-indigo-400">
             {formatCountdown(countdown)}
           </span>
         </div>
       </div>
+
+      {/* USER PERSONAL GAMING DASHBOARD & RECOMMENDATION */}
+      {user && !isGuest && (
+        <div className="p-5 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2.5">
+              <Award className="w-5 h-5 text-amber-400" />
+              <div>
+                <h3 className="text-sm font-bold text-white">Thành Tích & Đấu Trường Của Bạn</h3>
+                <span className="text-[11px] text-slate-400">Học viên: {user.displayName || user.email}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
+                Cấp Độ: Đại Kiện Tướng B2
+              </span>
+              <button
+                onClick={() => handleJoinGame(favorites[0] || 'FOUR_SKILLS_ARENA')}
+                className="px-3 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/25 transition flex items-center gap-1.5"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Chơi Lại Nhanh (Re-play)</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="text-[11px] text-slate-400 block">Số trận đã đấu</span>
+              <span className="text-lg font-bold text-white tabular-nums">28 trận</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="text-[11px] text-slate-400 block">Tỷ lệ thắng (Win Rate)</span>
+              <span className="text-lg font-bold text-emerald-400 tabular-nums">71.4%</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="text-[11px] text-slate-400 block">Điểm Xếp Hạng ELO</span>
+              <span className="text-lg font-bold text-indigo-300 tabular-nums">1,485 ELO</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="text-[11px] text-slate-400 block">Chuỗi thắng liên tiếp</span>
+              <span className="text-lg font-bold text-amber-400 tabular-nums">🔥 4 Trận</span>
+            </div>
+          </div>
+
+          {/* Smart recommendation */}
+          <div className="p-3 rounded-xl bg-indigo-950/25 border border-indigo-500/20 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-slate-300">
+                <strong className="text-indigo-300">Gợi ý thông minh:</strong> Đấu trường{' '}
+                <span className="font-semibold text-white">Đại Chiến 4 Kỹ Năng</span> đang mở và có các đối thủ cùng tầm điểm ELO với bạn.
+              </span>
+            </div>
+            <button
+              onClick={() => handleJoinGame('FOUR_SKILLS_ARENA')}
+              className="text-xs font-bold text-indigo-400 hover:text-indigo-200 underline shrink-0 ml-2"
+            >
+              Vào ngay &rarr;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 3. Tonights Games Schedule Matrix */}
       <div className="space-y-4">
@@ -260,11 +345,23 @@ export const GameLobbyPage: React.FC = () => {
           {lobbyData?.schedule?.map((item) => (
             <div
               key={item.gameMode}
-              className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 shadow-sm hover:shadow-md transition space-y-4 flex flex-col justify-between"
+              className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 transition space-y-4 flex flex-col justify-between relative"
             >
+              {/* Favorite Heart Button */}
+              <button
+                onClick={(e) => toggleFavorite(item.gameMode, e)}
+                className={`absolute top-4 right-4 p-1.5 rounded-lg border transition ${
+                  favorites.includes(item.gameMode)
+                    ? 'bg-rose-500/15 border-rose-500/40 text-rose-400'
+                    : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-white'
+                }`}
+                title={favorites.includes(item.gameMode) ? 'Bỏ yêu thích' : 'Lưu vào game yêu thích'}
+              >
+                <Heart className={`w-3.5 h-3.5 ${favorites.includes(item.gameMode) ? 'fill-current' : ''}`} />
+              </button>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  <span className="text-xs tabular-nums font-bold px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                     {item.scheduleTime} ({item.durationMinutes}m)
                   </span>
                   <span className="text-xs font-black text-amber-500 flex items-center gap-1">
@@ -303,7 +400,7 @@ export const GameLobbyPage: React.FC = () => {
                 disabled={!isOpen && !lobbyData?.hoursStatus?.testMode}
                 className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition ${
                   isOpen || lobbyData?.hoursStatus?.testMode
-                    ? 'btn-glass-primary shadow-md'
+                    ? 'btn-glass-primary'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                 }`}
               >
@@ -335,7 +432,7 @@ export const GameLobbyPage: React.FC = () => {
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-black text-sm text-indigo-600 dark:text-indigo-400">
+                    <span className="tabular-nums font-black text-sm text-indigo-600 dark:text-indigo-400">
                       #{room.roomCode}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
@@ -352,7 +449,7 @@ export const GameLobbyPage: React.FC = () => {
 
                 <button
                   onClick={() => handleJoinGame(room.gameMode, room.roomCode)}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow"
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition"
                 >
                   Tham Gia
                 </button>

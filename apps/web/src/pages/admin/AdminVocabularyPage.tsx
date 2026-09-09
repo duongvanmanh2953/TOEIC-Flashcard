@@ -529,7 +529,7 @@ export const AdminVocabularyPage: React.FC = () => {
                           )}
                         </div>
                         {item.phonetic && (
-                          <span className="text-[11px] text-slate-500 font-mono">
+                          <span className="text-[11px] text-slate-500 tabular-nums">
                             /{item.phonetic}/
                           </span>
                         )}
@@ -549,7 +549,7 @@ export const AdminVocabularyPage: React.FC = () => {
                           <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
                             {item.cefrLevel}
                           </span>
-                          <span className="text-[10px] font-mono text-slate-400">
+                          <span className="text-[10px] tabular-nums text-slate-400">
                             {item.partOfSpeech || 'n.'}
                           </span>
                         </div>
@@ -688,7 +688,7 @@ export const AdminVocabularyPage: React.FC = () => {
                   value={editingItem.phonetic || ''}
                   onChange={(e) => setEditingItem({ ...editingItem, phonetic: e.target.value })}
                   placeholder="e.g. /əˈkʌm.plɪʃ/"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 font-mono focus:border-indigo-500 focus:outline-hidden"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 tabular-nums focus:border-indigo-500 focus:outline-hidden"
                 />
               </div>
 
@@ -797,7 +797,7 @@ export const AdminVocabularyPage: React.FC = () => {
                   setImportValidation(null);
                 }}
                 placeholder={`Ví dụ định dạng CSV:\nnegotiate,verb,B2,thương lượng đàm phán,/nəˈɡoʊ.ʃi.eɪt/\nstrategy,noun,B1,chiến lược,/ˈstræt.ə.dʒi/`}
-                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 font-mono text-[11px] focus:border-indigo-500 focus:outline-hidden"
+                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 tabular-nums text-[11px] focus:border-indigo-500 focus:outline-hidden"
               />
 
               <div className="flex items-center justify-between">

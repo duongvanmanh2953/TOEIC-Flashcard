@@ -557,7 +557,7 @@ export const AdminFeedbackPage: React.FC = () => {
             </button>
           </div>
           {errorDetail && (
-            <details className="text-[11px] font-mono text-rose-700 dark:text-rose-300/80 bg-rose-100/50 dark:bg-rose-900/30 p-2 rounded-lg">
+            <details className="text-[11px] tabular-nums text-rose-700 dark:text-rose-300/80 bg-rose-100/50 dark:bg-rose-900/30 p-2 rounded-lg">
               <summary className="cursor-pointer font-bold">Technical Details (Dev Mode)</summary>
               <p className="mt-1 break-all">{errorDetail}</p>
             </details>
@@ -800,7 +800,7 @@ export const AdminFeedbackPage: React.FC = () => {
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">{selectedItem.title}</h3>
                 <p className="text-xs text-slate-400">
-                  ID: <span className="font-mono text-[10px]">{selectedItem.id}</span> •{' '}
+                  ID: <span className="tabular-nums text-[10px]">{selectedItem.id}</span> •{' '}
                   {new Date(selectedItem.createdAt).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}
                 </p>
               </div>

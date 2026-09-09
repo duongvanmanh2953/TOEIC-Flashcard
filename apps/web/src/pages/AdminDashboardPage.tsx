@@ -605,7 +605,7 @@ export const AdminDashboardPage: React.FC = () => {
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-900 dark:text-white text-sm">{item.word}</span>
-                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 tabular-nums">
                               {item.pos} • {item.level}
                             </span>
                           </div>
@@ -888,7 +888,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   {auditLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                      <td className="py-2.5 px-2 text-slate-400 font-mono">
+                      <td className="py-2.5 px-2 text-slate-400 tabular-nums">
                         {new Date(log.createdAt).toLocaleString('vi-VN')}
                       </td>
                       <td className="py-2.5 px-2 font-semibold text-slate-800 dark:text-slate-200">

@@ -6,7 +6,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -25,12 +27,55 @@ export class AuthController {
     private oauthService: OAuthService,
   ) {}
 
+  private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
+    if (!res) return;
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+    };
+
+    if (accessToken) {
+      res.cookie('token', accessToken, {
+        ...cookieOptions,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+    }
+
+    if (refreshToken) {
+      res.cookie('refreshToken', refreshToken, {
+        ...cookieOptions,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+    }
+  }
+
+  private clearAuthCookies(res: Response) {
+    if (!res) return;
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+    };
+    res.clearCookie('token', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
+  }
+
   @Public()
   @Post('register')
   @ApiOperation({ summary: 'Register a new learner account' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.register(dto);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @Public()
@@ -38,16 +83,26 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.login(dto);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh expired access token' })
-  refreshToken(@Body() dto: RefreshTokenDto) {
-    return this.authService.refreshToken(dto.refreshToken);
+  async refreshToken(
+    @Body() dto: RefreshTokenDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.refreshToken(dto.refreshToken);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -55,7 +110,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout and revoke refresh token' })
-  logout(@CurrentUser('id') userId: string) {
+  async logout(
+    @CurrentUser('id') userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    this.clearAuthCookies(res);
     return this.authService.logout(userId);
   }
 
@@ -71,7 +130,7 @@ export class AuthController {
   @Post('oauth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate via Google or Facebook OAuth' })
-  oauthLogin(
+  async oauthLogin(
     @Body()
     body: {
       provider: 'google' | 'facebook';
@@ -80,8 +139,11 @@ export class AuthController {
       displayName: string;
       avatar?: string;
     },
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.oauthService.handleOAuthUser(body);
+    const result: any = await this.oauthService.handleOAuthUser(body);
+    this.setAuthCookies(res, result?.accessToken, result?.refreshToken);
+    return result;
   }
 
   @Public()

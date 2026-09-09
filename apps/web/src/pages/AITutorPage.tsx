@@ -481,13 +481,13 @@ export const AITutorPage: React.FC = () => {
                               {msg.vocabularyCard.cefrLevel}
                             </span>
                             {msg.vocabularyCard.partOfSpeech && (
-                              <span className="text-xs font-mono text-slate-400">
+                              <span className="text-xs tabular-nums text-slate-400">
                                 ({msg.vocabularyCard.partOfSpeech})
                               </span>
                             )}
                           </div>
                           {msg.vocabularyCard.pronunciation && (
-                            <p className="text-xs font-mono text-slate-400 mt-0.5">
+                            <p className="text-xs tabular-nums text-slate-400 mt-0.5">
                               {msg.vocabularyCard.pronunciation}
                             </p>
                           )}
@@ -688,7 +688,7 @@ export const AITutorPage: React.FC = () => {
                         {w.cefrLevel}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 font-mono">{w.phonetic}</p>
+                    <p className="text-xs text-slate-400 tabular-nums">{w.phonetic}</p>
                     <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{w.meaningVi}</p>
                     <p className="text-[11px] text-slate-500 italic mt-1 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-lg">
                       "{w.contextSentence}"

@@ -157,7 +157,7 @@ export const AdminSystemPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <span className="text-xs font-mono px-3 py-1.5 bg-amber-500/20 text-amber-900 dark:text-amber-200 rounded-xl font-black whitespace-nowrap self-start md:self-auto">
+          <span className="text-xs tabular-nums px-3 py-1.5 bg-amber-500/20 text-amber-900 dark:text-amber-200 rounded-xl font-black whitespace-nowrap self-start md:self-auto">
             ACTION REQUIRED
           </span>
         </div>
@@ -186,7 +186,7 @@ export const AdminSystemPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <span className="text-xs font-mono px-3 py-1 bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 rounded-lg font-black">
+          <span className="text-xs tabular-nums px-3 py-1 bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 rounded-lg font-black">
             UPTIME: {data ? formatUptime(data.uptimeSeconds) : '...'}
           </span>
         </div>
@@ -199,7 +199,7 @@ export const AdminSystemPage: React.FC = () => {
             <KeyRound className="w-4 h-4 text-amber-400" />
             <span>{t('healthDiagnostics.unconfiguredAlert', 'Dịch Vụ Chưa Cấu Hình Key:')}</span>
           </div>
-          <ul className="list-disc list-inside text-xs text-slate-300 space-y-1 font-mono">
+          <ul className="list-disc list-inside text-xs text-slate-300 space-y-1 tabular-nums">
             {data.unconfiguredKeys.map((k, i) => (
               <li key={i} className="text-amber-200 font-medium">
                 {k}
@@ -250,7 +250,7 @@ export const AdminSystemPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex items-center gap-4 text-xs self-start sm:self-auto font-mono text-slate-600 dark:text-slate-300">
+                <div className="flex items-center gap-4 text-xs self-start sm:self-auto tabular-nums text-slate-600 dark:text-slate-300">
                   {svc.latencyMs > 0 && (
                     <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
                       {svc.latencyMs}ms

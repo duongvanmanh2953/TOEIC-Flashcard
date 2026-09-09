@@ -372,7 +372,7 @@ export const SupportCenterPage: React.FC = () => {
                   >
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <span
-                        className={`text-[9px] font-mono font-bold ${
+                        className={`text-[9px] tabular-nums font-bold ${
                           isSelected ? 'text-indigo-200' : 'text-slate-400'
                         }`}
                       >
@@ -410,7 +410,7 @@ export const SupportCenterPage: React.FC = () => {
               <div className="p-2.5 px-3 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 flex items-center justify-between gap-2 shrink-0">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="text-[10px] tabular-nums font-bold text-indigo-600 dark:text-indigo-400">
                       {selectedTicket.ticketId}
                     </span>
                     {getStatusBadge(selectedTicket.status)}

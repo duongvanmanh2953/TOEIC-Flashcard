@@ -158,7 +158,7 @@ export const LeaderboardPage: React.FC = () => {
                 <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-black uppercase tracking-wider">
                   {t('leaderboardSection.dailyChampion', "TODAY'S CHAMPION")}
                 </span>
-                <span className="text-xs text-slate-500 font-mono">
+                <span className="text-xs text-slate-500 tabular-nums">
                   {new Date().toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')}
                 </span>
               </div>
@@ -502,7 +502,7 @@ export const LeaderboardPage: React.FC = () => {
                       {item.bestStreak ?? item.currentStreak}
                     </span>
                   )}
-                  <span className="font-black text-sm sm:text-base text-slate-900 dark:text-white font-mono">
+                  <span className="font-black text-sm sm:text-base text-slate-900 dark:text-white tabular-nums">
                     {formatScore(item.score)} XP
                   </span>
                 </div>

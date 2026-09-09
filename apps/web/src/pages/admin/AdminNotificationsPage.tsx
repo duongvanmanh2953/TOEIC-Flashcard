@@ -473,7 +473,7 @@ export const AdminNotificationsPage: React.FC = () => {
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     {getPriorityBadge(alert.priority)}
-                    <span className="text-[10px] font-mono text-slate-400">{alert.type}</span>
+                    <span className="text-[10px] tabular-nums text-slate-400">{alert.type}</span>
                     <span className="text-[10px] text-slate-500">•</span>
                     <span className="text-[10px] text-slate-500">
                       {new Date(alert.createdAt).toLocaleString([], {
