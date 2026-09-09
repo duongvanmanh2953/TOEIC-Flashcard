@@ -25,8 +25,8 @@ import {
   Layers,
   ChevronRight,
   HelpCircle,
-  ShieldCheck,
   LockOpen,
+  X,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -36,8 +36,15 @@ export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [memoryRescue, setMemoryRescue] = useState<any>(null);
-  const [quotas, setQuotas] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showSpotlight, setShowSpotlight] = useState(() => {
+    return localStorage.getItem('leximind_hide_dash_spotlight') !== 'true';
+  });
+
+  const dismissSpotlight = () => {
+    setShowSpotlight(false);
+    localStorage.setItem('leximind_hide_dash_spotlight', 'true');
+  };
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -192,31 +199,40 @@ export const DashboardPage: React.FC = () => {
         </div>
       </GlassCard>
 
-      {/* Next Best Action Spotlight */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-emerald-500/15 border-2 border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/30">
-            <Target className="w-5 h-5" />
+      {/* Next Best Action Spotlight with Dismiss X */}
+      {showSpotlight && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-emerald-500/15 border-2 border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm relative pr-10 animate-fade-in">
+          <button
+            onClick={dismissSpotlight}
+            className="absolute top-3 right-3 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition"
+            title="Ẩn thông báo này"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/30">
+              <Target className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-black tracking-wider text-indigo-600 dark:text-indigo-400">
+                🎯 Next Best Action • Khuyến Nghị Trí Não
+              </span>
+              <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">
+                {reviewDue > 0
+                  ? `${reviewDue} từ vựng đã chạm ngưỡng quên (SRS Retrievability < 75%)`
+                  : 'Mục tiêu ngày đã sẵn sàng: Củng cố 10 từ vựng cốt lõi TOEIC'}
+              </p>
+            </div>
           </div>
-          <div>
-            <span className="text-[10px] uppercase font-black tracking-wider text-indigo-600 dark:text-indigo-400">
-              🎯 Next Best Action • Khuyến Nghị Trí Não
-            </span>
-            <p className="text-sm font-black text-slate-900 dark:text-white leading-snug">
-              {reviewDue > 0
-                ? `${reviewDue} từ vựng đã chạm ngưỡng quên (SRS Retrievability < 75%)`
-                : 'Mục tiêu ngày đã sẵn sàng: Củng cố 10 từ vựng cốt lõi TOEIC'}
-            </p>
-          </div>
+          <button
+            onClick={() => navigate('/review')}
+            className="btn-glass-primary text-xs !py-2 !px-4 shrink-0 gap-1.5 shadow-sm"
+          >
+            <span>Khởi động ngay</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          onClick={() => navigate('/review')}
-          className="btn-glass-primary text-xs !py-2 !px-4 shrink-0 gap-1.5 shadow-sm"
-        >
-          <span>Khởi động ngay</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      )}
 
       {/* Memory Rescue Slipping Words Alert Widget */}
       {memoryRescue && memoryRescue.rescueCount > 0 && (
@@ -245,11 +261,11 @@ export const DashboardPage: React.FC = () => {
               {!isPro && effectiveTier === 'FREE' && (
                 <button
                   onClick={() => navigate('/upgrade')}
-                  className="text-xs font-black text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 flex items-center gap-1.5 self-start sm:self-auto px-3 py-1.5 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 border border-brand-500/30 hover:scale-105 transition shadow-xs"
+                  className="relative overflow-hidden text-xs font-black text-amber-900 dark:text-amber-100 flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 hover:border-amber-300 hover:scale-105 transition shadow-[0_0_12px_rgba(245,158,11,0.25)] group"
                 >
-                  <LockOpen className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
                   <span>Mở khóa toàn bộ tính năng Pro</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-300" />
                 </button>
               )}
             </div>

@@ -15,8 +15,8 @@ import {
   Sparkles,
   Play,
   Calendar,
-  AlertCircle,
   CheckCircle,
+  X,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
@@ -53,7 +53,7 @@ interface LobbyData {
 }
 
 export const GameLobbyPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isGuest, promptLogin } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -63,6 +63,14 @@ export const GameLobbyPage: React.FC = () => {
   const [latency, setLatency] = useState<number>(38);
   const [selectedGameMode, setSelectedGameMode] = useState<string>('TRANSLATION_RUSH');
   const [joining, setJoining] = useState(false);
+  const [showHeroBanner, setShowHeroBanner] = useState(() => {
+    return localStorage.getItem('leximind_hide_games_hero') !== 'true';
+  });
+
+  const dismissHeroBanner = () => {
+    setShowHeroBanner(false);
+    localStorage.setItem('leximind_hide_games_hero', 'true');
+  };
 
   useEffect(() => {
     fetchLobby();
@@ -131,6 +139,10 @@ export const GameLobbyPage: React.FC = () => {
   };
 
   const handleJoinGame = (gameMode: string, roomCode?: string) => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để tham gia đấu trường đối kháng và ghi danh trên Bảng Xếp Hạng Fair-Play');
+      return;
+    }
     setJoining(true);
     const targetRoom = roomCode || `auto_${gameMode}`;
     navigate(`/games/room/${targetRoom}?mode=${gameMode}`);
@@ -140,41 +152,64 @@ export const GameLobbyPage: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-16 animate-fade-in">
-      {/* 1. Hero Title Banner with Competitive Spirit */}
-      <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-900/90 via-slate-900/95 to-purple-950/90 border border-indigo-500/30 text-white shadow-xl overflow-hidden">
-        <div className="relative z-10 space-y-3 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-black uppercase tracking-wider border border-indigo-400/30">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Đấu Trường Tiếng Anh Trực Tiếp • 20:00 – 22:00 Mỗi Ngày</span>
+      {/* 1. Hero Title Banner with Competitive Spirit & Dismiss X */}
+      {showHeroBanner ? (
+        <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-900/90 via-slate-900/95 to-purple-950/90 border border-indigo-500/30 text-white shadow-xl overflow-hidden animate-fade-in pr-12">
+          <button
+            onClick={dismissHeroBanner}
+            className="absolute top-4 right-4 p-1.5 rounded-xl text-indigo-300 hover:text-white hover:bg-white/10 transition z-20"
+            title="Ẩn banner giới thiệu"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="relative z-10 space-y-3 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-black uppercase tracking-wider border border-indigo-400/30">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Đấu Trường Tiếng Anh Trực Tiếp • 20:00 – 22:00 Mỗi Ngày</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+              {t('games.heroTitle', 'Đấu Trường Tiếng Anh Trực Tiếp')}
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+              {t(
+                'games.heroSubtitle',
+                'Trực tiếp so tài phản xạ từ vựng, dịch thuật và ngữ pháp thời gian thực với hàng ngàn học viên.',
+              )}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              {/* Live latency indicator */}
+              {getLatencyBadge(latency)}
+
+              {/* Test mode badge */}
+              {lobbyData?.hoursStatus?.testMode && (
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  ⚡ TEST MODE ACTIVE (24/7 ACCESS)
+                </span>
+              )}
+            </div>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
-            {t('games.heroTitle', 'Đấu Trường Tiếng Anh Trực Tiếp')}
-          </h1>
-
-          <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-            {t(
-              'games.heroSubtitle',
-              'Trực tiếp so tài phản xạ từ vựng, dịch thuật và ngữ pháp thời gian thực với hàng ngàn học viên.',
-            )}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            {/* Live latency indicator */}
-            {getLatencyBadge(latency)}
-
-            {/* Test mode badge */}
-            {lobbyData?.hoursStatus?.testMode && (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                ⚡ TEST MODE ACTIVE (24/7 ACCESS)
-              </span>
-            )}
-          </div>
+          {/* Decorative background glow */}
+          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-500/20 to-transparent pointer-events-none" />
         </div>
-
-        {/* Decorative background glow */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-500/20 to-transparent pointer-events-none" />
-      </div>
+      ) : (
+        <div className="flex justify-end">
+          <button
+            onClick={() => {
+              setShowHeroBanner(true);
+              localStorage.removeItem('leximind_hide_games_hero');
+            }}
+            className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 font-medium transition py-0.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            title="Hiện lại banner giới thiệu"
+          >
+            <Sparkles className="w-3 h-3 text-amber-500" />
+            <span>Hiện giới thiệu Đấu Trường</span>
+          </button>
+        </div>
+      )}
 
       {/* 2. Daily Operating Window & Countdown Card */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">

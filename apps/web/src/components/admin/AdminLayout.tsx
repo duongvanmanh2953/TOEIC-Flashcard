@@ -22,6 +22,8 @@ import {
   Menu,
   X,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   RefreshCw,
   Radio,
   Clock,
@@ -43,6 +45,18 @@ export const AdminLayout: React.FC = () => {
   const location = useLocation();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('leximind_admin_sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('leximind_admin_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
+
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [dateRange, setDateRange] = useState('30d');
   const [badgeCounts, setBadgeCounts] = useState({
@@ -219,57 +233,84 @@ export const AdminLayout: React.FC = () => {
           1. DEDICATED ADMIN SIDEBAR
           ======================================================================= */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen z-50 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed lg:sticky top-0 h-screen z-50 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'w-[68px] px-1.5' : 'w-64 px-3'
+        } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand & Command Center Header */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className={`py-3.5 border-b border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-1'}`}>
+          <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
             <img
               src="/vocabflow-logo-256.png"
               alt="VocabFlow"
-              className="w-9 h-9 rounded-xl object-contain shadow-md shrink-0"
+              className="w-8 h-8 rounded-xl object-contain shadow-md shrink-0 cursor-pointer hover:scale-105 transition"
+              onClick={() => navigate('/admin')}
+              title="VocabFlow Admin"
             />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm tracking-tight text-white">VocabFlow</span>
-                <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30">
-                  ADMIN
-                </span>
+            {!sidebarCollapsed && (
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-sm tracking-tight text-white">VocabFlow</span>
+                  <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30">
+                    ADMIN
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium">Command Center v7.0</p>
               </div>
-              <p className="text-[10px] text-slate-400 font-medium">Command Center v7.0</p>
-            </div>
+            )}
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-slate-400 hover:text-white p-1"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleSidebarCollapse}
+              className="hidden lg:flex p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              title={sidebarCollapsed ? 'Mở rộng thanh quản trị' : 'Thu gọn thanh quản trị (Chỉ hiện icon)'}
+            >
+              {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-slate-400 hover:text-white p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Global Action Shortcut Banner */}
-        <div className="p-3 mx-3 my-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Command className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-[11px] font-bold text-indigo-300">Command Palette</span>
-          </div>
-          <kbd
+        {sidebarCollapsed ? (
+          <div
             onClick={() => setPaletteOpen(true)}
-            className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300 border border-slate-700 cursor-pointer hover:bg-slate-700"
+            className="my-2 mx-auto w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center cursor-pointer hover:bg-indigo-500/20 transition text-indigo-400"
+            title="Command Palette (Ctrl+K)"
           >
-            Ctrl+K
-          </kbd>
-        </div>
+            <Command className="w-4 h-4" />
+          </div>
+        ) : (
+          <div className="p-2.5 my-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Command className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-[11px] font-bold text-indigo-300">Command Palette</span>
+            </div>
+            <kbd
+              onClick={() => setPaletteOpen(true)}
+              className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300 border border-slate-700 cursor-pointer hover:bg-slate-700"
+            >
+              Ctrl+K
+            </kbd>
+          </div>
+        )}
 
         {/* Navigation Sections */}
-        <nav className="flex-1 px-3 py-2 space-y-4 overflow-y-auto no-scrollbar text-xs font-semibold">
+        <nav className="flex-1 py-2 space-y-3 overflow-y-auto no-scrollbar text-xs font-semibold">
           {navSections.map((sec) => (
             <div key={sec.title} className="space-y-1">
-              <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                {sec.title}
-              </div>
+              {!sidebarCollapsed ? (
+                <div className="px-2 pt-1 pb-0.5 text-[9px] font-black uppercase tracking-wider text-slate-500">
+                  {sec.title}
+                </div>
+              ) : (
+                <div className="w-6 mx-auto border-t border-slate-800 my-1.5" />
+              )}
               {sec.items.map((item) => {
                 const Icon = item.icon;
                 const isActive =
@@ -282,34 +323,47 @@ export const AdminLayout: React.FC = () => {
                     key={item.to}
                     to={item.to}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl transition ${
+                    title={sidebarCollapsed ? item.label : undefined}
+                    className={`flex items-center rounded-xl transition relative ${
+                      sidebarCollapsed
+                        ? 'justify-center mx-auto w-9 h-9 p-0'
+                        : 'justify-between px-2.5 py-2'
+                    } ${
                       isActive
                         ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md font-bold'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`flex items-center min-w-0 ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                       <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                      <span className="truncate">{item.label}</span>
+                      {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                     </div>
                     {item.count !== undefined && item.count > 0 ? (
-                      <span
-                        className={`px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase shrink-0 ${
-                          item.badgeColor || 'bg-indigo-500 text-white'
-                        }`}
-                      >
-                        {item.count}
-                      </span>
+                      sidebarCollapsed ? (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-slate-900" />
+                      ) : (
+                        <span
+                          className={`px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase shrink-0 ${
+                            item.badgeColor || 'bg-indigo-500 text-white'
+                          }`}
+                        >
+                          {item.count}
+                        </span>
+                      )
                     ) : item.badge ? (
-                      <span
-                        className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase shrink-0 ${
-                          isActive
-                            ? 'bg-white/20 text-white'
-                            : 'bg-slate-800 text-slate-400 border border-slate-700'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
+                      sidebarCollapsed ? (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-400 ring-2 ring-slate-900" />
+                      ) : (
+                        <span
+                          className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase shrink-0 ${
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )
                     ) : null}
                   </NavLink>
                 );
@@ -319,35 +373,43 @@ export const AdminLayout: React.FC = () => {
         </nav>
 
         {/* Bottom Actions: User App Switch & Admin Info */}
-        <div className="p-3 border-t border-slate-800 space-y-2">
+        <div className="py-2.5 border-t border-slate-800 space-y-1.5">
           <button
             onClick={() => navigate('/dashboard')}
-            className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center justify-between shadow-xs border border-slate-700/60"
+            className={`rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center shadow-xs border border-slate-700/60 ${
+              sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
+            }`}
             title="Quay lại giao diện học tập của học viên"
           >
             <div className="flex items-center gap-2">
               <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Sang Học Viên (User App)</span>
+              {!sidebarCollapsed && <span>Sang Học Viên</span>}
             </div>
-            <span className="text-[10px] text-slate-400">&rarr;</span>
+            {!sidebarCollapsed && <span className="text-[10px] text-slate-400">&rarr;</span>}
           </button>
 
-          <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className={`flex items-center rounded-xl bg-slate-900/80 border border-slate-800 ${
+            sidebarCollapsed ? 'flex-col gap-1.5 p-1 w-9 mx-auto' : 'justify-between p-2'
+          }`}>
+            <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
               <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
                 {user?.displayName?.charAt(0).toUpperCase() || 'A'}
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate leading-tight">
-                  {user?.displayName || 'Admin'}
-                </p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.role || 'ADMIN'}</p>
-              </div>
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate leading-tight">
+                    {user?.displayName || 'Admin'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 truncate">{user?.role || 'ADMIN'}</p>
+                </div>
+              )}
             </div>
 
             <button
               onClick={toggleTheme}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className={`rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center justify-center ${
+                sidebarCollapsed ? 'w-7 h-7 p-0' : 'p-1.5'
+              }`}
               title="Đổi giao diện"
             >
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}

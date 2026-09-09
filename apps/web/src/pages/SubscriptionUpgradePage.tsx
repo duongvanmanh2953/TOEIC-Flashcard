@@ -492,13 +492,17 @@ export const SubscriptionUpgradePage: React.FC = () => {
               ) : (
                 <button
                   onClick={() => setCheckoutTier(plan.tier)}
-                  className={`w-full mt-6 py-3.5 rounded-xl text-xs font-black text-white transition flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
+                  className={`w-full mt-6 py-3.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] ${
                     isPlanPro
-                      ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/25'
-                      : 'bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 shadow-brand-500/25'
+                      ? 'relative overflow-hidden bg-amber-400/25 dark:bg-amber-400/20 backdrop-blur-xl border border-amber-400/70 hover:border-amber-300 text-amber-950 dark:text-amber-100 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] group'
+                      : 'bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 text-white shadow-brand-500/25'
                   }`}
                 >
-                  <LockOpen className="w-4 h-4" />
+                  {isPlanPro ? (
+                    <Crown className="w-4 h-4 text-amber-500 fill-amber-400" />
+                  ) : (
+                    <LockOpen className="w-4 h-4" />
+                  )}
                   <span>
                     {billingCycle === 'yearly'
                       ? `Mở Khóa ${plan.name} (${yearlyTotal.toLocaleString()} đ/năm)`

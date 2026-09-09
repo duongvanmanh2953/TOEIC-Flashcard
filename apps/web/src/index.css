@@ -819,13 +819,59 @@ a.card-brand-effect {
   border-radius: 9999px;
 }
 
-.chat-scrollbar::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 9999px;
+/* =============================================================================
+   UNIVERSAL HOVER-ONLY SCROLLBAR SYSTEM
+   Every scroll area across the web app stays clean and hidden by default,
+   and only reveals a sleek, refined scrollbar when hovered.
+   ============================================================================= */
+
+/* Firefox standard */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.25s ease-in-out;
 }
 
-.chat-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+*:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+}
+
+.dark *:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+/* WebKit (Chrome, Edge, Safari, Opera) */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease-in-out;
+}
+
+/* Reveal thumb ONLY on container hover */
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5);
+}
+
+.dark *:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.35);
+}
+
+/* Active thumb hover interaction */
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(99, 102, 241, 0.75) !important;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(129, 140, 248, 0.75) !important;
 }
 
 /* 3D Flip Flashcard Engine */

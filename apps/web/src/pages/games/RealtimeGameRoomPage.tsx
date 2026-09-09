@@ -57,7 +57,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const gameMode = searchParams.get('mode') || 'TRANSLATION_RUSH';
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isGuest, promptLogin } = useAuth();
   const { t } = useTranslation();
 
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -252,6 +252,22 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16 animate-fade-in">
+      {/* Guest Notice Banner */}
+      {isGuest && (
+        <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-200 text-xs font-bold flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+            <span className="truncate">Bạn đang thi đấu dưới tư cách Khách Học Thử. Điểm số sẽ không được ghi nhận vào Bảng Xếp Hạng Fair-Play!</span>
+          </div>
+          <button
+            onClick={() => promptLogin('Đăng nhập để ghi nhận điểm thi đấu vào BXH')}
+            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shrink-0 transition"
+          >
+            Đăng nhập ngay
+          </button>
+        </div>
+      )}
+
       {/* 1. Game Header & Latency Telemetry */}
       <div className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex items-center gap-3">

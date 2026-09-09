@@ -39,6 +39,7 @@ import {
   Trophy,
   Mic,
   Gamepad2,
+  LogIn,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import api from '../../lib/api';
@@ -48,17 +49,6 @@ import { VirtualChatPane } from '../chat/VirtualChatPane';
 export const AppShell: React.FC = () => {
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
   const { t } = useTranslation();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('leximind_sidebar_collapsed') === 'true';
-  });
-
-  const toggleSidebarCollapse = () => {
-    setSidebarCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem('leximind_sidebar_collapsed', String(next));
-      return next;
-    });
-  };
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -236,8 +226,8 @@ export const AppShell: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!chatInput.trim() || sendingMsg) return;
-    if (!user) {
-      promptLogin();
+    if (!user || user.isAnonymous) {
+      promptLogin('Đăng nhập để gửi tin nhắn hỗ trợ CSKH và nhận phản hồi trực tiếp');
       return;
     }
 
@@ -342,256 +332,209 @@ export const AppShell: React.FC = () => {
       {/* Ambient Blurred Colored Blobs / Orbs */}
       <LiquidBackground />
 
-      {/* Desktop Sidebar */}
-      <aside
-        className={`hidden lg:flex flex-col transition-all duration-300 ease-in-out border-r border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl pt-4 pb-3 shrink-0 h-screen sticky top-0 overflow-hidden box-border z-20 ${
-          sidebarCollapsed ? 'w-20 px-2' : 'w-64 max-w-[16rem] px-3.5'
-        }`}
-      >
-        {/* Scrollable Upper Navigation Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-0.5 pb-2 scrollbar-none">
-          {/* Brand Header with Logo & Collapse Toggle */}
-          <div className={`flex items-center mb-3.5 w-full min-w-0 ${sidebarCollapsed ? 'justify-center flex-col gap-2' : 'justify-between px-1'}`}>
-            <div className={`flex items-center gap-2.5 min-w-0 ${sidebarCollapsed ? 'justify-center' : 'flex-1 overflow-hidden'}`}>
+      {/* Desktop Sidebar — Fixed Header (Logo & Streak), Scrollable Menu, Luxurious Liquid Glass Gold Unlock & Dynamic Auth Controls */}
+      <aside className="hidden lg:flex flex-col border-r border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl pt-3.5 pb-3 shrink-0 h-screen sticky top-0 overflow-hidden box-border z-20 w-64 max-w-[16rem] px-3.5">
+        {/* 1. FIXED TOP: Brand Logo & User Streak (NEVER scrolls, always stays pinned) */}
+        <div className="shrink-0 pb-3 border-b border-slate-200/60 dark:border-slate-800/60 space-y-2.5">
+          {/* Brand Header with Logo */}
+          <div className="flex items-center justify-between px-1">
+            <div
+              className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden cursor-pointer group"
+              onClick={() => navigate('/dashboard')}
+              title="VocabFlow Smart Adaptive English"
+            >
               <img
                 src="/vocabflow-logo-256.png"
                 alt="VocabFlow Logo"
-                className="w-9 h-9 rounded-xl object-contain shrink-0 cursor-pointer hover:scale-105 transition"
-                onClick={() => navigate('/dashboard')}
-                title="VocabFlow"
+                className="w-8 h-8 rounded-xl object-contain shrink-0 group-hover:scale-105 transition-transform duration-200 shadow-xs"
               />
-              {!sidebarCollapsed && (
-                <div className="min-w-0 flex-1 truncate">
-                  <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
-                    VocabFlow
-                  </h2>
-                  <p className="text-[11px] text-slate-400 font-medium truncate">Smart Adaptive English</p>
-                </div>
-              )}
+              <div className="min-w-0 flex-1 truncate">
+                <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
+                  VocabFlow
+                </h2>
+                <p className="text-[11px] text-slate-400 font-medium truncate">Smart Adaptive English</p>
+              </div>
             </div>
-            <button
-              onClick={toggleSidebarCollapse}
-              className={`p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0 ${
-                sidebarCollapsed ? 'w-8 h-8 flex items-center justify-center' : ''
-              }`}
-              title={sidebarCollapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng (Chỉ hiện icon)'}
-            >
-              {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </button>
           </div>
 
-          {/* User Streak Pill */}
-          {sidebarCollapsed ? (
-            <div
-              className="mb-3 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col items-center justify-center gap-0.5 cursor-pointer hover:bg-amber-500/20 transition"
-              title={`${user?.streak?.currentStreak || 0} Day Streak • Lvl ${user?.xp?.currentLevel || 1}`}
-            >
+          {/* User Streak Pill — Pinned Directly Under Logo */}
+          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0 shadow-xs">
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs min-w-0 truncate">
               <Flame className="w-4 h-4 fill-amber-500 text-amber-500 shrink-0" />
-              <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 leading-none">
-                {user?.streak?.currentStreak || 0}d
-              </span>
+              <span className="truncate">{user?.streak?.currentStreak || 0} Day Streak</span>
             </div>
-          ) : (
-            <div className="mb-3.5 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs min-w-0 truncate">
-                <Flame className="w-4 h-4 fill-amber-500 shrink-0" />
-                <span className="truncate">{user?.streak?.currentStreak || 0} Day Streak</span>
-              </div>
-              <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-extrabold shrink-0 ml-1">
-                Lvl {user?.xp?.currentLevel || 1}
-              </span>
-            </div>
-          )}
-
-          {/* Categorized Nav Sections */}
-          <div className="space-y-3.5 w-full min-w-0">
-            {navSections.map((section) => (
-              <div key={section.title} className="space-y-1">
-                {!sidebarCollapsed ? (
-                  <p className="px-2.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    {section.title}
-                  </p>
-                ) : (
-                  <div className="w-8 mx-auto border-t border-slate-200/50 dark:border-slate-800/80 my-1.5" />
-                )}
-                <div className="space-y-0.5">
-                  {section.items.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      title={sidebarCollapsed ? `${item.label}${item.badge ? ` (${item.badge})` : ''}` : undefined}
-                      className={({ isActive }) =>
-                        `flex items-center rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 relative ${
-                          sidebarCollapsed
-                            ? 'justify-center p-2.5 mx-auto w-10 h-10'
-                            : 'justify-between px-3 py-2'
-                        } ${
-                          isActive
-                            ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
-                            : (item as any).admin
-                            ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
-                            : item.highlight
-                            ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
-                        }`
-                      }
-                    >
-                      <div className={`flex items-center min-w-0 ${sidebarCollapsed ? 'justify-center' : 'gap-2.5 flex-1 truncate mr-1.5'}`}>
-                        <item.icon className="w-4 h-4 shrink-0" />
-                        {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-                      </div>
-                      {item.badge && (
-                        sidebarCollapsed ? (
-                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-slate-900" />
-                        ) : (
-                          <span
-                            className={`shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded-md shadow-xs ml-1 flex items-center gap-1 ${
-                              (item as any).isUnlock
-                                ? 'bg-gradient-to-r from-amber-500 to-indigo-600 text-white'
-                                : 'bg-indigo-600 text-white'
-                            }`}
-                          >
-                            {(item as any).isUnlock && <LockOpen className="w-2.5 h-2.5 text-amber-200" />}
-                            <span>{item.badge}</span>
-                          </span>
-                        )
-                      )}
-                    </NavLink>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-extrabold shrink-0 ml-1 border border-amber-500/30">
+              Lvl {user?.xp?.currentLevel || 1}
+            </span>
           </div>
         </div>
 
-        {/* Pinned User Footer */}
-        <div className="shrink-0 pt-2.5 border-t border-slate-200/80 dark:border-slate-800/80 w-full min-w-0 space-y-2 bg-transparent">
-          {user?.isAnonymous ? (
-            sidebarCollapsed ? (
-              <button
-                onClick={() => promptLogin('Lưu trữ vĩnh viễn tiến độ học và các từ yêu thích')}
-                className="w-10 h-10 mx-auto rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition shadow-xs"
-                title="Đăng nhập 1-chạm"
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
-            ) : (
-              <div className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-500/15 to-purple-500/15 border border-indigo-500/25 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                    Khách Khám Phá
-                  </span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                </div>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
-                  Tiến độ đang lưu cục bộ. Đăng nhập để bảo lưu vĩnh viễn.
-                </p>
-                <button
-                  onClick={() => promptLogin('Lưu trữ vĩnh viễn tiến độ học và các từ yêu thích')}
-                  className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Đăng nhập 1-chạm</span>
-                </button>
+        {/* 2. SCROLLABLE MIDDLE: ONLY navigation links scroll */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pr-1 space-y-3.5">
+          {navSections.map((section) => (
+            <div key={section.title} className="space-y-1">
+              <p className="px-2.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 ${
+                        isActive
+                          ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
+                          : (item as any).admin
+                          ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                          : item.highlight
+                          ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`
+                    }
+                  >
+                    <div className="flex items-center gap-2.5 flex-1 truncate mr-1.5 min-w-0">
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      (item as any).isUnlock ? (
+                        /* Liquid Glass Gold Badge */
+                        <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider shadow-[0_0_10px_rgba(245,158,11,0.25)] group-hover:border-amber-300 transition-all shrink-0">
+                          <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                          <span>MỞ KHÓA</span>
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md shadow-xs">
+                          {item.badge}
+                        </span>
+                      )
+                    )}
+                  </NavLink>
+                ))}
               </div>
-            )
+            </div>
+          ))}
+        </div>
+
+        {/* 3. FIXED FOOTER: Account Tier / Unlock Card, Profile, Theme & Auth Controls */}
+        <div className="shrink-0 pt-2.5 border-t border-slate-200/80 dark:border-slate-800/80 w-full min-w-0 space-y-2 bg-transparent">
+          {user?.isAnonymous || !user ? (
+            <div className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-500/15 to-purple-500/15 border border-indigo-500/25 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                  Khách Khám Phá
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
+                Tiến độ đang lưu cục bộ. Đăng nhập để bảo lưu vĩnh viễn.
+              </p>
+              <button
+                onClick={() => promptLogin('Lưu trữ vĩnh viễn tiến độ học và mở khóa đầy đủ tính năng')}
+                className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Đăng nhập 1-chạm</span>
+              </button>
+            </div>
           ) : (
             <>
-              {/* Account Tier Pill */}
-              {sidebarCollapsed ? (
-                <div
-                  onClick={() => navigate('/upgrade')}
-                  className="w-10 h-10 mx-auto rounded-xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 border border-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-center cursor-pointer transition"
-                  title={isPro ? 'VocabFlow Pro (VIP)' : 'Gói Miễn Phí (Bấm để Mở Khóa)'}
-                >
-                  <Crown className={`w-4 h-4 ${isPro ? 'text-amber-500' : 'text-slate-400'}`} />
-                </div>
-              ) : (
-                <div
-                  onClick={() => navigate('/upgrade')}
-                  className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 border border-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-between cursor-pointer transition group"
-                  title="Xem chi tiết gói tài khoản hoặc nâng cấp"
-                >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              {/* Account Tier Card — Redesigned with Liquid Glass Gold */}
+              <div
+                onClick={() => navigate('/upgrade')}
+                className="relative p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 dark:border-amber-400/30 hover:border-amber-400/80 shadow-[0_4px_18px_rgba(245,158,11,0.15)] hover:shadow-[0_4px_25px_rgba(245,158,11,0.3)] cursor-pointer transition-all duration-300 group overflow-hidden"
+                title="Xem chi tiết gói tài khoản hoặc nâng cấp"
+              >
+                {/* Specular Liquid Sheen Reflection */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+
+                <div className="flex items-center justify-between min-w-0 relative z-10">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                      <Crown className="w-4 h-4 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-none">
+                      <p className="text-[9px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-wider leading-none">
                         Gói tài khoản
                       </p>
-                      <p className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 truncate leading-tight mt-0.5">
-                        {isPro ? 'VocabFlow Pro (VIP)' : (user?.subscription?.tier || 'Free Tier')}
+                      <p className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 truncate leading-tight mt-0.5">
+                        {isPro ? 'VocabFlow Pro VIP' : (user?.subscription?.tier || 'Gói Miễn Phí')}
                       </p>
                     </div>
                   </div>
-                  <span className="text-[9px] uppercase font-black px-1.5 py-0.5 rounded-md bg-indigo-600 text-white group-hover:bg-indigo-500 transition shrink-0 flex items-center gap-1">
+
+                  {/* Liquid Glass Gold Action Pill */}
+                  <span className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-amber-300/30 via-yellow-400/20 to-amber-500/30 hover:from-amber-300/45 hover:to-amber-500/45 border border-amber-400/60 dark:border-amber-400/50 text-amber-900 dark:text-amber-100 text-[10px] font-black uppercase tracking-wide shadow-[0_0_10px_rgba(245,158,11,0.25)] flex items-center gap-1 shrink-0 group-hover:scale-105 transition-transform duration-200">
                     {isPro ? (
                       <>
-                        <Crown className="w-2.5 h-2.5 text-amber-300 fill-amber-300" />
+                        <Crown className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
                         <span>PRO</span>
                       </>
                     ) : (
                       <>
-                        <LockOpen className="w-2.5 h-2.5 text-amber-200" />
+                        <LockOpen className="w-2.5 h-2.5 text-amber-600 dark:text-amber-300" />
                         <span>Mở khóa</span>
                       </>
                     )}
                   </span>
                 </div>
-              )}
+              </div>
 
               {/* User Profile Info Row */}
               <div
                 onClick={() => setProfileModalOpen(true)}
-                className={`flex items-center gap-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition group min-w-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60 ${
-                  sidebarCollapsed ? 'justify-center p-1.5 w-10 h-10 mx-auto' : 'justify-between p-2'
-                }`}
-                title={sidebarCollapsed ? `${user?.displayName || 'Learner'} (Hồ sơ cá nhân)` : 'Bấm để xem hồ sơ cá nhân & Hướng dẫn sử dụng'}
+                className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition group min-w-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60"
+                title="Bấm để xem hồ sơ cá nhân & Hướng dẫn sử dụng"
               >
-                <div className={`flex items-center gap-2.5 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                     {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  {!sidebarCollapsed && (
-                    <div className="min-w-0 truncate">
-                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {user?.displayName || user?.email?.split('@')[0] || 'Learner'}
-                      </p>
-                      <p className="text-[10px] text-slate-400 truncate">
-                        {user?.email || 'Học viên'}
-                      </p>
-                    </div>
-                  )}
+                  <div className="min-w-0 truncate">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {user?.displayName || user?.email?.split('@')[0] || 'Learner'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 truncate">
+                      {user?.email || 'Học viên'}
+                    </p>
+                  </div>
                 </div>
-                {!sidebarCollapsed && (
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition shrink-0" />
-                )}
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition shrink-0" />
               </div>
             </>
           )}
 
-          {/* Theme & Logout Controls */}
-          <div className={`flex items-center gap-1.5 ${sidebarCollapsed ? 'flex-col' : 'px-0.5'}`}>
+          {/* Theme & Auth Controls: Login for Guests / Logout for Real Users */}
+          <div className="flex items-center gap-1.5 px-0.5 pt-0.5">
             <button
               onClick={toggleTheme}
-              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition ${
-                sidebarCollapsed ? 'w-10 h-9' : 'flex-1'
-              }`}
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex-1"
               title={theme === 'dark' ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'}
             >
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-              {!sidebarCollapsed && (
-                <span>{theme === 'dark' ? t('nav.lightMode', 'Light') : t('nav.darkMode', 'Dark')}</span>
-              )}
+              <span>{theme === 'dark' ? t('nav.lightMode', 'Light') : t('nav.darkMode', 'Dark')}</span>
             </button>
-            <button
-              onClick={handleLogout}
-              className={`rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition flex items-center justify-center ${
-                sidebarCollapsed ? 'w-10 h-9 p-1.5' : 'p-1.5'
-              }`}
-              title={t('nav.logout', 'Logout')}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+
+            {/* ONLY Show Logout If Authenticated; Show Login If Guest */}
+            {user?.isAnonymous || !user ? (
+              <button
+                onClick={() => promptLogin('Đăng nhập để lưu tiến độ và sử dụng đầy đủ tính năng')}
+                className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shrink-0 shadow-xs"
+                title="Đăng nhập tài khoản"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Đăng nhập</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0"
+                title={t('nav.logout', 'Logout')}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -614,9 +557,9 @@ export const AppShell: React.FC = () => {
             {!isPro && (
               <button
                 onClick={() => navigate('/upgrade')}
-                className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[11px] font-black uppercase flex items-center gap-1 shadow-xs"
+                className="relative overflow-hidden px-2.5 py-1 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-[0_0_10px_rgba(245,158,11,0.25)] hover:border-amber-300 transition-all group"
               >
-                <LockOpen className="w-3.5 h-3.5 text-amber-200" />
+                <Crown className="w-3 h-3 text-amber-500 dark:text-amber-300 fill-amber-400" />
                 <span>Mở khóa</span>
               </button>
             )}
@@ -663,22 +606,44 @@ export const AppShell: React.FC = () => {
                         <span className="truncate">{item.label}</span>
                       </div>
                       {item.badge && (
-                        <span className="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
-                          {item.badge}
-                        </span>
+                        (item as any).isUnlock ? (
+                          <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider shadow-[0_0_10px_rgba(245,158,11,0.25)]">
+                            <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                            <span>MỞ KHÓA</span>
+                          </span>
+                        ) : (
+                          <span className="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
+                            {item.badge}
+                          </span>
+                        )
                       )}
                     </NavLink>
                   ))}
                 </div>
               </div>
             ))}
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>{t('nav.logout', 'Logout')}</span>
-            </button>
+
+            {/* ONLY Show Logout If Authenticated; Show Login If Guest */}
+            {user?.isAnonymous || !user ? (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  promptLogin('Đăng nhập để lưu tiến độ và sử dụng đầy đủ tính năng');
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition shadow-xs"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Đăng nhập tài khoản</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>{t('nav.logout', 'Logout')}</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -1070,6 +1035,20 @@ export const AppShell: React.FC = () => {
                 />
               </div>
 
+              {/* Guest Warning Banner */}
+              {(!user || user.isAnonymous) && (
+                <div className="p-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-between gap-2 text-[11px]">
+                  <span className="text-indigo-200 truncate">Đăng nhập để gửi tin nhắn và nhận phản hồi từ CSKH</span>
+                  <button
+                    type="button"
+                    onClick={() => promptLogin('Đăng nhập để kết nối tư vấn viên CSKH')}
+                    className="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] shrink-0"
+                  >
+                    Đăng nhập
+                  </button>
+                </div>
+              )}
+
               {/* Chat Composer Input */}
               <div className="pt-1.5 border-t border-slate-800 flex items-center gap-1.5">
                 <input
@@ -1080,7 +1059,7 @@ export const AppShell: React.FC = () => {
                     if (e.key === 'Enter') handleSendMessage();
                   }}
                   disabled={sendingMsg}
-                  placeholder={user ? "Nhập tin nhắn..." : "Đăng nhập để gửi tin nhắn..."}
+                  placeholder={user && !user.isAnonymous ? "Nhập tin nhắn..." : "Vui lòng đăng nhập để gửi tin..."}
                   className="flex-1 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 disabled:opacity-50"
                 />
                 <button

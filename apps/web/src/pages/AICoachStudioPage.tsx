@@ -50,10 +50,20 @@ interface ChatMessage {
 }
 
 export const AICoachStudioPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isGuest, promptLogin } = useAuth();
 
   // Primary navigation tabs
   const [activeTab, setActiveTab] = useState<'voice' | 'pronunciation' | 'simulator' | 'error-bank' | 'sound-better'>('voice');
+
+  // Hero banner dismiss state
+  const [showHeroBanner, setShowHeroBanner] = useState(() => {
+    return localStorage.getItem('leximind_hide_coach_hero') !== 'true';
+  });
+
+  const dismissHeroBanner = () => {
+    setShowHeroBanner(false);
+    localStorage.setItem('leximind_hide_coach_hero', 'true');
+  };
 
   // ==========================================
   // TAB 1: REAL-TIME VOICE COACH & HANDS-FREE 1:1 CALL
@@ -156,6 +166,10 @@ export const AICoachStudioPage: React.FC = () => {
   }, [callStatus]);
 
   const startListening = () => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để luyện giao tiếp bằng giọng nói với AI Coach');
+      return;
+    }
     setTranscript('');
     try {
       recognitionRef.current?.start();
@@ -175,6 +189,10 @@ export const AICoachStudioPage: React.FC = () => {
   };
 
   const toggleListening = () => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để luyện giao tiếp bằng giọng nói với AI Coach');
+      return;
+    }
     if (isListening) {
       stopListening();
       if (transcript.trim()) {
@@ -187,6 +205,10 @@ export const AICoachStudioPage: React.FC = () => {
 
   // Toggle 1:1 Hands-Free Call Mode
   const toggleCallMode = () => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để gọi thoại 1:1 trực tiếp với AI Coach');
+      return;
+    }
     if (isCallActive) {
       // End call
       setIsCallActive(false);
@@ -206,6 +228,11 @@ export const AICoachStudioPage: React.FC = () => {
   const handleSendMessage = async (textToSend?: string) => {
     const msg = (textToSend || transcript).trim();
     if (!msg) return;
+
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để trò chuyện và nhận phân tích sửa lỗi từ AI Coach');
+      return;
+    }
 
     if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
 
@@ -400,6 +427,10 @@ export const AICoachStudioPage: React.FC = () => {
   };
 
   const startPronunciationRecording = () => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để luyện và chấm điểm phát âm chuẩn bản xứ');
+      return;
+    }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       // Fallback direct evaluation if browser does not support mic
@@ -509,6 +540,10 @@ export const AICoachStudioPage: React.FC = () => {
 
   const handleSimulatorSend = async () => {
     if (!simulatorInput.trim()) return;
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để tham gia mô phỏng tình huống đàm phán thực tế với AI');
+      return;
+    }
     const userMsg = simulatorInput.trim();
     setSimulatorInput('');
 
@@ -584,6 +619,10 @@ export const AICoachStudioPage: React.FC = () => {
 
   const handleMakeMeSoundBetter = async () => {
     if (!soundBetterInput.trim()) return;
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để sử dụng tính năng nâng cấp câu văn chuẩn bản xứ');
+      return;
+    }
     setSoundBetterLoading(true);
     try {
       const res = await api.post('/ai/sound-better', {
@@ -611,29 +650,52 @@ export const AICoachStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-        {/* Top Product Header (Compact & Streamlined) */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden">
-          <div className="space-y-1 z-10">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-black uppercase tracking-wider">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Next-Gen AI Personal English Coach</span>
+    <div className="space-y-4 flex flex-col min-h-[calc(100vh-6rem)]">
+        {/* Top Product Header (Compact & Streamlined with Dismiss X Button) */}
+        {showHeroBanner ? (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden pr-12 animate-fade-in shrink-0">
+            <button
+              onClick={dismissHeroBanner}
+              className="absolute top-3 right-3 p-1.5 rounded-xl text-indigo-300 hover:text-white hover:bg-white/10 transition z-20"
+              title="Ẩn banner giới thiệu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="space-y-1 z-10">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-black uppercase tracking-wider">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>Next-Gen AI Personal English Coach</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+                A Personal English Coach That Learns You
+              </h1>
+              <p className="text-xs text-indigo-200/80 max-w-xl">
+                Huấn luyện viên ghi nhớ lịch sử, tìm nguyên nhân gốc rễ và tự động may đo lộ trình phản xạ cho riêng bạn.
+              </p>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              A Personal English Coach That Learns You
-            </h1>
-            <p className="text-xs text-indigo-200/80 max-w-xl">
-              Huấn luyện viên ghi nhớ lịch sử, tìm nguyên nhân gốc rễ và tự động may đo lộ trình phản xạ cho riêng bạn.
-            </p>
-          </div>
 
-          <div className="z-10 flex items-center gap-2.5 self-end sm:self-auto">
-            <div className="px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-center">
-              <span className="text-[10px] uppercase font-bold text-indigo-300 block leading-tight">English Power</span>
-              <span className="text-xl sm:text-2xl font-black text-amber-400 leading-tight">764</span>
+            <div className="z-10 flex items-center gap-2.5 self-end sm:self-auto">
+              <div className="px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 text-center">
+                <span className="text-[10px] uppercase font-bold text-indigo-300 block leading-tight">English Power</span>
+                <span className="text-xl sm:text-2xl font-black text-amber-400 leading-tight">764</span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-end shrink-0">
+            <button
+              onClick={() => {
+                setShowHeroBanner(true);
+                localStorage.removeItem('leximind_hide_coach_hero');
+              }}
+              className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 font-medium transition py-0.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              title="Hiện lại banner giới thiệu"
+            >
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              <span>Hiện giới thiệu Coach</span>
+            </button>
+          </div>
+        )}
 
         {/* 5 Core Feature Tabs */}
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
@@ -856,7 +918,9 @@ export const AICoachStudioPage: React.FC = () => {
             </div>
 
             {/* Right Interactive Voice Chat Stage */}
-            <div className="lg:col-span-2 flex flex-col h-[620px] bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+            <div className={`lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-300 ${
+              showHeroBanner ? 'min-h-[580px] h-[calc(100vh-17rem)]' : 'min-h-[660px] h-[calc(100vh-10.5rem)]'
+            }`}>
               {/* Call Mode Status Bar */}
               {isCallActive && (
                 <div className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-indigo-600 text-white flex items-center justify-between text-xs font-bold shadow-md">
@@ -1282,7 +1346,9 @@ export const AICoachStudioPage: React.FC = () => {
             </div>
 
             {/* Roleplay Chat Window */}
-            <div className="lg:col-span-2 flex flex-col h-[560px] bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+            <div className={`lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-300 ${
+              showHeroBanner ? 'min-h-[560px] h-[calc(100vh-17rem)]' : 'min-h-[660px] h-[calc(100vh-10.5rem)]'
+            }`}>
               <div className="flex-1 p-6 overflow-y-auto space-y-4">
                 {simulatorHistory.map((item, idx) => (
                   <div

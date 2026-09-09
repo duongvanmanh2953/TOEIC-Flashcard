@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react';
 
 export const CommunityDecksPage: React.FC = () => {
+  const { user, isGuest, promptLogin } = useAuth();
   const [decks, setDecks] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -67,11 +69,10 @@ export const CommunityDecksPage: React.FC = () => {
   const fetchMyWords = async () => {
     setLoadingMyWords(true);
     try {
-      const res: any = await api.get('/community/my-words?filter=ALL');
-      const data = res?.data || res || [];
+      const res: any = await api.get('/words/my-bank', { params: { limit: 100 } });
+      const data = res?.data?.items || res?.data || [];
       setMyWords(data);
-      // Auto select first 10 words by default if available
-      if (data.length > 0 && selectedMyWordIds.length === 0) {
+      if (selectedMyWordIds.length === 0 && data.length > 0) {
         setSelectedMyWordIds(data.slice(0, 10).map((item: any) => item.id));
       }
     } catch (err) {
@@ -86,6 +87,10 @@ export const CommunityDecksPage: React.FC = () => {
   }, [search]);
 
   const handleOpenCreateModal = () => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để tạo và chia sẻ bộ từ vựng cộng đồng');
+      return;
+    }
     setShowCreateModal(true);
     fetchMyWords();
   };
@@ -108,6 +113,10 @@ export const CommunityDecksPage: React.FC = () => {
   const [cloningOnline, setCloningOnline] = useState(false);
 
   const handleCloneToWordBank = async (deck: any) => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để sao chép bộ từ vựng vào kho cá nhân');
+      return;
+    }
     setCloningOnline(true);
     try {
       const res: any = await api.post(`/community/decks/${deck.id}/clone`);

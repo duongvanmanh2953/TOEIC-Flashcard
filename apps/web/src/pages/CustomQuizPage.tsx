@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { CustomDropdown } from '../components/common/CustomDropdown';
@@ -17,6 +18,7 @@ import {
 
 export const CustomQuizPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, isGuest, promptLogin } = useAuth();
 
   // Generator Setup State
   const [sourceFilter, setSourceFilter] = useState<'FAVORITES' | 'WEAK_WORDS' | 'CEFR'>('WEAK_WORDS');
@@ -33,6 +35,10 @@ export const CustomQuizPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const handleStartQuiz = async () => {
+    if ((sourceFilter === 'FAVORITES' || sourceFilter === 'WEAK_WORDS') && (isGuest || !user)) {
+      promptLogin('Đăng nhập để tạo đề trắc nghiệm từ Kho từ vựng cá nhân và Từ yếu');
+      return;
+    }
     setGenerating(true);
     try {
       const res: any = await api.post('/quizzes/generate', {

@@ -31,7 +31,7 @@ interface NotificationItem {
 }
 
 export const NotificationCenterPage: React.FC = () => {
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, promptLogin } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,6 +209,27 @@ export const NotificationCenterPage: React.FC = () => {
         <div className="flex items-center justify-center min-h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
+      ) : isGuest ? (
+        <GlassCard className="p-10 text-center space-y-4 max-w-md mx-auto border-amber-500/30">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <Bell className="w-7 h-7" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              Tính Năng Yêu Cầu Đăng Nhập
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+              Bạn đang duyệt với vai trò Khách Khám Phá. Vui lòng đăng nhập để nhận thông báo real-time, nhắc nhở thời điểm vàng SRS và phản hồi giải đáp từ chuyên viên CSKH.
+            </p>
+          </div>
+          <button
+            onClick={() => promptLogin('Đăng nhập để xem và nhận thông báo cá nhân')}
+            className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Đăng nhập tài khoản ngay</span>
+          </button>
+        </GlassCard>
       ) : notifications.length === 0 ? (
         <GlassCard className="p-12 text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto">

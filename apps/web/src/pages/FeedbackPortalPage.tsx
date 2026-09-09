@@ -162,7 +162,13 @@ export const FeedbackPortalPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setActiveTab('NEW')}
+          onClick={() => {
+            if (isGuest) {
+              promptLogin('Đăng nhập để đóng góp ý kiến và đề xuất tính năng mới');
+              return;
+            }
+            setActiveTab('NEW');
+          }}
           className="btn-glass-primary text-xs !py-2.5 !px-4 self-start sm:self-auto flex items-center gap-1.5 shadow-md"
         >
           <Plus className="w-4 h-4" />
@@ -360,6 +366,28 @@ export const FeedbackPortalPage: React.FC = () => {
 
       {/* TAB 3: SUBMIT FORM */}
       {activeTab === 'NEW' && (
+        isGuest ? (
+          <GlassCard className="max-w-md mx-auto p-10 text-center space-y-4 border-amber-500/30">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <MessageSquarePlus className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                Đăng Nhập Để Góp Ý & Đề Xuất
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                Vui lòng đăng nhập để gửi ý kiến phản hồi và nhận thông báo trực tiếp khi Ban Quản Trị giải đáp hoặc cập nhật tính năng.
+              </p>
+            </div>
+            <button
+              onClick={() => promptLogin('Đăng nhập để gửi đóng góp ý kiến')}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Đăng nhập ngay</span>
+            </button>
+          </GlassCard>
+        ) : (
         <GlassCard className="max-w-2xl mx-auto p-6 sm:p-8 shadow-xl border border-slate-200/80 dark:border-slate-800 space-y-4">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
             <h2 className="text-lg font-black text-slate-900 dark:text-white">
@@ -443,6 +471,7 @@ export const FeedbackPortalPage: React.FC = () => {
             </div>
           </form>
         </GlassCard>
+        )
       )}
     </div>
   );
