@@ -525,8 +525,8 @@ export const SubscriptionUpgradePage: React.FC = () => {
           Minh bạch mọi đặc quyền, hạn mức hàng ngày và chu kỳ thuê bao giữa các gói tài khoản.
         </p>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <table className="w-full min-w-[540px] text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase font-bold tracking-wider">
                 <th className="pb-3 px-3">Khả Năng / Quyền Lợi</th>

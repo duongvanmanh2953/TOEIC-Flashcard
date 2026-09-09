@@ -532,7 +532,7 @@ export const AdminPlansPage: React.FC = () => {
                   </div>
 
                   {/* Limits Summary */}
-                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 mt-3 text-xs">
                     <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40">
                       <span className="text-slate-400 text-[10px] uppercase font-bold block">
                         AI Quota / Ngày

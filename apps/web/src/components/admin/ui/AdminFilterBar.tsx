@@ -92,10 +92,10 @@ export const AdminFilterBar: React.FC<AdminFilterBarProps> = ({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Left: Search & Select Filters */}
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
           {/* Search Box */}
           {onSearchChange !== undefined && (
-            <div className="min-w-[220px] max-w-xs flex-1">
+            <div className="w-full sm:w-auto min-w-[180px] max-w-xs flex-1">
               <AdminInput
                 type="text"
                 value={search || ''}
@@ -111,7 +111,7 @@ export const AdminFilterBar: React.FC<AdminFilterBarProps> = ({
 
           {/* Date Range Preset Selector */}
           {onDatePresetChange !== undefined && (
-            <div className="min-w-[160px] sm:min-w-[190px]">
+            <div className="w-full sm:w-auto min-w-[140px] sm:min-w-[180px]">
               <AdminSelect
                 options={dateOptions}
                 value={datePreset || '30d'}
@@ -125,7 +125,7 @@ export const AdminFilterBar: React.FC<AdminFilterBarProps> = ({
 
           {/* Dynamic Select Filters */}
           {filters.map((f) => (
-            <div key={f.key} className="min-w-[180px] sm:min-w-[220px]">
+            <div key={f.key} className="w-full sm:w-auto min-w-[160px] sm:min-w-[200px]">
               <AdminSelect
                 options={f.options}
                 value={f.value}
@@ -158,21 +158,23 @@ export const AdminFilterBar: React.FC<AdminFilterBarProps> = ({
 
       {/* Custom Date Inputs if 'custom' is selected */}
       {showCustomDate && onCustomDateChange && (
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 text-xs">
-          <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
-          <span className="text-slate-400 font-medium">Từ ngày:</span>
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200 dark:border-slate-800/80 text-xs">
+          <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-medium shrink-0">
+            <Calendar className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+            <span>Từ ngày:</span>
+          </div>
           <input
             type="date"
             value={startDate || ''}
             onChange={(e) => onCustomDateChange(e.target.value, endDate || '')}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 text-xs outline-none focus:border-indigo-500"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-indigo-500"
           />
-          <span className="text-slate-400 font-medium">Đến:</span>
+          <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Đến:</span>
           <input
             type="date"
             value={endDate || ''}
             onChange={(e) => onCustomDateChange(startDate || '', e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 text-xs outline-none focus:border-indigo-500"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-indigo-500"
           />
         </div>
       )}

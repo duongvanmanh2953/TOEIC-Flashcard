@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedTheme =
       (localStorage.getItem('vocabflow_theme') as 'light' | 'dark') ||
       (localStorage.getItem('leximind_theme') as 'light' | 'dark') ||
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      'dark';
     setTheme(savedTheme);
     document.documentElement.classList.toggle('dark', savedTheme === 'dark');
   }, []);

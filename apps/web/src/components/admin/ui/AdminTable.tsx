@@ -20,6 +20,7 @@ export interface AdminTableProps<T> {
   onSelectRow?: (id: string, checked: boolean) => void;
   getId?: (item: T) => string;
   className?: string;
+  minWidth?: string;
 }
 
 export function AdminTable<T>({
@@ -32,6 +33,7 @@ export function AdminTable<T>({
   onSelectRow,
   getId,
   className = '',
+  minWidth = 'min-w-[640px]',
 }: AdminTableProps<T>) {
   const isAllSelected =
     data.length > 0 && selectedIds.length === data.length;
@@ -42,8 +44,8 @@ export function AdminTable<T>({
     <div
       className={`w-full overflow-hidden rounded-2xl bg-white dark:bg-slate-900/60 backdrop-blur-md border border-slate-200 dark:border-slate-800 ${className}`}
     >
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="w-full text-left border-collapse text-xs">
+      <div className="overflow-x-auto custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <table className={`w-full ${minWidth} text-left border-collapse text-xs`}>
           {/* Table Header */}
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 font-semibold tracking-wider uppercase text-[11px]">

@@ -174,9 +174,9 @@ export const AdminSystemPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="p-5 bg-emerald-500/10 dark:bg-emerald-950/40 border-2 border-emerald-500/30 rounded-2xl flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <CheckCircle2 className="w-7 h-7 text-emerald-500 flex-shrink-0" />
+        <div className="p-4 sm:p-5 bg-emerald-500/10 dark:bg-emerald-950/40 border-2 border-emerald-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <CheckCircle2 className="w-7 h-7 text-emerald-500 shrink-0 mt-0.5 sm:mt-0" />
             <div>
               <h2 className="font-black text-emerald-950 dark:text-emerald-200 text-base">
                 {t('healthDiagnostics.statusOperational', 'Tất Cả Dịch Vụ Vận Hành Tốt')}
@@ -186,7 +186,7 @@ export const AdminSystemPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <span className="text-xs tabular-nums px-3 py-1 bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 rounded-lg font-black">
+          <span className="text-xs tabular-nums px-3 py-1 bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 rounded-lg font-black self-start sm:self-auto shrink-0">
             UPTIME: {data ? formatUptime(data.uptimeSeconds) : '...'}
           </span>
         </div>

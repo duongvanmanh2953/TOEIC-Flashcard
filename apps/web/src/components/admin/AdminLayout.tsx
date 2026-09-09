@@ -50,6 +50,18 @@ export const AdminLayout: React.FC = () => {
     return localStorage.getItem('leximind_admin_sidebar_collapsed') === 'true';
   });
 
+  // Prevent background content from scrolling when mobile sidebar drawer is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
+
   const toggleSidebarCollapse = () => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
@@ -218,7 +230,7 @@ export const AdminLayout: React.FC = () => {
   return (
     <div
       className={`min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white ${
-        isLockedHeightRoute ? 'h-screen max-h-screen overflow-hidden' : ''
+        isLockedHeightRoute ? 'h-dvh max-h-dvh overflow-hidden overscroll-none' : ''
       }`}
     >
       <CommandPaletteModal isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
@@ -235,7 +247,7 @@ export const AdminLayout: React.FC = () => {
           1. DEDICATED ADMIN SIDEBAR
           ======================================================================= */}
       <aside
-        className={`fixed lg:sticky top-0 h-screen z-50 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`fixed lg:sticky top-0 h-dvh z-50 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? 'w-[68px] px-1.5' : 'w-64 px-3'
         } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
@@ -426,7 +438,7 @@ export const AdminLayout: React.FC = () => {
       <div
         className={`flex-1 flex flex-col min-w-0 ${
           isLockedHeightRoute
-            ? 'h-screen max-h-screen overflow-hidden'
+            ? 'h-dvh max-h-dvh overflow-hidden overscroll-none'
             : 'overflow-x-hidden'
         }`}
       >
@@ -548,7 +560,7 @@ export const AdminLayout: React.FC = () => {
         <main
           className={`flex-1 min-w-0 ${
             isLockedHeightRoute
-              ? 'p-1 sm:p-1.5 overflow-hidden flex flex-col h-[calc(100vh-56px)] max-h-[calc(100vh-56px)] min-h-0'
+              ? 'p-1 sm:p-1.5 overflow-hidden flex flex-col h-[calc(100dvh-56px)] max-h-[calc(100dvh-56px)] min-h-0'
               : 'p-4 sm:p-5 lg:p-6 space-y-6'
           }`}
         >

@@ -159,8 +159,8 @@ export const AdminBillingPage: React.FC = () => {
             Recent Subscription Orders
           </h3>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[520px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500">
                   <th className="py-2.5 px-3">Subscriber</th>

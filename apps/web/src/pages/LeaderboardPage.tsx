@@ -198,7 +198,10 @@ export const LeaderboardPage: React.FC = () => {
       {/* 3. Navigation Tabs & Filters */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Main Category Tabs */}
-        <div className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-300/50 dark:border-slate-700/50 w-full sm:w-auto overflow-x-auto">
+        <div
+          className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-300/50 dark:border-slate-700/50 w-full sm:w-auto overflow-x-auto flex-nowrap scrollbar-none"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           <button
             onClick={() => setActiveTab('games')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
@@ -246,12 +249,12 @@ export const LeaderboardPage: React.FC = () => {
         </div>
 
         {/* Timeframe & Mode Selector */}
-        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
           {activeTab === 'games' && (
             <select
               value={selectedMode}
               onChange={(e) => setSelectedMode(e.target.value)}
-              className="text-xs font-bold px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200"
+              className="text-xs font-bold px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 w-full sm:w-auto"
             >
               <option value="ALL">Tất Cả Game Mode</option>
               <option value="TRANSLATION_RUSH">Translation Rush</option>
@@ -263,10 +266,10 @@ export const LeaderboardPage: React.FC = () => {
             </select>
           )}
 
-          <div className="flex items-center p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 text-xs font-bold">
+          <div className="grid grid-cols-3 sm:flex items-center w-full sm:w-auto p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 text-xs font-bold">
             <button
               onClick={() => setTimeframe('daily')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`flex-1 text-center whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-lg transition ${
                 timeframe === 'daily'
                   ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400'
@@ -276,23 +279,23 @@ export const LeaderboardPage: React.FC = () => {
             </button>
             <button
               onClick={() => setTimeframe('weekly')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`flex-1 text-center whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-lg transition ${
                 timeframe === 'weekly'
                   ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
-              {t('leaderboardSection.tabWeekly', 'Tuần')}
+              {t('leaderboardSection.tabWeekly', 'Tuần Này')}
             </button>
             <button
               onClick={() => setTimeframe('all-time')}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`flex-1 text-center whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-lg transition ${
                 timeframe === 'all-time'
                   ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
-              {t('leaderboardSection.tabAllTime', 'Mọi Lúc')}
+              {t('leaderboardSection.tabAllTime', 'Mọi Thời Điểm')}
             </button>
           </div>
         </div>
@@ -454,9 +457,9 @@ export const LeaderboardPage: React.FC = () => {
                     : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/40'
                 }`}
               >
-                <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 pr-2">
                   <span
-                    className={`w-8 text-center font-black text-sm ${
+                    className={`w-7 sm:w-8 text-center font-black text-xs sm:text-sm shrink-0 ${
                       item.rank === 1
                         ? 'text-amber-500'
                         : item.rank === 2
@@ -472,37 +475,37 @@ export const LeaderboardPage: React.FC = () => {
                   <img
                     src={item.avatar}
                     alt={item.displayName}
-                    className="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
                   />
 
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[110px] sm:max-w-xs">
                         {item.displayName}
                       </h4>
                       {item.userId === user?.id && (
-                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500 text-white">
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-indigo-500 text-white shrink-0">
                           BẠN
                         </span>
                       )}
                       {item.isFairPlayVerified && (
-                        <ShieldCheck className="w-4 h-4 text-emerald-500" title="Fair-Play Verified" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title="Fair-Play Verified" />
                       )}
                     </div>
-                    <span className="text-xs text-slate-500 font-medium">
+                    <span className="text-[11px] sm:text-xs text-slate-500 font-medium truncate block">
                       CEFR {item.englishLevel || 'B1'} {item.gameMode ? `• ${item.gameMode}` : ''}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3 sm:gap-6 shrink-0 text-right">
                   {(item.bestStreak !== undefined || item.currentStreak !== undefined) && (
                     <span className="hidden sm:flex items-center gap-1 text-xs font-bold text-rose-500">
                       <Flame className="w-4 h-4 fill-rose-500" />
                       {item.bestStreak ?? item.currentStreak}
                     </span>
                   )}
-                  <span className="font-black text-sm sm:text-base text-slate-900 dark:text-white tabular-nums">
+                  <span className="font-black text-xs sm:text-base text-slate-900 dark:text-white tabular-nums whitespace-nowrap">
                     {formatScore(item.score)} XP
                   </span>
                 </div>

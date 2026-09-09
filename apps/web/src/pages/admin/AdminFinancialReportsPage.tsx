@@ -260,7 +260,10 @@ export const AdminFinancialReportsPage: React.FC = () => {
       </div>
 
       {/* Modern Interactive Tab Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200 dark:border-slate-800">
+      <div
+        className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200 dark:border-slate-800 flex-nowrap"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {REPORT_TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = reportType === tab.id;
@@ -268,7 +271,7 @@ export const AdminFinancialReportsPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setReportType(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 border ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 border whitespace-nowrap ${
                 isActive
                   ? 'bg-indigo-600 text-white border-indigo-600'
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60'
@@ -312,53 +315,65 @@ export const AdminFinancialReportsPage: React.FC = () => {
 
       {/* KPI Financial Overview Cards */}
       {reportData && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Doanh Thu Gộp</span>
-            <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tabular-nums">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Doanh Thu Gộp</span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate block mt-0.5">+14.2% so kỳ trước</span>
+            </div>
+            <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tabular-nums shrink-0">
               {(reportData.kpi.revenue / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">+14.2% so kỳ trước</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Chi Phí Vận Hành</span>
-            <span className="text-base sm:text-lg font-bold text-rose-600 dark:text-rose-300 tabular-nums">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Chi Phí Vận Hành</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate block mt-0.5">Lương & hạ tầng AI</span>
+            </div>
+            <span className="text-base sm:text-lg font-bold text-rose-600 dark:text-rose-300 tabular-nums shrink-0">
               {(reportData.kpi.cost / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Lương & hạ tầng AI</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Lợi Nhuận Gộp</span>
-            <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Lợi Nhuận Gộp</span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate block mt-0.5">Tỷ suất gộp tốt</span>
+            </div>
+            <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums shrink-0">
               {(reportData.kpi.grossProfit / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Tỷ suất gộp tốt</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Lợi Nhuận Ròng</span>
-            <span className="text-base sm:text-lg font-bold text-indigo-600 dark:text-indigo-300 tabular-nums">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Lợi Nhuận Ròng</span>
+              <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium truncate block mt-0.5">Sau chi phí</span>
+            </div>
+            <span className="text-base sm:text-lg font-bold text-indigo-600 dark:text-indigo-400 tabular-nums shrink-0">
               {(reportData.kpi.netProfit / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium">Sau khấu trừ toàn bộ</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Biên Lợi Nhuận</span>
-            <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-300 tabular-nums">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Biên Lợi Nhuận</span>
+              <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium truncate block mt-0.5">Target: 40.0%</span>
+            </div>
+            <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-300 tabular-nums shrink-0">
               {reportData.kpi.margin}%
             </span>
-            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Target: 40.0%</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Dòng Tiền Thuần</span>
-            <span className="text-base sm:text-lg font-bold text-cyan-600 dark:text-cyan-300 tabular-nums">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Dòng Tiền Thuần</span>
+              <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium truncate block mt-0.5">Tiền mặt thực tế</span>
+            </div>
+            <span className="text-base sm:text-lg font-bold text-cyan-600 dark:text-cyan-300 tabular-nums shrink-0">
               {(reportData.kpi.cashFlow / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-medium">Tiền mặt thực tế</span>
           </div>
         </div>
       )}
@@ -446,7 +461,7 @@ export const AdminFinancialReportsPage: React.FC = () => {
                 className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
               >
                 <div className="font-bold text-slate-800 dark:text-slate-200">{cf.title}</div>
-                <div className="flex items-center gap-4 sm:gap-6 tabular-nums">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:gap-6 tabular-nums text-[11px] sm:text-xs">
                   <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                     <span>Dòng vào:</span>
                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">

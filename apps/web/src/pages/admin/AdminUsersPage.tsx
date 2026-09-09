@@ -527,7 +527,7 @@ export const AdminUsersPage: React.FC = () => {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5 sm:gap-3">
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
                 <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Tổng Điểm XP</span>
                 <span className="text-base font-bold text-slate-900 dark:text-white tabular-nums">

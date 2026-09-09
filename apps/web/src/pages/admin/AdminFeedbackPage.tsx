@@ -440,25 +440,25 @@ export const AdminFeedbackPage: React.FC = () => {
       </div>
 
       {/* KPI Status Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs">
-          <span className="text-slate-400 font-medium">Mới tiếp nhận</span>
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3 text-xs">
+        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center justify-between xs:flex-col xs:items-start">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Mới tiếp nhận</span>
           <p className="text-lg font-bold text-violet-600 dark:text-violet-400 mt-0.5">{statusCounts.new || 0}</p>
         </div>
-        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs">
-          <span className="text-slate-400 font-medium">Đang xem xét</span>
+        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center justify-between xs:flex-col xs:items-start">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Đang xem xét</span>
           <p className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">{statusCounts.underReview || 0}</p>
         </div>
-        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs">
-          <span className="text-slate-400 font-medium">Đã lên Roadmap</span>
+        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center justify-between xs:flex-col xs:items-start">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Đã lên Roadmap</span>
           <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">{statusCounts.planned || 0}</p>
         </div>
-        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs">
-          <span className="text-slate-400 font-medium">Đang code / Fix</span>
+        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center justify-between xs:flex-col xs:items-start">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Đang code / Fix</span>
           <p className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-0.5">{statusCounts.inProgress || 0}</p>
         </div>
-        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs col-span-2 sm:col-span-1">
-          <span className="text-slate-400 font-medium">Đã giải quyết</span>
+        <div className="bg-white dark:bg-slate-800/90 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-xs flex items-center justify-between xs:flex-col xs:items-start">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Đã giải quyết</span>
           <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{statusCounts.resolved || 0}</p>
         </div>
       </div>
@@ -568,8 +568,8 @@ export const AdminFeedbackPage: React.FC = () => {
       {/* LIST TABLE VIEW */}
       {viewMode === 'list' && (
         <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[720px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700/60 bg-slate-50/70 dark:bg-slate-900/40 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Votes</th>

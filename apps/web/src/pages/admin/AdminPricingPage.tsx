@@ -267,13 +267,13 @@ export const AdminPricingPage: React.FC = () => {
           ===================================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Break-even Price */}
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-xs">
           <div>
-            <div className="flex items-center justify-between text-xs text-slate-400 font-semibold mb-1">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
               <span>Giá Hòa Vốn (Break-Even)</span>
               <ShieldCheck className="w-4 h-4 text-slate-400" />
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-slate-200 tabular-nums">
+            <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-200 tabular-nums">
               {formatVND(breakEvenPrice)}
             </div>
           </div>
@@ -285,20 +285,20 @@ export const AdminPricingPage: React.FC = () => {
         {/* Conservative Scenario */}
         <div
           onClick={() => setSimulatedPrice(minProfitablePrice)}
-          className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
+          className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs ${
             simulatedPrice === minProfitablePrice
               ? 'bg-cyan-500/10 border-cyan-500/50'
-              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+              : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
           }`}
         >
-          <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold mb-1">
+          <div className="flex items-center justify-between text-xs text-cyan-600 dark:text-cyan-400 font-semibold mb-1">
             <span>Kịch Bản Thận Trọng</span>
             <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-[10px] font-bold">15% Margin</span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-cyan-300 tabular-nums">
+          <div className="text-xl sm:text-2xl font-bold text-cyan-600 dark:text-cyan-300 tabular-nums">
             {formatVND(minProfitablePrice)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
             Ưu tiên tối đa lượng học viên, hạ giá để chiếm thị phần cao nhất.
           </p>
         </div>
@@ -306,25 +306,25 @@ export const AdminPricingPage: React.FC = () => {
         {/* Balanced Scenario (Recommended) */}
         <div
           onClick={() => setSimulatedPrice(recommendedPrice)}
-          className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden ${
+          className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer relative overflow-hidden shadow-xs ${
             simulatedPrice === recommendedPrice
               ? 'bg-indigo-500/15 border-indigo-500/60 ring-1 ring-indigo-500/30'
-              : 'bg-slate-900/60 border-slate-800 hover:border-indigo-500/40'
+              : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-indigo-500/40'
           }`}
         >
-          <div className="flex items-center justify-between text-xs text-indigo-400 font-semibold mb-1">
+          <div className="flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold mb-1">
             <span className="flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Khuyến Nghị Cân Bằng</span>
             </span>
-            <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">
+            <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-[10px] font-bold">
               {model.desiredMarginPercent}% Margin
             </span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-indigo-200 tabular-nums">
+          <div className="text-xl sm:text-2xl font-bold text-indigo-600 dark:text-indigo-200 tabular-nums">
             {formatVND(recommendedPrice)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
             Điểm tối ưu hóa doanh thu và lợi nhuận dài hạn (Sweet Spot).
           </p>
         </div>
@@ -332,20 +332,20 @@ export const AdminPricingPage: React.FC = () => {
         {/* Aggressive Scenario */}
         <div
           onClick={() => setSimulatedPrice(maxCompetitivePrice)}
-          className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
+          className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer shadow-xs ${
             simulatedPrice === maxCompetitivePrice
               ? 'bg-purple-500/10 border-purple-500/50'
-              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+              : 'bg-white dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
           }`}
         >
-          <div className="flex items-center justify-between text-xs text-purple-400 font-semibold mb-1">
+          <div className="flex items-center justify-between text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">
             <span>Kịch Bản Cao Cấp</span>
             <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-[10px] font-bold">65% Margin</span>
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-purple-300 tabular-nums">
+          <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-300 tabular-nums">
             {formatVND(maxCompetitivePrice)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-2">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
             Định vị sản phẩm cao cấp, biên lợi nhuận dày, tập trung học viên Pro.
           </p>
         </div>
@@ -354,15 +354,15 @@ export const AdminPricingPage: React.FC = () => {
       {/* =====================================================================
           SECTION 2: REAL-TIME INTERACTIVE SIMULATION SLIDER
           ===================================================================== */}
-      <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4 backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-4 backdrop-blur-md shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-indigo-400" />
-            <h3 className="text-sm font-bold text-white tracking-wide">
+            <Sliders className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">
               Bộ Giả Lập Tương Tác Thời Gian Thực (Price Elasticity Simulator)
             </h3>
           </div>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             Kéo thanh trượt để quan sát biến thiên Doanh Thu & Lợi Nhuận
           </span>
         </div>
@@ -395,49 +395,60 @@ export const AdminPricingPage: React.FC = () => {
         </div>
 
         {/* Simulated Impact Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2">
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase">Học Viên Mô Phỏng</span>
-            <span className="text-base font-bold text-white tabular-nums mt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 pt-2">
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Học Viên Mô Phỏng</span>
+              <span className={`text-[11px] font-medium truncate block mt-0.5 ${demandMultiplier >= 1 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                Nhu cầu: {(demandMultiplier * 100).toFixed(0)}%
+              </span>
+            </div>
+            <span className="text-base font-bold text-white tabular-nums shrink-0">
               {simulatedActiveUsers.toLocaleString()} users
             </span>
-            <span className={`text-[10px] font-medium mt-0.5 ${demandMultiplier >= 1 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              Nhu cầu: {(demandMultiplier * 100).toFixed(0)}%
-            </span>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase">Doanh Thu Dự Phóng</span>
-            <span className="text-base font-bold text-emerald-400 tabular-nums mt-1">
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Doanh Thu Dự Phóng</span>
+              <span className="text-[11px] text-slate-400 truncate block mt-0.5">Tổng thu tháng</span>
+            </div>
+            <span className="text-base font-bold text-emerald-400 tabular-nums shrink-0">
               {(simulatedGrossRevenue / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-slate-400 mt-0.5">Tổng thu tháng</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase">Tổng Chi Phí Vận Hành</span>
-            <span className="text-base font-bold text-rose-300 tabular-nums mt-1">
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Tổng Chi Phí</span>
+              <span className="text-[11px] text-slate-400 truncate block mt-0.5">Bao gồm thuế + phí</span>
+            </div>
+            <span className="text-base font-bold text-rose-300 tabular-nums shrink-0">
               {(simulatedTotalCosts / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-slate-400 mt-0.5">Bao gồm thuế + phí</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase">Lợi Nhuận Ròng</span>
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Lợi Nhuận Ròng</span>
+              <span className="text-[11px] text-slate-400 truncate block mt-0.5">Sau tất cả chi phí</span>
+            </div>
             <span
-              className={`text-base font-bold tabular-nums mt-1 ${
+              className={`text-base font-bold tabular-nums shrink-0 ${
                 simulatedNetProfit >= 0 ? 'text-indigo-300' : 'text-rose-400'
               }`}
             >
               {(simulatedNetProfit / 1000000).toFixed(1)}M ₫
             </span>
-            <span className="text-[10px] text-slate-400 mt-0.5">Sau tất cả chi phí</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase">Biên Lợi Nhuận Ròng</span>
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Biên Lợi Nhuận</span>
+              <span className="text-[11px] text-slate-400 truncate block mt-0.5">Net Profit Margin</span>
+            </div>
             <span
-              className={`text-base font-bold tabular-nums mt-1 ${
+              className={`text-base font-bold tabular-nums shrink-0 ${
                 simulatedNetMargin >= 30
                   ? 'text-emerald-400'
                   : simulatedNetMargin >= 0
@@ -447,13 +458,15 @@ export const AdminPricingPage: React.FC = () => {
             >
               {simulatedNetMargin.toFixed(1)}%
             </span>
-            <span className="text-[10px] text-slate-400 mt-0.5">Net Profit Margin</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase">Hiệu Suất Vốn (ROI)</span>
+          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Hiệu Suất Vốn</span>
+              <span className="text-[11px] text-slate-400 truncate block mt-0.5">Return on Investment</span>
+            </div>
             <span
-              className={`text-base font-bold tabular-nums mt-1 ${
+              className={`text-base font-bold tabular-nums shrink-0 ${
                 simulatedROI >= 50 ? 'text-emerald-400' : 'text-slate-200'
               }`}
             >

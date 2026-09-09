@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Trash2,
   ChevronDown,
+  ChevronLeft,
   ShieldCheck,
   Check,
   PanelRightClose,
@@ -396,63 +397,63 @@ export const AdminSupportPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden space-y-1 animate-fade-in">
-      {/* ULTRA-MINIMAL TOP BAR: Focused on resolving tickets without clutter */}
-      <div className="flex flex-wrap items-center justify-between gap-1.5 shrink-0 px-0.5 py-0.5">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xs font-bold text-slate-200 tracking-tight flex items-center gap-1.5">
-            <Headphones className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Hỗ Trợ CSKH</span>
-          </h2>
-          <span className="px-1.5 py-0.2 rounded-full bg-slate-800/80 text-slate-400 text-[10px] font-bold border border-slate-700/60">
-            {conversations.length}
-          </span>
+      {/* ULTRA-MINIMAL TOP BAR */}
+      <div className={`${selectedConv ? 'hidden md:flex' : 'flex'} flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 px-1 py-1`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs sm:text-sm font-bold text-slate-200 tracking-tight flex items-center gap-1.5">
+              <Headphones className="w-4 h-4 text-indigo-400" />
+              <span>Hỗ Trợ CSKH</span>
+            </h2>
+            <span className="px-1.5 py-0.2 rounded-full bg-slate-800/80 text-slate-400 text-[10px] font-bold border border-slate-700/60">
+              {conversations.length}
+            </span>
+          </div>
 
-          {/* Quick Filter Pills */}
-          <div className="flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-bold ml-1">
-            {(['ALL', 'OPEN', 'WAITING', 'RESOLVED'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`px-2 py-0.5 rounded-md transition ${
-                  activeFilter === f
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {f === 'ALL' ? 'Tất cả' : f === 'OPEN' ? 'Chờ nhận' : f === 'WAITING' ? 'Đã trả lời' : 'Đã xong'}
-              </button>
-            ))}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPurgeMockModalOpen(true)}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition shadow-xs"
+              title="Xóa toàn bộ dữ liệu mẫu (tickets, feedback, orders)"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Dọn data mẫu</span>
+            </button>
+
+            <button
+              onClick={() => setCleanModalOpen(true)}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition shadow-xs"
+              title="Dọn dẹp tin nhắn cũ hơn 3 ngày"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Dọn &gt;3 ngày</span>
+            </button>
+
+            <button
+              onClick={() => fetchConversations(false)}
+              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+              title="Tải lại danh sách"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          {/* Purge Mock Data Action */}
-          <button
-            onClick={() => setPurgeMockModalOpen(true)}
-            className="flex items-center gap-1 px-2 py-0.8 rounded-lg text-[10px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition shadow-xs"
-            title="Xóa toàn bộ dữ liệu mẫu (tickets, feedback, orders), chỉ giữ user và từ vựng"
-          >
-            <ShieldCheck className="w-3 h-3" />
-            <span className="hidden sm:inline">Dọn data mẫu</span>
-          </button>
-
-          {/* Cleanup old messages */}
-          <button
-            onClick={() => setCleanModalOpen(true)}
-            className="flex items-center gap-1 px-2 py-0.8 rounded-lg text-[10px] font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition shadow-xs"
-            title="Dọn dẹp tin nhắn cũ hơn 3 ngày"
-          >
-            <Trash2 className="w-3 h-3" />
-            <span className="hidden sm:inline">Dọn &gt;3 ngày</span>
-          </button>
-
-          <button
-            onClick={() => fetchConversations(false)}
-            className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-            title="Tải lại danh sách"
-          >
-            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
-          </button>
+        {/* Quick Filter Pills on mobile are full width and horizontally scrollable */}
+        <div className="flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-bold overflow-x-auto scrollbar-none flex-nowrap shrink-0 w-full sm:w-auto">
+          {(['ALL', 'OPEN', 'WAITING', 'RESOLVED'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              className={`flex-1 sm:flex-none px-2.5 py-1 rounded-md transition text-center whitespace-nowrap ${
+                activeFilter === f
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {f === 'ALL' ? 'Tất cả' : f === 'OPEN' ? 'Chờ nhận' : f === 'WAITING' ? 'Đã trả lời' : 'Đã xong'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -470,8 +471,12 @@ export const AdminSupportPage: React.FC = () => {
 
       {/* 2. MAIN WORKSPACE: Fills 100% remaining height without page scroll */}
       <div className="flex-1 min-h-0 flex gap-1.5 items-stretch overflow-hidden">
-        {/* COLUMN 1: TICKET LIST (Compact width ~260-280px) */}
-        <div className="w-64 sm:w-72 shrink-0 flex flex-col h-full min-h-0 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+        {/* COLUMN 1: TICKET LIST */}
+        <div
+          className={`w-full md:w-72 shrink-0 flex flex-col h-full min-h-0 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden ${
+            selectedConv ? 'hidden md:flex' : 'flex'
+          }`}
+        >
           {/* Search Bar */}
           <div className="p-1.5 border-b border-slate-800 bg-slate-950/40 shrink-0">
             <div className="relative">
@@ -542,35 +547,52 @@ export const AdminSupportPage: React.FC = () => {
         {selectedConv ? (
           <div className="flex-1 min-w-0 flex flex-col h-full min-h-0 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden relative shadow-md">
             {/* Header */}
-            <div className="p-2.5 px-3 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between gap-2 shrink-0">
-              <div className="min-w-0 flex items-center gap-2">
-                <span className="text-xs tabular-nums font-bold text-indigo-400 shrink-0">
-                  {selectedConv.ticketId}
-                </span>
-                <span
-                  className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded shrink-0 ${
-                    selectedConv.status === 'OPEN'
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : selectedConv.status === 'WAITING'
-                      ? 'bg-sky-500/20 text-sky-400'
-                      : 'bg-emerald-500/20 text-emerald-400'
-                  }`}
+            <div className="p-2 sm:p-2.5 px-3 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between gap-2 shrink-0">
+              <div className="min-w-0 flex-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedConv(null)}
+                  className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-0.5 text-xs font-bold text-indigo-400 shrink-0"
+                  title="Quay lại danh sách ticket"
                 >
-                  [{selectedConv.status}]
-                </span>
-                <h3 className="text-xs font-bold text-white truncate max-w-sm sm:max-w-md">
-                  {selectedConv.subject}
-                </h3>
+                  <ChevronLeft className="w-5 h-5" />
+                  <span className="text-[11px] hidden xs:inline">DS</span>
+                </button>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs tabular-nums font-bold text-indigo-400 shrink-0">
+                      {selectedConv.ticketId}
+                    </span>
+                    <span
+                      className={`text-[9px] uppercase font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                        selectedConv.status === 'OPEN'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : selectedConv.status === 'WAITING'
+                          ? 'bg-sky-500/20 text-sky-400'
+                          : 'bg-emerald-500/20 text-emerald-400'
+                      }`}
+                    >
+                      {selectedConv.status}
+                    </span>
+                    <span className="text-[10px] text-slate-400 truncate hidden sm:inline">
+                      • {selectedConv.user?.displayName || selectedConv.user?.email || 'Học viên'}
+                    </span>
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-bold text-white truncate max-w-full mt-0.5">
+                    {selectedConv.subject}
+                  </h3>
+                </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 {selectedConv.status !== 'RESOLVED' ? (
                   <button
                     onClick={() => handleStatusChange('RESOLVED')}
-                    className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition flex items-center gap-1"
+                    className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition flex items-center gap-1"
+                    title="Đóng Ticket"
                   >
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>Đóng Ticket</span>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Đóng Ticket</span>
                   </button>
                 ) : (
                   <button
@@ -584,14 +606,14 @@ export const AdminSupportPage: React.FC = () => {
                 {/* Toggle Profile Context Button */}
                 <button
                   onClick={() => setShowProfile((prev) => !prev)}
-                  className={`p-1 px-2 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                  className={`p-1.5 sm:px-2.5 sm:py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
                     showProfile
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'bg-slate-800 text-slate-400 hover:text-white'
                   }`}
                   title="Xem hồ sơ học viên & SLA"
                 >
-                  <User className="w-3 h-3" />
+                  <User className="w-4 h-4" />
                   <span className="hidden sm:inline">Hồ sơ</span>
                 </button>
               </div>
@@ -657,7 +679,7 @@ export const AdminSupportPage: React.FC = () => {
                       ? 'Viết ghi chú bàn giao ca trực hoặc điều tra...'
                       : 'Nhập phản hồi gửi tới học viên...'
                   }
-                  className={`flex-1 px-3 py-1.5 rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 ${
+                  className={`flex-1 px-3 py-2 sm:py-1.5 rounded-lg text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 ${
                     isInternalNote
                       ? 'bg-amber-500/10 border border-amber-500/30 focus:ring-amber-400'
                       : 'bg-slate-800 border border-slate-700 focus:ring-indigo-500'
@@ -666,7 +688,7 @@ export const AdminSupportPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!replyText.trim() || sending}
-                  className={`p-1.5 rounded-lg text-white transition disabled:opacity-50 shrink-0 ${
+                  className={`p-2 sm:p-1.5 rounded-lg text-white transition disabled:opacity-50 shrink-0 ${
                     isInternalNote ? 'bg-amber-600 hover:bg-amber-500' : 'bg-indigo-600 hover:bg-indigo-500'
                   }`}
                 >
@@ -683,78 +705,85 @@ export const AdminSupportPage: React.FC = () => {
 
         {/* COLUMN 3: COLLAPSIBLE CUSTOMER CONTEXT SIDEBAR */}
         {selectedConv && showProfile && (
-          <div className="w-60 xl:w-64 shrink-0 flex flex-col h-full min-h-0 bg-slate-900 rounded-xl border border-slate-800 p-3 space-y-3 text-xs overflow-y-auto animate-in slide-in-from-right duration-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <h4 className="font-bold text-white uppercase text-[10px] tracking-wider flex items-center gap-1.5">
-                <User className="w-3 h-3 text-indigo-400" />
-                <span>Hồ Sơ Học Viên</span>
-              </h4>
-              <button
-                onClick={() => setShowProfile(false)}
-                className="text-slate-500 hover:text-white p-0.5 rounded"
-              >
-                ✕
-              </button>
-            </div>
+          <>
+            {/* Mobile Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden"
+              onClick={() => setShowProfile(false)}
+            />
+            <div className="fixed inset-y-0 right-0 z-50 w-80 max-w-[88vw] lg:static lg:w-60 xl:w-64 shrink-0 flex flex-col h-full min-h-0 bg-slate-900 rounded-none lg:rounded-xl border-l lg:border border-slate-800 p-3 space-y-3 text-xs overflow-y-auto animate-in slide-in-from-right duration-200 shadow-2xl lg:shadow-none">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 className="font-bold text-white uppercase text-[10px] tracking-wider flex items-center gap-1.5">
+                  <User className="w-3 h-3 text-indigo-400" />
+                  <span>Hồ Sơ Học Viên</span>
+                </h4>
+                <button
+                  onClick={() => setShowProfile(false)}
+                  className="text-slate-500 hover:text-white p-0.5 rounded"
+                >
+                  ✕
+                </button>
+              </div>
 
-            <div className="space-y-2 text-[11px]">
-              <div>
-                <span className="text-[9px] text-slate-500 uppercase font-bold">Họ và tên</span>
-                <p className="font-bold text-white text-xs truncate">
-                  {selectedConv.user?.displayName || 'Chưa cập nhật'}
-                </p>
-              </div>
-              <div>
-                <span className="text-[9px] text-slate-500 uppercase font-bold">Email</span>
-                <p className="tabular-nums text-slate-300 text-[10px] truncate">
-                  {selectedConv.user?.email || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <span className="text-[9px] text-slate-500 uppercase font-bold">Gói tài khoản</span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Crown className="w-3 h-3 text-amber-400" />
-                  <span className="font-bold text-indigo-300 text-xs">
-                    {selectedConv.user?.subscriptions?.[0]?.plan?.name || selectedConv.user?.role || 'Miễn Phí'}
-                  </span>
+              <div className="space-y-2 text-[11px]">
+                <div>
+                  <span className="text-[9px] text-slate-500 uppercase font-bold">Họ và tên</span>
+                  <p className="font-bold text-white text-xs truncate">
+                    {selectedConv.user?.displayName || 'Chưa cập nhật'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[9px] text-slate-500 uppercase font-bold">Email</span>
+                  <p className="tabular-nums text-slate-300 text-[10px] truncate">
+                    {selectedConv.user?.email || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[9px] text-slate-500 uppercase font-bold">Gói tài khoản</span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Crown className="w-3 h-3 text-amber-400" />
+                    <span className="font-bold text-indigo-300 text-xs">
+                      {selectedConv.user?.subscriptions?.[0]?.plan?.name || selectedConv.user?.role || 'Miễn Phí'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[9px] text-slate-500 uppercase font-bold">Trình độ CEFR</span>
+                  <p className="font-bold text-emerald-400 text-xs">
+                    {selectedConv.user?.profile?.englishLevel || 'B1'} &rarr; {selectedConv.user?.profile?.targetLevel || 'C1'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[9px] text-slate-500 uppercase font-bold">Chuỗi học / XP</span>
+                  <p className="text-slate-300 font-semibold text-xs">
+                    🔥 {selectedConv.user?.streak?.currentStreak || 0} ngày • {selectedConv.user?.xp?.totalXP || 0} XP
+                  </p>
                 </div>
               </div>
-              <div>
-                <span className="text-[9px] text-slate-500 uppercase font-bold">Trình độ CEFR</span>
-                <p className="font-bold text-emerald-400 text-xs">
-                  {selectedConv.user?.profile?.englishLevel || 'B1'} &rarr; {selectedConv.user?.profile?.targetLevel || 'C1'}
-                </p>
-              </div>
-              <div>
-                <span className="text-[9px] text-slate-500 uppercase font-bold">Chuỗi học / XP</span>
-                <p className="text-slate-300 font-semibold text-xs">
-                  🔥 {selectedConv.user?.streak?.currentStreak || 0} ngày • {selectedConv.user?.xp?.totalXP || 0} XP
-                </p>
-              </div>
-            </div>
 
-            {/* Priority Controls */}
-            <div className="pt-2 border-t border-slate-800 space-y-1.5">
-              <span className="text-[9px] text-slate-500 uppercase font-bold block">
-                Độ ưu tiên xử lý
-              </span>
-              <div className="grid grid-cols-3 gap-1 text-[9px] font-bold">
-                {['LOW', 'NORMAL', 'URGENT'].map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => handlePriorityChange(p)}
-                    className={`py-1 rounded-md transition text-center ${
-                      selectedConv.priority === p
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
+              {/* Priority Controls */}
+              <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                <span className="text-[9px] text-slate-500 uppercase font-bold block">
+                  Độ ưu tiên xử lý
+                </span>
+                <div className="grid grid-cols-3 gap-1 text-[9px] font-bold">
+                  {['LOW', 'NORMAL', 'URGENT'].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => handlePriorityChange(p)}
+                      className={`py-1 rounded-md transition text-center ${
+                        selectedConv.priority === p
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 

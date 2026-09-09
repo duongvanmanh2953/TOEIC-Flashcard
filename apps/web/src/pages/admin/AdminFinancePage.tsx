@@ -313,53 +313,65 @@ export const AdminFinancePage: React.FC = () => {
       {/* =====================================================================
           SECTION 1: FINANCIAL KPI COMMAND METRICS
           ===================================================================== */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Doanh Thu Gộp</span>
-          <span className="text-base sm:text-lg font-bold text-white tabular-nums">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Doanh Thu Gộp</span>
+            <span className="text-[11px] text-emerald-400 font-medium truncate block mt-0.5">+16.4% so kỳ trước</span>
+          </div>
+          <span className="text-base sm:text-lg font-bold text-white tabular-nums shrink-0">
             {data ? formatVND(data.metrics.grossRevenue) : '...'}
           </span>
-          <span className="text-[10px] text-emerald-400 font-medium">+16.4% so kỳ trước</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Doanh Thu Thuần</span>
-          <span className="text-base sm:text-lg font-bold text-emerald-400 tabular-nums">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Doanh Thu Thuần</span>
+            <span className="text-[11px] text-slate-400 truncate block mt-0.5">Trừ phí PayOS & thuế</span>
+          </div>
+          <span className="text-base sm:text-lg font-bold text-emerald-400 tabular-nums shrink-0">
             {data ? formatVND(data.metrics.netRevenue) : '...'}
           </span>
-          <span className="text-[10px] text-slate-400">Trừ phí PayOS & thuế</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">MRR Định Kỳ</span>
-          <span className="text-base sm:text-lg font-bold text-indigo-300 tabular-nums">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate block">MRR Định Kỳ</span>
+            <span className="text-[11px] text-indigo-400 font-medium truncate block mt-0.5">Monthly Recurring</span>
+          </div>
+          <span className="text-base sm:text-lg font-bold text-indigo-300 tabular-nums shrink-0">
             {data ? formatVND(data.metrics.mrr) : '...'}
           </span>
-          <span className="text-[10px] text-indigo-400 font-medium">Monthly Recurring</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ARR Dự Phóng</span>
-          <span className="text-base sm:text-lg font-bold text-purple-300 tabular-nums">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate block">ARR Dự Phóng</span>
+            <span className="text-[11px] text-purple-400 font-medium truncate block mt-0.5">Annualized Run Rate</span>
+          </div>
+          <span className="text-base sm:text-lg font-bold text-purple-300 tabular-nums shrink-0">
             {data ? formatVND(data.metrics.arr) : '...'}
           </span>
-          <span className="text-[10px] text-purple-400 font-medium">Annualized Run Rate</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ARPU / Học Viên</span>
-          <span className="text-base sm:text-lg font-bold text-cyan-300 tabular-nums">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate block">ARPU / Học Viên</span>
+            <span className="text-[11px] text-slate-400 truncate block mt-0.5">Avg Revenue Per User</span>
+          </div>
+          <span className="text-base sm:text-lg font-bold text-cyan-300 tabular-nums shrink-0">
             {data ? formatVND(data.metrics.arpu) : '...'}
           </span>
-          <span className="text-[10px] text-slate-400">Avg Revenue Per User</span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Tỷ Lệ Thành Công</span>
-          <span className="text-base sm:text-lg font-bold text-emerald-400 tabular-nums">
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate block">Tỷ Lệ Thành Công</span>
+            <span className="text-[11px] text-emerald-400 font-medium truncate block mt-0.5">QR & Ngân hàng</span>
+          </div>
+          <span className="text-base sm:text-lg font-bold text-emerald-400 tabular-nums shrink-0">
             {data?.metrics.paymentSuccessRate || 96.5}%
           </span>
-          <span className="text-[10px] text-emerald-400 font-medium">QR & Ngân hàng</span>
         </div>
       </div>
 

@@ -53,6 +53,19 @@ export const AppShell: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+
+  // Prevent background content from scrolling when mobile menu drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   const [showSupportBtn, setShowSupportBtn] = useState(() => {
     return (
       localStorage.getItem('vocabflow_show_support_btn') !== 'false' &&
@@ -579,71 +592,80 @@ export const AppShell: React.FC = () => {
           </div>
         </header>
 
-        {/* Mobile Menu Dropdown */}
+        {/* Mobile Menu Overlay Drawer — FIXED OVERLAY, NEVER SCROLLS WITH PAGE */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-4 py-3 space-y-3 max-h-[75vh] overflow-y-auto">
-            {navSections.map((section) => (
-              <div key={section.title} className="space-y-1">
-                <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                  {section.title}
-                </p>
-                <div className="space-y-0.5">
-                  {section.items.map((item) => (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
-                          isActive
-                            ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`
-                      }
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <item.icon className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        (item as any).isUnlock ? (
-                          <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider">
-                            <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
-                            <span>MỞ KHÓA</span>
-                          </span>
-                        ) : (
-                          <span className="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
-                            {item.badge}
-                          </span>
-                        )
-                      )}
-                    </NavLink>
-                  ))}
+          <div className="lg:hidden fixed inset-x-0 top-[57px] bottom-0 z-40 flex flex-col">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            {/* Drawer Menu Content */}
+            <div className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3 max-h-[80vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200">
+              {navSections.map((section) => (
+                <div key={section.title} className="space-y-1">
+                  <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    {section.title}
+                  </p>
+                  <div className="space-y-0.5">
+                    {section.items.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
+                            isActive
+                              ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold'
+                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`
+                        }
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <item.icon className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          (item as any).isUnlock ? (
+                            <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider">
+                              <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                              <span>MỞ KHÓA</span>
+                            </span>
+                          ) : (
+                            <span className="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
+                              {item.badge}
+                            </span>
+                          )
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
-            {/* ONLY Show Logout If Authenticated; Show Login If Guest */}
-            {user?.isAnonymous || !user ? (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  promptLogin('Đăng nhập để lưu tiến độ và sử dụng đầy đủ tính năng');
-                }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition shadow-xs"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Đăng nhập tài khoản</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>{t('nav.logout', 'Logout')}</span>
-              </button>
-            )}
+              {/* ONLY Show Logout If Authenticated; Show Login If Guest */}
+              {user?.isAnonymous || !user ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    promptLogin('Đăng nhập để lưu tiến độ và sử dụng đầy đủ tính năng');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition shadow-xs"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Đăng nhập tài khoản</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>{t('nav.logout', 'Logout')}</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -954,126 +976,138 @@ export const AppShell: React.FC = () => {
 
       {/* Customer Support Floating Chat Widget (Hidden for Admin) */}
       {supportModalOpen && !isAdmin && (
-        <div
-          style={{
-            top: btnPosY ? `${Math.min(window.innerHeight - 500, Math.max(20, btnPosY - 220))}px` : undefined,
-            bottom: btnPosY ? undefined : '80px',
-            right: '16px',
-          }}
-          className="fixed z-50 animate-scale-up"
-        >
+        <>
+          {/* Mobile backdrop to dismiss */}
           <div
-            className="w-[calc(100vw-2rem)] sm:w-[330px] rounded-2xl bg-slate-900 border border-slate-700/80 p-3.5 space-y-2.5 flex flex-col max-h-[80vh] sm:max-h-[460px] overflow-hidden text-slate-100"
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 sm:hidden animate-fade-in"
+            onClick={() => setSupportModalOpen(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            style={
+              typeof window !== 'undefined' && window.innerWidth >= 640
+                ? {
+                    top: btnPosY ? `${Math.min(window.innerHeight - 500, Math.max(20, btnPosY - 220))}px` : undefined,
+                    bottom: btnPosY ? undefined : '80px',
+                    right: '16px',
+                  }
+                : undefined
+            }
+            className="fixed inset-x-2 bottom-2 sm:bottom-auto sm:inset-x-auto sm:right-4 z-50 animate-scale-up"
           >
-            {/* Header with Title & Online status */}
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold border border-indigo-500/30">
-                  <Headphones className="w-4 h-4 text-indigo-400" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-white leading-snug">
-                    VocabFlow CSKH 24/7
-                  </h4>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span>Đang trực tuyến</span>
+            <div
+              className="w-full sm:w-[350px] rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-slate-700/80 p-3.5 space-y-2.5 flex flex-col h-[75vh] max-h-[540px] sm:h-auto sm:max-h-[480px] overflow-hidden text-slate-100 shadow-2xl"
+            >
+              {/* Header with Title & Online status */}
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold border border-indigo-500/30">
+                    <Headphones className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-white leading-snug">
+                      VocabFlow CSKH 24/7
+                    </h4>
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                      <span>Đang trực tuyến</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setSupportModalOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                  aria-label="Đóng"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-          {/* Support Navigation Tabs */}
-          <div className="grid grid-cols-2 p-0.5 rounded-xl bg-slate-800/90 text-[11px] font-bold border border-slate-700/70">
-            <button
-              type="button"
-              onClick={() => setSupportTab('chat')}
-              className={`py-1 rounded-lg transition ${
-                supportTab === 'chat'
-                  ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              💬 Chat trực tiếp
-            </button>
-            <button
-              type="button"
-              onClick={() => setSupportTab('quick')}
-              className={`py-1 rounded-lg transition ${
-                supportTab === 'quick'
-                  ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              ⚡ Kênh liên hệ
-            </button>
-          </div>
-
-          {/* Tab 1: Realtime Support Chat */}
-          {supportTab === 'chat' ? (
-            <div className="flex-1 flex flex-col min-h-0 space-y-2">
-              {/* Virtualized Messages Scroll Area with Scroll Loading, Worker Processing & Read Receipts */}
-              <div className="h-56 min-h-0 bg-slate-950/50 rounded-xl overflow-hidden text-xs relative border border-slate-800/80">
-                <VirtualChatPane
-                  conversationId={activeConv?.id || 'new_chat'}
-                  rawMessages={supportMessages}
-                  currentUserId={user?.id}
-                  currentUserRole="USER"
-                  isLoading={loadingChat}
-                  emptyPlaceholder="Chào mừng bạn đến với CSKH 24/7! Hãy gửi tin nhắn bên dưới để nhận hỗ trợ."
-                  onMarkRead={handleMarkUserRead}
-                  isCompact={true}
-                />
-              </div>
-
-              {/* Guest Warning Banner */}
-              {(!user || user.isAnonymous) && (
-                <div className="p-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-between gap-2 text-[11px]">
-                  <span className="text-indigo-200 truncate">Đăng nhập để gửi tin nhắn và nhận phản hồi từ CSKH</span>
+                <div className="flex items-center gap-1">
                   <button
-                    type="button"
-                    onClick={() => promptLogin('Đăng nhập để kết nối tư vấn viên CSKH')}
-                    className="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] shrink-0"
+                    onClick={() => setSupportModalOpen(false)}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                    aria-label="Đóng"
                   >
-                    Đăng nhập
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              )}
-
-              {/* Chat Composer Input */}
-              <div className="pt-1.5 border-t border-slate-800 flex items-center gap-1.5">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSendMessage();
-                  }}
-                  disabled={sendingMsg}
-                  placeholder={user && !user.isAnonymous ? "Nhập tin nhắn..." : "Vui lòng đăng nhập để gửi tin..."}
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={handleSendMessage}
-                  disabled={!chatInput.trim() || sendingMsg}
-                  className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white shrink-0 transition"
-                  aria-label="Gửi tin nhắn"
-                >
-                  <Send className={`w-3.5 h-3.5 ${sendingMsg ? 'animate-spin' : ''}`} />
-                </button>
               </div>
+
+            {/* Support Navigation Tabs */}
+            <div className="grid grid-cols-2 p-0.5 rounded-xl bg-slate-800/90 text-[11px] font-bold border border-slate-700/70 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSupportTab('chat')}
+                className={`py-1 rounded-lg transition ${
+                  supportTab === 'chat'
+                    ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                💬 Chat trực tiếp
+              </button>
+              <button
+                type="button"
+                onClick={() => setSupportTab('quick')}
+                className={`py-1 rounded-lg transition ${
+                  supportTab === 'quick'
+                    ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                ⚡ Kênh liên hệ
+              </button>
             </div>
-          ) : (
+
+            {/* Tab 1: Realtime Support Chat */}
+            {supportTab === 'chat' ? (
+              <div className="flex-1 flex flex-col min-h-0 space-y-2">
+                {/* Virtualized Messages Scroll Area with Dynamic Height */}
+                <div className="flex-1 min-h-[160px] sm:h-56 bg-slate-950/50 rounded-xl overflow-hidden text-xs relative border border-slate-800/80">
+                  <VirtualChatPane
+                    conversationId={activeConv?.id || 'new_chat'}
+                    rawMessages={supportMessages}
+                    currentUserId={user?.id}
+                    currentUserRole="USER"
+                    isLoading={loadingChat}
+                    emptyPlaceholder="Chào mừng bạn đến với CSKH 24/7! Hãy gửi tin nhắn bên dưới để nhận hỗ trợ."
+                    onMarkRead={handleMarkUserRead}
+                    isCompact={true}
+                  />
+                </div>
+
+                {/* Guest Warning Banner */}
+                {(!user || user.isAnonymous) && (
+                  <div className="p-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-between gap-2 text-[11px] shrink-0">
+                    <span className="text-indigo-200 truncate">Đăng nhập để gửi tin nhắn và nhận phản hồi từ CSKH</span>
+                    <button
+                      type="button"
+                      onClick={() => promptLogin('Đăng nhập để kết nối tư vấn viên CSKH')}
+                      className="px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] shrink-0"
+                    >
+                      Đăng nhập
+                    </button>
+                  </div>
+                )}
+
+                {/* Chat Composer Input */}
+                <div className="pt-1.5 border-t border-slate-800 flex items-center gap-1.5 shrink-0">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSendMessage();
+                    }}
+                    disabled={sendingMsg}
+                    placeholder={user && !user.isAnonymous ? "Nhập tin nhắn..." : "Vui lòng đăng nhập để gửi tin..."}
+                    className="flex-1 px-3 py-2 sm:py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-sm sm:text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendMessage}
+                    disabled={!chatInput.trim() || sendingMsg}
+                    className="p-2 sm:p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white shrink-0 transition"
+                    aria-label="Gửi tin nhắn"
+                  >
+                    <Send className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${sendingMsg ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+              </div>
+            ) : (
             /* Tab 2: Quick Links / Facebook / FAQ */
             <div className="space-y-3 pt-1">
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -1120,7 +1154,8 @@ export const AppShell: React.FC = () => {
           </div>
         </div>
       </div>
-    )}
+    </>
+  )}
     </div>
   );
 };

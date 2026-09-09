@@ -47,18 +47,18 @@ export const LandingPage: React.FC = () => {
 
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/60 dark:bg-slate-950/60 border-b border-slate-200/50 dark:border-slate-800/60 transition-colors duration-300">
-        <div className="px-6 py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             <img
               src="/vocabflow-logo-256.png"
               alt="VocabFlow"
-              className="w-9 h-9 rounded-xl object-contain shadow-md shadow-indigo-500/20"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain shadow-md shadow-indigo-500/20"
             />
             <div className="flex flex-col">
-              <span className="font-extrabold text-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 dark:from-sky-400 dark:via-blue-400 dark:to-cyan-300 bg-clip-text text-transparent leading-snug">
+              <span className="font-extrabold text-lg sm:text-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 dark:from-sky-400 dark:via-blue-400 dark:to-cyan-300 bg-clip-text text-transparent leading-snug">
                 VocabFlow
               </span>
-              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider uppercase leading-none">
+              <span className="hidden sm:inline-block text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider uppercase leading-none">
                 Smart Adaptive English
               </span>
             </div>
@@ -79,16 +79,16 @@ export const LandingPage: React.FC = () => {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Link
               to="/login"
-              className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 px-3 py-2 transition"
+              className="whitespace-nowrap px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-cyan-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition shrink-0"
             >
               Đăng nhập
             </Link>
             <Link
               to="/dashboard"
-              className="btn-glass-primary !py-2.5 !px-5 text-xs sm:text-sm font-bold"
+              className="whitespace-nowrap btn-glass-primary !py-2 sm:!py-2.5 !px-3.5 sm:!px-5 text-xs sm:text-sm font-bold shrink-0"
             >
               <span>Vào học ngay</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -399,7 +399,7 @@ export const LandingPage: React.FC = () => {
             </Link>
             <Link
               to="/placement-test"
-              className="btn-glass-secondary !py-3.5 !px-7 text-sm font-bold flex items-center justify-center gap-2 text-slate-100 dark:text-white"
+              className="btn-glass-secondary !py-3.5 !px-7 text-sm font-bold flex items-center justify-center gap-2 text-slate-800 dark:text-white"
             >
               Làm bài test 3 phút
             </Link>

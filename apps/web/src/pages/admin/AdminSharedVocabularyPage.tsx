@@ -257,8 +257,8 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="w-full min-w-[680px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-800/80 bg-slate-950/40 text-slate-400 font-bold uppercase tracking-wider">
                   <th className="py-3.5 px-4">Bộ Từ Vựng & Đóng Góp</th>
