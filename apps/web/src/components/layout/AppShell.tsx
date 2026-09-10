@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, isProUser } from '../../contexts/AuthContext';
 import { useTranslation } from '../../i18n';
 import { LiquidBackground } from '../common/LiquidBackground';
@@ -53,6 +53,12 @@ export const AppShell: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const location = useLocation();
+
+  // Auto-close mobile drawer whenever route changes (Requirement 3)
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   // Prevent background content from scrolling when mobile menu drawer is open
   useEffect(() => {
@@ -723,7 +729,7 @@ export const AppShell: React.FC = () => {
         </header>
 
         {/* Routed Pages Container — Full Width & Space-Optimized */}
-        <main className="flex-1 p-3 sm:p-5 lg:p-6 w-full max-w-[1680px] mx-auto">
+        <main data-scroll-container="true" className="flex-1 p-3 sm:p-5 lg:p-6 w-full max-w-[1680px] mx-auto">
           <Outlet />
         </main>
 
@@ -733,6 +739,7 @@ export const AppShell: React.FC = () => {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
                 `flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all ${
                   isActive

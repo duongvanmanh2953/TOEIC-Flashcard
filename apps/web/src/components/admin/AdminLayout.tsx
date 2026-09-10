@@ -14,6 +14,7 @@ import {
   CreditCard,
   Activity,
   ShieldCheck,
+  Flame,
   Settings,
   Search,
   ExternalLink,
@@ -50,6 +51,11 @@ export const AdminLayout: React.FC = () => {
     return localStorage.getItem('leximind_admin_sidebar_collapsed') === 'true';
   });
 
+  // Auto-close mobile sidebar whenever route changes (Requirement 3)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
   // Prevent background content from scrolling when mobile sidebar drawer is open
   useEffect(() => {
     if (sidebarOpen) {
@@ -61,6 +67,7 @@ export const AdminLayout: React.FC = () => {
       document.body.style.overflow = '';
     };
   }, [sidebarOpen]);
+
 
   const toggleSidebarCollapse = () => {
     setSidebarCollapsed((prev) => {
@@ -218,6 +225,7 @@ export const AdminLayout: React.FC = () => {
       items: [
         { to: '/admin/system', label: 'Sức Khỏe Hệ Thống', icon: Activity },
         { to: '/admin/security', label: 'Bảo Mật & Phân Quyền', icon: ShieldCheck },
+        { to: '/admin/firebase', label: 'Cấu hình Firebase', icon: Flame },
         { to: '/admin/settings', label: 'Cài Đặt Chung', icon: Settings },
       ],
     },
@@ -389,7 +397,10 @@ export const AdminLayout: React.FC = () => {
         {/* Bottom Actions: User App Switch & Admin Info */}
         <div className="py-2.5 border-t border-slate-200 dark:border-slate-800 space-y-1.5">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              setSidebarOpen(false);
+              navigate('/dashboard');
+            }}
             className={`rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center border border-slate-200 dark:border-slate-700/60 ${
               sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
             }`}

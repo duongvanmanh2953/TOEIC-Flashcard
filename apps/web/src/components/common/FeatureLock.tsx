@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, LockOpen, Sparkles, ArrowRight } from 'lucide-react';
+import { Lock, LockOpen, Sparkles, ArrowRight, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PremiumBadge } from './PremiumBadge';
 

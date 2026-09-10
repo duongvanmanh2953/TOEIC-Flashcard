@@ -52,6 +52,8 @@ import { RealtimeGameRoomPage } from './pages/games/RealtimeGameRoomPage';
 import { WordMatchGame } from './pages/games/WordMatchGame';
 import { WordScrambleGame } from './pages/games/WordScrambleGame';
 import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
+import { AdminFirebasePage } from './pages/admin/AdminFirebasePage';
+import { ScrollToTop } from './components/common/ScrollToTop';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
   children,
@@ -113,6 +115,7 @@ export const App: React.FC = () => {
     <I18nProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <ContextualLoginModal />
           <Routes>
             {/* Public Entry Routes */}
@@ -190,6 +193,7 @@ export const App: React.FC = () => {
               <Route path="pricing" element={<AdminPricingPage />} />
               <Route path="system" element={<AdminSystemPage />} />
               <Route path="security" element={<AdminSecurityPage />} />
+              <Route path="firebase" element={<AdminFirebasePage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
 

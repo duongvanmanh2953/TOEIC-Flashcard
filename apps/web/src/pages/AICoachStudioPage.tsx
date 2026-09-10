@@ -12,6 +12,8 @@ import {
   Shield,
   HelpCircle,
   Play,
+  Pause,
+  Square,
   RotateCcw,
   CheckCircle2,
   AlertCircle,
@@ -39,6 +41,8 @@ import {
   Settings2,
   Trash2,
 } from 'lucide-react';
+import { audioEngine } from '../lib/audioEngine';
+import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 
 interface ChatMessage {
   id: string;
@@ -283,21 +287,17 @@ export const AICoachStudioPage: React.FC = () => {
     }
   };
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.95;
+  const speakText = (text: string, rate = 0.95) => {
+    if (isCallActiveRef.current) {
+      setCallStatus('speaking');
+      try {
+        recognitionRef.current?.stop();
+      } catch (_) {}
+    }
 
-      if (isCallActiveRef.current) {
-        setCallStatus('speaking');
-        try {
-          recognitionRef.current?.stop();
-        } catch (_) {}
-      }
-
-      utterance.onend = () => {
+    audioEngine.playWord(text, {
+      rate,
+      onEnd: () => {
         if (isCallActiveRef.current) {
           setCallStatus('listening');
           setTimeout(() => {
@@ -306,17 +306,14 @@ export const AICoachStudioPage: React.FC = () => {
             }
           }, 300);
         }
-      };
-
-      utterance.onerror = () => {
+      },
+      onError: () => {
         if (isCallActiveRef.current) {
           setCallStatus('listening');
           startListening();
         }
-      };
-
-      window.speechSynthesis.speak(utterance);
-    }
+      },
+    });
   };
 
   // ==========================================
@@ -426,66 +423,65 @@ export const AICoachStudioPage: React.FC = () => {
     },
   };
 
-  const startPronunciationRecording = () => {
+  // Tab 2 Voice Recorder Integration (cross-platform MediaRecorder + PCM WAV fallback)
+  const {
+    status: pronRecStatus,
+    isRecording: isPronRecording,
+    recordedUrl: pronRecordedUrl,
+    isPlayingRecording: isPlayingPronRecording,
+    recordingSeconds: pronRecordingSeconds,
+    errorMessage: pronRecErrorMessage,
+    startRecording: startPronVoiceRecording,
+    stopRecording: stopPronVoiceRecording,
+    replayRecording: replayPronVoiceRecording,
+    stopReplay: stopPronVoiceReplay,
+    resetRecording: resetPronVoiceRecording,
+  } = useVoiceRecorder();
+
+  const handleStartPronRecording = async () => {
     if (isGuest || !user) {
       promptLogin('Đăng nhập để luyện và chấm điểm phát âm chuẩn bản xứ');
       return;
     }
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      // Fallback direct evaluation if browser does not support SpeechRecognition
-      evaluatePronunciationMatch(selectedWord, selectedWord);
-      return;
-    }
-
-    setIsRecordingPronunciation(true);
     setRecordedSpokenWord('');
+    setPronunciationResult(null);
 
-    // Pre-prompt microphone permission for Chrome & Mobile browsers
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        // Stop stream immediately after granting permission
-        stream.getTracks().forEach((track) => track.stop());
-        runRecognition();
-      }).catch((err) => {
-        console.warn('Microphone permission denied or unsupported:', err);
-        setIsRecordingPronunciation(false);
-        evaluatePronunciationMatch(selectedWord, selectedWord);
-      });
-    } else {
-      runRecognition();
-    }
+    // 1. Start cross-platform microphone recording (MediaRecorder / PCM)
+    await startPronVoiceRecording();
 
-    function runRecognition() {
+    // 2. Try Web SpeechRecognition if browser supports it
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
       try {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
-
         recognition.onresult = (event: any) => {
           const spoken = event.results[0][0].transcript.toLowerCase().trim();
           setRecordedSpokenWord(spoken);
-          evaluatePronunciationMatch(selectedWord, spoken);
         };
-
-        recognition.onend = () => {
-          setIsRecordingPronunciation(false);
-        };
-
-        recognition.onerror = (event: any) => {
-          console.warn('SpeechRecognition error:', event?.error);
-          setIsRecordingPronunciation(false);
-          evaluatePronunciationMatch(selectedWord, selectedWord);
-        };
-
         pronunciationRecRef.current = recognition;
         recognition.start();
-      } catch (err) {
-        console.warn('Pronunciation mic error:', err);
-        setIsRecordingPronunciation(false);
-        evaluatePronunciationMatch(selectedWord, selectedWord);
-      }
+      } catch (_) {}
+    }
+  };
+
+  const handleStopPronRecording = async () => {
+    try {
+      pronunciationRecRef.current?.stop();
+    } catch (_) {}
+
+    const result = await stopPronVoiceRecording();
+    const spoken = recordedSpokenWord || selectedWord;
+    evaluatePronunciationMatch(selectedWord, spoken);
+  };
+
+  const handleToggleReplayPronRecording = () => {
+    if (isPlayingPronRecording) {
+      stopPronVoiceReplay();
+    } else {
+      replayPronVoiceRecording();
     }
   };
 
@@ -1211,40 +1207,76 @@ export const AICoachStudioPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Real Mic Record Button */}
-                  <div className="flex items-center gap-2">
+                  {/* Action Controls: Listen / Replay Native / Record / Replay User Recording */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Native Listen / Replay Button */}
                     <button
-                      onClick={startPronunciationRecording}
-                      disabled={isRecordingPronunciation || evaluatingPronunciation}
-                      className={`px-5 py-2.5 rounded-2xl font-black text-xs shadow-md transition flex items-center gap-2.5 whitespace-nowrap shrink-0 ${
-                        isRecordingPronunciation
-                          ? 'bg-rose-600 text-white shadow-rose-600/30 ring-4 ring-rose-500/20'
-                          : 'btn-glass-primary shadow-indigo-600/25'
-                      }`}
+                      type="button"
+                      onClick={() => speakText(selectedWord, 1.0)}
+                      className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-xs"
+                      title="Nghe lại phát âm bản xứ chuẩn"
                     >
-                      {isRecordingPronunciation ? (
-                        <>
-                          {/* 2-beat rhythmic soundwave indicator */}
-                          <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-4 bg-white rounded-full animate-pulse" />
-                            <span className="w-1.5 h-4 bg-white rounded-full animate-pulse [animation-delay:250ms]" />
-                          </span>
-                          <span>Đang lắng nghe... Hãy phát âm từ!</span>
-                        </>
-                      ) : evaluatingPronunciation ? (
-                        <>
-                          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                          <span>Đang phân tích âm vị...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="w-4 h-4" />
-                          <span>Bắt đầu thu âm & chấm điểm</span>
-                        </>
-                      )}
+                      <Volume2 className="w-4 h-4" />
+                      <span>Nghe phát âm chuẩn</span>
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => speakText(selectedWord, 0.75)}
+                      className="px-2.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-500/10 text-slate-600 dark:text-slate-300 hover:text-amber-600 font-bold text-xs transition active:scale-95"
+                      title="Nghe lại ở tốc độ chậm 0.75x"
+                    >
+                      🐢 Chậm
+                    </button>
+
+                    {/* Microphone Record / Stop Button */}
+                    {!isPronRecording ? (
+                      <button
+                        type="button"
+                        onClick={handleStartPronRecording}
+                        className="px-4 py-2.5 rounded-2xl btn-glass-primary text-white font-extrabold text-xs shadow-md shadow-indigo-600/25 flex items-center gap-2 transition active:scale-95"
+                      >
+                        <Mic className="w-4 h-4" />
+                        <span>{pronRecordedUrl ? 'Thu âm lại' : 'Bắt đầu thu âm'}</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleStopPronRecording}
+                        className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-lg shadow-rose-600/30 flex items-center gap-2 transition active:scale-95 animate-pulse"
+                      >
+                        <Square className="w-4 h-4 fill-white" />
+                        <span>
+                          Dừng thu âm ({pronRecordingSeconds < 10 ? `0${pronRecordingSeconds}` : pronRecordingSeconds}s)
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Replay User Recording Button */}
+                    {pronRecordedUrl && (
+                      <button
+                        type="button"
+                        onClick={handleToggleReplayPronRecording}
+                        className={`px-4 py-2.5 rounded-2xl font-extrabold text-xs shadow-sm flex items-center gap-2 transition active:scale-95 ${
+                          isPlayingPronRecording
+                            ? 'bg-emerald-600 text-white shadow-emerald-500/30 ring-2 ring-emerald-400'
+                            : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                        }`}
+                      >
+                        {isPlayingPronRecording ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+                        <span>{isPlayingPronRecording ? 'Đang nghe giọng bạn...' : 'Nghe lại bản thu của bạn'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
+
+                {/* Error Banner if mic permission issue */}
+                {pronRecErrorMessage && (
+                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{pronRecErrorMessage}</span>
+                  </div>
+                )}
 
                 {recordedSpokenWord && (
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between">

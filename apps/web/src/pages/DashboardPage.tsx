@@ -27,6 +27,7 @@ import {
   HelpCircle,
   LockOpen,
   X,
+  Crown,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {

@@ -21,10 +21,13 @@ import {
   Check,
   Lock,
   LockOpen,
+  Mic,
+  X,
 } from 'lucide-react';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { GlassCard } from '../components/common/GlassCard';
+import { PronunciationPracticeCard } from '../components/audio/PronunciationPracticeCard';
 
 export const TOPIC_OPTIONS = [
   { id: 'ALL', label: 'Tất cả từ cần ôn (SRS)', icon: Sparkles },
@@ -71,6 +74,7 @@ export const ReviewSessionPage: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
   const [sessionMood, setSessionMood] = useState<'great' | 'good' | 'okay' | 'tired' | null>(null);
   const [showSmartBreak, setShowSmartBreak] = useState(false);
+  const [showVoicePractice, setShowVoicePractice] = useState(false);
   const startTimeRef = useRef<number>(Date.now());
   const sessionDurationRef = useRef<number>(Date.now());
 
@@ -649,7 +653,20 @@ export const ReviewSessionPage: React.FC = () => {
                       CEFR {currentItem.cefrLevel || 'B2'}
                     </span>
                   </div>
-                  <SpeechButton text={currentItem.word} showSlowOption={true} />
+                  <div className="flex items-center gap-1.5">
+                    <SpeechButton text={currentItem.word} showSlowOption={true} />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowVoicePractice(true);
+                      }}
+                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/50 dark:border-slate-800 transition active:scale-95 flex items-center gap-1"
+                      title="Thu âm & Nghe lại giọng bạn"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Center Word Content */}
@@ -733,6 +750,29 @@ export const ReviewSessionPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Voice Practice & Recording Modal */}
+          {showVoicePractice && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in"
+              onClick={() => setShowVoicePractice(false)}
+            >
+              <div className="relative w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setShowVoicePractice(false)}
+                  className="absolute -top-3 -right-3 z-10 p-2 rounded-full bg-slate-800 text-white border border-slate-700 shadow-md hover:bg-slate-700 transition"
+                  aria-label="Đóng"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <PronunciationPracticeCard
+                  word={currentItem.word}
+                  ipa={currentItem.pronunciation}
+                  meaning={currentItem.meaningVi || currentItem.meaning}
+                />
+              </div>
+            </div>
+          )}
 
           {/* SRS 4-Tier Evaluation Buttons */}
           <div className="p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-md space-y-2">

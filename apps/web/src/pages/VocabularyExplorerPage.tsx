@@ -15,6 +15,7 @@ import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { idbSetCache, idbGetCache, idbSaveWords, idbGetWords } from '../lib/idb';
+import { audioEngine } from '../lib/audioEngine';
 
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -97,13 +98,7 @@ export const VocabularyExplorerPage: React.FC = () => {
 
   const playAudio = (url?: string, text?: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (url) {
-      new Audio(url).play().catch(() => {});
-    } else if (text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      window.speechSynthesis.speak(utterance);
-    }
+    audioEngine.playWord(text || '', { audioUrl: url });
   };
 
   const handleToggleFavorite = async (wordId: string, e: React.MouseEvent) => {

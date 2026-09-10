@@ -10,7 +10,7 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
-  const { register, loginWithGoogle, loginWithFacebook, openFirebaseConfigModal, isFirebaseConfigured } = useAuth();
+  const { register, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,29 +181,6 @@ export const RegisterPage: React.FC = () => {
           >
             <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 rounded-full object-contain shrink-0" />
             <span>{socialLoading === 'facebook' ? 'Đang vào...' : 'Facebook'}</span>
-          </button>
-        </div>
-
-        {/* Firebase OAuth Status & Quick Config Trigger */}
-        <div className="mt-3.5 flex items-center justify-between px-1 text-[11px] text-slate-500 dark:text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isFirebaseConfigured
-                  ? 'bg-emerald-500'
-                  : 'bg-amber-400'
-              }`}
-            />
-            <span>
-              {isFirebaseConfigured ? 'Firebase OAuth Sẵn Sàng' : 'Chưa cấu hình Firebase API Key'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={openFirebaseConfigModal}
-            className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 hover:underline font-bold flex items-center gap-1 transition"
-          >
-            <span>⚙️ Cấu hình Firebase</span>
           </button>
         </div>
 
