@@ -53,6 +53,15 @@ services:
       PAYOS_API_KEY: ${PAYOS_API_KEY:-}
       PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
       PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-}
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-VocabFlow AI <noreply@vocabflow.ai>}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
     ports:
       - '4000:4000'
     depends_on:

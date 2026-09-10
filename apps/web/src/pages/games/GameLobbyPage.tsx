@@ -331,6 +331,84 @@ export const GameLobbyPage: React.FC = () => {
         </div>
       )}
 
+      {/* 2.5. 24/7 MINI GAMES & SOLO PRACTICE SECTION */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Gamepad2 className="w-5 h-5 text-purple-500" />
+              <span>MINI GAMES LUYỆN PHẢN XẠ 24/7 (CHƠI NGAY)</span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Rèn luyện phản xạ từ vựng TOEIC cấp tốc bất cứ lúc nào không cần chờ phiên đấu
+            </p>
+          </div>
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+            🟢 MỞ CỬA 24/7
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Card 1: Word Match Challenge */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/70 border border-indigo-500/30 hover:border-indigo-400 transition-all duration-300 space-y-4 shadow-lg group">
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 group-hover:scale-110 transition">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                Lật Thẻ Trí Nhớ
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-white group-hover:text-indigo-300 transition">
+                Word Match Challenge
+              </h3>
+              <p className="text-xs text-slate-300 line-clamp-2">
+                Lật thẻ tìm đúng cặp từ vựng tiếng Anh và nghĩa tiếng Việt tương ứng. Tính điểm combo thần tốc và phát âm bản ngữ.
+              </p>
+            </div>
+
+            <button
+              onClick={() => navigate('/games/word-match')}
+              className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2"
+            >
+              <Gamepad2 className="w-4 h-4" />
+              <span>Chơi Ngay (Solo / Practice)</span>
+            </button>
+          </div>
+
+          {/* Card 2: Word Scramble Rush */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-950/80 via-slate-900 to-emerald-950/70 border border-emerald-500/30 hover:border-emerald-400 transition-all duration-300 space-y-4 shadow-lg group">
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-110 transition">
+                <Zap className="w-6 h-6" />
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                Sắp Xếp Ký Tự
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-white group-hover:text-emerald-300 transition">
+                Word Scramble Rush
+              </h3>
+              <p className="text-xs text-slate-300 line-clamp-2">
+                Giải mã các từ vựng TOEIC bị đảo lộn ký tự trong 25 giây. Rèn luyện chính tả, phiên âm và phản xạ nhớ từ sâu.
+              </p>
+            </div>
+
+            <button
+              onClick={() => navigate('/games/scramble')}
+              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2"
+            >
+              <Gamepad2 className="w-4 h-4" />
+              <span>Chơi Ngay (Speed Run)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* 3. Tonights Games Schedule Matrix */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

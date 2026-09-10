@@ -433,7 +433,7 @@ export const AICoachStudioPage: React.FC = () => {
     }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      // Fallback direct evaluation if browser does not support mic
+      // Fallback direct evaluation if browser does not support SpeechRecognition
       evaluatePronunciationMatch(selectedWord, selectedWord);
       return;
     }
@@ -441,34 +441,51 @@ export const AICoachStudioPage: React.FC = () => {
     setIsRecordingPronunciation(true);
     setRecordedSpokenWord('');
 
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        const spoken = event.results[0][0].transcript.toLowerCase().trim();
-        setRecordedSpokenWord(spoken);
-        evaluatePronunciationMatch(selectedWord, spoken);
-      };
-
-      recognition.onend = () => {
+    // Pre-prompt microphone permission for Chrome & Mobile browsers
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        // Stop stream immediately after granting permission
+        stream.getTracks().forEach((track) => track.stop());
+        runRecognition();
+      }).catch((err) => {
+        console.warn('Microphone permission denied or unsupported:', err);
         setIsRecordingPronunciation(false);
-      };
-
-      recognition.onerror = () => {
-        setIsRecordingPronunciation(false);
-        // Fallback evaluation
         evaluatePronunciationMatch(selectedWord, selectedWord);
-      };
+      });
+    } else {
+      runRecognition();
+    }
 
-      pronunciationRecRef.current = recognition;
-      recognition.start();
-    } catch (err) {
-      console.warn('Pronunciation mic error:', err);
-      setIsRecordingPronunciation(false);
-      evaluatePronunciationMatch(selectedWord, selectedWord);
+    function runRecognition() {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event: any) => {
+          const spoken = event.results[0][0].transcript.toLowerCase().trim();
+          setRecordedSpokenWord(spoken);
+          evaluatePronunciationMatch(selectedWord, spoken);
+        };
+
+        recognition.onend = () => {
+          setIsRecordingPronunciation(false);
+        };
+
+        recognition.onerror = (event: any) => {
+          console.warn('SpeechRecognition error:', event?.error);
+          setIsRecordingPronunciation(false);
+          evaluatePronunciationMatch(selectedWord, selectedWord);
+        };
+
+        pronunciationRecRef.current = recognition;
+        recognition.start();
+      } catch (err) {
+        console.warn('Pronunciation mic error:', err);
+        setIsRecordingPronunciation(false);
+        evaluatePronunciationMatch(selectedWord, selectedWord);
+      }
     }
   };
 

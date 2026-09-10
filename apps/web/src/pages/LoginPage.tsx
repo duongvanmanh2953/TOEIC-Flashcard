@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('learner@vocabflow.ai');
+  const [email, setEmail] = useState('pro@vocabflow.ai');
   const [password, setPassword] = useState('password123');
+  const [showForgot, setShowForgot] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
@@ -64,9 +66,18 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-              Mật khẩu
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Mật khẩu
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Quên mật khẩu?
+              </button>
+            </div>
             <input
               type="password"
               required
@@ -75,6 +86,45 @@ export const LoginPage: React.FC = () => {
               className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
               placeholder="••••••••"
             />
+          </div>
+
+          {/* Quick Demo Accounts Selection */}
+          <div className="p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/40 space-y-2">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+              ⚡ Tài khoản cố định có sẵn:
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('pro@vocabflow.ai');
+                  setPassword('password123');
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold border transition flex items-center justify-center gap-1 ${
+                  email === 'pro@vocabflow.ai'
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Học Viên Pro</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@vocabflow.ai');
+                  setPassword('admin123');
+                }}
+                className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold border transition flex items-center justify-center gap-1 ${
+                  email === 'admin@vocabflow.ai'
+                    ? 'bg-purple-600 text-white border-purple-500 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <ShieldCheck className="w-3 h-3" />
+                <span>Admin Quản Trị</span>
+              </button>
+            </div>
           </div>
 
           <button
@@ -225,6 +275,11 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={showForgot}
+        onClose={() => setShowForgot(false)}
+      />
     </div>
   );
 };

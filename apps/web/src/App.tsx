@@ -49,6 +49,8 @@ import { AdminGamesPage } from './pages/admin/AdminGamesPage';
 import { AdminFinancialReportsPage } from './pages/admin/AdminFinancialReportsPage';
 import { GameLobbyPage } from './pages/games/GameLobbyPage';
 import { RealtimeGameRoomPage } from './pages/games/RealtimeGameRoomPage';
+import { WordMatchGame } from './pages/games/WordMatchGame';
+import { WordScrambleGame } from './pages/games/WordScrambleGame';
 import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
@@ -143,6 +145,8 @@ export const App: React.FC = () => {
               <Route path="/ai-tutor" element={<AICoachStudioPage />} />
               <Route path="/coach" element={<AICoachStudioPage />} />
               <Route path="/games" element={<GameLobbyPage />} />
+              <Route path="/games/word-match" element={<WordMatchGame />} />
+              <Route path="/games/scramble" element={<WordScrambleGame />} />
               <Route path="/games/room/:roomId" element={<RealtimeGameRoomPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/progress" element={<ProgressAnalyticsPage />} />

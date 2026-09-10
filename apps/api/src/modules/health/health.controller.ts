@@ -1,14 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as nodemailer from 'nodemailer';
 
 export interface ServiceHealthDetail {
   name: string;
+  category: 'AI' | 'EMAIL' | 'PAYMENT' | 'DATABASE' | 'CACHE' | 'WEBSOCKET';
   status: 'HEALTHY' | 'DEGRADED' | 'UNCONFIGURED' | 'DOWN';
   configured: boolean;
   latencyMs: number;
-  message?: string;
+  message: string;
   details?: Record<string, any>;
 }
 
@@ -19,7 +21,7 @@ export class HealthController {
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Comprehensive live health & external API keys telemetry' })
+  @ApiOperation({ summary: 'Comprehensive live health & 3rd-party services ping test telemetry' })
   async check() {
     const memory = process.memoryUsage();
     const startTime = Date.now();
@@ -37,34 +39,147 @@ export class HealthController {
       dbError = err?.message || 'Database connection error';
     }
 
-    // 2. Check AI Provider Keys
-    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    const databaseService: ServiceHealthDetail = {
+      name: 'PostgreSQL Database (Prisma ORM)',
+      category: 'DATABASE',
+      status: dbStatus,
+      configured: true,
+      latencyMs: dbLatency,
+      message: dbStatus === 'HEALTHY' ? `Kết nối ổn định (${dbLatency}ms)` : `Lỗi kết nối: ${dbError}`,
+      details: { latencyMs: dbLatency, error: dbError },
+    };
+
+    // 2. Check OpenAI API Key with real ping
     const openAiKey = process.env.OPENAI_API_KEY?.trim();
-    const deepseekKey = process.env.DEEPSEEK_API_KEY?.trim();
-    const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+    let openAiStatus: ServiceHealthDetail['status'] = 'UNCONFIGURED';
+    let openAiMessage = 'Chưa cấu hình OPENAI_API_KEY (Đang dùng Google Gemini làm giải pháp chính)';
+    let openAiLatency = 0;
 
-    const hasAIKey = Boolean(geminiKey || openAiKey || deepseekKey || anthropicKey);
-    const activeProviders: string[] = [];
-    if (geminiKey) activeProviders.push('Google Gemini 1.5');
-    if (openAiKey) activeProviders.push('OpenAI GPT-4o');
-    if (deepseekKey) activeProviders.push('DeepSeek');
-    if (anthropicKey) activeProviders.push('Anthropic Claude');
+    if (openAiKey) {
+      const start = Date.now();
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch('https://api.openai.com/v1/models', {
+          headers: { Authorization: `Bearer ${openAiKey}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        openAiLatency = Date.now() - start;
 
-    const aiService: ServiceHealthDetail = {
-      name: 'AI Language Model Engine',
-      status: hasAIKey ? 'HEALTHY' : 'UNCONFIGURED',
-      configured: hasAIKey,
-      latencyMs: hasAIKey ? 120 : 0,
-      message: hasAIKey
-        ? `Đã liên kết provider: ${activeProviders.join(', ')}`
-        : 'CẢNH BÁO: Chưa cấu hình bất kỳ API Key AI nào (Gemini, OpenAI, DeepSeek). Hệ thống đang dùng Local Fallback Dictionary.',
+        if (res.status === 200) {
+          openAiStatus = 'HEALTHY';
+          openAiMessage = `OpenAI API hoạt động tốt (${openAiLatency}ms, GPT-4o-mini ready)`;
+        } else if (res.status === 429) {
+          openAiStatus = 'DEGRADED';
+          openAiMessage = 'Tài khoản OpenAI hết hạn ngạch (Quota Limit) -> Tự động chuyển sang Google Gemini AI';
+        } else if (res.status === 401) {
+          openAiStatus = 'DEGRADED';
+          openAiMessage = 'API Key OpenAI không hợp lệ hoặc đã bị vô hiệu hóa -> Tự động chuyển sang Google Gemini AI';
+        } else {
+          openAiStatus = 'DEGRADED';
+          openAiMessage = `OpenAI phản hồi mã lỗi ${res.status}`;
+        }
+      } catch (err: any) {
+        openAiStatus = 'DEGRADED';
+        openAiMessage = `Không kết nối được OpenAI (${err.message}) -> Đã kích hoạt Gemini AI dự phòng`;
+      }
+    }
+
+    const openAiService: ServiceHealthDetail = {
+      name: 'OpenAI API (GPT-4o-mini)',
+      category: 'AI',
+      status: openAiStatus,
+      configured: Boolean(openAiKey),
+      latencyMs: openAiLatency,
+      message: openAiMessage,
+      details: { configured: Boolean(openAiKey), keyPrefix: openAiKey ? openAiKey.slice(0, 7) + '...' : null },
+    };
+
+    // 3. Check Google Gemini AI Key with real ping
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    let geminiStatus: ServiceHealthDetail['status'] = 'UNCONFIGURED';
+    let geminiMessage = 'Chưa cấu hình GEMINI_API_KEY trong .env';
+    let geminiLatency = 0;
+
+    if (geminiKey) {
+      const start = Date.now();
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        geminiLatency = Date.now() - start;
+
+        if (res.status === 200) {
+          geminiStatus = 'HEALTHY';
+          geminiMessage = `Google Gemini AI hoạt động ổn định (${geminiLatency}ms, Model: gemini-1.5-flash)`;
+        } else if (res.status === 400 || res.status === 403) {
+          geminiStatus = 'DEGRADED';
+          geminiMessage = 'Khóa GEMINI_API_KEY không hợp lệ hoặc không có quyền truy cập';
+        } else {
+          geminiStatus = 'DEGRADED';
+          geminiMessage = `Google Gemini phản hồi mã lỗi ${res.status}`;
+        }
+      } catch (err: any) {
+        geminiStatus = 'DEGRADED';
+        geminiMessage = `Lỗi kết nối Google Gemini API: ${err.message}`;
+      }
+    }
+
+    const geminiService: ServiceHealthDetail = {
+      name: 'Google Gemini AI (Remini AI Engine)',
+      category: 'AI',
+      status: geminiStatus,
+      configured: Boolean(geminiKey),
+      latencyMs: geminiLatency,
+      message: geminiMessage,
+      details: { configured: Boolean(geminiKey), keyPrefix: geminiKey ? geminiKey.slice(0, 7) + '...' : null },
+    };
+
+    // 4. Check Email SMTP (Nodemailer) Service
+    const smtpHost = process.env.SMTP_HOST?.trim();
+    const smtpUser = process.env.SMTP_USER?.trim();
+    const smtpPass = process.env.SMTP_PASS?.trim();
+    const hasSmtp = Boolean(smtpHost && smtpUser && smtpPass);
+
+    let emailStatus: ServiceHealthDetail['status'] = 'UNCONFIGURED';
+    let emailMessage = 'Chưa cấu hình SMTP Key (Đang chạy Safe Dev Mode: OTP sẽ in ra console và phản hồi API)';
+
+    if (hasSmtp) {
+      try {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: parseInt(process.env.SMTP_PORT || '587', 10),
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: { user: smtpUser, pass: smtpPass },
+        });
+        await transporter.verify();
+        emailStatus = 'HEALTHY';
+        emailMessage = `Máy chủ gửi mail Nodemailer đã kết nối thành công (${smtpHost})`;
+      } catch (e: any) {
+        emailStatus = 'DEGRADED';
+        emailMessage = `Lỗi xác thực máy chủ SMTP (${e.message})`;
+      }
+    }
+
+    const emailService: ServiceHealthDetail = {
+      name: 'Email SMTP Service (Nodemailer)',
+      category: 'EMAIL',
+      status: emailStatus,
+      configured: hasSmtp,
+      latencyMs: hasSmtp ? 45 : 0,
+      message: emailMessage,
       details: {
-        activeProviders,
-        recommendedAction: hasAIKey ? null : 'Vui lòng bổ sung GEMINI_API_KEY hoặc OPENAI_API_KEY trong file .env để kích hoạt gia sư AI.',
+        host: smtpHost || 'Not set',
+        user: smtpUser ? `${smtpUser.slice(0, 3)}***` : 'Not set',
+        mode: hasSmtp ? 'SMTP Production' : 'Safe Dev Fallback (Console OTP)',
       },
     };
 
-    // 3. Check Payment Services
+    // 5. Check Payment Services
     const payosClient = process.env.PAYOS_CLIENT_ID?.trim();
     const payosKey = process.env.PAYOS_API_KEY?.trim();
     const hasPayOS = Boolean(payosClient && payosKey);
@@ -75,13 +190,14 @@ export class HealthController {
 
     const paymentService: ServiceHealthDetail = {
       name: 'Payment Gateways (VietQR & PayOS)',
+      category: 'PAYMENT',
       status: hasPayOS && hasVietQR ? 'HEALTHY' : hasVietQR ? 'DEGRADED' : 'UNCONFIGURED',
       configured: Boolean(hasPayOS || hasVietQR),
       latencyMs: 15,
       message: hasPayOS
         ? 'Cổng PayOS & VietQR đã sẵn sàng giao dịch tự động'
         : hasVietQR
-        ? 'VietQR thủ công đã cấu hình; Cổng tự động PayOS CHƯA cấu hình'
+        ? 'VietQR thủ công đã cấu hình; Cổng PayOS chưa điền API Key'
         : 'Chưa cấu hình thông tin tài khoản nhận thanh toán',
       details: {
         vietqr: hasVietQR ? `${vietqrBank} - ${vietqrAcc}` : 'Not configured',
@@ -89,10 +205,11 @@ export class HealthController {
       },
     };
 
-    // 4. Check Redis Cache
+    // 6. Check Redis Cache
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     const redisService: ServiceHealthDetail = {
       name: 'Redis Cache & Session Store',
+      category: 'CACHE',
       status: 'HEALTHY',
       configured: Boolean(process.env.REDIS_URL),
       latencyMs: 2,
@@ -100,32 +217,38 @@ export class HealthController {
       details: { url: redisUrl.replace(/:[^:@]+@/, ':***@') },
     };
 
-    // 5. Database Service detail
-    const databaseService: ServiceHealthDetail = {
-      name: 'PostgreSQL Database (Prisma ORM)',
-      status: dbStatus,
-      configured: true,
-      latencyMs: dbLatency,
-      message: dbStatus === 'HEALTHY' ? `Kết nối ổn định (${dbLatency}ms)` : `Lỗi kết nối: ${dbError}`,
-      details: { latencyMs: dbLatency, error: dbError },
-    };
-
-    // 6. WebSocket Realtime Hub
+    // 7. WebSocket Realtime Hub
     const wsService: ServiceHealthDetail = {
       name: 'WebSocket Realtime Games & Notification Hub',
+      category: 'WEBSOCKET',
       status: 'HEALTHY',
       configured: true,
       latencyMs: 5,
       message: 'Socket.IO Engine lắng nghe trên cổng 4000',
     };
 
-    // 7. Overall System Status Calculation
-    const servicesList = [databaseService, redisService, aiService, paymentService, wsService];
-    let overallStatus: 'HEALTHY' | 'DEGRADED' | 'CONFIGURATION_REQUIRED' | 'CRITICAL' = 'HEALTHY';
+    // Read current preferred AI Provider
+    let activeAiProvider = process.env.AI_PROVIDER || 'auto';
+    try {
+      const config = await this.prisma.systemConfig.findUnique({ where: { key: 'AI_PROVIDER' } });
+      if (config?.value) activeAiProvider = config.value;
+    } catch (_) {}
 
+    // Overall System Status Calculation
+    const servicesList = [
+      databaseService,
+      openAiService,
+      geminiService,
+      emailService,
+      paymentService,
+      redisService,
+      wsService,
+    ];
+
+    let overallStatus: 'HEALTHY' | 'DEGRADED' | 'CONFIGURATION_REQUIRED' | 'CRITICAL' = 'HEALTHY';
     if (dbStatus === 'DOWN') {
       overallStatus = 'CRITICAL';
-    } else if (!hasAIKey || !hasPayOS) {
+    } else if (!hasSmtp && !geminiKey && !openAiKey) {
       overallStatus = 'CONFIGURATION_REQUIRED';
     } else if (servicesList.some((s) => s.status === 'DEGRADED')) {
       overallStatus = 'DEGRADED';
@@ -136,24 +259,46 @@ export class HealthController {
       timestamp: new Date().toISOString(),
       uptimeSeconds: Math.floor(process.uptime()),
       apiLatencyMs: Date.now() - startTime,
+      activeAiProvider,
       memory: {
-        rssMb: Math.round(memory.rss / (1024 * 1024)),
-        heapUsedMb: Math.round(memory.heapUsed / (1024 * 1024)),
-        heapTotalMb: Math.round(memory.heapTotal / (1024 * 1024)),
-      },
-      services: {
-        database: databaseService,
-        redis: redisService,
-        ai: aiService,
-        payment: paymentService,
-        websocket: wsService,
+        rssMb: Math.round(memory.rss / 1024 / 1024),
+        heapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
+        heapTotalMb: Math.round(memory.heapTotal / 1024 / 1024),
       },
       servicesList,
-      unconfiguredKeys: [
-        ...(!hasAIKey ? ['GEMINI_API_KEY hoặc OPENAI_API_KEY (AI Engine)'] : []),
-        ...(!hasPayOS ? ['PAYOS_CLIENT_ID / PAYOS_API_KEY (Cổng PayOS)'] : []),
-        ...(!hasVietQR ? ['VIETQR_BANK_ID / VIETQR_ACCOUNT_NO (VietQR)'] : []),
-      ],
+      summary: {
+        aiReady: geminiStatus === 'HEALTHY' || openAiStatus === 'HEALTHY',
+        emailReady: emailStatus === 'HEALTHY',
+        databaseReady: dbStatus === 'HEALTHY',
+      },
     };
+  }
+
+  @Public()
+  @Get('ai-provider')
+  @ApiOperation({ summary: 'Get current active AI Provider mode' })
+  async getAiProvider() {
+    let provider = process.env.AI_PROVIDER || 'auto';
+    try {
+      const config = await this.prisma.systemConfig.findUnique({ where: { key: 'AI_PROVIDER' } });
+      if (config?.value) provider = config.value;
+    } catch (_) {}
+    return { provider };
+  }
+
+  @Public()
+  @Post('ai-provider')
+  @ApiOperation({ summary: 'Set active AI Provider (auto | openai | gemini | local)' })
+  async setAiProvider(@Body('provider') provider: string) {
+    const valid = ['auto', 'openai', 'gemini', 'local'];
+    const chosen = valid.includes(provider) ? provider : 'auto';
+
+    await this.prisma.systemConfig.upsert({
+      where: { key: 'AI_PROVIDER' },
+      update: { value: chosen },
+      create: { key: 'AI_PROVIDER', value: chosen, description: 'Active AI Provider' },
+    });
+
+    return { success: true, provider: chosen };
   }
 }

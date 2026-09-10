@@ -78,10 +78,12 @@ model User {
   locale       String      @default("vi")
   status       UserStatus  @default(ACTIVE)
   role         Role        @default(USER)
-  refreshToken String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  lastActiveAt DateTime    @default(now())
+  refreshToken         String?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  lastActiveAt         DateTime    @default(now())
 
   profile          UserProfile?
   userVocabularies UserVocabulary[]

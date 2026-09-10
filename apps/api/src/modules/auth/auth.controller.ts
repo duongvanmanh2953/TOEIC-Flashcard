@@ -14,6 +14,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -160,5 +161,28 @@ export class AuthController {
     },
   ) {
     return this.authService.migrateGuestData(body);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset OTP code sent via Nodemailer email' })
+  @ApiResponse({ status: 200, description: 'OTP sent to email successfully' })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify OTP and set a new password' })
+  @ApiResponse({ status: 200, description: 'Password reset successful, returns new JWT session' })
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.resetPassword(dto);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 }

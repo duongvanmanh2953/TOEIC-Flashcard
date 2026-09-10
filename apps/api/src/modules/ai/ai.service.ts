@@ -15,6 +15,157 @@ export class AIService {
   ) {}
 
   /**
+   * Direct Google Gemini API Invocation (gemini-1.5-flash)
+   */
+  async callGemini(
+    prompt: string,
+    options: { jsonMode?: boolean; systemPrompt?: string; temperature?: number } = {},
+  ): Promise<{ text: string; tokenUsage: number } | null> {
+    const key = process.env.GEMINI_API_KEY?.trim();
+    if (!key) return null;
+
+    try {
+      const fullPrompt = options.systemPrompt ? `${options.systemPrompt}\n\n${prompt}` : prompt;
+      const body: any = {
+        contents: [
+          {
+            parts: [{ text: fullPrompt }],
+          },
+        ],
+        generationConfig: {
+          temperature: options.temperature ?? 0.7,
+        },
+      };
+
+      if (options.jsonMode) {
+        body.generationConfig.responseMimeType = 'application/json';
+      }
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        this.logger.warn(`Gemini API error status ${res.status}: ${JSON.stringify(errData)}`);
+        return null;
+      }
+
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) return null;
+
+      const tokenUsage = data.usageMetadata?.totalTokenCount || 0;
+      return { text, tokenUsage };
+    } catch (err: any) {
+      this.logger.warn(`Gemini call exception: ${err.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Direct OpenAI API Invocation (gpt-4o-mini)
+   */
+  async callOpenAI(
+    prompt: string,
+    options: { jsonMode?: boolean; systemPrompt?: string; temperature?: number } = {},
+  ): Promise<{ text: string; tokenUsage: number } | null> {
+    const key = process.env.OPENAI_API_KEY?.trim();
+    if (!key) return null;
+
+    try {
+      const messages: any[] = [];
+      if (options.systemPrompt) {
+        messages.push({ role: 'system', content: options.systemPrompt });
+      }
+      messages.push({ role: 'user', content: prompt });
+
+      const body: any = {
+        model: 'gpt-4o-mini',
+        messages,
+        temperature: options.temperature ?? 0.7,
+      };
+
+      if (options.jsonMode) {
+        body.response_format = { type: 'json_object' };
+      }
+
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        this.logger.warn(`OpenAI API error status ${res.status}: ${JSON.stringify(errData)}`);
+        return null;
+      }
+
+      const data = await res.json();
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) return null;
+
+      const tokenUsage = data.usage?.total_tokens || 0;
+      return { text, tokenUsage };
+    } catch (err: any) {
+      this.logger.warn(`OpenAI call exception: ${err.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Universal Smart LLM Caller with Multi-Tier Fallback:
+   * 1. Check current system setting (from SystemConfig or env AI_PROVIDER: 'auto' | 'openai' | 'gemini' | 'local')
+   * 2. Tries primary provider
+   * 3. Seamlessly auto-fails over to Gemini AI if OpenAI is unavailable, error, or unconfigured
+   * 4. Returns null for local knowledge fallback
+   */
+  async executeSmartLLM(
+    prompt: string,
+    options: { jsonMode?: boolean; systemPrompt?: string; temperature?: number } = {},
+  ): Promise<{ text: string; provider: string; tokenUsage: number } | null> {
+    let configuredProvider = process.env.AI_PROVIDER || 'auto';
+    try {
+      const dbConfig = await this.prisma.systemConfig.findUnique({ where: { key: 'AI_PROVIDER' } });
+      if (dbConfig?.value) configuredProvider = dbConfig.value.trim().toLowerCase();
+    } catch (_) {}
+
+    if (configuredProvider === 'gemini') {
+      const geminiRes = await this.callGemini(prompt, options);
+      if (geminiRes) return { ...geminiRes, provider: 'gemini-1.5-flash' };
+      const openAiRes = await this.callOpenAI(prompt, options);
+      if (openAiRes) return { ...openAiRes, provider: 'openai-gpt-4o-mini (fallback)' };
+    } else if (configuredProvider === 'openai') {
+      const openAiRes = await this.callOpenAI(prompt, options);
+      if (openAiRes) return { ...openAiRes, provider: 'openai-gpt-4o-mini' };
+      const geminiRes = await this.callGemini(prompt, options);
+      if (geminiRes) return { ...geminiRes, provider: 'gemini-1.5-flash (fallback)' };
+    } else if (configuredProvider === 'local') {
+      return null;
+    } else {
+      // 'auto' mode: try OpenAI if key exists, then automatically fallback to Gemini
+      if (process.env.OPENAI_API_KEY?.trim()) {
+        const openAiRes = await this.callOpenAI(prompt, options);
+        if (openAiRes) return { ...openAiRes, provider: 'openai-gpt-4o-mini' };
+        this.logger.warn('OpenAI failed or unconfigured, auto failing over to Google Gemini AI...');
+      }
+      const geminiRes = await this.callGemini(prompt, options);
+      if (geminiRes) return { ...geminiRes, provider: 'gemini-1.5-flash' };
+    }
+
+    return null;
+  }
+
+  /**
    * Pipeline Step 1 & 2: Semantic Search & Contextual Reranking
    * Searches vocabulary knowledge base using semantic keywords and reranks
    */
@@ -88,35 +239,16 @@ Respond in clear, pedagogical Markdown with:
 2. Practical business/everyday example with Vietnamese translation.
 3. Quick interactive follow-up check question to test the user's active recall.`;
 
-    // 4. Model Invocation (LLM or Knowledge Fallback)
+    // 4. Model Invocation (LLM with Gemini Fallback or Knowledge Fallback)
     let responseText = '';
     let provider = 'leximind-core';
     let tokenUsage = 0;
 
-    const openAiKey = process.env.OPENAI_API_KEY;
-    if (openAiKey) {
-      try {
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${openAiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-          }),
-        });
-        const data = await res.json();
-        if (data.choices?.[0]?.message?.content) {
-          responseText = data.choices[0].message.content;
-          provider = 'openai-gpt-4o-mini';
-          tokenUsage = data.usage?.total_tokens || 0;
-        }
-      } catch (err) {
-        this.logger.warn(`OpenAI call failed, running knowledge engine: ${err.message}`);
-      }
+    const llmResult = await this.executeSmartLLM(prompt);
+    if (llmResult?.text) {
+      responseText = llmResult.text;
+      provider = llmResult.provider;
+      tokenUsage = llmResult.tokenUsage;
     }
 
     if (!responseText) {
@@ -351,10 +483,7 @@ Hãy trả lời cho tôi để xem phản xạ của bạn nhé!`;
       };
     }
 
-    const openAiKey = process.env.OPENAI_API_KEY;
-    if (openAiKey) {
-      try {
-        const prompt = `You are a world-class English communication coach.
+    const prompt = `You are a world-class English communication coach.
 Given this input from an ESL learner: "${trimmed}"
 Topic/Context: "${targetTopic || 'Everyday & Business Communication'}".
 
@@ -369,25 +498,12 @@ Return a strict JSON object with these exact keys:
   "pronunciationFocus": "suggested word stress and linking sound to pay attention to"
 }`;
 
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${openAiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            response_format: { type: 'json_object' },
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.6,
-          }),
-        });
-        const data = await res.json();
-        const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    const llmResult = await this.executeSmartLLM(prompt, { jsonMode: true, temperature: 0.6 });
+    if (llmResult?.text) {
+      try {
+        const parsed = JSON.parse(llmResult.text.replace(/```json|```/g, '').trim());
         if (parsed.corrected) return parsed;
-      } catch (e) {
-        this.logger.warn(`OpenAI makeMeSoundBetter fallback: ${e.message}`);
-      }
+      } catch (_) {}
     }
 
     // High-quality intelligent local fallback heuristic
@@ -441,10 +557,7 @@ Return a strict JSON object with these exact keys:
 
     const scenario = scenarioPresets[scenarioId] || scenarioPresets.job_interview;
 
-    const openAiKey = process.env.OPENAI_API_KEY;
-    if (openAiKey) {
-      try {
-        const systemPrompt = `You are roleplaying as ${scenario.aiRole} in: "${scenario.title}".
+    const systemPrompt = `You are roleplaying as ${scenario.aiRole} in: "${scenario.title}".
 Context: ${scenario.context}
 Goal: ${scenario.goal}.
 
@@ -471,32 +584,15 @@ Return strict JSON:
   }
 }`;
 
-        const messages: any[] = [
-          { role: 'system', content: systemPrompt },
-          ...history.slice(-4),
-          { role: 'user', content: userSpeech },
-        ];
+    const historyContext = history.slice(-4).map((h: any) => `${h.role}: ${h.content}`).join('\n');
+    const fullPrompt = `${historyContext ? `Conversation History:\n${historyContext}\n\n` : ''}User Speech: "${userSpeech}"`;
 
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${openAiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            response_format: { type: 'json_object' },
-            messages,
-            temperature: 0.7,
-          }),
-        });
-
-        const data = await res.json();
-        const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    const llmResult = await this.executeSmartLLM(fullPrompt, { systemPrompt, jsonMode: true, temperature: 0.7 });
+    if (llmResult?.text) {
+      try {
+        const parsed = JSON.parse(llmResult.text.replace(/```json|```/g, '').trim());
         if (parsed.reply) return parsed;
-      } catch (e) {
-        this.logger.warn(`OpenAI roleplay error: ${e.message}`);
-      }
+      } catch (_) {}
     }
 
     // Dynamic Simulation Fallback Heuristic
