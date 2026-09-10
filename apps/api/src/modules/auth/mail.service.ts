@@ -157,349 +157,211 @@ export class MailService {
     }
 
     const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="vi">
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" lang="vi">
     <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Xác Thực Bảo Mật Đặt Lại Mật Khẩu - VocabFlow AI</title>
-      <style>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+      <style type="text/css">
+        body, table, td, p, a, li, blockquote {
+          -webkit-text-size-adjust: 100%;
+          -ms-text-size-adjust: 100%;
+        }
         body {
-          margin: 0;
-          padding: 0;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+          font-family: Roboto, 'Google Sans', Arial, sans-serif !important;
           background-color: #f1f5f9;
-          color: #0f172a;
-          line-height: 1.6;
         }
-        .wrapper {
-          width: 100%;
-          background-color: #f1f5f9;
-          padding: 40px 12px;
+        img {
+          border: 0;
+          height: auto;
+          line-height: 100%;
+          outline: none;
+          text-decoration: none;
         }
-        .container {
-          max-width: 620px;
-          margin: 0 auto;
-          background-color: #ffffff;
-          border-radius: 28px;
-          border: 1px solid #e2e8f0;
-          overflow: hidden;
-          box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12), 0 8px 12px -4px rgba(15, 23, 42, 0.04);
-        }
-        .header {
-          background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 75%, #6366f1 100%);
-          padding: 36px 32px 30px;
-          text-align: center;
-          color: #ffffff;
-        }
-        .brand-title {
-          font-size: 24px;
-          font-weight: 900;
-          letter-spacing: -0.5px;
-          margin-top: 14px;
-          color: #ffffff;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .brand-tagline {
-          font-size: 13px;
-          color: #c7d2fe;
-          font-weight: 500;
-          margin-top: 4px;
-          letter-spacing: 0.2px;
-        }
-        .header-pill {
-          display: inline-block;
-          margin-top: 16px;
-          background: rgba(255, 255, 255, 0.15);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 9999px;
-          padding: 6px 18px;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          color: #ffffff;
-        }
-        .body-card {
-          padding: 36px 32px;
-        }
-        .greeting-lead {
-          font-size: 17px;
-          font-weight: 700;
-          color: #0f172a;
-          margin-bottom: 12px;
-        }
-        .project-desc-box {
-          background-color: #f8fafc;
-          border: 1px solid #e2e8f0;
-          border-radius: 18px;
-          padding: 18px 20px;
-          margin-bottom: 26px;
-        }
-        .meta-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 6px 0;
-          font-size: 12px;
-          border-bottom: 1px dashed #e2e8f0;
-        }
-        .meta-label {
-          color: #64748b;
-          font-weight: 600;
-        }
-        .meta-value {
-          color: #0f172a;
-          font-weight: 700;
-          text-align: right;
-        }
-        .otp-section {
-          background: #090d16;
-          border: 2px solid #3730a3;
-          border-radius: 24px;
-          padding: 28px 20px;
-          text-align: center;
-          margin: 26px 0;
-          box-shadow: 0 10px 25px -5px rgba(67, 56, 202, 0.25);
-        }
-        .otp-badge {
-          display: inline-block;
-          background: rgba(99, 102, 241, 0.25);
-          border: 1px solid rgba(99, 102, 241, 0.4);
-          color: #818cf8;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          padding: 4px 14px;
-          border-radius: 9999px;
-          margin-bottom: 16px;
-        }
-        .otp-boxes-table {
-          margin: 0 auto;
-          border-collapse: separate;
-          border-spacing: 8px;
-        }
-        .otp-digit-box {
-          width: 48px;
-          height: 60px;
-          background: #1e1b4b;
-          border: 2px solid #6366f1;
-          border-radius: 14px;
-          font-family: 'SF Mono', Monaco, Menlo, Consolas, monospace;
-          font-size: 32px;
-          font-weight: 900;
-          color: #38bdf8;
-          text-align: center;
-          vertical-align: middle;
-          box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
-        }
-        .otp-instruction {
-          font-size: 12px;
-          color: #94a3b8;
-          margin-top: 14px;
-        }
-        .otp-timer-tag {
-          display: inline-block;
-          margin-top: 10px;
-          background: rgba(245, 158, 11, 0.15);
-          border: 1px solid rgba(245, 158, 11, 0.35);
-          color: #fbbf24;
-          font-size: 12px;
-          font-weight: 700;
-          padding: 5px 14px;
-          border-radius: 8px;
-        }
-        .steps-card {
-          background-color: #fdf4ff;
-          border: 1px solid #f0abfc;
-          border-radius: 18px;
-          padding: 20px;
-          margin: 24px 0;
-        }
-        .steps-title {
-          font-size: 13px;
-          font-weight: 800;
-          color: #86198f;
-          margin-bottom: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .step-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          margin-bottom: 8px;
-          font-size: 13px;
-          color: #701a75;
-          line-height: 1.5;
-        }
-        .step-num {
-          background: #c026d3;
-          color: #ffffff;
-          font-weight: 800;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 11px;
-          flex-shrink: 0;
-          margin-top: 1px;
-        }
-        .standards-box {
-          background: #eff6ff;
-          border: 1px solid #bfdbfe;
-          border-radius: 18px;
-          padding: 20px;
-          margin: 24px 0;
-        }
-        .standards-title {
-          font-size: 13px;
-          font-weight: 800;
-          color: #1e40af;
-          margin-bottom: 10px;
-        }
-        .standards-list {
-          margin: 0;
-          padding-left: 20px;
-          font-size: 12px;
-          color: #1e3a8a;
-          line-height: 1.7;
-        }
-        .alert-box {
-          background-color: #fffbeb;
-          border-left: 4px solid #f59e0b;
-          border-radius: 0 14px 14px 0;
-          padding: 14px 18px;
-          font-size: 12px;
-          color: #92400e;
-          line-height: 1.6;
-          margin-top: 24px;
-        }
-        .footer {
-          background-color: #f8fafc;
-          border-top: 1px solid #f1f5f9;
-          padding: 28px 32px;
-          text-align: center;
-          font-size: 12px;
-          color: #64748b;
-          line-height: 1.7;
-        }
-        .footer-brand {
-          font-weight: 800;
-          color: #334155;
-          font-size: 13px;
+        table {
+          border-collapse: collapse !important;
         }
       </style>
     </head>
-    <body>
-      <div class="wrapper">
-        <div class="container">
+    <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: Roboto, 'Google Sans', Arial, sans-serif; color: #0f172a; line-height: 1.6;">
+      <div style="width: 100%; background-color: #f1f5f9; padding: 32px 12px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.1);">
           <!-- Header with Project Identity -->
-          <div class="header">
-            ${logoImgTag}
-            <div class="brand-title">VOCABFLOW AI</div>
-            <div class="brand-tagline">Nền Tảng Luyện Từ Vựng TOEIC & Luyện Thi Thông Minh Với AI</div>
-            <div>
-              <span class="header-pill">🔐 XÁC THỰC BẢO MẬT & ĐẶT LẠI MẬT KHẨU</span>
-            </div>
-          </div>
+          <tr>
+            <td align="center" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 75%, #6366f1 100%); background-color: #312e81; padding: 36px 24px 28px; text-align: center; color: #ffffff;">
+              ${logoImgTag}
+              <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-top: 12px; color: #ffffff; font-family: Roboto, 'Google Sans', Arial, sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                VOCABFLOW AI
+              </div>
+              <div style="font-size: 13px; color: #c7d2fe; font-weight: 500; margin-top: 4px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                Nền Tảng Luyện Từ Vựng TOEIC &amp; Luyện Thi Thông Minh Với AI
+              </div>
+              <div style="margin-top: 14px;">
+                <span style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 9999px; padding: 5px 16px; font-size: 11px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: #ffffff; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                  🔐 XÁC THỰC BẢO MẬT &amp; ĐẶT LẠI MẬT KHẨU
+                </span>
+              </div>
+            </td>
+          </tr>
 
           <!-- Body Content -->
-          <div class="body-card">
-            <div class="greeting-lead">Xin chào ${recipientName},</div>
-            <p style="font-size: 14px; color: #334155; margin-top: 0; margin-bottom: 18px; line-height: 1.65;">
-              Hệ thống bảo mật VocabFlow AI đã nhận được yêu cầu cấp lại mật khẩu cho tài khoản học viên của bạn. Dưới đây là thông tin chi tiết phiên yêu cầu và <strong>Mã Khóa Xác Thực (OTP)</strong>:
-            </p>
+          <tr>
+            <td style="padding: 32px 28px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+              <div style="font-size: 16px; font-weight: bold; color: #0f172a; margin-bottom: 12px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                Xin chào ${recipientName},
+              </div>
+              <p style="font-size: 14px; color: #334155; margin-top: 0; margin-bottom: 20px; line-height: 1.65; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                Hệ thống bảo mật VocabFlow AI đã nhận được yêu cầu cấp lại mật khẩu cho tài khoản học viên của bạn. Dưới đây là thông tin chi tiết phiên yêu cầu và <strong style="color: #0f172a;">Mã Khóa Xác Thực (OTP)</strong>:
+              </p>
 
-            <!-- Project & Request Metadata Table -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 18px; margin-bottom: 24px;">
-              <tr>
-                <td style="padding: 6px 0; font-size: 12px; color: #64748b; font-weight: 600;">📧 Tài khoản email:</td>
-                <td style="padding: 6px 0; font-size: 12px; color: #0f172a; font-weight: 700; text-align: right;">${email}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; font-size: 12px; color: #64748b; font-weight: 600; border-top: 1px dashed #e2e8f0;">👤 Học viên:</td>
-                <td style="padding: 6px 0; font-size: 12px; color: #0f172a; font-weight: 700; text-align: right; border-top: 1px dashed #e2e8f0;">${recipientName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; font-size: 12px; color: #64748b; font-weight: 600; border-top: 1px dashed #e2e8f0;">⏱️ Thời gian gửi yêu cầu:</td>
-                <td style="padding: 6px 0; font-size: 12px; color: #0f172a; font-weight: 700; text-align: right; border-top: 1px dashed #e2e8f0;">${requestTimeStr}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 0; font-size: 12px; color: #64748b; font-weight: 600; border-top: 1px dashed #e2e8f0;">🎯 Mục tiêu hệ thống:</td>
-                <td style="padding: 6px 0; font-size: 12px; color: #4338ca; font-weight: 700; text-align: right; border-top: 1px dashed #e2e8f0;">Bảo vệ dữ liệu học tập & Spaced Repetition</td>
-              </tr>
-            </table>
-
-            <!-- High-Tech 6-Box OTP Key Section -->
-            <div class="otp-section">
-              <div class="otp-badge">MÃ KHÓA BẢO MẬT XÁC THỰC 1 LẦN (OTP)</div>
-
-              <table class="otp-boxes-table" align="center">
+              <!-- Project & Request Metadata Table -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px 18px; margin-bottom: 24px; border-collapse: collapse; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
                 <tr>
-                  <td class="otp-digit-box">${digits[0]}</td>
-                  <td class="otp-digit-box">${digits[1]}</td>
-                  <td class="otp-digit-box">${digits[2]}</td>
-                  <td class="otp-digit-box">${digits[3]}</td>
-                  <td class="otp-digit-box">${digits[4]}</td>
-                  <td class="otp-digit-box">${digits[5]}</td>
+                  <td style="padding: 8px 12px; font-size: 12px; color: #64748b; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif; border-bottom: 1px dashed #e2e8f0;">📧 Tài khoản email:</td>
+                  <td align="right" style="padding: 8px 12px; font-size: 12px; color: #0f172a; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif; text-align: right; border-bottom: 1px dashed #e2e8f0;">${email}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; font-size: 12px; color: #64748b; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif; border-bottom: 1px dashed #e2e8f0;">👤 Học viên:</td>
+                  <td align="right" style="padding: 8px 12px; font-size: 12px; color: #0f172a; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif; text-align: right; border-bottom: 1px dashed #e2e8f0;">${recipientName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; font-size: 12px; color: #64748b; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif; border-bottom: 1px dashed #e2e8f0;">⏱️ Thời gian gửi yêu cầu:</td>
+                  <td align="right" style="padding: 8px 12px; font-size: 12px; color: #0f172a; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif; text-align: right; border-bottom: 1px dashed #e2e8f0;">${requestTimeStr}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 12px; font-size: 12px; color: #64748b; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif;">🎯 Mục tiêu hệ thống:</td>
+                  <td align="right" style="padding: 8px 12px; font-size: 12px; color: #4338ca; font-weight: bold; font-family: Roboto, 'Google Sans', Arial, sans-serif; text-align: right;">Bảo vệ dữ liệu học tập &amp; Spaced Repetition</td>
                 </tr>
               </table>
 
-              <div class="otp-instruction">Sao chép 6 chữ số trên và nhập vào màn hình "Xác Thực Mã Khóa OTP" trên ứng dụng.</div>
-              <div class="otp-timer-tag">⏳ Có hiệu lực trong vòng 15 phút (Hết hạn lúc: ${expireTimeStr})</div>
-            </div>
+              <!-- High-Tech 6-Box OTP Key Section -->
+              <div style="background-color: #090d16; border: 2px solid #3730a3; border-radius: 20px; padding: 26px 16px; text-align: center; margin: 24px 0;">
+                <div style="display: inline-block; background-color: rgba(99, 102, 241, 0.25); border: 1px solid rgba(99, 102, 241, 0.4); color: #818cf8; font-size: 11px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 14px; border-radius: 9999px; margin-bottom: 16px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                  MÃ KHÓA BẢO MẬT XÁC THỰC 1 LẦN (OTP)
+                </div>
 
-            <!-- Detailed 3-Step Procedure Guide -->
-            <div class="steps-card">
-              <div class="steps-title">📋 Hướng Dẫn Quy Trình Đổi Mật Khẩu 3 Bước:</div>
-              <div class="step-item">
-                <span class="step-num">1</span>
-                <span><strong>Nhập mã OTP</strong>: Nhập chính xác mã 6 chữ số bên trên vào Bước 2 trên màn hình ứng dụng VocabFlow.</span>
-              </div>
-              <div class="step-item">
-                <span class="step-num">2</span>
-                <span><strong>Hệ thống chứng thực</strong>: Hệ thống xác thực mã khóa hợp lệ trước khi cho phép mở khóa màn hình tạo mật khẩu mới.</span>
-              </div>
-              <div class="step-item">
-                <span class="step-num">3</span>
-                <span><strong>Thiết lập mật khẩu an toàn</strong>: Nhập mật khẩu mới tuân thủ quy chuẩn bảo mật bắt buộc của VocabFlow.</span>
-              </div>
-            </div>
+                <!-- OTP 6-Box Table -->
+                <table role="presentation" border="0" cellpadding="0" cellspacing="6" align="center" style="margin: 0 auto; border-collapse: separate; border-spacing: 6px;">
+                  <tr>
+                    <td align="center" valign="middle" style="width: 44px; height: 56px; background-color: #1e1b4b; border: 2px solid #6366f1; border-radius: 12px; font-family: Roboto, Consolas, Monaco, monospace; font-size: 28px; font-weight: bold; color: #38bdf8; text-align: center; vertical-align: middle; line-height: 56px; mso-line-height-rule: exactly; padding: 0;">${digits[0]}</td>
+                    <td align="center" valign="middle" style="width: 44px; height: 56px; background-color: #1e1b4b; border: 2px solid #6366f1; border-radius: 12px; font-family: Roboto, Consolas, Monaco, monospace; font-size: 28px; font-weight: bold; color: #38bdf8; text-align: center; vertical-align: middle; line-height: 56px; mso-line-height-rule: exactly; padding: 0;">${digits[1]}</td>
+                    <td align="center" valign="middle" style="width: 44px; height: 56px; background-color: #1e1b4b; border: 2px solid #6366f1; border-radius: 12px; font-family: Roboto, Consolas, Monaco, monospace; font-size: 28px; font-weight: bold; color: #38bdf8; text-align: center; vertical-align: middle; line-height: 56px; mso-line-height-rule: exactly; padding: 0;">${digits[2]}</td>
+                    <td align="center" valign="middle" style="width: 44px; height: 56px; background-color: #1e1b4b; border: 2px solid #6366f1; border-radius: 12px; font-family: Roboto, Consolas, Monaco, monospace; font-size: 28px; font-weight: bold; color: #38bdf8; text-align: center; vertical-align: middle; line-height: 56px; mso-line-height-rule: exactly; padding: 0;">${digits[3]}</td>
+                    <td align="center" valign="middle" style="width: 44px; height: 56px; background-color: #1e1b4b; border: 2px solid #6366f1; border-radius: 12px; font-family: Roboto, Consolas, Monaco, monospace; font-size: 28px; font-weight: bold; color: #38bdf8; text-align: center; vertical-align: middle; line-height: 56px; mso-line-height-rule: exactly; padding: 0;">${digits[4]}</td>
+                    <td align="center" valign="middle" style="width: 44px; height: 56px; background-color: #1e1b4b; border: 2px solid #6366f1; border-radius: 12px; font-family: Roboto, Consolas, Monaco, monospace; font-size: 28px; font-weight: bold; color: #38bdf8; text-align: center; vertical-align: middle; line-height: 56px; mso-line-height-rule: exactly; padding: 0;">${digits[5]}</td>
+                  </tr>
+                </table>
 
-            <!-- Password Standards Criteria -->
-            <div class="standards-box">
-              <div class="standards-title">🔒 Quy chuẩn mật khẩu mới bắt buộc (Được kiểm tra 2 đầu FE & BE):</div>
-              <ul class="standards-list">
-                <li>Độ dài tối thiểu từ <strong>8 đến 64 ký tự</strong></li>
-                <li>Chứa ít nhất <strong>1 chữ cái in hoa</strong> (A-Z) và <strong>1 chữ cái in thường</strong> (a-z)</li>
-                <li>Chứa ít nhất <strong>1 chữ số</strong> (0-9)</li>
-                <li>Chứa ít nhất <strong>1 ký tự đặc biệt</strong> (ví dụ: ! @ # $ % ^ & * _ -)</li>
-                <li>Không chứa khoảng trắng (dấu cách)</li>
-              </ul>
-            </div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 14px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                  Sao chép 6 chữ số trên và nhập vào màn hình "Xác Thực Mã Khóa OTP" trên ứng dụng.
+                </div>
+                <div style="display: inline-block; margin-top: 10px; background-color: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; font-size: 12px; font-weight: bold; padding: 5px 14px; border-radius: 8px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                  ⏳ Có hiệu lực trong vòng 15 phút (Hết hạn lúc: ${expireTimeStr})
+                </div>
+              </div>
 
-            <!-- Security Warning -->
-            <div class="alert-box">
-              <strong>⚠️ Cảnh báo an toàn thông tin:</strong> VocabFlow AI <strong>tuyệt đối không bao giờ</strong> yêu cầu bạn cung cấp mã OTP này qua điện thoại, tin nhắn hay bất kỳ người nào khác. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc đổi mật khẩu tài khoản ngay để phòng ngừa rủi ro.
-            </div>
-          </div>
+              <!-- Detailed 3-Step Procedure Guide (Cross-client Table Layout with Perfectly Centered Number Badges) -->
+              <div style="background-color: #fdf4ff; border: 1px solid #f0abfc; border-radius: 18px; padding: 20px; margin: 24px 0; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                <div style="font-size: 13px; font-weight: bold; color: #86198f; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                  📋 Hướng Dẫn Quy Trình Đổi Mật Khẩu 3 Bước:
+                </div>
+
+                <!-- Step 1 -->
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 12px; border-collapse: collapse;">
+                  <tr>
+                    <td width="30" valign="top" style="width: 30px; vertical-align: top; padding-top: 1px;">
+                      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="22" height="22" style="width: 22px; height: 22px; background-color: #c026d3; border-radius: 11px; border-collapse: separate;">
+                        <tr>
+                          <td align="center" valign="middle" style="width: 22px; height: 22px; text-align: center; vertical-align: middle; color: #ffffff; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 11px; font-weight: bold; line-height: 22px; mso-line-height-rule: exactly; padding: 0; margin: 0;">
+                            1
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td valign="top" style="vertical-align: top; padding-left: 8px; color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 13px; line-height: 20px;">
+                      <strong style="color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif;">Nhập mã OTP:</strong> Nhập chính xác mã 6 chữ số bên trên vào Bước 2 trên màn hình ứng dụng VocabFlow.
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Step 2 -->
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 12px; border-collapse: collapse;">
+                  <tr>
+                    <td width="30" valign="top" style="width: 30px; vertical-align: top; padding-top: 1px;">
+                      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="22" height="22" style="width: 22px; height: 22px; background-color: #c026d3; border-radius: 11px; border-collapse: separate;">
+                        <tr>
+                          <td align="center" valign="middle" style="width: 22px; height: 22px; text-align: center; vertical-align: middle; color: #ffffff; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 11px; font-weight: bold; line-height: 22px; mso-line-height-rule: exactly; padding: 0; margin: 0;">
+                            2
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td valign="top" style="vertical-align: top; padding-left: 8px; color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 13px; line-height: 20px;">
+                      <strong style="color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif;">Hệ thống chứng thực:</strong> Hệ thống xác thực mã khóa hợp lệ trước khi cho phép mở khóa màn hình tạo mật khẩu mới.
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Step 3 -->
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                  <tr>
+                    <td width="30" valign="top" style="width: 30px; vertical-align: top; padding-top: 1px;">
+                      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="22" height="22" style="width: 22px; height: 22px; background-color: #c026d3; border-radius: 11px; border-collapse: separate;">
+                        <tr>
+                          <td align="center" valign="middle" style="width: 22px; height: 22px; text-align: center; vertical-align: middle; color: #ffffff; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 11px; font-weight: bold; line-height: 22px; mso-line-height-rule: exactly; padding: 0; margin: 0;">
+                            3
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td valign="top" style="vertical-align: top; padding-left: 8px; color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 13px; line-height: 20px;">
+                      <strong style="color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif;">Thiết lập mật khẩu an toàn:</strong> Nhập mật khẩu mới tuân thủ quy chuẩn bảo mật bắt buộc của VocabFlow.
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Password Standards Criteria -->
+              <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 18px; padding: 20px; margin: 24px 0; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                <div style="font-size: 13px; font-weight: bold; color: #1e40af; margin-bottom: 10px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                  🔒 Quy chuẩn mật khẩu mới bắt buộc (Được kiểm tra 2 đầu FE &amp; BE):
+                </div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #1e3a8a; line-height: 1.8; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                  <li>Độ dài tối thiểu từ <strong style="color: #1e3a8a;">8 đến 64 ký tự</strong></li>
+                  <li>Chứa ít nhất <strong style="color: #1e3a8a;">1 chữ cái in hoa</strong> (A-Z) và <strong style="color: #1e3a8a;">1 chữ cái in thường</strong> (a-z)</li>
+                  <li>Chứa ít nhất <strong style="color: #1e3a8a;">1 chữ số</strong> (0-9)</li>
+                  <li>Chứa ít nhất <strong style="color: #1e3a8a;">1 ký tự đặc biệt</strong> (ví dụ: ! @ # $ % ^ &amp; * _ -)</li>
+                  <li>Không chứa khoảng trắng (dấu cách)</li>
+                </ul>
+              </div>
+
+              <!-- Security Warning -->
+              <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 14px 14px 0; padding: 14px 18px; font-size: 12px; color: #92400e; line-height: 1.6; margin-top: 24px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                <strong style="color: #92400e; font-family: Roboto, 'Google Sans', Arial, sans-serif;">⚠️ Cảnh báo an toàn thông tin:</strong> VocabFlow AI <strong style="color: #92400e;">tuyệt đối không bao giờ</strong> yêu cầu bạn cung cấp mã OTP này qua điện thoại, tin nhắn hay bất kỳ người nào khác. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc đổi mật khẩu tài khoản ngay để phòng ngừa rủi ro.
+              </div>
+            </td>
+          </tr>
 
           <!-- Footer with Comprehensive Project Information -->
-          <div class="footer">
-            <div class="footer-brand">VocabFlow AI - Intelligent TOEIC Vocabulary Platform</div>
-            <div style="margin: 6px 0; color: #475569;">
-              Dự án học từ vựng TOEIC với thuật toán Spaced Repetition (Lặp lại ngắt quãng SM-2/FSRS), Trợ giảng AI Tutor 24/7 và Đấu trường tương tác Realtime Vocabulary Arena.
-            </div>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 12px;">
-              Email này được phát hành tự động qua máy chủ Resend SMTP của VocabFlow AI.<br>
-              Cần hỗ trợ? Liên hệ bộ phận kỹ thuật: <a href="mailto:support@vocabflow.ai" style="color: #4f46e5; text-decoration: none; font-weight: 600;">support@vocabflow.ai</a><br>
-              © 2026 VocabFlow AI Platform. All rights reserved.
-            </div>
-          </div>
-        </div>
+          <tr>
+            <td style="background-color: #f8fafc; border-top: 1px solid #f1f5f9; padding: 28px 28px; text-align: center; font-size: 12px; color: #64748b; line-height: 1.7; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+              <div style="font-weight: bold; color: #334155; font-size: 13px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">VocabFlow AI - Intelligent TOEIC Vocabulary Platform</div>
+              <div style="margin: 6px 0; color: #475569; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                Dự án học từ vựng TOEIC với thuật toán Spaced Repetition (Lặp lại ngắt quãng SM-2/FSRS), Trợ giảng AI Tutor 24/7 và Đấu trường tương tác Realtime Vocabulary Arena.
+              </div>
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 12px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
+                Email này được phát hành tự động qua máy chủ Resend SMTP của VocabFlow AI.<br />
+                Cần hỗ trợ? Liên hệ bộ phận kỹ thuật: <a href="mailto:support@vocabflow.ai" style="color: #4f46e5; text-decoration: none; font-weight: bold;">support@vocabflow.ai</a><br />
+                © 2026 VocabFlow AI Platform. All rights reserved.
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
     </body>
     </html>
