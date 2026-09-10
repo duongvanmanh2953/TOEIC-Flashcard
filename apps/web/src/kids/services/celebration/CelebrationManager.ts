@@ -44,9 +44,9 @@ const VIETNAMESE_PRAISES_BIG = [
 ];
 
 const VIETNAMESE_GREETINGS = [
-  'Chào bé! Mình học nhé!',
-  'Chào bé! Bé giỏi quá!',
-  'Chào bé yêu!',
+  'Chào bé!',
+  'Bé giỏi quá!',
+  'Mình học nhé!',
 ];
 
 class CelebrationManager {

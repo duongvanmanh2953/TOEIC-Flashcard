@@ -44,7 +44,7 @@ export const KidsParentDashboardPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-fadeIn pb-16">
       {/* Top Header */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 border-2 border-slate-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-6 md:p-8 border-2 border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
             <KidsIcon name="shield" size={32} />
@@ -63,7 +63,7 @@ export const KidsParentDashboardPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/kids')}
-            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-sm transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition-all cursor-pointer"
           >
             ← Về Góc Bé Học
           </button>
@@ -78,7 +78,7 @@ export const KidsParentDashboardPage: React.FC = () => {
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-3xl p-5 border-2 border-amber-200/80 shadow-sm">
+        <div className="bg-white rounded-3xl p-5 border-2 border-amber-200/80">
           <div className="text-xs font-black text-slate-600 uppercase mb-1">Số Sao Tích Lũy</div>
           <div className="text-2xl md:text-3xl font-black text-amber-500 flex items-center gap-1.5">
             <span>⭐</span>
@@ -87,7 +87,7 @@ export const KidsParentDashboardPage: React.FC = () => {
           <div className="text-[11px] text-slate-600 font-bold mt-1">Từ bài học & mini-game</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-emerald-200/80 shadow-sm">
+        <div className="bg-white rounded-3xl p-5 border-2 border-emerald-200/80">
           <div className="text-xs font-black text-slate-600 uppercase mb-1">Bài Đã Hoàn Thành</div>
           <div className="text-2xl md:text-3xl font-black text-emerald-600">
             {completedLessonsCount} <span className="text-sm font-bold text-slate-500">/ {totalCurriculumLessons}</span>
@@ -95,7 +95,7 @@ export const KidsParentDashboardPage: React.FC = () => {
           <div className="text-[11px] text-slate-600 font-bold mt-1">{progressPercent}% lộ trình toàn bộ</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-sky-200/80 shadow-sm">
+        <div className="bg-white rounded-3xl p-5 border-2 border-sky-200/80">
           <div className="text-xs font-black text-slate-600 uppercase mb-1">Độ Chuẩn Phát Âm</div>
           <div className="text-2xl md:text-3xl font-black text-sky-600">
             {averageAccuracy}%
@@ -103,7 +103,7 @@ export const KidsParentDashboardPage: React.FC = () => {
           <div className="text-[11px] text-slate-600 font-bold mt-1">Độ chính xác luyện nói & nghe</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-rose-200/80 shadow-sm">
+        <div className="bg-white rounded-3xl p-5 border-2 border-rose-200/80">
           <div className="text-xs font-black text-slate-600 uppercase mb-1">Thói Quen Mỗi Ngày</div>
           <div className="text-2xl md:text-3xl font-black text-rose-500 flex items-center gap-1">
             <span>🔥</span>
@@ -115,7 +115,7 @@ export const KidsParentDashboardPage: React.FC = () => {
       </div>
 
       {/* Weak Words & Vocabulary Needs Practice */}
-      <div className="bg-white rounded-3xl p-6 md:p-7 border-2 border-amber-200/80 shadow-sm space-y-4">
+      <div className="bg-white rounded-3xl p-6 md:p-7 border-2 border-amber-200/80 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -151,7 +151,7 @@ export const KidsParentDashboardPage: React.FC = () => {
       </div>
 
       {/* Study Guardrails & Daily Limits */}
-      <div className="bg-white rounded-3xl p-6 md:p-7 border-2 border-slate-100 shadow-sm space-y-4">
+      <div className="bg-white rounded-3xl p-6 md:p-7 border-2 border-slate-100 space-y-4">
         <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
           <span>⏱️</span>
           <span>Child Safety & Screen Time</span>

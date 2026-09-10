@@ -6,6 +6,7 @@ import { AppShell } from './components/layout/AppShell';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ReviewSessionPage } from './pages/ReviewSessionPage';
 import { VocabularyExplorerPage } from './pages/VocabularyExplorerPage';
@@ -131,6 +132,7 @@ export const App: React.FC = () => {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
             {/* User Learning Application Shell */}
             <Route

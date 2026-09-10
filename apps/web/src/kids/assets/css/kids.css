@@ -1,0 +1,93 @@
+/* ==========================================================================
+   KIDS MODULE - LIQUID GLASS & PLAYFUL STYLES
+   ========================================================================== */
+
+/* Base Liquid Glass Foundation */
+.kids-glass-panel {
+  @apply bg-white/60 backdrop-blur-xl border-2 border-white/80 rounded-3xl relative overflow-hidden;
+}
+
+.dark .kids-glass-panel {
+  @apply bg-slate-900/60 border-slate-700/80;
+}
+
+/* Liquid Color Variants */
+.kids-liquid-amber {
+  @apply bg-amber-50/80 backdrop-blur-lg border-2 border-amber-300 text-amber-950 hover:bg-amber-100/90 transition-colors;
+}
+
+.kids-liquid-sky {
+  @apply bg-sky-50/80 backdrop-blur-lg border-2 border-sky-300 text-sky-950 hover:bg-sky-100/90 transition-colors;
+}
+
+.kids-liquid-rose {
+  @apply bg-rose-50/80 backdrop-blur-lg border-2 border-rose-300 text-rose-950 hover:bg-rose-100/90 transition-colors;
+}
+
+.kids-liquid-purple {
+  @apply bg-purple-50/80 backdrop-blur-lg border-2 border-purple-300 text-purple-950 hover:bg-purple-100/90 transition-colors;
+}
+
+.kids-liquid-emerald {
+  @apply bg-emerald-50/80 backdrop-blur-lg border-2 border-emerald-300 text-emerald-950 hover:bg-emerald-100/90 transition-colors;
+}
+
+.kids-liquid-indigo {
+  @apply bg-indigo-50/80 backdrop-blur-lg border-2 border-indigo-300 text-indigo-950 hover:bg-indigo-100/90 transition-colors;
+}
+
+.kids-liquid-teal {
+  @apply bg-teal-50/80 backdrop-blur-lg border-2 border-teal-300 text-teal-950 hover:bg-teal-100/90 transition-colors;
+}
+
+/* 3D Button Press Effect */
+.kids-btn-press {
+  @apply active:scale-95 transition-transform duration-100 ease-in-out;
+}
+
+/* Focus Mode Wrapper */
+.kids-focus-mode {
+  @apply fixed inset-0 z-50 bg-sky-50 flex flex-col;
+}
+
+/* Smooth Floating Animations */
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-gentle-float {
+  animation: gentle-float 6s ease-in-out infinite;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 3s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+.animate-wiggle {
+  animation: wiggle 2s ease-in-out infinite;
+}
+
+/* 3D Flip Card */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}

@@ -93,78 +93,7 @@ async function main() {
   const passwordHash = await bcrypt.hash(learnerPassword, 10);
   const adminHash = await bcrypt.hash(adminPassword, 10);
 
-  const demoUser = await prisma.user.upsert({
-    where: { email: 'learner@vocabflow.ai' },
-    update: {},
-    create: {
-      email: 'learner@vocabflow.ai',
-      username: 'learner',
-      displayName: 'Alex Learner',
-      passwordHash,
-      role: Role.USER,
-      status: UserStatus.ACTIVE,
-      profile: {
-        create: {
-          englishLevel: CefrLevel.B1,
-          targetLevel: CefrLevel.B2,
-          dailyGoal: 20,
-          weeklyGoal: 100,
-          learningGoal: 'Master TOEIC 800+ vocabulary with high retention',
-        },
-      },
-      streak: {
-        create: {
-          currentStreak: 5,
-          longestStreak: 12,
-          lastStudyDate: new Date(),
-        },
-      },
-      xp: {
-        create: {
-          totalXP: 1450,
-          currentLevel: 4,
-        },
-      },
-    },
-  });
-
-  // Also preserve learner@leximind.ai for backward compatibility
-  await prisma.user.upsert({
-    where: { email: 'learner@leximind.ai' },
-    update: {},
-    create: {
-      email: 'learner@leximind.ai',
-      username: 'learner_legacy',
-      displayName: 'Alex Learner (Legacy)',
-      passwordHash,
-      role: Role.USER,
-      status: UserStatus.ACTIVE,
-      profile: {
-        create: {
-          englishLevel: CefrLevel.B1,
-          targetLevel: CefrLevel.B2,
-          dailyGoal: 20,
-          weeklyGoal: 100,
-        },
-      },
-      streak: {
-        create: {
-          currentStreak: 5,
-          longestStreak: 12,
-          lastStudyDate: new Date(),
-        },
-      },
-      xp: {
-        create: {
-          totalXP: 1450,
-          currentLevel: 4,
-        },
-      },
-    },
-  });
-
-  // 2.1 Full PRO Account (pro@vocabflow.ai)
-  await prisma.user.upsert({
+  const proUser = await prisma.user.upsert({
     where: { email: 'pro@vocabflow.ai' },
     update: {
       role: Role.PREMIUM_USER,
@@ -224,26 +153,6 @@ async function main() {
       },
     },
   });
-
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      email: adminEmail,
-      username: 'admin',
-      displayName: 'System Admin',
-      passwordHash: adminHash,
-      role: Role.SUPER_ADMIN,
-      status: UserStatus.ACTIVE,
-      profile: {
-        create: {
-          englishLevel: CefrLevel.C1,
-          targetLevel: CefrLevel.C2,
-          dailyGoal: 30,
-        },
-      },
-    },
-  });
   // 2.3 Attach Full PRO Lifetime Subscriptions
   const proPlan = await prisma.plan.upsert({
     where: { tier: SubscriptionTier.PRO },
@@ -281,7 +190,7 @@ async function main() {
   });
 
   const lifetimeEnd = new Date('2099-12-31T23:59:59.000Z');
-  const proEmails = ['pro@vocabflow.ai', 'admin@vocabflow.ai', 'learner@vocabflow.ai', 'admin@leximind.ai'];
+  const proEmails = ['pro@vocabflow.ai', 'admin@vocabflow.ai'];
   for (const email of proEmails) {
     const u = await prisma.user.findUnique({ where: { email } });
     if (u) {
@@ -297,7 +206,7 @@ async function main() {
     }
   }
 
-  console.log('✅ Demo, Pro & Admin users initialized with Active PRO subscriptions.');
+  console.log('✅ Admin & Pro users initialized with Active PRO subscriptions.');
 
   // 3. Parse and Seed toeic_600_words.csv (chỉ nhập nếu DB chưa có dữ liệu)
   const existingWordCount = await prisma.vocabulary.count();
@@ -450,13 +359,13 @@ async function main() {
       await prisma.userVocabulary.upsert({
         where: {
           userId_vocabularyId: {
-            userId: demoUser.id,
+            userId: proUser.id,
             vocabularyId: vocab.id,
           },
         },
         update: {},
         create: {
-          userId: demoUser.id,
+          userId: proUser.id,
           vocabularyId: vocab.id,
           status: isDue ? 'REVIEW' : 'LEARNING',
           masteryScore: isDue ? 45.0 : 60.0,
@@ -546,7 +455,7 @@ async function main() {
   if (!existingDeck) {
     const deck = await prisma.communityDeck.create({
       data: {
-        userId: demoUser.id,
+        userId: proUser.id,
         title: 'Business Phrasal Verbs in Action',
         description: 'Tổng hợp các cụm động từ thường gặp nhất trong email công việc, đàm phán và thuyết trình.',
         category: 'Business English',
@@ -599,7 +508,7 @@ async function main() {
 
     await prisma.communityDeck.create({
       data: {
-        userId: demoUser.id,
+        userId: proUser.id,
         title: 'Essential Tech & AI Terms',
         description: 'Từ vựng cốt lõi cho kỹ sư phần mềm, làm việc với AI và các sản phẩm công nghệ.',
         category: 'Technology',
@@ -653,6 +562,7 @@ async function main() {
     await prisma.adminAnnouncement.deleteMany({});
     await prisma.reviewEvent.deleteMany({});
     await prisma.studySession.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { notIn: ['admin@vocabflow.ai', 'pro@vocabflow.ai'] } } });
     console.log('✅ Database cleaned: Only real users, plans, achievements and vocabulary preserved.');
   } catch (err) {
     console.warn('Notice during mock data cleanup:', err);

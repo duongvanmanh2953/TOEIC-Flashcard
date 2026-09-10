@@ -128,14 +128,14 @@ export const KidsLessonPage: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fadeIn pb-12">
       {/* Top Focus Mode Header with Caterpillar Progress & Parent-Protected Exit */}
-      <div className="bg-white rounded-3xl p-3.5 sm:p-5 border-2 border-amber-300 shadow-md flex items-center justify-between gap-3">
+      <div className="bg-white rounded-3xl p-3.5 sm:p-5 border-2 border-amber-300 flex items-center justify-between gap-3">
         {/* Protected Back / Exit button (Requires Parent confirmation) */}
         <button
           onClick={() => {
             soundManager.playPop();
             setParentExitModalOpen(true);
           }}
-          className="px-3 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer border border-slate-300 text-xs font-black shadow-xs shrink-0"
+          className="px-3 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer border border-slate-300 text-xs font-black shrink-0"
           title="Thoát bài học (Bố Mẹ mở khóa)"
         >
           <span>🔒</span>
@@ -160,9 +160,9 @@ export const KidsLessonPage: React.FC = () => {
                   key={act.id}
                   className={`h-3.5 rounded-full flex-1 transition-all duration-300 ${
                     isDone
-                      ? 'bg-emerald-500 shadow-xs'
+                      ? 'bg-emerald-500'
                       : isCurrent
-                      ? 'bg-amber-400 scale-y-125 ring-2 ring-amber-300 shadow-sm animate-pulse'
+                      ? 'bg-amber-400 scale-y-125 ring-2 ring-amber-300 animate-pulse'
                       : 'bg-slate-200'
                   }`}
                 />
@@ -175,12 +175,12 @@ export const KidsLessonPage: React.FC = () => {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleToggleFullscreen}
-            className="w-10 h-10 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-300 flex items-center justify-center text-slate-700 transition cursor-pointer text-sm font-black shadow-xs"
+            className="w-10 h-10 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-300 flex items-center justify-center text-slate-700 transition cursor-pointer text-sm font-black"
             title="Toàn màn hình tập trung"
           >
             {isFullscreen ? '✕' : '⛶'}
           </button>
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-xl shadow-xs">
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-xl">
             {targetLesson.emoji || '⭐'}
           </div>
         </div>

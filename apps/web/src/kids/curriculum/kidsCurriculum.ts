@@ -669,6 +669,302 @@ export const KIDS_CURRICULUM: KidWorld[] = [
       },
     ],
   },
+
+  // =========================================================================
+  // WORLD 4: OCEAN WORLD (Deep Blue Sea)
+  // =========================================================================
+  {
+    id: 'world-4-ocean',
+    level: 2,
+    title: 'Ocean World',
+    titleKey: 'kids.world4.title',
+    theme: 'Deep Blue Sea',
+    themeColor: '#0284c7',
+    bgGradient: 'from-sky-400 via-blue-500 to-cyan-600',
+    icon: '🌊',
+    description: 'Swim with gentle blue whales, playful dolphins, and magical sea turtles!',
+    chapters: [
+      {
+        id: 'w4-c1-sea-creatures',
+        worldId: 'world-4-ocean',
+        order: 1,
+        title: 'Friendly Sea Friends',
+        titleKey: 'kids.world4.c1.title',
+        icon: '🐬',
+        description: 'Explore vibrant coral reefs and swim with ocean animals!',
+        lessons: [
+          {
+            id: 'lesson-11-whale-dolphin',
+            chapterId: 'w4-c1-sea-creatures',
+            worldId: 'world-4-ocean',
+            order: 1,
+            title: 'Dolphin & Whale',
+            description: 'Meet friendly dolphins and mighty blue whales!',
+            emoji: '🐬',
+            bannerColor: '#0284c7',
+            activities: [
+              {
+                id: 'act-11-1',
+                type: 'flashcard',
+                title: 'Sea: Dolphin',
+                instruction: 'The dolphin loves to jump in the waves!',
+                targetWord: 'Dolphin',
+                phonetic: '/ˈdɑːl.fɪn/',
+                targetSentence: 'The dolphin swims fast in the blue sea.',
+                emoji: '🐬',
+              },
+              {
+                id: 'act-11-2',
+                type: 'flashcard',
+                title: 'Sea: Whale',
+                instruction: 'The giant blue whale sings ocean songs!',
+                targetWord: 'Whale',
+                phonetic: '/weɪl/',
+                targetSentence: 'The blue whale is very big.',
+                emoji: '🐋',
+              },
+              {
+                id: 'act-11-3',
+                type: 'speak',
+                title: 'Say: Dolphin',
+                instruction: 'Tap mic and say "Dolphin"',
+                targetWord: 'Dolphin',
+                emoji: '🎙️',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // =========================================================================
+  // WORLD 5: DESERT WORLD (Sunny Dunes & Weather)
+  // =========================================================================
+  {
+    id: 'world-5-desert',
+    level: 2,
+    title: 'Desert Dunes',
+    titleKey: 'kids.world5.title',
+    theme: 'Sunny Oasis',
+    themeColor: '#ea580c',
+    bgGradient: 'from-amber-500 via-orange-600 to-yellow-600',
+    icon: '🏜️',
+    description: 'Ride friendly camels across golden sands and learn weather words!',
+    chapters: [
+      {
+        id: 'w5-c1-desert-weather',
+        worldId: 'world-5-desert',
+        order: 1,
+        title: 'Golden Sands & Sun',
+        titleKey: 'kids.world5.c1.title',
+        icon: '☀️',
+        description: 'Explore the golden desert and sunny skies!',
+        lessons: [
+          {
+            id: 'lesson-12-sun-camel',
+            chapterId: 'w5-c1-desert-weather',
+            worldId: 'world-5-desert',
+            order: 1,
+            title: 'Camel & Sunshine',
+            description: 'Learn sun, wind, and friendly desert camels!',
+            emoji: '🐪',
+            bannerColor: '#ea580c',
+            activities: [
+              {
+                id: 'act-12-1',
+                type: 'flashcard',
+                title: 'Desert: Camel',
+                instruction: 'The camel walks across the golden dunes!',
+                targetWord: 'Camel',
+                phonetic: '/ˈkæm.əl/',
+                targetSentence: 'The friendly camel drinks clean water.',
+                emoji: '🐪',
+              },
+              {
+                id: 'act-12-2',
+                type: 'flashcard',
+                title: 'Weather: Sunny',
+                instruction: 'Warm and sunny day in the desert!',
+                targetWord: 'Sunny',
+                phonetic: '/ˈsʌn.i/',
+                targetSentence: 'Today is bright and sunny.',
+                emoji: '☀️',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // =========================================================================
+  // WORLD 6: MAGIC CASTLE (Story & Full Sentences)
+  // =========================================================================
+  {
+    id: 'world-6-castle',
+    level: 2,
+    title: 'Magic Castle',
+    titleKey: 'kids.world6.title',
+    theme: 'Enchanted Kingdom',
+    themeColor: '#7c3aed',
+    bgGradient: 'from-purple-500 via-violet-600 to-indigo-700',
+    icon: '🏰',
+    description: 'Unlock fairy tales, magical spells, and complete English sentences!',
+    chapters: [
+      {
+        id: 'w6-c1-spells',
+        worldId: 'world-6-castle',
+        order: 1,
+        title: 'Magical Words & Stories',
+        titleKey: 'kids.world6.c1.title',
+        icon: '✨',
+        description: 'Cast spells with magic words and read story adventures!',
+        lessons: [
+          {
+            id: 'lesson-13-castle-gate',
+            chapterId: 'w6-c1-spells',
+            worldId: 'world-6-castle',
+            order: 1,
+            title: 'Open the Castle Gate',
+            description: 'Speak full sentences to open golden doors!',
+            emoji: '🗝️',
+            bannerColor: '#7c3aed',
+            activities: [
+              {
+                id: 'act-13-1',
+                type: 'flashcard',
+                title: 'Sentence: Open the Door',
+                instruction: 'Listen to the magic enchantment!',
+                targetWord: 'Open the door',
+                phonetic: '/ˈoʊ.pən ðə dɔːr/',
+                targetSentence: 'Please open the golden door.',
+                emoji: '🚪',
+              },
+              {
+                id: 'act-13-2',
+                type: 'speak',
+                title: 'Spell: Open the door',
+                instruction: 'Say: "Open the door"',
+                targetWord: 'Open the door',
+                emoji: '🎤',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // =========================================================================
+  // WORLD 7: SPACE ADVENTURE (Galaxy & Stars)
+  // =========================================================================
+  {
+    id: 'world-7-space',
+    level: 2,
+    title: 'Space Adventure',
+    titleKey: 'kids.world7.title',
+    theme: 'Galaxy Odyssey',
+    themeColor: '#ec4899',
+    bgGradient: 'from-pink-500 via-rose-600 to-purple-800',
+    icon: '🚀',
+    description: 'Blast off in your rocket ship to visit the Moon, Mars and distant stars!',
+    chapters: [
+      {
+        id: 'w7-c1-planets',
+        worldId: 'world-7-space',
+        order: 1,
+        title: 'Rockets & Shooting Stars',
+        titleKey: 'kids.world7.c1.title',
+        icon: '⭐',
+        description: 'Fly high above the clouds and explore outer space!',
+        lessons: [
+          {
+            id: 'lesson-14-rocket-moon',
+            chapterId: 'w7-c1-planets',
+            worldId: 'world-7-space',
+            order: 1,
+            title: 'Rocket to the Moon',
+            description: 'Count down 3, 2, 1 and blast off!',
+            emoji: '🚀',
+            bannerColor: '#ec4899',
+            activities: [
+              {
+                id: 'act-14-1',
+                type: 'flashcard',
+                title: 'Space: Rocket',
+                instruction: 'Zoom into space on a shiny rocket!',
+                targetWord: 'Rocket',
+                phonetic: '/ˈrɑː.kɪt/',
+                targetSentence: 'The fast rocket flies to space.',
+                emoji: '🚀',
+              },
+              {
+                id: 'act-14-2',
+                type: 'flashcard',
+                title: 'Space: Moon',
+                instruction: 'Glow bright like the beautiful moon!',
+                targetWord: 'Moon',
+                phonetic: '/muːn/',
+                targetSentence: 'The moon shines at night.',
+                emoji: '🌙',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  // =========================================================================
+  // WORLD 8: DINOSAUR LAND (Prehistoric Wonder)
+  // =========================================================================
+  {
+    id: 'world-8-dino',
+    level: 2,
+    title: 'Dinosaur Land',
+    titleKey: 'kids.world8.title',
+    theme: 'Prehistoric Safari',
+    themeColor: '#059669',
+    bgGradient: 'from-emerald-500 via-teal-600 to-green-800',
+    icon: '🦖',
+    description: 'Stomp with gentle giants, discover dinosaur eggs and roar with T-Rex!',
+    chapters: [
+      {
+        id: 'w8-c1-dinos',
+        worldId: 'world-8-dino',
+        order: 1,
+        title: 'Friendly Prehistoric Friends',
+        titleKey: 'kids.world8.c1.title',
+        icon: '🦕',
+        description: 'Meet Brachiosaurus and gentle baby dinosaurs!',
+        lessons: [
+          {
+            id: 'lesson-15-dino-roar',
+            chapterId: 'w8-c1-dinos',
+            worldId: 'world-8-dino',
+            order: 1,
+            title: 'Dinosaur Roar',
+            description: 'Learn dinosaur names and big dinosaur stomps!',
+            emoji: '🦖',
+            bannerColor: '#059669',
+            activities: [
+              {
+                id: 'act-15-1',
+                type: 'flashcard',
+                title: 'Dino: Dinosaur',
+                instruction: 'Stomp your feet like a friendly dinosaur!',
+                targetWord: 'Dinosaur',
+                phonetic: '/ˈdaɪ.nə.sɔːr/',
+                targetSentence: 'The green dinosaur is playful.',
+                emoji: '🦖',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 export type KidsWorld = KidWorld;
@@ -676,3 +972,4 @@ export type KidsChapter = KidChapter;
 export type KidsLesson = KidLesson;
 export type KidsActivity = KidActivity;
 export const WORLDS_DATA = KIDS_CURRICULUM;
+

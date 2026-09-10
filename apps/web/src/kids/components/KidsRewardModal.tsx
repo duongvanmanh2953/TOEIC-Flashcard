@@ -64,7 +64,7 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
   return (
     <ModalPortal isOpen={isOpen} onClose={() => {}}>
       <div
-        className="m-auto relative w-full max-w-md rounded-3xl bg-gradient-to-b from-amber-50 via-white to-amber-100 border-4 border-amber-400 p-6 sm:p-8 shadow-2xl space-y-4 animate-scale-up text-center select-none overflow-hidden"
+        className="m-auto relative w-full max-w-md rounded-3xl bg-gradient-to-b from-amber-50 via-white to-amber-100 border-4 border-amber-400 p-6 sm:p-8 space-y-4 animate-scale-up text-center select-none overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Confetti / Sparkles Header */}
@@ -97,7 +97,7 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
                 key={starIndex}
                 className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
                   hasStar
-                    ? 'bg-amber-400 border-amber-500 text-white shadow-lg shadow-amber-400/40 scale-110 animate-bounce'
+                    ? 'bg-amber-400 border-amber-500 text-white scale-110 animate-bounce'
                     : 'bg-slate-100 border-slate-200 text-slate-300'
                 }`}
                 style={{ animationDelay: `${starIndex * 150}ms` }}
@@ -123,7 +123,7 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
         {/* Unlocked Reward Item / Next Lesson Callout */}
         {unlockedItemName ? (
           <div className="p-3.5 rounded-2xl bg-purple-50 border-2 border-purple-300 flex items-center gap-3 text-left">
-            <div className="w-12 h-12 rounded-xl bg-purple-500 text-white text-2xl flex items-center justify-center shadow-md shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-purple-500 text-white text-2xl flex items-center justify-center shrink-0">
               {unlockedItemEmoji}
             </div>
             <div>
@@ -145,7 +145,7 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
         <div className="space-y-2 pt-2">
           <button
             onClick={handlePrimaryAction}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base shadow-lg shadow-emerald-500/30 active:scale-95 transition cursor-pointer border-b-4 border-emerald-700"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base active:scale-95 transition cursor-pointer border-b-4 border-emerald-700"
           >
             TIẾP TỤC CHINH PHỤC ▶
           </button>

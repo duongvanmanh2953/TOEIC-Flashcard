@@ -1,15 +1,17 @@
 /**
  * KidsSoundManager.ts
- * Web Audio API Sound Synthesizer for Kids English Learning System
- * - Zero external mp3 dependencies (100% offline & instant playback)
+ * High-Quality Web Audio API Sound Synthesizer for Kids English Learning System
+ * - 100% Offline, zero external MP3 dependencies
  * - Safe for iOS Safari & Android Chrome
- * - Synthesizes friendly, child-safe chimes, bubble pops, and victory fanfares
- * - Global sound ON/OFF toggle persisted in localStorage
+ * - Authentic child-friendly sound effects: Bubbly pops, crystal sparkles, card whoosh, victory fanfares
  */
 
 export type SoundEffectType =
   | 'click'
   | 'pop'
+  | 'bubble_burst'
+  | 'sparkle'
+  | 'whoosh'
   | 'correct'
   | 'wrong'
   | 'star'
@@ -80,48 +82,110 @@ class KidsSoundManager {
       switch (type) {
         case 'click':
         case 'pop': {
-          // Playful wooden/bubble pop sound (freq rapid sweep down)
+          // Playful bubble/pop sound
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(520, now);
-          osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+          osc.frequency.setValueAtTime(620, now);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 0.09);
 
-          gain.gain.setValueAtTime(0.3, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
 
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start(now);
-          osc.stop(now + 0.09);
+          osc.stop(now + 0.1);
+          break;
+        }
+
+        case 'bubble_burst': {
+          // Double pop for soap bubble bursting
+          [0, 0.035].forEach((offset, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            const baseFreq = idx === 0 ? 750 : 920;
+            osc.frequency.setValueAtTime(baseFreq, now + offset);
+            osc.frequency.exponentialRampToValueAtTime(220, now + offset + 0.08);
+
+            gain.gain.setValueAtTime(0.3, now + offset);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.08);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + offset);
+            osc.stop(now + offset + 0.09);
+          });
+          break;
+        }
+
+        case 'whoosh': {
+          // Soft card flip whoosh (filtered white noise + sine sweep)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(280, now);
+          osc.frequency.linearRampToValueAtTime(540, now + 0.06);
+          osc.frequency.exponentialRampToValueAtTime(160, now + 0.14);
+
+          gain.gain.setValueAtTime(0.01, now);
+          gain.gain.linearRampToValueAtTime(0.25, now + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+          break;
+        }
+
+        case 'sparkle':
+        case 'star': {
+          // High crystal ping arpeggio
+          const sparkleNotes = [1046.5, 1318.5, 1567.98, 2093.0];
+          sparkleNotes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+            gain.gain.setValueAtTime(0.2, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.22);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.24);
+          });
           break;
         }
 
         case 'correct': {
-          // Melodic happy two-tone chime: C5 (523Hz) -> G5 (784Hz)
-          const notes = [523.25, 783.99];
+          // Melodic happy two-tone chime: C5 (523Hz) -> G5 (784Hz) -> C6 (1046Hz)
+          const notes = [523.25, 659.25, 783.99, 1046.5];
           notes.forEach((freq, idx) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
 
-            gain.gain.setValueAtTime(0, now + idx * 0.1);
-            gain.gain.linearRampToValueAtTime(0.35, now + idx * 0.1 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.28);
+            gain.gain.setValueAtTime(0, now + idx * 0.08);
+            gain.gain.linearRampToValueAtTime(0.35, now + idx * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.28);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
-            osc.start(now + idx * 0.1);
-            osc.stop(now + idx * 0.1 + 0.3);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.3);
           });
           break;
         }
 
         case 'wrong':
         case 'encourage': {
-          // Soft, non-aggressive gentle 'try again' wobble chime
-          const notes = [392.0, 349.23];
+          // Gentle warm two-tone try again
+          const notes = [392.0, 329.63];
           notes.forEach((freq, idx) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -139,49 +203,31 @@ class KidsSoundManager {
           break;
         }
 
-        case 'star': {
-          // Sparkle high ping: E6 (1318Hz) -> A6 (1760Hz)
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(1318.51, now);
-          osc.frequency.exponentialRampToValueAtTime(1760.0, now + 0.18);
-
-          gain.gain.setValueAtTime(0.25, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now);
-          osc.stop(now + 0.36);
-          break;
-        }
-
         case 'success':
         case 'unlock':
         case 'level_up': {
-          // Major chord arpeggio: C5 -> E5 -> G5 -> C6
+          // Major chord fanfare
           const chord = [523.25, 659.25, 783.99, 1046.5];
           chord.forEach((freq, idx) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
 
-            gain.gain.setValueAtTime(0, now + idx * 0.09);
-            gain.gain.linearRampToValueAtTime(0.3, now + idx * 0.09 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.35);
+            gain.gain.setValueAtTime(0, now + idx * 0.08);
+            gain.gain.linearRampToValueAtTime(0.3, now + idx * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
 
             osc.connect(gain);
             gain.connect(ctx.destination);
-            osc.start(now + idx * 0.09);
-            osc.stop(now + idx * 0.09 + 0.38);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.38);
           });
           break;
         }
 
         case 'celebration': {
-          // Victory Fanfare: C5 -> C5 -> C5 -> G5 -> C6
+          // Grand victory fanfare
           const fanfare = [
             { f: 523.25, t: 0.0, d: 0.1 },
             { f: 523.25, t: 0.12, d: 0.1 },
@@ -208,12 +254,13 @@ class KidsSoundManager {
           break;
         }
       }
-    } catch (_) {
-      // AudioContext fallback silent catch
-    }
+    } catch (_) {}
   }
 
   public playPop() { this.play('pop'); }
+  public playBubbleBurst() { this.play('bubble_burst'); }
+  public playWhoosh() { this.play('whoosh'); }
+  public playSparkle() { this.play('sparkle'); }
   public playDing() { this.play('correct'); }
   public playCorrect() { this.play('correct'); }
   public playIncorrect() { this.play('wrong'); }

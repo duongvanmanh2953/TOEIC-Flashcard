@@ -77,7 +77,7 @@ export const KidsMascot: React.FC<KidsMascotProps> = ({
       {speechText && (
         <div
           onClick={handleMascotTap}
-          className="mb-2.5 max-w-xs px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border-2 border-amber-300 dark:border-amber-700 shadow-md text-amber-900 dark:text-amber-100 font-bold text-xs sm:text-sm text-center relative cursor-pointer hover:scale-102 transition-transform"
+          className="mb-2.5 max-w-xs px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-bold text-xs sm:text-sm text-center relative cursor-pointer hover:scale-102 transition-transform"
         >
           <span>{speechText}</span>
           <span className="text-xs ml-1.5 opacity-60">🔊</span>
@@ -97,7 +97,7 @@ export const KidsMascot: React.FC<KidsMascotProps> = ({
           viewBox="0 0 160 160"
           width={resolvedSize.w}
           height={resolvedSize.h}
-          className="drop-shadow-lg filter"
+          className=""
         >
           <defs>
             {/* Fur gradient */}

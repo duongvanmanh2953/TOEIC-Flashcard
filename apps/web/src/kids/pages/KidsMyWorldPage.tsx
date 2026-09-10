@@ -162,6 +162,60 @@ const EXTENDED_VOCAB: WordEntry[] = [
     sentence: 'The sun rises in the morning.',
     stage: 'tree',
   },
+  {
+    word: 'Dolphin',
+    vi: 'Cá heo',
+    emoji: '🐬',
+    category: 'ocean',
+    phrase: 'playful blue dolphin',
+    sentence: 'The dolphin leaps high above the waves.',
+    stage: 'plant',
+  },
+  {
+    word: 'Whale',
+    vi: 'Cá voi',
+    emoji: '🐋',
+    category: 'ocean',
+    phrase: 'giant gentle whale',
+    sentence: 'The blue whale swims in the ocean.',
+    stage: 'tree',
+  },
+  {
+    word: 'Rocket',
+    vi: 'Tên lửa',
+    emoji: '🚀',
+    category: 'space',
+    phrase: 'shiny space rocket',
+    sentence: 'The rocket flies fast into outer space.',
+    stage: 'sprout',
+  },
+  {
+    word: 'Moon',
+    vi: 'Mặt trăng',
+    emoji: '🌙',
+    category: 'space',
+    phrase: 'bright silver moon',
+    sentence: 'The moon glows beautifully in the night sky.',
+    stage: 'tree',
+  },
+  {
+    word: 'Dinosaur',
+    vi: 'Khủng long',
+    emoji: '🦖',
+    category: 'dinosaurs',
+    phrase: 'friendly green dinosaur',
+    sentence: 'The dinosaur loves to stomp and roar.',
+    stage: 'plant',
+  },
+  {
+    word: 'Baby',
+    vi: 'Em bé',
+    emoji: '👶',
+    category: 'family',
+    phrase: 'cute happy baby',
+    sentence: 'The little baby smiles at mommy.',
+    stage: 'tree',
+  },
 ];
 
 interface PlacedItem {
@@ -246,6 +300,10 @@ export const KidsMyWorldPage: React.FC = () => {
     { id: 'food', label: 'Đồ ăn', icon: '🍎' },
     { id: 'colors', label: 'Màu sắc', icon: '🎨' },
     { id: 'numbers', label: 'Số đếm', icon: '🔢' },
+    { id: 'ocean', label: 'Đại dương', icon: '🌊' },
+    { id: 'space', label: 'Vũ trụ', icon: '🚀' },
+    { id: 'dinosaurs', label: 'Khủng long', icon: '🦖' },
+    { id: 'family', label: 'Gia đình', icon: '👶' },
     { id: 'vehicles', label: 'Phương tiện', icon: '🚗' },
     { id: 'nature', label: 'Thiên nhiên', icon: '☀️' },
   ];
@@ -253,7 +311,7 @@ export const KidsMyWorldPage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto w-full space-y-6 md:space-y-8 animate-fadeIn pb-24">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 border-3 border-emerald-400 shadow-md">
+      <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 border-3 border-emerald-400">
         <div className="flex items-center gap-4 text-center md:text-left">
           <KidsMascot mood="happy" size={90} speechText="Khám phá từ vựng cùng mình!" />
           <div>
@@ -273,7 +331,7 @@ export const KidsMyWorldPage: React.FC = () => {
             onClick={() => setActiveTab('garden')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer ${
               activeTab === 'garden'
-                ? 'bg-white text-slate-950 shadow-sm'
+                ? 'bg-white text-slate-950'
                 : 'text-white hover:bg-white/20'
             }`}
           >
@@ -283,7 +341,7 @@ export const KidsMyWorldPage: React.FC = () => {
             onClick={() => setActiveTab('island')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer ${
               activeTab === 'island'
-                ? 'bg-white text-slate-950 shadow-sm'
+                ? 'bg-white text-slate-950'
                 : 'text-white hover:bg-white/20'
             }`}
           >
@@ -293,7 +351,7 @@ export const KidsMyWorldPage: React.FC = () => {
             onClick={() => setActiveTab('badges')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer ${
               activeTab === 'badges'
-                ? 'bg-white text-slate-950 shadow-sm'
+                ? 'bg-white text-slate-950'
                 : 'text-white hover:bg-white/20'
             }`}
           >
@@ -315,7 +373,7 @@ export const KidsMyWorldPage: React.FC = () => {
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`px-3.5 py-2 rounded-2xl font-black text-xs flex items-center gap-1.5 whitespace-nowrap transition cursor-pointer border-2 ${
                   selectedCategory === cat.id
-                    ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-xs scale-102'
+                    ? 'bg-amber-400 text-slate-950 border-amber-500 scale-102'
                     : 'kids-liquid-card text-slate-800 border-slate-200 hover:bg-amber-50'
                 }`}
               >
@@ -342,7 +400,7 @@ export const KidsMyWorldPage: React.FC = () => {
                   onClick={() => setSelectedStage(st.id)}
                   className={`px-3 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
                     selectedStage === st.id
-                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
+                      ? 'bg-emerald-500 text-white border-emerald-600'
                       : 'kids-liquid-card text-slate-700 border-slate-300 hover:bg-emerald-50'
                   }`}
                 >
@@ -365,7 +423,7 @@ export const KidsMyWorldPage: React.FC = () => {
               return (
                 <div
                   key={item.word}
-                  className="kids-liquid-card p-5 rounded-3xl border-3 border-amber-300 hover:border-emerald-400 shadow-xs flex flex-col justify-between space-y-3 transition-all group"
+                  className="kids-liquid-card p-5 rounded-3xl border-3 border-amber-300 hover:border-emerald-400 flex flex-col justify-between space-y-3 transition-all group"
                 >
                   <div>
                     <div className="flex items-start justify-between">
@@ -391,14 +449,14 @@ export const KidsMyWorldPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Audio Controls Bar (Listen, Speak, Sentence) */}
-                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-1.5">
+                  {/* Audio Controls Bar (Listen, Speak, Sentence, Replay Slow) */}
+                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-1">
                     <button
                       onClick={() => {
                         soundManager.playDing();
                         kidsSpeech.speakBilingual(item.word, item.vi);
                       }}
-                      className="flex-1 py-1.5 px-2 rounded-xl bg-sky-100 hover:bg-sky-200 text-slate-950 text-xs font-black flex items-center justify-center gap-1 border border-sky-300 cursor-pointer"
+                      className="flex-1 py-1.5 px-1.5 rounded-xl bg-sky-100 hover:bg-sky-200 text-slate-950 text-xs font-black flex items-center justify-center gap-0.5 border border-sky-300 cursor-pointer"
                       title="Nghe phát âm từ vựng"
                     >
                       <span>🔊 Từ</span>
@@ -407,9 +465,20 @@ export const KidsMyWorldPage: React.FC = () => {
                     <button
                       onClick={() => {
                         soundManager.playPop();
+                        kidsSpeech.speak(item.word, { rate: 0.65 });
+                      }}
+                      className="flex-1 py-1.5 px-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 text-slate-950 text-xs font-black flex items-center justify-center gap-0.5 border border-purple-300 cursor-pointer"
+                      title="Nghe phát âm chậm rãi"
+                    >
+                      <span>🔁 Chậm</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        soundManager.playPop();
                         kidsSpeech.speak(item.sentence);
                       }}
-                      className="flex-1 py-1.5 px-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-slate-950 text-xs font-black flex items-center justify-center gap-1 border border-emerald-300 cursor-pointer"
+                      className="flex-1 py-1.5 px-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-slate-950 text-xs font-black flex items-center justify-center gap-0.5 border border-emerald-300 cursor-pointer"
                       title="Nghe toàn bộ câu"
                     >
                       <span>💬 Câu</span>
@@ -420,7 +489,7 @@ export const KidsMyWorldPage: React.FC = () => {
                         celebrationManager.speakPraise('Bé hãy đọc theo mẫu nhé!');
                         kidsSpeech.speak(item.word);
                       }}
-                      className="flex-1 py-1.5 px-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-slate-950 text-xs font-black flex items-center justify-center gap-1 border border-amber-300 cursor-pointer"
+                      className="flex-1 py-1.5 px-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-slate-950 text-xs font-black flex items-center justify-center gap-0.5 border border-amber-300 cursor-pointer"
                       title="Luyện đọc lại"
                     >
                       <span>🎙️ Luyện</span>
@@ -451,7 +520,7 @@ export const KidsMyWorldPage: React.FC = () => {
           {/* Island Canvas */}
           <div
             onClick={handlePlaceItemOnIsland}
-            className={`relative w-full h-[380px] sm:h-[460px] rounded-3xl bg-gradient-to-b from-sky-200 via-teal-100 to-emerald-200 border-4 border-teal-400 overflow-hidden cursor-crosshair shadow-inner select-none ${
+            className={`relative w-full h-[380px] sm:h-[460px] rounded-3xl bg-gradient-to-b from-sky-200 via-teal-100 to-emerald-200 border-4 border-teal-400 overflow-hidden cursor-crosshair select-none ${
               selectedSticker ? 'ring-4 ring-amber-400 animate-pulse' : ''
             }`}
           >
@@ -463,7 +532,7 @@ export const KidsMyWorldPage: React.FC = () => {
             </div>
 
             {/* Central Sandy Island Ground */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-3/5 rounded-[60px] bg-gradient-to-tr from-amber-100 via-amber-50 to-emerald-50 border-4 border-amber-300/80 shadow-md" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-3/5 rounded-[60px] bg-gradient-to-tr from-amber-100 via-amber-50 to-emerald-50 border-4 border-amber-300/80" />
 
             {/* Placed Items */}
             {placedItems.map((item) => (
@@ -473,10 +542,10 @@ export const KidsMyWorldPage: React.FC = () => {
                 style={{ left: `${item.x}%`, top: `${item.y}%` }}
                 className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer hover:scale-125 active:scale-95 transition-all z-10"
               >
-                <span className="text-5xl sm:text-6xl filter drop-shadow-md animate-bounce" style={{ animationDuration: '2.5s' }}>
+                <span className="text-5xl sm:text-6xl animate-bounce" style={{ animationDuration: '2.5s' }}>
                   {item.icon}
                 </span>
-                <span className="text-[10px] font-black bg-white/90 text-slate-950 px-2 py-0.5 rounded-full shadow-xs border border-slate-200 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[10px] font-black bg-white/90 text-slate-950 px-2 py-0.5 rounded-full border border-slate-200 opacity-0 group-hover:opacity-100 transition-opacity">
                   {item.name}
                 </span>
                 <button
@@ -504,7 +573,7 @@ export const KidsMyWorldPage: React.FC = () => {
                   }}
                   className={`p-3 rounded-2xl border-2 flex flex-col items-center min-w-[75px] transition cursor-pointer ${
                     selectedSticker === st.id
-                      ? 'bg-amber-200 border-amber-500 scale-105 shadow-sm'
+                      ? 'bg-amber-200 border-amber-500 scale-105'
                       : 'bg-white border-slate-200 hover:border-amber-300'
                   }`}
                 >
@@ -537,7 +606,7 @@ export const KidsMyWorldPage: React.FC = () => {
                   key={badge.id}
                   className={`p-4 rounded-3xl border-3 flex flex-col items-center text-center transition-all ${
                     isUnlocked
-                      ? 'kids-liquid-amber border-amber-400 shadow-sm'
+                      ? 'kids-liquid-amber border-amber-400'
                       : 'bg-slate-100/80 border-slate-300 opacity-60'
                   }`}
                 >

@@ -85,14 +85,14 @@ export const KidsLayout: React.FC = () => {
 
       {/* Top Header - Hidden in Focus Mode so lesson has full distraction-free screen */}
       {!isLessonMode && (
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b-2 border-amber-200/80 px-4 sm:px-6 lg:px-8 py-2.5 shadow-sm">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b-2 border-amber-200/80 px-4 sm:px-6 lg:px-8 py-2.5">
           <div className="w-full max-w-[1440px] mx-auto flex items-center justify-between gap-3 sm:gap-6">
             {/* Logo & Brand */}
             <div
               onClick={() => navigate('/kids')}
               className="flex items-center gap-2.5 cursor-pointer hover:scale-105 transition-transform shrink-0"
             >
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-2xl shadow-md border-2 border-white">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-2xl border-2 border-white">
                 🐻
               </div>
               <div>
@@ -118,7 +118,7 @@ export const KidsLayout: React.FC = () => {
                     to={item.to}
                     className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 rounded-2xl font-black text-xs lg:text-sm transition-all whitespace-nowrap ${
                       isActive
-                        ? 'bg-amber-400 text-amber-950 shadow-md shadow-amber-400/30 scale-105 border-2 border-amber-500/40'
+                        ? 'bg-amber-400 text-amber-950 scale-105 border-2 border-amber-500/40'
                         : 'text-slate-700 hover:bg-amber-100/70 border-2 border-transparent'
                     }`}
                   >
@@ -133,7 +133,7 @@ export const KidsLayout: React.FC = () => {
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Stars Pill */}
               <div
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-amber-100 border-2 border-amber-400 text-amber-900 font-black text-xs sm:text-sm shadow-xs"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-amber-100 border-2 border-amber-400 text-amber-900 font-black text-xs sm:text-sm"
                 title="Tổng số sao đạt được"
               >
                 <KidsStarIcon size={18} filled className="text-amber-500 fill-amber-500" />
@@ -142,7 +142,7 @@ export const KidsLayout: React.FC = () => {
 
               {/* Streak Pill */}
               <div
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-800 font-black text-xs"
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-800 font-black text-xs"
                 title="Số ngày học liên tiếp"
               >
                 <span>🔥 {progress.streakDays} ngày</span>
@@ -178,7 +178,7 @@ export const KidsLayout: React.FC = () => {
 
       {/* Mobile / Tablet Friendly Bottom Bar Navigation - Hidden in Focus Mode */}
       {!isLessonMode && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t-2 border-amber-200 px-3 py-2 flex items-center justify-around shadow-xl">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t-2 border-amber-200 px-3 py-2 flex items-center justify-around">
           {navItems.map((item) => {
             const isActive =
               item.exact
@@ -190,7 +190,7 @@ export const KidsLayout: React.FC = () => {
                 to={item.to}
                 className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
                   isActive
-                    ? 'bg-amber-400 text-amber-950 font-black scale-105 shadow-sm border border-amber-500/30'
+                    ? 'bg-amber-400 text-amber-950 font-black scale-105 border border-amber-500/30'
                     : 'text-slate-600 font-bold hover:text-slate-900'
                 }`}
               >
