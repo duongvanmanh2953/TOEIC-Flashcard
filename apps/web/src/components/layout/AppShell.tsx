@@ -40,6 +40,7 @@ import {
   Mic,
   Gamepad2,
   LogIn,
+  Baby,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import api from '../../lib/api';
@@ -299,6 +300,18 @@ export const AppShell: React.FC = () => {
         { to: '/coach', label: 'AI Personal Coach', icon: Mic, highlight: true, badge: 'VOICE' },
         { to: '/leaderboard', label: 'Bảng Xếp Hạng', icon: Trophy, badge: 'FAIR-PLAY' },
         { to: '/review', label: t('nav.review', 'Smart Review'), icon: Sparkles, badge: 'SRS' },
+      ],
+    },
+    {
+      title: '🧒 KIDS / HỌC CÙNG BÉ',
+      items: [
+        {
+          to: '/kids',
+          label: 'Học cùng bé (Kids Mode)',
+          icon: Baby,
+          highlight: true,
+          badge: 'NEW 🌟',
+        },
       ],
     },
     {

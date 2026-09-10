@@ -55,6 +55,15 @@ import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
 import { AdminFirebasePage } from './pages/admin/AdminFirebasePage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 
+// Kids English Learning System
+import { KidsLayout } from './kids/components/KidsLayout';
+import { KidsHomePage } from './kids/pages/KidsHomePage';
+import { KidsJourneyPage } from './kids/pages/KidsJourneyPage';
+import { KidsLessonPage } from './kids/pages/KidsLessonPage';
+import { KidsGamesPage } from './kids/pages/KidsGamesPage';
+import { KidsMyWorldPage } from './kids/pages/KidsMyWorldPage';
+import { KidsParentDashboardPage } from './kids/pages/KidsParentDashboardPage';
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
   children,
   requireAuth = false,
@@ -195,6 +204,16 @@ export const App: React.FC = () => {
               <Route path="security" element={<AdminSecurityPage />} />
               <Route path="firebase" element={<AdminFirebasePage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
+            </Route>
+
+            {/* Kids English Learning System (Child-Safe Dedicated Experience) */}
+            <Route path="/kids" element={<KidsLayout />}>
+              <Route index element={<KidsHomePage />} />
+              <Route path="journey" element={<KidsJourneyPage />} />
+              <Route path="lesson/:lessonId" element={<KidsLessonPage />} />
+              <Route path="games" element={<KidsGamesPage />} />
+              <Route path="world" element={<KidsMyWorldPage />} />
+              <Route path="parent" element={<KidsParentDashboardPage />} />
             </Route>
 
             {/* Catch-all redirect */}

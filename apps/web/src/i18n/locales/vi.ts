@@ -260,5 +260,30 @@ export const vi = {
     dbConnection: 'Kết nối Cơ sở dữ liệu PostgreSQL',
     activeSockets: 'Kết nối WebSocket Thời gian thực',
   },
+  kids: {
+    nav: {
+      home: 'Trang chủ Bé',
+      journey: 'Bản đồ Khám phá',
+      games: 'Trò chơi vui nhộn',
+      myWorld: 'Đảo Thần Kỳ',
+      parent: 'Góc Phụ Huynh',
+    },
+    home: {
+      welcome: 'Chào Nhà Thám Hiểm Nhí!',
+      streak: 'Ngày liên tiếp',
+      continueBtn: 'BẮT ĐẦU BÀI HỌC',
+      dailyMissions: 'Nhiệm Vụ Hôm Nay',
+      worlds: 'Các Vùng Đất Khám Phá',
+      viewAll: 'Xem Bản Đồ',
+    },
+    parentGate: {
+      title: 'Khu vực dành cho Phụ Huynh',
+      subtitle: 'Vui lòng giải phép tính bên dưới để tiếp tục:',
+      placeholder: 'Nhập kết quả...',
+      unlockBtn: 'Mở khóa',
+      cancelBtn: 'Hủy',
+      error: 'Kết quả chưa đúng, vui lòng thử lại!',
+    },
+  },
 };
 

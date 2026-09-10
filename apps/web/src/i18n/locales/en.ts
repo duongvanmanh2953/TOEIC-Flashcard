@@ -260,5 +260,30 @@ export const en = {
     dbConnection: 'PostgreSQL Database Connections',
     activeSockets: 'Active WebSocket Sockets',
   },
+  kids: {
+    nav: {
+      home: 'Kids Home',
+      journey: 'Adventure Map',
+      games: 'Fun Games',
+      myWorld: 'Wonder Island',
+      parent: 'Parents Corner',
+    },
+    home: {
+      welcome: 'Hi Little Explorer!',
+      streak: 'Days Streak',
+      continueBtn: 'START LESSON',
+      dailyMissions: "Today's Quests",
+      worlds: 'Adventure Worlds',
+      viewAll: 'View Map',
+    },
+    parentGate: {
+      title: 'Parent Area Verification',
+      subtitle: 'Please solve the math puzzle below to proceed:',
+      placeholder: 'Your answer...',
+      unlockBtn: 'Unlock',
+      cancelBtn: 'Cancel',
+      error: 'Incorrect answer, please try again!',
+    },
+  },
 };
 
