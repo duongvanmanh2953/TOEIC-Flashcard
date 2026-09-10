@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from '../../i18n';
 import { WORLDS_DATA, KidsLesson, KidsWorld } from '../curriculum/kidsCurriculum';
 import { KidsActivityRenderer } from '../components/KidsActivityRenderer';
 import { KidsRewardModal } from '../components/KidsRewardModal';
+import { KidsParentPinModal } from '../components/KidsParentPinModal';
 import { KidsIcon } from '../assets/icons/KidsIcons';
 import { completeLesson, getNextLessonToLearn } from '../curriculum/curriculumProgress';
 import { soundManager } from '../services/sound/KidsSoundManager';
-import { speechManager } from '../services/speech/KidsSpeechManager';
+import { celebrationManager } from '../services/celebration/CelebrationManager';
 
 export const KidsLessonPage: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   // Find target lesson and its parent world
   let targetLesson: KidsLesson | undefined;
@@ -37,6 +36,8 @@ export const KidsLessonPage: React.FC = () => {
   const [earnedStars, setEarnedStars] = useState(3);
   const [earnedXp, setEarnedXp] = useState(50);
   const [nextLesson, setNextLesson] = useState<KidsLesson | null>(null);
+  const [parentExitModalOpen, setParentExitModalOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // If lesson doesn't exist, redirect
   useEffect(() => {
@@ -51,7 +52,6 @@ export const KidsLessonPage: React.FC = () => {
 
   const activities = targetLesson.activities;
   const currentActivity = activities[currentStep];
-  const progressPercent = Math.round(((currentStep) / activities.length) * 100);
 
   const handleActivityComplete = (isCorrect: boolean) => {
     let newCorrect = correctCount;
@@ -59,9 +59,9 @@ export const KidsLessonPage: React.FC = () => {
       newCorrect += 1;
       setCorrectCount(newCorrect);
     } else {
-      // Record weak word if activity has target word
-      if (currentActivity.data.word && !weakWords.includes(currentActivity.data.word)) {
-        setWeakWords(prev => [...prev, currentActivity.data.word]);
+      const targetWord = currentActivity?.targetWord;
+      if (targetWord && !weakWords.includes(targetWord)) {
+        setWeakWords(prev => [...prev, targetWord]);
       }
     }
 
@@ -69,7 +69,6 @@ export const KidsLessonPage: React.FC = () => {
     if (currentStep + 1 < activities.length) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Finish lesson!
       finishLesson(newCorrect);
     }
   };
@@ -94,8 +93,7 @@ export const KidsLessonPage: React.FC = () => {
     }
 
     setIsCompleted(true);
-    soundManager.playFanfare();
-    speechManager.speak("Awesome job! You finished the adventure!");
+    celebrationManager.celebrate('lessonComplete');
   };
 
   const handleNextLesson = () => {
@@ -116,27 +114,41 @@ export const KidsLessonPage: React.FC = () => {
     setIsCompleted(false);
   };
 
+  const handleToggleFullscreen = () => {
+    soundManager.playPop();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(() => {});
+      setIsFullscreen(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fadeIn pb-12">
-      {/* Top Lesson Navigation & Caterpillar Progress Bar */}
-      <div className="bg-white rounded-3xl p-4 md:p-5 border-2 border-slate-100 shadow-sm flex items-center justify-between gap-4">
-        {/* Back / Exit button */}
+      {/* Top Focus Mode Header with Caterpillar Progress & Parent-Protected Exit */}
+      <div className="bg-white rounded-3xl p-3.5 sm:p-5 border-2 border-amber-300 shadow-md flex items-center justify-between gap-3">
+        {/* Protected Back / Exit button (Requires Parent confirmation) */}
         <button
           onClick={() => {
             soundManager.playPop();
-            navigate('/kids/journey');
+            setParentExitModalOpen(true);
           }}
-          className="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
-          title="Exit to Map"
+          className="px-3 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer border border-slate-300 text-xs font-black shadow-xs shrink-0"
+          title="Thoát bài học (Bố Mẹ mở khóa)"
         >
-          <KidsIcon name="home" size={20} />
+          <span>🔒</span>
+          <span className="hidden sm:inline">Thoát</span>
         </button>
 
         {/* Caterpillar Steps Indicator */}
         <div className="flex-1 max-w-md">
-          <div className="flex items-center justify-between text-xs font-black text-slate-600 mb-1.5 px-1">
-            <span>{targetLesson.title}</span>
-            <span>{currentStep + 1} / {activities.length}</span>
+          <div className="flex items-center justify-between text-xs font-black text-slate-800 mb-1.5 px-1">
+            <span className="truncate mr-2">🎯 {targetLesson.title}</span>
+            <span className="text-amber-700 shrink-0">
+              Trạm {currentStep + 1} / {activities.length}
+            </span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -146,11 +158,11 @@ export const KidsLessonPage: React.FC = () => {
               return (
                 <div
                   key={act.id}
-                  className={`h-3 rounded-full flex-1 transition-all duration-300 ${
+                  className={`h-3.5 rounded-full flex-1 transition-all duration-300 ${
                     isDone
-                      ? 'bg-emerald-400'
+                      ? 'bg-emerald-500 shadow-xs'
                       : isCurrent
-                      ? 'bg-amber-400 scale-y-125'
+                      ? 'bg-amber-400 scale-y-125 ring-2 ring-amber-300 shadow-sm animate-pulse'
                       : 'bg-slate-200'
                   }`}
                 />
@@ -159,9 +171,18 @@ export const KidsLessonPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Lesson Mascot Tag */}
-        <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-xl">
-          {targetLesson.emoji || '⭐'}
+        {/* Fullscreen & Lesson Emoji Badge */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleToggleFullscreen}
+            className="w-10 h-10 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-300 flex items-center justify-center text-slate-700 transition cursor-pointer text-sm font-black shadow-xs"
+            title="Toàn màn hình tập trung"
+          >
+            {isFullscreen ? '✕' : '⛶'}
+          </button>
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-xl shadow-xs">
+            {targetLesson.emoji || '⭐'}
+          </div>
         </div>
       </div>
 
@@ -172,6 +193,16 @@ export const KidsLessonPage: React.FC = () => {
           onComplete={handleActivityComplete}
         />
       )}
+
+      {/* Parent Exit Verification Gate */}
+      <KidsParentPinModal
+        isOpen={parentExitModalOpen}
+        onClose={() => setParentExitModalOpen(false)}
+        onVerified={() => {
+          setParentExitModalOpen(false);
+          navigate('/kids/journey');
+        }}
+      />
 
       {/* Completion Modal */}
       <KidsRewardModal

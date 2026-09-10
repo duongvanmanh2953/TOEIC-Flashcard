@@ -16,10 +16,11 @@ export type MascotMood =
 interface KidsMascotProps {
   mood?: MascotMood;
   speechText?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | number;
   interactive?: boolean;
   className?: string;
   onMascotClick?: () => void;
+  onClick?: () => void;
 }
 
 export const KidsMascot: React.FC<KidsMascotProps> = ({
@@ -29,13 +30,18 @@ export const KidsMascot: React.FC<KidsMascotProps> = ({
   interactive = true,
   className = '',
   onMascotClick,
+  onClick,
 }) => {
-  const sizeMap = {
+  const sizeMap: Record<string, { w: number; h: number; box: string }> = {
     sm: { w: 90, h: 90, box: 'w-24 h-24' },
     md: { w: 140, h: 140, box: 'w-36 h-36' },
     lg: { w: 190, h: 190, box: 'w-48 h-48' },
     xl: { w: 240, h: 240, box: 'w-60 h-60' },
   };
+
+  const resolvedSize = typeof size === 'number'
+    ? { w: size, h: size, box: '' }
+    : (typeof size === 'string' && sizeMap[size]) ? sizeMap[size] : sizeMap.md;
 
   const handleMascotTap = () => {
     kidsSound.play('pop');
@@ -44,6 +50,9 @@ export const KidsMascot: React.FC<KidsMascotProps> = ({
     }
     if (onMascotClick) {
       onMascotClick();
+    }
+    if (onClick) {
+      onClick();
     }
   };
 
@@ -80,13 +89,14 @@ export const KidsMascot: React.FC<KidsMascotProps> = ({
       {/* Bobby the Bear SVG Graphic */}
       <div
         onClick={handleMascotTap}
-        className={`${sizeMap[size].box} flex items-center justify-center cursor-pointer ${getAnimationClass()}`}
+        style={typeof size === 'number' ? { width: size, height: size } : undefined}
+        className={`${resolvedSize.box} flex items-center justify-center cursor-pointer ${getAnimationClass()}`}
         title="Bobby the Bear — Bấm để nghe Bobby nói chuyện!"
       >
         <svg
           viewBox="0 0 160 160"
-          width={sizeMap[size].w}
-          height={sizeMap[size].h}
+          width={resolvedSize.w}
+          height={resolvedSize.h}
           className="drop-shadow-lg filter"
         >
           <defs>

@@ -25,11 +25,11 @@ export const KidsParentDashboardPage: React.FC = () => {
     });
   });
 
-  const completedLessonsCount = Object.keys(progress.lessonScores).length;
+  const completedLessonsCount = Object.keys(progress.lessonScores || {}).length;
   const progressPercent = Math.round((completedLessonsCount / totalCurriculumLessons) * 100);
 
   // Compute average accuracy across completed lessons
-  const scoresArray = Object.values(progress.lessonScores);
+  const scoresArray = Object.values(progress.lessonScores || {});
   const averageAccuracy = scoresArray.length > 0
     ? Math.round(scoresArray.reduce((acc, curr) => acc + curr.accuracy, 0) / scoresArray.length)
     : 100;
@@ -50,12 +50,12 @@ export const KidsParentDashboardPage: React.FC = () => {
             <KidsIcon name="shield" size={32} />
           </div>
           <div>
-            <div className="inline-flex items-center gap-1 text-xs font-black text-purple-600 uppercase tracking-wider mb-0.5">
-              <span>Parental Control Center</span>
+            <div className="inline-flex items-center gap-1 text-xs font-black text-purple-700 uppercase tracking-wider mb-0.5">
+              <span>Trung Tâm Phụ Huynh</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-800">Learning Analytics</h1>
-            <p className="text-xs md:text-sm text-slate-600 font-medium">
-              Monitor your child's English pronunciation, vocabulary retention, and study streak.
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900">Báo Cáo Tiến Độ Của Bé</h1>
+            <p className="text-xs md:text-sm text-slate-600 font-bold">
+              Theo dõi phát âm tiếng Anh, khả năng ghi nhớ từ vựng và chuỗi ngày chăm chỉ của bé.
             </p>
           </div>
         </div>
@@ -63,79 +63,79 @@ export const KidsParentDashboardPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate('/kids')}
-            className="px-4 py-2.5 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-sm transition-all cursor-pointer"
           >
-            ← Back to Kids
+            ← Về Góc Bé Học
           </button>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs transition-all cursor-pointer"
           >
-            Exit to Adult App
+            Trang Người Lớn
           </button>
         </div>
       </div>
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-100 shadow-sm">
-          <div className="text-xs font-bold text-slate-600 uppercase mb-1">Stars Earned</div>
+        <div className="bg-white rounded-3xl p-5 border-2 border-amber-200/80 shadow-sm">
+          <div className="text-xs font-black text-slate-600 uppercase mb-1">Số Sao Tích Lũy</div>
           <div className="text-2xl md:text-3xl font-black text-amber-500 flex items-center gap-1.5">
             <span>⭐</span>
             <span>{progress.totalStars}</span>
           </div>
-          <div className="text-[11px] text-slate-600 mt-1">From lessons & mini-games</div>
+          <div className="text-[11px] text-slate-600 font-bold mt-1">Từ bài học & mini-game</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-100 shadow-sm">
-          <div className="text-xs font-bold text-slate-600 uppercase mb-1">Lessons Finished</div>
+        <div className="bg-white rounded-3xl p-5 border-2 border-emerald-200/80 shadow-sm">
+          <div className="text-xs font-black text-slate-600 uppercase mb-1">Bài Đã Hoàn Thành</div>
           <div className="text-2xl md:text-3xl font-black text-emerald-600">
-            {completedLessonsCount} <span className="text-sm font-bold text-slate-600">/ {totalCurriculumLessons}</span>
+            {completedLessonsCount} <span className="text-sm font-bold text-slate-500">/ {totalCurriculumLessons}</span>
           </div>
-          <div className="text-[11px] text-slate-600 mt-1">{progressPercent}% of full roadmap</div>
+          <div className="text-[11px] text-slate-600 font-bold mt-1">{progressPercent}% lộ trình toàn bộ</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-100 shadow-sm">
-          <div className="text-xs font-bold text-slate-600 uppercase mb-1">Pronunciation Avg</div>
+        <div className="bg-white rounded-3xl p-5 border-2 border-sky-200/80 shadow-sm">
+          <div className="text-xs font-black text-slate-600 uppercase mb-1">Độ Chuẩn Phát Âm</div>
           <div className="text-2xl md:text-3xl font-black text-sky-600">
             {averageAccuracy}%
           </div>
-          <div className="text-[11px] text-slate-600 mt-1">Speaking & Listening accuracy</div>
+          <div className="text-[11px] text-slate-600 font-bold mt-1">Độ chính xác luyện nói & nghe</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-slate-100 shadow-sm">
-          <div className="text-xs font-bold text-slate-600 uppercase mb-1">Daily Habit</div>
-          <div className="text-2xl md:text-3xl font-black text-orange-500 flex items-center gap-1">
+        <div className="bg-white rounded-3xl p-5 border-2 border-rose-200/80 shadow-sm">
+          <div className="text-xs font-black text-slate-600 uppercase mb-1">Thói Quen Mỗi Ngày</div>
+          <div className="text-2xl md:text-3xl font-black text-rose-500 flex items-center gap-1">
             <span>🔥</span>
             <span>{progress.streakDays}</span>
-            <span className="text-sm font-bold text-slate-600">days</span>
+            <span className="text-sm font-bold text-slate-600">ngày</span>
           </div>
-          <div className="text-[11px] text-slate-600 mt-1">Consecutive learning streak</div>
+          <div className="text-[11px] text-slate-600 font-bold mt-1">Chuỗi ngày học liên tục</div>
         </div>
       </div>
 
       {/* Weak Words & Vocabulary Needs Practice */}
-      <div className="bg-white rounded-3xl p-6 md:p-7 border-2 border-slate-100 shadow-sm space-y-4">
+      <div className="bg-white rounded-3xl p-6 md:p-7 border-2 border-amber-200/80 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
               <span>🎯</span>
-              <span>Words to Practice Together</span>
+              <span>Từ Vựng Cần Bố Mẹ Ôn Cùng Bé</span>
             </h2>
-            <p className="text-xs text-slate-600">Words where your child needed more than 1 attempt.</p>
+            <p className="text-xs text-slate-600 font-bold">Các từ bé cần nghe và luyện phát âm thêm.</p>
           </div>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-            {progress.weakWords.length} words
+          <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+            {(progress.weakWords || []).length} từ vựng
           </span>
         </div>
 
-        {progress.weakWords.length === 0 ? (
-          <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-800 text-center text-sm font-bold">
-            🌟 Incredible! Your child has mastered all attempted vocabulary with high accuracy!
+        {(!progress.weakWords || progress.weakWords.length === 0) ? (
+          <div className="p-6 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-900 text-center text-sm font-black">
+            🌟 Tuyệt vời! Bé đã nắm vững tất cả các từ vựng đã học với độ chính xác rất cao!
           </div>
         ) : (
           <div className="flex flex-wrap gap-2.5">
-            {progress.weakWords.map((word, idx) => (
+            {(progress.weakWords || []).map((word, idx) => (
               <button
                 key={idx}
                 onClick={() => speechManager.speak(word)}

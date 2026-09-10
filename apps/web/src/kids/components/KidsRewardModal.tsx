@@ -6,27 +6,40 @@ import { kidsSound } from '../services/sound/KidsSoundManager';
 
 interface KidsRewardModalProps {
   isOpen: boolean;
-  starsEarned: number;
-  xpEarned: number;
-  scorePercent: number;
+  stars?: number;
+  starsEarned?: number;
+  xpEarned?: number;
+  scorePercent?: number;
+  nextLessonTitle?: string;
   unlockedNextLessonTitle?: string;
   unlockedItemName?: string;
   unlockedItemEmoji?: string;
-  onContinue: () => void;
-  onGoHome: () => void;
+  onNext?: () => void;
+  onContinue?: () => void;
+  onReplay?: () => void;
+  onClose?: () => void;
+  onGoHome?: () => void;
 }
 
 export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
   isOpen,
+  stars,
   starsEarned,
-  xpEarned,
-  scorePercent,
+  xpEarned = 50,
+  scorePercent = 100,
+  nextLessonTitle,
   unlockedNextLessonTitle,
   unlockedItemName,
   unlockedItemEmoji = '🎁',
+  onNext,
   onContinue,
+  onReplay,
+  onClose,
   onGoHome,
 }) => {
+  const finalStars = stars ?? starsEarned ?? 3;
+  const finalNextLessonTitle = nextLessonTitle ?? unlockedNextLessonTitle;
+
   useEffect(() => {
     if (isOpen) {
       kidsSound.play('celebration');
@@ -35,16 +48,29 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handlePrimaryAction = () => {
+    kidsSound.play('click');
+    if (onNext) onNext();
+    else if (onContinue) onContinue();
+    else if (onClose) onClose();
+  };
+
+  const handleSecondaryAction = () => {
+    kidsSound.play('pop');
+    if (onClose) onClose();
+    else if (onGoHome) onGoHome();
+  };
+
   return (
     <ModalPortal isOpen={isOpen} onClose={() => {}}>
       <div
-        className="m-auto relative w-full max-w-md rounded-3xl bg-gradient-to-b from-amber-100 via-white to-amber-50 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950 border-4 border-amber-400 p-6 sm:p-8 shadow-2xl space-y-4 animate-scale-up text-center select-none overflow-hidden"
+        className="m-auto relative w-full max-w-md rounded-3xl bg-gradient-to-b from-amber-50 via-white to-amber-100 border-4 border-amber-400 p-6 sm:p-8 shadow-2xl space-y-4 animate-scale-up text-center select-none overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Confetti / Sparkles Header */}
-        <div className="flex items-center justify-center gap-2 text-amber-500 font-black text-sm uppercase tracking-wider animate-pulse">
+        <div className="flex items-center justify-center gap-2 text-amber-600 font-black text-sm uppercase tracking-wider animate-pulse">
           <KidsSparklesIcon size={20} />
-          <span>Lesson Complete!</span>
+          <span>Hoàn Thành Bài Học Xuất Sắc!</span>
           <KidsSparklesIcon size={20} />
         </div>
 
@@ -53,26 +79,26 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
           <KidsMascot
             mood="celebrate"
             size="md"
-            speechText="Yay! You did an amazing job today!"
+            speechText="Yeahhh! Bé hôm nay làm quá xuất sắc luôn!"
           />
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl sm:text-3xl font-black text-amber-900 dark:text-amber-100 tracking-tight">
-          🎉 SUPER STAR!
+        <h2 className="text-2xl sm:text-3xl font-black text-amber-950 tracking-tight">
+          🎉 BÉ THẬT XUẤT SẮC!
         </h2>
 
         {/* Stars Display (1 to 3 animated stars) */}
         <div className="flex items-center justify-center gap-3 py-2">
           {[1, 2, 3].map((starIndex) => {
-            const hasStar = starIndex <= starsEarned;
+            const hasStar = starIndex <= finalStars;
             return (
               <div
                 key={starIndex}
                 className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
                   hasStar
                     ? 'bg-amber-400 border-amber-500 text-white shadow-lg shadow-amber-400/40 scale-110 animate-bounce'
-                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600'
+                    : 'bg-slate-100 border-slate-200 text-slate-300'
                 }`}
                 style={{ animationDelay: `${starIndex * 150}ms` }}
               >
@@ -83,56 +109,62 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
         </div>
 
         {/* XP & Score Card */}
-        <div className="grid grid-cols-2 gap-3 py-2 px-4 rounded-2xl bg-amber-500/10 border-2 border-amber-400/30">
+        <div className="grid grid-cols-2 gap-3 py-2 px-4 rounded-2xl bg-amber-100 border-2 border-amber-300">
           <div className="space-y-0.5">
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Score</p>
-            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">{scorePercent}%</p>
+            <p className="text-[11px] font-bold text-slate-600">Độ Chính Xác</p>
+            <p className="text-xl font-black text-emerald-700">{scorePercent}%</p>
           </div>
           <div className="space-y-0.5">
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Adventure XP</p>
-            <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">+{xpEarned} XP</p>
+            <p className="text-[11px] font-bold text-slate-600">Điểm Kinh Nghiệm</p>
+            <p className="text-xl font-black text-indigo-700">+{xpEarned} XP</p>
           </div>
         </div>
 
         {/* Unlocked Reward Item / Next Lesson Callout */}
         {unlockedItemName ? (
-          <div className="p-3 rounded-2xl bg-gradient-to-r from-purple-500/15 to-pink-500/15 border-2 border-purple-400/40 flex items-center gap-3 text-left">
+          <div className="p-3.5 rounded-2xl bg-purple-50 border-2 border-purple-300 flex items-center gap-3 text-left">
             <div className="w-12 h-12 rounded-xl bg-purple-500 text-white text-2xl flex items-center justify-center shadow-md shrink-0">
               {unlockedItemEmoji}
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300">
-                New Item Unlocked!
+              <p className="text-[10px] font-black uppercase tracking-wider text-purple-700">
+                🎁 Mở Khóa Quà Tặng Mới!
               </p>
-              <p className="text-xs font-bold text-slate-900 dark:text-white">
-                {unlockedItemName} is ready in My World!
+              <p className="text-xs font-black text-slate-900">
+                {unlockedItemName} đã có trên Đảo Của Bé!
               </p>
             </div>
           </div>
-        ) : unlockedNextLessonTitle ? (
-          <div className="p-3 rounded-2xl bg-emerald-500/15 border-2 border-emerald-400/40 text-xs font-bold text-emerald-800 dark:text-emerald-200">
-            🔓 Next Lesson Unlocked: <span className="font-black">{unlockedNextLessonTitle}</span>
+        ) : finalNextLessonTitle ? (
+          <div className="p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-xs font-black text-emerald-900">
+            🔓 Đã Mở Khóa Trạm Tiếp Theo: <span className="text-amber-700">{finalNextLessonTitle}</span>
           </div>
         ) : null}
 
         {/* Actions */}
         <div className="space-y-2 pt-2">
           <button
-            onClick={() => {
-              kidsSound.play('click');
-              onContinue();
-            }}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-500/30 hover:scale-102 active:scale-98 transition flex items-center justify-center gap-2"
+            onClick={handlePrimaryAction}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base shadow-lg shadow-emerald-500/30 active:scale-95 transition cursor-pointer border-b-4 border-emerald-700"
           >
-            <span>TIẾP TỤC HỌC TIẾP ▶</span>
+            TIẾP TỤC CHINH PHỤC ▶
           </button>
 
+          {onReplay && (
+            <button
+              onClick={() => {
+                kidsSound.play('pop');
+                onReplay();
+              }}
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition cursor-pointer"
+            >
+              Chơi lại bài này 🔄
+            </button>
+          )}
+
           <button
-            onClick={() => {
-              kidsSound.play('pop');
-              onGoHome();
-            }}
-            className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition"
+            onClick={handleSecondaryAction}
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer"
           >
             Quay lại Bản đồ phiêu lưu
           </button>

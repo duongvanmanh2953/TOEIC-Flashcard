@@ -213,6 +213,7 @@ export const App: React.FC = () => {
               <Route path="lesson/:lessonId" element={<KidsLessonPage />} />
               <Route path="games" element={<KidsGamesPage />} />
               <Route path="world" element={<KidsMyWorldPage />} />
+              <Route path="my-world" element={<KidsMyWorldPage />} />
               <Route path="parent" element={<KidsParentDashboardPage />} />
             </Route>
 

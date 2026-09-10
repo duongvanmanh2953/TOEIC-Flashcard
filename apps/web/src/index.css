@@ -932,4 +932,153 @@ a.card-brand-effect {
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
+
+/* ==========================================================================
+   KIDS MODE LIQUID GLASS & PLAYFUL GAME ANIMATIONS
+   - Cream / very light pastel backgrounds
+   - Translucent liquid glass cards with clear colored borders matching text
+   - Dark navy / slate text for pristine contrast
+   ========================================================================== */
+.kids-liquid-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 3px solid rgba(226, 232, 240, 0.9);
+}
+
+.kids-liquid-amber {
+  background: rgba(254, 252, 232, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 3px solid #f59e0b;
+}
+
+.kids-liquid-emerald {
+  background: rgba(236, 253, 245, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 3px solid #10b981;
+}
+
+.kids-liquid-sky {
+  background: rgba(240, 249, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 3px solid #0ea5e9;
+}
+
+.kids-liquid-purple {
+  background: rgba(250, 245, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 3px solid #a855f7;
+}
+
+.kids-liquid-rose {
+  background: rgba(255, 241, 242, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 3px solid #f43f5e;
+}
+
+/* Balloon Burst / Particle Animation */
+@keyframes balloonPop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1.35);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-pop-burst {
+  animation: balloonPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Audio Mic Pulse Wave Rings */
+@keyframes micPulseWave {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-mic-pulse {
+  animation: micPulseWave 1.6s infinite ease-in-out;
+}
+
+/* Rocket Launch Animation */
+@keyframes rocketBlastOff {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translateY(-15px) scale(1.08);
+  }
+  50% {
+    transform: translateY(-40px) scale(1.15);
+  }
+  100% {
+    transform: translateY(-280px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.animate-rocket-launch {
+  animation: rocketBlastOff 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Gentle Floating Animation */
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-gentle-float {
+  animation: gentleFloat 3.5s ease-in-out infinite;
+}
+
+/* Lock Shake & Sparkle */
+@keyframes lockShake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-12deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(8deg); }
+}
+
+.animate-lock-shake {
+  animation: lockShake 0.6s ease-in-out;
+}
+
+/* Reward Star Sparkle */
+@keyframes starSparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  50% { transform: scale(1.2) rotate(15deg); filter: brightness(1.25); }
+}
+
+.animate-star-sparkle {
+  animation: starSparkle 2s ease-in-out infinite;
+}
+
+
 

@@ -96,6 +96,16 @@ class CurriculumProgressEngine {
     return this.state;
   }
 
+  public subscribe(listener: (state: KidProgressState) => void): () => void {
+    this.listeners.add(listener);
+    try {
+      listener(this.state);
+    } catch (_) {}
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
   public setState(newState: KidProgressState) {
     this.state = newState;
     this.save();

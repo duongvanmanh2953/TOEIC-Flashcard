@@ -81,6 +81,82 @@ class KidsSpeechManager {
     return enVoices[0];
   }
 
+  public getVietnameseVoice(): SpeechSynthesisVoice | null {
+    const viVoice = this.voices.find(
+      (v) => v.lang.startsWith('vi') || v.lang === 'vi-VN' || v.name.toLowerCase().includes('vietnam')
+    );
+    return viVoice || null;
+  }
+
+  /**
+   * Speak Vietnamese UI greetings and praise
+   */
+  public speakVi(
+    text: string,
+    options: {
+      rate?: number;
+      pitch?: number;
+      onStart?: () => void;
+      onEnd?: () => void;
+      onError?: (err: any) => void;
+    } = {}
+  ) {
+    if (!this.isSupported() || !text.trim()) {
+      options.onEnd?.();
+      return;
+    }
+
+    this.stop();
+
+    try {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text.trim());
+      utterance.lang = 'vi-VN';
+      utterance.rate = options.rate ?? 0.92;
+      utterance.pitch = options.pitch ?? 1.1;
+
+      const viVoice = this.getVietnameseVoice();
+      if (viVoice) {
+        utterance.voice = viVoice;
+      }
+
+      this.activeUtterance = utterance;
+
+      utterance.onstart = () => {
+        this.isCurrentlySpeaking = true;
+        this.notifyListeners(true);
+        options.onStart?.();
+      };
+
+      utterance.onend = () => {
+        this.isCurrentlySpeaking = false;
+        this.activeUtterance = null;
+        this.notifyListeners(false);
+        options.onEnd?.();
+      };
+
+      utterance.onerror = (e) => {
+        this.isCurrentlySpeaking = false;
+        this.activeUtterance = null;
+        this.notifyListeners(false);
+        if (e.error !== 'canceled' && e.error !== 'interrupted') {
+          options.onError?.(e);
+        }
+        options.onEnd?.();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      this.isCurrentlySpeaking = false;
+      this.notifyListeners(false);
+      options.onError?.(err);
+      options.onEnd?.();
+    }
+  }
+
   /**
    * Speak English text with smooth kids-friendly playback rate
    */
@@ -150,6 +226,129 @@ class KidsSpeechManager {
       options.onError?.(err);
       options.onEnd?.();
     }
+  }
+
+  /**
+   * Helper to look up common Vietnamese translation for vocabulary
+   */
+  public getViMeaning(enWord: string): string {
+    const key = (enWord || '').toLowerCase().trim();
+    const map: Record<string, string> = {
+      hello: 'Xin chào',
+      goodbye: 'Tạm biệt',
+      lion: 'Con sư tử',
+      elephant: 'Con voi',
+      monkey: 'Con khỉ',
+      apple: 'Quả táo',
+      banana: 'Quả chuối',
+      orange: 'Quả cam',
+      cat: 'Con mèo',
+      dog: 'Con chó',
+      fish: 'Con cá',
+      bird: 'Con chim',
+      rabbit: 'Con thỏ',
+      tiger: 'Con hổ',
+      bear: 'Con gấu',
+      red: 'Màu đỏ',
+      blue: 'Màu xanh dương',
+      green: 'Màu xanh lá',
+      yellow: 'Màu vàng',
+      pink: 'Màu hồng',
+      purple: 'Màu tím',
+      one: 'Số một',
+      two: 'Số hai',
+      three: 'Số ba',
+      four: 'Số bốn',
+      five: 'Số năm',
+      sun: 'Mặt trời',
+      rain: 'Cơn mưa',
+      water: 'Nước uống',
+      milk: 'Sữa tươi',
+      cake: 'Bánh ngọt',
+      bread: 'Bánh mì',
+      house: 'Ngôi nhà',
+      star: 'Ngôi sao',
+      tree: 'Cái cây',
+      car: 'Xe ô tô',
+      train: 'Đoàn tàu',
+    };
+    return map[key] || '';
+  }
+
+  /**
+   * Speak bilingual pronunciation:
+   * First speaks English (e.g. "Lion"), pauses, then speaks Vietnamese meaning (e.g. "Con sư tử")
+   * Essential for young children who cannot read text yet!
+   */
+  public speakBilingual(
+    enText: string,
+    viText?: string,
+    options: { onEnd?: () => void } = {}
+  ) {
+    const meaning = viText || this.getViMeaning(enText);
+
+    // Speak English first
+    this.speak(enText, {
+      onEnd: () => {
+        if (meaning) {
+          // Small natural pause between English and Vietnamese
+          setTimeout(() => {
+            this.speakVi(meaning, {
+              onEnd: () => options.onEnd?.(),
+            });
+          }, 350);
+        } else {
+          options.onEnd?.();
+        }
+      },
+    });
+  }
+
+  /**
+   * Explains the word in Vietnamese, pronounces in English, and prompts the child to repeat:
+   * "Đây là [Con sư tử]! [Lion]! Bé hãy đọc lại nhé: [Lion]!"
+   * Won't cut off speech prematurely.
+   */
+  public explainAndPromptRepeat(
+    enWord: string,
+    viMeaning?: string,
+    callbacks: {
+      onStart?: () => void;
+      onReadyForChild?: () => void;
+    } = {}
+  ) {
+    this.stop();
+    callbacks.onStart?.();
+
+    const meaning = viMeaning || this.getViMeaning(enWord);
+    const introText = meaning ? `Đây là ${meaning}!` : `Bé nhìn từ này nhé!`;
+
+    // 1. Vietnamese intro
+    this.speakVi(introText, {
+      onEnd: () => {
+        // 2. English pronunciation
+        setTimeout(() => {
+          this.speak(enWord, {
+            onEnd: () => {
+              // 3. Prompt child to repeat
+              setTimeout(() => {
+                this.speakVi('Bé đọc lại nhé!', {
+                  onEnd: () => {
+                    setTimeout(() => {
+                      this.speak(enWord, {
+                        onEnd: () => {
+                          callbacks.onReadyForChild?.();
+                        },
+                      });
+                    }, 200);
+                  },
+                });
+              }, 300);
+            },
+          });
+        }, 300);
+      },
+    });
   }
 
   public stop() {
