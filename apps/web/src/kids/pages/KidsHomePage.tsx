@@ -61,21 +61,21 @@ export const KidsHomePage: React.FC = () => {
     }
   };
 
-  // 6 Featured Games
+  // 6 Audited Kids V5 Games
   const featuredGames = [
     {
-      id: 'balloon_pop',
-      title: 'Bắn Nổ Bóng Bay',
-      subtitle: 'Bắn nổ bóng từ vựng đúng',
-      route: '/kids/games?game=balloon_pop',
-      styleClass: 'bg-rose-50 border-rose-300 text-rose-950',
+      id: 'animal_rescue',
+      title: 'Giải Cứu Động Vật',
+      subtitle: 'Lần theo dấu chân đưa cún về nhà',
+      route: '/kids/games?game=animal_rescue',
+      styleClass: 'bg-emerald-50 border-emerald-300 text-emerald-950',
     },
     {
-      id: 'rocket_launch',
-      title: 'Phóng Tên Lửa',
-      subtitle: 'Nạp nhiên liệu bay vào vũ trụ',
-      route: '/kids/games?game=rocket_launch',
-      styleClass: 'bg-emerald-50 border-emerald-300 text-emerald-950',
+      id: 'train_builder',
+      title: 'Đoàn Tàu Ghép Câu',
+      subtitle: 'Lắp ráp các toa tàu từ vựng',
+      route: '/kids/games?game=train_builder',
+      styleClass: 'bg-orange-50 border-orange-300 text-orange-950',
     },
     {
       id: 'feed_animal',
@@ -85,25 +85,25 @@ export const KidsHomePage: React.FC = () => {
       styleClass: 'bg-amber-50 border-amber-300 text-amber-950',
     },
     {
-      id: 'find_word',
-      title: 'Tìm Hình Khám Phá',
-      subtitle: 'Nghe phát âm và chọn hình đúng',
-      route: '/kids/games?game=find_word',
-      styleClass: 'bg-sky-50 border-sky-300 text-sky-950',
-    },
-    {
       id: 'match_cards',
       title: 'Lật Thẻ Trí Nhớ 3D',
-      subtitle: 'Tìm các cặp thẻ giống nhau',
+      subtitle: 'Tìm các cặp thẻ tương ứng',
       route: '/kids/games?game=match_cards',
       styleClass: 'bg-purple-50 border-purple-300 text-purple-950',
     },
     {
-      id: 'magic_train',
-      title: 'Đoàn Tàu Kỳ Diệu',
-      subtitle: 'Ghép toa tàu hoàn thành từ',
-      route: '/kids/games?game=magic_train',
-      styleClass: 'bg-orange-50 border-orange-300 text-orange-950',
+      id: 'balloon_pop',
+      title: 'Bắn Nổ Bóng Bay',
+      subtitle: 'Bắn nổ bóng từ vựng đúng',
+      route: '/kids/games?game=balloon_pop',
+      styleClass: 'bg-rose-50 border-rose-300 text-rose-950',
+    },
+    {
+      id: 'treasure_island',
+      title: 'Đảo Giấu Vàng',
+      subtitle: 'Vượt sông khám phá hòm kho báu',
+      route: '/kids/games?game=treasure_island',
+      styleClass: 'bg-yellow-50 border-yellow-300 text-yellow-950',
     },
   ];
 

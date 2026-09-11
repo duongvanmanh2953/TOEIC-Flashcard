@@ -12,6 +12,7 @@ import {
 } from '../assets/icons/KidsIcons';
 import { curriculumProgress, KidProgressState } from '../curriculum/curriculumProgress';
 import { kidsSound } from '../services/sound/KidsSoundManager';
+import { kidsAudioManager } from '../services/audio/KidsAudioManager';
 import { KidsParentPinModal } from './KidsParentPinModal';
 import { KidsHeaderStatCard } from './KidsHeaderStatCard';
 import { Flame, Sparkles, Star, Volume2, VolumeX, ShieldCheck, BookOpen } from 'lucide-react';
@@ -22,7 +23,7 @@ export const KidsLayout: React.FC = () => {
   const [progress, setProgress] = useState<KidProgressState>(() =>
     curriculumProgress.getState()
   );
-  const [soundOn, setSoundOn] = useState(() => kidsSound.isEnabled());
+  const [soundOn, setSoundOn] = useState(() => kidsSound.isEnabled() || kidsAudioManager.isMusicEnabled());
   const [parentModalOpen, setParentModalOpen] = useState(false);
   const [pendingParentRoute, setPendingParentRoute] = useState<string>('/kids/parent');
 
@@ -33,14 +34,20 @@ export const KidsLayout: React.FC = () => {
     }
   }, []);
 
+  // Ensure global world ambient music starts softly on interaction if enabled
+  useEffect(() => {
+    kidsAudioManager.startWorldMusic('world');
+  }, []);
+
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
   const handleToggleSound = () => {
-    const next = kidsSound.toggleSound();
-    setSoundOn(next);
+    const nextSound = kidsSound.toggleSound();
+    const nextMusic = kidsAudioManager.toggleMusic();
+    setSoundOn(nextSound || nextMusic);
   };
 
   const handleOpenParentGate = (targetRoute: string) => {

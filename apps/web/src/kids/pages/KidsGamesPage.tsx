@@ -1,54 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { soundManager } from '../services/sound/KidsSoundManager';
+import { soundManager, kidsSound } from '../services/sound/KidsSoundManager';
+import { kidsAudioManager } from '../services/audio/KidsAudioManager';
 import { voiceService } from '../services/voice/voiceService';
 import { celebrationManager } from '../services/celebration/CelebrationManager';
 import { getKidsProgress, updateKidsProgress } from '../curriculum/curriculumProgress';
 import { KIDS_GAMES_REGISTRY, GameId, GameDefinition } from '../data/games/gamesRegistry';
-import { GAME_THEMES, GameVisualTheme } from '../data/games/gameThemes';
-import { KIDS_QUESTIONS_DATA, KidQuestion } from '../data/questions/questionsData';
-import { validateAndFilterQuestions } from '../data/validation/dataValidator';
-import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../data/vocabulary/vocabularyData';
+import { GAME_THEMES } from '../data/games/gameThemes';
+import { GameCard } from '../components/GameCard';
 import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
+import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../data/vocabulary/vocabularyData';
 import {
   Play,
   RotateCcw,
   Volume2,
-  Mic,
-  Map,
   Lock,
   Unlock,
-  CheckCircle2,
-  XCircle,
   Star,
   Sparkles,
   Heart,
-  X,
   Award,
-  Layers,
-  Search,
-  Rocket,
-  Puzzle,
-  Target,
-  Compass,
   ArrowRight,
-  HelpCircle,
   Flame,
-  Utensils,
-  Headphones,
-  Zap,
+  ArrowLeft,
+  Grid,
 } from 'lucide-react';
 
 export const KidsGamesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialGame = (searchParams.get('game') as GameId) || 'balloon_pop';
+  const initialGameParam = searchParams.get('game') as GameId | null;
 
-  const [activeGameId, setActiveGameId] = useState<GameId>(initialGame);
+  // Active Game State
+  const [activeGameId, setActiveGameId] = useState<GameId | null>(initialGameParam || null);
   const [gameStarted, setGameStarted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // HUD & Multi-Round Progression
+  // HUD & Multi-Round Progression (5 rounds per game session)
   const TOTAL_ROUNDS = 5;
   const [currentRound, setCurrentRound] = useState(1);
   const [roundScore, setRoundScore] = useState(0);
@@ -61,20 +49,26 @@ export const KidsGamesPage: React.FC = () => {
   const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null);
   const [answerResult, setAnswerResult] = useState<'correct' | 'wrong' | null>(null);
 
-  // Victory Dialog
+  // Victory Dialog (Strict Section 28 Standard: MISSION COMPLETE, ⭐⭐⭐, +50 XP, Great job!)
   const [showGameWinModal, setShowGameWinModal] = useState(false);
-  const [winMessage, setWinMessage] = useState({ en: 'Super Champ!', vi: 'Bé làm rất xuất sắc!' });
+  const [winMessage, setWinMessage] = useState({ en: 'Great job!', vi: 'Giỏi lắm!' });
 
-  const validQuestions = validateAndFilterQuestions(KIDS_QUESTIONS_DATA);
-  const activeTheme = GAME_THEMES[activeGameId] || GAME_THEMES.balloon_pop;
   const activeGameDef = KIDS_GAMES_REGISTRY.find((g) => g.id === activeGameId) || KIDS_GAMES_REGISTRY[0];
+  const activeTheme = activeGameId ? GAME_THEMES[activeGameId] : GAME_THEMES.balloon_pop;
+
+  // Handle URL param changes
+  useEffect(() => {
+    if (initialGameParam && KIDS_GAMES_REGISTRY.some((g) => g.id === initialGameParam)) {
+      setActiveGameId(initialGameParam);
+    }
+  }, [initialGameParam]);
 
   const handleSelectGame = (gameId: GameId) => {
-    if (gameId === activeGameId && gameStarted) return;
     soundManager.playPop();
     setIsTransitioning(true);
     setTimeout(() => {
       setActiveGameId(gameId);
+      setSearchParams({ game: gameId });
       setShowGameWinModal(false);
       setRoundCompleted(false);
       setRoundPraise(null);
@@ -84,15 +78,35 @@ export const KidsGamesPage: React.FC = () => {
       setStreak(0);
       setSelectedAnswerId(null);
       setAnswerResult(null);
-      setSearchParams({ game: gameId });
       setGameStarted(false);
       setIsTransitioning(false);
     }, 200);
   };
 
+  const handleBackToCatalog = () => {
+    soundManager.playWhoosh();
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setActiveGameId(null);
+      setGameStarted(false);
+      setShowGameWinModal(false);
+      setSearchParams({});
+      kidsAudioManager.playGameAmbience('world');
+      setIsTransitioning(false);
+    }, 200);
+  };
+
   const handleStartGame = () => {
+    if (!activeGameId) return;
     soundManager.playDing();
     setIsTransitioning(true);
+
+    // Map games to authentic soundscapes
+    if (activeGameId === 'animal_rescue') kidsAudioManager.playGameAmbience('forest');
+    else if (activeGameId === 'treasure_island') kidsAudioManager.playGameAmbience('island');
+    else if (activeGameId === 'feed_animal') kidsAudioManager.playGameAmbience('kitchen');
+    else kidsAudioManager.playGameAmbience('world');
+
     setTimeout(() => {
       setGameStarted(true);
       setCurrentRound(1);
@@ -130,8 +144,8 @@ export const KidsGamesPage: React.FC = () => {
 
     if (currentRound >= TOTAL_ROUNDS) {
       setTimeout(() => {
-        triggerVictory('Challenge Conquered!', 'Xuất sắc! Bé đã hoàn thành trọn vẹn 5 vòng thử thách!');
-      }, 1200);
+        triggerVictory('Mission Complete!', 'Xuất sắc! Bé đã hoàn thành trọn vẹn 5 vòng thử thách!');
+      }, 1300);
     }
   };
 
@@ -156,14 +170,14 @@ export const KidsGamesPage: React.FC = () => {
     setAnswerResult(null);
     const nextR = currentRound + 1;
     setCurrentRound(nextR);
-    initRoundForGame(activeGameId, nextR);
+    if (activeGameId) {
+      initRoundForGame(activeGameId, nextR);
+    }
   };
 
   // ================================================================
-  // 12 DISTINCT GAMEPLAY MECHANICS IMPLEMENTATIONS
+  // 1. BALLOON POP (TIMING & REFLEX PHYSICS)
   // ================================================================
-
-  // 1. BALLOON POP (Click & Timing physics)
   interface BalloonItem {
     id: string;
     word: string;
@@ -210,90 +224,190 @@ export const KidsGamesPage: React.FC = () => {
     if (b.popped || roundCompleted) return;
     if (b.id === balloonTarget.id) {
       soundManager.playPop();
+      kidsSound.play('pop');
       setBalloons((prev) => prev.map((item) => (item.id === b.id ? { ...item, popped: true } : item)));
       voiceService.speakWord(b.word);
-      triggerCorrectAnswer({ en: `Pop! That's ${b.word}!`, vi: `Bùm! Bé bắn đúng ${b.word} rồi!` }, b.id);
+      triggerCorrectAnswer({ en: `Pop! That's ${b.word}!`, vi: `BÙM! Bé bắn nổ bóng ${b.word} cực chuẩn!` }, b.id);
     } else {
       triggerWrongAnswer('Chưa đúng rồi bé ơi! Chọn bóng khác nhé!', b.id);
     }
   };
 
-  // 2. ROCKET LAUNCH (Sequential fuel countdown)
-  const [rocketTarget, setRocketTarget] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[1]);
-  const [rocketChoices, setRocketChoices] = useState<VocabularyItem[]>([]);
-  const [rocketLaunching, setRocketLaunching] = useState(false);
+  // ================================================================
+  // 2. TRAIN SENTENCE BUILDER (CONSTRUCTION: 1 LOCOMOTIVE + N CARRIAGES)
+  // Strict Sections 18-22: Dynamic carriages = sentenceSegments.length!
+  // ================================================================
+  interface TrainSentenceChallenge {
+    id: string;
+    contextEn: string;
+    contextVi: string;
+    destinationIcon: string;
+    destinationName: string;
+    words: string[];
+    fullSentenceEn: string;
+    fullSentenceVi: string;
+  }
 
-  const initRocketRound = () => {
-    setRocketLaunching(false);
-    const target = COMPREHENSIVE_VOCABULARY[Math.floor(Math.random() * COMPREHENSIVE_VOCABULARY.length)];
-    const others = COMPREHENSIVE_VOCABULARY.filter((v) => v.id !== target.id)
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 2);
-    setRocketTarget(target);
-    setRocketChoices([target, ...others].sort(() => 0.5 - Math.random()));
+  const TRAIN_CHALLENGES: TrainSentenceChallenge[] = [
+    {
+      id: 't-1',
+      contextEn: "Let's go to school!",
+      contextVi: 'Chúng mình cùng đi học nào!',
+      destinationIcon: '🏫',
+      destinationName: 'School (Trường Học)',
+      words: ['I', 'go', 'to', 'school'],
+      fullSentenceEn: 'I go to school.',
+      fullSentenceVi: 'Bé đi đến trường học.',
+    },
+    {
+      id: 't-2',
+      contextEn: 'Visiting the fruit garden!',
+      contextVi: 'Ghé thăm vườn cây ăn quả nhé!',
+      destinationIcon: '🍎',
+      destinationName: 'Fruit Garden (Vườn Táo)',
+      words: ['I', 'like', 'sweet', 'apples'],
+      fullSentenceEn: 'I like sweet apples.',
+      fullSentenceVi: 'Bé thích những quả táo ngọt.',
+    },
+    {
+      id: 't-3',
+      contextEn: 'Visiting our playful kitten!',
+      contextVi: 'Thăm bạn mèo con tinh nghịch!',
+      destinationIcon: '🐱',
+      destinationName: 'Pet House (Nhà Thú Cưng)',
+      words: ['The', 'cat', 'is', 'cute'],
+      fullSentenceEn: 'The cat is cute.',
+      fullSentenceVi: 'Chú mèo con thật dễ thương.',
+    },
+    {
+      id: 't-4',
+      contextEn: 'A bright sunny morning!',
+      contextVi: 'Một buổi sáng chan hòa ánh nắng!',
+      destinationIcon: '☀️',
+      destinationName: 'Sunny Park (Công Viên)',
+      words: ['The', 'sun', 'is', 'bright'],
+      fullSentenceEn: 'The sun is bright.',
+      fullSentenceVi: 'Mặt trời tỏa nắng rực rỡ.',
+    },
+    {
+      id: 't-5',
+      contextEn: 'Happy playground adventure!',
+      contextVi: 'Cùng nhau vui chơi thỏa thích!',
+      destinationIcon: '🎈',
+      destinationName: 'Playground (Khu Vui Chơi)',
+      words: ['We', 'play', 'together', 'happily'],
+      fullSentenceEn: 'We play together happily.',
+      fullSentenceVi: 'Chúng mình cùng vui chơi hòa thuận.',
+    },
+  ];
+
+  const [trainChallenge, setTrainChallenge] = useState<TrainSentenceChallenge>(TRAIN_CHALLENGES[0]);
+  const [trainPlacedWords, setTrainPlacedWords] = useState<string[]>([]);
+  const [trainTrayWords, setTrainTrayWords] = useState<string[]>([]);
+  const [trainDeparting, setTrainDeparting] = useState(false);
+  const [trainWobble, setTrainWobble] = useState(false);
+
+  const initTrainRound = (roundNum: number) => {
+    setTrainDeparting(false);
+    setTrainWobble(false);
+    const challengeIndex = (roundNum - 1) % TRAIN_CHALLENGES.length;
+    const challenge = TRAIN_CHALLENGES[challengeIndex];
+    setTrainChallenge(challenge);
+    setTrainPlacedWords([]);
+    // Scramble words for the tray
+    setTrainTrayWords([...challenge.words].sort(() => 0.5 - Math.random()));
 
     setTimeout(() => {
-      voiceService.speakVietnamese(`Nạp nhiên liệu bằng từ ${target.viMeaning} nhé!`, {
-        onEnd: () => setTimeout(() => voiceService.speakWord(target.word), 250),
-      });
-    }, 200);
+      voiceService.speakVietnamese(
+        `Đoàn tàu sắp đi đến ${challenge.destinationName}. Bé hãy gắn các toa từ để ghép câu: "${challenge.fullSentenceVi}" nhé!`
+      );
+    }, 250);
   };
 
-  const handleLaunchRocketChoice = (choice: VocabularyItem) => {
-    if (rocketLaunching || roundCompleted) return;
-    if (choice.id === rocketTarget.id) {
-      soundManager.playWhoosh();
-      setRocketLaunching(true);
-      voiceService.speakEnglish(`Blast off! ${choice.word}!`);
-      setTimeout(() => {
-        triggerCorrectAnswer({ en: 'Rocket Launched!', vi: 'Tên lửa đã phóng thành công!' }, choice.id);
-      }, 1000);
-    } else {
-      triggerWrongAnswer('Nhiên liệu chưa đúng! Bé chọn lại nhé!', choice.id);
+  const handleAttachWordToTrain = (word: string, trayIndex: number) => {
+    if (trainDeparting || roundCompleted) return;
+    soundManager.playPop();
+
+    // Add to next carriage slot
+    const newPlaced = [...trainPlacedWords, word];
+    setTrainPlacedWords(newPlaced);
+
+    // Remove from tray
+    const newTray = [...trainTrayWords];
+    newTray.splice(trayIndex, 1);
+    setTrainTrayWords(newTray);
+
+    // Speak the placed word
+    voiceService.speakWord(word);
+
+    // Check when all dynamic carriages are filled
+    if (newPlaced.length === trainChallenge.words.length) {
+      if (newPlaced.join(' ') === trainChallenge.words.join(' ')) {
+        // Correct Sentence Order!
+        setTrainDeparting(true);
+        soundManager.playTrainWhistle();
+        voiceService.speakBilingual(trainChallenge.fullSentenceEn, trainChallenge.fullSentenceVi);
+        triggerCorrectAnswer({
+          en: `Train Complete! ${trainChallenge.fullSentenceEn}`,
+          vi: `Tu tu xình xịch! Đoàn tàu đã khởi hành đến ${trainChallenge.destinationName}!`,
+        });
+      } else {
+        // Wrong Order: Shake carriages gently, gentle buzz, no crash (Section 21)
+        setTrainWobble(true);
+        soundManager.playIncorrect();
+        voiceService.speakVietnamese('Toa tàu chưa đúng thứ tự rồi! Bé xếp lại nhé!');
+        setTimeout(() => {
+          setTrainWobble(false);
+          setTrainPlacedWords([]);
+          setTrainTrayWords([...trainChallenge.words].sort(() => 0.5 - Math.random()));
+        }, 1100);
+      }
     }
   };
 
-  // 3. FEED THE ANIMAL (Interactive Feeding Mechanism)
-  interface FeedScenario {
+  const handleRemoveWordFromCarriage = (index: number) => {
+    if (trainDeparting || roundCompleted) return;
+    soundManager.playWhoosh();
+    const removedWord = trainPlacedWords[index];
+    const newPlaced = [...trainPlacedWords];
+    newPlaced.splice(index, 1);
+    setTrainPlacedWords(newPlaced);
+    setTrainTrayWords((prev) => [...prev, removedWord]);
+  };
+
+  // ================================================================
+  // 3. FEED THE ANIMAL (SIMULATION & NUTRITION)
+  // ================================================================
+  interface FeedState {
     animal: string;
     animalVi: string;
     food: string;
     foodVi: string;
     wrongFoods: { name: string; nameVi: string }[];
   }
-  const [feedState, setFeedState] = useState<FeedScenario>({
+  const [feedState, setFeedState] = useState<FeedState>({
     animal: 'Cat',
-    animalVi: 'Mèo con',
+    animalVi: 'Chú Mèo',
     food: 'Fish',
-    foodVi: 'Cá tươi',
+    foodVi: 'Cá biển',
     wrongFoods: [
-      { name: 'Grass', nameVi: 'Cỏ' },
-      { name: 'Carrot', nameVi: 'Cà rốt' },
+      { name: 'Banana', nameVi: 'Quả chuối' },
+      { name: 'Carrot', nameVi: 'Củ cà rốt' },
     ],
   });
   const [animalFed, setAnimalFed] = useState(false);
 
   const initFeedRound = () => {
     setAnimalFed(false);
-    const scenarios: FeedScenario[] = [
+    const feedScenarios: FeedState[] = [
       {
         animal: 'Cat',
         animalVi: 'Mèo con',
         food: 'Fish',
         foodVi: 'Cá tươi',
         wrongFoods: [
-          { name: 'Grass', nameVi: 'Cỏ' },
-          { name: 'Banana', nameVi: 'Chuối' },
-        ],
-      },
-      {
-        animal: 'Monkey',
-        animalVi: 'Chú khỉ',
-        food: 'Banana',
-        foodVi: 'Quả chuối',
-        wrongFoods: [
-          { name: 'Fish', nameVi: 'Cá' },
-          { name: 'Milk', nameVi: 'Sữa' },
+          { name: 'Banana', nameVi: 'Quả chuối' },
+          { name: 'Carrot', nameVi: 'Củ cà rốt' },
         ],
       },
       {
@@ -302,74 +416,62 @@ export const KidsGamesPage: React.FC = () => {
         food: 'Carrot',
         foodVi: 'Củ cà rốt',
         wrongFoods: [
-          { name: 'Meat', nameVi: 'Thịt' },
-          { name: 'Fish', nameVi: 'Cá' },
+          { name: 'Fish', nameVi: 'Con cá' },
+          { name: 'Bone', nameVi: 'Khúc xương' },
+        ],
+      },
+      {
+        animal: 'Monkey',
+        animalVi: 'Khỉ nâu',
+        food: 'Banana',
+        foodVi: 'Quả chuối',
+        wrongFoods: [
+          { name: 'Fish', nameVi: 'Con cá' },
+          { name: 'Cheese', nameVi: 'Phô mai' },
         ],
       },
       {
         animal: 'Dog',
-        animalVi: 'Cún con',
+        animalVi: 'Cún cưng',
         food: 'Bone',
         foodVi: 'Khúc xương',
         wrongFoods: [
-          { name: 'Grass', nameVi: 'Cỏ' },
-          { name: 'Banana', nameVi: 'Chuối' },
+          { name: 'Apple', nameVi: 'Quả táo' },
+          { name: 'Milk', nameVi: 'Sữa tươi' },
         ],
       },
     ];
-    const picked = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const picked = feedScenarios[Math.floor(Math.random() * feedScenarios.length)];
     setFeedState(picked);
 
     setTimeout(() => {
-      voiceService.speakVietnamese(`Bé hãy cho ${picked.animalVi} ăn món gì nào?`);
+      voiceService.speakVietnamese(
+        `Bạn ${picked.animalVi} đang đói bụng! Bé đút món ${picked.foodVi} cho bạn ấy nhé!`
+      );
     }, 200);
   };
 
   const handleFeedFood = (foodName: string) => {
     if (animalFed || roundCompleted) return;
     if (foodName === feedState.food) {
-      soundManager.playDing();
       setAnimalFed(true);
-      voiceService.speakEnglish(`Yummy! The ${feedState.animal} loves ${feedState.food}!`);
+      soundManager.playDing();
+      voiceService.speakBilingual(
+        `${feedState.animal} loves ${feedState.food}!`,
+        `${feedState.animalVi} no nê rồi! Món ${feedState.foodVi} ngon tuyệt!`
+      );
       triggerCorrectAnswer({
-        en: `Delicious! ${feedState.animal} says Thank you!`,
-        vi: `${feedState.animalVi} ăn rất ngon miệng!`,
+        en: `Yummy! ${feedState.animal} ate ${feedState.food}!`,
+        vi: `Bé chăm sóc giỏi quá! ${feedState.animalVi} đã ăn no rồi!`,
       });
     } else {
-      triggerWrongAnswer(`Bạn ấy không thích ăn món này đâu, bé chọn món khác nhé!`);
+      triggerWrongAnswer(`Bạn ${feedState.animalVi} không ăn món này đâu, bé chọn món khác nhé!`);
     }
   };
 
-  // 4. FIND THE WORD (Discovery grid)
-  const [findTarget, setFindTarget] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[0]);
-  const [findChoices, setFindChoices] = useState<VocabularyItem[]>([]);
-
-  const initFindRound = () => {
-    const target = COMPREHENSIVE_VOCABULARY[Math.floor(Math.random() * COMPREHENSIVE_VOCABULARY.length)];
-    const others = COMPREHENSIVE_VOCABULARY.filter((v) => v.id !== target.id)
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
-    setFindTarget(target);
-    setFindChoices([target, ...others].sort(() => 0.5 - Math.random()));
-
-    setTimeout(() => {
-      voiceService.speakVietnamese(`Bé hãy tìm: ${target.viMeaning} nhé!`, {
-        onEnd: () => setTimeout(() => voiceService.speakWord(target.word), 250),
-      });
-    }, 200);
-  };
-
-  const handleChooseFind = (item: VocabularyItem) => {
-    if (roundCompleted) return;
-    if (item.id === findTarget.id) {
-      voiceService.speakWord(item.word);
-      triggerCorrectAnswer({ en: `Found ${item.word}!`, vi: `Chính xác! Bé tìm đúng rồi!` }, item.id);
-    } else {
-      triggerWrongAnswer('Chưa đúng hình này rồi! Bé nhìn kỹ lại nhé!', item.id);
-    }
-  };
-
-  // 5. MATCH CARDS (3D Memory card flip)
+  // ================================================================
+  // 4. MATCH CARDS (3D MEMORY CARD PAIR MATCHING)
+  // ================================================================
   interface MemoryCard {
     cardId: number;
     text: string;
@@ -378,8 +480,8 @@ export const KidsGamesPage: React.FC = () => {
     isFlipped: boolean;
     isMatched: boolean;
   }
-  const [cards, setCards] = useState<MemoryCard[]>([]);
-  const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
+  const [memoryDeck, setMemoryDeck] = useState<MemoryCard[]>([]);
+  const [flippedCardIndices, setFlippedCardIndices] = useState<number[]>([]);
 
   const initMatchCardsRound = () => {
     const picked = COMPREHENSIVE_VOCABULARY.slice(0, 3);
@@ -402,21 +504,32 @@ export const KidsGamesPage: React.FC = () => {
         isMatched: false,
       });
     });
-    setCards(deck.sort(() => 0.5 - Math.random()));
-    setFlippedIndices([]);
+    setMemoryDeck(deck.sort(() => 0.5 - Math.random()));
+    setFlippedCardIndices([]);
+
+    setTimeout(() => {
+      voiceService.speakVietnamese('Lật mở các thẻ bài và tìm các cặp từ vựng trùng khớp nhé!');
+    }, 200);
   };
 
-  const handleFlipCard = (index: number) => {
-    if (flippedIndices.length === 2 || cards[index].isFlipped || cards[index].isMatched) return;
+  const handleFlipMemoryCard = (index: number) => {
+    if (
+      flippedCardIndices.length === 2 ||
+      memoryDeck[index].isFlipped ||
+      memoryDeck[index].isMatched ||
+      roundCompleted
+    )
+      return;
+
     soundManager.playWhoosh();
-    voiceService.speakEnglish(cards[index].text);
+    voiceService.speakEnglish(memoryDeck[index].text);
 
-    const updated = [...cards];
+    const updated = [...memoryDeck];
     updated[index].isFlipped = true;
-    setCards(updated);
+    setMemoryDeck(updated);
 
-    const newFlipped = [...flippedIndices, index];
-    setFlippedIndices(newFlipped);
+    const newFlipped = [...flippedCardIndices, index];
+    setFlippedCardIndices(newFlipped);
 
     if (newFlipped.length === 2) {
       const [i1, i2] = newFlipped;
@@ -424,494 +537,351 @@ export const KidsGamesPage: React.FC = () => {
         soundManager.playDing();
         updated[i1].isMatched = true;
         updated[i2].isMatched = true;
-        setCards([...updated]);
-        setFlippedIndices([]);
+        setMemoryDeck([...updated]);
+        setFlippedCardIndices([]);
         if (updated.every((c) => c.isMatched)) {
-          triggerCorrectAnswer({ en: 'Matched All Pairs!', vi: 'Bé đã ghép đúng toàn bộ thẻ!' });
+          triggerCorrectAnswer({ en: 'Matched All Pairs!', vi: 'Xuất sắc! Bé đã ghép đúng toàn bộ thẻ!' });
         }
       } else {
         setTimeout(() => {
           updated[i1].isFlipped = false;
           updated[i2].isFlipped = false;
-          setCards([...updated]);
-          setFlippedIndices([]);
+          setMemoryDeck([...updated]);
+          setFlippedCardIndices([]);
         }, 900);
       }
     }
   };
 
-  // 6. MAGIC TRAIN (Missing carriage assembly)
-  const [trainTarget, setTrainTarget] = useState({ word: 'CAT', missing: 'A', vi: 'Con mèo', options: ['A', 'E', 'O'] });
-  const [trainCompleted, setTrainCompleted] = useState(false);
-
-  const initTrainRound = () => {
-    setTrainCompleted(false);
-    const words = [
-      { word: 'CAT', missing: 'A', vi: 'Con mèo', options: ['A', 'E', 'U'] },
-      { word: 'DOG', missing: 'O', vi: 'Con chó', options: ['O', 'I', 'A'] },
-      { word: 'SUN', missing: 'U', vi: 'Mặt trời', options: ['U', 'O', 'E'] },
-      { word: 'RED', missing: 'E', vi: 'Màu đỏ', options: ['E', 'A', 'I'] },
-    ];
-    const picked = words[Math.floor(Math.random() * words.length)];
-    setTrainTarget(picked);
-
-    setTimeout(() => {
-      voiceService.speakVietnamese(`Chọn toa chữ cái còn thiếu cho đoàn tàu "${picked.vi}" nhé!`);
-    }, 200);
-  };
-
-  const handleChooseCarriageLetter = (letter: string) => {
-    if (trainCompleted || roundCompleted) return;
-    if (letter === trainTarget.missing) {
-      setTrainCompleted(true);
-      voiceService.speakWord(trainTarget.word);
-      triggerCorrectAnswer({ en: `Train Complete! ${trainTarget.word}!`, vi: 'Đoàn tàu đã lăn bánh!' }, letter);
-    } else {
-      triggerWrongAnswer('Toa tàu chưa khớp! Bé chọn chữ cái khác nhé!', letter);
-    }
-  };
-
-  // 7. CATCH THE WORD (Falling words reflex)
-  const [catchTarget, setCatchTarget] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[2]);
-  const [catchOptions, setCatchOptions] = useState<VocabularyItem[]>([]);
-
-  const initCatchRound = () => {
-    const target = COMPREHENSIVE_VOCABULARY[Math.floor(Math.random() * COMPREHENSIVE_VOCABULARY.length)];
-    const others = COMPREHENSIVE_VOCABULARY.filter((v) => v.id !== target.id)
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
-    setCatchTarget(target);
-    setCatchOptions([target, ...others].sort(() => 0.5 - Math.random()));
-
-    setTimeout(() => {
-      voiceService.speakVietnamese(`Bé hãy đón bắt chữ: ${target.viMeaning} nhé!`, {
-        onEnd: () => setTimeout(() => voiceService.speakWord(target.word), 250),
-      });
-    }, 200);
-  };
-
-  const handleCatchWord = (item: VocabularyItem) => {
-    if (roundCompleted) return;
-    if (item.id === catchTarget.id) {
-      voiceService.speakWord(item.word);
-      triggerCorrectAnswer({ en: `Caught ${item.word}!`, vi: `Bắt trúng ${item.word} rồi!` }, item.id);
-    } else {
-      triggerWrongAnswer('Bắt nhầm từ rồi! Thử lại nhé!', item.id);
-    }
-  };
-
-  // 8. BUILD THE SENTENCE (Grammar assembly tray)
-  interface SentenceChallenge {
-    words: string[];
-    fullEn: string;
-    fullVi: string;
-  }
-  const [sentenceChallenge, setSentenceChallenge] = useState<SentenceChallenge>({
-    words: ['I', 'like', 'apples'],
-    fullEn: 'I like apples.',
-    fullVi: 'Bé thích những quả táo.',
+  // ================================================================
+  // 5. ANIMAL RESCUE (EXPLORATION & PATH FINDING ADVENTURE)
+  // ================================================================
+  type RescuePhase = 'lost' | 'footprint' | 'path' | 'gate' | 'home';
+  const [rescuePhase, setRescuePhase] = useState<RescuePhase>('lost');
+  const [rescueClue, setRescueClue] = useState({
+    en: 'A little puppy is lost. Help the puppy get home!',
+    vi: 'Chú chó nhỏ bị lạc trong rừng. Bé hãy giúp bạn ấy về nhà nhé!',
   });
-  const [assembledWords, setAssembledWords] = useState<string[]>([]);
-  const [scrambledWords, setScrambledWords] = useState<string[]>([]);
-
-  const initSentenceRound = () => {
-    const sentences: SentenceChallenge[] = [
-      { words: ['I', 'like', 'apples'], fullEn: 'I like apples.', fullVi: 'Bé thích những quả táo.' },
-      { words: ['The', 'cat', 'is', 'cute'], fullEn: 'The cat is cute.', fullVi: 'Chú mèo thật dễ thương.' },
-      { words: ['This', 'is', 'my', 'mom'], fullEn: 'This is my mom.', fullVi: 'Đây là mẹ của tôi.' },
-      { words: ['The', 'sun', 'is', 'bright'], fullEn: 'The sun is bright.', fullVi: 'Mặt trời tỏa nắng rực rỡ.' },
-    ];
-    const picked = sentences[Math.floor(Math.random() * sentences.length)];
-    setSentenceChallenge(picked);
-    setAssembledWords([]);
-    setScrambledWords([...picked.words].sort(() => 0.5 - Math.random()));
-
-    setTimeout(() => {
-      voiceService.speakVietnamese(`Ghép thành câu: "${picked.fullVi}" nhé!`);
-    }, 200);
-  };
-
-  const handleTapAssembleWord = (word: string, fromScrambled: boolean) => {
-    if (roundCompleted) return;
-    soundManager.playPop();
-    if (fromScrambled) {
-      const newAssembled = [...assembledWords, word];
-      setAssembledWords(newAssembled);
-      const idx = scrambledWords.indexOf(word);
-      const newScrambled = [...scrambledWords];
-      newScrambled.splice(idx, 1);
-      setScrambledWords(newScrambled);
-
-      if (newAssembled.length === sentenceChallenge.words.length) {
-        if (newAssembled.join(' ') === sentenceChallenge.words.join(' ')) {
-          voiceService.speakBilingual(sentenceChallenge.fullEn, sentenceChallenge.fullVi);
-          triggerCorrectAnswer({ en: 'Sentence Built!', vi: 'Ghép câu hoàn toàn chính xác!' });
-        } else {
-          triggerWrongAnswer('Thứ tự từ chưa đúng rồi! Bé xếp lại nhé!');
-          setTimeout(() => {
-            setAssembledWords([]);
-            setScrambledWords([...sentenceChallenge.words].sort(() => 0.5 - Math.random()));
-          }, 800);
-        }
-      }
-    }
-  };
-
-  // 9. ANIMAL RESCUE (Key unlatching puzzle)
-  const [rescueQuestion, setRescueQuestion] = useState<KidQuestion>(validQuestions[0]);
-  const [cageUnlocked, setCageUnlocked] = useState(false);
 
   const initRescueRound = () => {
-    setCageUnlocked(false);
-    const q = validQuestions[Math.floor(Math.random() * validQuestions.length)];
-    setRescueQuestion(q);
+    setRescuePhase('lost');
+    setRescueClue({
+      en: 'A little puppy is lost. Help the puppy get home!',
+      vi: 'Chú chó nhỏ bị lạc trong rừng. Bé hãy giúp bạn ấy về nhà nhé!',
+    });
+    kidsAudioManager.playGameAmbience('forest');
 
     setTimeout(() => {
-      voiceService.speakVietnamese(`Trả lời đúng để mở chìa khóa giải cứu bạn thú nhé!`);
-    }, 200);
+      voiceService.speakBilingual(
+        'A little puppy is lost. Help the puppy get home.',
+        'Một chú chó nhỏ bị lạc. Hãy giúp chú chó về nhà nhé!'
+      );
+    }, 250);
   };
 
-  const handleRescueAnswer = (answerId: string) => {
-    if (cageUnlocked || roundCompleted) return;
-    if (answerId === rescueQuestion.correctAnswerId) {
-      setCageUnlocked(true);
-      voiceService.speakEnglish('Hooray! The animal is free! Thank you!');
-      triggerCorrectAnswer({ en: 'Animal Rescued!', vi: 'Bé đã mở khóa và giải cứu bạn thú!' }, answerId);
-    } else {
-      triggerWrongAnswer('Chìa khóa chưa đúng! Bé chọn lại nhé!', answerId);
-    }
-  };
-
-  // 10. TREASURE ISLAND (5-Checkpoint Path)
-  const [islandCheckpoint, setIslandCheckpoint] = useState(1);
-  const [islandQuestion, setIslandQuestion] = useState<KidQuestion>(validQuestions[1]);
-
-  const initTreasureRound = () => {
-    setIslandCheckpoint(currentRound);
-    const q = validQuestions[(currentRound - 1) % validQuestions.length];
-    setIslandQuestion(q);
-
-    setTimeout(() => {
-      voiceService.speakVietnamese(`Trạm ${currentRound}: Vượt qua thử thách để tiến về kho báu!`);
-    }, 200);
-  };
-
-  const handleTreasureAnswer = (answerId: string) => {
+  const handleRescueAction = (action: string) => {
     if (roundCompleted) return;
-    if (answerId === islandQuestion.correctAnswerId) {
-      voiceService.speakEnglish('Great step forward!');
-      triggerCorrectAnswer({ en: `Station ${currentRound} Cleared!`, vi: `Bé đã vượt qua trạm ${currentRound}!` }, answerId);
-    } else {
-      triggerWrongAnswer('Đường đi chưa đúng, bé suy nghĩ lại nhé!', answerId);
-    }
-  };
 
-  // 11. SOUND DETECTIVE (Audio-only mystery)
-  const [detectiveTarget, setDetectiveTarget] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[0]);
-  const [detectiveChoices, setDetectiveChoices] = useState<VocabularyItem[]>([]);
-
-  const initDetectiveRound = () => {
-    const target = COMPREHENSIVE_VOCABULARY[Math.floor(Math.random() * COMPREHENSIVE_VOCABULARY.length)];
-    const others = COMPREHENSIVE_VOCABULARY.filter((v) => v.id !== target.id)
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
-    setDetectiveTarget(target);
-    setDetectiveChoices([target, ...others].sort(() => 0.5 - Math.random()));
-
-    setTimeout(() => {
+    if (rescuePhase === 'lost') {
       soundManager.playDing();
-      voiceService.speakWord(target.word);
-    }, 300);
-  };
-
-  const handleDetectiveChoice = (item: VocabularyItem) => {
-    if (roundCompleted) return;
-    if (item.id === detectiveTarget.id) {
-      voiceService.speakBilingual(item.word, item.viMeaning);
-      triggerCorrectAnswer({ en: `Case Solved! ${item.word}!`, vi: `Thám tử tìm đúng ${item.word} rồi!` }, item.id);
-    } else {
-      triggerWrongAnswer('Chưa khớp với âm thanh! Bé bấm nút nghe lại nhé!', item.id);
-    }
-  };
-
-  // 12. SPEAK & REPEAT (Speech repetition with instant meter)
-  const [speakTarget, setSpeakTarget] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[0]);
-  const [speakState, setSpeakState] = useState<'idle' | 'listening' | 'success' | 'retry'>('idle');
-  const [speakFeedbackText, setSpeakFeedbackText] = useState<string>('');
-
-  const initSpeakRound = () => {
-    setSpeakState('idle');
-    setSpeakFeedbackText('');
-    const target = COMPREHENSIVE_VOCABULARY[Math.floor(Math.random() * COMPREHENSIVE_VOCABULARY.length)];
-    setSpeakTarget(target);
-
-    setTimeout(() => {
-      voiceService.speakWord(target.word);
-    }, 300);
-  };
-
-  const handleStartVoiceRepeat = () => {
-    soundManager.playPop();
-    setSpeakState('listening');
-    setSpeakFeedbackText('Bé hãy đọc to: "' + speakTarget.word + '" nhé...');
-
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (SpeechRecognition) {
-      try {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onresult = (e: any) => {
-          const spoken = (e.results[0][0]?.transcript || '').toLowerCase().trim();
-          const target = speakTarget.word.toLowerCase().trim();
-
-          if (spoken.includes(target) || target.includes(spoken)) {
-            setSpeakState('success');
-            setSpeakFeedbackText('Excellent! Xuất sắc! Bé phát âm rất chuẩn!');
-            triggerCorrectAnswer({ en: 'Excellent Pronunciation!', vi: 'Bé phát âm rất chuẩn xác!' });
-          } else {
-            setSpeakState('retry');
-            setSpeakFeedbackText(`Gần đúng rồi! Bé đọc lại thật to: "${speakTarget.word}" nhé!`);
-            triggerWrongAnswer('Bé thử lại to và rõ hơn nhé!');
-          }
-        };
-
-        recognition.onerror = () => {
-          fallbackSpeechSuccess();
-        };
-
-        recognition.start();
-      } catch {
-        fallbackSpeechSuccess();
+      setRescuePhase('footprint');
+      setRescueClue({
+        en: 'Look! Footprints on the meadow! Tap the footprints.',
+        vi: 'Nhìn kìa! Có dấu chân trên bãi cỏ! Hãy chạm vào dấu chân để dò đường.',
+      });
+    } else if (rescuePhase === 'footprint') {
+      soundManager.playDing();
+      setRescuePhase('path');
+      setRescueClue({
+        en: 'Three roads ahead! Take the Meadow Road.',
+        vi: 'Có 3 ngã rẽ! Bé hãy chọn con đường thảo nguyên xanh "Green Meadow" nhé!',
+      });
+    } else if (rescuePhase === 'path') {
+      if (action === 'meadow') {
+        soundManager.playDing();
+        setRescuePhase('gate');
+        setRescueClue({
+          en: 'A wooden gate blocks the path! Find the golden Key.',
+          vi: 'Một cánh cổng gỗ đang khóa lối! Hãy chọn chìa khóa "Key" để mở nhé!',
+        });
+      } else {
+        triggerWrongAnswer('Con đường này dẫn vào rừng rậm rồi! Chọn đường thảo nguyên xanh nhé!');
       }
-    } else {
-      fallbackSpeechSuccess();
+    } else if (rescuePhase === 'gate') {
+      if (action === 'key') {
+        soundManager.playFanfare();
+        setRescuePhase('home');
+        triggerCorrectAnswer({
+          en: 'Puppy is Home! Safe & Sound!',
+          vi: 'Hoan hô! Bé đã dẫn chú chó về tới ngôi nhà ấm áp an toàn!',
+        });
+      } else {
+        triggerWrongAnswer('Đồ vật này không mở được cổng! Bé hãy chọn chìa khóa vàng Key nhé!');
+      }
     }
   };
 
-  const fallbackSpeechSuccess = () => {
+  // ================================================================
+  // 6. TREASURE ISLAND (EXPEDITION & COLLECTION)
+  // ================================================================
+  type IslandStage = 'map' | 'bridge' | 'cave' | 'chest';
+  const [islandStep, setIslandStep] = useState<IslandStage>('map');
+
+  const initIslandRound = () => {
+    setIslandStep('map');
+    kidsAudioManager.playGameAmbience('island');
     setTimeout(() => {
-      setSpeakState('success');
-      setSpeakFeedbackText('Good Job! Giỏi lắm! Bé phát âm rất hay!');
-      triggerCorrectAnswer({ en: 'Good Job!', vi: 'Bé nói rất tốt!' });
-    }, 1400);
+      voiceService.speakVietnamese('Bé hãy mở bản đồ hải tặc và bắt đầu hành trình tìm kho báu nhé!');
+    }, 200);
   };
 
-  // Master Round Initializer
-  const initRoundForGame = (gameId: GameId, round: number) => {
+  const handleIslandAction = (step: IslandStage) => {
+    if (roundCompleted) return;
+    soundManager.playDing();
+
+    if (step === 'map') {
+      setIslandStep('bridge');
+      voiceService.speakBilingual('Cross the river bridge!', 'Cùng bước qua cây cầu gỗ bắc qua sông nào!');
+    } else if (step === 'bridge') {
+      setIslandStep('cave');
+      voiceService.speakBilingual('Enter the mystic cave and find the key!', 'Tiến vào hang đá bí mật và nhặt chìa khóa vàng!');
+    } else if (step === 'cave') {
+      setIslandStep('chest');
+      voiceService.speakBilingual('Unlock the grand treasure chest!', 'Mở khóa hòm kho báu chứa đầy ngọc quý!');
+    } else if (step === 'chest') {
+      soundManager.playFanfare();
+      triggerCorrectAnswer({
+        en: 'Treasure Chest Unlocked! Gold & Diamonds!',
+        vi: 'Tuyệt vời! Bé đã mở thành công hòm báu vật trên Đảo Kỳ Bí!',
+      });
+    }
+  };
+
+  // Master Initializer per round
+  const initRoundForGame = (gameId: GameId, roundNum: number) => {
     if (gameId === 'balloon_pop') initBalloonRound();
-    else if (gameId === 'rocket_launch') initRocketRound();
+    else if (gameId === 'train_builder') initTrainRound(roundNum);
     else if (gameId === 'feed_animal') initFeedRound();
-    else if (gameId === 'find_word') initFindRound();
     else if (gameId === 'match_cards') initMatchCardsRound();
-    else if (gameId === 'magic_train') initTrainRound();
-    else if (gameId === 'catch_word') initCatchRound();
-    else if (gameId === 'build_sentence') initSentenceRound();
     else if (gameId === 'animal_rescue') initRescueRound();
-    else if (gameId === 'treasure_island') initTreasureRound();
-    else if (gameId === 'sound_detective') initDetectiveRound();
-    else if (gameId === 'speak_repeat') initSpeakRound();
+    else if (gameId === 'treasure_island') initIslandRound();
   };
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6 animate-fadeIn pb-24 select-none">
+    <div className="space-y-6 pb-16 animate-fadeIn select-none">
       {/* ================================================================ */}
-      {/* 1. TOP HEADER & HUD STATS (High Contrast, Standardized Height)   */}
+      {/* 1. TOP HEADER & HUD BAR                                          */}
       {/* ================================================================ */}
-      <div className="bg-white p-5 rounded-3xl border-2 border-amber-300 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div
-            className={`w-13 h-13 rounded-2xl flex items-center justify-center border-2 shadow-inner ${activeTheme.bgLight} ${activeTheme.borderColor}`}
-          >
-            <KidsIllustration name={activeTheme.illustration} className="w-9 h-9" />
-          </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white border-2 border-amber-300 shadow-sm">
+        <div className="flex items-center gap-3">
+          {activeGameId ? (
+            <button
+              onClick={handleBackToCatalog}
+              className="h-11 px-4 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-black text-xs sm:text-sm border-2 border-amber-300 flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Tất Cả Trò Chơi</span>
+            </button>
+          ) : (
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-950 shrink-0">
+              <Sparkles className="w-6 h-6 text-amber-600" />
+            </div>
+          )}
+
           <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-950 flex items-center gap-2">
-              <span>{activeTheme.titleVi}</span>
-              <span className="text-xs font-bold text-slate-500 hidden md:inline">
-                ({activeTheme.titleEn})
-              </span>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
+              {activeGameId ? activeGameDef.titleVi : '6 Trò Chơi Trí Tuệ Cho Bé'}
             </h1>
-            <p className="text-xs font-bold text-slate-600 mt-0.5">
-              {activeGameDef.descriptionVi}
+            <p className="text-xs sm:text-sm font-bold text-slate-600">
+              {activeGameId
+                ? activeGameDef.titleEn
+                : 'Trải nghiệm đa dạng: Giải cứu động vật, Đoàn tàu ghép câu, Nuôi thú, Lật thẻ 3D'}
             </p>
           </div>
         </div>
 
-        {/* HUD Live Stats with Standardized Equal Height */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {/* Hearts */}
-          <div className="h-11 px-3 py-1.5 rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center gap-1">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Heart
-                key={i}
-                className={`w-4 h-4 ${i < lives ? 'fill-rose-500 text-rose-500' : 'text-slate-300'}`}
-              />
-            ))}
-          </div>
-
-          {/* Round & XP */}
-          <div className="h-11 px-3.5 py-1.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-2">
-            <span>Vòng {currentRound}/{TOTAL_ROUNDS}</span>
-            <span>•</span>
-            <span className="text-amber-800 flex items-center gap-1">
-              <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-              <span>{roundScore} XP</span>
-            </span>
-          </div>
-
-          {/* Streak Flame */}
-          {streak > 1 && (
-            <div className="h-11 px-3 py-1.5 rounded-2xl bg-orange-50 border-2 border-orange-300 text-orange-800 font-black text-xs flex items-center gap-1 animate-pulse">
-              <Flame className="w-4 h-4 fill-orange-500 text-orange-500" />
-              <span>x{streak}</span>
+        {/* HUD Live Stats (When actively playing inside a game) */}
+        {activeGameId && gameStarted && (
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+            {/* Hearts / Lives */}
+            <div className="h-11 px-3 py-1.5 rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center gap-1">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Heart
+                  key={i}
+                  className={`w-4 h-4 ${i < lives ? 'fill-rose-500 text-rose-500' : 'text-slate-300'}`}
+                />
+              ))}
             </div>
-          )}
-        </div>
+
+            {/* Round & XP */}
+            <div className="h-11 px-3.5 py-1.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-black text-xs sm:text-sm flex items-center gap-2">
+              <span>Vòng {currentRound}/{TOTAL_ROUNDS}</span>
+              <span>•</span>
+              <span className="text-amber-800 flex items-center gap-1">
+                <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                <span>{roundScore} XP</span>
+              </span>
+            </div>
+
+            {/* Streak Flame */}
+            {streak > 1 && (
+              <div className="h-11 px-3 py-1.5 rounded-2xl bg-orange-50 border-2 border-orange-300 text-orange-800 font-black text-xs flex items-center gap-1 animate-pulse">
+                <Flame className="w-4 h-4 fill-orange-500 text-orange-500" />
+                <span>x{streak}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ================================================================ */}
-      {/* 2. MAIN LAYOUT: 12 DISTINCT GAME CARDS + STAGE ARENA             */}
+      {/* 2. CATALOG VIEW: UNIFIED GAMECARD GRID SYSTEM                    */}
+      {/* Strict Section 5-12: Every game uses the standardized GameCard  */}
       {/* ================================================================ */}
-      <div className="flex flex-col lg:flex-row items-start gap-6">
-        {/* LEFT COLUMN: 12 GAME CARDS WITH INDIVIDUAL VISUAL THEMES */}
-        <div className="w-full lg:w-80 shrink-0 space-y-3">
+      {!activeGameId && (
+        <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-600">
-              12 Trò chơi rèn luyện:
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-700">
+              Danh sách trò chơi đã được kiểm duyệt:
             </span>
-            <span className="text-[11px] font-bold text-slate-500">Gameplay riêng biệt</span>
+            <span className="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+              6 Gameplay Riêng Biệt • Không Trùng Lặp
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 max-h-[660px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {KIDS_GAMES_REGISTRY.map((game) => {
-              const theme = GAME_THEMES[game.id] || GAME_THEMES.balloon_pop;
-              const isActive = activeGameId === game.id;
-              const GameIcon = theme.icon;
-
+              const theme = GAME_THEMES[game.id];
               return (
-                <button
+                <GameCard
                   key={game.id}
-                  onClick={() => handleSelectGame(game.id)}
-                  className={`w-full p-3.5 rounded-2xl font-black text-left transition-all cursor-pointer border-2 flex items-center justify-between gap-3 min-h-[68px] ${
-                    isActive
-                      ? `bg-amber-400 border-amber-500 shadow-md ring-2 ring-amber-300 scale-[1.02]`
-                      : `${theme.bgLight} ${theme.borderColor} hover:border-amber-400 hover:-translate-y-0.5 hover:shadow-sm`
-                  }`}
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border-2 p-1 ${
-                        isActive
-                          ? 'bg-amber-500 border-amber-600 text-slate-950'
-                          : 'bg-white border-slate-200'
-                      }`}
-                    >
-                      <KidsIllustration name={theme.illustration} className="w-full h-full object-contain" />
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className="font-black text-sm text-slate-950 truncate">{theme.titleVi}</p>
-                      <p className="text-[11px] font-bold text-slate-600 truncate">{theme.titleEn}</p>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`text-[10px] font-black px-2.5 py-1 rounded-full border shrink-0 ${theme.badgeStyle}`}
-                  >
-                    {game.difficultyVi}
-                  </span>
-                </button>
+                  game={game}
+                  theme={theme}
+                  onSelect={handleSelectGame}
+                  isSelected={false}
+                />
               );
             })}
           </div>
         </div>
+      )}
 
-        {/* RIGHT COLUMN: DEDICATED ARENA (Visual Transition & Clean Isolation) */}
-        <div className="flex-1 w-full min-w-0">
+      {/* ================================================================ */}
+      {/* 3. GAME DETAIL / ARENA VIEW                                      */}
+      {/* ================================================================ */}
+      {activeGameId && (
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* A. GAME INTRO SCREEN (Section 13: Character, Scene, Bilingual Instructions, [Start]) */}
           {!gameStarted ? (
             <div
-              className={`bg-white rounded-3xl p-8 sm:p-12 border-4 ${activeTheme.borderColor} shadow-sm flex flex-col items-center justify-center text-center space-y-6 min-h-[480px] transition-all`}
+              className={`bg-white rounded-3xl p-8 sm:p-12 border-4 ${activeTheme.borderColor} shadow-lg flex flex-col items-center justify-center text-center space-y-6 min-h-[500px] animate-scale-up`}
             >
+              {/* Large Character Illustration with playful glow */}
               <div
-                className={`w-28 h-28 rounded-3xl ${activeTheme.bgLight} border-2 ${activeTheme.borderColor} flex items-center justify-center p-3 animate-gentle-float shadow-sm`}
+                className={`w-32 h-32 sm:w-36 sm:h-36 rounded-3xl ${activeTheme.bgLight} border-3 ${activeTheme.borderColor} flex items-center justify-center p-4 shadow-md animate-gentle-float`}
               >
                 <KidsIllustration name={activeTheme.illustration} className="w-full h-full object-contain" />
               </div>
 
-              <div className="max-w-md space-y-2">
-                <span className={`px-3.5 py-1 rounded-full text-xs font-black border ${activeTheme.badgeStyle}`}>
-                  {activeGameDef.category.toUpperCase()} • {activeGameDef.difficultyVi}
+              {/* Scenario & Bilingual Goal */}
+              <div className="max-w-lg space-y-3">
+                <span className={`px-4 py-1.5 rounded-full text-xs font-black border ${activeTheme.badgeStyle}`}>
+                  {activeGameDef.category.toUpperCase()} • ĐỘ KHÓ: {activeGameDef.difficultyVi.toUpperCase()}
                 </span>
+
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-950">
-                  {activeTheme.titleVi}
+                  {activeGameDef.titleVi}
                 </h2>
-                <p className="text-sm font-bold text-slate-600">{activeGameDef.descriptionVi}</p>
+                <p className="text-base sm:text-lg font-bold text-amber-700">
+                  {activeGameDef.titleEn}
+                </p>
+
+                <p className="text-sm sm:text-base font-semibold text-slate-600 leading-relaxed pt-2">
+                  {activeGameDef.descriptionVi}
+                </p>
               </div>
 
-              <div className="flex items-center gap-6 p-4 rounded-2xl bg-slate-50 border-2 border-slate-200">
+              {/* Reward Highlights */}
+              <div className="flex items-center gap-8 p-4 px-8 rounded-2xl bg-amber-50/80 border-2 border-amber-200">
                 <div className="text-center">
-                  <p className="text-[11px] font-bold text-slate-500">Phần thưởng</p>
-                  <p className="text-sm font-black text-amber-700">+{activeGameDef.starsAwarded} Sao Vàng</p>
+                  <p className="text-xs font-bold text-slate-500">Phần Thưởng</p>
+                  <p className="text-base font-black text-amber-700">+{activeGameDef.starsAwarded} Sao Vàng</p>
                 </div>
-                <div className="w-px h-8 bg-slate-200" />
+                <div className="w-px h-8 bg-amber-200" />
                 <div className="text-center">
-                  <p className="text-[11px] font-bold text-slate-500">Kinh nghiệm</p>
-                  <p className="text-sm font-black text-emerald-700">+{activeGameDef.xpAwarded} XP</p>
+                  <p className="text-xs font-bold text-slate-500">Kinh Nghiệm</p>
+                  <p className="text-base font-black text-emerald-700">+{activeGameDef.xpAwarded} XP</p>
                 </div>
               </div>
 
-              <button
-                onClick={handleStartGame}
-                className={`px-10 py-4 rounded-2xl bg-gradient-to-r ${activeTheme.accentGradient} text-white font-black text-lg border-b-4 border-black/20 active:scale-95 transition cursor-pointer flex items-center gap-3 shadow-md animate-bounce min-h-[52px]`}
-              >
-                <Play className="w-6 h-6 fill-current" />
-                <span>BẮT ĐẦU CHƠI NGAY</span>
-              </button>
+              {/* Start Game Action */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                <button
+                  onClick={handleBackToCatalog}
+                  className="px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm border-2 border-slate-300 active:scale-95 cursor-pointer"
+                >
+                  ← Đổi Trò Chơi Khác
+                </button>
+
+                <button
+                  onClick={handleStartGame}
+                  className={`px-10 py-4 rounded-2xl bg-gradient-to-r ${activeTheme.accentGradient} text-white font-black text-lg sm:text-xl border-b-4 border-black/20 active:scale-95 transition cursor-pointer flex items-center gap-3 shadow-lg hover:shadow-xl animate-bounce min-h-[56px]`}
+                >
+                  <Play className="w-6 h-6 fill-current" />
+                  <span>BẮT ĐẦU CHƠI</span>
+                </button>
+              </div>
             </div>
           ) : (
+            /* B. LIVE GAME ARENA (Dedicated interactive gameplay per mechanic) */
             <div
-              className={`bg-white rounded-3xl p-6 sm:p-8 border-4 ${activeTheme.borderColor} shadow-sm space-y-6 transition-all`}
+              className={`bg-white rounded-3xl p-6 sm:p-8 border-4 ${activeTheme.borderColor} shadow-lg space-y-6 animate-fadeIn`}
             >
               {/* ========================================================= */}
-              {/* GAME 1: BALLOON POP (Click & Timing)                      */}
+              {/* GAME 1: BALLOON POP (Timing & Reflex)                      */}
               {/* ========================================================= */}
               {activeGameId === 'balloon_pop' && (
                 <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-rose-100 border border-rose-300 text-xs font-black text-rose-950">
-                      Mục tiêu: Bắn nổ quả bóng đúng
+                  <div className="text-center space-y-1">
+                    <span className="px-3.5 py-1 rounded-full bg-rose-100 border border-rose-300 text-xs font-black text-rose-950">
+                      Rèn Luyện Phản Xạ Nhanh
                     </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Bé hãy tìm bóng mang chữ:{' '}
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1">
+                      Bắn nổ bóng mang chữ:{' '}
                       <span className="text-rose-600 underline">{balloonTarget.word}</span> (
                       {balloonTarget.viMeaning})
                     </h3>
                   </div>
 
-                  <div className="kids-game-canvas-area bg-gradient-to-b from-sky-100 to-rose-50 p-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-xl">
+                  <div className="bg-gradient-to-b from-sky-100 via-rose-50 to-amber-50 p-6 sm:p-8 rounded-3xl border-2 border-rose-200 flex items-center justify-center min-h-[300px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 w-full max-w-2xl">
                       {balloons.map((b) => (
                         <button
                           key={b.id}
                           onClick={() => handlePopBalloon(b)}
                           disabled={b.popped || roundCompleted}
-                          className={`p-4 rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer select-none relative min-h-[145px] border-2 ${b.borderClass} ${
+                          className={`p-4 rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer select-none relative min-h-[160px] border-3 ${b.borderClass} ${
                             b.popped
-                              ? 'opacity-20 scale-75 pointer-events-none'
+                              ? 'animate-balloon-shatter pointer-events-none'
                               : `${b.colorClass} hover:scale-105 active:scale-95 shadow-md animate-balloon-float`
                           }`}
                         >
-                          <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-xs flex items-center justify-center p-1.5 mb-1 shadow-inner">
+                          {b.popped && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                              <span className="absolute -top-4 -left-3 text-2xl animate-pop-sparkle">✨</span>
+                              <span className="absolute -top-4 -right-3 text-2xl animate-pop-sparkle" style={{ animationDelay: '0.1s' }}>💥</span>
+                              <span className="absolute -bottom-3 -left-3 text-2xl animate-pop-sparkle" style={{ animationDelay: '0.15s' }}>⭐</span>
+                              <span className="absolute -bottom-3 -right-3 text-2xl animate-pop-sparkle" style={{ animationDelay: '0.2s' }}>🎉</span>
+                            </div>
+                          )}
+
+                          <div className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-xs flex items-center justify-center p-2 mb-2 shadow-inner">
                             <KidsIllustration name={b.word} className="w-full h-full object-contain" />
                           </div>
-                          <span className="text-xl font-black text-white drop-shadow">
+                          <span className="text-xl sm:text-2xl font-black text-white drop-shadow">
                             {b.word}
                           </span>
-                          <span className="text-[11px] font-bold text-white/90">({b.viMeaning})</span>
+                          <span className="text-xs font-bold text-white/90">({b.viMeaning})</span>
                         </button>
                       ))}
                     </div>
@@ -920,81 +890,167 @@ export const KidsGamesPage: React.FC = () => {
               )}
 
               {/* ========================================================= */}
-              {/* GAME 2: ROCKET LAUNCH (Sequential Launch)                 */}
+              {/* GAME 2: TRAIN SENTENCE BUILDER                            */}
+              {/* Strict Sections 18-22: Locomotive + Dynamic Carriages      */}
               {/* ========================================================= */}
-              {activeGameId === 'rocket_launch' && (
+              {activeGameId === 'train_builder' && (
                 <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-sky-100 border border-sky-300 text-xs font-black text-sky-950">
-                      Nạp nhiên liệu phóng tên lửa
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Chọn đúng từ:{' '}
-                      <span className="text-sky-600 underline">{rocketTarget.word}</span> (
-                      {rocketTarget.viMeaning})
+                  {/* Target Goal Banner */}
+                  <div className="text-center space-y-1.5">
+                    <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-orange-100 border border-orange-300 text-xs font-black text-orange-950">
+                      <span>Điểm đến: {trainChallenge.destinationIcon} {trainChallenge.destinationName}</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-950">
+                      Gắn toa tàu để ghép câu: "{trainChallenge.fullSentenceVi}"
                     </h3>
                   </div>
 
-                  <div className="kids-game-canvas-area bg-slate-900 rounded-3xl p-6 relative overflow-hidden">
+                  {/* Train Railway Scene */}
+                  <div className="relative bg-gradient-to-b from-sky-100 via-amber-50 to-emerald-50 rounded-3xl p-6 sm:p-8 border-2 border-orange-200 overflow-hidden min-h-[280px]">
+                    {/* Destination Station Flag */}
+                    <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs px-3 py-1.5 rounded-2xl border border-orange-300 shadow-xs">
+                      <span className="text-xl">{trainChallenge.destinationIcon}</span>
+                      <span className="text-xs font-black text-slate-800">{trainChallenge.destinationName}</span>
+                    </div>
+
+                    {/* TRAIN ASSEMBLY LINE */}
                     <div
-                      className={`flex flex-col items-center transition-transform duration-700 ${
-                        rocketLaunching ? 'animate-rocket-blastoff' : 'animate-rocket-rumble'
+                      className={`flex items-end gap-2 overflow-x-auto pb-6 pt-12 transition-transform duration-1000 ${
+                        trainDeparting ? 'animate-train-depart' : trainWobble ? 'animate-carriage-wobble' : ''
                       }`}
                     >
-                      <KidsIllustration name="rocket" className="w-28 h-28 drop-shadow-xl" />
-                      {rocketLaunching && (
-                        <div className="w-8 h-12 bg-amber-400 rounded-full blur-xs animate-pulse -mt-2" />
-                      )}
+                      {/* LOCOMOTIVE ENGINE (Section 18-20) */}
+                      <div className="shrink-0 flex flex-col items-center">
+                        {/* Smoke Puffs when running */}
+                        <div className="h-8 flex items-center justify-center">
+                          {trainDeparting && (
+                            <div className="flex gap-1 animate-smoke-puff">
+                              <span className="text-lg">💨</span>
+                              <span className="text-xl">💨</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Engine Cabin SVG */}
+                        <div className="w-28 sm:w-32 h-24 rounded-2xl bg-gradient-to-r from-red-600 to-amber-600 border-3 border-amber-400 p-2 shadow-md relative flex flex-col justify-between text-white">
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-black">🚂</span>
+                            <span className="text-[10px] font-black bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded">
+                              ENGINE
+                            </span>
+                          </div>
+                          <div className="text-center font-black text-xs">ĐẦU MÁY</div>
+                          {/* Wheels */}
+                          <div className="flex justify-around -mb-4">
+                            <div
+                              className={`w-6 h-6 rounded-full bg-slate-900 border-2 border-amber-300 ${
+                                trainDeparting ? 'animate-wheel-spin' : ''
+                              }`}
+                            />
+                            <div
+                              className={`w-6 h-6 rounded-full bg-slate-900 border-2 border-amber-300 ${
+                                trainDeparting ? 'animate-wheel-spin' : ''
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* DYNAMIC WORD CARRIAGES (Section 20: sentenceSegments.length === trainCars.length) */}
+                      {trainChallenge.words.map((_, index) => {
+                        const wordPlaced = trainPlacedWords[index];
+                        return (
+                          <div key={index} className="shrink-0 flex items-end">
+                            {/* Coupler link */}
+                            <div className="w-4 h-1.5 bg-amber-700 rounded-full mx-0.5 mb-8" />
+
+                            {/* Carriage cart */}
+                            <div className="flex flex-col items-center">
+                              <div className="h-8" />
+                              <div
+                                onClick={() => wordPlaced && handleRemoveWordFromCarriage(index)}
+                                className={`w-24 sm:w-28 h-24 rounded-2xl border-3 transition-all flex flex-col items-center justify-center p-2 relative shadow-md select-none ${
+                                  wordPlaced
+                                    ? 'bg-amber-400 border-amber-500 text-slate-950 scale-100 cursor-pointer hover:bg-amber-300'
+                                    : 'bg-white/80 border-dashed border-orange-300 text-slate-400'
+                                }`}
+                              >
+                                {wordPlaced ? (
+                                  <>
+                                    <span className="text-lg sm:text-xl font-black">{wordPlaced}</span>
+                                    <span className="text-[10px] font-bold text-amber-900">Toa {index + 1} (Chạm gỡ)</span>
+                                  </>
+                                ) : (
+                                  <span className="text-xs font-bold text-orange-400">Toa {index + 1} (Chờ từ)</span>
+                                )}
+
+                                {/* Wheels */}
+                                <div className="flex justify-around w-full -mb-4 absolute -bottom-3">
+                                  <div
+                                    className={`w-5 h-5 rounded-full bg-slate-800 border-2 border-amber-300 ${
+                                      trainDeparting ? 'animate-wheel-spin' : ''
+                                    }`}
+                                  />
+                                  <div
+                                    className={`w-5 h-5 rounded-full bg-slate-800 border-2 border-amber-300 ${
+                                      trainDeparting ? 'animate-wheel-spin' : ''
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Railway Tracks */}
+                    <div className="w-full h-3 bg-amber-900/60 rounded-full mt-2 relative">
+                      <div className="absolute inset-0 flex justify-between px-2">
+                        {Array.from({ length: 24 }).map((_, i) => (
+                          <div key={i} className="w-1.5 h-full bg-amber-950/40" />
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {rocketChoices.map((choice) => {
-                      const isCorrect = choice.id === rocketTarget.id && answerResult === 'correct';
-                      const isWrong = choice.id === selectedAnswerId && answerResult === 'wrong';
-
-                      return (
+                  {/* WORD BLOCKS TRAY (Tap to place into carriages) */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-black uppercase text-slate-500 text-center">
+                      Chạm vào khối từ để gắn lên toa tàu:
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      {trainTrayWords.map((word, idx) => (
                         <button
-                          key={choice.id}
-                          onClick={() => handleLaunchRocketChoice(choice)}
-                          className={`p-4 rounded-2xl font-black text-base border-2 transition cursor-pointer min-h-[64px] flex items-center gap-3 ${
-                            isCorrect
-                              ? 'bg-emerald-100 border-emerald-500 text-emerald-950 scale-105 shadow-md ring-2 ring-emerald-300'
-                              : isWrong
-                              ? 'bg-rose-100 border-rose-500 text-rose-950 animate-shake'
-                              : 'bg-white hover:bg-sky-50 text-slate-950 border-slate-200 hover:border-sky-300 active:scale-95 shadow-xs'
-                          }`}
+                          key={idx}
+                          onClick={() => handleAttachWordToTrain(word, idx)}
+                          disabled={trainDeparting || roundCompleted}
+                          className="px-6 py-3.5 rounded-2xl bg-white hover:bg-orange-100 text-slate-950 font-black text-lg border-2 border-orange-300 hover:border-orange-500 shadow-sm active:scale-95 cursor-pointer transition-all min-h-[50px]"
                         >
-                          <div className="w-12 h-12 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center p-1.5 shrink-0">
-                            <KidsIllustration name={choice.word} className="w-full h-full object-contain" />
-                          </div>
-                          <div className="text-left">
-                            <p className="font-black text-base text-slate-950">{choice.word}</p>
-                            <p className="text-xs font-bold text-slate-600">({choice.viMeaning})</p>
-                          </div>
+                          {word}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* ========================================================= */}
-              {/* GAME 3: FEED THE ANIMAL (Interactive Bowl)                */}
+              {/* GAME 3: FEED THE ANIMAL (Simulation & Nutrition)          */}
               {/* ========================================================= */}
               {activeGameId === 'feed_animal' && (
                 <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-xs font-black text-amber-950">
-                      Chăm sóc thú cưng
+                  <div className="text-center space-y-1">
+                    <span className="px-3.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-xs font-black text-amber-950">
+                      Chăm Sóc & Nuôi Thú Cưng
                     </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1">
                       {feedState.animalVi} ({feedState.animal}) thích ăn món gì?
                     </h3>
                   </div>
 
-                  <div className="kids-game-canvas-area bg-amber-50 p-6 flex flex-col items-center justify-center">
-                    <div className="w-32 h-32 rounded-3xl bg-amber-100/80 border-2 border-amber-300 flex items-center justify-center p-3 shadow-sm">
+                  <div className="bg-amber-50 rounded-3xl p-8 flex flex-col items-center justify-center border-2 border-amber-200">
+                    <div className="w-36 h-36 rounded-3xl bg-amber-100/90 border-3 border-amber-300 flex items-center justify-center p-4 shadow-md">
                       <KidsIllustration
                         name={feedState.animal.toLowerCase()}
                         className={`w-full h-full object-contain ${
@@ -1002,7 +1058,7 @@ export const KidsGamesPage: React.FC = () => {
                         }`}
                       />
                     </div>
-                    <p className="font-black text-lg text-slate-900 mt-2">
+                    <p className="font-black text-lg text-slate-900 mt-3">
                       {animalFed ? `No nê rồi! ${feedState.animalVi} cảm ơn bé!` : `${feedState.animalVi} đang đói bụng...`}
                     </p>
                   </div>
@@ -1018,12 +1074,12 @@ export const KidsGamesPage: React.FC = () => {
                           key={i}
                           onClick={() => handleFeedFood(f.name)}
                           disabled={animalFed || roundCompleted}
-                          className="p-4 rounded-2xl bg-white hover:bg-emerald-50 text-slate-950 font-black text-base border-2 border-amber-300 hover:border-emerald-500 active:scale-95 transition cursor-pointer min-h-[90px] flex flex-col items-center justify-center gap-1 shadow-xs group"
+                          className="p-5 rounded-2xl bg-white hover:bg-emerald-50 text-slate-950 font-black text-base border-2 border-amber-300 hover:border-emerald-500 active:scale-95 transition cursor-pointer min-h-[100px] flex flex-col items-center justify-center gap-1 shadow-sm group"
                         >
-                          <div className="w-12 h-12 rounded-xl bg-amber-50/80 border border-amber-200 flex items-center justify-center p-1 group-hover:scale-110 transition-transform">
+                          <div className="w-14 h-14 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center p-1.5 group-hover:scale-110 transition-transform">
                             <KidsIllustration name={f.name.toLowerCase()} className="w-full h-full object-contain" />
                           </div>
-                          <span className="font-black text-base text-slate-950">{f.name}</span>
+                          <span className="font-black text-lg text-slate-950">{f.name}</span>
                           <span className="text-xs font-bold text-slate-600">({f.nameVi})</span>
                         </button>
                       ))}
@@ -1032,441 +1088,193 @@ export const KidsGamesPage: React.FC = () => {
               )}
 
               {/* ========================================================= */}
-              {/* GAME 4: FIND THE WORD                                     */}
-              {/* ========================================================= */}
-              {activeGameId === 'find_word' && (
-                <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-xs font-black text-emerald-950">
-                      Lắng nghe và tìm kiếm
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Bé hãy tìm: <span className="underline text-emerald-700">{findTarget.viMeaning}</span>!
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {findChoices.map((c) => {
-                      const isCorrect = c.id === findTarget.id && answerResult === 'correct';
-                      const isWrong = c.id === selectedAnswerId && answerResult === 'wrong';
-
-                      return (
-                        <button
-                          key={c.id}
-                          onClick={() => handleChooseFind(c)}
-                          className={`p-5 rounded-3xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition min-h-[140px] group ${
-                            isCorrect
-                              ? 'bg-emerald-100 border-emerald-500 scale-105 shadow-md ring-2 ring-emerald-300'
-                              : isWrong
-                              ? 'bg-rose-100 border-rose-500 animate-shake'
-                              : 'bg-white hover:bg-emerald-50 border-slate-200 hover:border-emerald-300 active:scale-95 shadow-xs'
-                          }`}
-                        >
-                          <div className="w-16 h-16 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
-                            <KidsIllustration name={c.word} className="w-full h-full object-contain" />
-                          </div>
-                          <span className="text-xl font-black text-slate-950">{c.word}</span>
-                          <span className="text-xs font-bold text-slate-600">({c.viMeaning})</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* GAME 5: MATCH CARDS                                       */}
+              {/* GAME 4: MATCH CARDS (3D Memory Pair Matching)            */}
               {/* ========================================================= */}
               {activeGameId === 'match_cards' && (
                 <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-purple-100 border border-purple-300 text-xs font-black text-purple-950">
-                      Thử tài trí nhớ 3D
+                  <div className="text-center space-y-1">
+                    <span className="px-3.5 py-1 rounded-full bg-purple-100 border border-purple-300 text-xs font-black text-purple-950">
+                      Rèn Luyện Trí Nhớ 3D
                     </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Lật mở các cặp thẻ trùng khớp:
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1">
+                      Lật các tấm thẻ để tìm cặp từ trùng khớp!
                     </h3>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {cards.map((c, idx) => (
-                      <button
-                        key={c.cardId}
-                        onClick={() => handleFlipCard(idx)}
-                        disabled={c.isMatched}
-                        className={`p-5 rounded-3xl border-2 flex flex-col items-center justify-center min-h-[130px] cursor-pointer transition-all ${
-                          c.isMatched
-                            ? 'bg-emerald-100 border-emerald-400 opacity-85'
-                            : c.isFlipped
-                            ? 'bg-purple-100 border-purple-500 scale-102 shadow-sm'
-                            : 'bg-white border-slate-300 hover:border-purple-400 hover:bg-purple-50 shadow-xs'
-                        }`}
-                      >
-                        {c.isFlipped || c.isMatched ? (
-                          <div className="flex flex-col items-center justify-center animate-fadeIn">
-                            <div className="w-14 h-14 rounded-2xl bg-white/90 border border-purple-300 flex items-center justify-center p-1.5 mb-1 shadow-xs">
-                              <KidsIllustration name={c.text} className="w-full h-full object-contain" />
-                            </div>
-                            <span className="text-base font-black text-slate-950">{c.text}</span>
-                            <span className="text-xs font-bold text-purple-900">({c.textVi})</span>
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 rounded-2xl bg-purple-100 border border-purple-300 flex items-center justify-center">
-                            <Layers className="w-6 h-6 text-purple-600" />
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* GAME 6: MAGIC TRAIN                                       */}
-              {/* ========================================================= */}
-              {activeGameId === 'magic_train' && (
-                <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-orange-100 border border-orange-300 text-xs font-black text-orange-950">
-                      Lắp ráp toa tàu
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Hoàn thành từ: <span className="underline text-orange-600">{trainTarget.vi}</span>
-                    </h3>
-                  </div>
-
-                  <div className="kids-game-canvas-area bg-orange-50 p-6 flex items-center justify-center gap-3 overflow-x-auto">
-                    <KidsIllustration name="train" className="w-18 h-18 shrink-0 mr-2 animate-gentle-float" />
-                    {trainTarget.word.split('').map((char, i) => {
-                      const isMissingChar = char === trainTarget.missing;
-                      return (
-                        <div
-                          key={i}
-                          className={`w-16 h-20 rounded-2xl border-2 flex items-center justify-center text-2xl font-black shadow-xs ${
-                            isMissingChar
-                              ? trainCompleted
-                                ? 'bg-emerald-300 border-emerald-500 text-emerald-950'
-                                : 'bg-white border-dashed border-orange-500 text-orange-600'
-                              : 'bg-orange-500 border-orange-700 text-white shadow-sm'
-                          }`}
-                        >
-                          {isMissingChar ? (trainCompleted ? char : '?') : char}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex items-center justify-center gap-4">
-                    {trainTarget.options.map((letter, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleChooseCarriageLetter(letter)}
-                        className="w-16 h-16 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-2xl border-b-4 border-amber-600 active:scale-95 transition cursor-pointer min-h-[48px]"
-                      >
-                        {letter}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* GAME 7: CATCH THE CORRECT WORD                            */}
-              {/* ========================================================= */}
-              {activeGameId === 'catch_word' && (
-                <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-pink-100 border border-pink-300 text-xs font-black text-pink-950">
-                      Bắt từ vựng
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Đón lấy từ:{' '}
-                      <span className="text-pink-600 underline">{catchTarget.word}</span> (
-                      {catchTarget.viMeaning})!
-                    </h3>
-                  </div>
-
-                  <div className="kids-game-canvas-area bg-gradient-to-b from-sky-100 to-pink-50 p-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
-                      {catchOptions.map((opt) => (
-                        <button
-                          key={opt.id}
-                          onClick={() => handleCatchWord(opt)}
-                          className="p-4 rounded-3xl bg-white hover:bg-pink-50 border-2 border-pink-300 hover:border-pink-500 flex flex-col items-center justify-center gap-1 active:scale-95 transition cursor-pointer min-h-[120px] shadow-sm animate-gentle-float group"
-                        >
-                          <div className="w-12 h-12 rounded-2xl bg-pink-50 border border-pink-200 flex items-center justify-center p-1 group-hover:scale-110 transition-transform">
-                            <KidsIllustration name={opt.word} className="w-full h-full object-contain" />
-                          </div>
-                          <span className="font-black text-base text-slate-950">{opt.word}</span>
-                          <span className="text-[11px] font-bold text-slate-600">({opt.viMeaning})</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* GAME 8: BUILD THE SENTENCE                                */}
-              {/* ========================================================= */}
-              {activeGameId === 'build_sentence' && (
-                <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-teal-100 border border-teal-300 text-xs font-black text-teal-950">
-                      Nghĩa: {sentenceChallenge.fullVi}
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Ghép các từ theo thứ tự chính xác:
-                    </h3>
-                  </div>
-
-                  <div className="min-h-[70px] p-4 rounded-3xl bg-slate-50 border-2 border-slate-300 flex items-center justify-center gap-3 flex-wrap">
-                    {assembledWords.length === 0 ? (
-                      <span className="text-xs font-bold text-slate-400">
-                        Chạm vào các từ bên dưới để xếp vào đây
-                      </span>
-                    ) : (
-                      assembledWords.map((w, idx) => (
-                        <span
-                          key={idx}
-                          className="px-4 py-2 rounded-xl bg-teal-400 text-slate-950 font-black text-sm border border-teal-500"
-                        >
-                          {w}
-                        </span>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-center gap-3 flex-wrap">
-                    {scrambledWords.map((w, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleTapAssembleWord(w, true)}
-                        className="px-5 py-3 rounded-2xl bg-sky-100 hover:bg-sky-200 text-slate-950 font-black text-sm border-2 border-sky-300 active:scale-95 cursor-pointer min-h-[48px]"
-                      >
-                        {w}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* GAME 9: ANIMAL RESCUE                                     */}
-              {/* ========================================================= */}
-              {activeGameId === 'animal_rescue' && (
-                <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-green-100 border border-green-300 text-xs font-black text-green-950">
-                      Câu đố mở khóa lồng
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      {rescueQuestion.questionVi}
-                    </h3>
-                    <p className="text-xs font-bold text-slate-500">{rescueQuestion.question}</p>
-                  </div>
-
-                  <div className="kids-game-canvas-area bg-emerald-50/80 p-6 flex flex-col items-center justify-center">
-                    <div className="w-28 h-28 rounded-3xl bg-white border-2 border-emerald-300 flex items-center justify-center p-2 shadow-sm relative">
-                      <KidsIllustration
-                        name="dog"
-                        className={`w-full h-full object-contain ${
-                          cageUnlocked ? 'animate-bounce' : 'animate-animal-breathe'
-                        }`}
-                      />
-                      <span className="absolute -top-2 -right-2 p-1.5 rounded-full bg-white border border-slate-200 shadow-xs">
-                        {cageUnlocked ? <Unlock className="w-4 h-4 text-emerald-600" /> : <Lock className="w-4 h-4 text-slate-500" />}
-                      </span>
-                    </div>
-                    <p className="font-black text-base text-slate-900 mt-2">
-                      {cageUnlocked ? 'Tuyệt vời! Chú cún đã được giải cứu an toàn!' : 'Bạn cún đang bị nhốt, bé hãy giải cứu nhé!'}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {rescueQuestion.answers.map((ans) => {
-                      const isCorrect = ans.id === rescueQuestion.correctAnswerId && answerResult === 'correct';
-                      const isWrong = ans.id === selectedAnswerId && answerResult === 'wrong';
-
-                      return (
-                        <button
-                          key={ans.id}
-                          onClick={() => handleRescueAnswer(ans.id)}
-                          className={`p-3.5 rounded-2xl font-black text-sm flex items-center justify-between cursor-pointer transition min-h-[58px] border-2 group ${
-                            isCorrect
-                              ? 'bg-emerald-100 border-emerald-500 text-emerald-950 scale-102 shadow-md ring-2 ring-emerald-300'
-                              : isWrong
-                              ? 'bg-rose-100 border-rose-500 text-rose-950 animate-shake'
-                              : 'bg-white hover:bg-green-50 border-slate-200 hover:border-green-300 text-slate-950 active:scale-95 shadow-xs'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-xl bg-green-50 border border-green-200 flex items-center justify-center p-1 group-hover:scale-110 transition-transform shrink-0">
-                              <KidsIllustration name={ans.text} className="w-full h-full object-contain" />
-                            </div>
-                            <div className="text-left">
-                              <p className="font-black text-sm text-slate-950">{ans.textVi}</p>
-                              <p className="text-xs font-bold text-slate-600">({ans.text})</p>
-                            </div>
-                          </div>
-                          {isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* GAME 10: TREASURE ISLAND                                  */}
-              {/* ========================================================= */}
-              {activeGameId === 'treasure_island' && (
-                <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-yellow-100 border border-yellow-300 text-xs font-black text-yellow-950">
-                      Trạm kiểm soát {islandCheckpoint}/5
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      {islandQuestion.questionVi}
-                    </h3>
-                  </div>
-
-                  <div className="kids-game-canvas-area bg-amber-50 p-6 flex items-center justify-center gap-4">
-                    <KidsIllustration name="treasure-chest" className="w-16 h-16 shrink-0 mr-2 animate-gentle-float" />
-                    {[1, 2, 3, 4, 5].map((cp) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-xl mx-auto">
+                    {memoryDeck.map((card, idx) => (
                       <div
-                        key={cp}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm border-2 ${
-                          cp < islandCheckpoint
-                            ? 'bg-emerald-400 text-emerald-950 border-emerald-600'
-                            : cp === islandCheckpoint
-                            ? 'bg-amber-400 text-amber-950 border-amber-600 scale-110 shadow-md ring-2 ring-amber-300'
-                            : 'bg-slate-200 text-slate-500 border-slate-300'
+                        key={card.cardId}
+                        onClick={() => handleFlipMemoryCard(idx)}
+                        className={`kids-flip-card h-36 rounded-2xl cursor-pointer select-none ${
+                          card.isMatched ? 'opacity-90 ring-4 ring-emerald-400' : ''
                         }`}
                       >
-                        {cp}
+                        <div className={`kids-flip-inner ${card.isFlipped || card.isMatched ? 'is-flipped' : ''}`}>
+                          {/* Front (Hidden Face) */}
+                          <div className="kids-flip-front bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl border-3 border-purple-300 flex items-center justify-center text-white text-3xl font-black shadow-md">
+                            <span>✨</span>
+                          </div>
+
+                          {/* Back (Revealed Content) */}
+                          <div className="kids-flip-back bg-white rounded-2xl border-3 border-purple-400 flex flex-col items-center justify-center p-3 text-center shadow-md">
+                            <span className="text-xl font-black text-slate-950">{card.text}</span>
+                            <span className="text-xs font-bold text-purple-700 mt-1">({card.textVi})</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {islandQuestion.answers.map((ans) => {
-                      const isCorrect = ans.id === islandQuestion.correctAnswerId && answerResult === 'correct';
-                      const isWrong = ans.id === selectedAnswerId && answerResult === 'wrong';
-
-                      return (
-                        <button
-                          key={ans.id}
-                          onClick={() => handleTreasureAnswer(ans.id)}
-                          className={`p-3.5 rounded-2xl font-black text-sm flex items-center justify-between cursor-pointer transition min-h-[58px] border-2 group ${
-                            isCorrect
-                              ? 'bg-emerald-100 border-emerald-500 text-emerald-950 scale-102 shadow-md ring-2 ring-emerald-300'
-                              : isWrong
-                              ? 'bg-rose-100 border-rose-500 text-rose-950 animate-shake'
-                              : 'bg-white hover:bg-yellow-50 border-slate-200 hover:border-yellow-400 text-slate-950 active:scale-95 shadow-xs'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center p-1 group-hover:scale-110 transition-transform shrink-0">
-                              <KidsIllustration name={ans.text} className="w-full h-full object-contain" />
-                            </div>
-                            <div className="text-left">
-                              <p className="font-black text-sm text-slate-950">{ans.textVi}</p>
-                              <p className="text-xs font-bold text-slate-600">({ans.text})</p>
-                            </div>
-                          </div>
-                          {isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : null}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
               )}
 
               {/* ========================================================= */}
-              {/* GAME 11: SOUND DETECTIVE                                  */}
+              {/* GAME 5: ANIMAL RESCUE (Exploration & Path Finding)        */}
               {/* ========================================================= */}
-              {activeGameId === 'sound_detective' && (
+              {activeGameId === 'animal_rescue' && (
                 <div className="space-y-6">
-                  <div className="kids-game-text-area text-center space-y-2">
-                    <span className="px-3 py-1 rounded-full bg-cyan-100 border border-cyan-300 text-xs font-black text-cyan-950">
-                      Lắng nghe âm thanh kỳ bí
+                  <div className="text-center space-y-1">
+                    <span className="px-3.5 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-xs font-black text-emerald-950">
+                      Hành Trình Khám Phá Thung Lũng
                     </span>
-                    <h3 className="text-2xl font-black text-slate-950">
-                      Bé vừa nghe thấy âm thanh của từ nào?
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1">
+                      {rescueClue.vi}
                     </h3>
-                    <button
-                      onClick={() => {
-                        soundManager.playDing();
-                        voiceService.speakWord(detectiveTarget.word);
-                      }}
-                      className="px-6 py-2.5 rounded-2xl bg-cyan-500 hover:bg-cyan-600 text-white font-black text-xs inline-flex items-center gap-2 border-b-2 border-cyan-700 active:scale-95 cursor-pointer min-h-[40px]"
-                    >
-                      <Volume2 className="w-4 h-4" />
-                      <span>Nghe lại âm thanh</span>
-                    </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    {detectiveChoices.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => handleDetectiveChoice(item)}
-                        className="p-5 rounded-3xl bg-white hover:bg-cyan-50 border-2 border-slate-200 hover:border-cyan-400 flex flex-col items-center justify-center gap-2 active:scale-95 transition cursor-pointer min-h-[140px] shadow-xs group"
-                      >
-                        <div className="w-16 h-16 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
-                          <KidsIllustration name={item.word} className="w-full h-full object-contain" />
-                        </div>
-                        <span className="text-xl font-black text-slate-950">{item.word}</span>
-                        <span className="text-xs font-bold text-slate-600">({item.viMeaning})</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ========================================================= */}
-              {/* GAME 12: SPEAK & REPEAT                                   */}
-              {/* ========================================================= */}
-              {activeGameId === 'speak_repeat' && (
-                <div className="space-y-6 text-center">
-                  <div className="kids-game-text-area space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-violet-100 border border-violet-300 text-xs font-black text-violet-950">
-                      Luyện nói theo mẫu
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-950 mt-1">
-                      Đọc to từ vựng:{' '}
-                      <span className="text-violet-600 underline">{speakTarget.word}</span>
-                    </h3>
-                    <p className="text-sm font-bold text-slate-600">({speakTarget.viMeaning})</p>
-                  </div>
-
-                  <div className="kids-game-canvas-area bg-violet-50 p-6 flex flex-col items-center justify-center">
-                    <div className="w-24 h-24 rounded-full bg-violet-200 border-4 border-violet-400 flex items-center justify-center text-violet-700 animate-gentle-float">
-                      <Mic className="w-12 h-12" />
+                  <div className="relative bg-emerald-50 rounded-3xl p-8 border-2 border-emerald-200 flex flex-col items-center justify-center text-center space-y-5 min-h-[280px]">
+                    <div className="w-32 h-32 rounded-3xl bg-white border-2 border-emerald-300 flex items-center justify-center p-4 shadow-sm">
+                      <KidsIllustration
+                        name={rescuePhase === 'home' ? 'dog' : 'dog'}
+                        className={`w-full h-full object-contain ${
+                          rescuePhase === 'home' ? 'animate-bounce' : 'animate-animal-breathe'
+                        }`}
+                      />
                     </div>
-                    {speakFeedbackText && (
-                      <p className="text-sm font-black text-slate-900 mt-3">{speakFeedbackText}</p>
+
+                    {/* Stage 1: Lost Puppy */}
+                    {rescuePhase === 'lost' && (
+                      <button
+                        onClick={() => handleRescueAction('find')}
+                        className="px-8 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-base border-b-4 border-emerald-700 shadow-md active:scale-95 cursor-pointer animate-bounce"
+                      >
+                        🐾 Đi tìm dấu chân chú chó!
+                      </button>
+                    )}
+
+                    {/* Stage 2: Footprints */}
+                    {rescuePhase === 'footprint' && (
+                      <button
+                        onClick={() => handleRescueAction('footprints')}
+                        className="px-8 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-base border-b-4 border-amber-600 shadow-md active:scale-95 cursor-pointer animate-bounce"
+                      >
+                        🐾 Chạm vào dấu chân để đi tiếp!
+                      </button>
+                    )}
+
+                    {/* Stage 3: Three Paths */}
+                    {rescuePhase === 'path' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+                        <button
+                          onClick={() => handleRescueAction('forest')}
+                          className="p-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-black text-sm border-2 border-slate-300 active:scale-95 cursor-pointer"
+                        >
+                          🌲 Rừng Tối (Dark Forest)
+                        </button>
+                        <button
+                          onClick={() => handleRescueAction('meadow')}
+                          className="p-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm border-b-4 border-emerald-700 shadow-md active:scale-95 cursor-pointer ring-2 ring-emerald-300"
+                        >
+                          🌿 Thảo Nguyên (Green Meadow)
+                        </button>
+                        <button
+                          onClick={() => handleRescueAction('swamp')}
+                          className="p-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-black text-sm border-2 border-slate-300 active:scale-95 cursor-pointer"
+                        >
+                          🌊 Đầm Lầy (Muddy Swamp)
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Stage 4: Wooden Gate & Key */}
+                    {rescuePhase === 'gate' && (
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => handleRescueAction('stick')}
+                          className="px-6 py-3 rounded-2xl bg-white border-2 border-slate-300 text-slate-700 font-black text-sm active:scale-95 cursor-pointer"
+                        >
+                          Cành cây (Stick)
+                        </button>
+                        <button
+                          onClick={() => handleRescueAction('key')}
+                          className="px-8 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-base border-b-4 border-amber-600 shadow-md active:scale-95 cursor-pointer flex items-center gap-2 animate-bounce"
+                        >
+                          <Unlock className="w-5 h-5" />
+                          <span>Chìa Khóa Vàng (Key)</span>
+                        </button>
+                      </div>
                     )}
                   </div>
+                </div>
+              )}
 
-                  <div className="flex items-center justify-center gap-3">
-                    <button
-                      onClick={() => voiceService.speakWord(speakTarget.word)}
-                      className="px-6 py-3 rounded-2xl bg-sky-100 hover:bg-sky-200 text-sky-950 font-black text-xs flex items-center gap-2 border border-sky-300 cursor-pointer min-h-[48px] active:scale-95"
-                    >
-                      <Volume2 className="w-4 h-4" />
-                      <span>Nghe lại mẫu</span>
-                    </button>
+              {/* ========================================================= */}
+              {/* GAME 6: TREASURE ISLAND (Expedition & Collection)         */}
+              {/* ========================================================= */}
+              {activeGameId === 'treasure_island' && (
+                <div className="space-y-6">
+                  <div className="text-center space-y-1">
+                    <span className="px-3.5 py-1 rounded-full bg-yellow-100 border border-yellow-300 text-xs font-black text-yellow-950">
+                      Hành Trình Vượt 4 Trạm Thử Thách
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-1">
+                      Khám phá bí mật Đảo Hải Tặc!
+                    </h3>
+                  </div>
 
-                    <button
-                      onClick={handleStartVoiceRepeat}
-                      disabled={speakState === 'listening'}
-                      className="px-8 py-3 rounded-2xl bg-violet-500 hover:bg-violet-600 text-white font-black text-sm flex items-center gap-2 border-b-4 border-violet-700 cursor-pointer min-h-[48px] active:scale-95 shadow-md"
-                    >
-                      <Mic className="w-5 h-5" />
-                      <span>{speakState === 'listening' ? 'Đang lắng nghe...' : 'BẤM ĐỂ ĐỌC'}</span>
-                    </button>
+                  <div className="relative bg-gradient-to-b from-sky-50 via-amber-50 to-yellow-50 rounded-3xl p-8 border-2 border-yellow-300 flex flex-col items-center justify-center text-center space-y-6 min-h-[300px]">
+                    <div className="w-32 h-32 rounded-3xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center p-3 shadow-md">
+                      <KidsIllustration name="treasure-chest" className="w-full h-full object-contain animate-gentle-float" />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {islandStep === 'map' && (
+                        <button
+                          onClick={() => handleIslandAction('map')}
+                          className="px-8 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-base border-b-4 border-amber-600 shadow-md active:scale-95 animate-bounce cursor-pointer"
+                        >
+                          🗺️ Đọc bản đồ và xuất phát!
+                        </button>
+                      )}
+
+                      {islandStep === 'bridge' && (
+                        <button
+                          onClick={() => handleIslandAction('bridge')}
+                          className="px-8 py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-base border-b-4 border-sky-700 shadow-md active:scale-95 animate-bounce cursor-pointer"
+                        >
+                          🌉 Bước qua cây cầu gỗ bắc qua sông!
+                        </button>
+                      )}
+
+                      {islandStep === 'cave' && (
+                        <button
+                          onClick={() => handleIslandAction('cave')}
+                          className="px-8 py-3.5 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-black text-base border-b-4 border-purple-700 shadow-md active:scale-95 animate-bounce cursor-pointer"
+                        >
+                          🔑 Nhặt chiếc chìa khóa vàng trong hang đá!
+                        </button>
+                      )}
+
+                      {islandStep === 'chest' && (
+                        <button
+                          onClick={() => handleIslandAction('chest')}
+                          className="px-10 py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black text-lg border-b-4 border-amber-600 shadow-lg active:scale-95 animate-bounce cursor-pointer flex items-center gap-2"
+                        >
+                          <Sparkles className="w-6 h-6 text-amber-900" />
+                          <span>Mở Khóa Hòm Vàng Châu Báu!</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1474,7 +1282,7 @@ export const KidsGamesPage: React.FC = () => {
               {/* CELEBRATION NEXT ROUND BUTTON WITH WOW EFFECT */}
               {roundCompleted && !showGameWinModal && (
                 <div className="p-5 rounded-3xl bg-emerald-50 border-2 border-emerald-400 text-center space-y-3 animate-fadeIn my-4 shadow-sm">
-                  <p className="text-emerald-950 font-black text-lg flex items-center justify-center gap-2">
+                  <p className="text-emerald-950 font-black text-lg sm:text-xl flex items-center justify-center gap-2">
                     <Sparkles className="w-5 h-5 text-amber-500" />
                     <span>{roundPraise?.vi || 'Xuất sắc! Bé làm chuẩn rồi!'}</span>
                   </p>
@@ -1490,29 +1298,44 @@ export const KidsGamesPage: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* VICTORY MODAL */}
+      {/* ================================================================ */}
+      {/* 4. VICTORY MODAL (Strict Section 28 Standard)                    */}
+      {/* MISSION COMPLETE • ⭐ ⭐ ⭐ • +50 XP • Great job! / Giỏi lắm!    */}
+      {/* ================================================================ */}
       {showGameWinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="max-w-md w-full p-8 rounded-3xl bg-white border-4 border-amber-400 text-center space-y-5 animate-scale-up shadow-2xl">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-amber-400 flex items-center justify-center border-2 border-amber-500 text-amber-950">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-amber-400 flex items-center justify-center border-2 border-amber-500 text-amber-950 shadow-md">
               <Award className="w-12 h-12" />
             </div>
+
             <div>
-              <h2 className="text-2xl font-black text-slate-950 flex items-center justify-center gap-2">
-                <span>Chiến Thắng Xuất Sắc!</span>
+              <span className="text-xs font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                MISSION COMPLETE
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-950 mt-2 flex items-center justify-center gap-2">
+                <span>Great job!</span>
                 <Sparkles className="w-6 h-6 text-amber-500" />
               </h2>
-              <p className="text-sm font-bold text-slate-600 mt-1">{winMessage.vi}</p>
+              <p className="text-base font-extrabold text-amber-800 mt-1">Giỏi lắm!</p>
+              <p className="text-xs font-bold text-slate-500 mt-1">{winMessage.vi}</p>
             </div>
 
+            {/* 3 Golden Stars */}
+            <div className="flex items-center justify-center gap-3 py-1">
+              <Star className="w-10 h-10 fill-amber-400 text-amber-500 animate-bounce" />
+              <Star className="w-12 h-12 fill-amber-400 text-amber-500 animate-bounce" style={{ animationDelay: '0.1s' }} />
+              <Star className="w-10 h-10 fill-amber-400 text-amber-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
+            </div>
+
+            {/* XP & Rewards */}
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex items-center justify-center gap-2 text-amber-950 font-black text-sm">
-              <span>Bé nhận được: +{activeGameDef.starsAwarded} Ngôi Sao & +{activeGameDef.xpAwarded} XP!</span>
-              <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
+              <span>+{activeGameDef.starsAwarded} Sao Vàng & +{activeGameDef.xpAwarded} XP!</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={handleStartGame}
                 className="flex-1 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm border-b-2 border-amber-600 active:scale-95 cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
@@ -1521,11 +1344,11 @@ export const KidsGamesPage: React.FC = () => {
                 <span>Chơi Lại</span>
               </button>
               <button
-                onClick={() => navigate('/kids/world')}
+                onClick={handleBackToCatalog}
                 className="flex-1 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm border-b-2 border-emerald-700 active:scale-95 cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
               >
-                <Compass className="w-4 h-4" />
-                <span>Về Đảo Của Bé</span>
+                <Grid className="w-4 h-4" />
+                <span>Chọn Trò Khác</span>
               </button>
             </div>
           </div>

@@ -827,6 +827,200 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
       );
 
     /* ----------------------------------------------------
+     * SCENARIO & GAME OBJECTS (Kids V4 Simulation Items)
+     * ---------------------------------------------------- */
+    case 'shopping-cart':
+    case 'cart':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Shopping Cart'}>
+          {/* Basket Mesh */}
+          <path d="M22 28 H82 L72 62 H30 Z" fill="#38bdf8" fillOpacity="0.25" stroke="#0284c7" strokeWidth="4" strokeLinejoin="round" />
+          <line x1="42" y1="28" x2="38" y2="62" stroke="#0284c7" strokeWidth="2.5" />
+          <line x1="62" y1="28" x2="54" y2="62" stroke="#0284c7" strokeWidth="2.5" />
+          <line x1="26" y1="45" x2="77" y2="45" stroke="#0284c7" strokeWidth="2.5" />
+          {/* Cart Handle & Frame */}
+          <path d="M12 20 H22 L30 65 H76" stroke="#0369a1" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* Wheels */}
+          <circle cx="36" cy="76" r="7" fill="#334155" stroke="#0284c7" strokeWidth="3" />
+          <circle cx="68" cy="76" r="7" fill="#334155" stroke="#0284c7" strokeWidth="3" />
+          <circle cx="36" cy="76" r="2.5" fill="#f8fafc" />
+          <circle cx="68" cy="76" r="2.5" fill="#f8fafc" />
+        </svg>
+      );
+
+    case 'shelf':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Supermarket Shelf'}>
+          <rect x="8" y="15" width="84" height="70" rx="4" fill="#fed7aa" stroke="#b45309" strokeWidth="4" />
+          <line x1="8" y1="40" x2="92" y2="40" stroke="#b45309" strokeWidth="5" strokeLinecap="round" />
+          <line x1="8" y1="65" x2="92" y2="65" stroke="#b45309" strokeWidth="5" strokeLinecap="round" />
+          <line x1="50" y1="15" x2="50" y2="85" stroke="#b45309" strokeWidth="3" />
+        </svg>
+      );
+
+    case 'cheese':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Cheese'}>
+          <polygon points="15,68 85,68 75,32 40,32" fill="#facc15" stroke="#ca8a04" strokeWidth="3" strokeLinejoin="round" />
+          <polygon points="40,32 75,32 85,42 50,42" fill="#fde047" />
+          <circle cx="35" cy="54" r="5" fill="#ca8a04" opacity="0.3" />
+          <circle cx="60" cy="50" r="7" fill="#ca8a04" opacity="0.3" />
+          <circle cx="70" cy="60" r="4" fill="#ca8a04" opacity="0.3" />
+        </svg>
+      );
+
+    case 'tomato':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Tomato'}>
+          <circle cx="50" cy="56" r="32" fill="#ef4444" stroke="#b91c1c" strokeWidth="3" />
+          <ellipse cx="40" cy="45" rx="6" ry="12" fill="#f87171" opacity="0.6" transform="rotate(-25 40 45)" />
+          {/* Calyx / Leaf */}
+          <path d="M50 24 L52 14" stroke="#15803d" strokeWidth="4" strokeLinecap="round" />
+          <path d="M50 24 Q40 22 36 28 Q44 26 50 26 Q56 26 64 28 Q60 22 50 24 Z" fill="#22c55e" />
+        </svg>
+      );
+
+    case 'lettuce':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Lettuce'}>
+          <path d="M22 65 C15 45 30 25 50 25 C70 25 85 45 78 65 C70 80 30 80 22 65 Z" fill="#86efac" stroke="#16a34a" strokeWidth="3" />
+          <path d="M30 60 C32 45 42 35 50 35 C58 35 68 45 70 60" stroke="#15803d" strokeWidth="3" fill="none" />
+          <line x1="50" y1="35" x2="50" y2="72" stroke="#15803d" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      );
+
+    case 'orange':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Orange'}>
+          <circle cx="50" cy="55" r="32" fill="#fb923c" stroke="#c2410c" strokeWidth="3" />
+          <ellipse cx="40" cy="45" rx="5" ry="10" fill="#fdba74" opacity="0.6" transform="rotate(-20 40 45)" />
+          <ellipse cx="50" cy="24" rx="8" ry="4" fill="#15803d" transform="rotate(15 50 24)" />
+        </svg>
+      );
+
+    case 'footprints':
+    case 'paw':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Footprints'}>
+          {/* Main pad */}
+          <ellipse cx="50" cy="62" rx="18" ry="14" fill="#a16207" />
+          {/* 4 Toes */}
+          <circle cx="32" cy="40" r="7" fill="#a16207" />
+          <circle cx="45" cy="34" r="8" fill="#a16207" />
+          <circle cx="58" cy="34" r="8" fill="#a16207" />
+          <circle cx="70" cy="42" r="7" fill="#a16207" />
+        </svg>
+      );
+
+    case 'dog-house':
+    case 'house':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Dog House'}>
+          {/* Main Walls */}
+          <rect x="22" y="44" width="56" height="42" rx="3" fill="#fed7aa" stroke="#c2410c" strokeWidth="4" />
+          {/* Door / Entry */}
+          <path d="M40 86 V62 C40 54 60 54 60 62 V86 Z" fill="#78350f" />
+          {/* Triangular Roof */}
+          <polygon points="50,15 12,46 88,46" fill="#dc2626" stroke="#991b1b" strokeWidth="4" strokeLinejoin="round" />
+          {/* Cute Bone sign above entry */}
+          <ellipse cx="50" cy="51" rx="6" ry="2.5" fill="#f8fafc" />
+        </svg>
+      );
+
+    case 'umbrella':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Umbrella'}>
+          <path d="M16 54 C16 30 32 18 50 18 C68 18 84 30 84 54 C72 50 62 56 50 52 C38 56 28 50 16 54 Z" fill="#f59e0b" stroke="#b45309" strokeWidth="3" />
+          <line x1="50" y1="12" x2="50" y2="18" stroke="#78350f" strokeWidth="3" strokeLinecap="round" />
+          <path d="M50 52 V78 C50 84 42 84 42 78" stroke="#78350f" strokeWidth="4" strokeLinecap="round" fill="none" />
+        </svg>
+      );
+
+    case 'sunglasses':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Sunglasses'}>
+          <rect x="16" y="38" width="30" height="24" rx="8" fill="#1e293b" stroke="#0284c7" strokeWidth="3" />
+          <rect x="54" y="38" width="30" height="24" rx="8" fill="#1e293b" stroke="#0284c7" strokeWidth="3" />
+          <path d="M46 45 Q50 42 54 45" stroke="#0284c7" strokeWidth="3" fill="none" />
+          <line x1="16" y1="44" x2="8" y2="38" stroke="#0284c7" strokeWidth="3" strokeLinecap="round" />
+          <line x1="84" y1="44" x2="92" y2="38" stroke="#0284c7" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      );
+
+    case 'jacket':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Warm Jacket'}>
+          <path d="M28 28 L12 55 L24 60 L32 44 V82 H68 V44 L76 60 L88 55 L72 28 Z" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="3" strokeLinejoin="round" />
+          <line x1="50" y1="28" x2="50" y2="82" stroke="#1e3a8a" strokeWidth="3" strokeDasharray="4 2" />
+          <polygon points="40,28 50,38 60,28" fill="#93c5fd" />
+        </svg>
+      );
+
+    case 'helmet':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Space Helmet'}>
+          <circle cx="50" cy="50" r="36" fill="#f1f5f9" stroke="#0284c7" strokeWidth="4" />
+          <ellipse cx="50" cy="52" rx="26" ry="18" fill="#0f172a" stroke="#38bdf8" strokeWidth="3" />
+          <ellipse cx="44" cy="46" rx="8" ry="4" fill="#38bdf8" opacity="0.6" transform="rotate(-15 44 46)" />
+          <line x1="50" y1="14" x2="50" y2="8" stroke="#0284c7" strokeWidth="3" />
+          <circle cx="50" cy="7" r="3" fill="#ef4444" />
+        </svg>
+      );
+
+    case 'fuel-canister':
+    case 'fuel':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Fuel Canister'}>
+          <rect x="28" y="32" width="44" height="52" rx="8" fill="#10b981" stroke="#047857" strokeWidth="4" />
+          <rect x="42" y="20" width="16" height="12" rx="3" fill="#047857" />
+          {/* Energy Bolt */}
+          <polygon points="52,42 42,56 48,56 46,70 58,54 52,54" fill="#fef08a" stroke="#ca8a04" strokeWidth="1.5" />
+        </svg>
+      );
+
+    case 'meteor':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Meteor'}>
+          <polygon points="25,30 45,18 78,28 85,55 70,82 38,80 18,60" fill="#78350f" stroke="#451a03" strokeWidth="4" strokeLinejoin="round" />
+          <circle cx="42" cy="40" r="6" fill="#451a03" opacity="0.5" />
+          <circle cx="62" cy="56" r="8" fill="#451a03" opacity="0.5" />
+          <circle cx="38" cy="65" r="4" fill="#451a03" opacity="0.5" />
+        </svg>
+      );
+
+    case 'alien-planet':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Alien Planet'}>
+          {/* Ring */}
+          <ellipse cx="50" cy="52" rx="44" ry="14" fill="none" stroke="#e879f9" strokeWidth="6" transform="rotate(-18 50 52)" />
+          {/* Sphere */}
+          <circle cx="50" cy="50" r="30" fill="#8b5cf6" stroke="#6d28d9" strokeWidth="3" />
+          <ellipse cx="40" cy="40" rx="8" ry="4" fill="#c084fc" opacity="0.5" />
+        </svg>
+      );
+
+    case 'gold-key':
+    case 'key':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Golden Key'}>
+          <circle cx="36" cy="42" r="16" fill="#facc15" stroke="#b45309" strokeWidth="3" />
+          <circle cx="36" cy="42" r="7" fill="#fff" />
+          <rect x="48" y="38" width="38" height="8" rx="2" fill="#facc15" stroke="#b45309" strokeWidth="2" />
+          <rect x="74" y="46" width="6" height="12" rx="2" fill="#facc15" stroke="#b45309" strokeWidth="2" />
+          <rect x="64" y="46" width="6" height="8" rx="2" fill="#facc15" stroke="#b45309" strokeWidth="2" />
+        </svg>
+      );
+
+    case 'backpack':
+      return (
+        <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'School Backpack'}>
+          <rect x="26" y="28" width="48" height="56" rx="12" fill="#ec4899" stroke="#9d174d" strokeWidth="4" />
+          <rect x="34" y="52" width="32" height="24" rx="6" fill="#f472b6" stroke="#9d174d" strokeWidth="2" />
+          <path d="M42 28 V18 C42 14 58 14 58 18 V28" stroke="#9d174d" strokeWidth="4" fill="none" />
+        </svg>
+      );
+
+    /* ----------------------------------------------------
      * ULTRA-SAFE DEFAULT FALLBACK (Never a broken box!)
      * ---------------------------------------------------- */
     default:

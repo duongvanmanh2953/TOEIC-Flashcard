@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 import { voiceService } from '../services/voice/voiceService';
@@ -328,6 +328,34 @@ export const KidsFlashcardsPage: React.FC = () => {
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
+
+  // Keyboard navigation & interaction (Section 17: Support click, tap, keyboard: flip, next, prev, audio)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        handlePrev();
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        handleFlip();
+      } else if (e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        handleSpeakEnglish();
+      } else if (e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        handleSpeakVietnamese();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredDeck.length, currentCard]);
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">

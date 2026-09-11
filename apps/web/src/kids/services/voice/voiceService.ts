@@ -9,6 +9,8 @@
  * - Unified API: speakEnglish, speakVietnamese, speakWord, speakSentence
  */
 
+import { kidsAudioManager } from '../audio/KidsAudioManager';
+
 export interface VoiceOptions {
   rate?: number;
   pitch?: number;
@@ -207,17 +209,20 @@ class VoiceService {
 
       utterance.onstart = () => {
         this.notify(true);
+        kidsAudioManager.duckMusic();
         options.onStart?.();
       };
 
       utterance.onend = () => {
         this.notify(false);
+        kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
         options.onEnd?.();
       };
 
       utterance.onerror = (e) => {
         this.notify(false);
+        kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
           options.onError?.(e);
@@ -228,6 +233,7 @@ class VoiceService {
       window.speechSynthesis.speak(utterance);
     } catch (err) {
       this.notify(false);
+      kidsAudioManager.restoreMusic();
       options.onError?.(err);
       options.onEnd?.();
     }
@@ -261,17 +267,20 @@ class VoiceService {
 
       utterance.onstart = () => {
         this.notify(true);
+        kidsAudioManager.duckMusic();
         options.onStart?.();
       };
 
       utterance.onend = () => {
         this.notify(false);
+        kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
         options.onEnd?.();
       };
 
       utterance.onerror = (e) => {
         this.notify(false);
+        kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
           options.onError?.(e);
@@ -282,9 +291,28 @@ class VoiceService {
       window.speechSynthesis.speak(utterance);
     } catch (err) {
       this.notify(false);
+      kidsAudioManager.restoreMusic();
       options.onError?.(err);
       options.onEnd?.();
     }
+  }
+
+  /**
+   * Dual Bilingual Speech: Speaks English first, pauses slightly, then speaks Northern Vietnamese
+   */
+  public speakBilingual(englishText: string, vietnameseText: string, onFinish?: () => void) {
+    this.speakEnglish(englishText, {
+      onEnd: () => {
+        setTimeout(() => {
+          this.speakVietnamese(vietnameseText, {
+            onEnd: onFinish,
+          });
+        }, 350);
+      },
+      onError: () => {
+        this.speakVietnamese(vietnameseText, { onEnd: onFinish });
+      },
+    });
   }
 
   /**
@@ -304,19 +332,6 @@ class VoiceService {
     this.speakEnglish(sentence, {
       rate: options.rate ?? 0.85,
       ...options,
-    });
-  }
-
-  /**
-   * Speak English word first, then Northern Vietnamese translation
-   */
-  public speakBilingual(english: string, vietnamese: string, onEnd?: () => void) {
-    this.speakEnglish(english, {
-      onEnd: () => {
-        setTimeout(() => {
-          this.speakVietnamese(vietnamese, { onEnd });
-        }, 300);
-      },
     });
   }
 }

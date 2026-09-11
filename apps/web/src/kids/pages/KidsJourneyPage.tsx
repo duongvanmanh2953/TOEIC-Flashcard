@@ -215,28 +215,80 @@ export const KidsJourneyPage: React.FC = () => {
           </p>
         </div>
 
-        {/* ZIGZAG S-CURVE HORIZONTAL ROWS */}
-        <div className="relative z-10 space-y-8 sm:space-y-12">
+        {/* ZIGZAG S-CURVE HORIZONTAL ROWS WITH SEAMLESS CONTINUOUS ROAD */}
+        <div className="relative z-10 space-y-12 sm:space-y-16">
           {zigzagRows.map((rowItems, rIdx) => {
             const isReversed = rIdx % 2 === 1;
 
             return (
               <div key={`row-${rIdx}`} className="relative">
-                {/* Horizontal Road Line Behind Cards */}
-                <div className="hidden sm:block absolute top-1/2 left-8 right-8 h-3 -translate-y-1/2 rounded-full bg-amber-300/80 border-2 border-amber-400 -z-0" />
+                {/* Horizontal Road Trail - Solid Amber Ribbon with Center Trail Marks */}
+                <div className="hidden sm:flex items-center absolute top-1/2 left-8 right-8 h-8 -translate-y-1/2 rounded-full bg-amber-400 border-4 border-amber-500 shadow-md z-0 overflow-hidden">
+                  <div className="w-full h-1 border-t-2 border-dashed border-amber-100/90" />
+                </div>
 
-                {/* Turnaround Connector between rows */}
+                {/* Seamless Connecting Turnaround Horseshoe Loop between rows (Exact width match) */}
                 {rIdx < zigzagRows.length - 1 && (
                   <div
-                    className={`hidden sm:block absolute -bottom-10 w-16 h-16 rounded-full border-4 border-amber-400 -z-0 ${
-                      isReversed
-                        ? 'left-6 border-r-0 rounded-r-none'
-                        : 'right-6 border-l-0 rounded-l-none'
+                    className={`hidden sm:block absolute -bottom-16 w-24 h-24 z-0 ${
+                      isReversed ? '-left-4' : '-right-4'
                     }`}
-                  />
+                  >
+                    <svg viewBox="0 0 96 96" className="w-full h-full overflow-visible">
+                      {isReversed ? (
+                        // Loop from Row bottom-left curving to Next Row top-left
+                        <g>
+                          <path
+                            d="M 64,0 C 10,0 10,96 64,96"
+                            fill="none"
+                            stroke="#fbbf24"
+                            strokeWidth="32"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 64,0 C 10,0 10,96 64,96"
+                            fill="none"
+                            stroke="#f59e0b"
+                            strokeWidth="4"
+                          />
+                          <path
+                            d="M 64,0 C 10,0 10,96 64,96"
+                            fill="none"
+                            stroke="#fef3c7"
+                            strokeWidth="3"
+                            strokeDasharray="6,6"
+                          />
+                        </g>
+                      ) : (
+                        // Loop from Row bottom-right curving to Next Row top-right
+                        <g>
+                          <path
+                            d="M 32,0 C 86,0 86,96 32,96"
+                            fill="none"
+                            stroke="#fbbf24"
+                            strokeWidth="32"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 32,0 C 86,0 86,96 32,96"
+                            fill="none"
+                            stroke="#f59e0b"
+                            strokeWidth="4"
+                          />
+                          <path
+                            d="M 32,0 C 86,0 86,96 32,96"
+                            fill="none"
+                            stroke="#fef3c7"
+                            strokeWidth="3"
+                            strokeDasharray="6,6"
+                          />
+                        </g>
+                      )}
+                    </svg>
+                  </div>
                 )}
 
-                {/* Checkpoint Nodes in this Row */}
+                {/* Checkpoint Nodes in this Row (z-10, 100% Solid Opacity to completely block background line) */}
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6 relative z-10">
                   {rowItems.map((item) => {
                     const isUnlocked =
@@ -251,14 +303,14 @@ export const KidsJourneyPage: React.FC = () => {
                       <div
                         key={item.lesson.id}
                         onClick={() => handleSelectLesson(item.lesson, isUnlocked)}
-                        className={`relative rounded-3xl p-4 sm:p-5 border-2 transition-all flex flex-col items-center text-center justify-between gap-3 cursor-pointer ${
+                        className={`relative rounded-3xl p-4 sm:p-5 border-3 transition-all flex flex-col items-center text-center justify-between gap-3 cursor-pointer shadow-md bg-white ${
                           isCurrentActive
-                            ? 'kids-liquid-amber border-amber-500 ring-4 ring-amber-400/50 scale-105 animate-pulse'
+                            ? '!bg-amber-100 border-amber-500 ring-4 ring-amber-400/60 scale-105 animate-pulse'
                             : stars > 0
-                            ? 'kids-liquid-emerald border-emerald-500 hover:scale-102'
+                            ? '!bg-emerald-50 border-emerald-500 hover:scale-102 hover:border-emerald-600'
                             : isUnlocked
-                            ? 'kids-liquid-card border-sky-400 hover:border-amber-400 hover:scale-102'
-                            : 'bg-slate-100/90 border-slate-300 opacity-70 cursor-not-allowed'
+                            ? '!bg-white border-sky-400 hover:border-amber-400 hover:scale-102 hover:shadow-lg'
+                            : '!bg-slate-100 border-slate-300 opacity-90 cursor-not-allowed'
                         }`}
                       >
                         {/* Station Number Header */}

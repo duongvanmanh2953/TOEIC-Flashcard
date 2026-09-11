@@ -19,7 +19,8 @@ export type SoundEffectType =
   | 'level_up'
   | 'unlock'
   | 'celebration'
-  | 'encourage';
+  | 'encourage'
+  | 'train_whistle';
 
 class KidsSoundManager {
   private ctx: AudioContext | null = null;
@@ -344,6 +345,52 @@ class KidsSoundManager {
 
       osc.start(now);
       osc.stop(now + 0.13);
+    } catch (_) {}
+  }
+
+  /**
+   * Authentic dual-tone steam train whistle
+   */
+  public playTrainWhistle() {
+    if (!this.soundEnabled) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      // Classic whistle notes: D5 (587Hz) + F#5 (740Hz)
+      const freqs = [587.33, 739.99];
+      // Two blasts: short toot (0.2s) followed by long blast (0.5s)
+      const blasts = [
+        { start: 0, dur: 0.22 },
+        { start: 0.28, dur: 0.55 },
+      ];
+      blasts.forEach((blast) => {
+        freqs.forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now + blast.start);
+          osc.frequency.linearRampToValueAtTime(freq * 1.03, now + blast.start + blast.dur);
+
+          // Bandpass filter to create resonant steam chamber acoustic
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(freq, now + blast.start);
+          filter.Q.setValueAtTime(8, now + blast.start);
+
+          gain.gain.setValueAtTime(0.01, now + blast.start);
+          gain.gain.linearRampToValueAtTime(0.2, now + blast.start + 0.04);
+          gain.gain.setValueAtTime(0.18, now + blast.start + blast.dur - 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + blast.start + blast.dur);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + blast.start);
+          osc.stop(now + blast.start + blast.dur + 0.02);
+        });
+      });
     } catch (_) {}
   }
 
