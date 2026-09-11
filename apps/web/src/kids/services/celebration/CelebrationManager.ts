@@ -25,22 +25,22 @@ export interface CelebrationEvent {
 }
 
 const VIETNAMESE_PRAISES_SMALL = [
-  'Đúng rồi! 🎉',
-  'Giỏi lắm bé ơi! ⭐',
-  'Hay quá! 👏',
-  'Chuẩn luôn! 🌟',
-  'Tuyệt vời! 💖',
-  'Bé thông minh quá! 🚀',
+  'Đúng rồi!',
+  'Giỏi lắm bé ơi!',
+  'Hay quá!',
+  'Chuẩn luôn!',
+  'Tuyệt vời!',
+  'Bé thông minh quá!',
 ];
 
 const VIETNAMESE_PRAISES_BIG = [
-  'Yeahhh! Bé giỏi quá! 🎉',
-  'Xuất sắc! Bé làm được rồi! 🚀',
-  'Tuyệt vời quá đi thôi! 🥳',
-  'Chiến thắng rồi! Hoan hô bé! 🏆',
-  'Bé đỉnh thật đấy! Xuất sắc! 🌈',
-  'Ôi, tuyệt quá! Bé giỏi quá chừng! 🌟',
-  'Hoàn thành rồi! Chúc mừng bé! 🎈',
+  'Yeahhh! Bé giỏi quá!',
+  'Xuất sắc! Bé làm được rồi!',
+  'Tuyệt vời quá đi thôi!',
+  'Chiến thắng rồi! Hoan hô bé!',
+  'Bé đỉnh thật đấy! Xuất sắc!',
+  'Ôi, tuyệt quá! Bé giỏi quá chừng!',
+  'Hoàn thành rồi! Chúc mừng bé!',
 ];
 
 const VIETNAMESE_GREETINGS = [

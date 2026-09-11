@@ -14,6 +14,7 @@ import { getKidsProgress } from '../curriculum/curriculumProgress';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { celebrationManager } from '../services/celebration/CelebrationManager';
 import { VectorTrophy } from '../assets/illustrations/KidsVectors';
+import { Play, RotateCcw, Lock, Flag, Compass, ChevronRight, Star, Trophy } from 'lucide-react';
 
 export const KidsJourneyPage: React.FC = () => {
   const navigate = useNavigate();
@@ -108,11 +109,11 @@ export const KidsJourneyPage: React.FC = () => {
                   : 'kids-liquid-card text-slate-800 border-amber-200 hover:bg-amber-50'
               }`}
             >
-              <span className="text-xl">{world.icon || '🌴'}</span>
+              <Compass className="w-4 h-4 text-amber-800" />
               <span>{world.title}</span>
               {!unlocked && (
-                <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full font-bold">
-                  🔒
+                <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full font-bold inline-flex items-center">
+                  <Lock className="w-2.5 h-2.5" />
                 </span>
               )}
             </button>
@@ -123,12 +124,7 @@ export const KidsJourneyPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 2. EXPEDITION BANNER (MOUNTAIN ADVENTURE HEADER)                 */}
       {/* ================================================================ */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 text-white p-6 sm:p-8 border-3 border-emerald-400">
-        <div className="absolute inset-0 pointer-events-none opacity-20 flex items-end justify-between select-none">
-          <span className="text-9xl leading-none -mb-8">⛰️</span>
-          <span className="text-8xl leading-none -mb-6">🏔️</span>
-          <span className="text-9xl leading-none -mb-10">⛰️</span>
-        </div>
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 text-white p-6 sm:p-8 border-2 border-emerald-400 shadow-sm">
 
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -145,8 +141,8 @@ export const KidsJourneyPage: React.FC = () => {
           </div>
 
           <div className="kids-liquid-card p-3.5 rounded-2xl border-2 border-white/40 flex items-center gap-3 shrink-0">
-            <div className="w-12 h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center text-2xl font-black">
-              🚩
+            <div className="w-12 h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black">
+              <Flag className="w-6 h-6" />
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-700">Mục tiêu đỉnh đèo</p>
@@ -159,7 +155,7 @@ export const KidsJourneyPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 3. DEDICATED BOBBY COMPANION BAR (NEVER OVERLAPS TITLES OR NODES) */}
       {/* ================================================================ */}
-      <div className="kids-liquid-amber p-4 sm:p-5 rounded-3xl border-3 border-amber-400 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="kids-liquid-amber p-4 sm:p-5 rounded-3xl border-2 border-amber-400 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 text-center sm:text-left">
           <div
             onClick={() => {
@@ -171,8 +167,9 @@ export const KidsJourneyPage: React.FC = () => {
             <KidsMascot mood="excited" size={68} speechText="Leo đèo cùng Bobby nào!" />
           </div>
           <div>
-            <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-300">
-              🎒 Bạn Đồng Hành Leo Núi
+            <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-300 inline-flex items-center gap-1">
+              <Compass className="w-3.5 h-3.5" />
+              Bạn Đồng Hành Leo Núi
             </span>
             <h3 className="font-black text-slate-950 text-base sm:text-lg mt-0.5">
               Trạm kế tiếp: {activeLesson ? activeLesson.title : 'Đỉnh Núi Vinh Quang'}
@@ -189,7 +186,8 @@ export const KidsJourneyPage: React.FC = () => {
             className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm flex items-center justify-center gap-2 border-b-4 border-emerald-700 cursor-pointer active:scale-95 shrink-0 animate-bounce"
           >
             <KidsPlayIcon size={20} />
-            <span>VÀO TRẠM NÀY NGAY ▶</span>
+            <span>VÀO TRẠM NÀY NGAY</span>
+            <Play className="w-4 h-4 fill-current" />
           </button>
         )}
       </div>
@@ -197,27 +195,20 @@ export const KidsJourneyPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 4. CONTINUOUS HORIZONTAL ZIGZAG MOUNTAIN TRAIL CONTAINER         */}
       {/* ================================================================ */}
-      <div className="relative rounded-3xl bg-gradient-to-b from-sky-100/90 via-amber-50/80 to-emerald-100/90 border-3 border-amber-300 p-6 sm:p-10 overflow-hidden">
-        {/* Scenic Background Clouds & Trees */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none opacity-40">
-          <div className="absolute top-6 left-10 text-3xl">☁️</div>
-          <div className="absolute top-20 right-12 text-4xl">☁️</div>
-          <div className="absolute top-1/2 left-8 text-3xl">🌲</div>
-          <div className="absolute top-1/3 right-10 text-4xl">🌲</div>
-          <div className="absolute bottom-20 left-16 text-3xl">🌲</div>
-          <div className="absolute bottom-10 right-20 text-4xl">🌲</div>
-        </div>
-
+      <div className="relative rounded-3xl bg-gradient-to-b from-sky-100/90 via-amber-50/80 to-emerald-100/90 border-2 border-amber-300 p-6 sm:p-10 overflow-hidden">
         {/* SUMMIT: Castle & Golden Trophy Destination */}
         <div className="relative z-10 flex flex-col items-center justify-center mb-8 text-center">
           <div className="relative group cursor-pointer hover:scale-105 transition-transform">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 border-4 border-white flex flex-col items-center justify-center">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 border-4 border-white flex flex-col items-center justify-center shadow-md">
               <KidsTrophyIcon size={64} />
             </div>
-            <span className="absolute -top-3 -right-3 text-3xl animate-bounce">🚩</span>
+            <span className="absolute -top-2 -right-2 p-1.5 rounded-full bg-white shadow-xs border border-slate-200">
+              <Flag className="w-5 h-5 text-rose-500 fill-rose-500" />
+            </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-950 mt-2">
-            Đỉnh Núi Vinh Quang 🏰
+          <h2 className="text-xl sm:text-2xl font-black text-slate-950 mt-2 flex items-center justify-center gap-1.5">
+            <span>Đỉnh Núi Vinh Quang</span>
+            <Trophy className="w-6 h-6 text-amber-500" />
           </h2>
           <p className="text-xs font-black text-amber-900 bg-white/80 px-3 py-1 rounded-full border border-amber-300 mt-1">
             Rương kho báu vàng đang chờ bé ở đích đến!
@@ -260,7 +251,7 @@ export const KidsJourneyPage: React.FC = () => {
                       <div
                         key={item.lesson.id}
                         onClick={() => handleSelectLesson(item.lesson, isUnlocked)}
-                        className={`relative rounded-3xl p-4 sm:p-5 border-3 transition-all flex flex-col items-center text-center justify-between gap-3 cursor-pointer ${
+                        className={`relative rounded-3xl p-4 sm:p-5 border-2 transition-all flex flex-col items-center text-center justify-between gap-3 cursor-pointer ${
                           isCurrentActive
                             ? 'kids-liquid-amber border-amber-500 ring-4 ring-amber-400/50 scale-105 animate-pulse'
                             : stars > 0
@@ -283,8 +274,9 @@ export const KidsJourneyPage: React.FC = () => {
                               ))}
                             </div>
                           ) : isCurrentActive ? (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 text-[10px] font-black animate-pulse">
-                              ĐANG ĐẾN 📍
+                            <span className="px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 text-[10px] font-black animate-pulse flex items-center gap-1">
+                              <span>ĐANG ĐẾN</span>
+                              <Compass className="w-3 h-3" />
                             </span>
                           ) : null}
                         </div>
@@ -292,7 +284,7 @@ export const KidsJourneyPage: React.FC = () => {
                         {/* Station Center Orb */}
                         <div className="relative my-1">
                           <div
-                            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-3xl sm:text-4xl border-3 transition-transform ${
+                            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-3xl sm:text-4xl border-2 transition-transform ${
                               isCurrentActive
                                 ? 'bg-amber-300 border-amber-500 scale-110'
                                 : stars > 0
@@ -330,20 +322,24 @@ export const KidsJourneyPage: React.FC = () => {
                         {/* Action CTA Button */}
                         <div className="w-full pt-1">
                           {isCurrentActive ? (
-                            <div className="w-full py-2 rounded-xl bg-amber-500 text-amber-950 font-black text-xs border-b-2 border-amber-700 text-center">
-                              BẮT ĐẦU NGAY ▶
+                            <div className="w-full py-2 rounded-xl bg-amber-500 text-amber-950 font-black text-xs border-b-2 border-amber-700 text-center flex items-center justify-center gap-1.5 shadow-sm">
+                              <span>BẮT ĐẦU NGAY</span>
+                              <Play className="w-3.5 h-3.5 fill-current" />
                             </div>
                           ) : stars > 0 ? (
-                            <div className="w-full py-1.5 rounded-xl bg-white text-emerald-800 font-black text-[11px] border border-emerald-300 text-center">
-                              Luyện Lại 🔁
+                            <div className="w-full py-1.5 rounded-xl bg-white text-emerald-800 font-black text-[11px] border border-emerald-300 text-center flex items-center justify-center gap-1.5 shadow-sm">
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Luyện Lại</span>
                             </div>
                           ) : isUnlocked ? (
-                            <div className="w-full py-1.5 rounded-xl bg-sky-100 text-sky-950 font-black text-[11px] border border-sky-300 text-center">
-                              Mở Khóa ▶
+                            <div className="w-full py-1.5 rounded-xl bg-sky-100 text-sky-950 font-black text-[11px] border border-sky-300 text-center flex items-center justify-center gap-1.5 shadow-sm">
+                              <span>Mở Khóa</span>
+                              <Play className="w-3.5 h-3.5 fill-current" />
                             </div>
                           ) : (
-                            <div className="w-full py-1.5 rounded-xl bg-slate-200 text-slate-500 font-black text-[11px] text-center">
-                              Chưa Mở 🔒
+                            <div className="w-full py-1.5 rounded-xl bg-slate-200 text-slate-500 font-black text-[11px] text-center flex items-center justify-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>Chưa Mở</span>
                             </div>
                           )}
                         </div>

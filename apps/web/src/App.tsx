@@ -64,6 +64,7 @@ import { KidsLessonPage } from './kids/pages/KidsLessonPage';
 import { KidsGamesPage } from './kids/pages/KidsGamesPage';
 import { KidsMyWorldPage } from './kids/pages/KidsMyWorldPage';
 import { KidsParentDashboardPage } from './kids/pages/KidsParentDashboardPage';
+import { KidsFlashcardsPage } from './kids/pages/KidsFlashcardsPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
   children,
@@ -216,6 +217,8 @@ export const App: React.FC = () => {
               <Route path="games" element={<KidsGamesPage />} />
               <Route path="world" element={<KidsMyWorldPage />} />
               <Route path="my-world" element={<KidsMyWorldPage />} />
+              <Route path="flashcards" element={<KidsFlashcardsPage />} />
+              <Route path="vocabulary" element={<KidsFlashcardsPage />} />
               <Route path="parent" element={<KidsParentDashboardPage />} />
             </Route>
 

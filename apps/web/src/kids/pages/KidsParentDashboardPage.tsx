@@ -6,6 +6,7 @@ import { getKidsProgress, resetKidsProgress } from '../curriculum/curriculumProg
 import { WORLDS_DATA } from '../curriculum/kidsCurriculum';
 import { speechManager } from '../services/speech/KidsSpeechManager';
 import { soundManager } from '../services/sound/KidsSoundManager';
+import { Star, Flame, Target, Volume2, Clock, Sparkles } from 'lucide-react';
 
 export const KidsParentDashboardPage: React.FC = () => {
   const { t } = useTranslation();
@@ -81,7 +82,7 @@ export const KidsParentDashboardPage: React.FC = () => {
         <div className="bg-white rounded-3xl p-5 border-2 border-amber-200/80">
           <div className="text-xs font-black text-slate-600 uppercase mb-1">Số Sao Tích Lũy</div>
           <div className="text-2xl md:text-3xl font-black text-amber-500 flex items-center gap-1.5">
-            <span>⭐</span>
+            <Star className="w-6 h-6 fill-amber-400 text-amber-500" />
             <span>{progress.totalStars}</span>
           </div>
           <div className="text-[11px] text-slate-600 font-bold mt-1">Từ bài học & mini-game</div>
@@ -105,8 +106,8 @@ export const KidsParentDashboardPage: React.FC = () => {
 
         <div className="bg-white rounded-3xl p-5 border-2 border-rose-200/80">
           <div className="text-xs font-black text-slate-600 uppercase mb-1">Thói Quen Mỗi Ngày</div>
-          <div className="text-2xl md:text-3xl font-black text-rose-500 flex items-center gap-1">
-            <span>🔥</span>
+          <div className="text-2xl md:text-3xl font-black text-rose-500 flex items-center gap-1.5">
+            <Flame className="w-6 h-6 text-rose-500" />
             <span>{progress.streakDays}</span>
             <span className="text-sm font-bold text-slate-600">ngày</span>
           </div>
@@ -119,7 +120,7 @@ export const KidsParentDashboardPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <span>🎯</span>
+              <Target className="w-5 h-5 text-amber-600" />
               <span>Từ Vựng Cần Bố Mẹ Ôn Cùng Bé</span>
             </h2>
             <p className="text-xs text-slate-600 font-bold">Các từ bé cần nghe và luyện phát âm thêm.</p>
@@ -130,8 +131,9 @@ export const KidsParentDashboardPage: React.FC = () => {
         </div>
 
         {(!progress.weakWords || progress.weakWords.length === 0) ? (
-          <div className="p-6 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-900 text-center text-sm font-black">
-            🌟 Tuyệt vời! Bé đã nắm vững tất cả các từ vựng đã học với độ chính xác rất cao!
+          <div className="p-6 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-900 text-center text-sm font-black flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-500" />
+            <span>Tuyệt vời! Bé đã nắm vững tất cả các từ vựng đã học với độ chính xác rất cao!</span>
           </div>
         ) : (
           <div className="flex flex-wrap gap-2.5">
@@ -142,7 +144,7 @@ export const KidsParentDashboardPage: React.FC = () => {
                 className="px-4 py-2 rounded-xl bg-orange-50 border border-orange-200 text-orange-800 text-xs font-bold flex items-center gap-2 hover:bg-orange-100 transition-all cursor-pointer"
                 title="Tap to hear pronunciation"
               >
-                <span>🔊</span>
+                <Volume2 className="w-3.5 h-3.5 text-orange-700" />
                 <span>{word}</span>
               </button>
             ))}
@@ -153,7 +155,7 @@ export const KidsParentDashboardPage: React.FC = () => {
       {/* Study Guardrails & Daily Limits */}
       <div className="bg-white rounded-3xl p-6 md:p-7 border-2 border-slate-100 space-y-4">
         <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-          <span>⏱️</span>
+          <Clock className="w-5 h-5 text-slate-600" />
           <span>Child Safety & Screen Time</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

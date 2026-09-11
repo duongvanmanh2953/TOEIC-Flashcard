@@ -8,6 +8,7 @@ import { KidsIcon } from '../assets/icons/KidsIcons';
 import { completeLesson, getNextLessonToLearn } from '../curriculum/curriculumProgress';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { celebrationManager } from '../services/celebration/CelebrationManager';
+import { Lock, Maximize2, Minimize2, Target } from 'lucide-react';
 
 export const KidsLessonPage: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -38,6 +39,7 @@ export const KidsLessonPage: React.FC = () => {
   const [nextLesson, setNextLesson] = useState<KidsLesson | null>(null);
   const [parentExitModalOpen, setParentExitModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isActivityBusy, setIsActivityBusy] = useState(false);
 
   // If lesson doesn't exist, redirect
   useEffect(() => {
@@ -54,6 +56,7 @@ export const KidsLessonPage: React.FC = () => {
   const currentActivity = activities[currentStep];
 
   const handleActivityComplete = (isCorrect: boolean) => {
+    if (isActivityBusy) return; // Never advance while child is speaking or system is evaluating
     let newCorrect = correctCount;
     if (isCorrect) {
       newCorrect += 1;
@@ -138,14 +141,17 @@ export const KidsLessonPage: React.FC = () => {
           className="px-3 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer border border-slate-300 text-xs font-black shrink-0"
           title="Thoát bài học (Bố Mẹ mở khóa)"
         >
-          <span>🔒</span>
+          <Lock className="w-3.5 h-3.5 text-slate-600" />
           <span className="hidden sm:inline">Thoát</span>
         </button>
 
         {/* Caterpillar Steps Indicator */}
         <div className="flex-1 max-w-md">
           <div className="flex items-center justify-between text-xs font-black text-slate-800 mb-1.5 px-1">
-            <span className="truncate mr-2">🎯 {targetLesson.title}</span>
+            <span className="truncate mr-2 flex items-center gap-1">
+              <Target className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>{targetLesson.title}</span>
+            </span>
             <span className="text-amber-700 shrink-0">
               Trạm {currentStep + 1} / {activities.length}
             </span>
@@ -178,7 +184,7 @@ export const KidsLessonPage: React.FC = () => {
             className="w-10 h-10 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-300 flex items-center justify-center text-slate-700 transition cursor-pointer text-sm font-black"
             title="Toàn màn hình tập trung"
           >
-            {isFullscreen ? '✕' : '⛶'}
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-xl">
             {targetLesson.emoji || '⭐'}
@@ -191,6 +197,7 @@ export const KidsLessonPage: React.FC = () => {
         <KidsActivityRenderer
           activity={currentActivity}
           onComplete={handleActivityComplete}
+          onBusyStateChange={setIsActivityBusy}
         />
       )}
 

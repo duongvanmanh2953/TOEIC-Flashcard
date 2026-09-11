@@ -3,6 +3,7 @@ import { ModalPortal } from '../../components/common/ModalPortal';
 import { KidsStarIcon, KidsSparklesIcon } from '../assets/icons/KidsIcons';
 import { KidsMascot } from './KidsMascot';
 import { kidsSound } from '../services/sound/KidsSoundManager';
+import { Play, RotateCcw, Unlock, Gift, ArrowLeft, Sparkles } from 'lucide-react';
 
 interface KidsRewardModalProps {
   isOpen: boolean;
@@ -84,8 +85,9 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl sm:text-3xl font-black text-amber-950 tracking-tight">
-          🎉 BÉ THẬT XUẤT SẮC!
+        <h2 className="text-2xl sm:text-3xl font-black text-amber-950 tracking-tight flex items-center justify-center gap-2">
+          <Sparkles className="w-7 h-7 text-amber-500" />
+          <span>BÉ THẬT XUẤT SẮC!</span>
         </h2>
 
         {/* Stars Display (1 to 3 animated stars) */}
@@ -98,9 +100,8 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
                 className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
                   hasStar
                     ? 'bg-amber-400 border-amber-500 text-white scale-110 animate-bounce'
-                    : 'bg-slate-100 border-slate-200 text-slate-300'
+                    : 'bg-slate-100 border-slate-300 text-slate-400'
                 }`}
-                style={{ animationDelay: `${starIndex * 150}ms` }}
               >
                 <KidsStarIcon size={32} filled={hasStar} />
               </div>
@@ -108,27 +109,24 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
           })}
         </div>
 
-        {/* XP & Score Card */}
-        <div className="grid grid-cols-2 gap-3 py-2 px-4 rounded-2xl bg-amber-100 border-2 border-amber-300">
-          <div className="space-y-0.5">
-            <p className="text-[11px] font-bold text-slate-600">Độ Chính Xác</p>
-            <p className="text-xl font-black text-emerald-700">{scorePercent}%</p>
-          </div>
-          <div className="space-y-0.5">
-            <p className="text-[11px] font-bold text-slate-600">Điểm Kinh Nghiệm</p>
-            <p className="text-xl font-black text-indigo-700">+{xpEarned} XP</p>
-          </div>
+        {/* XP & Score Summary Pill */}
+        <div className="flex items-center justify-center gap-4 py-2 text-xs font-black">
+          <span className="px-3 py-1 rounded-full bg-amber-200 text-amber-950 border border-amber-300">
+            +{xpEarned} Điểm EXP
+          </span>
+          <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+            Độ chính xác: {scorePercent}%
+          </span>
         </div>
 
-        {/* Unlocked Reward Item / Next Lesson Callout */}
+        {/* Unlock Next Lesson / Island Item Alert */}
         {unlockedItemName ? (
           <div className="p-3.5 rounded-2xl bg-purple-50 border-2 border-purple-300 flex items-center gap-3 text-left">
-            <div className="w-12 h-12 rounded-xl bg-purple-500 text-white text-2xl flex items-center justify-center shrink-0">
-              {unlockedItemEmoji}
-            </div>
+            <div className="text-3xl shrink-0">{unlockedItemEmoji}</div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-purple-700">
-                🎁 Mở Khóa Quà Tặng Mới!
+              <p className="text-[10px] font-black uppercase tracking-wider text-purple-700 flex items-center gap-1">
+                <Gift className="w-3.5 h-3.5" />
+                <span>Mở Khóa Quà Tặng Mới!</span>
               </p>
               <p className="text-xs font-black text-slate-900">
                 {unlockedItemName} đã có trên Đảo Của Bé!
@@ -136,8 +134,9 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
             </div>
           </div>
         ) : finalNextLessonTitle ? (
-          <div className="p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-xs font-black text-emerald-900">
-            🔓 Đã Mở Khóa Trạm Tiếp Theo: <span className="text-amber-700">{finalNextLessonTitle}</span>
+          <div className="p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-xs font-black text-emerald-900 flex items-center justify-center gap-1.5">
+            <Unlock className="w-4 h-4 text-emerald-700" />
+            <span>Đã Mở Khóa Trạm Tiếp Theo: <span className="text-amber-700">{finalNextLessonTitle}</span></span>
           </div>
         ) : null}
 
@@ -145,9 +144,10 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
         <div className="space-y-2 pt-2">
           <button
             onClick={handlePrimaryAction}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base active:scale-95 transition cursor-pointer border-b-4 border-emerald-700"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base active:scale-95 transition cursor-pointer border-b-4 border-emerald-700 flex items-center justify-center gap-2"
           >
-            TIẾP TỤC CHINH PHỤC ▶
+            <span>TIẾP TỤC CHINH PHỤC</span>
+            <Play className="w-4 h-4 fill-current" />
           </button>
 
           {onReplay && (
@@ -156,17 +156,19 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
                 kidsSound.play('pop');
                 onReplay();
               }}
-              className="w-full py-2.5 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition cursor-pointer"
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition cursor-pointer flex items-center justify-center gap-1.5"
             >
-              Chơi lại bài này 🔄
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Chơi lại bài này</span>
             </button>
           )}
 
           <button
             onClick={handleSecondaryAction}
-            className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer"
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer flex items-center justify-center gap-1.5"
           >
-            Quay lại Bản đồ phiêu lưu
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Quay lại Bản đồ phiêu lưu</span>
           </button>
         </div>
       </div>

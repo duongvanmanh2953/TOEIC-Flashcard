@@ -81,17 +81,102 @@ class KidsSpeechManager {
     return enVoices[0];
   }
 
+  /**
+   * Prioritize authentic Northern Vietnamese Female voice ("Giọng nữ miền Bắc")
+   * 1. Microsoft HoaiMy Online (Natural) - standard clear Hanoi female voice
+   * 2. Microsoft An Online (Natural) / Microsoft An - clear Hanoi female voice
+   * 3. Apple Linh / Mai / Huong (iOS/macOS Northern female voices)
+   * 4. Google Tiếng Việt (Female)
+   * Excludes any male voice (e.g. Microsoft NamMinh).
+   */
   public getVietnameseVoice(): SpeechSynthesisVoice | null {
-    const viVoice = this.voices.find(
-      (v) => v.lang.startsWith('vi') || v.lang === 'vi-VN' || v.name.toLowerCase().includes('vietnam')
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+
+    if (this.voices.length === 0) {
+      this.voices = window.speechSynthesis.getVoices() || [];
+    }
+
+    const viVoices = this.voices.filter(
+      (v) =>
+        v.lang.toLowerCase().startsWith('vi') ||
+        v.lang.toLowerCase() === 'vi-vn' ||
+        v.name.toLowerCase().includes('vietnam')
     );
-    return viVoice || null;
+    if (viVoices.length === 0) return null;
+
+    const northernFemaleKeywords = [
+      'hoaimy',
+      'hoài my',
+      'an online',
+      'an (natural)',
+      'an - vietnamese',
+      'microsoft an',
+      'linh',
+      'mai',
+      'huong',
+      'hương',
+      'ngoc',
+      'ngọc',
+      'ha',
+      'hà',
+      'phuong',
+      'phương',
+      'chi',
+      'trang',
+      'thao',
+      'northern',
+      'hanoi',
+      'female',
+    ];
+
+    // 1. Try prioritized Northern female keywords
+    for (const kw of northernFemaleKeywords) {
+      const match = viVoices.find((v) => {
+        const name = v.name.toLowerCase();
+        const uri = v.voiceURI.toLowerCase();
+        const isMale = name.includes('namminh') || name.includes('male') || uri.includes('namminh');
+        return !isMale && (name.includes(kw) || uri.includes(kw));
+      });
+      if (match) return match;
+    }
+
+    // 2. Any female voice (strictly exclude male voices like NamMinh)
+    const femaleVoice = viVoices.find((v) => {
+      const name = v.name.toLowerCase();
+      const uri = v.voiceURI.toLowerCase();
+      return !name.includes('namminh') && !name.includes('male') && !uri.includes('namminh');
+    });
+
+    return femaleVoice || viVoices[0];
   }
 
   /**
-   * Speak Vietnamese UI greetings and praise
+   * Speak Vietnamese UI greetings and praise with authentic Northern Female Voice
+   * Uses Web Speech API configured with Hanoi female pitch and pacing.
    */
   public speakVi(
+    text: string,
+    options: {
+      rate?: number;
+      pitch?: number;
+      onStart?: () => void;
+      onEnd?: () => void;
+      onError?: (err: any) => void;
+    } = {}
+  ) {
+    const cleanText = text.trim();
+    if (!cleanText) {
+      options.onEnd?.();
+      return;
+    }
+
+    this.speakViWebSpeech(cleanText, options);
+  }
+
+  /**
+   * Web Speech API fallback tuned specifically to Northern Female vocal pitch & cadence
+   */
+  private speakViWebSpeech(
     text: string,
     options: {
       rate?: number;
@@ -106,17 +191,17 @@ class KidsSpeechManager {
       return;
     }
 
-    this.stop();
-
     try {
+      this.stop();
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
 
       const utterance = new SpeechSynthesisUtterance(text.trim());
       utterance.lang = 'vi-VN';
-      utterance.rate = options.rate ?? 0.92;
-      utterance.pitch = options.pitch ?? 1.1;
+      // Sweet, friendly, clear Northern female cadence (Hanoi accent)
+      utterance.rate = options.rate ?? 0.88;
+      utterance.pitch = options.pitch ?? 1.16;
 
       const viVoice = this.getVietnameseVoice();
       if (viVoice) {
@@ -352,6 +437,13 @@ class KidsSpeechManager {
   }
 
   public stop() {
+    if (this.activeAudio) {
+      try {
+        this.activeAudio.pause();
+        this.activeAudio.currentTime = 0;
+      } catch (_) {}
+      this.activeAudio = null;
+    }
     if (this.isSupported()) {
       try {
         window.speechSynthesis.cancel();

@@ -1,93 +1,296 @@
 /* ==========================================================================
-   KIDS MODULE - LIQUID GLASS & PLAYFUL STYLES
+   KIDS MODULE - DESIGN SYSTEM TOKENS & PLAYFUL STYLES
    ========================================================================== */
 
-/* Base Liquid Glass Foundation */
+:root {
+  --kids-primary: #f59e0b;       /* Sunny Amber */
+  --kids-primary-hover: #d97706;
+  --kids-secondary: #0ea5e9;     /* Sky Blue */
+  --kids-accent: #ec4899;        /* Bubblegum Pink */
+  --kids-background: #f0fdf4;    /* Fresh Meadow Soft Green */
+  --kids-surface: #ffffff;
+  --kids-text: #020617;          /* Slate 950 - High Contrast Theme Safe */
+  --kids-text-muted: #475569;    /* Slate 600 */
+  --kids-success: #10b981;       /* Emerald */
+  --kids-warning: #f59e0b;       /* Amber */
+  --kids-error: #ef4444;         /* Rose Red */
+
+  /* Radius tokens */
+  --kids-radius-sm: 8px;
+  --kids-radius-md: 12px;
+  --kids-radius-lg: 16px;
+  --kids-radius-xl: 24px;
+  --kids-radius-full: 9999px;
+
+  /* Touch target standard for young children */
+  --kids-min-touch: 48px;
+
+  /* Dark Mode Semantic Text Token - Soft clear blue readable on dark backgrounds */
+  --kids-dark-muted-text: #93c5fd;
+}
+
+/* Fallback definition for border-3 */
+.border-3 {
+  border-width: 3px;
+}
+
+/* Dark Mode Semantic Text System (Guarantees readable, eye-friendly soft blue instead of dark gray) */
+.dark .text-slate-500,
+.dark .text-gray-500,
+.dark .text-zinc-500,
+.dark .text-neutral-500 {
+  color: var(--kids-dark-muted-text) !important;
+}
+
+.dark .text-slate-600,
+.dark .text-gray-600,
+.dark .text-zinc-600,
+.dark .text-neutral-600 {
+  color: #0099e9 !important;
+}
+
+.dark .text-slate-400,
+.dark .text-gray-400,
+.dark .text-zinc-400,
+.dark .text-neutral-400 {
+  color: #7dd3fc !important;
+}
+
+/* Base Liquid Glass Foundation with Guaranteed Contrast */
 .kids-glass-panel {
-  @apply bg-white/60 backdrop-blur-xl border-2 border-white/80 rounded-3xl relative overflow-hidden;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: var(--kids-radius-xl);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
 }
 
 .dark .kids-glass-panel {
-  @apply bg-slate-900/60 border-slate-700/80;
+  background-color: rgba(15, 23, 42, 0.85);
+  border-color: rgba(51, 65, 85, 0.8);
 }
 
-/* Liquid Color Variants */
+/* Liquid Color Variants (Contrast-guaranteed text-slate-950) */
 .kids-liquid-amber {
-  @apply bg-amber-50/80 backdrop-blur-lg border-2 border-amber-300 text-amber-950 hover:bg-amber-100/90 transition-colors;
+  background-color: rgba(254, 243, 199, 0.9);
+  backdrop-filter: blur(12px);
+  border: 2px solid #fcd34d;
+  color: #020617;
+  transition: all 0.2s ease;
+}
+.kids-liquid-amber:hover {
+  background-color: #fef08a;
 }
 
 .kids-liquid-sky {
-  @apply bg-sky-50/80 backdrop-blur-lg border-2 border-sky-300 text-sky-950 hover:bg-sky-100/90 transition-colors;
+  background-color: rgba(224, 242, 254, 0.9);
+  backdrop-filter: blur(12px);
+  border: 2px solid #7dd3fc;
+  color: #020617;
+  transition: all 0.2s ease;
+}
+.kids-liquid-sky:hover {
+  background-color: #0099e9;
 }
 
 .kids-liquid-rose {
-  @apply bg-rose-50/80 backdrop-blur-lg border-2 border-rose-300 text-rose-950 hover:bg-rose-100/90 transition-colors;
+  background-color: rgba(255, 228, 230, 0.9);
+  backdrop-filter: blur(12px);
+  border: 2px solid #fda4af;
+  color: #020617;
+  transition: all 0.2s ease;
+}
+.kids-liquid-rose:hover {
+  background-color: #fecdd3;
 }
 
 .kids-liquid-purple {
-  @apply bg-purple-50/80 backdrop-blur-lg border-2 border-purple-300 text-purple-950 hover:bg-purple-100/90 transition-colors;
+  background-color: rgba(243, 232, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 2px solid #d8b4fe;
+  color: #020617;
+  transition: all 0.2s ease;
+}
+.kids-liquid-purple:hover {
+  background-color: #e9d5ff;
 }
 
 .kids-liquid-emerald {
-  @apply bg-emerald-50/80 backdrop-blur-lg border-2 border-emerald-300 text-emerald-950 hover:bg-emerald-100/90 transition-colors;
+  background-color: rgba(209, 250, 229, 0.9);
+  backdrop-filter: blur(12px);
+  border: 2px solid #6ee7b7;
+  color: #020617;
+  transition: all 0.2s ease;
+}
+.kids-liquid-emerald:hover {
+  background-color: #a7f3d0;
 }
 
-.kids-liquid-indigo {
-  @apply bg-indigo-50/80 backdrop-blur-lg border-2 border-indigo-300 text-indigo-950 hover:bg-indigo-100/90 transition-colors;
+.kids-liquid-card {
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border: 2px solid #fde68a;
+  color: #020617;
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.04);
 }
 
-.kids-liquid-teal {
-  @apply bg-teal-50/80 backdrop-blur-lg border-2 border-teal-300 text-teal-950 hover:bg-teal-100/90 transition-colors;
-}
-
-/* 3D Button Press Effect */
+/* 3D Button Press Effect with Minimum Accessible Touch Target */
 .kids-btn-press {
-  @apply active:scale-95 transition-transform duration-100 ease-in-out;
+  min-height: var(--kids-min-touch);
+  min-width: var(--kids-min-touch);
+  transition: transform 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
+}
+.kids-btn-press:active {
+  transform: scale(0.96) translateY(2px);
 }
 
-/* Focus Mode Wrapper */
-.kids-focus-mode {
-  @apply fixed inset-0 z-50 bg-sky-50 flex flex-col;
+/* Dedicated Game Screen Boundaries (Prevent Animation Overlapping Text) */
+.kids-game-canvas-area {
+  position: relative;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--kids-radius-xl);
+  margin-bottom: 1rem;
 }
 
-/* Smooth Floating Animations */
+.kids-game-text-area {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+}
+
+/* Subtle, Controlled Child Animations */
+@keyframes balloon-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+
+.animate-balloon-float {
+  animation: balloon-float 3.5s ease-in-out infinite;
+}
+
+@keyframes rocket-rumble {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-2px) rotate(-1.5deg);
+  }
+  75% {
+    transform: translateY(2px) rotate(1.5deg);
+  }
+}
+
+.animate-rocket-rumble {
+  animation: rocket-rumble 0.2s ease-in-out infinite;
+}
+
+@keyframes rocket-blastoff {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(-40px) scale(1.1);
+  }
+  100% {
+    transform: translateY(-380px) scale(0.7);
+    opacity: 0;
+  }
+}
+
+.animate-rocket-blastoff {
+  animation: rocket-blastoff 1.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
+}
+
 @keyframes gentle-float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
 }
 
 .animate-gentle-float {
-  animation: gentle-float 6s ease-in-out infinite;
-}
-
-@keyframes bounce-subtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-.animate-bounce-subtle {
-  animation: bounce-subtle 3s ease-in-out infinite;
+  animation: gentle-float 4s ease-in-out infinite;
 }
 
 @keyframes wiggle {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
 }
 
 .animate-wiggle {
-  animation: wiggle 2s ease-in-out infinite;
+  animation: wiggle 1.8s ease-in-out infinite;
 }
 
-/* 3D Flip Card */
-.perspective-1000 {
+/* Comprehensive 3D Flip Card System for Flashcards (Duration 550ms, Smooth Perspective) */
+.kids-flip-card {
   perspective: 1000px;
+  -webkit-perspective: 1000px;
 }
-.transform-style-3d {
+
+.kids-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
-.backface-hidden {
-  backface-visibility: hidden;
-}
-.rotate-y-180 {
+
+.kids-flip-inner.is-flipped {
   transform: rotateY(180deg);
+}
+
+.kids-flip-front,
+.kids-flip-back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.kids-flip-back {
+  transform: rotateY(180deg);
+}
+
+/* Object Specific Playful Animations */
+@keyframes animal-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+.animate-animal-breathe {
+  animation: animal-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes animal-eat {
+  0%, 100% { transform: scale(1) translateY(0); }
+  25% { transform: scale(1.08, 0.94) translateY(4px); }
+  50% { transform: scale(0.96, 1.05) translateY(-3px); }
+  75% { transform: scale(1.04, 0.97) translateY(2px); }
+}
+
+.animate-animal-eat {
+  animation: animal-eat 0.5s ease-in-out 3;
+}
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.animate-star-twinkle {
+  animation: star-twinkle 2s ease-in-out infinite;
 }

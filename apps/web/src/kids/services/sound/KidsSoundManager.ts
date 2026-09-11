@@ -257,6 +257,96 @@ class KidsSoundManager {
     } catch (_) {}
   }
 
+  /**
+   * Synthesize rocket engine rumble / ignition
+   */
+  public playEngineIgnition(duration: number = 0.6) {
+    if (!this.soundEnabled) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      // Low rumble oscillator with frequency modulation
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(65, now);
+      osc.frequency.linearRampToValueAtTime(110, now + duration);
+
+      gain.gain.setValueAtTime(0.02, now);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+      // Lowpass filter for deep muffled rumble
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(220, now);
+      filter.frequency.linearRampToValueAtTime(380, now + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (_) {}
+  }
+
+  /**
+   * Synthesize rocket launch accelerating whoosh
+   */
+  public playRocketLaunch(duration: number = 1.0) {
+    if (!this.soundEnabled) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      // Rising pitch whoosh accelerating upwards
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + duration * 0.8);
+
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (_) {}
+  }
+
+  /**
+   * Springy squash/stretch bounce feedback
+   */
+  public playBounce() {
+    if (!this.soundEnabled) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.linearRampToValueAtTime(440, now + 0.05);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.12);
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } catch (_) {}
+  }
+
   public playPop() { this.play('pop'); }
   public playBubbleBurst() { this.play('bubble_burst'); }
   public playWhoosh() { this.play('whoosh'); }
@@ -270,3 +360,4 @@ class KidsSoundManager {
 export const kidsSound = new KidsSoundManager();
 export const soundManager = kidsSound;
 export default kidsSound;
+
