@@ -134,6 +134,85 @@ export const TREASURE_MAP_CONTINUOUS_PATH = `
   C 460,130 390,105 330,80
 `.replace(/\s+/g, ' ').trim();
 
+export interface BezierSegment {
+  p0: { x: number; y: number };
+  p1: { x: number; y: number };
+  p2: { x: number; y: number };
+  p3: { x: number; y: number };
+}
+
+// Exact 6 Bézier segments connecting consecutive landmarks 0..6
+export const PATH_SEGMENTS: BezierSegment[] = [
+  // 0: camp (120, 720) -> beach (200, 590)
+  { p0: { x: 120, y: 720 }, p1: { x: 140, y: 660 }, p2: { x: 170, y: 620 }, p3: { x: 200, y: 590 } },
+  // 1: beach (200, 590) -> gate (350, 470)
+  { p0: { x: 200, y: 590 }, p1: { x: 240, y: 550 }, p2: { x: 290, y: 510 }, p3: { x: 350, y: 470 } },
+  // 2: gate (350, 470) -> river (540, 380)
+  { p0: { x: 350, y: 470 }, p1: { x: 410, y: 430 }, p2: { x: 480, y: 400 }, p3: { x: 540, y: 380 } },
+  // 3: river (540, 380) -> mountain (670, 270)
+  { p0: { x: 540, y: 380 }, p1: { x: 600, y: 355 }, p2: { x: 650, y: 320 }, p3: { x: 670, y: 270 } },
+  // 4: mountain (670, 270) -> cave (540, 150)
+  { p0: { x: 670, y: 270 }, p1: { x: 690, y: 220 }, p2: { x: 630, y: 170 }, p3: { x: 540, y: 150 } },
+  // 5: cave (540, 150) -> summit (330, 80)
+  { p0: { x: 540, y: 150 }, p1: { x: 460, y: 130 }, p2: { x: 390, y: 105 }, p3: { x: 330, y: 80 } },
+];
+
+/**
+ * Calculates (x, y) coordinates along a single Cubic Bézier curve for t in [0, 1]
+ */
+export function getPointOnSegment(seg: BezierSegment, t: number): { x: number; y: number } {
+  const clampedT = Math.max(0, Math.min(1, t));
+  const mt = 1 - clampedT;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+  const t2 = clampedT * clampedT;
+  const t3 = t2 * clampedT;
+
+  return {
+    x: mt3 * seg.p0.x + 3 * mt2 * clampedT * seg.p1.x + 3 * mt * t2 * seg.p2.x + t3 * seg.p3.x,
+    y: mt3 * seg.p0.y + 3 * mt2 * clampedT * seg.p1.y + 3 * mt * t2 * seg.p2.y + t3 * seg.p3.y,
+  };
+}
+
+/**
+ * Samples (x, y) coordinates along the continuous winding trail between any two landmark nodes
+ */
+export function samplePathBetweenNodes(
+  fromNodeId: string,
+  toNodeId: string,
+  progress: number
+): { x: number; y: number } {
+  const fromIdx = MAP_LANDMARKS.findIndex((n) => n.id === fromNodeId);
+  const toIdx = MAP_LANDMARKS.findIndex((n) => n.id === toNodeId);
+
+  if (fromIdx < 0 || toIdx < 0) {
+    const fallbackNode = MAP_LANDMARKS[0];
+    return { x: fallbackNode.x, y: fallbackNode.y };
+  }
+
+  if (fromIdx === toIdx) {
+    return { x: MAP_LANDMARKS[toIdx].x, y: MAP_LANDMARKS[toIdx].y };
+  }
+
+  const p = Math.max(0, Math.min(1, progress));
+
+  if (fromIdx < toIdx) {
+    const hops = toIdx - fromIdx;
+    const scaled = p * hops;
+    const segOffset = Math.min(Math.floor(scaled), hops - 1);
+    const localT = scaled - segOffset;
+    const seg = PATH_SEGMENTS[fromIdx + segOffset];
+    return getPointOnSegment(seg, localT);
+  } else {
+    const hops = fromIdx - toIdx;
+    const scaled = p * hops;
+    const segOffset = Math.min(Math.floor(scaled), hops - 1);
+    const localT = 1 - (scaled - segOffset);
+    const seg = PATH_SEGMENTS[fromIdx - 1 - segOffset];
+    return getPointOnSegment(seg, localT);
+  }
+}
+
 // 6 Structured Pedagogical Quests: See -> Hear -> Understand -> Act -> Reward
 export const TREASURE_QUESTS: TreasureQuest[] = [
   {

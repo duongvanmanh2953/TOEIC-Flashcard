@@ -55,6 +55,7 @@ import {
   HeroTreasureChest,
 } from '../assets/illustrations/KidsHeroAssets';
 import { TreasureMapGame } from '../games/treasure-map';
+import { AnimalRescueGame } from '../games/animal-rescue';
 
 
 
@@ -1309,6 +1310,24 @@ export const KidsGamesPage: React.FC = () => {
     else if (gameId === 'magic_door') initMagicDoorRound();
   };
 
+  // Dedicated Immersive Module for Animal Rescue Expedition (🦁 Thả Xích Cứu Thú)
+  if (activeGameId === 'animal_rescue') {
+    return (
+      <div className="w-full max-w-5xl mx-auto py-2 sm:py-4 px-2 sm:px-4 animate-fadeIn">
+        <AnimalRescueGame
+          onExit={handleBackToCatalog}
+          onStarsAwarded={(earnedStars) => {
+            const current = getKidsProgress();
+            updateKidsProgress({
+              totalStars: current.totalStars + earnedStars,
+              xp: current.xp + earnedStars * 10,
+            });
+          }}
+        />
+      </div>
+    );
+  }
+
   // Dedicated Immersive Module for Treasure Map Adventure (🗺️ Bản Đồ Kho Báu)
   if (activeGameId === 'treasure_island') {
     return (
@@ -1318,7 +1337,7 @@ export const KidsGamesPage: React.FC = () => {
           onStarsAwarded={(earnedStars) => {
             const current = getKidsProgress();
             updateKidsProgress({
-              stars: current.stars + earnedStars,
+              totalStars: current.totalStars + earnedStars,
               xp: current.xp + earnedStars * 10,
             });
           }}

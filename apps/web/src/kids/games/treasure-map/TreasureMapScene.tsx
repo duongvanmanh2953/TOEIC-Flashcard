@@ -28,6 +28,7 @@ interface TreasureMapSceneProps {
   activeQuest: TreasureQuest;
   characterPos: { x: number; y: number };
   characterAction: CharacterActionState;
+  facing?: 'left' | 'right';
   particles: SparkleParticle[];
   onInteractTarget: (targetType: string) => void;
   onWaypointClick: (nodeId: string) => void;
@@ -38,6 +39,7 @@ export const TreasureMapScene: React.FC<TreasureMapSceneProps> = ({
   activeQuest,
   characterPos,
   characterAction,
+  facing = 'right',
   particles,
   onInteractTarget,
   onWaypointClick,
@@ -248,6 +250,7 @@ export const TreasureMapScene: React.FC<TreasureMapSceneProps> = ({
           x={characterPos.x}
           y={characterPos.y}
           state={characterAction}
+          facing={facing}
         />
 
         {/* Layer 6: Dynamic Particle Sparks Layer */}

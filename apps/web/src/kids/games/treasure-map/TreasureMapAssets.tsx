@@ -188,17 +188,17 @@ interface ExplorerBobbyProps {
   x: number;
   y: number;
   state: CharacterActionState;
+  facing?: 'left' | 'right';
 }
 
-export const ExplorerBobby: React.FC<ExplorerBobbyProps> = ({ x, y, state }) => {
+export const ExplorerBobby: React.FC<ExplorerBobbyProps> = ({ x, y, state, facing = 'right' }) => {
   const isWalking = state === 'walk';
   const isCelebrating = state === 'celebrate' || state === 'happy';
 
   return (
     <g
       id="explorer-bobby"
-      transform={`translate(${x}, ${y})`}
-      className="transition-all duration-500 ease-out"
+      transform={`translate(${x}, ${y}) scale(${facing === 'left' ? -1 : 1}, 1)`}
       style={{ cursor: 'pointer' }}
     >
       {/* Soft Ground Shadow */}

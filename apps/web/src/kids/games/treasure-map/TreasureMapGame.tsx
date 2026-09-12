@@ -35,6 +35,7 @@ export const TreasureMapGame: React.FC<TreasureMapGameProps> = ({
     gameState,
     characterPos,
     characterAction,
+    facing,
     activeQuest,
     particles,
     showWinModal,
@@ -128,6 +129,7 @@ export const TreasureMapGame: React.FC<TreasureMapGameProps> = ({
         activeQuest={activeQuest}
         characterPos={characterPos}
         characterAction={characterAction}
+        facing={facing}
         particles={particles}
         onInteractTarget={handleInteractTarget}
         onWaypointClick={handleWaypointClick}

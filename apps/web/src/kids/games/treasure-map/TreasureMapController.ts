@@ -11,6 +11,7 @@ import {
   TreasureMapSavedState,
   GameMachineState,
   CharacterActionState,
+  samplePathBetweenNodes,
 } from './TreasureMapData';
 import { treasureAudio } from './TreasureMapAudio';
 import { generateBurstParticles, SparkleParticle } from './TreasureMapAnimation';
@@ -37,6 +38,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
   // 2. Runtime Game State Machine
   const [gameState, setGameState] = useState<GameMachineState>('loading');
   const [characterAction, setCharacterAction] = useState<CharacterActionState>('idle');
+  const [facing, setFacing] = useState<'left' | 'right'>('right');
   const [particles, setParticles] = useState<SparkleParticle[]>([]);
   const [showWinModal, setShowWinModal] = useState(false);
 
@@ -47,13 +49,18 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
   // Character Canvas Position
   const currentNode = MAP_LANDMARKS.find((n) => n.id === savedState.characterNodeId) || MAP_LANDMARKS[0];
   const [characterPos, setCharacterPos] = useState({ x: currentNode.x, y: currentNode.y });
+  const characterPosRef = useRef({ x: currentNode.x, y: currentNode.y });
+  const isWalkingRef = useRef<boolean>(false);
 
   const animFrameRef = useRef<number | null>(null);
 
-  // Sync position on mount or node change
+  // Sync position on mount or node change (only when not actively walking)
   useEffect(() => {
-    const node = MAP_LANDMARKS.find((n) => n.id === savedState.characterNodeId) || MAP_LANDMARKS[0];
-    setCharacterPos({ x: node.x, y: node.y });
+    if (!isWalkingRef.current) {
+      const node = MAP_LANDMARKS.find((n) => n.id === savedState.characterNodeId) || MAP_LANDMARKS[0];
+      characterPosRef.current = { x: node.x, y: node.y };
+      setCharacterPos({ x: node.x, y: node.y });
+    }
   }, [savedState.characterNodeId]);
 
   // Persist State to LocalStorage
@@ -68,45 +75,76 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     }
   }, []);
 
-  // Smooth Character Walk Animation between coordinates
-  const walkCharacterTo = useCallback((targetX: number, targetY: number, onArrival?: () => void) => {
+  // Smooth Character Walk Animation along the continuous Bézier trail
+  const walkAlongPathToNode = useCallback((targetNodeId: string, onArrival?: () => void) => {
+    const fromNodeId = savedState.characterNodeId;
+    if (fromNodeId === targetNodeId) {
+      if (onArrival) onArrival();
+      return;
+    }
+
+    const fromIdx = MAP_LANDMARKS.findIndex((n) => n.id === fromNodeId);
+    const toIdx = MAP_LANDMARKS.findIndex((n) => n.id === targetNodeId);
+    if (fromIdx < 0 || toIdx < 0) {
+      if (onArrival) onArrival();
+      return;
+    }
+
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+
+    isWalkingRef.current = true;
     setCharacterAction('walk');
-    const startX = characterPos.x;
-    const startY = characterPos.y;
+
+    const hops = Math.abs(toIdx - fromIdx);
+    const duration = Math.max(900, Math.min(2600, hops * 750));
     const startTime = performance.now();
-    const duration = 1200; // 1.2s smooth walk
 
     // Play footstep cadence
     let stepCount = 0;
+    const maxSteps = Math.max(4, hops * 4);
     const footstepInterval = setInterval(() => {
       treasureAudio.playFootstep();
       stepCount++;
-      if (stepCount > 5) clearInterval(footstepInterval);
-    }, 200);
+      if (stepCount >= maxSteps) clearInterval(footstepInterval);
+    }, 220);
+
+    let lastX = characterPosRef.current.x;
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Smooth ease
-      const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+      // Smooth ease-in-out
+      const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-      setCharacterPos({
-        x: startX + (targetX - startX) * ease,
-        y: startY + (targetY - startY) * ease,
-      });
+      const pt = samplePathBetweenNodes(fromNodeId, targetNodeId, ease);
+
+      if (Math.abs(pt.x - lastX) > 0.5) {
+        setFacing(pt.x >= lastX ? 'right' : 'left');
+        lastX = pt.x;
+      }
+
+      characterPosRef.current = pt;
+      setCharacterPos(pt);
 
       if (progress < 1) {
         animFrameRef.current = requestAnimationFrame(animate);
       } else {
         clearInterval(footstepInterval);
+        isWalkingRef.current = false;
+        const targetNode = MAP_LANDMARKS[toIdx];
+        characterPosRef.current = { x: targetNode.x, y: targetNode.y };
+        setCharacterPos({ x: targetNode.x, y: targetNode.y });
         setCharacterAction('happy');
-        setTimeout(() => setCharacterAction('idle'), 600);
+        setTimeout(() => setCharacterAction('idle'), 500);
         if (onArrival) onArrival();
       }
     };
 
     animFrameRef.current = requestAnimationFrame(animate);
-  }, [characterPos]);
+  }, [savedState.characterNodeId]);
 
   // Clean animation frame on unmount
   useEffect(() => {
@@ -147,7 +185,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     // 1. BEACH KEY QUEST
     if (targetType === 'key' && activeQuest.targetType === 'key') {
       const beachNode = MAP_LANDMARKS.find((n) => n.id === 'beach')!;
-      walkCharacterTo(beachNode.x, beachNode.y, () => {
+      walkAlongPathToNode('beach', () => {
         treasureAudio.playPickupChime();
         treasureAudio.playKeyRattle();
         setParticles(generateBurstParticles(beachNode.x, beachNode.y));
@@ -185,7 +223,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
       }
 
       const gateNode = MAP_LANDMARKS.find((n) => n.id === 'gate')!;
-      walkCharacterTo(gateNode.x, gateNode.y, () => {
+      walkAlongPathToNode('gate', () => {
         treasureAudio.playLockTurn();
         treasureAudio.playGateSwing();
         setParticles(generateBurstParticles(gateNode.x, gateNode.y));
@@ -212,7 +250,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     // 3. RIVER BRIDGE QUEST
     if (targetType === 'bridge' && activeQuest.targetType === 'bridge') {
       const riverNode = MAP_LANDMARKS.find((n) => n.id === 'river')!;
-      walkCharacterTo(riverNode.x, riverNode.y, () => {
+      walkAlongPathToNode('river', () => {
         const nextPlanks = savedState.bridgePlanksPlaced + 1;
         treasureAudio.playWoodImpact();
         setParticles(generateBurstParticles(riverNode.x, riverNode.y, 8));
@@ -221,6 +259,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
           persistState({
             ...savedState,
             bridgePlanksPlaced: nextPlanks,
+            characterNodeId: 'river',
           });
           treasureAudio.speakEnglish(`Plank ${nextPlanks}! Place one more!`);
         } else {
@@ -248,7 +287,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     // 4. MOUNTAIN FLAG QUEST
     if (targetType === 'flag' && activeQuest.targetType === 'flag') {
       const mountainNode = MAP_LANDMARKS.find((n) => n.id === 'mountain')!;
-      walkCharacterTo(mountainNode.x, mountainNode.y, () => {
+      walkAlongPathToNode('mountain', () => {
         treasureAudio.playFlagWave();
         treasureAudio.playPickupChime();
         setParticles(generateBurstParticles(mountainNode.x, mountainNode.y));
@@ -275,7 +314,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     // 5. CAVE TORCH QUEST
     if (targetType === 'torch' && activeQuest.targetType === 'torch') {
       const caveNode = MAP_LANDMARKS.find((n) => n.id === 'cave')!;
-      walkCharacterTo(caveNode.x, caveNode.y, () => {
+      walkAlongPathToNode('cave', () => {
         treasureAudio.playTorchIgnite();
         treasureAudio.playPickupChime();
         setParticles(generateBurstParticles(caveNode.x, caveNode.y));
@@ -308,7 +347,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     // 6. TREASURE CHEST AT SUMMIT QUEST
     if (targetType === 'chest' && activeQuest.targetType === 'chest') {
       const summitNode = MAP_LANDMARKS.find((n) => n.id === 'summit')!;
-      walkCharacterTo(summitNode.x, summitNode.y, () => {
+      walkAlongPathToNode('summit', () => {
         treasureAudio.playLockTurn();
         treasureAudio.playChestOpen();
         treasureAudio.playCelebrationCheer();
@@ -332,19 +371,31 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
       });
       return;
     }
-  }, [activeQuest, activeQuestIndex, savedState, walkCharacterTo, persistState, onStarsAwarded]);
+  }, [activeQuest, activeQuestIndex, savedState, walkAlongPathToNode, persistState, onStarsAwarded]);
 
-  // Click on Waypoints to navigate
+  // Click on Waypoints to navigate along the continuous trail
   const handleWaypointClick = useCallback((nodeId: string) => {
+    if (isWalkingRef.current) return;
     const node = MAP_LANDMARKS.find((n) => n.id === nodeId);
     if (!node) return;
-    walkCharacterTo(node.x, node.y, () => {
+
+    // Allow walking to already reached landmarks or current target
+    const maxAccessibleQuestIndex = savedState.currentQuestIndex;
+    const isAccessible = node.questIndex <= maxAccessibleQuestIndex;
+
+    if (!isAccessible) {
+      treasureAudio.playLockTurn();
+      treasureAudio.speakEnglish(`Let's find the ${activeQuest.targetWord} first!`);
+      return;
+    }
+
+    walkAlongPathToNode(nodeId, () => {
       persistState({
         ...savedState,
         characterNodeId: nodeId,
       });
     });
-  }, [walkCharacterTo, savedState, persistState]);
+  }, [walkAlongPathToNode, savedState, persistState, activeQuest]);
 
   // Reset Game Progress
   const resetGame = useCallback(() => {
@@ -359,6 +410,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     gameState,
     characterPos,
     characterAction,
+    facing,
     activeQuest,
     particles,
     showWinModal,
@@ -370,3 +422,4 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
     resetGame,
   };
 }
+
