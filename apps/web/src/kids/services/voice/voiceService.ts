@@ -11,6 +11,25 @@
 
 import { kidsAudioManager } from '../audio/KidsAudioManager';
 
+/**
+ * Generate Google TTS audio URL (browser-native, pure Web API, no Node url dependency)
+ * Produces authentic Northern Vietnamese Female voice ('vi' locale, tw-ob client)
+ */
+function getGoogleTTSAudioUrl(text: string, lang = 'vi', slow = false): string {
+  const params = new URLSearchParams({
+    ie: 'UTF-8',
+    q: text,
+    tl: lang,
+    total: '1',
+    idx: '0',
+    textlen: String(text.length),
+    client: 'tw-ob',
+    prev: 'input',
+    ttsspeed: slow ? '0.24' : '1',
+  });
+  return `https://translate.google.com/translate_tts?${params.toString()}`;
+}
+
 export interface VoiceOptions {
   rate?: number;
   pitch?: number;
@@ -70,11 +89,46 @@ class VoiceService {
   private voices: SpeechSynthesisVoice[] = [];
   private isReady = false;
   private activeUtterance: SpeechSynthesisUtterance | null = null;
+  private activeAudio: HTMLAudioElement | null = null;
   private isSpeaking = false;
+  private isInstructionSpeaking = false;
   private listeners: Set<(speaking: boolean) => void> = new Set();
+  private audioCache: Map<string, HTMLAudioElement> = new Map();
 
   constructor() {
     this.init();
+    this.preloadCommonPhrases();
+  }
+
+  /**
+   * Preload frequent short Vietnamese UI sentences into memory cache
+   * Provides 0ms instant playback for cheers and praises on Safari
+   */
+  public preloadCommonPhrases() {
+    if (typeof window === 'undefined') return;
+    const phrases = [
+      'Chào bé!',
+      'Giỏi quá!',
+      'Yeahhh!',
+      'Tuyệt!',
+      'Thử lại nhé!',
+      'Đúng rồi!',
+      'Bé làm tốt lắm!',
+      'Cùng chơi nhé!',
+      'Bé hãy lắng nghe!',
+    ];
+    phrases.forEach((phrase) => {
+      try {
+        const url = getGoogleTTSAudioUrl(phrase, 'vi');
+        const audio = new Audio(url);
+        audio.preload = 'auto';
+        this.audioCache.set(phrase, audio);
+      } catch (_) {}
+    });
+  }
+
+  public isInstructionActive(): boolean {
+    return this.isInstructionSpeaking;
   }
 
   private init() {
@@ -162,6 +216,13 @@ class VoiceService {
   }
 
   public stop() {
+    if (this.activeAudio) {
+      try {
+        this.activeAudio.pause();
+        this.activeAudio.currentTime = 0;
+      } catch (_) {}
+      this.activeAudio = null;
+    }
     if (!this.isSupported()) return;
     try {
       window.speechSynthesis.cancel();
@@ -191,7 +252,10 @@ class VoiceService {
     }
 
     try {
-      this.stop();
+      // Fix iOS Safari cancel race condition: only cancel if actively speaking
+      if (window.speechSynthesis.speaking) {
+        this.stop();
+      }
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
@@ -206,6 +270,8 @@ class VoiceService {
       if (voice) utterance.voice = voice;
 
       this.activeUtterance = utterance;
+      // Strong global reference preventing iOS Safari garbage collection
+      (window as any).__kidsVoiceUtterance = utterance;
 
       utterance.onstart = () => {
         this.notify(true);
@@ -217,6 +283,7 @@ class VoiceService {
         this.notify(false);
         kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
+        (window as any).__kidsVoiceUtterance = null;
         options.onEnd?.();
       };
 
@@ -224,13 +291,21 @@ class VoiceService {
         this.notify(false);
         kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
+        (window as any).__kidsVoiceUtterance = null;
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
           options.onError?.(e);
         }
         options.onEnd?.();
       };
 
-      window.speechSynthesis.speak(utterance);
+      // Slight delay for iOS Safari speech queue stability
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.speak(utterance);
+        } catch (_) {
+          options.onEnd?.();
+        }
+      }, 10);
     } catch (err) {
       this.notify(false);
       kidsAudioManager.restoreMusic();
@@ -241,20 +316,109 @@ class VoiceService {
 
   /**
    * Speak Vietnamese text using authentic Northern female voice (Hanoi accent)
+   * Powered by google-tts-api for 100% reliable iOS Safari & tablet playback
    */
+  public speakVietnameseNorthern(text: string, options: VoiceOptions = {}) {
+    return this.speakVietnamese(text, options);
+  }
+
   public speakVietnamese(text: string, options: VoiceOptions = {}) {
-    if (!this.isSupported() || !text.trim()) {
+    const cleanText = (text || '').trim();
+    if (!cleanText) {
+      options.onEnd?.();
+      return;
+    }
+
+    this.stop();
+
+    // 1. High-Quality Northern Female Voice via Google TTS (with Instant Memory Audio Cache)
+    // Works 100% on iOS Safari, macOS Safari, Android & Desktop without relying on local voices
+    try {
+      if (cleanText.length <= 200) {
+        let audio: HTMLAudioElement;
+        const cached = this.audioCache.get(cleanText);
+        if (cached) {
+          audio = cached.cloneNode(true) as HTMLAudioElement;
+        } else {
+          const url = getGoogleTTSAudioUrl(cleanText, 'vi');
+          audio = new Audio(url);
+          this.audioCache.set(cleanText, audio);
+        }
+
+        this.activeAudio = audio;
+        this.notify(true);
+        kidsAudioManager.duckMusic();
+        options.onStart?.();
+
+        audio.onended = () => {
+          this.notify(false);
+          kidsAudioManager.restoreMusic();
+          this.activeAudio = null;
+          options.onEnd?.();
+        };
+
+        audio.onerror = () => {
+          this.speakVietnameseBrowserFallback(cleanText, options);
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            this.speakVietnameseBrowserFallback(cleanText, options);
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    // 2. Fallback to Browser SpeechSynthesis if text is very long or offline
+    this.speakVietnameseBrowserFallback(cleanText, options);
+  }
+
+  /**
+   * Dedicated Instruction Speaker that tracks instruction playback state
+   * Used by GameGuide and Activities so user interaction is strictly disabled until speech ends
+   */
+  public speakInstruction(text: string, lang: 'vi' | 'en' = 'vi', options: VoiceOptions = {}) {
+    this.isInstructionSpeaking = true;
+    const wrappedOptions: VoiceOptions = {
+      ...options,
+      onStart: () => {
+        this.isInstructionSpeaking = true;
+        options.onStart?.();
+      },
+      onEnd: () => {
+        this.isInstructionSpeaking = false;
+        options.onEnd?.();
+      },
+      onError: (err) => {
+        this.isInstructionSpeaking = false;
+        options.onError?.(err);
+      },
+    };
+
+    if (lang === 'vi') {
+      this.speakVietnamese(text, wrappedOptions);
+    } else {
+      this.speakEnglish(text, wrappedOptions);
+    }
+  }
+
+  private speakVietnameseBrowserFallback(cleanText: string, options: VoiceOptions = {}) {
+    if (!this.isSupported()) {
       options.onEnd?.();
       return;
     }
 
     try {
-      this.stop();
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
 
-      const utterance = new SpeechSynthesisUtterance(text.trim());
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = VOICE_CONFIG.vietnamese.language;
       utterance.rate = options.rate ?? VOICE_CONFIG.vietnamese.rate;
       utterance.pitch = options.pitch ?? VOICE_CONFIG.vietnamese.pitch;
@@ -264,6 +428,8 @@ class VoiceService {
       if (viVoice) utterance.voice = viVoice;
 
       this.activeUtterance = utterance;
+      // Strong global reference preventing iOS Safari garbage collection
+      (window as any).__kidsVoiceUtterance = utterance;
 
       utterance.onstart = () => {
         this.notify(true);
@@ -275,6 +441,7 @@ class VoiceService {
         this.notify(false);
         kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
+        (window as any).__kidsVoiceUtterance = null;
         options.onEnd?.();
       };
 
@@ -282,13 +449,21 @@ class VoiceService {
         this.notify(false);
         kidsAudioManager.restoreMusic();
         this.activeUtterance = null;
+        (window as any).__kidsVoiceUtterance = null;
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
           options.onError?.(e);
         }
         options.onEnd?.();
       };
 
-      window.speechSynthesis.speak(utterance);
+      // Slight delay for iOS Safari speech queue stability
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.speak(utterance);
+        } catch (_) {
+          options.onEnd?.();
+        }
+      }, 10);
     } catch (err) {
       this.notify(false);
       kidsAudioManager.restoreMusic();
@@ -334,7 +509,19 @@ class VoiceService {
       ...options,
     });
   }
+
+  /**
+   * Confident, futuristic robot voice (Deep pitch, clear robotic cadence)
+   */
+  public speakRobotVoice(phrase: string, options: VoiceOptions = {}) {
+    this.speakEnglish(phrase, {
+      pitch: 0.65, // Deeper, mechanical pitch
+      rate: 0.84,  // Measured, authoritative robotic cadence
+      ...options,
+    });
+  }
 }
 
 export const voiceService = new VoiceService();
+
 export default voiceService;

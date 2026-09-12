@@ -128,12 +128,21 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
     // Microphone amplitude meter via Web Audio API with silence detection
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices
-        .getUserMedia({ audio: true })
+        .getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
         .then((stream) => {
           mediaStreamRef.current = stream;
           try {
             const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
             const audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') {
+              audioCtx.resume().catch(() => {});
+            }
             audioContextRef.current = audioCtx;
             const source = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
@@ -312,12 +321,12 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
             </div>
 
             <div className="my-auto flex flex-col items-center">
-              <span className="text-7xl sm:text-8xl mb-2">{activity.emoji || '🌟'}</span>
-              <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-950 uppercase">
+              <span className="text-6xl sm:text-7xl mb-2">{activity.emoji || '🌟'}</span>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 uppercase">
                 {activity.targetWord}
               </h2>
               {viMeaning && (
-                <p className="text-xl sm:text-2xl font-black text-emerald-900 mt-1">
+                <p className="text-base sm:text-lg font-black text-emerald-900 mt-1">
                   ({viMeaning})
                 </p>
               )}
@@ -507,10 +516,9 @@ const ListenChoiceActivity: React.FC<ActivityProps> = ({ activity, onDone, onBus
   const handlePlayPrompt = () => {
     if (!activity.targetWord) return;
     setState('audioPlaying');
-    celebrationManager.promptFindItem(activity.targetWord, viMeaning);
-    setTimeout(() => {
+    celebrationManager.promptFindItem(activity.targetWord, viMeaning, () => {
       setState('waitingForUser');
-    }, 1200);
+    });
   };
 
   const handlePlayWord = (word: string) => {
@@ -527,7 +535,7 @@ const ListenChoiceActivity: React.FC<ActivityProps> = ({ activity, onDone, onBus
   }, [activity.id]);
 
   const handleSelectOption = (opt: any, e: React.MouseEvent<HTMLButtonElement>) => {
-    if (state === 'processing' || state === 'feedback') return;
+    if (state === 'audioPlaying' || state === 'processing' || state === 'feedback') return;
     setSelectedOptId(opt.id);
 
     const btn = e.currentTarget;
@@ -573,7 +581,7 @@ const ListenChoiceActivity: React.FC<ActivityProps> = ({ activity, onDone, onBus
       />
 
       <div className="text-center space-y-1">
-        <h3 className="text-2xl sm:text-3xl font-black text-slate-950">
+        <h3 className="text-xl sm:text-2xl font-black text-slate-950">
           {activity.title}
         </h3>
         <p className="text-xs sm:text-sm font-extrabold text-amber-800">
@@ -581,17 +589,30 @@ const ListenChoiceActivity: React.FC<ActivityProps> = ({ activity, onDone, onBus
         </p>
       </div>
 
+      {/* Audio Status Pill */}
+      {state === 'audioPlaying' && (
+        <div className="px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-950 text-xs font-black flex items-center gap-2 animate-pulse">
+          <Headphones className="w-3.5 h-3.5 text-amber-700 animate-bounce" />
+          <span>Bé hãy lắng nghe câu hỏi trước nhé...</span>
+        </div>
+      )}
+
       {activity.targetWord && (
         <button
-          onClick={() => handlePlayWord(activity.targetWord!)}
-          className="px-5 py-2.5 rounded-2xl bg-amber-100 hover:bg-amber-200 text-slate-950 font-black text-xs flex items-center gap-2 border-2 border-amber-400 hover:scale-105 transition cursor-pointer"
+          onClick={() => handlePlayPrompt()}
+          disabled={state === 'audioPlaying'}
+          className={`px-5 py-2.5 rounded-2xl font-black text-xs flex items-center gap-2 border-2 transition cursor-pointer ${
+            state === 'audioPlaying'
+              ? 'bg-slate-100 text-slate-400 border-slate-300 cursor-not-allowed'
+              : 'bg-amber-100 hover:bg-amber-200 text-slate-950 border-amber-400 hover:scale-105 active:scale-95'
+          }`}
         >
           <KidsListenIcon size={20} />
-          <span>Nghe lại từ vựng</span>
+          <span>Nghe lại câu hỏi</span>
         </button>
       )}
 
-      {/* Options Grid */}
+      {/* Options Grid - strictly blocked while audio is playing */}
       <div className="w-full max-w-md grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
         {activity.options?.map((opt) => {
           const isChosen = selectedOptId === opt.id;
@@ -604,12 +625,18 @@ const ListenChoiceActivity: React.FC<ActivityProps> = ({ activity, onDone, onBus
             btnBorder = 'border-rose-500 bg-rose-100 text-slate-950 animate-shake';
           }
 
+          const isBlocked = state === 'audioPlaying' || state === 'processing' || state === 'feedback';
+
           return (
             <button
               key={opt.id}
               onClick={(e) => handleSelectOption(opt, e)}
-              disabled={state === 'feedback'}
-              className={`p-5 rounded-3xl border-2 flex flex-col items-center justify-center text-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer select-none ${btnBg} ${btnBorder}`}
+              disabled={isBlocked}
+              className={`p-5 rounded-3xl border-2 flex flex-col items-center justify-center text-center gap-2 transition-all select-none ${
+                isBlocked
+                  ? 'opacity-85 cursor-not-allowed'
+                  : 'hover:scale-105 active:scale-95 cursor-pointer'
+              } ${btnBg} ${btnBorder}`}
             >
               <span className="text-5xl">{opt.emoji || '⭐'}</span>
               <span className="font-black text-base sm:text-lg text-slate-950">
@@ -692,12 +719,21 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
     // Microphone amplitude meter
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices
-        .getUserMedia({ audio: true })
+        .getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        })
         .then((stream) => {
           mediaStreamRef.current = stream;
           try {
             const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
             const audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') {
+              audioCtx.resume().catch(() => {});
+            }
             audioContextRef.current = audioCtx;
             const source = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
@@ -779,7 +815,7 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
         <p className="text-xs font-black uppercase tracking-wider text-indigo-900">
           Từ vựng bé cần phát âm
         </p>
-        <h2 className="text-4xl sm:text-5xl font-black text-slate-950 uppercase tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-tight">
           {activity.targetWord}
         </h2>
         {activity.phonetic && (
@@ -799,7 +835,7 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
       <div className="py-2">
         <button
           onClick={state === 'userAnswering' ? stopRecordAndEvaluate : startRecord}
-          className={`w-28 h-28 rounded-full border-4 flex flex-col items-center justify-center text-white transition-all duration-300 cursor-pointer shadow-lg ${
+          className={`w-28 h-28 rounded-full border-4 flex flex-col items-center justify-center text-white transition-all duration-300 cursor-pointer ${
             state === 'userAnswering'
               ? 'bg-rose-500 border-white ring-4 ring-rose-300 animate-pulse scale-105'
               : 'bg-gradient-to-tr from-indigo-500 to-purple-600 border-white hover:scale-105'

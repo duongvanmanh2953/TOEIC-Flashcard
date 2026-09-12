@@ -129,15 +129,26 @@ class CelebrationManager {
   /**
    * Audio instruction for games so kids who cannot read can still play:
    * e.g. "Bé hãy tìm: Con sư tử!" -> "Lion"
+   * Strict audio timing: enables interaction only after audio finishes
    */
-  public promptFindItem(enWord: string, viMeaning?: string) {
+  public promptFindItem(enWord: string, viMeaning?: string, onComplete?: () => void) {
     const meaning = viMeaning || kidsSpeech.getViMeaning(enWord);
     const viPhrase = meaning ? `Bé hãy tìm ${meaning}!` : `Bé hãy tìm từ này!`;
     kidsSpeech.speakVi(viPhrase, {
       onEnd: () => {
         setTimeout(() => {
-          kidsSpeech.speak(enWord);
-        }, 250);
+          kidsSpeech.speak(enWord, {
+            onEnd: () => {
+              onComplete?.();
+            },
+            onError: () => {
+              onComplete?.();
+            },
+          });
+        }, 200);
+      },
+      onError: () => {
+        onComplete?.();
       },
     });
   }

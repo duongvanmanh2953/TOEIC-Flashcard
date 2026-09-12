@@ -7,6 +7,8 @@
  * - Queue cancellation on route changes or rapid replay
  */
 
+import { voiceService } from '../voice/voiceService';
+
 class KidsSpeechManager {
   private voices: SpeechSynthesisVoice[] = [];
   private isReady: boolean = false;
@@ -164,82 +166,31 @@ class KidsSpeechManager {
       onError?: (err: any) => void;
     } = {}
   ) {
-    const cleanText = text.trim();
+    const cleanText = (text || '').trim();
     if (!cleanText) {
       options.onEnd?.();
       return;
     }
 
-    this.speakViWebSpeech(cleanText, options);
-  }
-
-  /**
-   * Web Speech API fallback tuned specifically to Northern Female vocal pitch & cadence
-   */
-  private speakViWebSpeech(
-    text: string,
-    options: {
-      rate?: number;
-      pitch?: number;
-      onStart?: () => void;
-      onEnd?: () => void;
-      onError?: (err: any) => void;
-    } = {}
-  ) {
-    if (!this.isSupported() || !text.trim()) {
-      options.onEnd?.();
-      return;
-    }
-
-    try {
-      this.stop();
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-
-      const utterance = new SpeechSynthesisUtterance(text.trim());
-      utterance.lang = 'vi-VN';
-      // Sweet, friendly, clear Northern female cadence (Hanoi accent)
-      utterance.rate = options.rate ?? 0.88;
-      utterance.pitch = options.pitch ?? 1.16;
-
-      const viVoice = this.getVietnameseVoice();
-      if (viVoice) {
-        utterance.voice = viVoice;
-      }
-
-      this.activeUtterance = utterance;
-
-      utterance.onstart = () => {
+    voiceService.speakVietnamese(cleanText, {
+      rate: options.rate,
+      pitch: options.pitch,
+      onStart: () => {
         this.isCurrentlySpeaking = true;
         this.notifyListeners(true);
         options.onStart?.();
-      };
-
-      utterance.onend = () => {
+      },
+      onEnd: () => {
         this.isCurrentlySpeaking = false;
-        this.activeUtterance = null;
         this.notifyListeners(false);
         options.onEnd?.();
-      };
-
-      utterance.onerror = (e) => {
+      },
+      onError: (err) => {
         this.isCurrentlySpeaking = false;
-        this.activeUtterance = null;
         this.notifyListeners(false);
-        if (e.error !== 'canceled' && e.error !== 'interrupted') {
-          options.onError?.(e);
-        }
-        options.onEnd?.();
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      this.isCurrentlySpeaking = false;
-      this.notifyListeners(false);
-      options.onError?.(err);
-      options.onEnd?.();
-    }
+        options.onError?.(err);
+      },
+    });
   }
 
   /**

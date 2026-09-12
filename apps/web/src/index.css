@@ -56,18 +56,28 @@
   }
 
   /* Universal High-Contrast Overrides for Gray/Muted Classes */
-  .text-slate-400, .text-gray-400, .text-zinc-400 {
+  .text-slate-400,
+  .text-gray-400,
+  .text-zinc-400 {
     color: #475569 !important;
   }
-  .dark .text-slate-400, .dark .text-gray-400, .dark .text-zinc-400 {
+
+  .dark .text-slate-400,
+  .dark .text-gray-400,
+  .dark .text-zinc-400 {
     color: #cbd5e1 !important;
   }
 
-  .text-slate-500, .text-gray-500, .text-zinc-500 {
+  .text-slate-500,
+  .text-gray-500,
+  .text-zinc-500 {
     color: #334155 !important;
   }
-  .dark .text-slate-500, .dark .text-gray-500, .dark .text-zinc-500 {
-    color: #001531 !important;
+
+  .dark .text-slate-500,
+  .dark .text-gray-500,
+  .dark .text-zinc-500 {
+    color: #006ae9 !important;
   }
 
   /* ==========================================================================
@@ -139,6 +149,7 @@
     -webkit-appearance: none !important;
     margin: 0 !important;
   }
+
   input[type="number"] {
     -moz-appearance: textfield !important;
     appearance: textfield !important;
@@ -372,10 +383,12 @@ a.card-brand-effect {
   box-shadow: none !important;
   transform: none !important;
 }
+
 .dark .podium-gold {
   background: linear-gradient(145deg, rgba(245, 158, 11, 0.18) 0%, rgba(120, 53, 15, 0.25) 50%, rgba(15, 23, 42, 0.85) 100%) !important;
   border: 1.5px solid rgba(251, 191, 36, 0.4) !important;
 }
+
 .podium-gold:hover {
   border-color: rgba(245, 158, 11, 0.75) !important;
   box-shadow: none !important;
@@ -390,10 +403,12 @@ a.card-brand-effect {
   box-shadow: none !important;
   transform: none !important;
 }
+
 .dark .podium-silver {
   background: linear-gradient(145deg, rgba(148, 163, 184, 0.14) 0%, rgba(51, 65, 85, 0.3) 50%, rgba(15, 23, 42, 0.85) 100%) !important;
   border: 1.5px solid rgba(148, 163, 184, 0.4) !important;
 }
+
 .podium-silver:hover {
   border-color: rgba(203, 213, 225, 0.75) !important;
   box-shadow: none !important;
@@ -408,10 +423,12 @@ a.card-brand-effect {
   box-shadow: none !important;
   transform: none !important;
 }
+
 .dark .podium-bronze {
   background: linear-gradient(145deg, rgba(180, 83, 9, 0.16) 0%, rgba(120, 53, 15, 0.22) 50%, rgba(15, 23, 42, 0.85) 100%) !important;
   border: 1.5px solid rgba(217, 119, 6, 0.4) !important;
 }
+
 .podium-bronze:hover {
   border-color: rgba(217, 119, 6, 0.7) !important;
   box-shadow: none !important;
@@ -637,12 +654,14 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .card-metric-indigo:hover {
   border-color: rgba(99, 102, 241, 0.8);
   box-shadow: none !important;
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-indigo {
   background: linear-gradient(135deg, rgba(30, 27, 75, 0.65) 0%, rgba(15, 23, 42, 0.82) 60%, rgba(49, 46, 129, 0.45) 100%);
   backdrop-filter: blur(28px);
@@ -652,6 +671,7 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-indigo:hover {
   border-color: rgba(165, 180, 252, 0.65);
   box-shadow: none !important;
@@ -668,12 +688,14 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .card-metric-amber:hover {
   border-color: rgba(245, 158, 11, 0.85);
   box-shadow: none !important;
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-amber {
   background: linear-gradient(135deg, rgba(69, 26, 3, 0.65) 0%, rgba(15, 23, 42, 0.82) 60%, rgba(120, 53, 15, 0.45) 100%);
   backdrop-filter: blur(28px);
@@ -683,6 +705,7 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-amber:hover {
   border-color: rgba(251, 191, 36, 0.65);
   box-shadow: none !important;
@@ -699,12 +722,14 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .card-metric-emerald:hover {
   border-color: rgba(16, 185, 129, 0.85);
   box-shadow: none !important;
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-emerald {
   background: linear-gradient(135deg, rgba(6, 78, 59, 0.65) 0%, rgba(15, 23, 42, 0.82) 60%, rgba(4, 120, 87, 0.45) 100%);
   backdrop-filter: blur(28px);
@@ -714,6 +739,7 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-emerald:hover {
   border-color: rgba(52, 211, 153, 0.65);
   box-shadow: none !important;
@@ -730,12 +756,14 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .card-metric-cyan:hover {
   border-color: rgba(14, 165, 233, 0.85);
   box-shadow: none !important;
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-cyan {
   background: linear-gradient(135deg, rgba(12, 74, 110, 0.65) 0%, rgba(15, 23, 42, 0.82) 60%, rgba(3, 105, 161, 0.45) 100%);
   backdrop-filter: blur(28px);
@@ -745,6 +773,7 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-cyan:hover {
   border-color: rgba(56, 189, 248, 0.65);
   box-shadow: none !important;
@@ -761,12 +790,14 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .card-metric-purple:hover {
   border-color: rgba(168, 85, 247, 0.85);
   box-shadow: none !important;
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-purple {
   background: linear-gradient(135deg, rgba(88, 28, 135, 0.65) 0%, rgba(15, 23, 42, 0.82) 60%, rgba(126, 34, 206, 0.45) 100%);
   backdrop-filter: blur(28px);
@@ -776,6 +807,7 @@ a.card-brand-effect {
   transform: none !important;
   opacity: 1 !important;
 }
+
 .dark .card-metric-purple:hover {
   border-color: rgba(192, 132, 252, 0.65);
   box-shadow: none !important;
@@ -1026,10 +1058,12 @@ a.card-brand-effect {
     transform: scale(1);
     opacity: 1;
   }
+
   40% {
     transform: scale(1.35);
     opacity: 0.85;
   }
+
   100% {
     transform: scale(0);
     opacity: 0;
@@ -1046,10 +1080,12 @@ a.card-brand-effect {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
   }
+
   70% {
     transform: scale(1.08);
     box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
   }
+
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
@@ -1066,12 +1102,15 @@ a.card-brand-effect {
     transform: translateY(0) scale(1);
     opacity: 1;
   }
+
   25% {
     transform: translateY(-15px) scale(1.08);
   }
+
   50% {
     transform: translateY(-40px) scale(1.15);
   }
+
   100% {
     transform: translateY(-280px) scale(0.6);
     opacity: 0;
@@ -1084,9 +1123,12 @@ a.card-brand-effect {
 
 /* Gentle Floating Animation */
 @keyframes gentleFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-8px);
   }
@@ -1098,11 +1140,27 @@ a.card-brand-effect {
 
 /* Lock Shake & Sparkle */
 @keyframes lockShake {
-  0%, 100% { transform: rotate(0); }
-  20% { transform: rotate(-12deg); }
-  40% { transform: rotate(12deg); }
-  60% { transform: rotate(-8deg); }
-  80% { transform: rotate(8deg); }
+
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+
+  20% {
+    transform: rotate(-12deg);
+  }
+
+  40% {
+    transform: rotate(12deg);
+  }
+
+  60% {
+    transform: rotate(-8deg);
+  }
+
+  80% {
+    transform: rotate(8deg);
+  }
 }
 
 .animate-lock-shake {
@@ -1111,8 +1169,17 @@ a.card-brand-effect {
 
 /* Reward Star Sparkle */
 @keyframes starSparkle {
-  0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
-  50% { transform: scale(1.2) rotate(15deg); filter: brightness(1.25); }
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.2) rotate(15deg);
+    filter: brightness(1.25);
+  }
 }
 
 .animate-star-sparkle {
@@ -1121,9 +1188,12 @@ a.card-brand-effect {
 
 /* Pulse Glow for Active Checkpoint */
 @keyframes checkpointGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6);
   }
+
   50% {
     box-shadow: 0 0 0 14px rgba(245, 158, 11, 0);
   }
@@ -1133,6 +1203,110 @@ a.card-brand-effect {
   animation: checkpointGlow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
+@keyframes bounce {
 
+  0%,
+  100% {
+    transform: translateY(-5%) !important;
+    animation-timing-function: cubic-bezier(.8, 0, 1, 1);
+  }
+}
 
+/* =============================================================================
+   GAME-SPECIFIC ANIMATIONS (Phase 5 Audited Visual System)
+   ============================================================================= */
 
+/* 1. Bubble Squash & Pop (Tap -> Squash -> Pop -> Disappear) */
+@keyframes bubbleSquashPop {
+  0% {
+    transform: scale(1);
+  }
+
+  25% {
+    transform: scale(1.25, 0.85);
+  }
+
+  50% {
+    transform: scale(0.9, 1.2);
+  }
+
+  75% {
+    transform: scale(1.35);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-bubble-squash-pop {
+  animation: bubbleSquashPop 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 2. Star Pop (Rotate -> Burst -> Sparkle) */
+@keyframes starBurstRotate {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  40% {
+    transform: scale(1.4) rotate(45deg);
+    filter: brightness(1.3);
+  }
+
+  100% {
+    transform: scale(1.6) rotate(90deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-burst-rotate {
+  animation: starBurstRotate 0.45s ease-out forwards;
+}
+
+/* 3. Sentence / Train Snap Glow */
+@keyframes sentenceSnapGlow {
+  0% {
+    transform: scale(0.92);
+    border-color: #38bdf8;
+  }
+
+  50% {
+    transform: scale(1.05);
+    border-color: #10b981;
+  }
+
+  100% {
+    transform: scale(1);
+    border-color: #059669;
+  }
+}
+
+.animate-snap-glow {
+  animation: sentenceSnapGlow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 4. Character Mountain Climb Step */
+@keyframes characterClimbStep {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  30% {
+    transform: translateY(-16px) rotate(-6deg);
+  }
+
+  70% {
+    transform: translateY(-24px) rotate(6deg);
+  }
+
+  100% {
+    transform: translateY(-32px) rotate(0deg);
+  }
+}
+
+.animate-character-climb {
+  animation: characterClimbStep 0.6s ease-in-out forwards;
+}

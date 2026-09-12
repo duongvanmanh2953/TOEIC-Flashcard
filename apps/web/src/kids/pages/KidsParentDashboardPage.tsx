@@ -54,7 +54,7 @@ export const KidsParentDashboardPage: React.FC = () => {
             <div className="inline-flex items-center gap-1 text-xs font-black text-purple-700 uppercase tracking-wider mb-0.5">
               <span>Trung Tâm Phụ Huynh</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900">Báo Cáo Tiến Độ Của Bé</h1>
+            <h1 className="text-xl md:text-2xl font-black text-slate-900">Báo Cáo Tiến Độ Của Bé</h1>
             <p className="text-xs md:text-sm text-slate-600 font-bold">
               Theo dõi phát âm tiếng Anh, khả năng ghi nhớ từ vựng và chuỗi ngày chăm chỉ của bé.
             </p>

@@ -85,8 +85,8 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl sm:text-3xl font-black text-amber-950 tracking-tight flex items-center justify-center gap-2">
-          <Sparkles className="w-7 h-7 text-amber-500" />
+        <h2 className="text-xl sm:text-2xl font-black text-amber-950 tracking-tight flex items-center justify-center gap-2">
+          <Sparkles className="w-6 h-6 text-amber-500" />
           <span>BÉ THẬT XUẤT SẮC!</span>
         </h2>
 

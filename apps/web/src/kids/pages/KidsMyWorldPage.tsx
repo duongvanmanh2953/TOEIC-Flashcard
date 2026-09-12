@@ -307,7 +307,7 @@ export const KidsMyWorldPage: React.FC = () => {
               <Compass className="w-4 h-4 text-yellow-300" />
               <span>Hành Tinh Kỳ Thú • Đảo Của Bé</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">Thế Giới Khám Phá & Học Tập Tương Tác</h1>
+            <h1 className="text-xl sm:text-2xl font-black text-white">Thế Giới Khám Phá & Học Tập Tương Tác</h1>
             <p className="text-emerald-100 text-xs sm:text-sm font-bold mt-1 max-w-xl">
               Khám phá 6 phân khu kỳ diệu: nghe từ vựng tự động, trò chuyện hàng ngày và xây dựng vương quốc riêng của bé!
             </p>
@@ -315,63 +315,61 @@ export const KidsMyWorldPage: React.FC = () => {
         </div>
 
         {/* 4 Mode Tabs with Equal Touch Targets */}
-        <div className="relative z-10 flex items-center gap-2 bg-white/20 backdrop-blur-md p-1.5 rounded-2xl border border-white/30 flex-wrap justify-center">
+        <div className="relative z-10 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 bg-white/20 backdrop-blur-md p-2 rounded-2xl border border-white/30 w-full md:w-auto">
           <button
             onClick={() => setActiveTab('zones')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
               activeTab === 'zones'
                 ? 'bg-white text-slate-950 shadow-sm'
                 : 'text-white hover:bg-white/20'
             }`}
           >
-            <Compass className="w-4 h-4 text-emerald-600" />
-            <span>Phân Khu Kỳ Thú</span>
+            <Compass className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="truncate">Phân Khu Kỳ Thú</span>
           </button>
           <button
             onClick={() => setActiveTab('phrases')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
               activeTab === 'phrases'
                 ? 'bg-white text-slate-950 shadow-sm'
                 : 'text-white hover:bg-white/20'
             }`}
           >
-            <MessageSquare className="w-4 h-4 text-sky-600" />
-            <span>Câu Giao Tiếp</span>
+            <MessageSquare className="w-4 h-4 text-sky-600 shrink-0" />
+            <span className="truncate">Câu Giao Tiếp</span>
           </button>
           <button
             onClick={() => setActiveTab('island')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
               activeTab === 'island'
                 ? 'bg-white text-slate-950 shadow-sm'
                 : 'text-white hover:bg-white/20'
             }`}
           >
-            <MapPin className="w-4 h-4 text-amber-600" />
-            <span>Đảo Hình Dán</span>
+            <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
+            <span className="truncate">Đảo Hình Dán</span>
           </button>
           <button
             onClick={() => setActiveTab('badges')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
               activeTab === 'badges'
                 ? 'bg-white text-slate-950 shadow-sm'
                 : 'text-white hover:bg-white/20'
             }`}
           >
-            <Award className="w-4 h-4 text-yellow-400" />
-            <span>Huy Hiệu</span>
+            <Award className="w-4 h-4 text-yellow-400 shrink-0" />
+            <span className="truncate">Huy Hiệu</span>
           </button>
         </div>
       </div>
 
-      {/* ================================================================ */}
-      {/* 2. 6 INTERACTIVE ISLAND ZONES SELECTOR                           */}
-      {/* ================================================================ */}
+      {/* 6 Interactive Learning Zones (Section 15: Big Icons, 44px+ touch) */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-            <Compass className="w-4 h-4 text-amber-500" />
-            <span>6 Phân Khu Khám Phá:</span>
-          </span>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base sm:text-lg font-black text-slate-950 flex items-center gap-2">
+            <Compass className="w-5 h-5 text-emerald-600" />
+            <span>6 Phân Khu Học Tập Theo Chủ Đề</span>
+          </h2>
           <span className="text-xs font-bold text-slate-500 hidden sm:inline">
             Chạm vào từng phân khu để dịch chuyển tức thì
           </span>
@@ -436,19 +434,28 @@ export const KidsMyWorldPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Subcategory Pills with Roomy Horizontal Scroll (Requirement #16) */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none py-1 px-1 -mx-1">
+          {/* Visual Category Selection Grid (Spacious, No horizontal squishing) */}
+          <div className="space-y-2.5 bg-white p-4 sm:p-5 rounded-3xl border-2 border-slate-200">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+                Danh Mục Từ Vựng:
+              </span>
+              <span className="text-xs font-bold text-slate-500">
+                {filteredWords.length} từ khả dụng
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm whitespace-nowrap transition cursor-pointer border-2 shrink-0 flex items-center gap-2 min-h-[44px] ${
+                className={`p-2.5 sm:p-3 rounded-2xl font-black text-xs transition cursor-pointer border-2 flex flex-col items-center justify-center text-center gap-1 min-h-[64px] ${
                   selectedCategory === 'all'
-                    ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm'
-                    : 'bg-white text-slate-800 border-slate-200 hover:bg-amber-50'
+                    ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm scale-102'
+                    : 'bg-slate-50 hover:bg-amber-50/60 text-slate-700 border-slate-200'
                 }`}
               >
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>Tất Cả Danh Mục</span>
+                <Sparkles className="w-5 h-5 text-amber-600" />
+                <span className="leading-tight">Tất Cả</span>
               </button>
 
               {KIDS_CATEGORIES.map((cat) => {
@@ -457,35 +464,38 @@ export const KidsMyWorldPage: React.FC = () => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm whitespace-nowrap transition cursor-pointer border-2 shrink-0 flex items-center gap-2 min-h-[44px] ${
+                    className={`p-2.5 sm:p-3 rounded-2xl font-black text-xs transition cursor-pointer border-2 flex flex-col items-center justify-center text-center gap-1 min-h-[64px] ${
                       isSelected
-                        ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm'
-                        : 'bg-white text-slate-800 border-slate-200 hover:bg-amber-50'
+                        ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm scale-102'
+                        : 'bg-slate-50 hover:bg-amber-50/60 text-slate-700 border-slate-200'
                     }`}
                   >
-                    <span>{cat.nameVi}</span>
-                    <span className="text-[10px] font-bold text-slate-500">({cat.nameEn})</span>
+                    <span className="text-lg leading-none">{cat.icon || '📖'}</span>
+                    <div className="leading-tight">
+                      <p className="truncate">{cat.nameVi}</p>
+                      <p className="text-[10px] font-bold text-slate-500 truncate">({cat.nameEn})</p>
+                    </div>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Search & Growth Stage Filter */}
-          <div className="flex items-center justify-between flex-wrap gap-4 bg-white p-4 rounded-3xl border-2 border-slate-200">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
+          {/* Search & Growth Stage Filter: Clean Responsive Stacking */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border-2 border-slate-200">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm từ tiếng Anh hoặc nghĩa tiếng Việt..."
-                className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl bg-slate-50 border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl bg-slate-50 border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[42px]"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-600">Giai đoạn sinh trưởng:</span>
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <span className="text-xs font-bold text-slate-600 hidden md:inline">Giai đoạn:</span>
               {[
                 { id: 'all', label: 'Tất cả' },
                 { id: 'sprout', label: 'Mầm non' },
@@ -495,7 +505,7 @@ export const KidsMyWorldPage: React.FC = () => {
                 <button
                   key={st.id}
                   onClick={() => setSelectedStage(st.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border min-h-[36px] ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border min-h-[38px] ${
                     selectedStage === st.id
                       ? 'bg-emerald-500 text-white border-emerald-600'
                       : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-emerald-50'
@@ -521,11 +531,14 @@ export const KidsMyWorldPage: React.FC = () => {
                 <div
                   key={item.id}
                   onClick={() => handleOpenWord(item)}
-                  className="bg-white p-5 rounded-3xl border-2 border-amber-300 hover:border-emerald-500 hover:shadow-md transition-all flex flex-col justify-between space-y-4 cursor-pointer group"
+                  className="bg-white p-4 sm:p-5 rounded-3xl border-2 border-amber-300 hover:border-emerald-500 transition-all flex flex-col justify-between space-y-4 cursor-pointer group"
                 >
                   <div>
                     <div className="flex items-start justify-between">
-                      <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-300 flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
+                      <div
+                        className="relative z-10 shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-50 border border-amber-300 flex items-center justify-center p-2 group-hover:scale-105 transition-transform"
+                        style={{ WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}
+                      >
                         <KidsIllustration name={item.word} className="w-full h-full object-contain" />
                       </div>
                       <span className={`text-[11px] font-black px-3 py-1 rounded-full border ${stageBadge.color}`}>
@@ -535,12 +548,12 @@ export const KidsMyWorldPage: React.FC = () => {
 
                     <div className="mt-3">
                       <div className="flex items-baseline gap-2 flex-wrap">
-                        <h3 className="text-2xl font-black text-slate-950 uppercase tracking-wide">
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-wide break-words">
                           {item.word}
                         </h3>
                         <span className="text-xs font-bold text-slate-500">{item.phonetic}</span>
                       </div>
-                      <p className="text-sm font-black text-emerald-700 mt-0.5">
+                      <p className="text-xs sm:text-sm font-black text-emerald-700 mt-0.5">
                         {item.viMeaning}
                       </p>
 
@@ -626,7 +639,7 @@ export const KidsMyWorldPage: React.FC = () => {
             {DAILY_PHRASES.map((phr) => (
               <div
                 key={phr.id}
-                className="bg-white p-5 rounded-3xl border-2 border-slate-200 hover:border-sky-400 transition-all space-y-3 shadow-sm"
+                className="bg-white p-5 rounded-3xl border-2 border-slate-200 hover:border-sky-400 transition-all space-y-3"
               >
                 <div className="flex items-start justify-between">
                   <span className="px-3 py-1 rounded-full bg-sky-100 border border-sky-300 text-xs font-black text-sky-950">
@@ -868,7 +881,7 @@ export const KidsMyWorldPage: React.FC = () => {
               </div>
 
               <div>
-                <h2 className="text-3xl font-black text-slate-950 uppercase tracking-wide">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-wide">
                   {activeWordModal.word}
                 </h2>
                 <p className="text-sm font-bold text-slate-500">{activeWordModal.phonetic}</p>
