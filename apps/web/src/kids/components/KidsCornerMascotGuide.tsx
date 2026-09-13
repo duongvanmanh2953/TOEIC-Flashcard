@@ -23,6 +23,19 @@ export const KidsCornerMascotGuide: React.FC<KidsCornerMascotGuideProps> = ({
   const [isOpen, setIsOpen] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // Auto-read instruction when Bobby guide appears on screen
+  useEffect(() => {
+    if (soundManager.getSoundMode() === 'muted') return;
+
+    const timer = setTimeout(() => {
+      handleSpeakAll();
+    }, 750);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [instructionVi, targetWord]);
+
   // If no instructions are provided for this screen, do not render
   if (!instructionVi && !instructionEn && !targetWord) {
     return null;

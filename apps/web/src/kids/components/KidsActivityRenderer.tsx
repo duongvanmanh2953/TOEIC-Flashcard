@@ -290,15 +290,15 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
       <div
         ref={cardRef}
         onClick={handleToggleFlip}
-        className="w-full h-[360px] sm:h-[390px] cursor-pointer select-none [perspective:1000px] group"
+        className="kids-flip-card w-full h-[360px] sm:h-[390px] cursor-pointer select-none group"
       >
         <div
-          className={`relative w-full h-full rounded-3xl transition-transform duration-500 ease-out [transform-style:preserve-3d] ${
-            isFlipped ? '[transform:rotateY(180deg)]' : ''
+          className={`kids-flip-inner ${
+            isFlipped ? 'is-flipped' : ''
           }`}
         >
           {/* Card Front */}
-          <div className="absolute inset-0 w-full h-full rounded-3xl kids-liquid-amber p-6 flex flex-col items-center justify-between text-center [backface-visibility:hidden]">
+          <div className="kids-flip-front bg-gradient-to-b from-amber-50 to-orange-50/80 border-2 border-amber-300 p-6 flex flex-col items-center justify-between text-center">
             <div className="px-4 py-1.5 rounded-full bg-amber-200/90 text-slate-900 text-xs sm:text-sm font-black border-2 border-amber-400">
               Bé đoán xem đây là gì nào?
             </div>
@@ -314,7 +314,7 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
           </div>
 
           {/* Card Back */}
-          <div className="absolute inset-0 w-full h-full rounded-3xl kids-liquid-emerald p-6 flex flex-col items-center justify-between text-center [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <div className="kids-flip-back bg-gradient-to-b from-emerald-50 to-teal-50 border-2 border-emerald-400 p-6 flex flex-col items-center justify-between text-center">
             <div className="px-4 py-1.5 rounded-full bg-emerald-200/90 text-slate-950 text-xs sm:text-sm font-black border-2 border-emerald-400 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Từ Vựng & Phát Âm Chuẩn</span>

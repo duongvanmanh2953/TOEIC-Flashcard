@@ -536,37 +536,7 @@ export const AppShell: React.FC = () => {
             </>
           )}
 
-          {/* Theme & Auth Controls: Login for Guests / Logout for Real Users */}
-          <div className="flex items-center gap-1.5 px-0.5 pt-0.5">
-            <button
-              onClick={toggleTheme}
-              className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex-1"
-              title={theme === 'dark' ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'}
-            >
-              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-              <span>{theme === 'dark' ? t('nav.lightMode', 'Light') : t('nav.darkMode', 'Dark')}</span>
-            </button>
 
-            {/* ONLY Show Logout If Authenticated; Show Login If Guest */}
-            {user?.isAnonymous || !user ? (
-              <button
-                onClick={() => promptLogin('Đăng nhập để lưu tiến độ và sử dụng đầy đủ tính năng')}
-                className="flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition shrink-0 shadow-xs"
-                title="Đăng nhập tài khoản"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Đăng nhập</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleLogout}
-                className="p-1.5 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0"
-                title={t('nav.logout', 'Logout')}
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
         </div>
       </aside>
 
@@ -1052,8 +1022,8 @@ export const AppShell: React.FC = () => {
                   type="button"
                   onClick={() => setSupportTab('chat')}
                   className={`py-1 rounded-lg transition ${supportTab === 'chat'
-                      ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
-                      : 'text-slate-400 hover:text-white'
+                    ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                    : 'text-slate-400 hover:text-white'
                     }`}
                 >
                   💬 Chat trực tiếp
@@ -1062,8 +1032,8 @@ export const AppShell: React.FC = () => {
                   type="button"
                   onClick={() => setSupportTab('quick')}
                   className={`py-1 rounded-lg transition ${supportTab === 'quick'
-                      ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
-                      : 'text-slate-400 hover:text-white'
+                    ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                    : 'text-slate-400 hover:text-white'
                     }`}
                 >
                   ⚡ Kênh liên hệ

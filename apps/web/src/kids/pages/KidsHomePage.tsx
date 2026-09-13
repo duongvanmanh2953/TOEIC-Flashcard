@@ -177,7 +177,7 @@ export const KidsHomePage: React.FC = () => {
                     <span>Khám phá ngay</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>
-                  <span className="text-xs font-bold text-slate-400">4-10 tuổi</span>
+                  <span className="text-xs font-black text-slate-700 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200">4-10 tuổi</span>
                 </div>
               </div>
 
@@ -205,7 +205,7 @@ export const KidsHomePage: React.FC = () => {
                     <span>Giải cứu ngay</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </span>
-                  <span className="text-xs font-bold text-slate-400">4-9 tuổi</span>
+                  <span className="text-xs font-black text-slate-700 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200">4-9 tuổi</span>
                 </div>
               </div>
             </div>

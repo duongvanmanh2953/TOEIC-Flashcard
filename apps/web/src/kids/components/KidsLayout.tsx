@@ -246,7 +246,7 @@ export const KidsLayout: React.FC = () => {
 
         {/* Navigation Section */}
         <div className="space-y-1.5">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-60 px-2 block mb-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 px-2 block mb-1">
             Khu vực khám phá
           </span>
 
@@ -293,7 +293,7 @@ export const KidsLayout: React.FC = () => {
                     )}
                   </div>
                   <p
-                    className={`text-[10px] font-bold truncate mt-0.5 ${isActive ? 'text-white/90' : 'text-slate-60'
+                    className={`text-[10px] font-bold truncate mt-0.5 ${isActive ? 'text-white' : 'text-slate-600'
                       }`}
                   >
                     {item.desc}
@@ -445,7 +445,7 @@ export const KidsLayout: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="hidden lg:flex items-center gap-2">
+                <div className="hidden xl:flex items-center gap-2">
                   <span className="text-xs font-black text-amber-900/80 bg-amber-50 px-3 py-1 rounded-full border border-amber-200 shadow-2xs">
                     🌟 Khám phá tiếng Anh kỳ thú cùng Bobby
                   </span>
@@ -457,13 +457,13 @@ export const KidsLayout: React.FC = () => {
                 <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 font-black text-xs sm:text-sm shadow-xs">
                   <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400 text-amber-500" />
                   <span>{progress.totalStars || 0}</span>
-                  <span className="text-[10px] text-amber-800 hidden lg:inline">Sao</span>
+                  <span className="text-[10px] text-amber-800 hidden xl:inline">Sao</span>
                 </div>
 
                 <div className="hidden sm:flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 font-black text-xs sm:text-sm">
                   <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-rose-500 text-rose-500" />
                   <span>{progress.streakDays || 1}</span>
-                  <span className="text-[10px] text-rose-700 hidden lg:inline">ngày</span>
+                  <span className="text-[10px] text-rose-700 hidden xl:inline">ngày</span>
                 </div>
 
                 {/* Unified Sound Controller */}
@@ -483,7 +483,7 @@ export const KidsLayout: React.FC = () => {
         )}
 
         {/* Main Content Body */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 relative z-10">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8 relative z-10">
           <Outlet />
         </main>
       </div>
@@ -493,7 +493,7 @@ export const KidsLayout: React.FC = () => {
       {/* ========================================================================= */}
       {!isFocusMode && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t-2 border-slate-200 px-2 py-1.5 shadow-lg">
-          <div className="w-full max-w-md mx-auto flex items-center justify-around">
+          <div className="w-full max-w-md sm:max-w-xl mx-auto flex items-center justify-around">
             {navItems.map((item) => {
               const isActive =
                 item.exact

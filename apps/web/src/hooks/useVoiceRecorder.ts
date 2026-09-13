@@ -42,7 +42,17 @@ export const useVoiceRecorder = () => {
       if (err.message === 'PERMISSION_DENIED') {
         setStatus('permission_denied');
         setErrorMessage(
-          'Không thể truy cập Microphone. Vui lòng cho phép quyền Microphone trong Cài đặt trình duyệt (Safari/Chrome) để thu âm.'
+          'Không thể truy cập Microphone. Vui lòng cho phép quyền Microphone trong Cài đặt Safari / Chrome để thu âm.'
+        );
+      } else if (err.message === 'SAFARI_INSECURE_CONTEXT') {
+        setStatus('permission_denied');
+        setErrorMessage(
+          'Safari yêu cầu kết nối bảo mật (HTTPS hoặc localhost) để mở Microphone. Nếu dùng iPad qua mạng LAN, hãy dùng HTTPS hoặc mở localhost.'
+        );
+      } else if (err.message === 'NOT_SUPPORTED') {
+        setStatus('permission_denied');
+        setErrorMessage(
+          'Trình duyệt Safari không tìm thấy thiết bị Microphone khả dụng hoặc quyền truy cập bị chặn trong Cài đặt iPad > Safari.'
         );
       } else {
         setStatus('idle');

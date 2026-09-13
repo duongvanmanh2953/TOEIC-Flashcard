@@ -104,9 +104,34 @@ export class VoiceRecorder {
     };
 
     try {
-      this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (typeof navigator === 'undefined') {
+        throw new Error('NOT_SUPPORTED');
+      }
+
+      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+        this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } else {
+        // Fallback for Safari / WebKit or older browsers
+        const legacyGetUserMedia =
+          (navigator as any).getUserMedia ||
+          (navigator as any).webkitGetUserMedia ||
+          (navigator as any).mozGetUserMedia ||
+          (navigator as any).msGetUserMedia;
+
+        if (typeof legacyGetUserMedia === 'function') {
+          this.mediaStream = await new Promise<MediaStream>((resolve, reject) => {
+            legacyGetUserMedia.call(navigator, constraints, resolve, reject);
+          });
+        } else {
+          // Safari completely removes mediaDevices in HTTP non-localhost contexts
+          if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost') {
+            throw new Error('SAFARI_INSECURE_CONTEXT');
+          }
+          throw new Error('NOT_SUPPORTED');
+        }
+      }
     } catch (err: any) {
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message === 'PERMISSION_DENIED') {
         throw new Error('PERMISSION_DENIED');
       }
       throw err;

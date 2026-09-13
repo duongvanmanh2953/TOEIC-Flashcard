@@ -757,7 +757,7 @@ export const ReviewSessionPage: React.FC = () => {
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in"
               onClick={() => setShowVoicePractice(false)}
             >
-              <div className="relative w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="relative w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setShowVoicePractice(false)}
                   className="absolute -top-3 -right-3 z-10 p-2 rounded-full bg-slate-800 text-white border border-slate-700 shadow-md hover:bg-slate-700 transition"

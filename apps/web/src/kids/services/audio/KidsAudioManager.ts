@@ -25,8 +25,8 @@ class KidsAudioManager {
   private melodyIntervalId: any = null;
   private isDucked: boolean = false;
 
-  private baseMusicVolume: number = 0.18;
-  private duckedMusicVolume: number = 0.04;
+  private baseMusicVolume: number = 0.16;
+  private duckedMusicVolume: number = 0.01;
   private sfxVolume: number = 0.35;
 
   constructor() {

@@ -867,7 +867,3 @@
 .animate-robot-eye-glow {
   animation: eye-glow 1s ease-in-out infinite;
 }
-
-span.text-xs.font-bold.text-slate-400 {
-  color: #3e3f41 !important;
-}

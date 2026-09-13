@@ -165,7 +165,7 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
 
           <button
             onClick={handleSecondaryAction}
-            className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer flex items-center justify-center gap-1.5"
+            className="w-full py-2.5 rounded-xl text-xs font-extrabold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition cursor-pointer flex items-center justify-center gap-1.5"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Quay lại Bản đồ phiêu lưu</span>

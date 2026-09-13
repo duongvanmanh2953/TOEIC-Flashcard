@@ -363,9 +363,11 @@ class VoiceService {
           // Direct backend proxy route that streams authentic Vietnamese TTS (Northern female voice)
           const proxyUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=vi`;
           audio = new Audio(proxyUrl);
+          audio.volume = 1.0;
           this.audioCache.set(`vi:${cleanText}`, audio);
         }
 
+        audio.volume = 1.0;
         this.activeAudio = audio;
         this.notify(true);
         kidsAudioManager.duckMusic();
@@ -406,9 +408,11 @@ class VoiceService {
       } else {
         const proxyUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=en`;
         audio = new Audio(proxyUrl);
+        audio.volume = 1.0;
         this.audioCache.set(`en:${cleanText}`, audio);
       }
 
+      audio.volume = 1.0;
       this.activeAudio = audio;
       this.notify(true);
       kidsAudioManager.duckMusic();

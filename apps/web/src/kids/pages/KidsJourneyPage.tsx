@@ -842,7 +842,7 @@ export const KidsJourneyPage: React.FC = () => {
                                 <span>Luyện Lại</span>
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-xl bg-slate-100 text-slate-400 font-medium text-[11px] flex items-center gap-1">
+                              <span className="px-2 py-0.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-[11px] border border-slate-200 flex items-center gap-1">
                                 <Lock className="w-3 h-3" />
                                 <span>Chưa Mở</span>
                               </span>
