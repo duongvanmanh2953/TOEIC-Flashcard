@@ -3,17 +3,26 @@
    ========================================================================== */
 
 :root {
-  --kids-primary: #f59e0b;       /* Sunny Amber */
+  --kids-primary: #f59e0b;
+  /* Sunny Amber */
   --kids-primary-hover: #d97706;
-  --kids-secondary: #0ea5e9;     /* Sky Blue */
-  --kids-accent: #ec4899;        /* Bubblegum Pink */
-  --kids-background: #f0fdf4;    /* Fresh Meadow Soft Green */
+  --kids-secondary: #0ea5e9;
+  /* Sky Blue */
+  --kids-accent: #ec4899;
+  /* Bubblegum Pink */
+  --kids-background: #f0fdf4;
+  /* Fresh Meadow Soft Green */
   --kids-surface: #ffffff;
-  --kids-text: #020617;          /* Slate 950 - High Contrast Theme Safe */
-  --kids-text-muted: #475569;    /* Slate 600 */
-  --kids-success: #10b981;       /* Emerald */
-  --kids-warning: #f59e0b;       /* Amber */
-  --kids-error: #ef4444;         /* Rose Red */
+  --kids-text: #020617;
+  /* Slate 950 - High Contrast Theme Safe */
+  --kids-text-muted: #475569;
+  /* Slate 600 */
+  --kids-success: #10b981;
+  /* Emerald */
+  --kids-warning: #f59e0b;
+  /* Amber */
+  --kids-error: #ef4444;
+  /* Rose Red */
 
   /* Radius tokens */
   --kids-radius-sm: 8px;
@@ -49,7 +58,10 @@
   color: #0099e9 !important;
 }
 
-.dark .text-slate-400,
+
+
+
+
 .dark .text-gray-400,
 .dark .text-zinc-400,
 .dark .text-neutral-400 {
@@ -80,6 +92,7 @@
   color: #020617;
   transition: all 0.2s ease;
 }
+
 .kids-liquid-amber:hover {
   background-color: #fef08a;
 }
@@ -91,6 +104,7 @@
   color: #020617;
   transition: all 0.2s ease;
 }
+
 .kids-liquid-sky:hover {
   background-color: #0099e9;
 }
@@ -102,6 +116,7 @@
   color: #020617;
   transition: all 0.2s ease;
 }
+
 .kids-liquid-rose:hover {
   background-color: #fecdd3;
 }
@@ -113,6 +128,7 @@
   color: #020617;
   transition: all 0.2s ease;
 }
+
 .kids-liquid-purple:hover {
   background-color: #e9d5ff;
 }
@@ -124,6 +140,7 @@
   color: #020617;
   transition: all 0.2s ease;
 }
+
 .kids-liquid-emerald:hover {
   background-color: #a7f3d0;
 }
@@ -142,6 +159,7 @@
   min-width: var(--kids-min-touch);
   transition: transform 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
 }
+
 .kids-btn-press:active {
   transform: scale(0.96) translateY(2px);
 }
@@ -166,9 +184,12 @@
 
 /* Subtle, Controlled Child Animations */
 @keyframes balloon-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
   }
+
   50% {
     transform: translateY(-12px) rotate(2deg);
   }
@@ -180,12 +201,16 @@
 
 /* Realistic Balloon String Wave */
 @keyframes string-wave {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   33% {
     transform: rotate(4deg) scaleX(0.95);
   }
+
   66% {
     transform: rotate(-3deg) scaleX(1.05);
   }
@@ -198,18 +223,24 @@
 
 /* Rubber Wobble on Tap / Wrong Select */
 @keyframes rubber-wobble {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1) rotate(0deg);
   }
+
   20% {
     transform: scale(1.12, 0.88) rotate(-6deg);
   }
+
   40% {
     transform: scale(0.9, 1.12) rotate(6deg);
   }
+
   60% {
     transform: scale(1.06, 0.94) rotate(-3deg);
   }
+
   80% {
     transform: scale(0.98, 1.02) rotate(2deg);
   }
@@ -226,20 +257,24 @@
     opacity: 1;
     filter: brightness(1);
   }
+
   25% {
     transform: scale(1.35) rotate(-4deg);
     filter: brightness(1.6);
   }
+
   45% {
     transform: scale(1.45) rotate(6deg);
     filter: brightness(2);
     opacity: 0.9;
   }
+
   60% {
     transform: scale(0.4) rotate(-15deg);
     filter: blur(2px) contrast(1.8);
     opacity: 0.5;
   }
+
   100% {
     transform: scale(0) translateY(-20px);
     opacity: 0;
@@ -257,10 +292,12 @@
     transform: scale(0) rotate(0deg);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.6) rotate(180deg);
     opacity: 0.9;
   }
+
   100% {
     transform: scale(2.2) rotate(360deg);
     opacity: 0;
@@ -272,12 +309,16 @@
 }
 
 @keyframes rocket-rumble {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
   }
+
   25% {
     transform: translateY(-2px) rotate(-1.5deg);
   }
+
   75% {
     transform: translateY(2px) rotate(1.5deg);
   }
@@ -292,9 +333,11 @@
     transform: translateY(0) scale(1);
     opacity: 1;
   }
+
   40% {
     transform: translateY(-40px) scale(1.1);
   }
+
   100% {
     transform: translateY(-380px) scale(0.7);
     opacity: 0;
@@ -306,8 +349,15 @@
 }
 
 @keyframes gentle-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .animate-gentle-float {
@@ -315,47 +365,88 @@
 }
 
 @keyframes wiggle {
-  0%, 100% { transform: rotate(-2deg); }
-  50% { transform: rotate(2deg); }
+
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(2deg);
+  }
 }
 
 .animate-wiggle {
   animation: wiggle 1.8s ease-in-out infinite;
 }
 
-/* Comprehensive 3D Flip Card System for Flashcards (Strict Section 14: 1200px perspective, 600ms ease) */
+/* Comprehensive 3D Flip Card System for Flashcards (Strict Single-Axis Rotation) */
 .kids-flip-card {
   perspective: 1200px;
   -webkit-perspective: 1200px;
+  perspective-origin: 50% 50%;
+  -webkit-perspective-origin: 50% 50%;
+  position: relative;
+  width: 100%;
 }
 
 .kids-flip-inner {
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 600ms ease;
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  -webkit-transform-origin: 50% 50%;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .kids-flip-inner.is-flipped {
   transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
 }
 
 .kids-flip-front,
 .kids-flip-back {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  border-radius: inherit;
-  overflow: hidden;
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  transform-origin: 50% 50% !important;
+  -webkit-transform-origin: 50% 50% !important;
+  border-radius: 1.5rem;
+}
+
+.kids-flip-front {
+  transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
+  z-index: 2;
+  pointer-events: auto;
 }
 
 .kids-flip-back {
   transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kids-flip-inner.is-flipped .kids-flip-front {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kids-flip-inner.is-flipped .kids-flip-back {
+  z-index: 3;
+  pointer-events: auto;
 }
 
 /* ======================================================== */
@@ -365,9 +456,11 @@
   0% {
     transform: translateX(0);
   }
+
   20% {
     transform: translateX(-15px);
   }
+
   100% {
     transform: translateX(115%);
   }
@@ -378,9 +471,21 @@
 }
 
 @keyframes carriage-wobble {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px) rotate(-1.5deg); }
-  40%, 80% { transform: translateX(6px) rotate(1.5deg); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-6px) rotate(-1.5deg);
+  }
+
+  40%,
+  80% {
+    transform: translateX(6px) rotate(1.5deg);
+  }
 }
 
 .animate-carriage-wobble {
@@ -392,10 +497,12 @@
     opacity: 0.9;
     transform: translateY(0) scale(0.6);
   }
+
   50% {
     opacity: 0.7;
     transform: translateY(-18px) scale(1.1);
   }
+
   100% {
     opacity: 0;
     transform: translateY(-40px) scale(1.6);
@@ -407,8 +514,13 @@
 }
 
 @keyframes wheel-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-wheel-spin {
@@ -417,8 +529,15 @@
 
 /* Object Specific Playful Animations */
 @keyframes animal-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.03);
+  }
 }
 
 .animate-animal-breathe {
@@ -426,10 +545,23 @@
 }
 
 @keyframes animal-eat {
-  0%, 100% { transform: scale(1) translateY(0); }
-  25% { transform: scale(1.08, 0.94) translateY(4px); }
-  50% { transform: scale(0.96, 1.05) translateY(-3px); }
-  75% { transform: scale(1.04, 0.97) translateY(2px); }
+
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+
+  25% {
+    transform: scale(1.08, 0.94) translateY(4px);
+  }
+
+  50% {
+    transform: scale(0.96, 1.05) translateY(-3px);
+  }
+
+  75% {
+    transform: scale(1.04, 0.97) translateY(2px);
+  }
 }
 
 .animate-animal-eat {
@@ -437,8 +569,17 @@
 }
 
 @keyframes star-twinkle {
-  0%, 100% { opacity: 0.3; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 .animate-star-twinkle {
@@ -455,17 +596,21 @@
     transform: scale(1);
     opacity: 1;
   }
+
   20% {
     transform: scale(1.18, 0.86);
   }
+
   45% {
     transform: scale(0.9, 1.22);
     filter: brightness(1.4);
   }
+
   70% {
     transform: scale(1.35);
     opacity: 0.8;
   }
+
   100% {
     transform: scale(0.1);
     opacity: 0;
@@ -482,18 +627,22 @@
     transform: scale(1) rotate(0deg);
     filter: drop-shadow(0 0 0px #fbbf24);
   }
+
   25% {
     transform: scale(1.25) rotate(-15deg);
     filter: drop-shadow(0 0 12px #f59e0b) brightness(1.3);
   }
+
   50% {
     transform: scale(1.45) rotate(25deg);
     filter: drop-shadow(0 0 24px #e11d48) brightness(1.8);
   }
+
   75% {
     transform: scale(1.6) rotate(60deg);
     opacity: 0.7;
   }
+
   100% {
     transform: scale(0.2) rotate(90deg);
     opacity: 0;
@@ -509,17 +658,21 @@
   0% {
     transform: scale(1) translateY(0);
   }
+
   25% {
     transform: scale(1.22, 0.84) translateY(6px);
   }
+
   50% {
     transform: scale(0.88, 1.26) translateY(-8px);
     filter: brightness(1.5);
   }
+
   75% {
     transform: scale(1.4) translateY(-12px);
     opacity: 0.85;
   }
+
   100% {
     transform: scale(0) translateY(-20px);
     opacity: 0;
@@ -536,9 +689,11 @@
     transform: translate(0, 0) scale(1);
     opacity: 1;
   }
+
   60% {
     opacity: 0.9;
   }
+
   100% {
     transform: translate(var(--tx, 0px), var(--ty, -30px)) scale(var(--scale-end, 0.3)) rotate(var(--rot, 0deg));
     opacity: 0;
@@ -555,10 +710,12 @@
     transform: translate(0, 0) scale(1) rotate(0deg);
     opacity: 1;
   }
+
   30% {
     opacity: 1;
     transform: translate(calc(var(--tx, 0px) * 0.45), calc(var(--ty, 0px) * 0.45)) scale(1.15) rotate(calc(var(--rot, 0deg) * 0.4));
   }
+
   100% {
     transform: translate(var(--tx, 0px), calc(var(--ty, 0px) + 24px)) scale(var(--scale-end, 0.4)) rotate(var(--rot, 0deg));
     opacity: 0;
@@ -574,15 +731,19 @@
   0% {
     transform: scale(1, 1);
   }
+
   25% {
     transform: scale(1.22, 0.82) translateY(6px);
   }
+
   50% {
     transform: scale(0.9, 1.15) translateY(-8px);
   }
+
   75% {
     transform: scale(1.08, 0.94) translateY(2px);
   }
+
   100% {
     transform: scale(1, 1) translateY(0);
   }
@@ -594,10 +755,13 @@
 
 /* Magnetic Snap Glow Pulse */
 @keyframes magnetic-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0px rgba(16, 185, 129, 0.6);
     border-color: #10b981;
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.2);
     border-color: #059669;
@@ -614,6 +778,7 @@
     transform: translateY(0) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(-30px, 80px) rotate(-45deg);
     opacity: 0;
@@ -625,6 +790,7 @@
     transform: translateY(0) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(30px, 80px) rotate(45deg);
     opacity: 0;
@@ -644,12 +810,15 @@
   0% {
     transform: rotateX(0deg);
   }
+
   40% {
     transform: rotateX(-125deg);
   }
+
   70% {
     transform: rotateX(-95deg);
   }
+
   100% {
     transform: rotateX(-110deg);
   }
@@ -662,12 +831,16 @@
 
 /* Robot Arm Wave */
 @keyframes robot-wave {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   25% {
     transform: rotate(25deg);
   }
+
   75% {
     transform: rotate(-15deg);
   }
@@ -680,9 +853,12 @@
 
 /* Robot Eye Blink & Glow */
 @keyframes eye-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: drop-shadow(0 0 2px #06b6d4) brightness(1);
   }
+
   50% {
     filter: drop-shadow(0 0 12px #22d3ee) brightness(1.6);
   }
@@ -692,4 +868,6 @@
   animation: eye-glow 1s ease-in-out infinite;
 }
 
-
+span.text-xs.font-bold.text-slate-400 {
+  color: #3e3f41 !important;
+}

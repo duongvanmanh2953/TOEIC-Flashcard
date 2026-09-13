@@ -156,17 +156,7 @@ export function useTreasureMapController(onStarsAwarded?: (stars: number) => voi
 
   // Initialize Game on Mount (Ensures NO blank screen!)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setGameState('intro');
-      // Speak teaching of current quest
-      treasureAudio.speakEnglish(activeQuest.targetWord, () => {
-        treasureAudio.speakEnglish(activeQuest.instructionEn, () => {
-          setGameState('exploring');
-        });
-      });
-    }, 400);
-
-    return () => clearTimeout(timer);
+    setGameState('exploring');
   }, []);
 
   // Replay English Audio

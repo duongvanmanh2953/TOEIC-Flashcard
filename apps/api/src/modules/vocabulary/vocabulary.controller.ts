@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { VocabularyService } from './vocabulary.service';
 import { QueryVocabDto } from './dto/query-vocab.dto';
@@ -13,6 +14,42 @@ import { Role } from '@prisma/client';
 @Controller('vocabulary')
 export class VocabularyController {
   constructor(private readonly vocabularyService: VocabularyService) {}
+
+  @Public()
+  @Get('tts')
+  @ApiOperation({ summary: 'Proxy TTS audio for Vietnamese and English to ensure iOS/Safari compatibility' })
+  async proxyTts(
+    @Query('text') text: string,
+    @Query('lang') lang: string = 'vi',
+    @Res() res: Response,
+  ) {
+    if (!text || !text.trim()) {
+      return res.status(400).send('Text parameter is required');
+    }
+
+    try {
+      const cleanText = text.trim().slice(0, 300);
+      const targetLang = lang === 'en' ? 'en' : 'vi';
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLang}&client=tw-ob`;
+
+      const upstream = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
+        },
+      });
+
+      if (!upstream.ok) {
+        return res.status(upstream.status).send('Failed to fetch TTS from upstream');
+      }
+
+      const buffer = await upstream.arrayBuffer();
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(Buffer.from(buffer));
+    } catch (err) {
+      return res.status(500).send('Internal TTS error');
+    }
+  }
 
   @Public()
   @UseGuards(JwtAuthGuard)

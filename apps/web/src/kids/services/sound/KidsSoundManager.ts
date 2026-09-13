@@ -942,6 +942,7 @@ class KidsSoundManager {
     } catch (_) {}
   }
 
+  public playClick() { this.play('click'); }
   public playPop() { this.play('pop'); }
   public playBubbleBurst() { this.play('bubble_burst'); }
   public playWhoosh() { this.play('whoosh'); }
@@ -949,7 +950,11 @@ class KidsSoundManager {
   public playDing() { this.play('correct'); }
   public playCorrect() { this.play('correct'); }
   public playIncorrect() { this.play('wrong'); }
+  public playWrong() { this.play('wrong'); }
   public playFanfare() { this.play('celebration'); }
+  public playStar() { this.play('star'); }
+  public playSuccess() { this.play('success'); }
+  public playLevelUp() { this.play('level_up'); }
 }
 
 

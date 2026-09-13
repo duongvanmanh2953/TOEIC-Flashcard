@@ -687,52 +687,56 @@ export const AppShell: React.FC = () => {
         )}
 
         {/* Desktop Top Header Bar — Sticky fixed at top, balanced & polished */}
-        <header className="hidden lg:flex items-center justify-between px-6 lg:px-8 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors">
-          <div className="flex items-center gap-2.5">
+        <header className="hidden lg:flex items-center justify-between px-4 lg:px-6 xl:px-8 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors">
+          <div className="flex items-center gap-2.5 shrink-0">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-xs shadow-emerald-500/50" />
             <span className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-tight">
-              VocabFlow AI <span className="text-slate-400 dark:text-slate-500 font-normal mx-1">•</span> Personal English Coach
+              VocabFlow AI <span className="hidden xl:inline text-slate-400 dark:text-slate-500 font-normal mx-1">•</span> <span className="hidden xl:inline">Personal English Coach</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 shrink-0">
             <NavLink
               to="/coach"
-              className="h-8 px-3 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs"
+              title="Voice Coach"
+              className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs"
             >
               <Mic className="w-3.5 h-3.5" />
-              <span>Voice Coach</span>
+              <span className="hidden xl:inline">Voice Coach</span>
             </NavLink>
 
             <NavLink
               to="/leaderboard"
-              className="h-8 px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 flex items-center gap-1.5 transition shadow-xs"
+              title="Bảng Xếp Hạng"
+              className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 flex items-center gap-1.5 transition shadow-xs"
             >
               <Trophy className="w-3.5 h-3.5" />
-              <span>Bảng Xếp Hạng</span>
+              <span className="hidden xl:inline">Bảng Xếp Hạng</span>
             </NavLink>
 
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 xl:mx-1" />
 
             <NavLink
               to="/feedback"
-              className="h-8 px-3 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              title="Góp ý phản hồi"
+              className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Góp ý</span>
+              <span className="hidden xl:inline">Góp ý</span>
             </NavLink>
 
             {isAdmin && (
               <NavLink
                 to="/admin"
-                className="h-8 px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 transition shadow-xs"
+                title="Admin Center"
+                className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 transition shadow-xs"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                <span>🛠 Admin Center</span>
+                <span className="hidden xl:inline">🛠 Admin Center</span>
               </NavLink>
             )}
 
-            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 xl:mx-1" />
 
             {/* Notification Bell with Badge & Dropdown */}
             <NotificationBell />

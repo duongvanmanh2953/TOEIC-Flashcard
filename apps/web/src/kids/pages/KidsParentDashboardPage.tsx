@@ -43,7 +43,7 @@ export const KidsParentDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 animate-fadeIn pb-16">
+    <div className="mx-auto space-y-6 md:space-y-8 animate-fadeIn pb-16">
       {/* Top Header */}
       <div className="bg-white rounded-3xl p-6 md:p-8 border-2 border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

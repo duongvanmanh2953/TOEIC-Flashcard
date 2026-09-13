@@ -65,13 +65,13 @@ export const KidsHomePage: React.FC = () => {
   const currentLessonTitle = nextLessonInfo ? nextLessonInfo.lesson.title : 'Đỉnh Núi Cầu Vồng';
 
   return (
-    <div className="space-y-8 animate-fadeIn pb-20 select-none max-w-7xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 animate-fadeIn pb-6 select-none max-w-7xl mx-auto">
       {/* ================================================================ */}
-      {/* 1. TOP HEADER & QUICK STATS                                      */}
+      {/* 1. TOP HEADER & GREETING                                         */}
       {/* ================================================================ */}
-      <div className="flex items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-white border-2 border-amber-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl bg-white border-2 border-amber-200 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-900 font-black text-xl">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-900 font-black text-xl shrink-0">
             🌟
           </div>
           <div>
@@ -84,16 +84,14 @@ export const KidsHomePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="h-11 px-3.5 py-1.5 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-center gap-1.5 font-black text-xs sm:text-sm text-amber-950">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
-            <span>{progress.totalStars || 0}</span>
-          </div>
-
-          <div className="h-11 px-3.5 py-1.5 rounded-2xl bg-rose-50 border-2 border-rose-200 flex items-center gap-1.5 font-black text-xs sm:text-sm text-rose-950">
-            <Flame className="w-4 h-4 fill-rose-500 text-rose-500" />
-            <span>{progress.streakDays || 1} ngày</span>
-          </div>
+        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+          <button
+            onClick={handleStartContinue}
+            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs sm:text-sm border-b-2 border-emerald-700 shadow-sm flex items-center gap-2 active:scale-95 transition-all cursor-pointer"
+          >
+            <Play className="w-4 h-4 fill-current" />
+            <span>Vào học ngay</span>
+          </button>
         </div>
       </div>
 
@@ -126,7 +124,7 @@ export const KidsHomePage: React.FC = () => {
 
               <button
                 onClick={handleStartContinue}
-                className="w-full sm:w-auto px-8 py-4 sm:py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base sm:text-lg border-b-4 border-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-md min-h-[54px]"
+                className="w-full sm:w-auto px-8 py-4 sm:py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-md sm:text-md border-b-4 border-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-3 cursor-pointer shadow-md min-h-[54px]"
               >
                 <span>TIẾP TỤC HÀNH TRÌNH</span>
                 <Play className="w-5 h-5 fill-current" />

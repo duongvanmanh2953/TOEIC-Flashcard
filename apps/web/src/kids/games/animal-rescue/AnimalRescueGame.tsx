@@ -105,17 +105,6 @@ export const AnimalRescueGame: React.FC<AnimalRescueGameProps> = ({
   useEffect(() => {
     setSeveredChains([false, false, false]);
     setIsFreed(false);
-
-    const timer = setTimeout(() => {
-      voiceService.speakWord(currentAnimal.animalName);
-      setTimeout(() => {
-        voiceService.speakVietnamese(
-          `Bạn ${currentAnimal.animalVi} đang bị 3 dải xích sắt khóa chặt! Bé hãy chạm vào từng ổ khóa để thả xích giải cứu nhé!`
-        );
-      }, 900);
-    }, 400);
-
-    return () => clearTimeout(timer);
   }, [scenarioIndex]);
 
   // Pronounce target animal
@@ -147,14 +136,13 @@ export const AnimalRescueGame: React.FC<AnimalRescueGameProps> = ({
       setStarsEarned((prev) => prev + starsToAdd);
       if (onStarsAwarded) onStarsAwarded(starsToAdd);
 
-      setTimeout(() => {
-        soundManager.play('star_burst');
-        soundManager.play('celebration');
-        voiceService.speakWord(currentAnimal.animalName);
-        setTimeout(() => {
+      soundManager.play('star_burst');
+      soundManager.play('celebration');
+      voiceService.speakWord(currentAnimal.animalName, {
+        onEnd: () => {
           voiceService.speakVietnamese(currentAnimal.rescuePraiseVi);
-        }, 1100);
-      }, 300);
+        },
+      });
     }
   };
 

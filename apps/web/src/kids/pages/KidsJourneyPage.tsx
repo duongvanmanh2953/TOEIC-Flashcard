@@ -165,7 +165,7 @@ export const KidsJourneyPage: React.FC = () => {
   ).length;
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-4xl mx-auto pb-24 select-none">
+    <div className="space-y-6 sm:space-y-8 animate-fadeIn max-w-4xl mx-auto pb-6 select-none">
       {/* ================================================================ */}
       {/* 1. REALM BIOMES SELECTOR (CLEAN TACTILE PILL TABS)               */}
       {/* ================================================================ */}
@@ -204,17 +204,17 @@ export const KidsJourneyPage: React.FC = () => {
       {/* 2. ADVENTURE WORLD HEADER (ATMOSPHERIC CINEMATIC BANNER)         */}
       {/* ================================================================ */}
       <div
-        className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${currentBiome.gradient} text-white p-6 sm:p-8 border-2 ${currentBiome.border} shadow-sm`}
+        className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${currentBiome.gradient} text-white p-5 sm:p-7 lg:p-8 border-2 ${currentBiome.border} shadow-sm`}
       >
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-black uppercase tracking-wider border border-white/30">
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
+          <div className="space-y-2 max-w-xl min-w-0 flex-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] sm:text-xs font-black uppercase tracking-wider border border-white/30">
               <KidsMapIcon size={16} />
               <span>Cung Đường Thám Hiểm</span>
               <span>•</span>
               <span>Cấp độ {currentWorld.level}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
               {currentWorld.title}
             </h1>
             <p className="text-white/90 font-medium text-xs sm:text-sm leading-relaxed">
@@ -223,13 +223,13 @@ export const KidsJourneyPage: React.FC = () => {
           </div>
 
           {/* Expedition Quick Milestone Box */}
-          <div className="bg-white/15 backdrop-blur-md p-4 rounded-2xl border border-white/30 flex items-center gap-4 shrink-0 shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-xs">
-              <Flag className="w-6 h-6" />
+          <div className="bg-white/15 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/30 flex items-center gap-3 sm:gap-4 shrink-0 shadow-xs self-stretch sm:self-auto">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-xs shrink-0">
+              <Flag className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-wider text-white/80">Tiến độ chặng</p>
-              <p className="text-base font-black text-white">
+              <p className="text-sm sm:text-base font-black text-white">
                 {completedCount} / {allWorldLessons.length} Trạm
               </p>
             </div>
@@ -244,12 +244,11 @@ export const KidsJourneyPage: React.FC = () => {
         <div className="flex items-center gap-4 text-center sm:text-left">
           <div
             onClick={() => {
-              soundManager.playDing();
-              celebrationManager.speakPraise('Cố lên bé ơi! Đỉnh núi vinh quang đang đợi bé!');
+              soundManager.playPop();
             }}
-            className="cursor-pointer hover:scale-110 transition-transform shrink-0"
+            className="shrink-0"
           >
-            <KidsMascot mood="excited" size={64} speechText="Leo đèo cùng Bobby nào!" />
+            <KidsMascot mood="excited" size={52} />
           </div>
           <div>
             <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-300 inline-flex items-center gap-1">
@@ -280,23 +279,27 @@ export const KidsJourneyPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 4. ADVENTURE WORLD: CONTINUOUS SVG PATH MOUNTAIN ROADMAP         */}
       {/* ================================================================ */}
-      <div className="relative rounded-3xl bg-gradient-to-b from-slate-50 via-sky-50/50 to-emerald-50/50 border-2 border-slate-200 p-4 sm:p-8 overflow-hidden shadow-xs">
+      <div className="relative rounded-3xl bg-gradient-to-b from-emerald-100 via-green-50 to-emerald-200/90 border-3 border-emerald-400 p-3 sm:p-8 overflow-hidden shadow-md select-none">
         
         {/* Atmosphere Background Silhouette (Layer 1: Behind Path) */}
-        <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden">
-          <svg viewBox="0 0 700 1200" className="w-full h-full object-cover">
-            <path d="M0,1200 L200,800 L400,950 L600,600 L700,750 L700,1200 Z" fill="#94a3b8" />
-            <path d="M0,850 L150,550 L350,700 L550,400 L700,550 L700,1200 L0,1200 Z" fill="#cbd5e1" />
+        <div className="absolute inset-0 pointer-events-none opacity-30 overflow-hidden">
+          <svg viewBox="0 0 700 1400" className="w-full h-full object-cover">
+            <path d="M0,1400 L200,900 L400,1100 L600,750 L700,950 L700,1400 Z" fill="#86efac" />
+            <path d="M0,950 L150,650 L350,800 L550,500 L700,650 L700,1400 L0,1400 Z" fill="#bbf7d0" />
           </svg>
         </div>
 
         {/* DATA-DRIVEN CONTINUOUS SVG ROADMAP CANVAS */}
         {(() => {
           const CANVAS_WIDTH = 700;
-          const NODE_SPACING_Y = 150;
-          const TOP_OFFSET = 220;
+          const NODE_SPACING_Y = 220; // Expanded generous vertical height for majestic winding mountain trail
+          const TOP_OFFSET = 260;     // Space for majestic Summit & Golden Treasure Chest
+          const BOTTOM_OFFSET = 180;  // Space for Trailhead Entrance Gate
           const N = allWorldLessons.length;
-          const CANVAS_HEIGHT = N * NODE_SPACING_Y + TOP_OFFSET + 80;
+          const CANVAS_HEIGHT = Math.max(900, N * NODE_SPACING_Y + TOP_OFFSET + BOTTOM_OFFSET);
+
+          const summitPoint = { x: 350, y: 120 };
+          const startPoint = { x: 350, y: CANVAS_HEIGHT - 70 };
 
           // Build exact (x, y) coordinates for each station node
           const roadmapNodes: Array<{
@@ -319,10 +322,10 @@ export const KidsJourneyPage: React.FC = () => {
             const isCurrent = item.index === activeLessonIdx;
             const status = isCurrent ? 'current' : stars > 0 ? 'completed' : 'locked';
 
-            // Y ascends from bottom to top
-            const y = CANVAS_HEIGHT - 100 - idx * NODE_SPACING_Y;
-            // X alternates smoothly left (210) to right (490)
-            const x = idx % 2 === 0 ? 210 : 490;
+            // Y ascends gracefully from bottom to top with tall spacing
+            const y = CANVAS_HEIGHT - BOTTOM_OFFSET - idx * NODE_SPACING_Y;
+            // X alternates smoothly: left (190) to right (510)
+            const x = idx % 2 === 0 ? 190 : 510;
 
             return {
               id: item.lesson.id,
@@ -337,11 +340,14 @@ export const KidsJourneyPage: React.FC = () => {
             };
           });
 
-          // Summit coordinates
-          const summitPoint = { x: 350, y: 90 };
+          // 1. Build Single Continuous Cubic Bézier Path (Starting Gate -> Station 0 -> ... -> Station N-1 -> Summit)
+          let fullPathD = `M ${startPoint.x} ${startPoint.y}`;
+          if (roadmapNodes.length > 0) {
+            const n0 = roadmapNodes[0];
+            const dy0 = n0.y - startPoint.y;
+            fullPathD += ` C ${startPoint.x} ${startPoint.y + dy0 * 0.45}, ${n0.x} ${n0.y - dy0 * 0.45}, ${n0.x} ${n0.y}`;
+          }
 
-          // 1. Build Single Continuous Cubic Bézier Path (Station 0 -> Station N-1 -> Summit)
-          let fullPathD = `M ${roadmapNodes[0]?.x || 210} ${roadmapNodes[0]?.y || 800}`;
           for (let i = 0; i < roadmapNodes.length - 1; i++) {
             const curr = roadmapNodes[i];
             const next = roadmapNodes[i + 1];
@@ -363,7 +369,11 @@ export const KidsJourneyPage: React.FC = () => {
           // 2. Build Completed Highway Path (Up to activeLessonIdx)
           let completedPathD = '';
           if (roadmapNodes.length > 0 && activeLessonIdx >= 0) {
-            completedPathD = `M ${roadmapNodes[0].x} ${roadmapNodes[0].y}`;
+            completedPathD = `M ${startPoint.x} ${startPoint.y}`;
+            const n0 = roadmapNodes[0];
+            const dy0 = n0.y - startPoint.y;
+            completedPathD += ` C ${startPoint.x} ${startPoint.y + dy0 * 0.45}, ${n0.x} ${n0.y - dy0 * 0.45}, ${n0.x} ${n0.y}`;
+
             const targetIdx = Math.min(activeLessonIdx, roadmapNodes.length - 1);
             for (let i = 0; i < targetIdx; i++) {
               const curr = roadmapNodes[i];
@@ -377,14 +387,72 @@ export const KidsJourneyPage: React.FC = () => {
             }
           }
 
+          // 3. Generate Rich Scattered Grass Tufts & Patches (Điểm cỏ đồng cỏ xanh)
+          const grassPatches: Array<{
+            id: string;
+            x: number;
+            y: number;
+            type: 'tuftA' | 'tuftB' | 'small' | 'pebble' | 'clover';
+            scale: number;
+          }> = [];
+
+          const totalTiers = N + 2;
+          for (let tier = 0; tier <= totalTiers; tier++) {
+            const baseY = CANVAS_HEIGHT - 60 - tier * (CANVAS_HEIGHT / (totalTiers + 1));
+            grassPatches.push(
+              {
+                id: `g_l_far_${tier}`,
+                x: 35 + ((tier * 47) % 65),
+                y: baseY - 20 + ((tier * 31) % 45),
+                type: tier % 3 === 0 ? 'tuftB' : 'tuftA',
+                scale: 0.9 + ((tier % 3) * 0.12),
+              },
+              {
+                id: `g_l_mid_${tier}`,
+                x: 120 + ((tier * 37) % 55),
+                y: baseY + 35 - ((tier * 19) % 50),
+                type: tier % 2 === 0 ? 'clover' : 'small',
+                scale: 0.85 + ((tier % 2) * 0.15),
+              },
+              {
+                id: `g_ctr_${tier}`,
+                x: 320 + (((tier * 59) % 70) - 35),
+                y: baseY - 50,
+                type: tier % 2 === 0 ? 'tuftB' : 'tuftA',
+                scale: 0.8,
+              },
+              {
+                id: `g_r_mid_${tier}`,
+                x: 525 + ((tier * 41) % 50),
+                y: baseY + 20 - ((tier * 29) % 45),
+                type: tier % 3 === 1 ? 'clover' : 'small',
+                scale: 0.85,
+              },
+              {
+                id: `g_r_far_${tier}`,
+                x: 615 + ((tier * 53) % 55),
+                y: baseY - 15 + ((tier * 23) % 40),
+                type: tier % 4 === 0 ? 'pebble' : 'tuftA',
+                scale: 0.95,
+              }
+            );
+          }
+
           return (
             <div className="relative w-full max-w-3xl mx-auto select-none">
               <svg
                 viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}
                 className="w-full h-auto overflow-visible"
-                style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.02))' }}
+                style={{ filter: 'drop-shadow(0 6px 14px rgba(16,185,129,0.08))' }}
               >
                 <defs>
+                  {/* Soft Meadow Gradient Background */}
+                  <linearGradient id="meadowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#ecfdf5" />
+                    <stop offset="50%" stopColor="#d1fae5" />
+                    <stop offset="100%" stopColor="#bbf7d0" />
+                  </linearGradient>
+
                   {/* Completed / Active Road Gradient */}
                   <linearGradient id="completedRoadGrad" x1="0%" y1="100%" x2="0%" y2="0%">
                     <stop offset="0%" stopColor="#10b981" />
@@ -405,26 +473,134 @@ export const KidsJourneyPage: React.FC = () => {
                     <stop offset="0%" stopColor="#ffffff" />
                     <stop offset="100%" stopColor="#cbd5e1" />
                   </radialGradient>
+
+                  {/* SVG Grass Tufts (Điểm Cỏ Xanh & Hoa Đồng Nội) */}
+                  <g id="grassTuftA">
+                    <ellipse cx="0" cy="8" rx="14" ry="4" fill="#065f46" fillOpacity="0.15" />
+                    <path d="M-6 8 C-10 2, -14 -6, -16 -12 C-13 -6, -8 0, -4 8" fill="#16a34a" />
+                    <path d="M-3 8 C-4 -2, -2 -14, 0 -20 C2 -14, 2 -2, 3 8" fill="#22c55e" />
+                    <path d="M2 8 C6 2, 12 -4, 15 -8 C11 -4, 6 2, 4 8" fill="#15803d" />
+                    <path d="M-1 8 C2 4, 6 0, 8 -3 C6 2, 3 5, 1 8" fill="#4ade80" />
+                  </g>
+
+                  <g id="grassTuftB">
+                    <ellipse cx="0" cy="8" rx="16" ry="5" fill="#065f46" fillOpacity="0.16" />
+                    <path d="M-7 8 C-12 1, -16 -7, -18 -13 C-14 -7, -9 -1, -5 8" fill="#15803d" />
+                    <path d="M-4 8 C-5 -3, -3 -15, -1 -22 C1 -15, 1 -3, 2 8" fill="#22c55e" />
+                    <path d="M3 8 C7 1, 14 -5, 17 -10 C13 -5, 7 1, 5 8" fill="#16a34a" />
+                    {/* Little daisy flower */}
+                    <path d="M-1 8 C-1 0, 4 -8, 6 -14" stroke="#15803d" strokeWidth="2" strokeLinecap="round" fill="none" />
+                    <circle cx="6" cy="-14" r="5" fill="#ffffff" />
+                    <circle cx="6" cy="-14" r="2.5" fill="#fbbf24" />
+                  </g>
+
+                  <g id="grassTuftSmall">
+                    <path d="M-4 5 C-7 0, -10 -5, -11 -9 C-9 -4, -6 1, -3 5" fill="#16a34a" />
+                    <path d="M-2 5 C-3 -1, -1 -9, 1 -13 C2 -9, 2 -1, 2 5" fill="#22c55e" />
+                    <path d="M1 5 C4 1, 8 -3, 9 -6 C7 -2, 4 2, 3 5" fill="#15803d" />
+                  </g>
+
+                  <g id="cloverPatch">
+                    <circle cx="-4" cy="0" r="4.5" fill="#22c55e" />
+                    <circle cx="4" cy="0" r="4.5" fill="#16a34a" />
+                    <circle cx="0" cy="-5" r="4.5" fill="#4ade80" />
+                    <path d="M0 0 L0 8" stroke="#15803d" strokeWidth="2" strokeLinecap="round" />
+                  </g>
+
+                  <g id="pebbleCluster">
+                    <ellipse cx="-4" cy="2" rx="5" ry="3" fill="#94a3b8" />
+                    <ellipse cx="4" cy="3" rx="4" ry="2.5" fill="#cbd5e1" />
+                    <ellipse cx="1" cy="-1" rx="3" ry="2" fill="#64748b" />
+                  </g>
                 </defs>
 
                 {/* -------------------------------------------------------- */}
-                {/* 1. BASE TRACK: FULL HIGHWAY (Always 100% visible)        */}
+                {/* 0. MEADOW GREEN BASE & ROLLING HILL CONTOURS             */}
                 {/* -------------------------------------------------------- */}
+                <rect width={CANVAS_WIDTH} height={CANVAS_HEIGHT} fill="url(#meadowGrad)" rx="28" />
+
+                {/* Rolling Grass Hills Silhouette Contours */}
+                <path
+                  d={`M0,${CANVAS_HEIGHT} L0,${CANVAS_HEIGHT * 0.8} Q180,${CANVAS_HEIGHT * 0.74} 350,${CANVAS_HEIGHT * 0.82} T700,${CANVAS_HEIGHT * 0.76} L700,${CANVAS_HEIGHT} Z`}
+                  fill="#86efac"
+                  opacity="0.45"
+                />
+                <path
+                  d={`M0,${CANVAS_HEIGHT * 0.8} L0,${CANVAS_HEIGHT * 0.54} Q200,${CANVAS_HEIGHT * 0.46} 420,${CANVAS_HEIGHT * 0.56} T700,${CANVAS_HEIGHT * 0.48} L700,${CANVAS_HEIGHT} L0,${CANVAS_HEIGHT} Z`}
+                  fill="#bbf7d0"
+                  opacity="0.5"
+                />
+                <path
+                  d={`M0,${CANVAS_HEIGHT * 0.54} L0,${CANVAS_HEIGHT * 0.28} Q150,${CANVAS_HEIGHT * 0.2} 380,${CANVAS_HEIGHT * 0.26} T700,${CANVAS_HEIGHT * 0.22} L700,${CANVAS_HEIGHT} L0,${CANVAS_HEIGHT} Z`}
+                  fill="#86efac"
+                  opacity="0.35"
+                />
+
+                {/* -------------------------------------------------------- */}
+                {/* 1. SCATTERED GRASS TUFTS & WILDFLOWER PATCHES (Điểm Cỏ)  */}
+                {/* -------------------------------------------------------- */}
+                {grassPatches.map((patch) => {
+                  const href =
+                    patch.type === 'tuftB'
+                      ? '#grassTuftB'
+                      : patch.type === 'small'
+                      ? '#grassTuftSmall'
+                      : patch.type === 'clover'
+                      ? '#cloverPatch'
+                      : patch.type === 'pebble'
+                      ? '#pebbleCluster'
+                      : '#grassTuftA';
+
+                  return (
+                    <use
+                      key={patch.id}
+                      href={href}
+                      x={patch.x}
+                      y={patch.y}
+                      transform={`scale(${patch.scale})`}
+                      transform-origin={`${patch.x} ${patch.y}`}
+                      opacity="0.9"
+                    />
+                  );
+                })}
+
+                {/* -------------------------------------------------------- */}
+                {/* 2. BASE TRACK: FULL HIGHWAY (High-contrast stone path)   */}
+                {/* -------------------------------------------------------- */}
+                {/* Outer Road Grass Shadow */}
+                <path
+                  d={fullPathD}
+                  fill="none"
+                  stroke="#047857"
+                  strokeWidth="36"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity="0.14"
+                />
                 {/* Outer Stone Foundation Highway */}
                 <path
                   d={fullPathD}
                   fill="none"
-                  stroke="#e2e8f0"
-                  strokeWidth="28"
+                  stroke="#ffffff"
+                  strokeWidth="30"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-                {/* High Contrast Visible Center Lane (Dashed Stone Trail) */}
+                {/* Cobblestone Texture Inner Trail */}
+                <path
+                  d={fullPathD}
+                  fill="none"
+                  stroke="#e2e8f0"
+                  strokeWidth="24"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* High Contrast Center Lane Stepping Stones */}
                 <path
                   d={fullPathD}
                   fill="none"
                   stroke="#94a3b8"
-                  strokeWidth="6"
+                  strokeWidth="5"
                   strokeDasharray="14 10"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -432,7 +608,7 @@ export const KidsJourneyPage: React.FC = () => {
                 />
 
                 {/* -------------------------------------------------------- */}
-                {/* 2. COMPLETED / ACTIVE TRAIL (Vibrant Glow Highway)        */}
+                {/* 3. COMPLETED / ACTIVE TRAIL (Vibrant Glow Highway)        */}
                 {/* -------------------------------------------------------- */}
                 {completedPathD && (
                   <>
@@ -448,19 +624,46 @@ export const KidsJourneyPage: React.FC = () => {
                       d={completedPathD}
                       fill="none"
                       stroke="#ffffff"
-                      strokeWidth="3"
+                      strokeWidth="3.5"
                       strokeDasharray="8 8"
                       strokeLinecap="round"
-                      opacity="0.75"
+                      opacity="0.85"
                     />
                   </>
                 )}
 
                 {/* -------------------------------------------------------- */}
-                {/* 3. SUMMIT CITADEL: GOLDEN TREASURE CHEST AT THE TOP      */}
+                {/* 4. STARTING TRAILHEAD GATE (At the bottom of the map)    */}
+                {/* -------------------------------------------------------- */}
+                <g transform={`translate(${startPoint.x}, ${startPoint.y})`}>
+                  {/* Ground shadow & pedestal */}
+                  <ellipse cx="0" cy="14" rx="42" ry="14" fill="#047857" fillOpacity="0.2" />
+                  <circle cx="0" cy="0" r="30" fill="#10b981" stroke="#047857" strokeWidth="4" />
+                  <circle cx="0" cy="0" r="36" fill="none" stroke="#6ee7b7" strokeWidth="2" strokeDasharray="5 5" />
+                  
+                  {/* Flag Icon */}
+                  <foreignObject width="36" height="36" x="-18" y="-18">
+                    <div className="w-full h-full flex items-center justify-center text-xl select-none">
+                      🏁
+                    </div>
+                  </foreignObject>
+
+                  {/* Trailhead Pill Label */}
+                  <foreignObject width="180" height="40" x="-90" y="34">
+                    <div className="text-center">
+                      <span className="px-3 py-1 rounded-full bg-emerald-800 text-emerald-100 font-black text-[10px] tracking-wider uppercase border border-emerald-600 shadow-sm inline-flex items-center gap-1">
+                        <span>CỔNG XUẤT PHÁT</span>
+                      </span>
+                    </div>
+                  </foreignObject>
+                </g>
+
+                {/* -------------------------------------------------------- */}
+                {/* 5. SUMMIT CITADEL: GOLDEN TREASURE CHEST AT THE TOP      */}
                 {/* -------------------------------------------------------- */}
                 <g transform={`translate(${summitPoint.x}, ${summitPoint.y})`}>
                   {/* Summit Base Pedestal */}
+                  <ellipse cx="0" cy="20" rx="72" ry="24" fill="#047857" fillOpacity="0.2" />
                   <circle cx="0" cy="10" r="56" fill="#fef3c7" stroke="#f59e0b" strokeWidth="4" />
                   <circle cx="0" cy="10" r="66" fill="none" stroke="#fbbf24" strokeWidth="2" strokeDasharray="6 6" className="animate-spin-slow" />
                   
@@ -488,7 +691,7 @@ export const KidsJourneyPage: React.FC = () => {
                 </g>
 
                 {/* -------------------------------------------------------- */}
-                {/* 4. EXACT PATH WAYPOINT NODES & INTERACTIVE CARDS         */}
+                {/* 6. EXACT PATH WAYPOINT NODES & INTERACTIVE CARDS         */}
                 {/* -------------------------------------------------------- */}
                 {roadmapNodes.map((node) => {
                   const isCurrent = node.status === 'current';

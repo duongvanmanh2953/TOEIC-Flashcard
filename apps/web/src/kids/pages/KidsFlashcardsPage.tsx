@@ -311,13 +311,11 @@ export const KidsFlashcardsPage: React.FC = () => {
 
   const handleSpeakEnglish = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    soundManager.playDing();
     voiceService.speakEnglish(currentCard.word);
   };
 
   const handleSpeakVietnamese = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    soundManager.playDing();
     voiceService.speakVietnameseNorthern(currentCard.viMeaning);
   };
 
@@ -359,28 +357,28 @@ export const KidsFlashcardsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
-      {/* Top Header Banner */}
-      <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 rounded-3xl p-5 sm:p-7 text-slate-950 flex flex-col md:flex-row items-center justify-between gap-4 border-2 border-amber-300 shadow-sm">
-        <div className="flex items-center gap-4 text-center md:text-left">
-          <div className="w-16 h-16 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center shadow-xs border-2 border-amber-200">
-            <KidsIllustration name="book" className="w-12 h-12" />
+      {/* Top Header Banner (Roomy on tablet and mobile, lg:flex-row on desktop) */}
+      <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 rounded-3xl p-4 sm:p-6 lg:p-7 text-slate-950 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-2 border-amber-300 shadow-sm">
+        <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0 flex-1">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center shadow-xs border-2 border-amber-200 shrink-0">
+            <KidsIllustration name="book" className="w-10 h-10 sm:w-12 sm:h-12" />
           </div>
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/90 text-xs font-black text-amber-950 border border-amber-300 mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/90 text-[11px] sm:text-xs font-black text-amber-950 border border-amber-300 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span>Học Từ Vựng 3D Tương Tác</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950">
               Thẻ Ghi Nhớ Flashcard Cho Bé
             </h1>
-            <p className="text-xs sm:text-sm font-extrabold text-amber-950/80 mt-0.5">
-              Chạm vào thẻ để lật xem nghĩa tiếng Việt & nghe phát âm chuẩn giọng Bắc
+            <p className="text-xs sm:text-sm font-extrabold text-amber-950/80 mt-0.5 leading-snug">
+              Chạm vào thẻ để lật xem nghĩa và nghe phát âm tiếng Việt
             </p>
           </div>
         </div>
 
         {/* View Switcher */}
-        <div className="flex items-center gap-2 bg-white/90 p-1.5 rounded-2xl border-2 border-amber-300">
+        <div className="flex items-center gap-2 bg-white/90 p-1.5 rounded-2xl border-2 border-amber-300 shrink-0 self-stretch sm:self-auto justify-center">
           <button
             onClick={() => setViewMode('carousel')}
             className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all ${
@@ -468,7 +466,7 @@ export const KidsFlashcardsPage: React.FC = () => {
             <div className={`kids-flip-inner ${isFlipped ? 'is-flipped' : ''}`}>
               {/* ================= FRONT SIDE ================= */}
               <div
-                className={`kids-flip-front ${currentCard.bgColor} border-2 ${currentCard.borderColor} rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between text-center relative`}
+                className={`kids-flip-front ${currentCard.bgColor} border-2 ${currentCard.borderColor} rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between text-center`}
               >
                 {/* Badge Category */}
                 <div className="w-full flex items-center justify-between">
@@ -478,10 +476,9 @@ export const KidsFlashcardsPage: React.FC = () => {
                   <span className="text-xs font-bold text-slate-600">Chạm để lật ⟳</span>
                 </div>
 
-                {/* Big Visual Illustration with Safari translateZ fix */}
+                {/* Big Visual Illustration */}
                 <div
                   className="relative z-10 shrink-0 w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/90 border-2 border-slate-200/80 flex items-center justify-center p-4 group-hover:scale-105 transition-transform duration-300"
-                  style={{ WebkitTransform: 'translateZ(1px)', transform: 'translateZ(1px)' }}
                 >
                   <KidsIllustration
                     name={currentCard.illustration}
@@ -511,7 +508,7 @@ export const KidsFlashcardsPage: React.FC = () => {
 
               {/* ================= BACK SIDE ================= */}
               <div
-                className={`kids-flip-back bg-white border-2 ${currentCard.borderColor} rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between text-center relative`}
+                className={`kids-flip-back bg-white border-2 ${currentCard.borderColor} rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between text-center`}
               >
                 {/* Header of back */}
                 <div className="w-full flex items-center justify-between">
@@ -521,10 +518,9 @@ export const KidsFlashcardsPage: React.FC = () => {
                   <RotateCw className="w-4 h-4 text-slate-400 group-hover:rotate-180 transition-transform duration-500" />
                 </div>
 
-                {/* Illustration Medium with Safari translateZ fix */}
+                {/* Illustration Medium */}
                 <div
                   className="relative z-10 shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center p-2"
-                  style={{ WebkitTransform: 'translateZ(1px)', transform: 'translateZ(1px)' }}
                 >
                   <KidsIllustration name={currentCard.illustration} className="w-full h-full object-contain" />
                 </div>
@@ -550,18 +546,18 @@ export const KidsFlashcardsPage: React.FC = () => {
                 <div className="w-full grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={handleSpeakEnglish}
-                    className="py-2.5 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                    className="py-2.5 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
                   >
                     <Volume2 className="w-3.5 h-3.5 text-white" />
-                    <span>Đọc tiếng Anh</span>
+                    <span>Phát tiếng Anh</span>
                   </button>
 
                   <button
                     onClick={handleSpeakVietnamese}
-                    className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                    className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
                   >
                     <Languages className="w-3.5 h-3.5 text-white" />
-                    <span>Giọng Hà Nội</span>
+                    <span>Phát tiếng Việt</span>
                   </button>
                 </div>
               </div>
@@ -604,7 +600,6 @@ export const KidsFlashcardsPage: React.FC = () => {
             <div
               key={card.id}
               onClick={() => {
-                soundManager.playDing();
                 voiceService.speakEnglish(card.word);
               }}
               className={`p-4 rounded-3xl ${card.bgColor} border-2 ${card.borderColor} hover:scale-105 hover:shadow-md transition-all flex flex-col items-center text-center justify-between gap-3 cursor-pointer group`}
@@ -619,11 +614,30 @@ export const KidsFlashcardsPage: React.FC = () => {
                 <p className="text-[11px] font-bold text-slate-500">{card.phonetic}</p>
               </div>
 
-              <div className="w-full pt-2 border-t border-slate-200/80 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-500">{card.categoryVi}</span>
-                <span className="p-1.5 rounded-full bg-white text-slate-700 group-hover:bg-amber-400 group-hover:text-slate-950 transition-colors">
-                  <Volume2 className="w-3.5 h-3.5" />
-                </span>
+              <div className="w-full pt-2 border-t border-slate-200/80 flex items-center justify-between gap-1">
+                <span className="text-[10px] font-bold text-slate-500 truncate">{card.categoryVi}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      voiceService.speakEnglish(card.word);
+                    }}
+                    title="Nghe tiếng Anh"
+                    className="p-1.5 rounded-full bg-white text-sky-600 hover:bg-sky-100 hover:scale-110 transition-all border border-slate-200 cursor-pointer"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      voiceService.speakVietnameseNorthern(card.viMeaning);
+                    }}
+                    title="Phát tiếng Việt"
+                    className="p-1.5 rounded-full bg-white text-emerald-600 hover:bg-emerald-100 hover:scale-110 transition-all border border-slate-200 cursor-pointer"
+                  >
+                    <Languages className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
