@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { CustomSelect, SelectOption } from '../components/ui/CustomSelect';
+import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
 import {
   Mic,
   MicOff,
@@ -259,12 +260,14 @@ export const AICoachStudioPage: React.FC = () => {
         contextWord: coachPersonality,
       });
 
-      const assistantReply = res.data?.data?.reply || res.data?.data?.content || "That's an insightful point! How would you describe the next milestone?";
+      const data = res.data?.data || res.data || res;
+      const assistantReply = data?.reply || data?.content || data?.text || "That's an insightful point! How would you describe the next milestone?";
       
-      const botMsg: ChatMessage = {
+      const botMsg: ChatMessage & { provider?: string } = {
         id: String(Date.now() + 1),
         role: 'assistant',
         content: assistantReply,
+        provider: data?.provider,
         timestamp: new Date(),
       };
 
@@ -295,7 +298,7 @@ export const AICoachStudioPage: React.FC = () => {
       } catch (_) {}
     }
 
-    audioEngine.playWord(text, {
+    audioEngine.playBilingualText(text, {
       rate,
       onEnd: () => {
         if (isCallActiveRef.current) {
@@ -492,8 +495,9 @@ export const AICoachStudioPage: React.FC = () => {
         word: target,
         spokenText: spoken,
       });
-      if (res.data?.data) {
-        setPronunciationResult(res.data.data);
+      const data = res.data?.data || res.data;
+      if (data && data.accuracy !== undefined) {
+        setPronunciationResult(data);
         return;
       }
     } catch (_) {}
@@ -957,29 +961,24 @@ export const AICoachStudioPage: React.FC = () => {
                         <Sparkles className="w-4 h-4" />
                       </div>
                     )}
-                    <div
-                      className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed ${
-                        msg.role === 'user'
-                          ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none border border-slate-200/50 dark:border-slate-700/50'
-                      }`}
-                    >
-                      <p>{msg.content}</p>
-                      {msg.viTranslation && (
-                        <p className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 italic">
-                          💡 {msg.viTranslation}
-                        </p>
-                      )}
-                      {msg.role === 'assistant' && (
-                        <button
-                          onClick={() => speakText(msg.content)}
-                          className="mt-2 flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
-                        >
-                          <Volume2 className="w-3 h-3" />
-                          <span>Nghe lại</span>
-                        </button>
-                      )}
-                    </div>
+                    {msg.role === 'user' ? (
+                      <div className="max-w-md p-4 rounded-2xl text-xs sm:text-sm leading-relaxed bg-indigo-600 text-white rounded-br-none shadow-md">
+                        <p>{msg.content}</p>
+                        {msg.viTranslation && (
+                          <p className="mt-2 pt-2 border-t border-indigo-400 text-[11px] text-indigo-100 italic">
+                            💡 {msg.viTranslation}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="max-w-xl w-full">
+                        <RichAIMessageRenderer
+                          content={msg.content}
+                          provider={(msg as any).provider}
+                          onSelectQuizOption={(opt) => handleSend(opt)}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
                 {coachLoading && (

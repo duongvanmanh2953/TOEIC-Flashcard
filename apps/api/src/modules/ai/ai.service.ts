@@ -41,14 +41,32 @@ export class AIService {
         body.generationConfig.responseMimeType = 'application/json';
       }
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+      let res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': key,
+          },
           body: JSON.stringify(body),
         },
       );
+
+      if (!res.ok) {
+        // Fallback to gemini-1.5-flash
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-goog-api-key': key,
+            },
+            body: JSON.stringify(body),
+          },
+        );
+      }
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

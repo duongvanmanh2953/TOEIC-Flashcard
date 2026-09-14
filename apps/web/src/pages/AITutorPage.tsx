@@ -5,6 +5,7 @@ import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
 import { useTranslation } from '../i18n';
 import { useAuth, isProUser } from '../contexts/AuthContext';
 import {
@@ -465,7 +466,10 @@ export const AITutorPage: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <RichAIMessageRenderer
+                      content={msg.content}
+                      onSelectQuizOption={(opt) => handleSendMessage(opt)}
+                    />
                   )}
 
                   {/* 1. Structured Vocabulary Card */}

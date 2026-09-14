@@ -187,6 +187,70 @@ class AudioEngine {
   }
 
   /**
+   * Smart Bilingual Speech Synthesis:
+   * Splits mixed English/Vietnamese text into language segments and reads each with the correct voice.
+   */
+  public async playBilingualText(
+    text: string,
+    options: {
+      onStart?: () => void;
+      onEnd?: () => void;
+      onError?: (err: any) => void;
+    } = {}
+  ): Promise<void> {
+    const cleanText = text.replace(/[*#]/g, '').trim();
+    if (!cleanText) return;
+
+    this.stop();
+    const sessionId = ++this.currentSessionId;
+    this.isCurrentlyPlaying = true;
+
+    // Split text into lines/paragraphs to analyze language for each sentence/block
+    const rawLines = cleanText.split(/\n+/).filter((s) => s.trim().length > 0);
+    const playList: { text: string; lang: 'en-US' | 'vi-VN' }[] = [];
+
+    for (const line of rawLines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Extract bullet / index prefixes
+      const cleanedLine = trimmed.replace(/^[0-9]+[.)]\s*/, '').replace(/^[🇬🇧🇻🇳💡•\s-]+/, '');
+
+      // Check for Vietnamese diacritics
+      const hasViDiacritics = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(cleanedLine);
+      const isEnglish = !hasViDiacritics && /[a-zA-Z]/.test(cleanedLine);
+
+      playList.push({
+        text: cleanedLine,
+        lang: isEnglish ? 'en-US' : 'vi-VN',
+      });
+    }
+
+    if (playList.length === 0) {
+      playList.push({ text: cleanText, lang: 'vi-VN' });
+    }
+
+    options.onStart?.();
+
+    let idx = 0;
+    const playNext = () => {
+      if (this.currentSessionId !== sessionId || idx >= playList.length) {
+        this.isCurrentlyPlaying = false;
+        options.onEnd?.();
+        return;
+      }
+
+      const item = playList[idx++];
+      this.playViaSpeechSynthesis(item.text, item.lang === 'vi-VN' ? 1.0 : 0.9, item.lang, sessionId, {
+        onEnd: playNext,
+        onError: playNext,
+      });
+    };
+
+    playNext();
+  }
+
+  /**
    * Play an audio file from URL using the unlocked shared HTMLAudioElement
    */
   private playFromUrl(
@@ -265,20 +329,31 @@ class AudioEngine {
       utterance.lang = lang;
       utterance.rate = rate;
 
-      // Select optimal English voice
+      // Select optimal voice based on language
       const voices = window.speechSynthesis.getVoices();
       if (voices && voices.length > 0) {
-        const preferredVoice = voices.find(
-          (v) =>
-            (v.lang.startsWith('en') &&
+        let preferredVoice: SpeechSynthesisVoice | undefined;
+        if (lang.startsWith('vi')) {
+          preferredVoice = voices.find(
+            (v) =>
+              v.lang.toLowerCase().startsWith('vi') ||
+              v.name.toLowerCase().includes('vietnam') ||
+              v.name.toLowerCase().includes('hoaimy') ||
+              v.name.toLowerCase().includes('linh') ||
+              v.name.toLowerCase().includes('mai')
+          );
+        } else {
+          preferredVoice = voices.find(
+            (v) =>
+              v.lang.toLowerCase().startsWith('en') &&
               (v.name.includes('Google') ||
                 v.name.includes('Natural') ||
                 v.name.includes('Samantha') ||
                 v.name.includes('Daniel') ||
                 v.name.includes('Karen') ||
-                v.name.includes('Siri'))) ||
-            v.lang === lang
-        );
+                v.name.includes('Siri'))
+          );
+        }
         if (preferredVoice) {
           utterance.voice = preferredVoice;
         }

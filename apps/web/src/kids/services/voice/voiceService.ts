@@ -24,7 +24,7 @@ function getGoogleTTSAudioUrl(text: string, lang = 'vi', slow = false): string {
     total: '1',
     idx: '0',
     textlen: String(text.length),
-    client: 'tw-ob',
+    client: 'gtx',
     prev: 'input',
     ttsspeed: slow ? '0.24' : '1',
   });

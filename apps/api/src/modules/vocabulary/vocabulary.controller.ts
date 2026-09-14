@@ -30,16 +30,30 @@ export class VocabularyController {
     try {
       const cleanText = text.trim().slice(0, 300);
       const targetLang = lang === 'en' ? 'en' : 'vi';
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLang}&client=tw-ob`;
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLang}&client=gtx`;
 
       const upstream = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
       });
 
       if (!upstream.ok) {
-        return res.status(upstream.status).send('Failed to fetch TTS from upstream');
+        const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLang}&client=dict-chrome-ex`;
+        const fallbackUpstream = await fetch(fallbackUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+
+        if (!fallbackUpstream.ok) {
+          return res.status(fallbackUpstream.status).send('Failed to fetch TTS from upstream');
+        }
+
+        const fallbackBuffer = await fallbackUpstream.arrayBuffer();
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.send(Buffer.from(fallbackBuffer));
       }
 
       const buffer = await upstream.arrayBuffer();
