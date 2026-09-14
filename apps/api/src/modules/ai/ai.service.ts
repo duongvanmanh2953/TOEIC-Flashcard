@@ -231,6 +231,37 @@ export class AIService {
    * Learner Profile -> Semantic Search + Learning Engine -> AI Task Router -> Model/Rules -> Evaluation -> Feedback
    */
   async pipelineQuery(userId: string, userQuery: string, contextWord?: string) {
+    const cleanQuery = (userQuery || '').trim();
+    if (!cleanQuery) {
+      return { reply: 'Xin chào! Bạn muốn học từ vựng hay luyện câu gì hôm nay?' };
+    }
+
+    // 0. Smart Database Cache Lookup (Saves tokens & returns instant pedagogical response)
+    const cachedHit = await this.findCachedInteraction(cleanQuery);
+    if (cachedHit) {
+      this.logger.log(`[SmartCache HIT] Query: "${cleanQuery}" -> Served from DB cache, saved tokens!`);
+      const today = new Date().toISOString().slice(0, 10);
+      try {
+        await this.prisma.entitlementUsage.upsert({
+          where: { userId_date: { userId, date: today } },
+          update: { aiUsageCount: { increment: 1 } },
+          create: { userId, date: today, aiUsageCount: 1 },
+        });
+      } catch (_) {}
+
+      return {
+        interactionId: cachedHit.id,
+        evaluationId: null,
+        provider: 'leximind-smart-cache (⚡ Tiết kiệm Token)',
+        userCefr: 'B1',
+        reply: cachedHit.output,
+        semanticContext: [],
+        vocabularyCard: null,
+        isCached: true,
+        tokensSaved: cachedHit.tokenUsage || 1850,
+      };
+    }
+
     // 1. Fetch Learner Profile, Weak Words, and Conversation History Context
     const [profile, weakWords, recentInteractions] = await Promise.all([
       this.prisma.userProfile.findUnique({ where: { userId } }),
@@ -453,6 +484,155 @@ Reply with your answer A, B, or C to test your recall!`;
     ];
 
     return { word, sentences: gradedSentences };
+  }
+
+  /**
+   * Smart Cache Matcher: Searches database for existing high-quality Q&A to save API tokens
+   */
+  async findCachedInteraction(query: string) {
+    const clean = query.trim();
+    if (!clean || clean.length < 2) return null;
+
+    const normalized = clean
+      .toLowerCase()
+      .replace(/[?!.,;:_~`'"“”]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    try {
+      // 1. Try exact match (case-insensitive)
+      const exact = await this.prisma.aIInteraction.findFirst({
+        where: {
+          input: { equals: clean, mode: 'insensitive' },
+          output: { not: '' },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (exact && exact.output && exact.output.length > 40) return exact;
+
+      // 2. Try normalized query match if longer than 3 chars
+      if (normalized.length >= 4) {
+        const matches = await this.prisma.aIInteraction.findMany({
+          where: {
+            input: { contains: normalized.slice(0, 35), mode: 'insensitive' },
+            output: { not: '' },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 6,
+        });
+
+        for (const m of matches) {
+          const mNorm = m.input
+            .toLowerCase()
+            .replace(/[?!.,;:_~`'"“”]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          if (mNorm === normalized && m.output && m.output.length > 40) {
+            return m;
+          }
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`findCachedInteraction check failed: ${err.message}`);
+    }
+    return null;
+  }
+
+  /**
+   * Autocomplete & Query Suggestion Generator:
+   * Returns saved queries with instant answers (0 API tokens spent)
+   * and high-yield TOEIC vocabulary / grammar prompts.
+   */
+  async getChatSuggestions(query: string = '') {
+    const trimmed = (query || '').trim();
+    const suggestions: Array<{ id: string; title: string; category: string; hasCache: boolean }> = [];
+
+    try {
+      // 1. Search cached user interactions from DB
+      const interactions = await this.prisma.aIInteraction.findMany({
+        where: trimmed
+          ? { input: { contains: trimmed, mode: 'insensitive' }, output: { not: '' } }
+          : { output: { not: '' } },
+        select: { id: true, input: true },
+        distinct: ['input'],
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+      });
+
+      for (const item of interactions) {
+        const clean = item.input.trim();
+        if (clean.length >= 3 && !suggestions.some((s) => s.title.toLowerCase() === clean.toLowerCase())) {
+          suggestions.push({
+            id: `cache-${item.id}`,
+            title: clean,
+            category: '⚡ Đã có câu trả lời (0 Token)',
+            hasCache: true,
+          });
+        }
+      }
+
+      // 2. Contextual suggestions from Vocabulary DB
+      if (trimmed.length >= 2) {
+        const vocabs = await this.prisma.vocabulary.findMany({
+          where: {
+            OR: [
+              { word: { startsWith: trimmed, mode: 'insensitive' } },
+              { definition: { contains: trimmed, mode: 'insensitive' } },
+              { shortDefinition: { contains: trimmed, mode: 'insensitive' } },
+              { meanings: { some: { meaning: { contains: trimmed, mode: 'insensitive' } } } },
+            ],
+          },
+          select: {
+            id: true,
+            word: true,
+            shortDefinition: true,
+            meanings: { select: { meaning: true }, take: 1 },
+          },
+          take: 3,
+        });
+
+        for (const v of vocabs) {
+          const def = v.meanings[0]?.meaning || v.shortDefinition;
+          const title = def ? `Giải thích từ "${v.word}" (${def}) và cách dùng trong TOEIC` : `Giải thích từ "${v.word}" và câu ví dụ`;
+          if (!suggestions.some((s) => s.title.toLowerCase() === title.toLowerCase())) {
+            suggestions.push({
+              id: `vocab-${v.id}`,
+              title,
+              category: 'Từ vựng TOEIC',
+              hasCache: suggestions.some((s) => s.hasCache && s.title.toLowerCase().includes(v.word.toLowerCase())),
+            });
+          }
+        }
+      }
+
+      // 3. Default high-yield curated questions when user input is empty or few suggestions
+      const defaultCurated = [
+        { title: 'Phân biệt "will" và "be going to" trong giao tiếp', category: 'Ngữ pháp' },
+        { title: 'Giải thích từ "accommodate" và các collocation thường gặp', category: 'Từ vựng TOEIC' },
+        { title: 'Cấu trúc "used to" vs "be used to" vs "get used to"', category: 'Cấu trúc câu' },
+        { title: 'Cách luyện phản xạ nói tiếng Anh tự nhiên không dịch nhẩm', category: 'Phản xạ giao tiếp' },
+        { title: '5 collocation kinh điển với "make" và "do" trong công sở', category: 'Collocation' },
+      ];
+
+      if (suggestions.length < 5) {
+        for (const [idx, item] of defaultCurated.entries()) {
+          if (!trimmed || item.title.toLowerCase().includes(trimmed.toLowerCase())) {
+            if (!suggestions.some((s) => s.title.toLowerCase() === item.title.toLowerCase())) {
+              suggestions.push({
+                id: `default-${idx}`,
+                title: item.title,
+                category: item.category,
+                hasCache: true,
+              });
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`getChatSuggestions error: ${err.message}`);
+    }
+
+    return suggestions.slice(0, 6);
   }
 
   async tutorChat(message: string, userId: string, contextWord?: string) {

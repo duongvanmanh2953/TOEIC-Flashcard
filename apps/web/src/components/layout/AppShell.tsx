@@ -717,10 +717,10 @@ export const AppShell: React.FC = () => {
         {/* Routed Pages Container — Space-Optimized: tight padding for chat, standard for other pages */}
         <main
           data-scroll-container="true"
-          className={`flex-1 w-full max-w-[1680px] mx-auto min-h-0 ${
+          className={`flex-1 w-full min-h-0 ${
             isFullHeightChat
-              ? 'flex flex-col overflow-hidden p-2 sm:p-3 lg:px-4 lg:py-2.5 pb-16 lg:pb-2.5'
-              : 'p-3 sm:p-5 lg:p-6'
+              ? 'flex flex-col overflow-hidden p-0 max-w-none pb-14 lg:p-3 lg:pb-2.5 lg:max-w-[1680px] lg:mx-auto'
+              : 'max-w-[1680px] mx-auto p-3 sm:p-5 lg:p-6'
           }`}
         >
           <Outlet />

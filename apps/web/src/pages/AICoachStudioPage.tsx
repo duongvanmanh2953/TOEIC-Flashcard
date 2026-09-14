@@ -41,7 +41,9 @@ import {
   X,
   Settings2,
   Trash2,
+  Send,
 } from 'lucide-react';
+import { ModalPortal } from '../components/common/ModalPortal';
 import { audioEngine } from '../lib/audioEngine';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 
@@ -91,6 +93,37 @@ export const AICoachStudioPage: React.FC = () => {
   const [fearlessLevel, setFearlessLevel] = useState<number>(2);
   const [whatShouldISayStep, setWhatShouldISayStep] = useState<number | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // User Voice & Speech Input Language Preference (Default: Tiếng Việt / Giọng Ngọc Huyền)
+  const [voiceLang, setVoiceLang] = useState<'vi' | 'en' | 'auto'>(() => {
+    return audioEngine.getPreferredVoiceLang();
+  });
+  const [speechInputLang, setSpeechInputLang] = useState<'vi-VN' | 'en-US'>('vi-VN');
+  const [chatLanguageMode, setChatLanguageMode] = useState<'bilingual' | 'vi' | 'en'>('bilingual');
+
+  interface ChatSuggestion {
+    id: string;
+    title: string;
+    category: string;
+    hasCache: boolean;
+  }
+  const [suggestions, setSuggestions] = useState<ChatSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>(() => {
+    return audioEngine.getPreferredVoiceGender();
+  });
+
+  const handleVoiceGenderChange = (gender: 'male' | 'female') => {
+    setVoiceGender(gender);
+    audioEngine.setPreferredVoiceGender(gender);
+  };
+
+  const handleVoiceLangChange = (mode: 'vi' | 'en' | 'auto') => {
+    setVoiceLang(mode);
+    audioEngine.setPreferredVoiceLang(mode);
+  };
 
   const recognitionRef = useRef<any>(null);
   const silenceTimeoutRef = useRef<any>(null);
@@ -107,7 +140,7 @@ export const AICoachStudioPage: React.FC = () => {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      recognition.lang = speechInputLang;
 
       recognition.onresult = (event: any) => {
         let currentText = '';
@@ -168,7 +201,30 @@ export const AICoachStudioPage: React.FC = () => {
         window.speechSynthesis.cancel();
       }
     };
-  }, [callStatus]);
+  }, [callStatus, speechInputLang]);
+
+  // Fetch smart autocomplete and cached suggestions from DB (saves API tokens)
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchSuggestions = async () => {
+      try {
+        const res = await api.get(`/ai/suggestions?q=${encodeURIComponent(transcript.trim())}`);
+        const list = res.data?.data || res.data || [];
+        if (!isCancelled && Array.isArray(list)) {
+          setSuggestions(list);
+        }
+      } catch (_) {}
+    };
+
+    const timer = setTimeout(fetchSuggestions, 200);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [transcript]);
+
+  const [isHoldingToRecord, setIsHoldingToRecord] = useState(false);
+  const holdStartTimeRef = useRef(0);
 
   const startListening = () => {
     if (isGuest || !user) {
@@ -176,7 +232,11 @@ export const AICoachStudioPage: React.FC = () => {
       return;
     }
     setTranscript('');
+    currentTranscriptRef.current = '';
     try {
+      if (recognitionRef.current) {
+        recognitionRef.current.lang = speechInputLang;
+      }
       recognitionRef.current?.start();
       setIsListening(true);
       if (isCallActiveRef.current) setCallStatus('listening');
@@ -191,6 +251,33 @@ export const AICoachStudioPage: React.FC = () => {
       recognitionRef.current?.stop();
     } catch (_) {}
     setIsListening(false);
+    setIsHoldingToRecord(false);
+  };
+
+  const handleHoldStart = (e?: React.SyntheticEvent) => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để luyện giao tiếp bằng giọng nói với AI Coach');
+      return;
+    }
+    if (isCallActive) return; // In 1:1 call mode, hands-free takes care of it
+
+    holdStartTimeRef.current = Date.now();
+    setIsHoldingToRecord(true);
+    startListening();
+  };
+
+  const handleHoldEnd = () => {
+    if (!isHoldingToRecord || isCallActive) return;
+    setIsHoldingToRecord(false);
+
+    // Give a 200ms grace period to let SpeechRecognition append the final words
+    setTimeout(() => {
+      stopListening();
+      const recorded = (currentTranscriptRef.current || transcript).trim();
+      if (recorded.length > 0) {
+        handleSendMessage(recorded);
+      }
+    }, 200);
   };
 
   const toggleListening = () => {
@@ -200,8 +287,9 @@ export const AICoachStudioPage: React.FC = () => {
     }
     if (isListening) {
       stopListening();
-      if (transcript.trim()) {
-        handleSendMessage(transcript);
+      const recorded = (currentTranscriptRef.current || transcript).trim();
+      if (recorded.length > 0) {
+        handleSendMessage(recorded);
       }
     } else {
       startListening();
@@ -250,6 +338,7 @@ export const AICoachStudioPage: React.FC = () => {
 
     setMessages((prev) => [...prev, userMsg]);
     setTranscript('');
+    setShowSuggestions(false);
     setCoachLoading(true);
     if (isCallActiveRef.current) setCallStatus('thinking');
     setWhatShouldISayStep(null);
@@ -290,7 +379,7 @@ export const AICoachStudioPage: React.FC = () => {
     }
   };
 
-  const speakText = (text: string, rate = 0.95) => {
+  const speakText = (text: string, rate = 1.1) => {
     if (isCallActiveRef.current) {
       setCallStatus('speaking');
       try {
@@ -667,10 +756,10 @@ export const AICoachStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 flex-1 overflow-hidden space-y-2.5">
-        {/* Top Product Header (Compact & Streamlined with Dismiss X Button) */}
+    <div className="flex flex-col h-full min-h-0 flex-1 overflow-hidden space-y-1.5 sm:space-y-2.5">
+        {/* Top Product Header (Compact & Streamlined with Dismiss X Button - Hidden on mobile to maximize chat space) */}
         {showHeroBanner ? (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden pr-12 animate-fade-in shrink-0">
+          <div className="hidden md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden pr-12 animate-fade-in shrink-0">
             <button
               onClick={dismissHeroBanner}
               className="absolute top-3 right-3 p-1.5 rounded-xl text-indigo-300 hover:text-white hover:bg-white/10 transition z-20"
@@ -699,7 +788,7 @@ export const AICoachStudioPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex justify-end shrink-0">
+          <div className="hidden md:flex justify-end shrink-0">
             <button
               onClick={() => {
                 setShowHeroBanner(true);
@@ -714,66 +803,71 @@ export const AICoachStudioPage: React.FC = () => {
           </div>
         )}
 
-        {/* 5 Core Feature Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 shrink-0">
+        {/* 5 Core Feature Tabs - Hidden on mobile (moved to secondary drawer), visible on tablet/desktop */}
+        <div className="hidden md:flex items-center gap-1.5 sm:gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-1.5 sm:pb-2.5 overflow-x-auto scrollbar-none shrink-0 -mx-1 px-1">
           <button
             onClick={() => setActiveTab('voice')}
-            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'voice'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
           >
-            <Mic className="w-4 h-4" />
-            <span>Voice Coach & Real-Time Studio</span>
+            <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">Voice Coach & Real-Time Studio</span>
+            <span className="sm:hidden">Voice Coach</span>
           </button>
 
           <button
             onClick={() => setActiveTab('pronunciation')}
-            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'pronunciation'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
           >
-            <Volume2 className="w-4 h-4" />
-            <span>Phòng Luyện Phát Âm (Phoneme Lab)</span>
+            <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">Phòng Luyện Phát Âm (Phoneme Lab)</span>
+            <span className="sm:hidden">Luyện Âm</span>
           </button>
 
           <button
             onClick={() => setActiveTab('simulator')}
-            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'simulator'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
           >
-            <Briefcase className="w-4 h-4" />
-            <span>Mô Phỏng Tình Huống (Roleplay Simulator)</span>
+            <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">Mô Phỏng Tình Huống (Roleplay Simulator)</span>
+            <span className="sm:hidden">Mô Phỏng</span>
           </button>
 
           <button
             onClick={() => setActiveTab('error-bank')}
-            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'error-bank'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
           >
-            <BrainCircuit className="w-4 h-4" />
-            <span>Ngân Hàng Lỗi Sai (Error Heatmap)</span>
+            <BrainCircuit className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden sm:inline">Ngân Hàng Lỗi Sai (Error Heatmap)</span>
+            <span className="sm:hidden">Lỗi Sai</span>
           </button>
 
           <button
             onClick={() => setActiveTab('sound-better')}
-            className={`px-4 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${
               activeTab === 'sound-better'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Make Me Sound Better (Bản Xứ Hóa)</span>
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+            <span className="hidden sm:inline">Make Me Sound Better (Bản Xứ Hóa)</span>
+            <span className="sm:hidden">Bản Xứ Hóa</span>
           </button>
         </div>
 
@@ -781,7 +875,7 @@ export const AICoachStudioPage: React.FC = () => {
         {/* TAB 1: VOICE COACH & REAL-TIME CONVERSATION              */}
         {/* ======================================================== */}
         {activeTab === 'voice' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 flex-1 min-h-0 overflow-hidden">
             {/* Left Controls & Coach Settings */}
             <div className="space-y-3 overflow-y-auto max-h-full pr-1 hidden lg:block">
               {/* Hands-Free 1:1 Call Banner Card */}
@@ -838,6 +932,67 @@ export const AICoachStudioPage: React.FC = () => {
                       </span>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* AI Voice Info (Giọng Nam Bắc chuẩn - Nam Minh) */}
+              <div className="p-4 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-blue-500/10 to-purple-500/10 border border-indigo-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase text-indigo-800 dark:text-indigo-300 tracking-wider flex items-center gap-1.5">
+                    <Volume2 className="w-4 h-4 text-indigo-500" />
+                    Giọng Đọc AI Coach
+                  </span>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-black shadow-xs">
+                    Nam Minh (Bắc Chuẩn)
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                  Đọc toàn bộ câu trả lời bằng <strong className="text-indigo-700 dark:text-indigo-300 font-extrabold">Giọng Nam Bắc chuẩn (Nam Minh)</strong>, đọc liền mạch không ngắt quãng giữa câu, phát âm chuẩn cả tiếng Anh và tiếng Việt với tốc độ nhanh, dứt khoát (+25%).
+                </p>
+              </div>
+
+              {/* Microphone Recording Language Selection */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                <label className="text-xs font-extrabold uppercase text-slate-400 tracking-wider flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Mic className="w-4 h-4 text-indigo-500" />
+                    Ngôn Ngữ Nhận Diện Micro
+                  </span>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                    {speechInputLang === 'vi-VN' ? 'Đang nghe Tiếng Việt' : 'Đang nghe Tiếng Anh'}
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => {
+                      setSpeechInputLang('vi-VN');
+                      if (recognitionRef.current) {
+                        try { recognitionRef.current.lang = 'vi-VN'; } catch (_) {}
+                      }
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      speechInputLang === 'vi-VN'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <span>Nói Tiếng Việt</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSpeechInputLang('en-US');
+                      if (recognitionRef.current) {
+                        try { recognitionRef.current.lang = 'en-US'; } catch (_) {}
+                      }
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                      speechInputLang === 'en-US'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <span>Nói Tiếng Anh</span>
+                  </button>
                 </div>
               </div>
 
@@ -905,21 +1060,31 @@ export const AICoachStudioPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Interactive Voice Chat Stage */}
-            <div className="lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex-1 h-full min-h-0">
+            {/* Right Interactive Voice Chat Stage - Full width edge-to-edge on mobile, rounded card on desktop */}
+            <div className="lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-none sm:rounded-2xl lg:rounded-3xl border-0 sm:border border-slate-200/80 dark:border-slate-800 shadow-none sm:shadow-xl overflow-hidden flex-1 h-full min-h-0 w-full">
               {/* Dedicated Sleek Chat Box Header */}
-              <div className="px-4 sm:px-6 py-3 bg-gradient-to-r from-slate-50 via-white to-indigo-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
-                <div className="flex items-center gap-3 min-w-0">
+              <div className="px-2.5 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-slate-50 via-white to-indigo-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-1.5 sm:gap-3 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  {/* Mobile Studio Secondary Drawer Button */}
+                  <button
+                    onClick={() => setMobileDrawerOpen(true)}
+                    className="md:hidden flex items-center gap-1 px-2 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 font-black text-xs shrink-0 transition active:scale-95"
+                    title="Mở Studio & Cài đặt"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                    <span className="font-extrabold text-[11px]">Studio</span>
+                  </button>
+
                   <div className="relative shrink-0">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-rose-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
-                      <Sparkles className="w-5 h-5 text-amber-300" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-rose-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
                     </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 animate-pulse" title="AI Coach Sẵn Sàng" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 animate-pulse" title="AI Coach Sẵn Sàng" />
                   </div>
 
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate leading-tight">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <h3 className="font-extrabold text-xs sm:text-base text-slate-900 dark:text-white truncate leading-tight">
                         LexiMind AI Coach
                       </h3>
                       <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
@@ -927,17 +1092,27 @@ export const AICoachStudioPage: React.FC = () => {
                         Live • {coachPersonality}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                      Gia sư đàm thoại & sửa lỗi ngữ cảnh thời gian thực
+                    <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      <span className="sm:hidden font-bold text-indigo-600 dark:text-indigo-400">{coachPersonality} • {bilingualMode === 'beginner' ? '50% EN' : bilingualMode === 'intermediate' ? '80% EN' : '100% EN'}</span>
+                      <span className="hidden sm:inline">Gia sư đàm thoại & sửa lỗi ngữ cảnh thời gian thực</span>
                     </p>
                   </div>
                 </div>
 
                 {/* Header Action Controls */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  {/* AI Voice Badge: Giọng Nam Bắc Chuẩn */}
+                  <div
+                    className="flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 text-[10px] sm:text-xs font-black shadow-xs select-none"
+                    title="AI đọc toàn bộ câu trả lời bằng giọng Nam Bắc chuẩn (Nam Minh) đọc nhanh dứt khoát 1.25x"
+                  >
+                    <Volume2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <span>Nam Minh (Bắc Chuẩn)</span>
+                  </div>
+
                   <button
                     onClick={toggleCallMode}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs ${
+                    className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 shadow-xs ${
                       isCallActive
                         ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
                         : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
@@ -955,46 +1130,46 @@ export const AICoachStudioPage: React.FC = () => {
                           {
                             id: 'welcome-' + Date.now(),
                             role: 'assistant',
-                            content: "Hello! I'm your AI Personal English Coach. What would you like to practice now? Feel free to speak in English or Vietnamese!",
-                            viTranslation: 'Xin chào! Tôi là Gia sư AI. Bạn muốn luyện tập chủ đề gì bây giờ?',
+                            content: "Xin chào! Tôi là Gia sư AI LexiMind. Hôm nay bạn muốn luyện tập chủ đề gì? Bạn có thể nói bằng tiếng Việt hoặc tiếng Anh tùy thích nhé!",
+                            viTranslation: 'Xin chào! Tôi là Gia sư AI LexiMind.',
                             timestamp: new Date(),
                           },
                         ]);
                       }
                     }}
-                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition"
+                    className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition"
                     title="Làm mới cuộc trò chuyện"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                 </div>
               </div>
 
               {/* Call Mode Status Bar */}
               {isCallActive && (
-                <div className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-indigo-600 text-white flex items-center justify-between text-xs font-bold shadow-md shrink-0">
+                <div className="px-3 sm:px-6 py-1.5 sm:py-2.5 bg-gradient-to-r from-emerald-600 to-indigo-600 text-white flex items-center justify-between text-[11px] sm:text-xs font-bold shadow-md shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                    <span>Cuộc gọi 1:1 Đang Hoạt Động (Rảnh tay, không cần bấm gửi)</span>
+                    <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                    <span>Cuộc gọi 1:1 Đang Hoạt Động</span>
                   </div>
-                  <span className="text-[11px] opacity-90">Tự động nhận diện khi bạn dừng nói 1.4s</span>
+                  <span className="text-[10px] sm:text-[11px] opacity-90 hidden xs:inline">Tự nhận diện khi dừng nói 1.4s</span>
                 </div>
               )}
 
               {/* Chat Log */}
-              <div className="flex-1 p-6 overflow-y-auto space-y-4">
+              <div className="flex-1 p-2.5 sm:p-6 overflow-y-auto space-y-2.5 sm:space-y-4">
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-start gap-2.5 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     {msg.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-rose-500 flex items-center justify-center text-white shrink-0 shadow-md">
-                        <Sparkles className="w-4 h-4" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-rose-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                        <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
                     )}
                     {msg.role === 'user' ? (
-                      <div className="max-w-md p-4 rounded-2xl text-xs sm:text-sm leading-relaxed bg-indigo-600 text-white rounded-br-none shadow-md">
+                      <div className="max-w-md p-3 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed bg-indigo-600 text-white rounded-br-none shadow-md">
                         <p>{msg.content}</p>
                         {msg.viTranslation && (
                           <p className="mt-2 pt-2 border-t border-indigo-400 text-[11px] text-indigo-100 italic">
@@ -1022,82 +1197,199 @@ export const AICoachStudioPage: React.FC = () => {
               </div>
 
               {/* "What Should I Say?" Scaffolding Help Bar */}
-              <div className="px-6 py-2 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs overflow-x-auto">
-                <span className="text-slate-400 font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 mr-2">
+              <div className="px-3 sm:px-6 py-1 sm:py-2 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs overflow-x-auto scrollbar-none">
+                <span className="text-slate-400 font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 mr-2 text-[11px]">
                   <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
                   <span>Bị bí từ?</span>
                 </span>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => setWhatShouldISayStep(1)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] hover:bg-indigo-100 whitespace-nowrap shrink-0"
+                    className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] sm:text-[11px] hover:bg-indigo-100 whitespace-nowrap shrink-0"
                   >
                     Gợi ý ý tưởng
                   </button>
                   <button
                     onClick={() => setWhatShouldISayStep(2)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] hover:bg-indigo-100 whitespace-nowrap shrink-0"
+                    className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] sm:text-[11px] hover:bg-indigo-100 whitespace-nowrap shrink-0"
                   >
                     Từ then chốt
                   </button>
                   <button
                     onClick={() => setWhatShouldISayStep(3)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] hover:bg-indigo-100 whitespace-nowrap shrink-0"
+                    className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] sm:text-[11px] hover:bg-indigo-100 whitespace-nowrap shrink-0"
                   >
-                    Mẫu câu hoàn chỉnh
+                    Mẫu câu
                   </button>
                 </div>
               </div>
 
               {whatShouldISayStep && (
-                <div className="px-6 py-2.5 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs border-t border-amber-500/20">
-                  {whatShouldISayStep === 1 && (
-                    <span>💡 <strong>Gợi ý:</strong> Chia sẻ về 1 trở ngại bạn đã vượt qua trong công việc hôm nay.</span>
-                  )}
-                  {whatShouldISayStep === 2 && (
-                    <span>🔑 <strong>Từ then chốt:</strong> resolved / bottleneck / coordinated / team deliverables.</span>
-                  )}
-                  {whatShouldISayStep === 3 && (
-                    <span>📝 <strong>Mẫu câu:</strong> "Today, my team successfully coordinated to resolve a major delivery bottleneck."</span>
-                  )}
+                <div className="px-3 sm:px-6 py-1.5 sm:py-2.5 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs border-t border-amber-500/20 flex items-center justify-between gap-2">
+                  <div className="flex-1">
+                    {whatShouldISayStep === 1 && (
+                      <span>💡 <strong>Gợi ý:</strong> Chia sẻ về 1 trở ngại bạn đã vượt qua trong công việc hôm nay.</span>
+                    )}
+                    {whatShouldISayStep === 2 && (
+                      <span>🔑 <strong>Từ then chốt:</strong> resolved / bottleneck / coordinated / team deliverables.</span>
+                    )}
+                    {whatShouldISayStep === 3 && (
+                      <span>📝 <strong>Mẫu câu:</strong> "Today, my team successfully coordinated to resolve a major delivery bottleneck."</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setWhatShouldISayStep(null)}
+                    className="p-1 text-amber-600 hover:text-amber-800 dark:text-amber-300 shrink-0"
+                    title="Đóng gợi ý"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Autocomplete & Cached Prompt Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="mx-2 sm:mx-4 mb-2 p-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-indigo-100 dark:border-slate-800 shadow-xl space-y-1 animate-in fade-in slide-in-from-bottom-2 duration-200 z-20">
+                  <div className="flex items-center justify-between px-2 py-1 border-b border-slate-100 dark:border-slate-800 text-[11px] font-black">
+                    <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                      <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                      <span>Gợi ý câu hỏi & từ khóa từ dữ liệu</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" /> Tiết kiệm 100% Token
+                      </span>
+                      <button
+                        onClick={() => setShowSuggestions(false)}
+                        className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        title="Đóng gợi ý"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="max-h-52 overflow-y-auto divide-y divide-slate-100/60 dark:divide-slate-800/60">
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={item.id || idx}
+                        onClick={() => {
+                          setTranscript(item.title);
+                          setShowSuggestions(false);
+                          handleSendMessage(item.title);
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-indigo-50/80 dark:hover:bg-slate-800/80 flex items-center justify-between gap-2 transition group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {item.hasCache ? (
+                            <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0 fill-amber-400" />
+                          ) : (
+                            <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          )}
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 truncate">
+                            {item.title}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0 ${
+                            item.hasCache
+                              ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+                          }`}
+                        >
+                          {item.hasCache ? '⚡ Có sẵn' : item.category}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* Voice Input & Action Bar */}
-              <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3">
+              <div className="p-2 sm:p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                {/* Sleek Language Switch Button (Tiếng Việt <-> English) */}
                 <button
-                  onClick={toggleListening}
-                  className={`p-3.5 rounded-2xl transition shadow-md flex items-center justify-center shrink-0 whitespace-nowrap ${
-                    isListening
-                      ? 'bg-rose-600 text-white animate-pulse shadow-rose-500/30'
-                      : 'btn-glass-primary shadow-indigo-500/30'
+                  type="button"
+                  onClick={() => {
+                    const nextLang = speechInputLang === 'vi-VN' ? 'en-US' : 'vi-VN';
+                    setSpeechInputLang(nextLang);
+                    if (recognitionRef.current) {
+                      try { recognitionRef.current.lang = nextLang; } catch (_) {}
+                    }
+                  }}
+                  className={`h-10 sm:h-11 px-2.5 sm:px-3 rounded-xl sm:rounded-2xl border text-xs font-black flex items-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs select-none ${
+                    speechInputLang === 'vi-VN'
+                      ? 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                      : 'border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
                   }`}
-                  title={isListening ? 'Bấm để dừng nói' : 'Bấm để bật Micro'}
+                  title="Bấm để đổi ngôn ngữ thu âm Micro: Tiếng Việt hoặc English"
                 >
-                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      speechInputLang === 'vi-VN' ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500 animate-pulse'
+                    }`}
+                  />
+                  <span className="font-extrabold">{speechInputLang === 'vi-VN' ? 'Tiếng Việt' : 'English'}</span>
+                </button>
+
+                {/* Refined Push-To-Talk Microphone Button (Ấn giữ để nói, thả tay để gửi) */}
+                <button
+                  type="button"
+                  onPointerDown={handleHoldStart}
+                  onPointerUp={handleHoldEnd}
+                  onPointerLeave={() => { if (isHoldingToRecord) handleHoldEnd(); }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center shrink-0 select-none cursor-pointer active:scale-95 border ${
+                    isListening || isHoldingToRecord
+                      ? 'bg-rose-600 border-rose-600 text-white animate-pulse shadow-rose-500/40 ring-4 ring-rose-500/20'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400'
+                  }`}
+                  title="Ấn và GIỮ để nói, THẢ RA để gửi tin nhắn phân tích"
+                >
+                  {isListening || isHoldingToRecord ? (
+                    <Mic className="w-5 h-5 text-white animate-bounce" />
+                  ) : (
+                    <Mic className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  )}
                 </button>
 
                 <input
                   type="text"
                   value={transcript}
-                  onChange={(e) => setTranscript(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onFocus={() => setShowSuggestions(true)}
+                  onChange={(e) => {
+                    setTranscript(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setShowSuggestions(false);
+                      handleSendMessage();
+                    } else if (e.key === 'Escape') {
+                      setShowSuggestions(false);
+                    }
+                  }}
                   placeholder={
                     isCallActive
-                      ? 'Chế độ 1:1 đang bật — hãy nói vào Micro, câu nói sẽ tự gửi...'
-                      : isListening
-                      ? 'Đang lắng nghe giọng nói của bạn...'
-                      : 'Nói qua Micro hoặc gõ câu trả lời...'
+                      ? 'Chế độ 1:1 bật — hãy nói...'
+                      : isHoldingToRecord || isListening
+                      ? `🔴 Đang lắng nghe... Thả tay để gửi`
+                      : `Ấn giữ Micro để nói, hoặc gõ câu hỏi...`
                   }
-                  className="flex-1 px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="flex-1 h-10 sm:h-11 px-3.5 sm:px-4 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
                 />
 
                 <button
-                  onClick={() => handleSendMessage()}
+                  onClick={() => {
+                    setShowSuggestions(false);
+                    handleSendMessage();
+                  }}
                   disabled={!transcript.trim() || coachLoading}
-                  className="btn-glass-primary px-5 py-3 rounded-2xl disabled:opacity-50 font-extrabold text-xs shadow-md transition whitespace-nowrap shrink-0"
+                  className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+                  title="Gửi câu hỏi"
                 >
-                  Gửi
+                  <Send className="w-3.5 h-3.5" />
+                  <span className="hidden xs:inline">Gửi</span>
                 </button>
               </div>
             </div>
@@ -1670,6 +1962,262 @@ export const AICoachStudioPage: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Mobile Secondary Drawer (Drawer Phụ gom toàn bộ chức năng & cài đặt để tối ưu 100% diện tích cho khung chat) */}
+        {mobileDrawerOpen && (
+          <div className="fixed inset-0 z-[100] md:hidden animate-fade-in">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+              onClick={() => setMobileDrawerOpen(false)}
+            />
+
+            {/* Slide-over Drawer Panel */}
+            <div className="fixed inset-y-0 left-0 w-[86%] max-w-[340px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col p-4 space-y-4 overflow-y-auto animate-slide-in-left z-10">
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-rose-500 text-white flex items-center justify-center shadow-md">
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Studio & Cài Đặt</h3>
+                    <p className="text-[10px] text-slate-400">Chọn phòng luyện & tùy biến Coach</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  title="Đóng menu"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* 1:1 Voice Call Quick Toggle */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 border border-indigo-500/30 text-white space-y-2 shrink-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Headphones className="w-4 h-4 text-emerald-400" />
+                    Đối Thoại 1:1 Rảnh Tay
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                    isCallActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {isCallActive ? 'Đang Bật' : 'Chưa Bật'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-snug">
+                  Nói chuyện liên tục không cần bấm nút gửi. AI tự ngắt câu và phản hồi giọng nói.
+                </p>
+                <button
+                  onClick={() => {
+                    toggleCallMode();
+                    setMobileDrawerOpen(false);
+                  }}
+                  className={`w-full py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-sm ${
+                    isCallActive ? 'bg-rose-600 text-white' : 'btn-glass-primary'
+                  }`}
+                >
+                  {isCallActive ? <PhoneOff className="w-3.5 h-3.5" /> : <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span>{isCallActive ? 'Tắt Cuộc Gọi 1:1' : 'Bật Cuộc Gọi 1:1 Rảnh Tay'}</span>
+                </button>
+              </div>
+
+              {/* 5 Studio Feature Rooms */}
+              <div className="space-y-1.5 shrink-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block px-1">
+                  Phòng Luyện Chức Năng
+                </span>
+                {[
+                  { id: 'voice', name: 'Voice Coach & Real-Time', icon: Mic, desc: 'Đàm thoại phản xạ 1:1' },
+                  { id: 'pronunciation', name: 'Phòng Luyện Phát Âm', icon: Volume2, desc: 'Phoneme Lab & Shadowing' },
+                  { id: 'simulator', name: 'Mô Phỏng Tình Huống', icon: Briefcase, desc: 'Roleplay phỏng vấn & công việc' },
+                  { id: 'error-bank', name: 'Ngân Hàng Lỗi Sai', icon: BrainCircuit, desc: 'Error Heatmap & sửa lỗi' },
+                  { id: 'sound-better', name: 'Make Me Sound Better', icon: Sparkles, desc: 'Bản xứ hóa câu văn' },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id as any);
+                        setMobileDrawerOpen(false);
+                      }}
+                      className={`w-full p-2.5 rounded-xl text-left flex items-center gap-3 transition ${
+                        isActive
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                          : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${isActive ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-black truncate">{tab.name}</p>
+                        <p className={`text-[10px] truncate ${isActive ? 'text-indigo-100' : 'text-slate-400'}`}>{tab.desc}</p>
+                      </div>
+                      {isActive && <Check className="w-4 h-4 shrink-0 text-white" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Coach Settings */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3 shrink-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block px-1">
+                  Cài Đặt Huấn Luyện Viên
+                </span>
+
+                {/* AI Voice Selection (Default: Giọng Việt / Ngọc Huyền) */}
+                <div className="space-y-1.5 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                  <label className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Volume2 className="w-3.5 h-3.5" />
+                      Giọng Nói AI Coach
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black">
+                      {voiceLang === 'vi' ? 'Ngọc Huyền 2.0 (Mặc định)' : 'Native English'}
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5 pt-1">
+                    <button
+                      onClick={() => handleVoiceLangChange('vi')}
+                      className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                        voiceLang === 'vi'
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span>Giọng Tiếng Việt</span>
+                    </button>
+                    <button
+                      onClick={() => handleVoiceLangChange('en')}
+                      className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${
+                        voiceLang === 'en'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span>Giọng Tiếng Anh</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Microphone Recording Language Selection */}
+                <div className="space-y-1.5 p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Mic className="w-3.5 h-3.5 text-indigo-500" />
+                      Ngôn Ngữ Nhận Diện Micro
+                    </span>
+                    <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                      {speechInputLang === 'vi-VN' ? 'Đang nghe Tiếng Việt' : 'Đang nghe Tiếng Anh'}
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5 pt-1">
+                    <button
+                      onClick={() => setSpeechInputLang('vi-VN')}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        speechInputLang === 'vi-VN'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span>Nói Tiếng Việt</span>
+                    </button>
+                    <button
+                      onClick={() => setSpeechInputLang('en-US')}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        speechInputLang === 'en-US'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span>Nói Tiếng Anh</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Personality */}
+                <CustomSelect
+                  label="Tính cách AI Coach"
+                  icon={Smile}
+                  value={coachPersonality}
+                  onChange={(val) => setCoachPersonality(String(val))}
+                  options={[
+                    { value: 'Friendly Tutor', label: 'Friendly Tutor', description: 'Kiên nhẫn & Cổ vũ người học' },
+                    { value: 'Strict Teacher', label: 'Strict Teacher', description: 'Chỉnh lỗi ngữ pháp nghiêm khắc' },
+                    { value: 'Casual Friend', label: 'Casual Friend', description: 'Bạn bè thân thiện, đàm thoại tự nhiên' },
+                    { value: 'Work Colleague', label: 'Work Colleague', description: 'Đồng nghiệp công sở' },
+                    { value: 'Interview Coach', label: 'Interview Coach', description: 'Chuyên gia phỏng vấn' },
+                    { value: 'American Coach', label: 'American Teacher', description: 'Giọng Mỹ chuẩn' },
+                    { value: 'British Coach', label: 'British Teacher', description: 'Giọng Anh chuẩn' },
+                  ]}
+                  className="w-full text-xs"
+                />
+
+                {/* Bilingual fallback */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Cứu cánh song ngữ</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {(['beginner', 'intermediate', 'advanced'] as const).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setBilingualMode(m)}
+                        className={`py-1.5 rounded-lg text-[10px] font-bold transition ${
+                          bilingualMode === m ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        {m === 'beginner' ? '50% EN' : m === 'intermediate' ? '80% EN' : '100% EN'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fearless Speaking Mode */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Nói không sợ sai</span>
+                    </label>
+                    <span className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400">
+                      Mức {fearlessLevel}/3
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    value={fearlessLevel}
+                    onChange={(e) => setFearlessLevel(Number(e.target.value))}
+                    className="w-full accent-indigo-600 cursor-pointer"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    {fearlessLevel === 1 && 'Sửa mọi lỗi ngữ pháp & phát âm ngay lập tức.'}
+                    {fearlessLevel === 2 && 'Cân bằng giao tiếp tự nhiên và góp ý điểm cốt lõi.'}
+                    {fearlessLevel === 3 && 'Tối đa độ trôi chảy, không ngắt lời.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Close Drawer Button */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => setMobileDrawerOpen(false)}
+                  className="w-full py-2.5 rounded-xl btn-glass-primary font-bold text-xs"
+                >
+                  Xong & Tiếp Tục Trò Chuyện
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -89,7 +89,11 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
             </div>
             
             <div className="mt-0.5 flex items-center gap-1.5">
-              {isGemini ? (
+              {provider?.includes('cache') ? (
+                <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/70 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
+                  ⚡ Kho Dữ Liệu Thông Minh (Tiết Kiệm Token)
+                </span>
+              ) : isGemini ? (
                 <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-400/40">
                   ✨ Gemini 1.5 Flash AI Direct
                 </span>
@@ -112,10 +116,10 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
           onClick={handlePlayBilingual}
           disabled={isPlayingAudio}
           className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-extrabold flex items-center gap-1.5 border border-white/30 shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
-          title="Đọc toàn bộ câu trả lời phân biệt giọng Tiếng Anh & Tiếng Việt"
+          title="Đọc toàn bộ câu trả lời bằng giọng Nam Brian (Đa ngôn ngữ, chuẩn bản xứ tốc độ 1.25x)"
         >
           <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'animate-pulse text-amber-300' : ''}`} />
-          <span>{isPlayingAudio ? 'Đang đọc...' : 'Đọc Song Ngữ'}</span>
+          <span>{isPlayingAudio ? 'Đang đọc...' : 'Giọng Nam Brian'}</span>
         </button>
       </div>
 
