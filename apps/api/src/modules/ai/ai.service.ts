@@ -41,36 +41,38 @@ export class AIService {
         body.generationConfig.responseMimeType = 'application/json';
       }
 
-      let res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-goog-api-key': key,
-          },
-          body: JSON.stringify(body),
-        },
-      );
+      const models = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
+      let res: Response | null = null;
+      let lastErrData: any = null;
 
-      if (!res.ok) {
-        // Fallback to gemini-1.5-flash
-        res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-goog-api-key': key,
+      for (const model of models) {
+        try {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-goog-api-key': key,
+              },
+              body: JSON.stringify(body),
             },
-            body: JSON.stringify(body),
-          },
-        );
+          );
+
+          if (response.ok) {
+            res = response;
+            break;
+          } else {
+            lastErrData = await response.json().catch(() => ({}));
+            this.logger.warn(`Gemini model ${model} status ${response.status}: ${JSON.stringify(lastErrData)}`);
+          }
+        } catch (e: any) {
+          this.logger.warn(`Gemini fetch error on model ${model}: ${e.message}`);
+        }
       }
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        this.logger.warn(`Gemini API error status ${res.status}: ${JSON.stringify(errData)}`);
+      if (!res || !res.ok) {
+        this.logger.warn(`All Gemini models failed. Last error: ${JSON.stringify(lastErrData)}`);
         return null;
       }
 
@@ -229,33 +231,71 @@ export class AIService {
    * Learner Profile -> Semantic Search + Learning Engine -> AI Task Router -> Model/Rules -> Evaluation -> Feedback
    */
   async pipelineQuery(userId: string, userQuery: string, contextWord?: string) {
-    // 1. Fetch Learner Profile
-    const [profile, weakWords] = await Promise.all([
+    // 1. Fetch Learner Profile, Weak Words, and Conversation History Context
+    const [profile, weakWords, recentInteractions] = await Promise.all([
       this.prisma.userProfile.findUnique({ where: { userId } }),
       this.prisma.userVocabulary.findMany({
         where: { userId, OR: [{ masteryScore: { lt: 50 } }, { isHard: true }] },
         include: { vocabulary: { select: { word: true } } },
         take: 5,
       }),
+      this.prisma.aIInteraction.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 4,
+        select: { input: true, output: true },
+      }),
     ]);
 
     const userCefr = profile?.englishLevel || CefrLevel.B1;
     const weakWordList = weakWords.map((w) => w.vocabulary.word);
 
+    // Build context history string for continuous conversation
+    const historyText = recentInteractions
+      .slice()
+      .reverse()
+      .map((item) => `Học viên: "${item.input.slice(0, 150)}"\nGia sư: "${item.output.slice(0, 200)}..."`)
+      .join('\n\n');
+
     // 2. Semantic Search: Find relevant knowledge context
     const contextResults = await this.semanticSearch(contextWord || userQuery, 3);
     const contextTerms = contextResults.map((v) => `${v.word} (${v.shortDefinition})`).join(', ');
 
-    // 3. AI Task Router: Decide prompt & strategy
-    const prompt = `You are LexiMind AI Personal English Tutor.
+    // Detect if user query is in Vietnamese or English
+    const isVietnameseQuery = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(userQuery);
+
+    // 3. AI Task Router: Build pedagogical prompt with bilingual matching & context history
+    const prompt = `You are LexiMind AI Personal English Tutor (An empathetic, expert bilingual ESL coach).
 Learner CEFR Level: ${userCefr}.
-Learner's current weak words: [${weakWordList.join(', ')}].
-Relevant knowledge graph context: [${contextTerms}].
-Learner query: "${userQuery}".
-Respond in clear, pedagogical Markdown with:
-1. Direct, concise answer adjusted for CEFR ${userCefr}.
-2. Practical business/everyday example with Vietnamese translation.
-3. Quick interactive follow-up check question to test the user's active recall.`;
+Learner Weak Words: [${weakWordList.join(', ')}].
+Knowledge Graph Context: [${contextTerms}].
+
+Conversation History (Context link with past interactions):
+${historyText || 'Chưa có lịch sử hội thoại trước đó.'}
+
+Current Learner Query: "${userQuery}"
+
+CRITICAL INSTRUCTIONS FOR RESPONSE:
+1. DYNAMIC BILINGUAL LANGUAGE MATCHING:
+   - If the learner query is in Vietnamese (or mixed), explain concepts, nuances, and rules in clear, encouraging Vietnamese, while teaching English words, phrases, and examples.
+   - If the learner query is in English, reply in English, BUT ALWAYS include Vietnamese translations for key vocabulary, collocations, and example sentences so learners at CEFR ${userCefr} fully understand.
+   - Link response naturally to previous context in history if relevant.
+
+2. MANDATORY PEDAGOGICAL STRUCTURE (Strict Markdown format):
+   ### 💡 [Tiêu đề phản hồi / Lời chào ngắn gọn phù hợp câu hỏi]
+
+   1. 📌 **Giải thích & Ngữ cảnh (Explanation):**
+      [Giải thích trực diện, đễ hiểu, phân tích bản chất từ/câu hỏi calibrated cho CEFR ${userCefr}]
+
+   2. 🇬🇧 🇻🇳 **Ví dụ thực tế song ngữ (Bilingual Examples):**
+      🇬🇧 *"English sentence example"*
+      🇻🇳 *"Dịch nghĩa tiếng Việt tự nhiên"*
+
+   3. 🔗 **Từ vựng & Cấu trúc liên quan (Related Vocabulary/Phrases):**
+      - **Vocabulary/Collocation**: Dịch nghĩa + cách dùng thực tế
+
+   4. 🎯 **Thử thách phản xạ (Active Recall Check):**
+      [Đặt 1 câu hỏi tương tác ngắn dạng trắc nghiệm A/B/C hoặc điền từ để người học đáp lại]`;
 
     // 4. Model Invocation (LLM with Gemini Fallback or Knowledge Fallback)
     let responseText = '';
@@ -270,29 +310,60 @@ Respond in clear, pedagogical Markdown with:
     }
 
     if (!responseText) {
-      // High-grade pedagogical response generated by LexiMind Knowledge Engine
-      const targetTerm = contextResults[0]?.word || contextWord || 'từ vựng';
+      // High-grade dynamic pedagogical response generated by LexiMind Knowledge Engine
+      const targetTerm = contextResults[0]?.word || contextWord || userQuery.split(' ')[0] || 'vocabulary';
       const targetMeaning = contextResults[0]?.shortDefinition || 'ngữ nghĩa liên quan';
 
-      responseText = `### 💡 Hướng dẫn học tập từ Gia sư LexiMind AI (Trình độ: **${userCefr}**)
+      if (isVietnameseQuery) {
+        responseText = `### 💡 Hướng dẫn từ Gia sư LexiMind AI (Trình độ: **${userCefr}**)
 
-Chào bạn! Dựa trên hồ sơ học tập và phân tích ngữ nghĩa cho câu hỏi của bạn:
+Chào bạn! Dựa trên câu hỏi của bạn và lịch sử học tập:
 
-1. **Giải thích trọng tâm:**
-   Từ vựng liên quan: **${targetTerm.toUpperCase()}** (*${targetMeaning}*).
-   Ở cấp độ **${userCefr}**, bạn nên chú trọng vào việc sử dụng tự nhiên trong văn cảnh giao tiếp và đàm phán công việc thay vì chỉ dịch nghĩa từng chữ.
+1. 📌 **Giải thích & Ngữ cảnh:**
+   Về câu hỏi **"${userQuery}"**, khái niệm chính liên quan là **${targetTerm.toUpperCase()}** (*${targetMeaning}*).
+   Ở trình độ **${userCefr}**, bạn nên chú trọng cách phối hợp từ (Collocation) và sắc thái giao tiếp tự nhiên thay vì dịch từng chữ.
 
-2. **Ví dụ thực tế song ngữ:**
-   🇬🇧 *"Our department agreed to **${targetTerm}** the contract terms to reach a mutual benefit."*
-   🇻🇳 *"Bộ phận của chúng tôi đã đồng ý xem xét các điều khoản hợp đồng để đạt được lợi ích chung."*
+2. 🇬🇧 🇻🇳 **Ví dụ thực tế song ngữ:**
+   🇬🇧 *"Our team agreed to **${targetTerm}** the key objectives to ensure long-term success."*
+   🇻🇳 *"Đội ngũ của chúng tôi đã đồng ý xem xét các mục tiêu chính để đảm bảo thành công lâu dài."*
 
-3. **Thử thách phản xạ nhanh (Active Recall Check):**
-   Nếu bạn muốn diễn đạt *"Chúng tôi đã tiến hành đàm phán một cách thiện chí"*, bạn sẽ kết hợp từ nào sau đây?
+3. 🔗 **Từ vựng & Cấu trúc liên quan:**
+   - **Reach a consensus**: Đạt được sự đồng thuận trong đàm phán.
+   - **In good faith**: Thiện chí (e.g. *negotiate in good faith*).
+
+4. 🎯 **Thử thách phản xạ (Active Recall Check):**
+   Nếu muốn nói *"Chúng tôi đàm phán trên tinh thần thiện chí"*, đáp án nào đúng nhất?
    - A) negotiate in good faith
    - B) make in good faith
    - C) build in good faith
 
-Hãy trả lời cho tôi để xem phản xạ của bạn nhé!`;
+Bạn hãy chọn A, B hoặc C để kiểm tra phản xạ nhé!`;
+      } else {
+        responseText = `### 💡 LexiMind AI Tutor Guide (Level: **${userCefr}**)
+
+Great question! Here is the detailed explanation for: **"${userQuery}"**
+
+1. 📌 **Explanation & Usage Context:**
+   The key concept here relates to **${targetTerm.toUpperCase()}** (*${targetMeaning}*).
+   At CEFR **${userCefr}**, focus on using this naturally in business and daily context.
+   *(Dịch tiếng Việt: Tại trình độ ${userCefr}, bạn hãy chú trọng sử dụng tự nhiên trong văn cảnh làm việc và giao tiếp).*
+
+2. 🇬🇧 🇻🇳 **Bilingual Real-World Example:**
+   🇬🇧 *"Our team agreed to **${targetTerm}** the key objectives to ensure long-term success."*
+   🇻🇳 *"Đội ngũ của chúng tôi đã đồng ý xem xét các mục tiêu chính để đảm bảo thành công lâu dài."*
+
+3. 🔗 **Related Vocabulary & Phrasal Patterns:**
+   - **Reach a consensus** *(Đạt được sự đồng thuận)*.
+   - **In good faith** *(Thiện chí trong hợp tác)*.
+
+4. 🎯 **Active Recall Challenge:**
+   How would you express *"We negotiated in good faith"*?
+   - A) negotiate in good faith
+   - B) make in good faith
+   - C) build in good faith
+
+Reply with your answer A, B, or C to test your recall!`;
+      }
     }
 
     // 5. AI Evaluation Step: Audit CEFR & quality
