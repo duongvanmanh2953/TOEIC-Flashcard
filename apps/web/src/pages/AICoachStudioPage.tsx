@@ -667,7 +667,7 @@ export const AICoachStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 flex flex-col min-h-[calc(100vh-6rem)]">
+    <div className="flex flex-col h-full min-h-0 flex-1 overflow-hidden space-y-2.5">
         {/* Top Product Header (Compact & Streamlined with Dismiss X Button) */}
         {showHeroBanner ? (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden pr-12 animate-fade-in shrink-0">
@@ -715,7 +715,7 @@ export const AICoachStudioPage: React.FC = () => {
         )}
 
         {/* 5 Core Feature Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 shrink-0">
           <button
             onClick={() => setActiveTab('voice')}
             className={`px-4 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-2 whitespace-nowrap shrink-0 ${
@@ -781,12 +781,12 @@ export const AICoachStudioPage: React.FC = () => {
         {/* TAB 1: VOICE COACH & REAL-TIME CONVERSATION              */}
         {/* ======================================================== */}
         {activeTab === 'voice' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0 overflow-hidden">
             {/* Left Controls & Coach Settings */}
-            <div className="space-y-4">
+            <div className="space-y-3 overflow-y-auto max-h-full pr-1 hidden lg:block">
               {/* Hands-Free 1:1 Call Banner Card */}
-              <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 border border-indigo-500/30 text-white shadow-xl relative overflow-hidden">
-                <div className="relative z-10 space-y-3">
+              <div className="p-4 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 border border-indigo-500/30 text-white shadow-xl relative overflow-hidden">
+                <div className="relative z-10 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-xs font-black tracking-wide uppercase text-indigo-300">
                       <Headphones className="w-4 h-4 text-emerald-400" />
@@ -805,7 +805,7 @@ export const AICoachStudioPage: React.FC = () => {
 
                   <button
                     onClick={toggleCallMode}
-                    className={`w-full py-3 px-4 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg ${
+                    className={`w-full py-2.5 px-4 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg ${
                       isCallActive
                         ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30 animate-pulse'
                         : 'btn-glass-primary shadow-indigo-600/30'
@@ -842,7 +842,7 @@ export const AICoachStudioPage: React.FC = () => {
               </div>
 
               {/* Personality Selector using CustomSelect */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
                 <CustomSelect
                   label="AI Coach Personality"
                   icon={Smile}
@@ -862,7 +862,7 @@ export const AICoachStudioPage: React.FC = () => {
               </div>
 
               {/* Bilingual Fallback Mode */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
                 <label className="text-xs font-extrabold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
                   <Globe className="w-4 h-4 text-indigo-500" />
                   <span>Bilingual Fallback (Cứu Cánh Song Ngữ)</span>
@@ -902,45 +902,77 @@ export const AICoachStudioPage: React.FC = () => {
                     <span className="block text-[9px] opacity-70">Native</span>
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Khi bạn bí từ hoặc chuyển sang tiếng Việt, AI tự động giải thích và hướng dẫn cách nói tự nhiên.
-                </p>
-              </div>
-
-              {/* Fearless Speaking Mode */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                <label className="text-xs font-extrabold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                  <Shield className="w-4 h-4 text-emerald-500" />
-                  <span>Fearless Speaking Mode (Xóa Bỏ Sợ Nói)</span>
-                </label>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold">Cấp độ {fearlessLevel}:</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">
-                    {fearlessLevel === 1 && 'Nói một mình (Tự luyện)'}
-                    {fearlessLevel === 2 && 'Nói cùng AI thân thiện'}
-                    {fearlessLevel === 3 && 'Tình huống Roleplay'}
-                    {fearlessLevel === 4 && 'Phản xạ áp lực cao'}
-                    {fearlessLevel === 5 && 'Câu hỏi bất ngờ'}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={5}
-                  value={fearlessLevel}
-                  onChange={(e) => setFearlessLevel(Number(e.target.value))}
-                  className="w-full accent-indigo-600"
-                />
               </div>
             </div>
 
             {/* Right Interactive Voice Chat Stage */}
-            <div className={`lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-300 ${
-              showHeroBanner ? 'min-h-[580px] h-[calc(100vh-17rem)]' : 'min-h-[660px] h-[calc(100vh-10.5rem)]'
-            }`}>
+            <div className="lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex-1 h-full min-h-0">
+              {/* Dedicated Sleek Chat Box Header */}
+              <div className="px-4 sm:px-6 py-3 bg-gradient-to-r from-slate-50 via-white to-indigo-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-rose-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                      <Sparkles className="w-5 h-5 text-amber-300" />
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 animate-pulse" title="AI Coach Sẵn Sàng" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate leading-tight">
+                        LexiMind AI Coach
+                      </h3>
+                      <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                        Live • {coachPersonality}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      Gia sư đàm thoại & sửa lỗi ngữ cảnh thời gian thực
+                    </p>
+                  </div>
+                </div>
+
+                {/* Header Action Controls */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={toggleCallMode}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs ${
+                      isCallActive
+                        ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                        : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+                    }`}
+                    title={isCallActive ? 'Dừng cuộc gọi thoại' : 'Bật đàm thoại giọng nói 1:1'}
+                  >
+                    {isCallActive ? <PhoneOff className="w-3.5 h-3.5" /> : <PhoneCall className="w-3.5 h-3.5 text-emerald-500" />}
+                    <span className="hidden sm:inline">{isCallActive ? 'Dừng Gọi' : 'Gọi 1:1'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Bạn có muốn làm mới cuộc trò chuyện này?')) {
+                        setMessages([
+                          {
+                            id: 'welcome-' + Date.now(),
+                            role: 'assistant',
+                            content: "Hello! I'm your AI Personal English Coach. What would you like to practice now? Feel free to speak in English or Vietnamese!",
+                            viTranslation: 'Xin chào! Tôi là Gia sư AI. Bạn muốn luyện tập chủ đề gì bây giờ?',
+                            timestamp: new Date(),
+                          },
+                        ]);
+                      }
+                    }}
+                    className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition"
+                    title="Làm mới cuộc trò chuyện"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
               {/* Call Mode Status Bar */}
               {isCallActive && (
-                <div className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-indigo-600 text-white flex items-center justify-between text-xs font-bold shadow-md">
+                <div className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-indigo-600 text-white flex items-center justify-between text-xs font-bold shadow-md shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
                     <span>Cuộc gọi 1:1 Đang Hoạt Động (Rảnh tay, không cần bấm gửi)</span>

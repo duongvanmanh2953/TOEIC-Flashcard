@@ -199,9 +199,10 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
                   <button
                     onClick={() => handlePlayAudio(cleanVi, 'vi-VN')}
                     className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-xs"
+                    title="Đọc chuẩn giọng Tiếng Việt (Ngọc Huyền 2.0)"
                   >
                     <Volume2 className="w-3 h-3 text-emerald-200" />
-                    <span>Đọc TV</span>
+                    <span>Đọc TV (Ngọc Huyền 2.0)</span>
                   </button>
                 </div>
                 <p className="text-xs sm:text-sm font-medium text-emerald-950 dark:text-emerald-100 leading-relaxed">

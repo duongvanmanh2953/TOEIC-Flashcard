@@ -55,6 +55,7 @@ export const AppShell: React.FC = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
   const location = useLocation();
+  const isFullHeightChat = location.pathname.startsWith('/coach') || location.pathname.startsWith('/ai-tutor');
 
   // Auto-close mobile drawer whenever route changes (Requirement 3)
   useEffect(() => {
@@ -541,9 +542,9 @@ export const AppShell: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-0 relative z-10">
+      <div className={`flex-1 flex flex-col min-w-0 relative z-10 ${isFullHeightChat ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
         {/* Mobile Header — Sticky fixed at top */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors">
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors shrink-0">
           <div className="flex items-center gap-2.5">
             <img
               src="/vocabflow-logo-256.png"
@@ -657,7 +658,7 @@ export const AppShell: React.FC = () => {
         )}
 
         {/* Desktop Top Header Bar — Sticky fixed at top, balanced & polished */}
-        <header className="hidden lg:flex items-center justify-between px-4 lg:px-6 xl:px-8 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors">
+        <header className="hidden lg:flex items-center justify-between px-4 lg:px-6 xl:px-8 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors shrink-0">
           <div className="flex items-center gap-2.5 shrink-0">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-xs shadow-emerald-500/50" />
             <span className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-tight">
@@ -713,8 +714,15 @@ export const AppShell: React.FC = () => {
           </div>
         </header>
 
-        {/* Routed Pages Container — Full Width & Space-Optimized */}
-        <main data-scroll-container="true" className="flex-1 p-3 sm:p-5 lg:p-6 w-full max-w-[1680px] mx-auto">
+        {/* Routed Pages Container — Space-Optimized: tight padding for chat, standard for other pages */}
+        <main
+          data-scroll-container="true"
+          className={`flex-1 w-full max-w-[1680px] mx-auto min-h-0 ${
+            isFullHeightChat
+              ? 'flex flex-col overflow-hidden p-2 sm:p-3 lg:px-4 lg:py-2.5 pb-16 lg:pb-2.5'
+              : 'p-3 sm:p-5 lg:p-6'
+          }`}
+        >
           <Outlet />
         </main>
 

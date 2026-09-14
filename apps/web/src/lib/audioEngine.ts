@@ -336,11 +336,15 @@ class AudioEngine {
         if (lang.startsWith('vi')) {
           preferredVoice = voices.find(
             (v) =>
-              v.lang.toLowerCase().startsWith('vi') ||
-              v.name.toLowerCase().includes('vietnam') ||
+              v.name.toLowerCase().includes('ngọc huyền') ||
+              v.name.toLowerCase().includes('ngoc huyen') ||
+              v.name.toLowerCase().includes('huyen 2.0') ||
+              v.name.toLowerCase().includes('huyen') ||
               v.name.toLowerCase().includes('hoaimy') ||
               v.name.toLowerCase().includes('linh') ||
-              v.name.toLowerCase().includes('mai')
+              v.name.toLowerCase().includes('mai') ||
+              v.name.toLowerCase().includes('vietnam') ||
+              v.lang.toLowerCase().startsWith('vi')
           );
         } else {
           preferredVoice = voices.find(
