@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateDeckDto, CreateWordItemDto } from './dto/create-deck.dto';
+import { CreateDeckDto, CreateWordItemDto, SyncCloudDto } from './dto/create-deck.dto';
 import { CefrLevel, ModerationStatus, VocabStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class CommunityService {
@@ -28,7 +29,7 @@ export class CommunityService {
       where.cefrLevel = cefrLevel;
     }
 
-    return this.prisma.communityDeck.findMany({
+    const decks = await this.prisma.communityDeck.findMany({
       where,
       include: {
         author: {
@@ -43,9 +44,15 @@ export class CommunityService {
       },
       orderBy: [{ cloneCount: 'desc' }, { createdAt: 'desc' }],
     });
+
+    // Never expose passwordHash to public clients
+    return decks.map(({ passwordHash, ...rest }) => ({
+      ...rest,
+      hasPassword: rest.isProtected,
+    }));
   }
 
-  async getDeckDetails(id: string) {
+  async getDeckDetails(id: string, requesterId?: string) {
     const deck = await this.prisma.communityDeck.findUnique({
       where: { id },
       include: {
@@ -63,7 +70,72 @@ export class CommunityService {
       throw new NotFoundException('Community Deck not found');
     }
 
-    return deck;
+    const { passwordHash, ...safeDeck } = deck;
+    return {
+      ...safeDeck,
+      hasPassword: deck.isProtected,
+    };
+  }
+
+  async unlockDeck(id: string, password?: string) {
+    const deck = await this.prisma.communityDeck.findUnique({
+      where: { id },
+      include: {
+        author: {
+          select: { id: true, displayName: true, avatar: true },
+        },
+        words: true,
+        _count: {
+          select: { words: true, clones: true },
+        },
+      },
+    });
+
+    if (!deck) {
+      throw new NotFoundException('Community Deck not found');
+    }
+
+    if (deck.isProtected) {
+      if (!password || !deck.passwordHash) {
+        throw new UnauthorizedException('Mật khẩu mở khóa không được để trống.');
+      }
+      const isMatch = await bcrypt.compare(password, deck.passwordHash);
+      if (!isMatch) {
+        throw new UnauthorizedException('Mật khẩu kho từ không chính xác!');
+      }
+    }
+
+    const { passwordHash, ...safeDeck } = deck;
+    return {
+      success: true,
+      message: 'Mở khóa kho từ thành công!',
+      deck: {
+        ...safeDeck,
+        hasPassword: deck.isProtected,
+      },
+    };
+  }
+
+  async getMyDecks(userId: string) {
+    const decks = await this.prisma.communityDeck.findMany({
+      where: { userId },
+      include: {
+        author: {
+          select: { id: true, displayName: true, avatar: true },
+        },
+        words: true,
+        _count: {
+          select: { words: true, clones: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Never expose passwordHash
+    return decks.map(({ passwordHash, ...rest }) => ({
+      ...rest,
+      hasPassword: rest.isProtected,
+    }));
   }
 
   async createDeck(userId: string, dto: CreateDeckDto) {
@@ -75,7 +147,11 @@ export class CommunityService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     const status = user?.role === 'ADMIN' ? ModerationStatus.APPROVED : ModerationStatus.PENDING;
 
-    return this.prisma.communityDeck.create({
+    // Secure password hashing
+    const isProtected = Boolean(dto.password && dto.password.trim().length > 0);
+    const passwordHash = isProtected ? await bcrypt.hash(dto.password!.trim(), 10) : null;
+
+    const created = await this.prisma.communityDeck.create({
       data: {
         userId,
         title: dto.title,
@@ -83,6 +159,8 @@ export class CommunityService {
         category: dto.category || 'General',
         cefrLevel: dto.cefrLevel || CefrLevel.B2,
         isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
+        isProtected,
+        passwordHash,
         status,
         words: {
           create: dto.words.map((w) => ({
@@ -100,9 +178,15 @@ export class CommunityService {
         words: true,
       },
     });
+
+    const { passwordHash: _removed, ...safeDeck } = created;
+    return {
+      ...safeDeck,
+      hasPassword: safeDeck.isProtected,
+    };
   }
 
-  async cloneDeck(userId: string, deckId: string) {
+  async cloneDeck(userId: string, deckId: string, password?: string) {
     const deck = await this.prisma.communityDeck.findUnique({
       where: { id: deckId },
       include: { words: true },
@@ -110,6 +194,20 @@ export class CommunityService {
 
     if (!deck) {
       throw new NotFoundException('Deck not found');
+    }
+
+    // Verify password if deck is protected and user is not author
+    if (deck.isProtected && deck.userId !== userId) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN') {
+        if (!password || !deck.passwordHash) {
+          throw new UnauthorizedException('Kho từ này có mật khẩu bảo vệ. Vui lòng nhập mật khẩu để sao chép.');
+        }
+        const isMatch = await bcrypt.compare(password, deck.passwordHash);
+        if (!isMatch) {
+          throw new UnauthorizedException('Mật khẩu mở khóa kho từ không chính xác!');
+        }
+      }
     }
 
     // Clone words into Vocabulary and UserVocabulary
@@ -297,5 +395,47 @@ export class CommunityService {
       },
       orderBy: { lastReviewedAt: 'desc' },
     });
+  }
+
+  async syncCloud(userId: string, dto: SyncCloudDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { subscriptions: { include: { plan: true } } },
+    });
+
+    const hasActiveSubscription = user?.subscriptions?.some(
+      (s) =>
+        s.status === 'ACTIVE' &&
+        (s.plan?.tier === 'PLUS' || s.plan?.tier === 'PRO' || (s.plan?.tier as string) === 'ENTERPRISE')
+    );
+
+    const isVip =
+      user &&
+      (user.role === 'ADMIN' ||
+        user.role === 'SUPER_ADMIN' ||
+        user.role === 'PREMIUM_USER' ||
+        (user as any).tier === 'PLUS' ||
+        (user as any).tier === 'PRO' ||
+        (user as any).tier === 'ENTERPRISE' ||
+        hasActiveSubscription);
+
+    if (!isVip) {
+      throw new ForbiddenException(
+        'Tính năng Lưu trữ & Đồng bộ Đám mây Không giới hạn dành riêng cho gói Trả phí (Plus/Pro). Dữ liệu hiện tại của bạn vẫn được lưu an toàn trên máy (IndexedDB).'
+      );
+    }
+
+    let syncedWordsCount = 0;
+    if (dto?.words && Array.isArray(dto.words) && dto.words.length > 0) {
+      const res = await this.batchAddWords(userId, dto.words);
+      syncedWordsCount = res.importedCount;
+    }
+
+    return {
+      success: true,
+      message: `Đồng bộ Đám mây thành công cho tài khoản ${user.displayName || user.email}!`,
+      syncedWordsCount,
+      syncedAt: new Date(),
+    };
   }
 }

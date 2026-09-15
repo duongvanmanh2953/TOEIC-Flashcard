@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
+import { idbSaveWords, idbGetWords } from '../lib/idb';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
@@ -21,6 +23,11 @@ import {
   ArrowRight,
   Heart,
   Tag,
+  CloudUpload,
+  Crown,
+  HardDrive,
+  RefreshCw,
+  CheckCircle,
 } from 'lucide-react';
 import {
   downloadVocabularyTemplate,
@@ -30,11 +37,17 @@ import {
 
 export const MyWordBankPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, isGuest, promptLogin } = useAuth();
   const [words, setWords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'LEARNING' | 'MASTERED' | 'FAVORITES'>('ALL');
   const [topicFilter, setTopicFilter] = useState('ALL');
   const [search, setSearch] = useState('');
+
+  // VIP Cloud Sync State
+  const [showVipModal, setShowVipModal] = useState(false);
+  const [syncingCloud, setSyncingCloud] = useState(false);
+  const [cloudSyncMsg, setCloudSyncMsg] = useState<string | null>(null);
 
   // Favorites state
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
@@ -69,15 +82,64 @@ export const MyWordBankPage: React.FC = () => {
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isVip = Boolean(
+    user &&
+      (user.role === 'ADMIN' ||
+        user.role === 'SUPER_ADMIN' ||
+        user.role === 'PREMIUM_USER' ||
+        user.tier === 'PLUS' ||
+        user.tier === 'PRO' ||
+        user.subscription?.tier === 'PLUS' ||
+        user.subscription?.tier === 'PRO')
+  );
+
   const fetchMyWords = async () => {
     setLoading(true);
     try {
       const res: any = await api.get(`/community/my-words?filter=${filter}`);
-      setWords(res?.data || res || []);
+      const data = res?.data || res || [];
+      setWords(data);
+      if (Array.isArray(data) && data.length > 0) {
+        idbSaveWords(data);
+      }
     } catch (err) {
-      console.error('Failed to fetch personal word bank', err);
+      console.error('Failed to fetch personal word bank from network, reading from IndexedDB offline cache', err);
+      const cached = await idbGetWords();
+      if (cached && cached.length > 0) {
+        setWords(cached);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncCloud = async () => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để sử dụng tính năng Lưu trữ & Đồng bộ Đám mây');
+      return;
+    }
+    if (!isVip) {
+      setShowVipModal(true);
+      return;
+    }
+    setSyncingCloud(true);
+    try {
+      const wordsToSync = words
+        .map((item) => ({
+          word: item.vocabulary?.word || '',
+          phonetic: item.vocabulary?.phonetic || '',
+          meaning: item.vocabulary?.shortDefinition || item.vocabulary?.definition || '',
+          example: item.vocabulary?.examples?.[0]?.sentence || '',
+        }))
+        .filter((w) => w.word && w.meaning);
+
+      const res: any = await api.post('/community/sync-cloud', { words: wordsToSync });
+      setCloudSyncMsg(res?.message || 'Đã đồng bộ toàn bộ kho từ vựng lên Cloud an toàn!');
+      setTimeout(() => setCloudSyncMsg(null), 5000);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Lỗi khi đồng bộ lên Cloud.');
+    } finally {
+      setSyncingCloud(false);
     }
   };
 
@@ -221,9 +283,15 @@ export const MyWordBankPage: React.FC = () => {
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1 border border-indigo-500/20">
-            <Bookmark className="w-3.5 h-3.5" />
-            <span>Personal Word Bank</span>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider border border-indigo-500/20">
+              <Bookmark className="w-3.5 h-3.5" />
+              <span>Personal Word Bank</span>
+            </div>
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
+              <HardDrive className="w-3 h-3 text-indigo-500" />
+              <span>Lưu an toàn máy (IndexedDB)</span>
+            </div>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-snug">
             Kho Từ Vựng Cá Nhân & Sổ Tay Từ
@@ -234,6 +302,22 @@ export const MyWordBankPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* VIP Cloud Sync Button */}
+          <button
+            onClick={handleSyncCloud}
+            disabled={syncingCloud}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-bold text-xs shadow-md hover:opacity-95 transition"
+          >
+            {syncingCloud ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : isVip ? (
+              <CloudUpload className="w-3.5 h-3.5" />
+            ) : (
+              <Crown className="w-3.5 h-3.5 text-amber-200" />
+            )}
+            <span>{syncingCloud ? 'Đang đồng bộ...' : isVip ? 'Đẩy lên Cloud' : 'Đẩy lên Cloud (VIP)'}</span>
+          </button>
+
           <button
             onClick={() => navigate('/review')}
             className="btn-glass-primary text-xs !py-2.5 gap-2 shadow-md"
@@ -265,6 +349,13 @@ export const MyWordBankPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {cloudSyncMsg && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-2 animate-in fade-in">
+          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{cloudSyncMsg}</span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -750,6 +841,78 @@ export const MyWordBankPage: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+      </ModalPortal>
+
+      {/* VIP CLOUD UPGRADE MODAL */}
+      <ModalPortal isOpen={showVipModal} onClose={() => setShowVipModal(false)}>
+        <div
+          className="m-auto relative max-w-lg w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shrink-0">
+              <Crown className="w-6 h-6" />
+            </div>
+            <button
+              onClick={() => setShowVipModal(false)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold transition"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-snug">
+              Lưu Trữ & Đồng Bộ Đám Mây Không Giới Hạn
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Tính năng Lưu trữ & Đồng bộ Đám mây Không giới hạn dành riêng cho gói Trả phí (Plus/Pro). Dữ liệu hiện tại của bạn vẫn được lưu an toàn trên máy (IndexedDB).
+            </p>
+          </div>
+
+          <div className="space-y-3 p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+              Đặc quyền gói Plus / Pro:
+            </h4>
+            <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Đồng bộ tức thì mọi từ vựng giữa PC, Laptop và Điện thoại.</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Sao lưu dữ liệu vĩnh viễn, không sợ mất từ khi dọn dẹp trình duyệt.</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Kho từ vựng cá nhân không giới hạn dung lượng lưu trữ.</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>AI Tutor phản xạ chuyên sâu và phát âm Microsoft Neural chân thực.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+            <button
+              onClick={() => {
+                setShowVipModal(false);
+                window.location.href = '/subscription';
+              }}
+              className="w-full btn-glass-primary !py-3 text-xs sm:text-sm font-bold gap-2 shadow-lg"
+            >
+              <Crown className="w-4 h-4 text-amber-300" />
+              <span>Nâng Cấp Gói VIP Ngay</span>
+            </button>
+            <button
+              onClick={() => setShowVipModal(false)}
+              className="w-full sm:w-auto px-4 py-3 rounded-2xl text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
+            >
+              Đóng
+            </button>
+          </div>
         </div>
       </ModalPortal>
     </div>

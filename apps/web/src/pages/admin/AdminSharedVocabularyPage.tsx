@@ -17,6 +17,7 @@ import {
   Check,
   X,
   FileText,
+  Lock,
 } from 'lucide-react';
 import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
@@ -41,6 +42,8 @@ interface SharedDeck {
   category: string;
   cefrLevel: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  isProtected?: boolean;
+  hasPassword?: boolean;
   cloneCount: number;
   createdAt: string;
   updatedAt: string;
@@ -282,11 +285,17 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                       className="hover:bg-slate-800/40 transition cursor-pointer group"
                     >
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-white group-hover:text-indigo-400 transition flex items-center gap-2">
+                        <div className="font-bold text-white group-hover:text-indigo-400 transition flex items-center gap-2 flex-wrap">
                           <span>{deck.title}</span>
                           {deck.category && (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/50">
                               {deck.category}
+                            </span>
+                          )}
+                          {(deck.isProtected || deck.hasPassword) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              <Lock className="w-3 h-3" />
+                              <span>Đã mã hóa bảo vệ</span>
                             </span>
                           )}
                         </div>
@@ -424,6 +433,22 @@ export const AdminSharedVocabularyPage: React.FC = () => {
 
             {/* Modal Body */}
             <div className="p-6 space-y-6 overflow-y-auto flex-1 text-xs">
+              {(selectedDeck.isProtected || selectedDeck.hasPassword) && (
+                <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-purple-900/50 text-purple-300 shrink-0">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-purple-200">
+                      Kho từ có mã bảo vệ (Đã mã hóa bcrypt một chiều)
+                    </p>
+                    <p className="text-[11px] text-purple-300/80 leading-relaxed">
+                      Quản trị viên có toàn quyền kiểm duyệt nội dung các thẻ từ, phiên âm và ví dụ câu bên dưới để thẩm định chất lượng. Mật khẩu cá nhân do tác giả thiết lập đã được mã hóa an toàn và hoàn toàn không thể xem được.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* AI Quality Evaluation Card */}
               <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 space-y-3">
                 <div className="flex items-center justify-between">

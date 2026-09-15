@@ -4,9 +4,25 @@
  */
 
 const DB_NAME = 'vocabflow_offline_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_VOCAB = 'vocabulary';
 const STORE_CACHE = 'api_cache';
+const STORE_DECKS = 'local_decks';
+
+export interface LocalDeck {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  cefrLevel?: string;
+  words: any[];
+  isProtected?: boolean;
+  hasPassword?: boolean;
+  status?: string;
+  createdAt: number;
+  updatedAt: number;
+  isSyncedToCloud?: boolean;
+}
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -23,6 +39,9 @@ function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_CACHE)) {
         db.createObjectStore(STORE_CACHE, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(STORE_DECKS)) {
+        db.createObjectStore(STORE_DECKS, { keyPath: 'id' });
       }
     };
 
@@ -89,5 +108,42 @@ export async function idbGetCache<T = any>(key: string): Promise<T | null> {
     });
   } catch {
     return null;
+  }
+}
+
+export async function idbSaveLocalDeck(deck: LocalDeck): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_DECKS, 'readwrite');
+    const store = tx.objectStore(STORE_DECKS);
+    store.put(deck);
+  } catch (err) {
+    console.warn('IDB deck write failure:', err);
+  }
+}
+
+export async function idbGetLocalDecks(): Promise<LocalDeck[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_DECKS, 'readonly');
+      const store = tx.objectStore(STORE_DECKS);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function idbDeleteLocalDeck(id: string): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_DECKS, 'readwrite');
+    const store = tx.objectStore(STORE_DECKS);
+    store.delete(id);
+  } catch (err) {
+    console.warn('IDB deck delete failure:', err);
   }
 }

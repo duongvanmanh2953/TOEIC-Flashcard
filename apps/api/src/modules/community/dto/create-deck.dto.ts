@@ -66,9 +66,33 @@ export class CreateDeckDto {
   @IsBoolean()
   isPublic?: boolean = true;
 
+  @ApiPropertyOptional({ example: 'Secret123!' })
+  @IsOptional()
+  @IsString()
+  password?: string;
+
   @ApiProperty({ type: [CreateWordItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateWordItemDto)
   words: CreateWordItemDto[];
+}
+
+export class UnlockDeckDto {
+  @ApiProperty({ example: 'Secret123!' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
+export class SyncCloudDto {
+  @ApiPropertyOptional({ type: [CreateWordItemDto] })
+  @IsOptional()
+  @IsArray()
+  words?: CreateWordItemDto[];
+
+  @ApiPropertyOptional({ type: [CreateDeckDto] })
+  @IsOptional()
+  @IsArray()
+  decks?: any[];
 }

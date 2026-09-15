@@ -29,6 +29,7 @@ enum CefrLevel {
   B2
   C1
   C2
+  ALL
 }
 
 enum VocabStatus {
@@ -420,9 +421,11 @@ model CommunityDeck {
   description String?
   category    String           @default("General")
   cefrLevel   CefrLevel        @default(B1)
-  isPublic    Boolean          @default(true)
-  status      ModerationStatus @default(PENDING)
-  cloneCount  Int              @default(0)
+  isPublic     Boolean          @default(true)
+  status       ModerationStatus @default(PENDING)
+  isProtected  Boolean          @default(false)
+  passwordHash String?
+  cloneCount   Int              @default(0)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 

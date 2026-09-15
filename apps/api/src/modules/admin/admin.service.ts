@@ -707,7 +707,7 @@ export class AdminService {
   // =========================================================================
 
   async getPendingDecks() {
-    return this.prisma.communityDeck.findMany({
+    const decks = await this.prisma.communityDeck.findMany({
       where: { status: ModerationStatus.PENDING },
       include: {
         author: { select: { id: true, displayName: true, email: true } },
@@ -715,6 +715,7 @@ export class AdminService {
       },
       orderBy: { createdAt: 'asc' },
     });
+    return decks.map(({ passwordHash, ...d }) => ({ ...d, hasPassword: d.isProtected }));
   }
 
   async moderateDeck(deckId: string, action: 'APPROVE' | 'REJECT', actorId?: string) {
@@ -1150,8 +1151,10 @@ export class AdminService {
       if (missingExample > 0) flags.push(`MISSING_EX_${missingExample}`);
       if (missingPhonetic > 0) flags.push(`MISSING_IPA_${missingPhonetic}`);
 
+      const { passwordHash: _ph, ...deckWithoutPassword } = deck;
       return {
-        ...deck,
+        ...deckWithoutPassword,
+        hasPassword: deck.isProtected,
         qualityScore,
         flags,
       };

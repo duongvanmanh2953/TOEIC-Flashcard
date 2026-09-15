@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CommunityService } from './community.service';
-import { CreateDeckDto, CreateWordItemDto } from './dto/create-deck.dto';
+import { CreateDeckDto, CreateWordItemDto, UnlockDeckDto, SyncCloudDto } from './dto/create-deck.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -23,11 +23,26 @@ export class CommunityController {
     return this.communityService.getPublicDecks(search, category, cefrLevel);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('my-decks')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user personal decks with pending/approved/rejected status' })
+  getMyDecks(@CurrentUser('id') userId: string) {
+    return this.communityService.getMyDecks(userId);
+  }
+
   @Public()
   @Get('decks/:id')
   @ApiOperation({ summary: 'Get details and word list of a community deck' })
   getDeckDetails(@Param('id') id: string) {
     return this.communityService.getDeckDetails(id);
+  }
+
+  @Public()
+  @Post('decks/:id/unlock')
+  @ApiOperation({ summary: 'Unlock a protected community deck using its password' })
+  unlockDeck(@Param('id') id: string, @Body() dto: UnlockDeckDto) {
+    return this.communityService.unlockDeck(id, dto.password);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -42,8 +57,20 @@ export class CommunityController {
   @Post('decks/:id/clone')
   @ApiBearerAuth()
   @ApiOperation({ summary: '1-click Clone/Fork community deck into personal review bank' })
-  cloneDeck(@CurrentUser('id') userId: string, @Param('id') deckId: string) {
-    return this.communityService.cloneDeck(userId, deckId);
+  cloneDeck(
+    @CurrentUser('id') userId: string,
+    @Param('id') deckId: string,
+    @Body() body?: { password?: string },
+  ) {
+    return this.communityService.cloneDeck(userId, deckId, body?.password);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sync-cloud')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Sync offline/IndexedDB word bank and decks to cloud (VIP Plus/Pro)' })
+  syncCloud(@CurrentUser('id') userId: string, @Body() dto: SyncCloudDto) {
+    return this.communityService.syncCloud(userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)

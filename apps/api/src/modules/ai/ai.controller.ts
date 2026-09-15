@@ -42,6 +42,7 @@ export class AIController {
 
       // 1. High-Fidelity Microsoft Edge Neural Multilingual Male Voice (+25% Fast Speed)
       try {
+        // @ts-ignore
         const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts');
         const tts = new MsEdgeTTS();
 
