@@ -254,15 +254,17 @@ export class CommunityService {
       throw new BadRequestException('Words array is required');
     }
 
+    const validWords = words.filter((w) => w && w.word && w.meaning);
     let addedCount = 0;
-    for (const item of words) {
-      if (!item.word || !item.meaning) continue;
-      try {
-        await this.quickAddWord(userId, item);
-        addedCount++;
-      } catch (err) {
-        // Continue processing other items
-      }
+
+    // Execute in sub-batches of 25 for high performance without DB connection pool exhaustion
+    const SUB_BATCH_SIZE = 25;
+    for (let i = 0; i < validWords.length; i += SUB_BATCH_SIZE) {
+      const chunk = validWords.slice(i, i + SUB_BATCH_SIZE);
+      const results = await Promise.allSettled(
+        chunk.map((item) => this.quickAddWord(userId, item))
+      );
+      addedCount += results.filter((r) => r.status === 'fulfilled').length;
     }
 
     return {

@@ -90,62 +90,139 @@ export const downloadVocabularyTemplate = (format: 'xlsx' | 'csv' = 'xlsx') => {
  * Parses uploaded Excel or CSV file into structured ParsedWordItem array
  */
 export const parseVocabularyFile = async (file: File): Promise<ParsedWordItem[]> => {
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File vượt quá dung lượng tối đa 100MB (Kích thước file: ${(file.size / (1024 * 1024)).toFixed(1)}MB). Vui lòng chọn file nhỏ hơn.`);
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onload = (e) => {
       try {
-        const buffer = e.target?.result;
-        const workbook = XLSX.read(buffer, { type: 'binary' });
+        const buffer = e.target?.result as ArrayBuffer;
+        if (!buffer) {
+          throw new Error('Không thể đọc dữ liệu từ file.');
+        }
+
+        const workbook = XLSX.read(buffer, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
+        if (!firstSheetName) {
+          throw new Error('File Excel/CSV không có worksheet nào.');
+        }
+
         const worksheet = workbook.Sheets[firstSheetName];
         const rawData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
         if (!rawData || rawData.length === 0) {
-          throw new Error('File không chứa dòng dữ liệu nào.');
+          throw new Error('File rỗng hoặc không chứa dòng dữ liệu nào.');
         }
 
         const parsedWords: ParsedWordItem[] = [];
 
         for (const row of rawData) {
-          // Normalize row keys to match various header namings
           const keys = Object.keys(row);
+          if (keys.length === 0) continue;
+
           let word = '';
           let phonetic = '';
           let partOfSpeech = 'noun';
           let meaning = '';
           let example = '';
+          let exampleTranslation = '';
           let cefrLevel = 'B1';
           let topic = 'General';
+
+          let hasMatchedKeys = false;
 
           for (const key of keys) {
             const lowerKey = key.toLowerCase().trim();
             const val = String(row[key] || '').trim();
+            if (!val) continue;
 
-            if (lowerKey.includes('word') || lowerKey.includes('từ')) {
+            if (
+              lowerKey.includes('word') ||
+              lowerKey.includes('từ') ||
+              lowerKey.includes('vocab') ||
+              lowerKey.includes('term') ||
+              lowerKey.includes('tiếng anh') ||
+              lowerKey.includes('english')
+            ) {
               word = val;
-            } else if (lowerKey.includes('phonetic') || lowerKey.includes('phiên') || lowerKey.includes('ipa')) {
+              hasMatchedKeys = true;
+            } else if (
+              lowerKey.includes('phonetic') ||
+              lowerKey.includes('phiên') ||
+              lowerKey.includes('ipa') ||
+              lowerKey.includes('pronunciation')
+            ) {
               phonetic = val;
-            } else if (lowerKey.includes('part') || lowerKey.includes('loại') || lowerKey.includes('pos')) {
+            } else if (
+              lowerKey.includes('part') ||
+              lowerKey.includes('loại') ||
+              lowerKey.includes('pos') ||
+              lowerKey.includes('type')
+            ) {
               partOfSpeech = val;
-            } else if (lowerKey.includes('meaning') || lowerKey.includes('nghĩa') || lowerKey.includes('định nghĩa')) {
+            } else if (
+              lowerKey.includes('meaning') ||
+              lowerKey.includes('nghĩa') ||
+              lowerKey.includes('định nghĩa') ||
+              lowerKey.includes('definition') ||
+              lowerKey.includes('translation') ||
+              lowerKey.includes('tiếng việt') ||
+              lowerKey.includes('vietnamese')
+            ) {
               meaning = val;
-            } else if (lowerKey.includes('example') || lowerKey.includes('ví dụ') || lowerKey.includes('sentence')) {
+              hasMatchedKeys = true;
+            } else if (
+              lowerKey.includes('example translation') ||
+              lowerKey.includes('dịch ví dụ') ||
+              lowerKey.includes('nghĩa ví dụ')
+            ) {
+              exampleTranslation = val;
+            } else if (
+              lowerKey.includes('example') ||
+              lowerKey.includes('ví dụ') ||
+              lowerKey.includes('sentence')
+            ) {
               example = val;
-            } else if (lowerKey.includes('cefr') || lowerKey.includes('cấp độ') || lowerKey.includes('level')) {
+            } else if (
+              lowerKey.includes('cefr') ||
+              lowerKey.includes('cấp độ') ||
+              lowerKey.includes('level') ||
+              lowerKey.includes('trình độ')
+            ) {
               cefrLevel = val;
-            } else if (lowerKey.includes('topic') || lowerKey.includes('chủ đề') || lowerKey.includes('chủ de')) {
+            } else if (
+              lowerKey.includes('topic') ||
+              lowerKey.includes('chủ đề') ||
+              lowerKey.includes('category')
+            ) {
               topic = val;
             }
           }
 
-          if (word && meaning) {
+          // Fallback parsing if headers couldn't be matched by keywords
+          if (!hasMatchedKeys || !word || !meaning) {
+            const nonArrayValues = keys
+              .map((k) => String(row[k] || '').trim())
+              .filter((v) => v.length > 0);
+
+            if (nonArrayValues.length >= 2) {
+              word = word || nonArrayValues[0];
+              meaning = meaning || nonArrayValues[1];
+            }
+          }
+
+          if (word && meaning && word.toLowerCase() !== 'word' && word.toLowerCase() !== 'từ tiếng anh') {
             parsedWords.push({
               word,
               phonetic: phonetic || undefined,
               partOfSpeech: partOfSpeech || 'noun',
               meaning,
               example: example || undefined,
+              exampleTranslation: exampleTranslation || undefined,
               cefrLevel: cefrLevel || 'B1',
               topic: topic || 'General',
             });
@@ -153,7 +230,7 @@ export const parseVocabularyFile = async (file: File): Promise<ParsedWordItem[]>
         }
 
         if (parsedWords.length === 0) {
-          throw new Error('Không tìm thấy từ vựng hợp lệ. Hãy kiểm tra các cột Word và Meaning.');
+          throw new Error('Cấu trúc file không đúng định dạng. Cần có tối thiểu 2 cột chứa Từ tiếng Anh (Word) và Nghĩa tiếng Việt (Meaning).');
         }
 
         resolve(parsedWords);
@@ -163,9 +240,9 @@ export const parseVocabularyFile = async (file: File): Promise<ParsedWordItem[]>
     };
 
     reader.onerror = () => {
-      reject(new Error('Lỗi khi đọc file.'));
+      reject(new Error('Lỗi khi đọc file. Vui lòng thử lại.'));
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 };

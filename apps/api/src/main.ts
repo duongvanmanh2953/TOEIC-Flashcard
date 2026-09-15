@@ -23,9 +23,15 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 
+import { json, urlencoded } from 'express';
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  // Increase payload limit for batch imports up to 100MB
+  app.use(json({ limit: '100mb' }));
+  app.use(urlencoded({ limit: '100mb', extended: true }));
 
   const port = process.env.PORT || 4000;
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';

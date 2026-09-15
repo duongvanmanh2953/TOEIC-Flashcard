@@ -128,12 +128,15 @@ export const MyWordBankPage: React.FC = () => {
     }
   };
 
+  const [importProgressMsg, setImportProgressMsg] = useState<string | null>(null);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setSelectedFile(file);
     setParsingError(null);
+    setImportProgressMsg(null);
     setIsParsing(true);
 
     try {
@@ -151,12 +154,29 @@ export const MyWordBankPage: React.FC = () => {
     if (parsedWords.length === 0 || isImporting) return;
 
     setIsImporting(true);
-    try {
-      const res: any = await api.post('/community/words/batch-add', {
-        words: parsedWords,
-      });
+    setParsingError(null);
+    setImportProgressMsg(null);
 
-      setImportSuccessMsg(res?.message || `Đã nhập thành công ${parsedWords.length} từ vựng vào kho cá nhân!`);
+    try {
+      const CHUNK_SIZE = 500;
+      let totalImported = 0;
+
+      for (let i = 0; i < parsedWords.length; i += CHUNK_SIZE) {
+        const chunk = parsedWords.slice(i, i + CHUNK_SIZE);
+        const currentCount = Math.min(i + CHUNK_SIZE, parsedWords.length);
+        const percent = Math.round((currentCount / parsedWords.length) * 100);
+
+        setImportProgressMsg(`Đang nhập dữ liệu... (${currentCount}/${parsedWords.length} từ - ${percent}%)`);
+
+        const res: any = await api.post('/community/words/batch-add', {
+          words: chunk,
+        });
+
+        totalImported += res?.importedCount || chunk.length;
+      }
+
+      setImportProgressMsg(null);
+      setImportSuccessMsg(`Đã nạp thành công ${totalImported} từ vựng vào kho cá nhân của bạn!`);
       fetchMyWords();
 
       setTimeout(() => {
@@ -164,9 +184,10 @@ export const MyWordBankPage: React.FC = () => {
         setShowAddModal(false);
         setSelectedFile(null);
         setParsedWords([]);
-      }, 2000);
+      }, 2500);
     } catch (err: any) {
-      setParsingError(err.response?.data?.message || err.message || 'Lỗi khi nhập dữ liệu.');
+      setImportProgressMsg(null);
+      setParsingError(err.response?.data?.message || err.message || 'Lỗi khi nhập dữ liệu từ vựng.');
     } finally {
       setIsImporting(false);
     }
@@ -629,7 +650,7 @@ export const MyWordBankPage: React.FC = () => {
                     {selectedFile ? selectedFile.name : 'Bấm để chọn hoặc kéo thả file Excel / CSV vào đây'}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Hỗ trợ định dạng .xlsx, .xls, hoặc .csv (UTF-8)
+                    Hỗ trợ định dạng .xlsx, .xls, hoặc .csv UTF-8 (Tối đa 100MB)
                   </p>
                 </div>
               </div>
@@ -637,7 +658,14 @@ export const MyWordBankPage: React.FC = () => {
               {isParsing && (
                 <div className="p-3 text-center text-xs text-slate-500 font-semibold flex items-center justify-center gap-2">
                   <div className="w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin"></div>
-                  <span>Đang đọc và phân tích dữ liệu từ vựng...</span>
+                  <span>Đang tự động quét và kiểm tra cấu trúc dữ liệu từ vựng...</span>
+                </div>
+              )}
+
+              {importProgressMsg && (
+                <div className="p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-xs font-semibold flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin shrink-0"></div>
+                  <span>{importProgressMsg}</span>
                 </div>
               )}
 
