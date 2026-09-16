@@ -23,6 +23,7 @@ import {
 import { GlassCard } from '../components/common/GlassCard';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { useScrollLoad } from '../hooks/useScrollLoad';
 import {
   Bookmark,
   Plus,
@@ -141,10 +142,6 @@ export const MyWordBankPage: React.FC = () => {
       localStorage.setItem('leximind_word_view_mode', mode);
     } catch {}
   };
-
-  // Lazy loading count for smooth infinite list rendering
-  const [displayCount, setDisplayCount] = useState(24);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Favorites state
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
@@ -359,23 +356,7 @@ export const MyWordBankPage: React.FC = () => {
     localStorage.setItem('vocabflow_favorites', JSON.stringify(favoriteIds));
   }, [favoriteIds]);
 
-  // Auto Infinite Scroll observer for "All Words" tab
-  useEffect(() => {
-    const target = loadMoreRef.current;
-    if (!target) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setDisplayCount((prev) => prev + 24);
-        }
-      },
-      { threshold: 0.1, rootMargin: '300px' }
-    );
-
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, []);
 
   // Instant Native Browser Speech (0ms latency, zero slow-down)
   const handlePlayAudio = (text: string, e?: React.MouseEvent) => {
@@ -448,6 +429,19 @@ export const MyWordBankPage: React.FC = () => {
       return matchesSearch && matchesCat;
     });
   }, [deckListWithStats, deckSearch, deckCategoryFilter]);
+
+  // Infinite Scroll & Lazy Loading for Decks (Smooth 0ms FPS)
+  const {
+    visibleItems: visibleDecks,
+    hasMore: hasMoreDecks,
+    isLoadingMore: isLoadingMoreDecks,
+    sentinelRef: decksSentinelRef,
+  } = useScrollLoad({
+    items: filteredDecks,
+    initialBatch: 12,
+    batchSize: 12,
+    resetDependencies: [deckSearch, deckCategoryFilter],
+  });
 
   // Create Deck
   const handleConfirmCreateDeck = async (e: React.FormEvent) => {
@@ -843,6 +837,19 @@ export const MyWordBankPage: React.FC = () => {
       return (b.createdAt || 0) - (a.createdAt || 0);
     });
   }, [wordsInSelectedDeck, deckWordSearch, deckWordTopicFilter, deckWordStatusFilter, deckWordSort, favoriteIds]);
+
+  // Infinite Scroll & Lazy Loading for Words Inside Deck (Eliminates lag for 500-1000 word decks)
+  const {
+    visibleItems: visibleWordsInDeck,
+    hasMore: hasMoreWordsInDeck,
+    isLoadingMore: isLoadingMoreWordsInDeck,
+    sentinelRef: wordsInDeckSentinelRef,
+  } = useScrollLoad({
+    items: filteredWordsInDeck,
+    initialBatch: 24,
+    batchSize: 24,
+    resetDependencies: [selectedDeck?.id, deckWordSearch, deckWordTopicFilter, deckWordStatusFilter, deckWordSort],
+  });
 
   // Add Word to Deck
   const handleOpenAddWord = () => {
@@ -1245,9 +1252,18 @@ export const MyWordBankPage: React.FC = () => {
     });
   }, [words, allWordSearch, allWordTopicFilter, allWordCefrFilter, allWordStatusFilter, favoriteIds]);
 
-  const visibleAllWords = useMemo(() => {
-    return allFilteredWords.slice(0, displayCount);
-  }, [allFilteredWords, displayCount]);
+  // Infinite Scroll & Lazy Loading for All Words Tab
+  const {
+    visibleItems: visibleAllWords,
+    hasMore: hasMoreAllWords,
+    isLoadingMore: isLoadingMoreAllWords,
+    sentinelRef: allWordsSentinelRef,
+  } = useScrollLoad({
+    items: allFilteredWords,
+    initialBatch: 24,
+    batchSize: 24,
+    resetDependencies: [allWordSearch, allWordTopicFilter, allWordCefrFilter, allWordStatusFilter],
+  });
 
   // =============================================================================
   // RENDER
@@ -1681,12 +1697,12 @@ export const MyWordBankPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
-                    {filteredDecks.map((deck) => {
+                    {visibleDecks.map((deck) => {
                       const isSelected = selectedDeckIds.includes(deck.id);
                       return (
                         <tr
                           key={deck.id}
-                          className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 ${
+                          className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 cv-auto-row ${
                             isSelected ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''
                           }`}
                         >
@@ -1863,14 +1879,14 @@ export const MyWordBankPage: React.FC = () => {
                GRID VIEW FOR DECKS (DƯỚI Ô)
                ================================================================= */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDecks.map((deck) => {
+              {visibleDecks.map((deck) => {
                 const isSelected = selectedDeckIds.includes(deck.id);
 
                 return (
                   <GlassCard
                     key={deck.id}
                     variant="liquid"
-                    className={`p-5 flex flex-col justify-between space-y-4 border transition duration-200 shadow-sm hover:shadow-md ${
+                    className={`p-5 flex flex-col justify-between space-y-4 border transition duration-200 shadow-sm hover:shadow-md cv-auto-card ${
                       isSelected
                         ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
                         : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40'
@@ -2090,6 +2106,24 @@ export const MyWordBankPage: React.FC = () => {
               })}
             </div>
           )}
+
+          {/* Infinite Scroll Sentinel for Decks */}
+          <div ref={decksSentinelRef} className="w-full py-4 flex flex-col items-center justify-center gap-1">
+            {isLoadingMoreDecks ? (
+              <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Đang cuộn tải thêm kho từ...</span>
+              </div>
+            ) : hasMoreDecks ? (
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                Đã hiển thị {visibleDecks.length} / {filteredDecks.length} kho • Cuộn xuống để xem tiếp
+              </span>
+            ) : filteredDecks.length > 12 ? (
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                ✓ Đã hiển thị toàn bộ {filteredDecks.length} kho từ vựng
+              </span>
+            ) : null}
+          </div>
         </div>
       )}
 
@@ -2364,7 +2398,7 @@ export const MyWordBankPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
-                    {filteredWordsInDeck.map((item) => {
+                    {visibleWordsInDeck.map((item) => {
                       const isSelected = selectedWordIds.includes(item.id);
                       const isFav = favoriteIds.includes(item.id) || item.isFavorite;
                       const realTopic = item.topic || item.vocabulary?.topic || 'General';
@@ -2373,7 +2407,7 @@ export const MyWordBankPage: React.FC = () => {
                       return (
                         <tr
                           key={item.id}
-                          className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 ${
+                          className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 cv-auto-row ${
                             isSelected ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''
                           }`}
                         >
@@ -2500,7 +2534,7 @@ export const MyWordBankPage: React.FC = () => {
                GRID VIEW FOR WORDS INSIDE DECK (DƯỚI Ô)
                ================================================================= */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredWordsInDeck.map((item) => {
+              {visibleWordsInDeck.map((item) => {
                 const isSelected = selectedWordIds.includes(item.id);
                 const isFav = favoriteIds.includes(item.id) || item.isFavorite;
                 // Topic is NEVER the deck name!
@@ -2511,7 +2545,7 @@ export const MyWordBankPage: React.FC = () => {
                   <GlassCard
                     key={item.id}
                     variant="liquid"
-                    className={`p-4 flex flex-col justify-between space-y-3 border transition duration-200 shadow-sm hover:shadow-md ${
+                    className={`p-4 flex flex-col justify-between space-y-3 border transition duration-200 shadow-sm hover:shadow-md cv-auto-card ${
                       isSelected
                         ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
                         : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40'
@@ -2640,6 +2674,24 @@ export const MyWordBankPage: React.FC = () => {
               })}
             </div>
           )}
+
+          {/* Infinite Scroll Sentinel for Words Inside Deck */}
+          <div ref={wordsInDeckSentinelRef} className="w-full py-5 flex flex-col items-center justify-center gap-1.5">
+            {isLoadingMoreWordsInDeck ? (
+              <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Đang cuộn tải thêm từ vựng...</span>
+              </div>
+            ) : hasMoreWordsInDeck ? (
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                Đã hiển thị {visibleWordsInDeck.length} / {filteredWordsInDeck.length} từ • Cuộn xuống để xem tiếp
+              </span>
+            ) : filteredWordsInDeck.length > 24 ? (
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                ✓ Đã hiển thị toàn bộ {filteredWordsInDeck.length} từ trong kho
+              </span>
+            ) : null}
+          </div>
         </div>
       )}
 
@@ -2828,7 +2880,7 @@ export const MyWordBankPage: React.FC = () => {
                       return (
                         <tr
                           key={item.id}
-                          className="hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150"
+                          className="hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 cv-auto-row"
                         >
                           <td className="py-3 px-3 text-center">
                             <button
@@ -2948,7 +3000,7 @@ export const MyWordBankPage: React.FC = () => {
                   <GlassCard
                     key={item.id}
                     variant="liquid"
-                    className="p-4 flex flex-col justify-between space-y-3 border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40 transition duration-200 shadow-sm hover:shadow-md"
+                    className="p-4 flex flex-col justify-between space-y-3 border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40 transition duration-200 shadow-sm hover:shadow-md cv-auto-card"
                   >
                     <div>
                       {/* Top Bar: Tags on Left, Fixed Action Icons (🔊 ♥) on Top-Right */}
@@ -3052,10 +3104,21 @@ export const MyWordBankPage: React.FC = () => {
           )}
 
           {/* Auto Infinite Scroll Target Anchor */}
-          <div ref={loadMoreRef} className="h-8 flex items-center justify-center">
-            {allFilteredWords.length > displayCount && (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
-            )}
+          <div ref={allWordsSentinelRef} className="w-full py-5 flex flex-col items-center justify-center gap-1.5">
+            {isLoadingMoreAllWords ? (
+              <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>Đang cuộn tải thêm từ vựng...</span>
+              </div>
+            ) : hasMoreAllWords ? (
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                Đã hiển thị {visibleAllWords.length} / {allFilteredWords.length} từ • Cuộn xuống để xem tiếp
+              </span>
+            ) : allFilteredWords.length > 24 ? (
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                ✓ Đã hiển thị toàn bộ {allFilteredWords.length} từ vựng
+              </span>
+            ) : null}
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { idbSaveLocalDeck, idbGetLocalDecks } from '../lib/idb';
+import { useScrollLoad } from '../hooks/useScrollLoad';
 import * as XLSX from 'xlsx';
 import {
   Users,
@@ -440,6 +441,57 @@ export const CommunityDecksPage: React.FC = () => {
     return !q || w.includes(q) || m.includes(q);
   });
 
+  // Infinite Scroll & Lazy Loading for Public Decks
+  const {
+    visibleItems: visibleDecks,
+    hasMore: hasMoreDecks,
+    isLoadingMore: isLoadingMoreDecks,
+    sentinelRef: decksSentinelRef,
+  } = useScrollLoad({
+    items: decks,
+    initialBatch: 12,
+    batchSize: 12,
+    resetDependencies: [search, category, cefrLevel],
+  });
+
+  // Infinite Scroll & Lazy Loading for My Decks
+  const {
+    visibleItems: visibleMyDecks,
+    hasMore: hasMoreMyDecks,
+    isLoadingMore: isLoadingMoreMyDecks,
+    sentinelRef: myDecksSentinelRef,
+  } = useScrollLoad({
+    items: myDecks,
+    initialBatch: 12,
+    batchSize: 12,
+  });
+
+  // Infinite Scroll & Lazy Loading for Words in Detail Modal
+  const {
+    visibleItems: visibleSelectedDeckWords,
+    hasMore: hasMoreSelectedDeckWords,
+    isLoadingMore: isLoadingMoreSelectedDeckWords,
+    sentinelRef: selectedDeckWordsSentinelRef,
+  } = useScrollLoad({
+    items: selectedDeck?.words || [],
+    initialBatch: 20,
+    batchSize: 20,
+    resetDependencies: [selectedDeck?.id],
+  });
+
+  // Infinite Scroll & Lazy Loading for My Words in Creation Modal
+  const {
+    visibleItems: visibleFilteredMyWords,
+    hasMore: hasMoreFilteredMyWords,
+    isLoadingMore: isLoadingMoreFilteredMyWords,
+    sentinelRef: filteredMyWordsSentinelRef,
+  } = useScrollLoad({
+    items: filteredMyWords,
+    initialBatch: 25,
+    batchSize: 25,
+    resetDependencies: [myWordsSearch],
+  });
+
   return (
     <div className="w-full space-y-6 animate-fade-in">
       {/* Header with CTA & Sync */}
@@ -577,15 +629,16 @@ export const CommunityDecksPage: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {decks.map((deck) => {
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {visibleDecks.map((deck) => {
                 const isProtected = deck.hasPassword || deck.isProtected;
                 const isUnlocked = unlockedDeckIds[deck.id] || (user && deck.userId === user.id);
                 return (
                   <GlassCard
                     key={deck.id}
                     variant="liquid"
-                    className="p-5 md:p-6 flex flex-col justify-between relative overflow-hidden"
+                    className="p-5 md:p-6 flex flex-col justify-between relative overflow-hidden cv-auto-card"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2.5">
@@ -655,7 +708,26 @@ export const CommunityDecksPage: React.FC = () => {
                 );
               })}
             </div>
-          )}
+
+            {/* Infinite Scroll Sentinel for Public Decks */}
+            <div ref={decksSentinelRef} className="w-full py-4 flex flex-col items-center justify-center gap-1">
+              {isLoadingMoreDecks ? (
+                <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Đang cuộn tải thêm bộ từ cộng đồng...</span>
+                </div>
+              ) : hasMoreDecks ? (
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  Đã hiển thị {visibleDecks.length} / {decks.length} bộ từ • Cuộn xuống để xem tiếp
+                </span>
+              ) : decks.length > 12 ? (
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  ✓ Đã hiển thị toàn bộ {decks.length} bộ từ vựng
+                </span>
+              ) : null}
+            </div>
+          </>
+        )}
         </>
       )}
 
@@ -684,14 +756,15 @@ export const CommunityDecksPage: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {myDecks.map((deck) => {
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {visibleMyDecks.map((deck) => {
                 const status = deck.status || 'PENDING';
                 return (
                   <GlassCard
                     key={deck.id}
                     variant="liquid"
-                    className="p-5 md:p-6 flex flex-col justify-between relative border border-slate-200/70 dark:border-slate-800/70"
+                    className="p-5 md:p-6 flex flex-col justify-between relative border border-slate-200/70 dark:border-slate-800/70 cv-auto-card"
                   >
                     <div>
                       {/* Status Badges Header */}
@@ -784,7 +857,26 @@ export const CommunityDecksPage: React.FC = () => {
                 );
               })}
             </div>
-          )}
+
+            {/* Infinite Scroll Sentinel for My Decks */}
+            <div ref={myDecksSentinelRef} className="w-full py-4 flex flex-col items-center justify-center gap-1">
+              {isLoadingMoreMyDecks ? (
+                <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Đang cuộn tải thêm bộ từ của bạn...</span>
+                </div>
+              ) : hasMoreMyDecks ? (
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  Đã hiển thị {visibleMyDecks.length} / {myDecks.length} bộ từ • Cuộn xuống để xem tiếp
+                </span>
+              ) : myDecks.length > 12 ? (
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  ✓ Đã hiển thị toàn bộ {myDecks.length} bộ từ vựng
+                </span>
+              ) : null}
+            </div>
+          </>
+        )}
         </>
       )}
 
@@ -816,11 +908,11 @@ export const CommunityDecksPage: React.FC = () => {
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Danh sách từ vựng ({selectedDeck.words?.length || 0} từ)
               </h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {selectedDeck.words?.map((w: any) => (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {visibleSelectedDeckWords.map((w: any) => (
                   <div
                     key={w.id}
-                    className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3 text-xs"
+                    className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3 text-xs cv-auto-row"
                   >
                     <div>
                       <div className="flex items-center gap-2">
@@ -833,6 +925,15 @@ export const CommunityDecksPage: React.FC = () => {
                     <SpeechButton text={w.word} />
                   </div>
                 ))}
+
+                {/* Infinite Scroll Sentinel for Words in Preview */}
+                <div ref={selectedDeckWordsSentinelRef} className="py-2 text-center">
+                  {isLoadingMoreSelectedDeckWords ? (
+                    <span className="text-[11px] text-indigo-500 animate-pulse font-medium">Đang tải thêm từ vựng...</span>
+                  ) : hasMoreSelectedDeckWords ? (
+                    <span className="text-[11px] text-slate-400">Cuộn để xem thêm từ...</span>
+                  ) : null}
+                </div>
               </div>
             </div>
 
@@ -1164,15 +1265,15 @@ export const CommunityDecksPage: React.FC = () => {
                         Chưa có từ vựng nào trong kho cá nhân. Bạn có thể chuyển sang tab "Nhập thêm thủ công" bên cạnh.
                       </div>
                     ) : (
-                      <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                        {filteredMyWords.map((item) => {
+                      <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                        {visibleFilteredMyWords.map((item) => {
                           const isChecked = selectedMyWordIds.includes(item.id);
                           const v = item.vocabulary;
                           return (
                             <div
                               key={item.id}
                               onClick={() => handleToggleWord(item.id)}
-                              className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition text-xs ${
+                              className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition text-xs cv-auto-row ${
                                 isChecked
                                   ? 'bg-indigo-50/80 dark:bg-indigo-950/50 border-indigo-500/40 text-indigo-900 dark:text-indigo-200'
                                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/60 hover:border-slate-300'
@@ -1198,6 +1299,15 @@ export const CommunityDecksPage: React.FC = () => {
                             </div>
                           );
                         })}
+
+                        {/* Infinite Scroll Sentinel for My Words selection */}
+                        <div ref={filteredMyWordsSentinelRef} className="py-2 text-center">
+                          {isLoadingMoreFilteredMyWords ? (
+                            <span className="text-[11px] text-indigo-500 animate-pulse font-medium">Đang tải thêm từ...</span>
+                          ) : hasMoreFilteredMyWords ? (
+                            <span className="text-[11px] text-slate-400">Cuộn để xem tiếp...</span>
+                          ) : null}
+                        </div>
                       </div>
                     )}
                   </div>

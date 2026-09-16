@@ -684,6 +684,20 @@ a.card-brand-effect {
   justify-content: center !important;
 }
 
+/* ==========================================================================
+   VIRTUAL SCROLL & OFFSCREEN LAYOUT PERFORMANCE (content-visibility)
+   ========================================================================== */
+.cv-auto-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 220px;
+}
+
+.cv-auto-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 54px;
+}
+
+
 
 /* ==========================================================================
    AUTHENTIC LIQUID GLASS METRIC CARDS — LUMINOUS, LIGHT-BEVELED & SPECUlAR

@@ -278,7 +278,7 @@ export const VocabularyExplorerPage: React.FC = () => {
               <div
                 key={item.id}
                 onClick={() => setSelectedWord(item)}
-                className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between group"
+                className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between group cv-auto-card"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
