@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,16 +10,21 @@ import {
   Filter,
   Layers,
   Heart,
+  RotateCcw,
+  Sliders,
+  Check,
+  AlertTriangle,
 } from 'lucide-react';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
-import { idbSetCache, idbGetCache, idbSaveWords, idbGetWords } from '../lib/idb';
+import { idbSetCache, idbGetCache, idbSaveWords } from '../lib/idb';
 import { audioEngine } from '../lib/audioEngine';
+import { useScrollLoad } from '../hooks/useScrollLoad';
 
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isGuest, promptLogin } = useAuth();
+  const { isGuest } = useAuth();
   const [words, setWords] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -27,74 +32,133 @@ export const VocabularyExplorerPage: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [scrollMode, setScrollMode] = useState<'infinite' | 'paged'>('infinite');
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
 
-  // Load Topics with IndexedDB caching
+  // Virtual batching on current words list
+  const { visibleItems, sentinelRef, displayCount } = useScrollLoad({
+    items: words,
+    initialBatch: 24,
+    batchSize: 18,
+    resetDependencies: [search, selectedCefr, selectedTopic, scrollMode],
+  });
+
+  // Load Topics from API with IndexedDB caching
   useEffect(() => {
     idbGetCache('vocab_topics').then((cachedTopics) => {
       if (cachedTopics) setTopics(cachedTopics);
     });
 
     api.get('/vocabulary/topics').then((res: any) => {
-      if (res?.success) {
+      if (res?.success && res.data) {
         setTopics(res.data);
         idbSetCache('vocab_topics', res.data, 24 * 3600 * 1000);
       }
-    });
+    }).catch(() => {});
   }, []);
 
-  // Fetch Vocabulary with search & filters (IndexedDB cache-first + live sync)
-  useEffect(() => {
-    const fetchVocab = async () => {
-      setLoading(true);
-      const cacheKey = `vocab_p${page}_${search}_${selectedCefr}_${selectedTopic}`;
+  // Fetch Vocabulary Page from real database
+  const fetchVocabPage = useCallback(
+    async (targetPage: number, append: boolean = false) => {
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+      setLoadError(null);
 
-      // 1. Check IndexedDB cache first for instant 0ms render
-      const cached = await idbGetCache(cacheKey);
-      if (cached) {
-        setWords(cached.items);
-        setTotalPages(cached.totalPages);
-        setLoading(false);
+      const cacheKey = `vocab_p${targetPage}_${search}_${selectedCefr}_${selectedTopic}`;
+
+      // Check cache only for initial page 1 to allow 0ms start
+      if (targetPage === 1 && !append) {
+        const cached = await idbGetCache(cacheKey);
+        if (cached?.items) {
+          setWords(cached.items);
+          setTotalPages(cached.totalPages || 1);
+          setTotalCount(cached.totalCount || cached.items.length);
+          setLoading(false);
+        }
       }
 
       try {
-        const params: any = { page, limit: 18 };
-        if (search) params.search = search;
+        const params: any = { page: targetPage, limit: 18 };
+        if (search.trim()) params.search = search.trim();
         if (selectedCefr) params.cefrLevel = selectedCefr;
         if (selectedTopic) params.topic = selectedTopic;
 
         const res: any = await api.get('/vocabulary', { params });
         if (res?.success) {
-          // Restore any guest favorites from localStorage
           const guestFavs: string[] = JSON.parse(
             localStorage.getItem('vocabflow_guest_favorites') || '[]'
           );
-          const mappedItems = (res.data?.items || res.data || []).map((w: any) => ({
+          const rawItems = res.data?.items || res.data || [];
+          const mappedItems = rawItems.map((w: any) => ({
             ...w,
             userProgress: {
               ...w.userProgress,
               isFavorite: w.userProgress?.isFavorite || guestFavs.includes(w.id),
             },
           }));
-          setWords(mappedItems);
-          const pages = res.meta?.pagination?.totalPages || 1;
+
+          const count = res.meta?.pagination?.total ?? res.data?.pagination?.total ?? mappedItems.length;
+          const pages = res.meta?.pagination?.totalPages ?? res.data?.pagination?.totalPages ?? 1;
+
+          setTotalCount(count);
           setTotalPages(pages);
 
-          // Save to IndexedDB asynchronously
-          idbSetCache(cacheKey, { items: mappedItems, totalPages: pages }, 30 * 60 * 1000);
-          idbSaveWords(mappedItems);
+          if (append) {
+            setWords((prev) => {
+              const existingIds = new Set(prev.map((i) => i.id));
+              const newItems = mappedItems.filter((i: any) => !existingIds.has(i.id));
+              return [...prev, ...newItems];
+            });
+          } else {
+            setWords(mappedItems);
+            idbSetCache(cacheKey, { items: mappedItems, totalPages: pages, totalCount: count }, 15 * 60 * 1000);
+            idbSaveWords(mappedItems);
+          }
+        } else {
+          setLoadError(res?.message || 'Không thể tải danh sách từ vựng.');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load vocabulary', err);
+        setLoadError(err?.response?.data?.message || 'Lỗi kết nối máy chủ khi tải từ vựng.');
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
-    };
+    },
+    [search, selectedCefr, selectedTopic]
+  );
 
-    const timer = setTimeout(fetchVocab, 200);
+  // Trigger initial fetch when search or filter parameters change
+  useEffect(() => {
+    setPage(1);
+    const timer = setTimeout(() => {
+      fetchVocabPage(1, false);
+    }, 250);
     return () => clearTimeout(timer);
-  }, [search, selectedCefr, selectedTopic, page]);
+  }, [fetchVocabPage]);
+
+  // Load next page in infinite scroll mode
+  const handleLoadNextPage = useCallback(() => {
+    if (page < totalPages && !loadingMore && !loading) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchVocabPage(nextPage, true);
+    }
+  }, [page, totalPages, loadingMore, loading, fetchVocabPage]);
+
+  // When virtual window expands to end of current words array in infinite mode, trigger next page
+  useEffect(() => {
+    if (scrollMode === 'infinite' && displayCount >= words.length && page < totalPages && !loadingMore && !loading) {
+      handleLoadNextPage();
+    }
+  }, [displayCount, words.length, page, totalPages, loadingMore, loading, scrollMode, handleLoadNextPage]);
 
   const playAudio = (url?: string, text?: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -108,73 +172,102 @@ export const VocabularyExplorerPage: React.FC = () => {
       const guestFavs: string[] = JSON.parse(
         localStorage.getItem('vocabflow_guest_favorites') || '[]'
       );
-      const targetWord = words.find((w) => w.id === wordId);
-      const isAlready = guestFavs.includes(wordId);
-      const updated = isAlready ? guestFavs.filter((id) => id !== wordId) : [...guestFavs, wordId];
+      const isFav = guestFavs.includes(wordId);
+      const updated = isFav ? guestFavs.filter((id) => id !== wordId) : [...guestFavs, wordId];
       localStorage.setItem('vocabflow_guest_favorites', JSON.stringify(updated));
 
       setWords((prev) =>
         prev.map((w) =>
           w.id === wordId
-            ? {
-                ...w,
-                userProgress: {
-                  ...w.userProgress,
-                  isFavorite: !isAlready,
-                },
-              }
-            : w,
-        ),
+            ? { ...w, userProgress: { ...w.userProgress, isFavorite: !isFav } }
+            : w
+        )
       );
-
-      promptLogin(`Lưu từ vựng "${targetWord?.word || ''}" vào mục Yêu thích ❤️`);
       return;
     }
 
     try {
-      await api.post(`/vocabulary/${wordId}/favorite`);
-      setWords((prev) =>
-        prev.map((w) =>
-          w.id === wordId
-            ? {
-                ...w,
-                userProgress: {
-                  ...w.userProgress,
-                  isFavorite: !w.userProgress?.isFavorite,
-                },
-              }
-            : w,
-        ),
-      );
+      const res: any = await api.post(`/vocabulary/${wordId}/favorite`);
+      if (res?.success) {
+        setWords((prev) =>
+          prev.map((w) =>
+            w.id === wordId
+              ? {
+                  ...w,
+                  userProgress: {
+                    ...w.userProgress,
+                    isFavorite: res.data?.isFavorite ?? !w.userProgress?.isFavorite,
+                  },
+                }
+              : w
+          )
+        );
+      }
     } catch (err) {
       console.error(err);
     }
   };
+
+  const itemsToRender = scrollMode === 'infinite' ? visibleItems : words;
 
   return (
     <div className="space-y-6">
       {/* Header with Flashcard Study CTA */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-snug">
-            Thư viện Từ vựng TOEIC & CEFR
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Khám phá 600+ từ vựng chuẩn hóa theo chủ đề thực chiến, phân tầng từ A2 đến C1
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-snug">
+              Thư viện Từ vựng TOEIC & CEFR
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-brand-500/[0.12] text-brand-600 dark:text-brand-300 border border-brand-500/20">
+              {totalCount.toLocaleString('vi-VN')} từ
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Kho dữ liệu chuẩn hóa phân tầng từ A2 đến C1, đồng bộ dữ liệu thật thời gian thực.
           </p>
         </div>
 
-        <button
-          onClick={() => navigate('/review' + (selectedTopic ? `?topic=${selectedTopic}` : ''))}
-          className="btn-glass-primary !shadow-none px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition self-start md:self-auto"
-        >
-          <Sparkles className="w-4 h-4 fill-white" />
-          <span>Học Flashcard {selectedTopic ? `Chủ đề ${selectedTopic}` : 'bộ từ này'}</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start md:self-auto">
+          {/* Scroll Mode Switcher */}
+          <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700 text-xs">
+            <button
+              onClick={() => setScrollMode('infinite')}
+              className={`px-3 py-1 rounded-lg font-bold transition ${
+                scrollMode === 'infinite'
+                  ? 'bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Cuộn vô tận
+            </button>
+            <button
+              onClick={() => {
+                setScrollMode('paged');
+                fetchVocabPage(page, false);
+              }}
+              className={`px-3 py-1 rounded-lg font-bold transition ${
+                scrollMode === 'paged'
+                  ? 'bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Phân trang
+            </button>
+          </div>
+
+          <button
+            onClick={() => navigate('/review' + (selectedTopic ? `?topic=${selectedTopic}` : ''))}
+            className="btn-glass-primary !shadow-none px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition"
+          >
+            <Sparkles className="w-4 h-4 fill-white" />
+            <span>Ôn {selectedTopic ? `chủ đề ${selectedTopic}` : 'kho này'}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Quick Topic Filter Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+      {/* Dynamic Topic Filter Pills from Real Database */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
         <button
           onClick={() => {
             setSelectedTopic('');
@@ -183,25 +276,32 @@ export const VocabularyExplorerPage: React.FC = () => {
           className={`px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
             selectedTopic === ''
               ? 'bg-indigo-600 text-white shadow-xs'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          Tất cả chủ đề
+          Tất cả chủ đề ({totalCount})
         </button>
-        {['Business', 'Finance', 'Travel', 'Technology', 'Daily'].map((slug) => (
+        {topics.slice(0, 10).map((t) => (
           <button
-            key={slug}
+            key={t.id || t.slug}
             onClick={() => {
-              setSelectedTopic(slug);
+              setSelectedTopic(t.slug);
               setPage(1);
             }}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
-              selectedTopic === slug
+            className={`px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
+              selectedTopic === t.slug
                 ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
           >
-            {slug}
+            <span>{t.name}</span>
+            {t._count?.items !== undefined && (
+              <span className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                selectedTopic === t.slug ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+              }`}>
+                {t._count.items}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -231,10 +331,12 @@ export const VocabularyExplorerPage: React.FC = () => {
           }}
           options={[
             { value: '', label: 'Tất cả cấp độ CEFR' },
+            { value: 'A1', label: 'A1 — Căn bản', badge: 'A1' },
             { value: 'A2', label: 'A2 — Sơ cấp', badge: 'A2' },
             { value: 'B1', label: 'B1 — Trung cấp', badge: 'B1' },
             { value: 'B2', label: 'B2 — Trung cao cấp', badge: 'B2' },
             { value: 'C1', label: 'C1 — Nâng cao', badge: 'C1' },
+            { value: 'C2', label: 'C2 — Thành thạo', badge: 'C2' },
           ]}
           className="w-full sm:w-56 shrink-0"
         />
@@ -258,6 +360,22 @@ export const VocabularyExplorerPage: React.FC = () => {
         />
       </div>
 
+      {/* Error Message */}
+      {loadError && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>{loadError}</span>
+          </div>
+          <button
+            onClick={() => fetchVocabPage(page, false)}
+            className="px-3 py-1 rounded-lg bg-rose-500 text-white font-bold text-xs hover:bg-rose-600 transition"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+
       {/* Vocabulary Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-24">
@@ -270,9 +388,9 @@ export const VocabularyExplorerPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {words.map((item) => {
+          {itemsToRender.map((item) => {
             const isFav = item.userProgress?.isFavorite;
-            const primaryMeaning = item.meanings[0]?.meaning || item.shortDefinition || item.definition;
+            const primaryMeaning = item.meanings?.[0]?.meaning || item.shortDefinition || item.definition || 'Nghĩa từ vựng';
 
             return (
               <div
@@ -284,7 +402,7 @@ export const VocabularyExplorerPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/30">
-                        {item.cefrLevel}
+                        {item.cefrLevel || 'B1'}
                       </span>
                       {item.partOfSpeech && (
                         <span className="text-xs tabular-nums text-slate-400">{item.partOfSpeech}</span>
@@ -317,7 +435,7 @@ export const VocabularyExplorerPage: React.FC = () => {
 
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
                   <span className="truncate max-w-[160px]">
-                    {item.topicItems[0]?.topic?.name || 'General Business'}
+                    {item.topicItems?.[0]?.topic?.name || item.topic || 'General Business'}
                   </span>
                   <SpeechButton text={item.word} showSlowOption={false} />
                 </div>
@@ -327,21 +445,52 @@ export const VocabularyExplorerPage: React.FC = () => {
         </div>
       )}
 
-      {/* Pagination Bar */}
-      {totalPages > 1 && (
+      {/* Infinite Scroll Sentinel & Loader */}
+      {scrollMode === 'infinite' && words.length > 0 && (
+        <div ref={sentinelRef} className="py-6 text-center text-xs text-slate-400">
+          {loadingMore ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+              <span>Đang tải thêm từ vựng...</span>
+            </div>
+          ) : page < totalPages ? (
+            <button
+              onClick={handleLoadNextPage}
+              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold transition"
+            >
+              Tải thêm từ vựng (Trang {page + 1}/{totalPages})
+            </button>
+          ) : (
+            <p className="text-slate-400">
+              ✨ Đã hiển thị toàn bộ {totalCount.toLocaleString('vi-VN')} từ vựng.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Pagination Bar (When paged mode is active) */}
+      {scrollMode === 'paged' && totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-6">
           <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => {
+              const prev = Math.max(1, page - 1);
+              setPage(prev);
+              fetchVocabPage(prev, false);
+            }}
             disabled={page === 1}
             className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-40 text-xs font-bold"
           >
             Trang trước
           </button>
           <span className="text-xs font-bold text-slate-500 px-3">
-            Trang {page} / {totalPages}
+            Trang {page} / {totalPages} ({totalCount} từ)
           </span>
           <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => {
+              const next = Math.min(totalPages, page + 1);
+              setPage(next);
+              fetchVocabPage(next, false);
+            }}
             disabled={page === totalPages}
             className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-40 text-xs font-bold"
           >
@@ -354,51 +503,72 @@ export const VocabularyExplorerPage: React.FC = () => {
       <ModalPortal isOpen={Boolean(selectedWord)} onClose={() => setSelectedWord(null)}>
         {selectedWord && (
           <div
-            className="m-auto relative max-w-2xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+            className="m-auto relative max-w-2xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl max-h-[calc(100dvh-3rem)] sm:max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/30">
-                  {selectedWord.cefrLevel}
+                  {selectedWord.cefrLevel || 'B1'}
                 </span>
-                <span className="text-xs tabular-nums text-slate-400">{selectedWord.partOfSpeech}</span>
+                <span className="text-xs tabular-nums text-slate-400">{selectedWord.partOfSpeech || 'n.'}</span>
               </div>
               <button
                 onClick={() => setSelectedWord(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-bold transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline justify-between gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold">{selectedWord.word}</h2>
-                <p className="text-sm tabular-nums text-slate-400">{selectedWord.pronunciation}</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{selectedWord.word}</h2>
+                {selectedWord.pronunciation && (
+                  <p className="text-sm tabular-nums text-slate-400 mt-0.5">{selectedWord.pronunciation}</p>
+                )}
               </div>
               <SpeechButton text={selectedWord.word} showSlowOption={true} />
             </div>
 
             <div className="space-y-3 pt-2">
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+              {/* Vietnamese Primary Meaning */}
+              <div className="p-4 rounded-2xl bg-emerald-500/[0.08] dark:bg-emerald-500/10 border border-emerald-500/20">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-1">
                   Nghĩa Tiếng Việt
                 </h4>
-                <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
-                  {selectedWord.meaningVi}
+                <p className="text-base sm:text-lg font-extrabold text-emerald-600 dark:text-emerald-400 leading-snug">
+                  {selectedWord.meaning ||
+                    selectedWord.shortDefinition ||
+                    selectedWord.definition ||
+                    selectedWord.meanings?.[0]?.meaning ||
+                    'Nghĩa từ vựng'}
                 </p>
               </div>
 
-              {selectedWord.examples && selectedWord.examples.length > 0 && (
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1">
+              {/* English Definition if distinct */}
+              {selectedWord.definition &&
+                selectedWord.definition !== (selectedWord.shortDefinition || selectedWord.meanings?.[0]?.meaning) && (
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Định Nghĩa Chi Tiết
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                      {selectedWord.definition}
+                    </p>
+                  </div>
+                )}
+
+              {/* Example sentence & translation */}
+              {(selectedWord.examples?.length > 0 || selectedWord.example) && (
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Ví Dụ Ngữ Cảnh</h4>
-                  <p className="text-xs sm:text-sm font-medium italic text-slate-700 dark:text-slate-300">
-                    "{selectedWord.examples[0].sentence}"
+                  <p className="text-xs sm:text-sm font-medium italic text-slate-700 dark:text-slate-200">
+                    "{selectedWord.examples?.[0]?.sentence || selectedWord.example}"
                   </p>
-                  {selectedWord.examples[0].translation && (
-                    <p className="text-xs text-slate-500">
-                      🇻🇳 "{selectedWord.examples[0].translation}"
+                  {(selectedWord.examples?.[0]?.translation || selectedWord.exampleTranslation) && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      🇻🇳 "{selectedWord.examples?.[0]?.translation || selectedWord.exampleTranslation}"
                     </p>
                   )}
                 </div>
@@ -408,7 +578,7 @@ export const VocabularyExplorerPage: React.FC = () => {
             <button
               onClick={() => {
                 setSelectedWord(null);
-                window.location.href = `/ai-tutor?word=${selectedWord.word}`;
+                window.location.href = `/ai-tutor?word=${encodeURIComponent(selectedWord.word)}`;
               }}
               className="btn-glass-primary w-full !py-3 text-xs gap-2"
             >

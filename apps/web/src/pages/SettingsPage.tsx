@@ -4,6 +4,7 @@ import { useTranslation } from '../i18n';
 import { GlassCard } from '../components/common/GlassCard';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { ToggleSwitch } from '../components/common/ToggleSwitch';
 import {
   Globe,
   Sun,
@@ -31,58 +32,94 @@ import {
   LogOut,
   ExternalLink,
   MessageCircle,
+  Layers,
+  LayoutGrid,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { user, theme, toggleTheme } = useAuth();
   const { locale, setLocale, t } = useTranslation();
 
+  // Navigation Sub-tabs for space optimization & scientific categorization
+  const [activeTab, setActiveTab] = useState<'all' | 'appearance' | 'audio_study' | 'security' | 'data'>('all');
+
   // 1. Giao diện settings
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>(() => {
-    return (localStorage.getItem('vocabflow_theme_mode') as any) || (localStorage.getItem('leximind_theme_mode') as any) || (theme || 'system');
+    return (
+      (localStorage.getItem('vocabflow_theme_mode') as any) ||
+      (localStorage.getItem('leximind_theme_mode') as any) ||
+      theme ||
+      'system'
+    );
   });
 
   const [accentColor, setAccentColor] = useState<'violet' | 'indigo' | 'emerald' | 'amber' | 'rose' | 'slate'>(() => {
-    return (localStorage.getItem('vocabflow_accent') as any) || (localStorage.getItem('leximind_accent') as any) || 'violet';
+    return (
+      (localStorage.getItem('vocabflow_accent') as any) ||
+      (localStorage.getItem('leximind_accent') as any) ||
+      'violet'
+    );
   });
 
   // 2. Phiên âm & Giọng đọc
   const [showPhonetic, setShowPhonetic] = useState<boolean>(() => {
-    return (localStorage.getItem('vocabflow_show_phonetic') || localStorage.getItem('leximind_show_phonetic')) !== 'false';
+    return (
+      (localStorage.getItem('vocabflow_show_phonetic') || localStorage.getItem('leximind_show_phonetic')) !== 'false'
+    );
   });
 
   const [voiceAccent, setVoiceAccent] = useState<'en-US' | 'en-GB' | 'en-AU'>(() => {
-    return (localStorage.getItem('vocabflow_voice') as any) || (localStorage.getItem('leximind_voice') as any) || 'en-US';
+    return (
+      (localStorage.getItem('vocabflow_voice') as any) ||
+      (localStorage.getItem('leximind_voice') as any) ||
+      'en-US'
+    );
   });
 
   const [voiceSpeed, setVoiceSpeed] = useState<number>(() => {
-    return parseFloat(localStorage.getItem('vocabflow_voice_speed') || localStorage.getItem('leximind_voice_speed') || '1.0');
+    return parseFloat(
+      localStorage.getItem('vocabflow_voice_speed') || localStorage.getItem('leximind_voice_speed') || '1.0'
+    );
   });
 
   const [autoPlayAudio, setAutoPlayAudio] = useState<boolean>(() => {
-    return (localStorage.getItem('vocabflow_auto_audio') || localStorage.getItem('leximind_auto_audio')) === 'true';
+    return (
+      (localStorage.getItem('vocabflow_auto_audio') || localStorage.getItem('leximind_auto_audio')) === 'true'
+    );
   });
 
   // 3. Tùy chọn học
   const [showImages, setShowImages] = useState<boolean>(() => {
-    return (localStorage.getItem('vocabflow_show_images') || localStorage.getItem('leximind_show_images')) !== 'false';
+    return (
+      (localStorage.getItem('vocabflow_show_images') || localStorage.getItem('leximind_show_images')) !== 'false'
+    );
   });
 
   const [showExamples, setShowExamples] = useState<boolean>(() => {
-    return (localStorage.getItem('vocabflow_show_examples') || localStorage.getItem('leximind_show_examples')) !== 'false';
+    return (
+      (localStorage.getItem('vocabflow_show_examples') || localStorage.getItem('leximind_show_examples')) !== 'false'
+    );
   });
 
   const [autoAdvance, setAutoAdvance] = useState<boolean>(() => {
-    return (localStorage.getItem('vocabflow_auto_advance') || localStorage.getItem('leximind_auto_advance')) === 'true';
+    return (
+      (localStorage.getItem('vocabflow_auto_advance') || localStorage.getItem('leximind_auto_advance')) === 'true'
+    );
   });
 
   const [showSupportBtn, setShowSupportBtn] = useState<boolean>(() => {
-    return (localStorage.getItem('vocabflow_show_support_btn') || localStorage.getItem('leximind_show_support_btn')) !== 'false';
+    return (
+      (localStorage.getItem('vocabflow_show_support_btn') || localStorage.getItem('leximind_show_support_btn')) !==
+      'false'
+    );
   });
 
   // 4. Mục tiêu ngày
   const [dailyGoal, setDailyGoal] = useState<number>(() => {
-    return parseInt(localStorage.getItem('vocabflow_daily_goal') || localStorage.getItem('leximind_daily_goal') || '20', 10);
+    return parseInt(
+      localStorage.getItem('vocabflow_daily_goal') || localStorage.getItem('leximind_daily_goal') || '20',
+      10
+    );
   });
 
   // Notifications & Modals
@@ -126,10 +163,10 @@ export const SettingsPage: React.FC = () => {
         },
       };
 
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
       const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `vocabflow_export_${new Date().toISOString().split('T')[0]}.json`);
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `vocabflow_export_${new Date().toISOString().split('T')[0]}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -211,7 +248,7 @@ export const SettingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in pb-12">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
         <div>
@@ -223,7 +260,7 @@ export const SettingsPage: React.FC = () => {
             Cài Đặt & Tùy Chọn Trải Nghiệm
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-            Tùy biến giao diện, âm thanh, tùy chọn học từ và quản lý dữ liệu cá nhân theo ý bạn.
+            Tùy biến giao diện, âm thanh, tùy chọn học từ và bảo mật tài khoản cá nhân.
           </p>
         </div>
 
@@ -232,657 +269,656 @@ export const SettingsPage: React.FC = () => {
           className="self-start sm:self-auto inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-glass-primary !shadow-none font-bold text-xs transition"
         >
           {savedToast ? <Check className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-          <span>{savedToast ? 'Đã lưu tất cả thiết lập!' : 'Lưu tất cả thay đổi'}</span>
+          <span>{savedToast ? 'Đã lưu thiết lập!' : 'Lưu tất cả thay đổi'}</span>
         </button>
       </div>
 
+      {/* Action Success Toast Banner */}
       {actionSuccessMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2.5 animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 shrink-0" />
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center gap-2.5 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{actionSuccessMsg}</span>
         </div>
       )}
 
-      {/* 1. GIAO DIỆN */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-          <Palette className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-              Giao Diện
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Cấu hình ngôn ngữ, chế độ hiển thị sáng/tối và bảng màu chủ đạo.
-            </p>
-          </div>
-        </div>
+      {/* Quick Category Navigation Pills (Tối ưu trải nghiệm & diện tích) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {[
+          { id: 'all', label: 'Tất cả mục', icon: LayoutGrid },
+          { id: 'appearance', label: 'Giao diện & Hiển thị', icon: Palette },
+          { id: 'audio_study', label: 'Âm thanh & Học tập', icon: Volume2 },
+          { id: 'security', label: 'Bảo mật & Phiên', icon: Shield },
+          { id: 'data', label: 'Dữ liệu & Quyền riêng tư', icon: Database },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 border ${
+                isActive
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/20'
+                  : 'bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-          {/* Language */}
-          <div className="space-y-2">
-            <label className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5 text-slate-400" />
-              <span>Language (Ngôn ngữ)</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setLocale('vi')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition ${
-                  locale === 'vi'
-                    ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <span>🇻🇳</span>
-                <span>Tiếng Việt</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocale('en')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition ${
-                  locale === 'en'
-                    ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <span>🇬🇧</span>
-                <span>English</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Chủ đề (Theme) */}
-          <div className="space-y-2">
-            <label className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[11px]">
-              Chủ đề (Theme)
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleSelectTheme('system')}
-                className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-2xl border text-xs font-bold transition ${
-                  themeMode === 'system'
-                    ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <Laptop className="w-4 h-4" />
-                <span>Hệ thống</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectTheme('light')}
-                className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-2xl border text-xs font-bold transition ${
-                  themeMode === 'light'
-                    ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <Sun className="w-4 h-4" />
-                <span>Sáng</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectTheme('dark')}
-                className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-2xl border text-xs font-bold transition ${
-                  themeMode === 'dark'
-                    ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                }`}
-              >
-                <Moon className="w-4 h-4" />
-                <span>Tối</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Màu chủ đạo */}
-          <div className="space-y-2">
-            <label className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[11px]">
-              Màu chủ đạo: <span className="text-indigo-600 dark:text-indigo-400 capitalize">{accentColor}</span>
-            </label>
-            <div className="grid grid-cols-6 gap-2">
-              {accentColors.map((color) => (
-                <button
-                  key={color.id}
-                  type="button"
-                  onClick={() => setAccentColor(color.id as any)}
-                  className={`h-11 rounded-xl ${color.bg} flex items-center justify-center text-white transition transform hover:scale-105 ${
-                    accentColor === color.id
-                      ? `ring-2 ring-offset-2 dark:ring-offset-slate-900 ${color.ring}`
-                      : 'opacity-80 hover:opacity-100'
-                  }`}
-                  title={color.label}
-                >
-                  {accentColor === color.id && <Check className="w-4 h-4 stroke-[3]" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Bật/Tắt nút Hỗ trợ khách hàng nổi */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                <MessageCircle className="w-4 h-4" />
+      {/* Responsive 2-Column Grid (Tối ưu diện tích màn hình) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* ========================================================================= */}
+        {/* SECTION 1: GIAO DIỆN & HIỂN THỊ                                           */}
+        {/* ========================================================================= */}
+        {(activeTab === 'all' || activeTab === 'appearance') && (
+          <GlassCard variant="liquid" className="p-6 space-y-5">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <Palette className="w-4 h-4" />
               </div>
               <div>
-                <p className="font-bold text-slate-800 dark:text-slate-200">Hiển thị nút Hỗ trợ nổi</p>
-                <p className="text-[11px] text-slate-400">Nút tròn liên hệ hỗ trợ 24/7 ở góc dưới màn hình</p>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={showSupportBtn}
-              onChange={(e) => {
-                setShowSupportBtn(e.target.checked);
-                localStorage.setItem('leximind_show_support_btn', e.target.checked ? 'true' : 'false');
-                window.dispatchEvent(new Event('storage'));
-              }}
-              className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-            />
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* 2. PHIÊN ÂM & GIỌNG ĐỌC */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-          <Volume2 className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-              Phiên Âm & Giọng Đọc
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Tùy chỉnh ký âm quốc tế IPA, chất giọng phát âm bản xứ và tốc độ phản xạ.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          {/* Phiên âm toggle */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-            <div className="space-y-0.5 pr-2">
-              <p className="font-bold text-slate-800 dark:text-slate-200">Phiên âm IPA</p>
-              <p className="text-[11px] text-slate-400">Hiển thị ký âm quốc tế /.../</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={showPhonetic}
-              onChange={(e) => setShowPhonetic(e.target.checked)}
-              className="w-5 h-5 accent-indigo-600 rounded cursor-pointer shrink-0"
-            />
-          </div>
-
-          {/* Giọng đọc */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-2">
-            <label className="font-bold text-slate-800 dark:text-slate-200 text-sm">Giọng đọc bản ngữ</label>
-            <CustomDropdown
-              value={voiceAccent}
-              onChange={(val) => setVoiceAccent(val as any)}
-              options={[
-                { value: 'en-US', label: '🇺🇸 Tiếng Anh - Giọng Mỹ (US)' },
-                { value: 'en-GB', label: '🇬🇧 Tiếng Anh - Giọng Anh (UK)' },
-                { value: 'en-AU', label: '🇦🇺 Tiếng Anh - Giọng Úc (AU)' },
-              ]}
-              className="w-full"
-            />
-          </div>
-
-          {/* Tốc độ đọc */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-2">
-            <label className="font-bold text-slate-800 dark:text-slate-200 text-sm">Tốc độ phát âm</label>
-            <CustomDropdown
-              value={voiceSpeed}
-              onChange={(val) => setVoiceSpeed(parseFloat(val))}
-              options={[
-                { value: 0.75, label: '0.75× (Chậm rãi, rõ ràng)' },
-                { value: 1.0, label: '1.0× (Tự nhiên chuẩn bản ngữ)' },
-                { value: 1.25, label: '1.25× (Nhanh vừa phải)' },
-                { value: 1.5, label: '1.5× (Nhanh nâng cao)' },
-              ]}
-              className="w-full"
-            />
-          </div>
-
-          {/* Tự động phát âm */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-            <div className="space-y-0.5 pr-2">
-              <p className="font-bold text-slate-800 dark:text-slate-200">Tự động phát âm</p>
-              <p className="text-[11px] text-slate-400">Khi mở câu hỏi hoặc lật thẻ</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={autoPlayAudio}
-              onChange={(e) => setAutoPlayAudio(e.target.checked)}
-              className="w-5 h-5 accent-indigo-600 rounded cursor-pointer shrink-0"
-            />
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* 3. TÙY CHỌN HỌC */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-          <BookOpen className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-              Tùy Chọn Học
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Kiểm soát các thành phần hiển thị trong flashcard và tốc độ làm bài kiểm tra.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          {/* Hiện hình ảnh */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <ImageIcon className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="font-bold text-slate-800 dark:text-slate-200">Hiện hình ảnh</p>
-                <p className="text-[11px] text-slate-400">Trực quan hóa nghĩa từ</p>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={showImages}
-              onChange={(e) => setShowImages(e.target.checked)}
-              className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-            />
-          </div>
-
-          {/* Hiện ví dụ */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                <Eye className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="font-bold text-slate-800 dark:text-slate-200">Hiện ví dụ</p>
-                <p className="text-[11px] text-slate-400">Kèm ngữ cảnh thực tế</p>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={showExamples}
-              onChange={(e) => setShowExamples(e.target.checked)}
-              className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-            />
-          </div>
-
-          {/* Tự chuyển câu trong bài kiểm tra */}
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <FastForward className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="font-bold text-slate-800 dark:text-slate-200">Tự chuyển câu trong bài kiểm tra</p>
-                <p className="text-[11px] text-slate-400">Tự động khi làm đúng</p>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={autoAdvance}
-              onChange={(e) => setAutoAdvance(e.target.checked)}
-              className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-            />
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* 4. MỤC TIÊU NGÀY */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-          <Target className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-              Mục Tiêu Ngày
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Số lượng từ mới và thẻ ôn tập dự kiến hoàn thành mỗi ngày để duy trì chuỗi Streak.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {[10, 15, 20, 30, 50].map((words) => (
-              <button
-                key={words}
-                type="button"
-                onClick={() => setDailyGoal(words)}
-                className={`p-4 rounded-2xl border text-center transition ${
-                  dailyGoal === words
-                    ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                }`}
-              >
-                <p className="text-lg font-black leading-snug">{words} words</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {words === 10 ? 'Nhẹ nhàng' : words === 20 ? 'Khuyến nghị' : words === 50 ? 'Cường độ cao' : 'Tiêu chuẩn'}
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                  Giao Diện & Hiển Thị
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Ngôn ngữ, chế độ hiển thị sáng/tối và tùy chọn trực quan.
                 </p>
-              </button>
-            ))}
-          </div>
-
-          <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-700 dark:text-slate-300">Tùy chỉnh thanh trượt linh hoạt:</span>
-              <span className="font-extrabold text-indigo-600 dark:text-indigo-400 text-sm">{dailyGoal} words / ngày</span>
-            </div>
-            <input
-              type="range"
-              min={5}
-              max={60}
-              step={5}
-              value={dailyGoal}
-              onChange={(e) => setDailyGoal(parseInt(e.target.value, 10))}
-              className="w-full accent-indigo-600 cursor-pointer"
-            />
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* 5. DỮ LIỆU */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-          <Database className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-              Dữ Liệu
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Quản trị bộ nhớ tạm, đặt lại tiến trình SRS hoặc làm sạch kho lưu trữ từ vựng.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          {/* Đặt lại tiến độ học */}
-          <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold">
-                <RotateCcw className="w-4 h-4" />
-                <span>Đặt lại tiến độ học</span>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
-                Xóa lịch sử ôn tập cục bộ, phiên chat tạm và tải lại tiến trình từ vựng từ máy chủ.
-              </p>
-            </div>
-            <button
-              onClick={() => setResetProgressModalOpen(true)}
-              className="self-start px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-bold text-xs transition"
-            >
-              Đặt lại tiến độ học
-            </button>
-          </div>
-
-          {/* Xóa kho từ vựng */}
-          <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
-                <Trash2 className="w-4 h-4" />
-                <span>Xóa kho từ vựng</span>
-              </div>
-              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
-                Xóa toàn bộ các từ cá nhân đã lưu trong sổ tay từ vựng và các flashcard tự tạo.
-              </p>
-            </div>
-            <button
-              onClick={() => setClearWordBankModalOpen(true)}
-              className="self-start px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs transition"
-            >
-              Xóa kho từ vựng
-            </button>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* 6. TRUNG TÂM BẢO MẬT (SECURITY CENTER) */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-          <Shield className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-              Trung Tâm Bảo Mật (Security Center)
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Quản lý tài khoản liên kết (Google, Facebook), thiết bị đăng nhập và phiên hoạt động.
-            </p>
-          </div>
-        </div>
-
-        {/* Linked Accounts */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-            Tài Khoản & Phương Thức Xác Thực Đã Liên Kết
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-sm">
-                  G
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-white">Google OAuth</p>
-                  <p className="text-[11px] text-slate-400">
-                    {user?.email?.includes('@') ? `Đã liên kết (${user.email})` : 'Chưa liên kết'}
-                  </p>
-                </div>
-              </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                Đã bảo vệ ✓
-              </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center font-bold text-sm">
-                  f
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 dark:text-white">Facebook Login</p>
-                  <p className="text-[11px] text-slate-400">Đăng nhập nhanh 1-chạm</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setActionSuccessMsg('Đang kích hoạt liên kết tài khoản Facebook...');
-                  setTimeout(() => setActionSuccessMsg(null), 3000);
-                }}
-                className="px-2.5 py-1 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 text-[11px] font-bold transition"
-              >
-                Liên kết
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Active Sessions */}
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <Smartphone className="w-3.5 h-3.5 text-slate-400" />
-              <span>Thiết Bị Đang Đăng Nhập ({sessions.length})</span>
-            </h3>
-            {sessions.length > 1 && (
-              <button
-                onClick={handleRevokeOtherSessions}
-                className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1"
-              >
-                <LogOut className="w-3 h-3" />
-                <span>Đăng xuất thiết bị khác</span>
-              </button>
-            )}
-          </div>
-
-          <div className="space-y-2 text-xs">
-            {sessions.map((sess) => (
-              <div
-                key={sess.id}
-                className="p-3.5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300">
-                    <Laptop className="w-4 h-4" />
+            <div className="space-y-4 text-xs">
+              {/* Row: Language & Theme */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Language */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 text-slate-400" />
+                    <span>Ngôn ngữ hệ thống</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLocale('vi')}
+                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-bold transition ${
+                        locale === 'vi'
+                          ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <span>🇻🇳</span>
+                      <span>Tiếng Việt</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLocale('en')}
+                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-bold transition ${
+                        locale === 'en'
+                          ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <span>🇬🇧</span>
+                      <span>English</span>
+                    </button>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-slate-900 dark:text-white leading-snug">{sess.device}</p>
-                      {sess.isCurrent && (
-                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold">
-                          Thiết bị này
-                        </span>
+                </div>
+
+                {/* Theme Mode */}
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                    Chế độ nền (Theme)
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTheme('system')}
+                      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border text-[11px] font-bold transition ${
+                        themeMode === 'system'
+                          ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Laptop className="w-3.5 h-3.5" />
+                      <span>Hệ thống</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTheme('light')}
+                      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border text-[11px] font-bold transition ${
+                        themeMode === 'light'
+                          ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Sun className="w-3.5 h-3.5" />
+                      <span>Sáng</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectTheme('dark')}
+                      className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border text-[11px] font-bold transition ${
+                        themeMode === 'dark'
+                          ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Moon className="w-3.5 h-3.5" />
+                      <span>Tối</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accent Color Palette */}
+              <div className="space-y-1.5 pt-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                  Màu chủ đạo: <span className="text-indigo-600 dark:text-indigo-400 capitalize">{accentColor}</span>
+                </label>
+                <div className="grid grid-cols-6 gap-2">
+                  {accentColors.map((color) => (
+                    <button
+                      key={color.id}
+                      type="button"
+                      onClick={() => setAccentColor(color.id as any)}
+                      className={`h-9 rounded-xl ${color.bg} flex items-center justify-center text-white transition transform hover:scale-105 ${
+                        accentColor === color.id
+                          ? `ring-2 ring-offset-2 dark:ring-offset-slate-900 ${color.ring}`
+                          : 'opacity-80 hover:opacity-100'
+                      }`}
+                      title={color.label}
+                    >
+                      {accentColor === color.id && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Display Options with ToggleSwitches */}
+              <div className="pt-2 space-y-2">
+                <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] block">
+                  Tùy chọn hiển thị chi tiết
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Phiên âm IPA Toggle */}
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+                    <ToggleSwitch
+                      checked={showPhonetic}
+                      onChange={setShowPhonetic}
+                      label="Phiên âm IPA"
+                      description="Ký âm quốc tế /.../ dưới từ"
+                      size="sm"
+                    />
+                  </div>
+
+                  {/* Hiện hình ảnh Toggle */}
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+                    <ToggleSwitch
+                      checked={showImages}
+                      onChange={setShowImages}
+                      label="Hình ảnh minh họa"
+                      description="Trực quan hóa nghĩa từ"
+                      size="sm"
+                    />
+                  </div>
+
+                  {/* Hiện ví dụ Toggle */}
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+                    <ToggleSwitch
+                      checked={showExamples}
+                      onChange={setShowExamples}
+                      label="Ví dụ ngữ cảnh"
+                      description="Câu mẫu và bản dịch"
+                      size="sm"
+                    />
+                  </div>
+
+                  {/* Nút hỗ trợ nổi Toggle */}
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+                    <ToggleSwitch
+                      checked={showSupportBtn}
+                      onChange={(val) => {
+                        setShowSupportBtn(val);
+                        localStorage.setItem('leximind_show_support_btn', val ? 'true' : 'false');
+                        window.dispatchEvent(new Event('storage'));
+                      }}
+                      label="Nút Hỗ trợ nổi"
+                      description="Biểu tượng chat 24/7 góc dưới"
+                      size="sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* ========================================================================= */}
+        {/* SECTION 2: ÂM THANH & TÙY CHỌN HỌC                                        */}
+        {/* ========================================================================= */}
+        {(activeTab === 'all' || activeTab === 'audio_study') && (
+          <GlassCard variant="liquid" className="p-6 space-y-5">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <Volume2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                  Âm Thanh & Tùy Chọn Học
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Cấu hình giọng đọc bản ngữ, tốc độ phát âm và mục tiêu ngày.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Row: Accent & Speed */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                    Giọng đọc bản ngữ
+                  </label>
+                  <CustomDropdown
+                    value={voiceAccent}
+                    onChange={(val) => setVoiceAccent(val as any)}
+                    options={[
+                      { value: 'en-US', label: '🇺🇸 Tiếng Anh - Giọng Mỹ (US)' },
+                      { value: 'en-GB', label: '🇬🇧 Tiếng Anh - Giọng Anh (UK)' },
+                      { value: 'en-AU', label: '🇦🇺 Tiếng Anh - Giọng Úc (AU)' },
+                    ]}
+                    size="sm"
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                    Tốc độ phát âm
+                  </label>
+                  <CustomDropdown
+                    value={voiceSpeed}
+                    onChange={(val) => setVoiceSpeed(parseFloat(val))}
+                    options={[
+                      { value: 0.75, label: '0.75× (Chậm rãi, rõ từng âm)' },
+                      { value: 1.0, label: '1.0× (Tự nhiên chuẩn bản ngữ)' },
+                      { value: 1.25, label: '1.25× (Nhanh vừa phải)' },
+                      { value: 1.5, label: '1.5× (Nhanh nâng cao)' },
+                    ]}
+                    size="sm"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Audio & Quiz Behavior Toggles */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+                  <ToggleSwitch
+                    checked={autoPlayAudio}
+                    onChange={setAutoPlayAudio}
+                    label="Tự động phát âm"
+                    description="Khi mở câu hỏi hoặc lật thẻ"
+                    size="sm"
+                  />
+                </div>
+
+                <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+                  <ToggleSwitch
+                    checked={autoAdvance}
+                    onChange={setAutoAdvance}
+                    label="Tự chuyển câu trắc nghiệm"
+                    description="Tự động khi trả lời đúng"
+                    size="sm"
+                  />
+                </div>
+              </div>
+
+              {/* Daily Goal Target */}
+              <div className="p-4 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span className="font-bold text-slate-800 dark:text-slate-200">Mục tiêu học mỗi ngày</span>
+                  </div>
+                  <span className="font-extrabold text-indigo-600 dark:text-indigo-400 text-sm">
+                    {dailyGoal} từ / ngày
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[10, 15, 20, 30, 50].map((words) => (
+                    <button
+                      key={words}
+                      type="button"
+                      onClick={() => setDailyGoal(words)}
+                      className={`py-1.5 rounded-xl border text-center font-bold text-xs transition ${
+                        dailyGoal === words
+                          ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
+                      }`}
+                    >
+                      {words}
+                    </button>
+                  ))}
+                </div>
+
+                <input
+                  type="range"
+                  min={5}
+                  max={60}
+                  step={5}
+                  value={dailyGoal}
+                  onChange={(e) => setDailyGoal(parseInt(e.target.value, 10))}
+                  className="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg"
+                />
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* ========================================================================= */}
+        {/* SECTION 3: TRUNG TÂM BẢO MẬT & PHIÊN                                      */}
+        {/* ========================================================================= */}
+        {(activeTab === 'all' || activeTab === 'security') && (
+          <GlassCard variant="liquid" className="p-6 space-y-5">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <Shield className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                  Bảo Mật & Quản Lý Phiên
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Tài khoản liên kết OAuth, bảo vệ mật khẩu và thiết bị đăng nhập.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Linked Accounts */}
+              <div className="space-y-2">
+                <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                  Tài khoản liên kết
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center font-bold text-xs">
+                        G
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white leading-tight">Google</p>
+                        <p className="text-[10px] text-slate-400 truncate max-w-[120px]">
+                          {user?.email?.includes('@') ? user.email : 'Chưa liên kết'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      ✓ Đã bảo vệ
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-blue-600/10 text-blue-600 flex items-center justify-center font-bold text-xs">
+                        f
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white leading-tight">Facebook</p>
+                        <p className="text-[10px] text-slate-400">Đăng nhập nhanh</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setActionSuccessMsg('Đang kích hoạt liên kết tài khoản Facebook...');
+                        setTimeout(() => setActionSuccessMsg(null), 3000);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 text-[11px] font-bold transition"
+                    >
+                      Liên kết
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Active Sessions */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <Smartphone className="w-3 h-3 text-slate-400" />
+                    <span>Thiết bị đăng nhập ({sessions.length})</span>
+                  </label>
+                  {sessions.length > 1 && (
+                    <button
+                      onClick={handleRevokeOtherSessions}
+                      className="text-[10px] font-bold text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1"
+                    >
+                      <LogOut className="w-2.5 h-2.5" />
+                      <span>Đăng xuất thiết bị khác</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  {sessions.map((sess) => (
+                    <div
+                      key={sess.id}
+                      className="p-3 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                          <Laptop className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-bold text-slate-900 dark:text-white leading-tight">{sess.device}</p>
+                            {sess.isCurrent && (
+                              <span className="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase">
+                                Hiện tại
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400">
+                            {sess.ip} • {sess.lastActive}
+                          </p>
+                        </div>
+                      </div>
+                      {!sess.isCurrent && (
+                        <button
+                          onClick={handleRevokeOtherSessions}
+                          className="px-2 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-[10px] font-bold transition"
+                        >
+                          Thu hồi
+                        </button>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400">
-                      IP: {sess.ip} • {sess.lastActive}
+                  ))}
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* ========================================================================= */}
+        {/* SECTION 4: DỮ LIỆU & QUYỀN RIÊNG TƯ                                      */}
+        {/* ========================================================================= */}
+        {(activeTab === 'all' || activeTab === 'data') && (
+          <GlassCard variant="liquid" className="p-6 space-y-5">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <Database className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                  Dữ Liệu & Quyền Riêng Tư
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Sao lưu dữ liệu học tập JSON, đặt lại tiến trình SRS hoặc xóa tài khoản (GDPR).
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Row: JSON Export & Reset progress */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Trích xuất dữ liệu JSON */}
+                <div className="p-4 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-bold">
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Sao lưu học tập (JSON)</span>
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
+                      Tải bản sao lưu từ vựng, từ yêu thích và lịch sử ôn tập.
                     </p>
                   </div>
-                </div>
-                {!sess.isCurrent && (
                   <button
-                    onClick={handleRevokeOtherSessions}
-                    className="px-2 py-1 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-[11px] font-semibold transition"
+                    onClick={handleExportData}
+                    className="self-start px-3 py-1.5 rounded-lg btn-glass-primary !shadow-none font-bold text-xs transition flex items-center gap-1.5"
                   >
-                    Thu hồi
+                    <Download className="w-3 h-3" />
+                    <span>Tải file JSON</span>
                   </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </GlassCard>
+                </div>
 
-      {/* 7. QUYỀN RIÊNG TƯ & XUẤT DỮ LIỆU (PRIVACY CENTER) */}
-      <GlassCard variant="liquid" className="p-6 md:p-8 space-y-6">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-          <Download className="w-5 h-5 text-indigo-500" />
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-              Trung Tâm Quyền Riêng Tư (Privacy Center)
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Bạn có toàn quyền làm chủ dữ liệu của mình. Xuất dữ liệu học tập hoặc yêu cầu xóa vĩnh viễn theo chuẩn GDPR.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          {/* Trích xuất dữ liệu JSON */}
-          <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold">
-                <Download className="w-4 h-4" />
-                <span>Xuất dữ liệu học tập (JSON)</span>
+                {/* Đặt lại tiến độ học */}
+                <div className="p-4 rounded-xl bg-white/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Đặt lại bộ nhớ đệm</span>
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
+                      Làm mới cache ôn tập cục bộ và đồng bộ lại từ máy chủ.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setResetProgressModalOpen(true)}
+                    className="self-start px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-bold text-xs transition"
+                  >
+                    Đặt lại tiến độ
+                  </button>
+                </div>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
-                Tải xuống bản sao lưu đầy đủ chứa hồ sơ, danh sách từ vựng cá nhân, từ yêu thích và lịch sử làm bài kiểm tra.
-              </p>
+
+              {/* Danger Zone: Clear Word Bank & Delete Account */}
+              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 space-y-2">
+                <label className="font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Vùng nguy hiểm (Danger Zone)</span>
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3.5 rounded-xl bg-rose-500/[0.04] dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between">
+                    <div className="pr-2">
+                      <p className="font-bold text-slate-800 dark:text-slate-200">Xóa kho từ cá nhân</p>
+                      <p className="text-[10px] text-slate-400">Xóa tất cả từ vựng tự nhập</p>
+                    </div>
+                    <button
+                      onClick={() => setClearWordBankModalOpen(true)}
+                      className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-[11px] shrink-0 transition"
+                    >
+                      Xóa kho
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-rose-500/[0.04] dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between">
+                    <div className="pr-2">
+                      <p className="font-bold text-slate-800 dark:text-slate-200">Xóa vĩnh viễn tài khoản</p>
+                      <p className="text-[10px] text-slate-400">Quyền được lãng quên (GDPR)</p>
+                    </div>
+                    <button
+                      onClick={() => setDeleteAccountModalOpen(true)}
+                      className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-[11px] shrink-0 hover:bg-rose-500 transition shadow-xs"
+                    >
+                      Xóa tài khoản
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={handleExportData}
-              className="self-start px-4 py-2 rounded-xl btn-glass-primary !shadow-none font-bold text-xs transition flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Tải file JSON ngay</span>
-            </button>
-          </div>
+          </GlassCard>
+        )}
+      </div>
 
-          {/* Xóa tài khoản vĩnh viễn */}
-          <div className="p-5 rounded-2xl bg-white/70 dark:bg-slate-800/50 border border-rose-200/60 dark:border-rose-900/40 flex flex-col justify-between space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
-                <Trash2 className="w-4 h-4" />
-                <span>Xóa vĩnh viễn tài khoản</span>
-              </div>
-              <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">
-                Quyền được lãng quên (GDPR): Xóa sạch toàn bộ tài khoản, chuỗi streak, huy hiệu và dữ liệu cá nhân khỏi hệ thống.
-              </p>
-            </div>
-            <button
-              onClick={() => setDeleteAccountModalOpen(true)}
-              className="self-start px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bold text-xs transition"
-            >
-              Yêu cầu xóa tài khoản
-            </button>
-          </div>
-        </div>
-      </GlassCard>
+      {/* ========================================================================= */}
+      {/* MODALS                                                                    */}
+      {/* ========================================================================= */}
 
-      {/* Modal: Đặt lại tiến độ học — ModalPortal to document.body */}
+      {/* Modal: Đặt lại tiến độ học */}
       <ModalPortal isOpen={resetProgressModalOpen} onClose={() => setResetProgressModalOpen(false)}>
         <div
-          className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6"
+          className="m-auto relative w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-6 h-6" />
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                 Xác nhận đặt lại tiến độ học?
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                Thao tác này sẽ làm mới bộ nhớ đệm ôn tập và đồng bộ lại trạng thái học từ máy chủ. Tài khoản và cấp độ của bạn vẫn được giữ nguyên an toàn.
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Thao tác này sẽ làm mới bộ nhớ đệm ôn tập và đồng bộ lại trạng thái học từ máy chủ. Tài khoản và cấp độ
+                của bạn vẫn được giữ nguyên an toàn.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               onClick={() => setResetProgressModalOpen(false)}
-              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
+              className="btn-glass-secondary text-xs !py-2 !px-4"
             >
               Hủy bỏ
             </button>
             <button
               onClick={handleConfirmResetProgress}
-              className="btn-glass-amber text-xs sm:text-sm !py-2.5 !px-5"
+              className="btn-glass-amber text-xs !py-2 !px-4"
             >
-              Xác nhận đặt lại tiến độ
+              Xác nhận đặt lại
             </button>
           </div>
         </div>
       </ModalPortal>
 
-      {/* Modal: Xóa kho từ vựng — ModalPortal to document.body */}
+      {/* Modal: Xóa kho từ vựng */}
       <ModalPortal isOpen={clearWordBankModalOpen} onClose={() => setClearWordBankModalOpen(false)}>
         <div
-          className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6"
+          className="m-auto relative w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-              <Trash2 className="w-6 h-6" />
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <Trash2 className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                Xác nhận xóa toàn bộ kho từ vựng cá nhân?
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                Xóa toàn bộ kho từ vựng cá nhân?
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                Cảnh báo: Thao tác này sẽ xóa tất cả các từ vựng tự nhập và từ bạn đã thêm vào kho từ vựng cá nhân. Hành động này không thể hoàn tác.
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Cảnh báo: Thao tác này sẽ xóa tất cả các từ vựng tự nhập và từ bạn đã thêm vào kho cá nhân. Hành động
+                này không thể hoàn tác.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               onClick={() => setClearWordBankModalOpen(false)}
-              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
+              className="btn-glass-secondary text-xs !py-2 !px-4"
             >
               Hủy bỏ
             </button>
             <button
               onClick={handleConfirmClearWordBank}
-              className="btn-glass-danger text-xs sm:text-sm !py-2.5 !px-5"
+              className="btn-glass-danger text-xs !py-2 !px-4"
             >
               Xóa vĩnh viễn kho từ
             </button>
@@ -890,38 +926,39 @@ export const SettingsPage: React.FC = () => {
         </div>
       </ModalPortal>
 
-      {/* Modal: Xóa vĩnh viễn tài khoản — ModalPortal to document.body */}
+      {/* Modal: Xóa vĩnh viễn tài khoản */}
       <ModalPortal isOpen={deleteAccountModalOpen} onClose={() => setDeleteAccountModalOpen(false)}>
         <div
-          className="m-auto relative w-full max-w-2xl p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 shadow-2xl space-y-6"
+          className="m-auto relative w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 shadow-2xl space-y-5"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-              <Trash2 className="w-6 h-6" />
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <Trash2 className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                 Xác nhận xóa tài khoản vĩnh viễn?
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                Cảnh báo bảo mật tối cao: Thao tác này sẽ xóa vĩnh viễn toàn bộ tiến trình học, điểm XP, chuỗi Streak, danh sách từ vựng cá nhân và các gói đăng ký gắn liền với tài khoản của bạn. Hành động này không thể đảo ngược hoặc khôi phục.
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Cảnh báo bảo mật tối cao: Thao tác này sẽ xóa vĩnh viễn toàn bộ tiến trình học, điểm XP, chuỗi Streak,
+                danh sách từ vựng và các gói đăng ký. Hành động này không thể đảo ngược hoặc khôi phục.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               onClick={() => setDeleteAccountModalOpen(false)}
-              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-5"
+              className="btn-glass-secondary text-xs !py-2 !px-4"
             >
               Hủy bỏ
             </button>
             <button
               onClick={handleConfirmDeleteAccount}
-              className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm transition shadow-lg shadow-rose-600/20"
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-lg shadow-rose-600/20"
             >
-              Xác nhận xóa tài khoản vĩnh viễn
+              Xác nhận xóa tài khoản
             </button>
           </div>
         </div>

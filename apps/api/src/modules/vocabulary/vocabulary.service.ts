@@ -29,8 +29,9 @@ export class VocabularyService {
       ];
     }
 
-    if (cefrLevel) {
-      where.cefrLevel = cefrLevel;
+    const effectiveCefr = cefrLevel || query.cefr;
+    if (effectiveCefr) {
+      where.cefrLevel = effectiveCefr;
     }
 
     if (partOfSpeech) {
@@ -41,7 +42,11 @@ export class VocabularyService {
       where.topicItems = {
         some: {
           topic: {
-            slug: topic,
+            OR: [
+              { slug: topic.toLowerCase() },
+              { name: { contains: topic, mode: 'insensitive' } },
+              { id: topic },
+            ],
           },
         },
       };

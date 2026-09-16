@@ -618,19 +618,19 @@ a.card-brand-effect {
   transform: translateY(-1px);
 }
 
-/* Amber Glass Button: Streak / Gold / VIP */
+/* Amber / Sunset Glass Button: Modernized Rich Warm Sunset */
 .btn-glass-amber {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.92) 0%, rgba(217, 119, 6, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.92) 0%, rgba(217, 119, 6, 0.9) 100%);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: none;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.25);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .btn-glass-amber:hover {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.98) 0%, rgba(180, 83, 9, 0.95) 100%);
-  box-shadow: none;
+  background: linear-gradient(135deg, rgba(234, 88, 12, 0.98) 0%, rgba(180, 83, 9, 0.95) 100%);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35);
   transform: translateY(-1px);
 }
 

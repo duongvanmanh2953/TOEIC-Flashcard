@@ -885,22 +885,39 @@ export const AppShell: React.FC = () => {
           )}
 
           {/* Footer Buttons */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
             <button
-              onClick={() => {
-                setProfileModalOpen(false);
-                navigate('/settings');
+              onClick={async () => {
+                if (window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?')) {
+                  setProfileModalOpen(false);
+                  await logout();
+                  navigate('/login');
+                }
               }}
-              className="btn-glass-secondary text-xs !py-2 !px-4"
+              className="btn-glass-danger text-xs !py-2 !px-4 flex items-center gap-1.5 shrink-0"
+              title="Đăng xuất khỏi hệ thống"
             >
-              Đi đến Cài đặt
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Đăng xuất</span>
             </button>
-            <button
-              onClick={() => setProfileModalOpen(false)}
-              className="btn-glass-primary text-xs !py-2 !px-5"
-            >
-              Đã hiểu
-            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setProfileModalOpen(false);
+                  navigate('/settings');
+                }}
+                className="btn-glass-secondary text-xs !py-2 !px-4"
+              >
+                Đi đến Cài đặt
+              </button>
+              <button
+                onClick={() => setProfileModalOpen(false)}
+                className="btn-glass-primary text-xs !py-2 !px-5"
+              >
+                Đã hiểu
+              </button>
+            </div>
           </div>
         </div>
       </ModalPortal>

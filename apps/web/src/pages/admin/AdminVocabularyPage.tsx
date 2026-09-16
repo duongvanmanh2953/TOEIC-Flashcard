@@ -93,6 +93,7 @@ export const AdminVocabularyPage: React.FC = () => {
           page,
           limit: 15,
           search: search.trim() || undefined,
+          cefrLevel: cefrFilter !== 'ALL' ? cefrFilter : undefined,
           cefr: cefrFilter !== 'ALL' ? cefrFilter : undefined,
           partOfSpeech: posFilter !== 'ALL' ? posFilter : undefined,
         },

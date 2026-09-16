@@ -14,6 +14,11 @@ export class QueryVocabDto {
   @IsEnum(CefrLevel)
   cefrLevel?: CefrLevel;
 
+  @ApiPropertyOptional({ enum: CefrLevel, description: 'Alias for cefrLevel' })
+  @IsOptional()
+  @IsEnum(CefrLevel)
+  cefr?: CefrLevel;
+
   @ApiPropertyOptional({ description: 'Topic slug e.g. salaries-benefits' })
   @IsOptional()
   @IsString()

@@ -5,7 +5,7 @@ import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
-import { idbSaveLocalDeck, idbGetLocalDecks } from '../lib/idb';
+import { idbSaveLocalDeck, idbGetLocalDecks, idbSaveWords } from '../lib/idb';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import * as XLSX from 'xlsx';
 import {
@@ -270,6 +270,47 @@ export const CommunityDecksPage: React.FC = () => {
       const password = unlockedPasswords[deck.id];
       const res: any = await api.post(`/community/decks/${deck.id}/clone`, { password });
       if (res?.success) {
+        // Save copy to IndexedDB so it appears directly in "Kho từ vựng của tôi" with full attribution
+        const localDeckCopy: any = {
+          id: `cloned_${deck.id}`,
+          userId: user.id,
+          title: deck.title,
+          description: deck.description || '',
+          category: deck.category || 'General',
+          cefrLevel: deck.cefrLevel || 'B1',
+          words: (deck.words || []).map((w: any) => ({
+            id: `cloned_w_${w.id || Math.random().toString(36).substring(2, 9)}`,
+            userId: user.id,
+            word: w.word,
+            phonetic: w.phonetic,
+            meaning: w.meaning || w.definition,
+            example: w.example,
+            partOfSpeech: w.partOfSpeech || 'n.',
+            deckId: `cloned_${deck.id}`,
+            deckName: deck.title,
+            source: 'COMMUNITY',
+            author: deck.author?.displayName || 'Cộng đồng',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          })),
+          source: 'COMMUNITY',
+          sourceName: 'Cộng đồng chia sẻ',
+          authorName: deck.author?.displayName || 'Cộng đồng',
+          authorEmail: deck.author?.email,
+          originDeckId: deck.id,
+          isImported: true,
+          isReadOnly: true,
+          isProtected: Boolean(deck.isProtected || deck.hasPassword),
+          hasPassword: Boolean(deck.isProtected || deck.hasPassword),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          isSyncedToCloud: true,
+        };
+        await idbSaveLocalDeck(localDeckCopy, user.id);
+        if (localDeckCopy.words.length > 0) {
+          await idbSaveWords(localDeckCopy.words, user.id);
+        }
+
         setCloneSuccess(`Đã lưu thành công bộ từ "${deck.title}" vào Kho từ vựng cá nhân!`);
         fetchDecks();
         fetchMyDecks();
@@ -635,10 +676,9 @@ export const CommunityDecksPage: React.FC = () => {
                 const isProtected = deck.hasPassword || deck.isProtected;
                 const isUnlocked = unlockedDeckIds[deck.id] || (user && deck.userId === user.id);
                 return (
-                  <GlassCard
+                  <div
                     key={deck.id}
-                    variant="liquid"
-                    className="p-5 md:p-6 flex flex-col justify-between relative overflow-hidden cv-auto-card"
+                    className="p-5 md:p-6 flex flex-col justify-between relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md transition duration-150 cv-auto-card"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2.5">
@@ -704,7 +744,7 @@ export const CommunityDecksPage: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                  </GlassCard>
+                  </div>
                 );
               })}
             </div>
@@ -761,10 +801,9 @@ export const CommunityDecksPage: React.FC = () => {
               {visibleMyDecks.map((deck) => {
                 const status = deck.status || 'PENDING';
                 return (
-                  <GlassCard
+                  <div
                     key={deck.id}
-                    variant="liquid"
-                    className="p-5 md:p-6 flex flex-col justify-between relative border border-slate-200/70 dark:border-slate-800/70 cv-auto-card"
+                    className="p-5 md:p-6 flex flex-col justify-between relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md transition duration-150 cv-auto-card"
                   >
                     <div>
                       {/* Status Badges Header */}
@@ -853,7 +892,7 @@ export const CommunityDecksPage: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                  </GlassCard>
+                  </div>
                 );
               })}
             </div>

@@ -53,14 +53,17 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     const dropUp = spaceBelow < 220 && spaceAbove > spaceBelow;
 
     const triggerWidth = rect.width;
-    // Cho width dài max tối đa 200% cái ô
-    const maxWidth = Math.min(Math.max(triggerWidth * 2, 280), window.innerWidth - 24);
     const minWidth = Math.max(triggerWidth, 160);
+    // For wide/full-width triggers, menu matches trigger width; for compact triggers, allow comfortable reading width
+    const maxWidth = triggerWidth >= 260
+      ? Math.min(triggerWidth, window.innerWidth - 24)
+      : Math.min(Math.max(triggerWidth * 1.5, 260), window.innerWidth - 24);
 
-    // Ensure left does not bleed past right edge of window
+    // Keep dropdown aligned to left edge of trigger button unless it overflows screen
     let left = rect.left;
-    if (left + maxWidth > window.innerWidth - 12) {
-      left = Math.max(12, rect.right - maxWidth);
+    const expectedWidth = Math.min(minWidth, maxWidth);
+    if (left + expectedWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - 12 - expectedWidth);
     }
     if (left < 12) left = 12;
 
@@ -143,7 +146,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   }[size];
 
   return (
-    <div ref={containerRef} className={`relative inline-block text-left ${className}`}>
+    <div ref={containerRef} className={`relative ${className.includes('w-full') ? 'block' : 'inline-block'} text-left ${className}`}>
       {/* Trigger Button - Synchronized with modal & filter input theme */}
       <button
         type="button"

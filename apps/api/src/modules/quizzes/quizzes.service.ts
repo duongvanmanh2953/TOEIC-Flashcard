@@ -33,18 +33,84 @@ export class QuizzesService {
         orderBy: { masteryScore: 'asc' },
       });
       targetVocabIds = weak.map((w) => w.vocabularyId);
+    } else if (dto.sourceFilter === 'CEFR') {
+      const cefrVocabs = await this.prisma.vocabulary.findMany({
+        where: dto.cefrLevel ? { cefrLevel: dto.cefrLevel } : {},
+        select: { id: true },
+        take: limit,
+      });
+      targetVocabIds = cefrVocabs.map((v) => v.id);
     } else if (dto.sourceFilter === 'DECK' && dto.deckId) {
       const deck = await this.prisma.communityDeck.findUnique({
         where: { id: dto.deckId },
         include: { words: true },
       });
-      if (deck) {
+      if (deck && deck.words.length > 0) {
         const words = await this.prisma.vocabulary.findMany({
           where: { word: { in: deck.words.map((w) => w.word.toLowerCase()) } },
           select: { id: true },
           take: limit,
         });
         targetVocabIds = words.map((w) => w.id);
+
+        // If targetVocabIds has fewer words than needed, generate questions directly from deck.words
+        if (targetVocabIds.length === 0 && deck.words.length > 0) {
+          const distractors = await this.prisma.vocabulary.findMany({
+            take: 30,
+            select: { word: true, shortDefinition: true },
+          });
+
+          const selectedWords = deck.words.slice(0, limit);
+          const questions = selectedWords.map((cw, index) => {
+            const meaning = cw.meaning || cw.definition || cw.word;
+            const otherOptions = distractors
+              .filter((d) => d.word.toLowerCase() !== cw.word.toLowerCase())
+              .slice(0, 3)
+              .map((d) => d.shortDefinition || d.word);
+            const options = [meaning, ...otherOptions].sort(() => Math.random() - 0.5);
+
+            const isFillBlank = index % 2 === 1 && Boolean(cw.example);
+            let prompt = `Nghĩa chính xác của từ "${cw.word}" là gì?`;
+            let sentenceContext: string | null = null;
+
+            if (isFillBlank && cw.example) {
+              const regex = new RegExp(`\\b${cw.word}\\b`, 'gi');
+              sentenceContext = cw.example.replace(regex, '______');
+              prompt = `Chọn từ thích hợp điền vào chỗ trống: "${sentenceContext}"`;
+            }
+
+            return {
+              id: `q-${index + 1}`,
+              vocabularyId: cw.id,
+              word: cw.word,
+              prompt,
+              phonetic: cw.phonetic || '',
+              sentenceContext,
+              options: isFillBlank
+                ? [cw.word, ...distractors.slice(0, 3).map((d) => d.word)].sort(() => Math.random() - 0.5)
+                : options,
+              correctAnswer: isFillBlank ? cw.word : meaning,
+              explanation: cw.exampleTranslation || cw.definition || meaning,
+            };
+          });
+
+          const quiz = await this.prisma.customQuiz.create({
+            data: {
+              userId,
+              title: dto.title || `Custom Quiz: ${deck.title} (${questions.length} câu)`,
+              sourceFilter: dto.sourceFilter,
+              questionCount: questions.length,
+              questions: questions as any,
+            },
+          });
+
+          return {
+            quizId: quiz.id,
+            title: quiz.title,
+            questionCount: questions.length,
+            questions,
+          };
+        }
       }
     }
 
@@ -66,6 +132,10 @@ export class QuizzesService {
       where: { id: { in: targetVocabIds } },
       include: { meanings: true, examples: true },
     });
+
+    if (vocabs.length === 0) {
+      throw new BadRequestException('Không tìm thấy từ vựng phù hợp với tiêu chí đã chọn để tạo bài thi.');
+    }
 
     const distractors = await this.prisma.vocabulary.findMany({
       take: 30,

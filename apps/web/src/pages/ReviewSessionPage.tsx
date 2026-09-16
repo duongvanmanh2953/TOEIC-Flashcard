@@ -23,22 +23,187 @@ import {
   LockOpen,
   Mic,
   X,
+  AlertCircle,
+  Clock,
+  Shuffle,
 } from 'lucide-react';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { SpeechButton } from '../components/common/SpeechButton';
-import { GlassCard } from '../components/common/GlassCard';
 import { PronunciationPracticeCard } from '../components/audio/PronunciationPracticeCard';
+import {
+  idbGetLocalDecks,
+  idbGetWords,
+  idbGetWordsByDeck,
+  idbUpdateWordProgress,
+  CachedWordItem,
+  LocalDeck,
+} from '../lib/idb';
 
-export const TOPIC_OPTIONS = [
-  { id: 'ALL', label: 'Tất cả từ cần ôn (SRS)', icon: Sparkles },
-  { id: 'MEMORY_RESCUE', label: '🚑 Giải cứu trí nhớ (Slipping Words) 🔒 [PRO]', icon: Flame },
-  { id: 'Business', label: 'Business & Office (Kinh doanh)', icon: BookOpen },
-  { id: 'Finance', label: 'Finance & Banking (Tài chính)', icon: Award },
-  { id: 'Travel', label: 'Travel & Tourism (Du lịch)', icon: Layers },
-  { id: 'Technology', label: 'Technology & IT (Công nghệ)', icon: BrainCircuit },
-  { id: 'Daily', label: 'Daily Communication (Giao tiếp)', icon: Volume2 },
-  { id: 'MY_WORDS', label: 'Kho từ của tôi (My Word Bank)', icon: Bookmark },
+export interface ReviewQueueItem {
+  vocabularyId: string;
+  word: string;
+  pronunciation?: string;
+  meaning: string;
+  meaningVi: string;
+  englishDefinition?: string;
+  example?: string;
+  exampleTranslation?: string;
+  partOfSpeech?: string;
+  cefrLevel?: string;
+  topic?: string;
+  origin?: string;
+  deckId?: string;
+  deckTitle?: string;
+  options: string[];
+  correctAnswer: string;
+  // Spaced Repetition (FSRS-compatible) parameters
+  dueAt: number;
+  lastReviewedAt: number;
+  reviewCount: number;
+  correctCount: number;
+  wrongCount: number;
+  consecutiveCorrect: number;
+  consecutiveWrong: number;
+  interval: number; // in days
+  stability: number; // in days
+  difficulty: number; // 1.0 - 10.0
+  retrievability: number; // 0.0 - 1.0
+  priorityScore: number;
+}
+
+export const DEFAULT_TOPIC_OPTIONS = [
+  { id: 'ALL', label: '⚡ Tất cả từ cần ôn (SRS Smart)', icon: Sparkles },
+  { id: 'MEMORY_RESCUE', label: '🚑 Giải cứu trí nhớ (Slipping Words)', icon: Flame },
+  { id: 'MY_WORDS', label: '⭐ Kho từ của tôi (Tất cả)', icon: Bookmark },
 ];
+
+/**
+ * FSRS / Spaced Repetition Priority Score Calculator
+ * High score = high urgency to review right now
+ */
+export function calculateWordPriority(item: Partial<ReviewQueueItem>): number {
+  const now = Date.now();
+  const dueAt = item.dueAt || 0;
+  const lastRev = item.lastReviewedAt || 0;
+  const elapsedDays = lastRev > 0 ? (now - lastRev) / (1000 * 60 * 60 * 24) : 999;
+  const stability = Math.max(0.5, item.stability || 1.0);
+  const difficulty = Math.max(1.0, Math.min(10.0, item.difficulty || 5.0));
+  const wrongCount = item.wrongCount || 0;
+  const reviewCount = item.reviewCount || 0;
+  const consecutiveCorrect = item.consecutiveCorrect || 0;
+
+  // FSRS retrievability estimation: R = exp(-elapsed / (9 * stability))
+  const retrievability = reviewCount > 0 ? Math.exp(-elapsedDays / (9 * stability)) : 0;
+
+  let score = 0;
+
+  // Priority 1: Due cards (dueAt <= now)
+  if (dueAt <= now) {
+    score += 50;
+    const overdueHours = (now - dueAt) / (1000 * 60 * 60);
+    score += Math.min(30, Math.max(0, overdueHours * 0.5));
+  } else {
+    // If future due, lower urgency
+    const hoursUntilDue = (dueAt - now) / (1000 * 60 * 60);
+    score -= Math.min(35, hoursUntilDue * 0.2);
+  }
+
+  // Priority 2: High risk of forgetting (low retrievability / slip risk)
+  if (reviewCount > 0) {
+    score += (1 - retrievability) * 35;
+  }
+
+  // Mistake history
+  score += Math.min(25, wrongCount * 5);
+
+  // Intrinsic difficulty
+  score += (difficulty / 10) * 20;
+
+  // Low stability (unstable memories need earlier rehearsal)
+  score += 15 / (1 + stability);
+
+  // Priority 3: New words (never reviewed)
+  if (reviewCount === 0) {
+    score += 20;
+  }
+
+  // Mastered words not due get penalized so user doesn't waste time
+  if (reviewCount >= 3 && consecutiveCorrect >= 2 && dueAt > now) {
+    score -= 40;
+  }
+
+  // Minor jitter (+/- 1.0) so identical priority scores don't appear in mechanical order
+  score += Math.random() * 2 - 1.0;
+
+  return score;
+}
+
+/**
+ * Maps raw word object to structured ReviewQueueItem
+ */
+function mapToReviewItem(raw: any, defaultTopic = 'General', origin = 'DECK'): ReviewQueueItem {
+  const v = raw.vocabulary || raw;
+  const wordMeaning =
+    v.meaning ||
+    v.shortDefinition ||
+    v.definition ||
+    raw.meaning ||
+    raw.shortDefinition ||
+    raw.definition ||
+    raw.meanings?.[0]?.meaning ||
+    'Nghĩa từ vựng';
+
+  const now = Date.now();
+  const dueAt = raw.dueAt || v.dueAt || now - 1000;
+  const lastReviewedAt = raw.lastReviewedAt || v.lastReviewedAt || 0;
+  const reviewCount = raw.reviewCount || v.reviewCount || 0;
+  const correctCount = raw.correctCount || v.correctCount || 0;
+  const wrongCount = raw.wrongCount || v.wrongCount || 0;
+  const consecutiveCorrect = raw.consecutiveCorrect || v.consecutiveCorrect || 0;
+  const consecutiveWrong = raw.consecutiveWrong || v.consecutiveWrong || 0;
+  const interval = raw.interval || v.interval || 1;
+  const stability = raw.stability || v.stability || 1.0;
+  const difficulty = raw.difficulty || v.difficulty || 5.0;
+
+  const item: ReviewQueueItem = {
+    vocabularyId: v.id || raw.id || `vocab_${Math.random()}`,
+    word: v.word || raw.word || 'Vocabulary',
+    pronunciation: v.phonetic || raw.phonetic || v.pronunciation || raw.pronunciation || '',
+    meaning: wordMeaning,
+    meaningVi: wordMeaning,
+    englishDefinition: v.definition || raw.definition || '',
+    example: v.examples?.[0]?.sentence || v.example || raw.example || '',
+    exampleTranslation: v.examples?.[0]?.translation || v.exampleTranslation || raw.exampleTranslation || '',
+    partOfSpeech: v.partOfSpeech || raw.partOfSpeech || 'n.',
+    cefrLevel: v.cefrLevel || raw.cefrLevel || 'B1',
+    topic: v.topic || raw.topic || defaultTopic,
+    origin,
+    deckId: raw.deckId || v.deckId,
+    deckTitle: raw.deckName || v.deckName || defaultTopic,
+    options: [
+      wordMeaning,
+      'Sự trì hoãn trong công việc và dự án',
+      'Đánh giá tiến độ và hiệu suất công việc',
+      'Chính sách phát triển và bảo trì hệ thống',
+    ].sort(() => Math.random() - 0.5),
+    correctAnswer: wordMeaning,
+    dueAt,
+    lastReviewedAt,
+    reviewCount,
+    correctCount,
+    wrongCount,
+    consecutiveCorrect,
+    consecutiveWrong,
+    interval,
+    stability,
+    difficulty,
+    retrievability: 1.0,
+    priorityScore: 0,
+  };
+
+  item.priorityScore = calculateWordPriority(item);
+  return item;
+}
 
 export const ReviewSessionPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,13 +211,26 @@ export const ReviewSessionPage: React.FC = () => {
 
   // Mode: 3D Flashcard vs Multiple Choice Quiz
   const [studyMode, setStudyMode] = useState<'flashcard' | 'quiz'>('flashcard');
-  const initialTopic = searchParams.get('type') === 'MEMORY_RESCUE' ? 'MEMORY_RESCUE' : (searchParams.get('topic') || 'ALL');
-  const [selectedTopic, setSelectedTopic] = useState<string>(initialTopic);
 
-  // Flashcard states
-  const [items, setItems] = useState<any[]>([]);
+  // Topic & Deck Selection
+  const initialTopic =
+    searchParams.get('type') === 'MEMORY_RESCUE'
+      ? 'MEMORY_RESCUE'
+      : searchParams.get('deckId')
+      ? `deck_${searchParams.get('deckId')}`
+      : searchParams.get('topic') || 'ALL';
+
+  const [selectedTopic, setSelectedTopic] = useState<string>(initialTopic);
+  const [topicOptions, setTopicOptions] = useState<any[]>(DEFAULT_TOPIC_OPTIONS);
+  const [userDecks, setUserDecks] = useState<LocalDeck[]>([]);
+  const [systemTopics, setSystemTopics] = useState<any[]>([]);
+
+  // Review Queue states
+  const [items, setItems] = useState<ReviewQueueItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [transitionNotice, setTransitionNotice] = useState<string | null>(null);
+
   const [sessionStats, setSessionStats] = useState({
     again: 0,
     hard: 0,
@@ -78,6 +256,65 @@ export const ReviewSessionPage: React.FC = () => {
   const startTimeRef = useRef<number>(Date.now());
   const sessionDurationRef = useRef<number>(Date.now());
 
+  // Load user decks & system topics on mount
+  useEffect(() => {
+    Promise.allSettled([
+      idbGetLocalDecks(),
+      api.get('/community/my-decks').catch(() => []),
+      api.get('/vocabulary/topics').catch(() => ({ data: [] })),
+    ]).then(([localDecksRes, cloudDecksRes, topicsRes]) => {
+      const localDecks: LocalDeck[] =
+        localDecksRes.status === 'fulfilled' && Array.isArray(localDecksRes.value) ? localDecksRes.value : [];
+      const cloudDecks: any[] =
+        cloudDecksRes.status === 'fulfilled' && Array.isArray(cloudDecksRes.value) ? cloudDecksRes.value : [];
+      const sysTopics: any[] =
+        topicsRes.status === 'fulfilled' && topicsRes.value?.data ? topicsRes.value.data : [];
+
+      const mergedMap = new Map<string, any>();
+      for (const d of cloudDecks) mergedMap.set(d.id, d);
+      for (const d of localDecks) {
+        if (!mergedMap.has(d.id)) mergedMap.set(d.id, d);
+      }
+      const decks = Array.from(mergedMap.values());
+      setUserDecks(decks);
+      setSystemTopics(sysTopics);
+
+      const opts: any[] = [
+        { id: 'ALL', label: '⚡ Tất cả từ cần ôn (SRS Smart)', icon: Sparkles },
+        { id: 'MEMORY_RESCUE', label: '🚑 Giải cứu trí nhớ (Slipping Words)', icon: Flame },
+        { id: 'MY_WORDS', label: '⭐ Kho từ của tôi (Tất cả)', icon: Bookmark },
+      ];
+
+      if (decks.length > 0) {
+        decks.forEach((d) => {
+          opts.push({
+            id: `deck_${d.id}`,
+            deckId: d.id,
+            deckTitle: d.title,
+            label: `📁 ${d.title} (${d.wordCount || d.words?.length || 0} từ)`,
+            icon: BookOpen,
+            type: 'DECK',
+          });
+        });
+      }
+
+      if (sysTopics.length > 0) {
+        sysTopics.forEach((st: any) => {
+          opts.push({
+            id: `topic_${st.slug}`,
+            slug: st.slug,
+            name: st.name,
+            label: `🏷️ ${st.name} (${st._count?.items || 0} từ)`,
+            icon: Layers,
+            type: 'TOPIC',
+          });
+        });
+      }
+
+      setTopicOptions(opts);
+    });
+  }, []);
+
   // Smart Break Monitor: Trigger gentle reminder after 25 minutes of continuous study
   useEffect(() => {
     const timer = setInterval(() => {
@@ -89,164 +326,187 @@ export const ReviewSessionPage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Load study items based on selected topic
-  const loadStudyItems = async (topic: string) => {
+  // Find next deck with reviewable words when current deck clears
+  const findNextReviewableDeck = async (currentTopicKey: string) => {
+    try {
+      const [localDecks, allWords] = await Promise.all([idbGetLocalDecks(), idbGetWords()]);
+      const cleanCurrentId = currentTopicKey.replace('deck_', '');
+
+      const otherDecks = localDecks.filter(
+        (d) => d.id !== cleanCurrentId && d.title !== currentTopicKey && `deck_${d.id}` !== currentTopicKey
+      );
+
+      for (const deck of otherDecks) {
+        const deckWords = allWords.filter(
+          (w) => w.deckId === deck.id || (w.deckName && w.deckName === deck.title)
+        );
+        if (deckWords.length > 0) {
+          return { deck, words: deckWords };
+        }
+      }
+    } catch (err) {
+      console.warn('Next deck scan warning:', err);
+    }
+    return null;
+  };
+
+  // Load study items based on selected topic or deck
+  const loadStudyItems = async (topicKey: string) => {
     setLoading(true);
     setCurrentIndex(0);
     setIsFlipped(false);
     setSummary(null);
     setFeedback(null);
+    setTransitionNotice(null);
     setSessionStats({ again: 0, hard: 0, good: 0, easy: 0, xpEarned: 0 });
 
     try {
-      if (topic === 'MEMORY_RESCUE') {
-        const res: any = await api.post('/reviews/memory-rescue/session');
+      // 1. MEMORY RESCUE
+      if (topicKey === 'MEMORY_RESCUE') {
+        const res: any = await api.post('/reviews/memory-rescue/session').catch(() => ({ data: { items: [] } }));
         if (res?.success && res.data?.items?.length > 0) {
           setSession(res.data.session);
-          setItems(res.data.items);
+          const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Memory Rescue', 'MEMORY_RESCUE'));
+          mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
+          setItems(mapped);
         } else {
-          // If no words in slipping queue, fallback to ALL
-          loadStudyItems('ALL');
-          return;
+          // Fallback to local slipping words
+          const localWords = await idbGetWords();
+          const slipping = localWords
+            .filter((w) => (w.wrongCount || 0) > 0 || (w.stability || 1.0) < 1.5)
+            .map((w) => mapToReviewItem(w, 'Memory Rescue', 'LOCAL'));
+          slipping.sort((a, b) => b.priorityScore - a.priorityScore);
+          setItems(slipping);
         }
-      } else if (topic === 'MY_WORDS') {
-        const res: any = await api.get('/community/my-words?filter=ALL');
-        const words = (res?.data || res || []).map((item: any) => {
-          const v = item.vocabulary || {};
-          return {
-            vocabularyId: v.id || item.id,
-            word: v.word || item.word || 'Vocabulary',
-            pronunciation: v.phonetic || '',
-            meaning: v.meanings?.[0]?.meaning || v.shortDefinition || v.definition || 'Nghĩa từ vựng',
-            englishDefinition: v.definition || v.shortDefinition || '',
-            example: v.examples?.[0]?.sentence || '',
-            exampleTranslation: v.examples?.[0]?.translation || '',
-            cefrLevel: v.cefrLevel || 'B1',
-            topic: v.topic || 'General',
-            origin: 'WORD_BANK',
-            options: [
-              v.shortDefinition || v.definition || 'Nghĩa đúng',
-              'Sự chậm trễ trong tiến độ bàn giao',
-              'Phân tích chi tiết báo cáo tài chính',
-              'Đồng ý với các điều khoản bảo hành',
-            ],
-            correctAnswer: v.shortDefinition || v.definition || 'Nghĩa đúng',
-          };
-        });
-        setItems(words.slice(0, 15));
-      } else if (topic === 'ALL') {
-        // Normal SRS Queue
-        const res: any = await api.post('/reviews/smart-session', { limit: 12 });
-        if (res?.success && res.data?.items?.length > 0) {
-          setSession(res.data.session);
-          setItems(res.data.items);
-        } else {
-          // Fallback to active vocabulary list
-          const vocabRes: any = await api.get('/vocabulary', { params: { limit: 15 } });
-          const raw = vocabRes?.data || [];
-          setItems(
-            raw.map((v: any) => ({
-              vocabularyId: v.id,
-              word: v.word,
-              pronunciation: v.phonetic,
-              meaning: v.shortDefinition || v.definition || v.word,
-              englishDefinition: v.definition || '',
-              example: v.examples?.[0]?.sentence || '',
-              exampleTranslation: v.examples?.[0]?.translation || '',
-              cefrLevel: v.cefrLevel || 'B2',
-              topic: v.topic || 'Business English',
-              origin: 'VOCABULARY',
-              options: [
-                v.shortDefinition || v.definition || 'Nghĩa đúng',
-                'Khả năng phục hồi và thích ứng linh hoạt',
-                'Kế hoạch triển khai dự án thương mại',
-                'Chính sách ưu đãi dành cho khách hàng',
-              ],
-              correctAnswer: v.shortDefinition || v.definition || 'Nghĩa đúng',
-            }))
+      }
+      // 2. MY WORDS (ALL)
+      else if (topicKey === 'MY_WORDS') {
+        let localWords = await idbGetWords();
+        if (localWords.length === 0) {
+          const cloudRes: any = await api.get('/community/my-words?filter=ALL').catch(() => []);
+          localWords = Array.isArray(cloudRes) ? cloudRes : cloudRes?.data || [];
+        }
+        const mapped = localWords.map((item: any) => mapToReviewItem(item, 'My Words', 'WORD_BANK'));
+        mapped.sort((a, b) => b.priorityScore - a.priorityScore);
+        setItems(mapped);
+      }
+      // 3. SPECIFIC DECK OR QUERY DECK ID
+      else if (
+        topicKey.startsWith('deck_') ||
+        searchParams.get('deckId') ||
+        searchParams.get('topic')
+      ) {
+        const targetDeckId = topicKey.startsWith('deck_')
+          ? topicKey.replace('deck_', '')
+          : searchParams.get('deckId');
+
+        const [localDecks, allLocalWords] = await Promise.all([idbGetLocalDecks(), idbGetWords()]);
+
+        let matchedDeck = targetDeckId
+          ? localDecks.find((d) => d.id === targetDeckId) || userDecks.find((d) => d.id === targetDeckId)
+          : null;
+
+        if (!matchedDeck) {
+          matchedDeck =
+            localDecks.find((d) => d.title === topicKey || d.id === topicKey) ||
+            userDecks.find((d) => d.title === topicKey || d.id === topicKey);
+        }
+
+        let deckWords: any[] = [];
+        const deckIdToSearch = matchedDeck?.id || targetDeckId;
+        const deckTitleToSearch = matchedDeck?.title || topicKey;
+
+        if (deckIdToSearch) {
+          deckWords = await idbGetWordsByDeck(deckIdToSearch);
+        }
+
+        if (deckWords.length === 0) {
+          deckWords = allLocalWords.filter(
+            (w: any) =>
+              (deckIdToSearch && w.deckId === deckIdToSearch) ||
+              (w.deckName && w.deckName === deckTitleToSearch) ||
+              (w.topic && w.topic === deckTitleToSearch)
           );
         }
-      } else {
-        // Filter by specific topic
-        const res: any = await api.get('/vocabulary', { params: { topic, limit: 15 } });
-        const list = res?.data || [];
-        setItems(
-          list.map((v: any) => ({
-            vocabularyId: v.id,
-            word: v.word,
-            pronunciation: v.phonetic,
-            meaning: v.shortDefinition || v.definition || v.word,
-            englishDefinition: v.definition || '',
-            example: v.examples?.[0]?.sentence || '',
-            exampleTranslation: v.examples?.[0]?.translation || '',
-            cefrLevel: v.cefrLevel || 'B2',
-            topic: v.topic || topic,
-            origin: topic.toUpperCase(),
-            options: [
-              v.shortDefinition || v.definition || 'Nghĩa đúng',
-              'Sự thỏa thuận giữa hai bên đối tác',
-              'Quy trình đánh giá hiệu suất định kỳ',
-              'Báo cáo tổng kết quý vừa qua',
-            ],
-            correctAnswer: v.shortDefinition || v.definition || 'Nghĩa đúng',
-          }))
-        );
+
+        // If still empty and deckId is present, query Cloud API
+        if (deckWords.length === 0 && deckIdToSearch) {
+          const cloudDeck: any = await api.get(`/community/decks/${deckIdToSearch}`).catch(() => null);
+          if (cloudDeck?.words && cloudDeck.words.length > 0) {
+            deckWords = cloudDeck.words;
+          }
+        }
+
+        // If words exist, map them all and sort by Spaced Repetition priority
+        if (deckWords.length > 0) {
+          const mapped = deckWords.map((item: any) =>
+            mapToReviewItem(item, deckTitleToSearch, 'DECK')
+          );
+          mapped.sort((a, b) => b.priorityScore - a.priorityScore);
+          setItems(mapped);
+        } else {
+          // If no words found for deck, fall back to general vocabulary
+          setItems([]);
+        }
       }
+      // 4. ALL DUE (SMART SRS SESSION)
+      else if (topicKey === 'ALL') {
+        const [localDecks, allLocalWords] = await Promise.all([idbGetLocalDecks(), idbGetWords()]);
+
+        if (allLocalWords.length > 0) {
+          const mapped = allLocalWords.map((item: any) => mapToReviewItem(item, 'General', 'WORD_BANK'));
+          mapped.sort((a, b) => b.priorityScore - a.priorityScore);
+          setItems(mapped);
+        } else {
+          // Fall back to server vocabulary session
+          const res: any = await api.post('/reviews/smart-session', { limit: 50 }).catch(() => null);
+          if (res?.success && res.data?.items?.length > 0) {
+            setSession(res.data.session);
+            const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Smart Review', 'SYSTEM'));
+            mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
+            setItems(mapped);
+          } else {
+            const vocabRes: any = await api.get('/vocabulary', { params: { limit: 50 } }).catch(() => ({ data: { items: [] } }));
+            const raw = vocabRes.data?.items || vocabRes.data || [];
+            const mapped = raw.map((v: any) => mapToReviewItem(v, 'Vocabulary', 'VOCABULARY'));
+            mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
+            setItems(mapped);
+          }
+        }
+      }
+      // 5. TOPIC SLUG
+      else {
+        const cleanSlug = topicKey.startsWith('topic_') ? topicKey.replace('topic_', '') : topicKey;
+        const res: any = await api.get('/vocabulary', { params: { topic: cleanSlug, limit: 100 } }).catch(() => ({ data: { items: [] } }));
+        const rawList = res?.data?.items || res?.data || [];
+        const totalPages = res?.meta?.pagination?.totalPages || res?.data?.pagination?.totalPages || 1;
+
+        let allWords = [...rawList];
+        if (totalPages > 1) {
+          const nextPages = await Promise.allSettled(
+            Array.from({ length: Math.min(totalPages, 5) - 1 }, (_, i) =>
+              api.get('/vocabulary', { params: { topic: cleanSlug, page: i + 2, limit: 100 } })
+            )
+          );
+          nextPages.forEach((p) => {
+            if (p.status === 'fulfilled') {
+              const pItems = p.value?.data?.items || p.value?.data || [];
+              allWords.push(...pItems);
+            }
+          });
+        }
+
+        const mapped = allWords.map((v: any) => mapToReviewItem(v, cleanSlug, 'TOPIC'));
+        mapped.sort((a, b) => b.priorityScore - a.priorityScore);
+        setItems(mapped);
+      }
+
       startTimeRef.current = Date.now();
     } catch (err) {
       console.error('Failed to load study items', err);
+      setItems([]);
     } finally {
       setLoading(false);
-      setItems((prev) => {
-        if (prev && prev.length > 0) return prev;
-        return [
-          {
-            vocabularyId: 'demo-1',
-            word: 'negotiate',
-            pronunciation: '/nɪˈɡoʊʃieɪt/',
-            partOfSpeech: 'verb',
-            meaningVi: 'đàm phán, thương lượng hợp đồng',
-            meaning: 'đàm phán, thương lượng hợp đồng',
-            englishDefinition: 'to discuss something in order to reach an agreement.',
-            example: 'The team managed to negotiate a favorable deal for both parties.',
-            exampleTranslation: 'Cả nhóm đã đàm phán thành công một thỏa thuận có lợi cho đôi bên.',
-            cefrLevel: 'B2',
-            topic: 'Business English',
-            options: ['đàm phán, thương lượng', 'bảo trì hệ thống', 'khảo sát thị trường', 'phê duyệt ngân sách'],
-            correctAnswer: 'đàm phán, thương lượng',
-          },
-          {
-            vocabularyId: 'demo-2',
-            word: 'collaborate',
-            pronunciation: '/kəˈlæbəreɪt/',
-            partOfSpeech: 'verb',
-            meaningVi: 'hợp tác, phối hợp làm việc',
-            meaning: 'hợp tác, phối hợp làm việc',
-            englishDefinition: 'to work together with a person or group in order to achieve something.',
-            example: 'Engineers collaborate with designers to create intuitive apps.',
-            exampleTranslation: 'Các kỹ sư phối hợp cùng nhà thiết kế để tạo ra các ứng dụng trực quan.',
-            cefrLevel: 'B2',
-            topic: 'Technology',
-            options: ['hợp tác, phối hợp', 'từ chối đề xuất', 'hoãn lại cuộc họp', 'ủy quyền công việc'],
-            correctAnswer: 'hợp tác, phối hợp',
-          },
-          {
-            vocabularyId: 'demo-3',
-            word: 'resilient',
-            pronunciation: '/rɪˈzɪliənt/',
-            partOfSpeech: 'adjective',
-            meaningVi: 'kiên cường, phục hồi nhanh',
-            meaning: 'kiên cường, phục hồi nhanh',
-            englishDefinition: 'able to withstand or recover quickly from difficult conditions.',
-            example: 'A resilient mindset helps professionals overcome workplace setbacks.',
-            exampleTranslation: 'Tư duy kiên cường giúp người đi làm vượt qua những khó khăn nơi công sở.',
-            cefrLevel: 'C1',
-            topic: 'Personal Growth',
-            options: ['kiên cường, phục hồi nhanh', 'do dự thiếu tự tin', 'vội vàng hấp tấp', 'thụ động chờ đợi'],
-            correctAnswer: 'kiên cường, phục hồi nhanh',
-          },
-        ];
-      });
     }
   };
 
@@ -256,14 +516,14 @@ export const ReviewSessionPage: React.FC = () => {
 
   const currentItem = items[currentIndex];
 
-  // Helper for Cloze example (hiding the target word with blank)
+  // Helper for Cloze example
   const getClozeSentence = (sentence?: string, word?: string) => {
     if (!sentence || !word) return '';
     const regex = new RegExp(`\\b${word}\\w*\\b`, 'gi');
     return sentence.replace(regex, '__________');
   };
 
-  // 3D Flip Keyboard handler
+  // Keyboard shortcut handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (summary) return;
@@ -293,13 +553,13 @@ export const ReviewSessionPage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [studyMode, isFlipped, currentItem, feedback, summary, currentIndex]);
+  }, [studyMode, isFlipped, currentItem, feedback, summary, currentIndex, items]);
 
   // Handle Flashcard Rating & SRS Interval Update
   const handleRateFlashcard = async (rating: 'AGAIN' | 'HARD' | 'GOOD' | 'EASY') => {
     if (!currentItem) return;
 
-    // Calculate XP
+    const qualityMap = { AGAIN: 1, HARD: 2, GOOD: 4, EASY: 5 };
     const xpMap = { AGAIN: 5, HARD: 10, GOOD: 15, EASY: 20 };
     const xp = xpMap[rating];
 
@@ -310,10 +570,74 @@ export const ReviewSessionPage: React.FC = () => {
       xpEarned: prev.xpEarned + xp,
     }));
 
-    // Post review answer if session exists
+    const now = Date.now();
+    let updatedInterval = currentItem.interval;
+    let updatedStability = currentItem.stability;
+    let updatedDifficulty = currentItem.difficulty;
+    let updatedConsecutiveCorrect = currentItem.consecutiveCorrect;
+    let updatedConsecutiveWrong = currentItem.consecutiveWrong;
+    let updatedWrongCount = currentItem.wrongCount;
+    let updatedCorrectCount = currentItem.correctCount;
+    let updatedDueAt = currentItem.dueAt;
+    let nextStatus = 'LEARNING';
+
+    if (rating === 'AGAIN') {
+      // User forgot or failed recall: re-queue card
+      updatedWrongCount += 1;
+      updatedConsecutiveWrong += 1;
+      updatedConsecutiveCorrect = 0;
+      updatedStability = Math.max(0.5, updatedStability * 0.5);
+      updatedDifficulty = Math.min(10.0, updatedDifficulty + 1.0);
+      updatedInterval = 1;
+      updatedDueAt = now + 10 * 60 * 1000; // repeat soon
+      nextStatus = 'LEARNING';
+    } else if (rating === 'HARD') {
+      updatedCorrectCount += 1;
+      updatedConsecutiveWrong = 0;
+      updatedInterval = Math.max(1, Math.round(updatedInterval * 1.2));
+      updatedStability = Math.max(1.0, updatedStability * 1.1);
+      updatedDifficulty = Math.min(10.0, updatedDifficulty + 0.3);
+      updatedDueAt = now + updatedInterval * 86400000;
+      nextStatus = 'REVIEW';
+    } else if (rating === 'GOOD') {
+      updatedCorrectCount += 1;
+      updatedConsecutiveCorrect += 1;
+      updatedConsecutiveWrong = 0;
+      updatedInterval = Math.max(1, Math.round(updatedInterval * 2.5));
+      updatedStability = updatedStability * 1.8;
+      updatedDueAt = now + updatedInterval * 86400000;
+      nextStatus = updatedConsecutiveCorrect >= 3 ? 'MASTERED' : 'REVIEW';
+    } else if (rating === 'EASY') {
+      updatedCorrectCount += 1;
+      updatedConsecutiveCorrect += 1;
+      updatedConsecutiveWrong = 0;
+      updatedInterval = Math.max(2, Math.round(updatedInterval * 4.0));
+      updatedStability = updatedStability * 2.5;
+      updatedDifficulty = Math.max(1.0, updatedDifficulty - 1.0);
+      updatedDueAt = now + updatedInterval * 86400000;
+      nextStatus = 'MASTERED';
+    }
+
+    // Persist locally in IndexedDB
+    if (currentItem.vocabularyId) {
+      await idbUpdateWordProgress(currentItem.vocabularyId, {
+        dueAt: updatedDueAt,
+        lastReviewedAt: now,
+        reviewCount: (currentItem.reviewCount || 0) + 1,
+        correctCount: updatedCorrectCount,
+        wrongCount: updatedWrongCount,
+        consecutiveCorrect: updatedConsecutiveCorrect,
+        consecutiveWrong: updatedConsecutiveWrong,
+        interval: updatedInterval,
+        stability: updatedStability,
+        difficulty: updatedDifficulty,
+        status: nextStatus,
+      });
+    }
+
+    // Post review answer if cloud session exists
     if (session?.id) {
       try {
-        const qualityMap = { AGAIN: 1, HARD: 2, GOOD: 4, EASY: 5 };
         await api.post(`/reviews/${session.id}/answer`, {
           vocabularyId: currentItem.vocabularyId,
           answer: currentItem.word,
@@ -325,18 +649,59 @@ export const ReviewSessionPage: React.FC = () => {
       }
     }
 
-    // Advance to next card
     setIsFlipped(false);
     startTimeRef.current = Date.now();
 
+    const updatedCurrentItem: ReviewQueueItem = {
+      ...currentItem,
+      dueAt: updatedDueAt,
+      lastReviewedAt: now,
+      reviewCount: (currentItem.reviewCount || 0) + 1,
+      correctCount: updatedCorrectCount,
+      wrongCount: updatedWrongCount,
+      consecutiveCorrect: updatedConsecutiveCorrect,
+      consecutiveWrong: updatedConsecutiveWrong,
+      interval: updatedInterval,
+      stability: updatedStability,
+      difficulty: updatedDifficulty,
+    };
+
+    // QUEUE LOGIC: If AGAIN, re-insert card 2-3 positions ahead in the active queue
+    if (rating === 'AGAIN') {
+      const newItems = [...items];
+      newItems.splice(currentIndex, 1);
+      const reInsertPos = Math.min(currentIndex + 2, newItems.length);
+      newItems.splice(reInsertPos, 0, updatedCurrentItem);
+      setItems(newItems);
+      // Stay at currentIndex which now points to the next item
+      return;
+    }
+
+    // If HARD, GOOD, EASY: card is cleared from current queue!
     if (currentIndex + 1 < items.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
-      // Completed session
+      // Finished current deck/topic! Check if another deck has reviewable words
+      const nextDeckInfo = await findNextReviewableDeck(selectedTopic);
+      if (nextDeckInfo) {
+        setTransitionNotice(
+          `🎉 Hoàn thành kho "${currentItem.deckTitle || selectedTopic}"! Tự động chuyển tiếp sang kho "${nextDeckInfo.deck.title}" còn ${nextDeckInfo.words.length} từ...`
+        );
+        setTimeout(() => setTransitionNotice(null), 4000);
+        const nextQueue = nextDeckInfo.words.map((w) => mapToReviewItem(w, nextDeckInfo.deck.title, 'DECK'));
+        nextQueue.sort((a, b) => b.priorityScore - a.priorityScore);
+        setItems(nextQueue);
+        setCurrentIndex(0);
+        setSelectedTopic(`deck_${nextDeckInfo.deck.id}`);
+        return;
+      }
+
+      // Truly no reviewable words remain across all topics!
+      const totalReviews = sessionStats.again + sessionStats.hard + sessionStats.good + sessionStats.easy + 1;
       setSummary({
-        totalQuestions: items.length,
+        totalQuestions: totalReviews,
         xpEarned: sessionStats.xpEarned + xp,
-        accuracy: Math.round(((sessionStats.good + sessionStats.easy + 1) / items.length) * 100),
+        accuracy: Math.round(((sessionStats.good + sessionStats.easy + 1) / totalReviews) * 100),
       });
       if (session?.id) {
         api.post(`/reviews/${session.id}/complete`).catch(() => {});
@@ -359,19 +724,45 @@ export const ReviewSessionPage: React.FC = () => {
     setSubmitting(false);
   };
 
-  const handleNextQuiz = () => {
+  const handleNextQuiz = async () => {
+    const wasCorrect = feedback?.isCorrect;
     setFeedback(null);
     setUserAnswer('');
     setShowHint(false);
     startTimeRef.current = Date.now();
 
+    // If answer was wrong in Quiz mode, re-insert 2 questions ahead
+    if (!wasCorrect) {
+      const newItems = [...items];
+      const wrongItem = newItems.splice(currentIndex, 1)[0];
+      const insertIdx = Math.min(currentIndex + 2, newItems.length);
+      newItems.splice(insertIdx, 0, wrongItem);
+      setItems(newItems);
+      return;
+    }
+
     if (currentIndex + 1 < items.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
+      // Check multi-deck transition
+      const nextDeckInfo = await findNextReviewableDeck(selectedTopic);
+      if (nextDeckInfo) {
+        setTransitionNotice(
+          `🎉 Hoàn thành kho hiện tại! Tiếp tục chuyển sang kho "${nextDeckInfo.deck.title}" còn ${nextDeckInfo.words.length} từ...`
+        );
+        setTimeout(() => setTransitionNotice(null), 4000);
+        const nextQueue = nextDeckInfo.words.map((w) => mapToReviewItem(w, nextDeckInfo.deck.title, 'DECK'));
+        nextQueue.sort((a, b) => b.priorityScore - a.priorityScore);
+        setItems(nextQueue);
+        setCurrentIndex(0);
+        setSelectedTopic(`deck_${nextDeckInfo.deck.id}`);
+        return;
+      }
+
       setSummary({
         totalQuestions: items.length,
         xpEarned: items.length * 15,
-        accuracy: 90,
+        accuracy: 95,
       });
     }
   };
@@ -380,7 +771,7 @@ export const ReviewSessionPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-        <p className="text-xs font-semibold text-slate-500">Đang khởi tạo thuật toán Spaced Repetition...</p>
+        <p className="text-xs font-semibold text-slate-500">Đang khởi tạo thuật toán Spaced Repetition (FSRS)...</p>
       </div>
     );
   }
@@ -388,7 +779,7 @@ export const ReviewSessionPage: React.FC = () => {
   // Summary Screen
   if (summary) {
     return (
-      <div className="max-w-lg mx-auto py-10 px-4 text-center animate-fade-in">
+      <div className="max-w-2xl mx-auto py-10 px-4 text-center animate-fade-in">
         <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white mx-auto flex items-center justify-center shadow-lg shadow-indigo-500/30">
             <Sparkles className="w-8 h-8" />
@@ -396,16 +787,16 @@ export const ReviewSessionPage: React.FC = () => {
 
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Hoàn Tất Phiên Học Flashcard!
+              Bạn Đã Ôn Hết!
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Các từ vựng đã được cập nhật chu kỳ ghi nhớ ngắt quãng (SRS) tối ưu vào hệ thống.
+              Không còn từ vựng nào cần ôn lúc này. Các thẻ đã được cập nhật chu kỳ Spaced Repetition vào tương lai.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-3 py-4 border-y border-slate-100 dark:border-slate-800">
             <div className="p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50">
-              <p className="text-[11px] text-slate-400 font-bold uppercase">Tổng từ</p>
+              <p className="text-[11px] text-slate-400 font-bold uppercase">Lượt thẻ ôn</p>
               <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mt-0.5">
                 {summary.totalQuestions}
               </p>
@@ -424,7 +815,7 @@ export const ReviewSessionPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Session Mood Feedback (Prompt Requirement # 29) */}
+          {/* Session Mood Feedback */}
           <div className="space-y-2 pt-1 text-left border-t border-slate-100 dark:border-slate-800">
             <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Bạn cảm thấy phiên học này như thế nào?
@@ -462,13 +853,13 @@ export const ReviewSessionPage: React.FC = () => {
               className="btn-glass-primary w-full !py-3 text-xs gap-2"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Ôn tập tiếp chủ đề này</span>
+              <span>Ôn tập củng cố lại</span>
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/word-bank')}
               className="btn-glass-secondary w-full !py-3 text-xs"
             >
-              Về Dashboard
+              Xem Kho Từ Vựng
             </button>
           </div>
         </div>
@@ -485,20 +876,20 @@ export const ReviewSessionPage: React.FC = () => {
         </div>
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Không còn từ vựng nào cần ôn lúc này!</h3>
         <p className="text-xs text-slate-500">
-          Tất cả các từ trong chủ đề này đã được củng cố. Bạn có thể chọn chủ đề khác để tiếp tục.
+          Tất cả các từ trong chủ đề này đã được củng cố và chưa đến hạn ôn tập tiếp theo. Bạn có thể chọn chủ đề khác hoặc quay về kho từ.
         </p>
         <div className="flex justify-center gap-2 pt-2">
           <button
             onClick={() => setSelectedTopic('ALL')}
-            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold"
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-xs hover:bg-indigo-700 transition"
           >
-            Xem tất cả từ
+            Ôn tất cả từ
           </button>
           <button
-            onClick={() => navigate('/dashboard')}
-            className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold"
+            onClick={() => navigate('/word-bank')}
+            className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition"
           >
-            Về Dashboard
+            Về Kho Từ Vựng
           </button>
         </div>
       </div>
@@ -508,12 +899,20 @@ export const ReviewSessionPage: React.FC = () => {
   const progressPercent = Math.round(((currentIndex + 1) / items.length) * 100);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in py-2">
-      {/* Smart Break Prompt (Prompt Requirement # 28) */}
+    <div className="max-w-2xl mx-auto space-y-5 animate-fade-in py-2">
+      {/* Multi-topic Auto Transition Notice */}
+      {transitionNotice && (
+        <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+          <span>{transitionNotice}</span>
+        </div>
+      )}
+
+      {/* Smart Break Prompt */}
       {showSmartBreak && (
         <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between animate-in fade-in">
           <div className="flex items-center gap-2">
-            <span className="text-base">☕</span>
+            <Clock className="w-4 h-4 text-amber-600 shrink-0" />
             <span className="font-semibold">
               Bạn đang học rất tốt suốt 25 phút qua! Một khoảng nghỉ ngắn 3 phút sẽ giúp não bộ củng cố nơ-ron tốt hơn.
             </span>
@@ -539,7 +938,8 @@ export const ReviewSessionPage: React.FC = () => {
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <span>🎴 Flashcard 3D (SRS)</span>
+            <Layers className="w-3.5 h-3.5" />
+            <span>Flashcard 3D (SRS)</span>
           </button>
           <button
             onClick={() => setStudyMode('quiz')}
@@ -549,7 +949,8 @@ export const ReviewSessionPage: React.FC = () => {
                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <span>🎯 Trắc nghiệm (Quiz)</span>
+            <BrainCircuit className="w-3.5 h-3.5" />
+            <span>Trắc nghiệm (Quiz)</span>
           </button>
         </div>
 
@@ -562,12 +963,12 @@ export const ReviewSessionPage: React.FC = () => {
               setSelectedTopic(val);
               setSearchParams({ topic: val });
             }}
-            options={TOPIC_OPTIONS.map((opt) => ({
+            options={topicOptions.map((opt) => ({
               value: opt.id,
               label: opt.label,
             }))}
             size="sm"
-            className="w-44 sm:w-52"
+            className="w-52 sm:w-64"
           />
         </div>
       </div>
@@ -577,19 +978,12 @@ export const ReviewSessionPage: React.FC = () => {
         <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-200 text-xs font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
           <div className="flex items-center gap-2">
             <Flame className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>🚑 Phiên Giải Cứu Trí Nhớ (Memory Rescue) — Củng cố nơ-ron các từ vựng nguy cơ quên cao</span>
+            <span>Phiên Giải Cứu Trí Nhớ (Memory Rescue) — Củng cố nơ-ron các từ vựng nguy cơ quên cao</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
             <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600 dark:text-rose-300 text-[10px] uppercase font-black">
-              ✨ PRO
+              SRS ACTIVE
             </span>
-            <button
-              onClick={() => navigate('/upgrade')}
-              className="px-2.5 py-1 rounded-md bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white text-[10px] font-black uppercase flex items-center gap-1 shadow-xs transition hover:scale-105"
-            >
-              <LockOpen className="w-2.5 h-2.5" />
-              <span>Mở khóa Pro</span>
-            </button>
           </div>
         </div>
       )}
@@ -601,8 +995,13 @@ export const ReviewSessionPage: React.FC = () => {
             Thẻ {currentIndex + 1} / {items.length}
           </span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 font-bold">
-            {progressPercent}% hoàn thành
+            {progressPercent}% tiến độ
           </span>
+          {currentItem.deckTitle && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">
+              📁 {currentItem.deckTitle}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -611,8 +1010,8 @@ export const ReviewSessionPage: React.FC = () => {
             <span>+{sessionStats.xpEarned} XP</span>
           </div>
           <button
-            onClick={() => navigate('/dashboard')}
-            className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            onClick={() => navigate('/word-bank')}
+            className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
           >
             ✕ Thoát
           </button>
@@ -627,30 +1026,30 @@ export const ReviewSessionPage: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODE 1: TACTILE 3D FLASHCARD INTERACTIVE LEARNING (User Requested)        */}
+      {/* MODE 1: TACTILE 3D FLASHCARD INTERACTIVE LEARNING                        */}
       {/* ========================================================================= */}
       {studyMode === 'flashcard' && (
         <div className="space-y-4">
           {/* 3D Flip Card Container */}
           <div
-            className="perspective-1000 w-full min-h-[360px] sm:min-h-[380px] cursor-pointer select-none"
+            className="perspective-1000 w-full min-h-[380px] max-h-[calc(100dvh-16rem)] cursor-pointer select-none"
             onClick={() => setIsFlipped(!isFlipped)}
           >
             <div
-              className={`transform-style-3d relative w-full h-full min-h-[360px] sm:min-h-[380px] rounded-3xl transition-transform duration-500 ${
+              className={`transform-style-3d relative w-full h-full min-h-[380px] rounded-3xl transition-transform duration-500 ${
                 isFlipped ? 'rotate-y-180' : ''
               }`}
             >
               {/* FRONT OF THE FLASHCARD */}
-              <div className="backface-hidden absolute inset-0 w-full h-full p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between">
+              <div className="backface-hidden absolute inset-0 w-full h-full p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between overflow-y-auto">
                 {/* Top Badges */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                      {currentItem.topic || 'Business'}
+                      {currentItem.topic || 'General'}
                     </span>
                     <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">
-                      CEFR {currentItem.cefrLevel || 'B2'}
+                      CEFR {currentItem.cefrLevel || 'B1'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -662,7 +1061,7 @@ export const ReviewSessionPage: React.FC = () => {
                         setShowVoicePractice(true);
                       }}
                       className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/50 dark:border-slate-800 transition active:scale-95 flex items-center gap-1"
-                      title="Thu âm & Nghe lại giọng bạn"
+                      title="Thu âm & Luyện phát âm AI"
                     >
                       <Mic className="w-4 h-4" />
                     </button>
@@ -671,7 +1070,7 @@ export const ReviewSessionPage: React.FC = () => {
 
                 {/* Center Word Content */}
                 <div className="text-center py-6 space-y-3">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
                     {currentItem.word}
                   </h2>
                   {currentItem.pronunciation && (
@@ -695,13 +1094,13 @@ export const ReviewSessionPage: React.FC = () => {
                 {/* Bottom Card Flip Cue */}
                 <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800/80">
                   <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-                    🔄 Nhấn vào thẻ hoặc bấm phím Space để xem nghĩa & ví dụ chi tiết
+                    🔄 Nhấn vào thẻ hoặc bấm phím Space để xem nghĩa tiếng Việt & ví dụ
                   </span>
                 </div>
               </div>
 
               {/* BACK OF THE FLASHCARD */}
-              <div className="backface-hidden rotate-y-180 absolute inset-0 w-full h-full p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-900 shadow-2xl flex flex-col justify-between">
+              <div className="backface-hidden rotate-y-180 absolute inset-0 w-full h-full p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-900 shadow-2xl flex flex-col justify-between overflow-y-auto">
                 {/* Top Badges */}
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                   <div className="flex items-center gap-2">
@@ -714,29 +1113,33 @@ export const ReviewSessionPage: React.FC = () => {
                 </div>
 
                 {/* Vietnamese Meaning & Context Details */}
-                <div className="py-3 space-y-3 overflow-y-auto max-h-[220px]">
+                <div className="py-3 space-y-3 overflow-y-auto flex-1">
                   <div>
                     <span className="text-[10px] font-bold uppercase text-slate-400">Nghĩa tiếng Việt:</span>
-                    <p className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                      {currentItem.meaningVi}
+                    <p className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {currentItem.meaning ||
+                        currentItem.meaningVi ||
+                        currentItem.shortDefinition ||
+                        currentItem.definition ||
+                        'Nghĩa từ vựng'}
                     </p>
                   </div>
 
                   {currentItem.englishDefinition && (
                     <div>
                       <span className="text-[10px] font-bold uppercase text-slate-400">Định nghĩa tiếng Anh:</span>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
                         {currentItem.englishDefinition}
                       </p>
                     </div>
                   )}
 
                   {currentItem.example && (
-                    <div className="p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 text-xs">
+                    <div className="p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 text-xs space-y-1">
                       <p className="font-medium text-indigo-950 dark:text-indigo-200">"{currentItem.example}"</p>
                       {currentItem.exampleTranslation && (
-                        <p className="text-slate-500 dark:text-slate-400 mt-1 italic">
-                          "{currentItem.exampleTranslation}"
+                        <p className="text-slate-500 dark:text-slate-400 italic">
+                          🇻🇳 "{currentItem.exampleTranslation}"
                         </p>
                       )}
                     </div>
@@ -745,7 +1148,7 @@ export const ReviewSessionPage: React.FC = () => {
 
                 {/* Flip Back Cue */}
                 <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-[11px] text-slate-400">Bấm Space để lật lại mặt trước</span>
+                  <span className="text-[11px] text-slate-400">Bấm Space hoặc chạm thẻ để lật lại</span>
                 </div>
               </div>
             </div>
@@ -777,63 +1180,99 @@ export const ReviewSessionPage: React.FC = () => {
           {/* SRS 4-Tier Evaluation Buttons */}
           <div className="p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
             <p className="text-center text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Đánh giá mức độ ghi nhớ để lập lịch Spaced Repetition:
+              Đánh giá mức độ ghi nhớ (Spaced Repetition FSRS):
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {/* AGAIN */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRateFlashcard('AGAIN');
                 }}
                 className="p-3.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 transition text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
+                title="Chưa nhớ — Ôn lại trong phiên này"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs">Quên</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">1</span>
+                  <span className="font-bold text-xs flex items-center gap-1">
+                    <RotateCcw className="w-3 h-3 text-rose-500" />
+                    Quên
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">
+                    [1]
+                  </span>
                 </div>
-                <span className="text-[11px] text-rose-600/80 dark:text-rose-400/80 font-medium mt-0.5 block">&lt; 1 ngày</span>
+                <span className="text-[11px] text-rose-600/80 dark:text-rose-400/80 font-medium mt-0.5 block">
+                  Ôn lại ngay
+                </span>
               </button>
 
+              {/* HARD */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRateFlashcard('HARD');
                 }}
-                className="p-3.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 transition text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
+                className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/15 to-orange-500/10 hover:from-amber-500/25 hover:to-orange-500/20 dark:from-amber-500/20 dark:to-orange-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 transition text-left relative overflow-hidden backdrop-blur-md active:scale-95 shadow-sm group"
+                title="Khá khó nhớ — Ôn lại sau 1-2 ngày"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs">Khó</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">2</span>
+                  <span className="font-bold text-xs flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                    Khó
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/25 text-amber-800 dark:text-amber-200 font-black border border-amber-500/30">
+                    [2]
+                  </span>
                 </div>
-                <span className="text-[11px] text-amber-600/80 dark:text-amber-400/80 font-medium mt-0.5 block">2 - 3 ngày</span>
+                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5 block">
+                  1 - 2 ngày
+                </span>
               </button>
 
+              {/* GOOD */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRateFlashcard('GOOD');
                 }}
                 className="p-3.5 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 dark:bg-indigo-500/15 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 transition text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
+                title="Nhớ tốt — Ôn lại sau 3-5 ngày"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs">Nhớ tốt</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold">3</span>
+                  <span className="font-bold text-xs flex items-center gap-1">
+                    <Check className="w-3 h-3 text-indigo-500" />
+                    Nhớ tốt
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold">
+                    [3]
+                  </span>
                 </div>
-                <span className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80 font-medium mt-0.5 block">5 - 7 ngày</span>
+                <span className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80 font-medium mt-0.5 block">
+                  3 - 5 ngày
+                </span>
               </button>
 
+              {/* EASY */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRateFlashcard('EASY');
                 }}
                 className="p-3.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 transition text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
+                title="Rất dễ — Ôn lại sau 7-14 ngày"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs">Rất dễ</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">4</span>
+                  <span className="font-bold text-xs flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-emerald-500" />
+                    Rất dễ
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                    [4]
+                  </span>
                 </div>
-                <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 font-medium mt-0.5 block">10 - 14 ngày</span>
+                <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 font-medium mt-0.5 block">
+                  7 - 14 ngày
+                </span>
               </button>
             </div>
           </div>
@@ -905,7 +1344,7 @@ export const ReviewSessionPage: React.FC = () => {
                   </span>
                 ) : (
                   <span className="text-rose-600 flex items-center gap-1.5">
-                    <XCircle className="w-5 h-5" /> Chưa chính xác
+                    <XCircle className="w-5 h-5" /> Chưa chính xác (thẻ sẽ được ôn lại)
                   </span>
                 )}
               </div>

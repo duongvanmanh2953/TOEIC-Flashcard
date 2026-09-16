@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { idbGetDecks } from '../lib/idb';
 import {
   FileCheck2,
   Sparkles,
@@ -14,6 +15,7 @@ import {
   Clock,
   Award,
   RotateCcw,
+  BookOpen,
 } from 'lucide-react';
 
 export const CustomQuizPage: React.FC = () => {
@@ -21,10 +23,33 @@ export const CustomQuizPage: React.FC = () => {
   const { user, isGuest, promptLogin } = useAuth();
 
   // Generator Setup State
-  const [sourceFilter, setSourceFilter] = useState<'FAVORITES' | 'WEAK_WORDS' | 'CEFR'>('WEAK_WORDS');
+  const [sourceFilter, setSourceFilter] = useState<'FAVORITES' | 'WEAK_WORDS' | 'CEFR' | 'DECK'>('WEAK_WORDS');
   const [questionCount, setQuestionCount] = useState<number>(10);
   const [cefrLevel, setCefrLevel] = useState('B2');
+  const [userDecks, setUserDecks] = useState<any[]>([]);
+  const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [generating, setGenerating] = useState(false);
+
+  // Load user decks for DECK option
+  useEffect(() => {
+    idbGetDecks().then((decks) => {
+      if (decks && decks.length > 0) {
+        setUserDecks(decks);
+        setSelectedDeckId(decks[0].id);
+      }
+    });
+
+    if (user && !isGuest) {
+      api.get('/community/my-decks').then((res: any) => {
+        if (Array.isArray(res)) {
+          setUserDecks(res);
+          if (!selectedDeckId && res.length > 0) {
+            setSelectedDeckId(res[0].id);
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [user, isGuest]);
 
   // Active Quiz State
   const [activeQuiz, setActiveQuiz] = useState<any | null>(null);
@@ -35,8 +60,12 @@ export const CustomQuizPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const handleStartQuiz = async () => {
-    if ((sourceFilter === 'FAVORITES' || sourceFilter === 'WEAK_WORDS') && (isGuest || !user)) {
+    if ((sourceFilter === 'FAVORITES' || sourceFilter === 'WEAK_WORDS' || sourceFilter === 'DECK') && (isGuest || !user)) {
       promptLogin('Đăng nhập để tạo đề trắc nghiệm từ Kho từ vựng cá nhân và Từ yếu');
+      return;
+    }
+    if (sourceFilter === 'DECK' && !selectedDeckId) {
+      alert('Vui lòng chọn một kho từ vựng để tạo bài thi.');
       return;
     }
     setGenerating(true);
@@ -44,18 +73,26 @@ export const CustomQuizPage: React.FC = () => {
       const res: any = await api.post('/quizzes/generate', {
         sourceFilter,
         questionCount,
-        cefrLevel,
+        cefrLevel: sourceFilter === 'CEFR' ? cefrLevel : undefined,
+        deckId: sourceFilter === 'DECK' ? selectedDeckId : undefined,
       });
 
       if (res?.success) {
+        const questions = res.data?.questions || [];
+        if (questions.length === 0) {
+          alert('Không tìm thấy từ vựng phù hợp trong kho đã chọn để tạo câu hỏi. Vui lòng chọn kho hoặc nguồn khác!');
+          return;
+        }
         setActiveQuiz(res.data);
         setCurrentIndex(0);
         setAnswers({});
         setResult(null);
         setStartTime(Date.now());
+      } else {
+        alert(res?.message || 'Không thể tạo bài kiểm tra.');
       }
     } catch (err: any) {
-      alert(err?.message || 'Không thể tạo bài kiểm tra.');
+      alert(err?.response?.data?.message || err?.message || 'Không thể tạo bài kiểm tra.');
     } finally {
       setGenerating(false);
     }
@@ -136,8 +173,31 @@ export const CustomQuizPage: React.FC = () => {
 
   // Taking Quiz View
   if (activeQuiz) {
-    const currentQ = activeQuiz.questions[currentIndex];
-    const totalQ = activeQuiz.questions.length;
+    const questions = activeQuiz.questions || [];
+    const totalQ = questions.length;
+    const currentQ = questions[currentIndex];
+
+    if (totalQ === 0 || !currentQ) {
+      return (
+        <div className="max-w-lg mx-auto py-12 px-4 text-center">
+          <GlassCard className="p-8 space-y-4">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+              Đề thi chưa có câu hỏi
+            </h3>
+            <p className="text-xs text-slate-500">
+              Không tìm thấy câu hỏi hợp lệ trong bài thi này. Vui lòng thử tạo đề thi khác.
+            </p>
+            <button
+              onClick={() => setActiveQuiz(null)}
+              className="btn-glass-primary px-6 py-2.5 rounded-xl text-xs font-bold text-white"
+            >
+              Quay lại tạo đề
+            </button>
+          </GlassCard>
+        </div>
+      );
+    }
+
     const progress = Math.round(((currentIndex + 1) / totalQ) * 100);
 
     return (
@@ -163,11 +223,11 @@ export const CustomQuizPage: React.FC = () => {
             <span className="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded-md bg-brand-500/[0.08] dark:bg-brand-500/[0.14] text-brand-600 dark:text-brand-300 border border-brand-400/30">
               {activeQuiz.title}
             </span>
-            <SpeechButton text={currentQ.word} />
+            {currentQ.word && <SpeechButton text={currentQ.word} />}
           </div>
 
           <div className="text-center py-2 space-y-1">
-            <h3 className="text-2xl sm:text-3xl font-black">{currentQ.word}</h3>
+            <h3 className="text-2xl sm:text-3xl font-black">{currentQ.word || 'Từ vựng'}</h3>
             {currentQ.phonetic && <p className="text-xs tabular-nums text-slate-400">{currentQ.phonetic}</p>}
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300 pt-2">{currentQ.prompt}</p>
           </div>
@@ -179,10 +239,11 @@ export const CustomQuizPage: React.FC = () => {
                 <button
                   key={idx}
                   onClick={() => handleSelectOption(currentQ.id, opt)}
-                  className={`w-full p-4 rounded-2xl border text-left font-semibold text-sm transition flex items-center justify-between ${selected
+                  className={`w-full p-4 rounded-2xl border text-left font-semibold text-sm transition flex items-center justify-between ${
+                    selected
                       ? 'border-2 border-brand-500 bg-brand-500/[0.08] dark:bg-brand-500/[0.16] text-brand-700 dark:text-brand-200'
                       : 'border-slate-200/60 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 bg-transparent'
-                    }`}
+                  }`}
                 >
                   <span>{opt}</span>
                   <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs tabular-nums font-bold text-slate-400">
@@ -202,10 +263,10 @@ export const CustomQuizPage: React.FC = () => {
               Câu trước
             </button>
 
-            {currentIndex + 1 < totalQ ? (
+            {currentIndex < totalQ - 1 ? (
               <button
-                onClick={() => setCurrentIndex((prev) => prev + 1)}
-                className="btn-glass-primary !px-6 !py-2.5 !rounded-xl text-white font-extrabold text-xs shadow-md transition"
+                onClick={() => setCurrentIndex((prev) => Math.min(totalQ - 1, prev + 1))}
+                className="btn-glass-primary px-6 py-2.5 rounded-xl text-white font-bold text-xs"
               >
                 Câu tiếp theo
               </button>
@@ -213,7 +274,7 @@ export const CustomQuizPage: React.FC = () => {
               <button
                 onClick={handleSubmitQuiz}
                 disabled={submitting}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition"
+                className="btn-glass-primary px-6 py-2.5 rounded-xl text-white font-bold text-xs shadow-md"
               >
                 {submitting ? 'Đang chấm điểm...' : 'Nộp bài thi'}
               </button>
@@ -236,56 +297,100 @@ export const CustomQuizPage: React.FC = () => {
           Tạo Đề Kiểm Tra & Thi Thử Tự Động
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Hệ thống tự động biên soạn đề thi trắc nghiệm & điền từ tùy biến từ kho từ yếu, từ yêu thích hoặc theo cấp độ CEFR.
+          Hệ thống tự động biên soạn đề thi trắc nghiệm & điền từ tùy biến từ kho từ yếu, từ yêu thích, bộ thẻ cá nhân hoặc theo cấp độ CEFR.
         </p>
       </div>
 
       <GlassCard className="p-6 md:p-8 space-y-6">
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
             <label className="block text-xs font-bold uppercase text-slate-400 mb-2">
               1. Chọn nguồn tạo đề thi
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { key: 'WEAK_WORDS', label: 'Từ hay quên (Weak Words)', desc: 'Củng cố các từ < 50% mastery' },
                 { key: 'FAVORITES', label: 'Từ yêu thích (Favorites)', desc: 'Kiểm tra các từ bạn đã lưu' },
-                { key: 'CEFR', label: 'Theo chuẩn CEFR', desc: 'Đánh giá vốn từ phân tầng' },
+                { key: 'DECK', label: 'Kho từ của tôi (Decks)', desc: 'Luyện tập theo bộ thẻ cá nhân' },
+                { key: 'CEFR', label: 'Theo chuẩn CEFR', desc: 'Đánh giá vốn từ phân tầng A2–C1' },
               ].map((src) => (
                 <button
                   key={src.key}
                   type="button"
                   onClick={() => setSourceFilter(src.key as any)}
-                  className={`p-4 rounded-2xl border text-left transition ${sourceFilter === src.key
+                  className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between ${
+                    sourceFilter === src.key
                       ? 'card-brand-effect border-2 border-brand-500 bg-brand-500/[0.06] dark:bg-brand-500/[0.12]'
                       : 'border-slate-200/60 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-transparent'
-                    }`}
+                  }`}
                 >
-                  <p className="font-bold text-sm leading-tight text-slate-900 dark:text-slate-100">
-                    {src.label}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">{src.desc}</p>
+                  <div>
+                    <p className="font-bold text-sm leading-tight text-slate-900 dark:text-slate-100">
+                      {src.label}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">{src.desc}</p>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
+
+          {sourceFilter === 'DECK' && (
+            <div>
+              <label className="block text-xs font-bold uppercase text-slate-400 mb-2">
+                2. Chọn bộ thẻ từ vựng
+              </label>
+              {userDecks.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-xs text-slate-500">
+                  Bạn chưa có bộ thẻ cá nhân nào. Hãy vào "Kho từ của tôi" để tạo hoặc lưu bộ thẻ từ cộng đồng!
+                </div>
+              ) : (
+                <CustomDropdown
+                  value={selectedDeckId}
+                  onChange={(val) => setSelectedDeckId(val)}
+                  options={userDecks.map((d) => ({
+                    value: d.id,
+                    label: `${d.title} (${d.wordCount || d.words?.length || 0} từ)`,
+                    badge: d.cefrLevel || 'B1',
+                  }))}
+                  className="w-full"
+                />
+              )}
+            </div>
+          )}
 
           {sourceFilter === 'CEFR' && (
             <div>
               <label className="block text-xs font-bold uppercase text-slate-400 mb-2">
                 2. Chọn cấp độ CEFR
               </label>
-              <CustomDropdown
-                value={cefrLevel}
-                onChange={(val) => setCefrLevel(val)}
-                options={[
-                  { value: 'A2', label: 'A2 — Pre-intermediate', badge: 'A2' },
-                  { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
-                  { value: 'B2', label: 'B2 — Upper Intermediate', badge: 'B2' },
-                  { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
-                ]}
-                className="w-full"
-              />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { level: 'A2', desc: 'Pre-intermediate', title: 'Sơ cấp A2' },
+                  { level: 'B1', desc: 'Intermediate', title: 'Trung cấp B1' },
+                  { level: 'B2', desc: 'Upper Intermediate', title: 'Trung cao B2' },
+                  { level: 'C1', desc: 'Advanced', title: 'Cao cấp C1' },
+                ].map((item) => (
+                  <button
+                    key={item.level}
+                    type="button"
+                    onClick={() => setCefrLevel(item.level)}
+                    className={`p-3.5 rounded-2xl border text-left transition ${
+                      cefrLevel === item.level
+                        ? 'border-brand-600 bg-brand-500/[0.08] dark:bg-brand-500/[0.16] text-brand-700 dark:text-brand-300 border-2 font-bold shadow-xs'
+                        : 'border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-extrabold text-sm">{item.level}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold">
+                        {item.desc}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">{item.title}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -299,10 +404,11 @@ export const CustomQuizPage: React.FC = () => {
                   key={num}
                   type="button"
                   onClick={() => setQuestionCount(num)}
-                  className={`py-3 rounded-2xl border font-bold text-sm transition ${questionCount === num
+                  className={`py-3 rounded-2xl border font-bold text-sm transition ${
+                    questionCount === num
                       ? 'border-brand-600 bg-brand-600 text-white shadow-md'
                       : 'border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
+                  }`}
                 >
                   {num} câu
                 </button>

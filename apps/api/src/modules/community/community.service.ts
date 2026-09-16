@@ -196,6 +196,49 @@ export class CommunityService {
     const isProtected = Boolean(dto.password && dto.password.trim().length > 0);
     const passwordHash = isProtected ? await bcrypt.hash(dto.password!.trim(), 10) : null;
 
+    // Check if user already submitted a deck with this exact title that is currently PENDING
+    const existingPending = await this.prisma.communityDeck.findFirst({
+      where: {
+        userId,
+        title: dto.title.trim(),
+        status: ModerationStatus.PENDING,
+      },
+    });
+
+    if (existingPending) {
+      // Idempotently update the existing pending submission rather than creating duplicate rows
+      await this.prisma.communityWord.deleteMany({ where: { deckId: existingPending.id } });
+      const updated = await this.prisma.communityDeck.update({
+        where: { id: existingPending.id },
+        data: {
+          description: dto.description,
+          category: dto.category || 'General',
+          cefrLevel: dto.cefrLevel || CefrLevel.B2,
+          isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
+          isProtected,
+          passwordHash,
+          words: {
+            create: dto.words.map((w) => ({
+              word: w.word.trim().toLowerCase(),
+              phonetic: w.phonetic,
+              partOfSpeech: w.partOfSpeech,
+              meaning: w.meaning,
+              definition: w.definition,
+              example: w.example,
+              exampleTranslation: w.exampleTranslation,
+            })),
+          },
+        },
+        include: {
+          author: { select: { id: true, displayName: true, avatar: true } },
+          words: true,
+          _count: { select: { words: true, clones: true } },
+        },
+      });
+      await this.cacheService.invalidateDeck(existingPending.id);
+      return updated;
+    }
+
     const created = await this.prisma.communityDeck.create({
       data: {
         userId,
@@ -534,7 +577,13 @@ export class CommunityService {
   async updateDeck(userId: string, deckId: string, dto: UpdateDeckDto) {
     const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
     if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
-    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền sửa kho từ vựng này');
+    
+    // Verify owner or admin
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    if (deck.userId !== userId && !isAdmin) {
+      throw new ForbiddenException('Bạn không có quyền sửa kho từ vựng này');
+    }
 
     const data: any = {};
     if (dto.title !== undefined) data.title = dto.title.trim();
@@ -542,6 +591,21 @@ export class CommunityService {
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.cefrLevel !== undefined) data.cefrLevel = dto.cefrLevel;
     if (dto.isPublic !== undefined) data.isPublic = dto.isPublic;
+    
+    // Status management: Admin can set any status. Owner can re-submit (PENDING) or withdraw to private
+    if (dto.status !== undefined) {
+      if (isAdmin) {
+        data.status = dto.status;
+      } else if (dto.status === ModerationStatus.PENDING) {
+        data.status = ModerationStatus.PENDING;
+      }
+    }
+    
+    // If owner changes deck to private, it no longer needs moderation
+    if (dto.isPublic === false && !isAdmin) {
+      // Keep as pending/private or approved
+    }
+
     if (dto.password !== undefined) {
       if (dto.password.trim().length > 0) {
         data.isProtected = true;
@@ -567,8 +631,11 @@ export class CommunityService {
     const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
     if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
     
-    // If not owner, check if user cloned it and remove clone
-    if (deck.userId !== userId) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+    // If not owner, check if user cloned it and remove clone record
+    if (deck.userId !== userId && !isAdmin) {
       const clone = await this.prisma.deckClone.findUnique({
         where: { userId_deckId: { userId, deckId } },
       });
@@ -582,6 +649,7 @@ export class CommunityService {
       throw new ForbiddenException('Bạn không có quyền xóa kho từ vựng này');
     }
 
+    // Owner or Admin can delete the deck directly at any time (even if PENDING)
     await this.prisma.communityDeck.delete({ where: { id: deckId } });
     await this.cacheService.invalidateDeck(deckId);
     return { success: true, message: 'Đã xóa kho từ vựng thành công' };
@@ -589,6 +657,16 @@ export class CommunityService {
 
   async bulkDeleteDecks(userId: string, deckIds: string[]) {
     if (!deckIds || deckIds.length === 0) return { success: true, deletedCount: 0 };
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (user?.role !== 'ADMIN') {
+      const pendingCount = await this.prisma.communityDeck.count({
+        where: { id: { in: deckIds }, userId, status: ModerationStatus.PENDING },
+      });
+      if (pendingCount > 0) {
+        throw new BadRequestException(`Có ${pendingCount} kho từ vựng đang chờ kiểm duyệt (PENDING_REVIEW), không thể xóa.`);
+      }
+    }
     
     // 1. Delete owned decks
     const res = await this.prisma.communityDeck.deleteMany({
@@ -633,7 +711,9 @@ export class CommunityService {
   async updateWordInDeck(userId: string, deckId: string, wordId: string, dto: UpdateWordItemDto) {
     const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
     if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
-    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền sửa từ trong kho này');
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    if (deck.userId !== userId && !isAdmin) throw new ForbiddenException('Bạn không có quyền sửa từ trong kho này');
 
     const data: any = {};
     if (dto.word !== undefined) data.word = dto.word.trim().toLowerCase();
@@ -656,7 +736,9 @@ export class CommunityService {
   async deleteWordFromDeck(userId: string, deckId: string, wordId: string) {
     const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
     if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
-    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền xóa từ trong kho này');
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    if (deck.userId !== userId && !isAdmin) throw new ForbiddenException('Bạn không có quyền xóa từ trong kho này');
 
     await this.prisma.communityWord.delete({ where: { id: wordId } });
     await this.cacheService.invalidateDeck(deckId);
@@ -666,7 +748,9 @@ export class CommunityService {
   async bulkDeleteWordsFromDeck(userId: string, deckId: string, wordIds: string[]) {
     const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
     if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
-    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền xóa từ trong kho này');
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    if (deck.userId !== userId && !isAdmin) throw new ForbiddenException('Bạn không có quyền xóa từ trong kho này');
 
     const res = await this.prisma.communityWord.deleteMany({
       where: { id: { in: wordIds }, deckId },

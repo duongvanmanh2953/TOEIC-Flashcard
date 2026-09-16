@@ -13,6 +13,8 @@ const STORE_META = 'metadata';
 
 export interface LocalDeck {
   id: string;
+  userId?: string;
+  originDeckId?: string;
   title: string;
   description?: string;
   category?: string;
@@ -33,6 +35,7 @@ export interface LocalDeck {
 
 export interface CachedWordItem {
   id: string;
+  userId?: string;
   deckId?: string;
   deckName?: string;
   word: string;
@@ -49,6 +52,18 @@ export interface CachedWordItem {
   vocabulary?: any;
   createdAt?: number;
   updatedAt?: number;
+  // Spaced Repetition (FSRS-compatible) tracking fields
+  dueAt?: number;
+  lastReviewedAt?: number;
+  reviewCount?: number;
+  correctCount?: number;
+  wrongCount?: number;
+  consecutiveCorrect?: number;
+  consecutiveWrong?: number;
+  interval?: number;
+  stability?: number;
+  difficulty?: number;
+  masteryScore?: number;
 }
 
 function openDB(): Promise<IDBDatabase> {
@@ -116,6 +131,7 @@ export async function idbGetMeta<T = any>(key: string): Promise<T | null> {
 
 export async function idbSaveWords(
   words: any[],
+  userId?: string,
   onProgress?: (saved: number, total: number) => void
 ): Promise<void> {
   try {
@@ -131,6 +147,9 @@ export async function idbSaveWords(
         for (const word of chunk) {
           if (!word) continue;
           const wordObj = { ...word };
+          if (userId) {
+            wordObj.userId = userId;
+          }
           if (!wordObj.id) {
             const cleanW = (wordObj.vocabulary?.word || wordObj.word || '')
               .toString()
@@ -160,14 +179,22 @@ export async function idbSaveWords(
   }
 }
 
-export async function idbGetWords(): Promise<any[]> {
+export async function idbGetWords(userId?: string): Promise<any[]> {
   try {
     const db = await openDB();
     return new Promise((resolve) => {
       const tx = db.transaction(STORE_VOCAB, 'readonly');
       const store = tx.objectStore(STORE_VOCAB);
       const req = store.getAll();
-      req.onsuccess = () => resolve(req.result || []);
+      req.onsuccess = () => {
+        const all: any[] = req.result || [];
+        if (!userId) return resolve(all);
+        // Isolate by user: match user ID or guest session
+        const filtered = all.filter(
+          (w) => w.userId === userId || (!w.userId && (userId === 'guest' || userId.startsWith('anon_')))
+        );
+        resolve(filtered);
+      };
       req.onerror = () => resolve([]);
     });
   } catch {
@@ -203,6 +230,48 @@ export async function idbUpdateWord(id: string, updates: Partial<CachedWordItem>
     };
   } catch (err) {
     console.warn('IDB update word failure:', err);
+  }
+}
+
+export async function idbUpdateWordProgress(
+  id: string,
+  progress: {
+    dueAt?: number;
+    lastReviewedAt?: number;
+    reviewCount?: number;
+    correctCount?: number;
+    wrongCount?: number;
+    consecutiveCorrect?: number;
+    consecutiveWrong?: number;
+    interval?: number;
+    stability?: number;
+    difficulty?: number;
+    masteryScore?: number;
+    status?: string;
+  }
+): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_VOCAB, 'readwrite');
+    const store = tx.objectStore(STORE_VOCAB);
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (existing) {
+        const updated = {
+          ...existing,
+          ...progress,
+          vocabulary: {
+            ...(existing.vocabulary || {}),
+            ...progress,
+          },
+          updatedAt: Date.now(),
+        };
+        store.put(updated);
+      }
+    };
+  } catch (err) {
+    console.warn('IDB update word progress failure:', err);
   }
 }
 
@@ -270,12 +339,16 @@ export async function idbClearAllWords(): Promise<void> {
 // DECK / WORD BANK CRUD OPERATIONS
 // =============================================================================
 
-export async function idbSaveLocalDeck(deck: LocalDeck): Promise<void> {
+export async function idbSaveLocalDeck(deck: LocalDeck, userId?: string): Promise<void> {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_DECKS, 'readwrite');
     const store = tx.objectStore(STORE_DECKS);
-    store.put(deck);
+    const deckToSave = { ...deck };
+    if (userId) {
+      deckToSave.userId = userId;
+    }
+    store.put(deckToSave);
   } catch (err) {
     console.warn('IDB deck write failure:', err);
   }
@@ -298,14 +371,21 @@ export async function idbUpdateLocalDeck(id: string, updates: Partial<LocalDeck>
   }
 }
 
-export async function idbGetLocalDecks(): Promise<LocalDeck[]> {
+export async function idbGetLocalDecks(userId?: string): Promise<LocalDeck[]> {
   try {
     const db = await openDB();
     return new Promise((resolve) => {
       const tx = db.transaction(STORE_DECKS, 'readonly');
       const store = tx.objectStore(STORE_DECKS);
       const req = store.getAll();
-      req.onsuccess = () => resolve(req.result || []);
+      req.onsuccess = () => {
+        const all: LocalDeck[] = req.result || [];
+        if (!userId) return resolve(all);
+        const filtered = all.filter(
+          (d) => d.userId === userId || (!d.userId && (userId === 'guest' || userId.startsWith('anon_')))
+        );
+        resolve(filtered);
+      };
       req.onerror = () => resolve([]);
     });
   } catch {
@@ -346,6 +426,16 @@ export async function idbClearAllDecks(): Promise<void> {
   } catch (err) {
     console.warn('IDB clear decks failure:', err);
   }
+}
+
+/**
+ * Completely purges offline stores when switching accounts to ensure zero leakage
+ */
+export async function idbClearAllUserData(): Promise<void> {
+  await Promise.allSettled([
+    idbClearAllDecks(),
+    idbClearAllWords(),
+  ]);
 }
 
 // =============================================================================
@@ -401,3 +491,12 @@ export async function idbInvalidateCache(keyPrefix: string): Promise<void> {
     };
   } catch (_) {}
 }
+
+export async function idbGetWordsByDeck(deckId: string): Promise<any[]> {
+  const all = await idbGetWords();
+  return all.filter((w) => w.deckId === deckId);
+}
+
+export const idbGetDecks = idbGetLocalDecks;
+
+

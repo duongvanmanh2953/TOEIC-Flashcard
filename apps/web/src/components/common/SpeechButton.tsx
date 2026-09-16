@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Clock } from 'lucide-react';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 
 interface SpeechButtonProps {
@@ -66,11 +66,12 @@ export const SpeechButton: React.FC<SpeechButtonProps> = ({
           type="button"
           onClick={(e) => handleSpeak(0.75, e)}
           onTouchEnd={(e) => handleSpeak(0.75, e)}
-          className="p-1.5 rounded-xl bg-slate-100/60 dark:bg-slate-800/60 hover:bg-amber-500/10 text-slate-500 hover:text-amber-600 text-xs transition border border-slate-200/40 dark:border-slate-800 active:scale-95"
+          className="px-2 py-1 rounded-xl bg-slate-100/60 dark:bg-slate-800/60 hover:bg-amber-500/10 text-slate-500 hover:text-amber-600 text-xs transition border border-slate-200/40 dark:border-slate-800 active:scale-95 flex items-center gap-1 font-bold text-[10px]"
           title="Đọc chậm 0.75x"
           aria-label={`Đọc chậm từ ${text}`}
         >
-          🐢
+          <Clock className="w-3 h-3 text-amber-500" />
+          <span>0.75x</span>
         </button>
       )}
     </div>

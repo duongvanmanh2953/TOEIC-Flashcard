@@ -38,6 +38,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'funnel' | 'word-health' | 'moderation' | 'users' | 'audit'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedHealthFilter, setSelectedHealthFilter] = useState<'ALL' | 'CRITICAL' | 'GOOD'>('ALL');
+  const [vocabHealth, setVocabHealth] = useState<any>(null);
 
   useEffect(() => {
     fetchAdminData();
@@ -46,18 +47,20 @@ export const AdminDashboardPage: React.FC = () => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const [statsRes, healthRes, decksRes, auditRes, usersRes]: any = await Promise.all([
+      const [statsRes, healthRes, decksRes, auditRes, usersRes, vocabHealthRes]: any = await Promise.all([
         api.get('/admin/dashboard').catch(() => ({ data: {} })),
         api.get('/health').catch(() => ({ data: {} })),
-        api.get('/admin/moderation/decks').catch(() => ({ data: [] })),
+        api.get('/admin/shared-vocabulary?status=PENDING').catch(() => ({ data: { items: [] } })),
         api.get('/admin/audit-logs').catch(() => ({ data: [] })),
         api.get('/admin/users').catch(() => ({ data: { items: [] } })),
+        api.get('/admin/vocab-health').catch(() => ({ data: {} })),
       ]);
       setStats(statsRes.data || statsRes);
       setHealth(healthRes.data || healthRes);
-      setPendingDecks(decksRes.data || decksRes || []);
+      setPendingDecks(decksRes.data?.items || decksRes.items || decksRes.data || []);
       setAuditLogs(auditRes.data || auditRes || []);
       setUsers(usersRes.data?.items || usersRes.items || []);
+      setVocabHealth(vocabHealthRes.data || vocabHealthRes || {});
     } catch (err) {
       console.error('Failed to load admin telemetry', err);
     } finally {
@@ -68,7 +71,7 @@ export const AdminDashboardPage: React.FC = () => {
   const handleModerateDeck = async (deckId: string, action: 'APPROVE' | 'REJECT') => {
     setActionLoading(deckId);
     try {
-      await api.patch(`/admin/moderation/decks/${deckId}`, { action });
+      await api.post(`/admin/shared-vocabulary/${deckId}/moderate`, { action });
       setPendingDecks((prev) => prev.filter((d) => d.id !== deckId));
       fetchAdminData();
     } catch (err) {
@@ -547,7 +550,7 @@ export const AdminDashboardPage: React.FC = () => {
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Tất cả (500+)
+                Tất cả ({vocabHealth?.totalWords ? vocabHealth.totalWords.toLocaleString('vi-VN') : '500+'})
               </button>
               <button
                 onClick={() => setSelectedHealthFilter('CRITICAL')}
@@ -557,7 +560,7 @@ export const AdminDashboardPage: React.FC = () => {
                     : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50'
                 }`}
               >
-                Cần Tối Ưu (5)
+                Cần Tối Ưu ({vocabHealth?.topFailed?.length || 0})
               </button>
               <button
                 onClick={() => setSelectedHealthFilter('GOOD')}
@@ -586,21 +589,47 @@ export const AdminDashboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {[
-                    { word: 'fastidious', pos: 'adj', level: 'C1', retention: 42, error: 58, skip: 84, status: 'CRITICAL', note: 'Ví dụ trừu tượng, học viên thường chọn nhầm với tedious' },
-                    { word: 'blandishment', pos: 'noun', level: 'C2', retention: 46, error: 54, skip: 92, status: 'CRITICAL', note: 'Ít gặp trong ngữ cảnh giao tiếp hàng ngày' },
-                    { word: 'supercilious', pos: 'adj', level: 'C1', retention: 51, error: 49, skip: 65, status: 'CRITICAL', note: 'Phiên âm IPA phức tạp /ˌsuː.pɚˈsɪl.i.əs/' },
-                    { word: 'obfuscate', pos: 'verb', level: 'C1', retention: 55, error: 45, skip: 71, status: 'CRITICAL', note: 'Nhiều nét nghĩa chuyên ngành kỹ thuật' },
-                    { word: 'serendipity', pos: 'noun', level: 'B2', retention: 88, error: 12, skip: 15, status: 'GOOD', note: 'Độ nhớ rất tốt nhờ câu chuyện hấp dẫn' },
-                    { word: 'collaborate', pos: 'verb', level: 'B1', retention: 94, error: 6, skip: 8, status: 'GOOD', note: 'Từ vựng văn phòng chuẩn mực' },
-                    { word: 'resilient', pos: 'adj', level: 'B2', retention: 91, error: 9, skip: 12, status: 'GOOD', note: 'Định nghĩa và ví dụ trực quan' },
-                  ]
-                    .filter((item) => {
+                  {(() => {
+                    const allItems = [
+                      ...(vocabHealth?.topFailed || []).map((tf: any) => ({
+                        word: tf.word,
+                        pos: tf.pos || 'v',
+                        level: tf.level || 'B2',
+                        retention: Math.max(10, 100 - parseInt(tf.errorRate || '35', 10)),
+                        error: parseInt(tf.errorRate || '35', 10),
+                        skip: tf.failCount || 8,
+                        status: 'CRITICAL',
+                        note: `Tỷ lệ sai cao (${tf.errorRate || '35%'}) qua ${tf.failCount || 0} bài tập đánh giá`,
+                      })),
+                      ...(vocabHealth?.highErrorWords || []).map((hw: any) => ({
+                        word: hw.word,
+                        pos: hw.partOfSpeech || 'n',
+                        level: hw.cefrLevel || 'B1',
+                        retention: 88,
+                        error: 12,
+                        skip: 4,
+                        status: 'GOOD',
+                        note: hw.definition || 'Từ vựng cốt lõi chuẩn CEFR',
+                      })),
+                    ];
+
+                    const filtered = allItems.filter((item) => {
                       if (selectedHealthFilter === 'CRITICAL') return item.status === 'CRITICAL';
                       if (selectedHealthFilter === 'GOOD') return item.status === 'GOOD';
                       return true;
-                    })
-                    .map((item, idx) => (
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-slate-400">
+                            Không có từ vựng nào thuộc nhóm trạng thái này trong cơ sở dữ liệu.
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filtered.map((item, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
@@ -654,7 +683,8 @@ export const AdminDashboardPage: React.FC = () => {
                           )}
                         </td>
                       </tr>
-                    ))}
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>

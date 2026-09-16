@@ -579,24 +579,27 @@ export const DashboardPage: React.FC = () => {
             </p>
 
             <div className="mt-3 space-y-1.5">
-              {[
-                { word: 'compromise', score: 42, reason: 'Phản xạ chậm' },
-                { word: 'accommodate', score: 48, reason: 'Nhầm spelling' },
-                { word: 'resilient', score: 55, reason: 'Sắp tới hạn' },
-              ].map((w, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-2 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/20 text-xs"
-                >
-                  <div>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{w.word}</span>
-                    <span className="text-[10px] text-slate-400 block">{w.reason}</span>
+              {memoryRescue?.words && memoryRescue.words.length > 0 ? (
+                memoryRescue.words.slice(0, 3).map((w: any, idx: number) => (
+                  <div
+                    key={w.id || idx}
+                    className="flex items-center justify-between p-2 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 border border-rose-500/20 text-xs"
+                  >
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{w.word}</span>
+                      <span className="text-[10px] text-slate-400 block">{w.meaning || 'Nguy cơ quên'}</span>
+                    </div>
+                    <span className="text-[11px] text-rose-600 dark:text-rose-400 font-bold">
+                      {w.masteryScore !== undefined ? `${Math.round(w.masteryScore)}% nhớ` : `${w.slipRisk || 45}% rủi ro`}
+                    </span>
                   </div>
-                  <span className="text-[11px] text-rose-600 dark:text-rose-400 font-bold">
-                    {w.score}% nhớ
-                  </span>
+                ))
+              ) : (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>Trí nhớ đang ở vùng an toàn! Không có từ nào có nguy cơ quên cao.</span>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -605,7 +608,11 @@ export const DashboardPage: React.FC = () => {
             className="btn-glass-danger w-full mt-4 !py-2.5 text-xs gap-2"
           >
             <Sparkles className="w-3.5 h-3.5 fill-white" />
-            <span>Cứu 3 từ vựng này ngay</span>
+            <span>
+              {memoryRescue?.words && memoryRescue.words.length > 0
+                ? `Cứu ${Math.min(3, memoryRescue.words.length)} từ vựng này ngay`
+                : 'Ôn tập củng cố trí nhớ'}
+            </span>
           </button>
         </GlassCard>
       </div>

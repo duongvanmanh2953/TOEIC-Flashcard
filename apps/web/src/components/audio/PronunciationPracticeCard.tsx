@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Headphones,
+  Clock,
 } from 'lucide-react';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
@@ -138,10 +139,11 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
             <button
               type="button"
               onClick={() => handlePlayNative(0.75)}
-              className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-amber-500/10 text-slate-600 dark:text-slate-200 hover:text-amber-600 text-xs font-bold border border-slate-200 dark:border-slate-600 transition active:scale-95"
+              className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-amber-500/10 text-slate-600 dark:text-slate-200 hover:text-amber-600 text-xs font-bold border border-slate-200 dark:border-slate-600 transition active:scale-95 flex items-center gap-1.5"
               title="Nghe lại ở tốc độ chậm 0.75x"
             >
-              🐢 Chậm
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <span>Chậm 0.75x</span>
             </button>
           </div>
 

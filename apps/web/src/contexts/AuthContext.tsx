@@ -8,6 +8,7 @@ import {
   isFirebaseConfigured as checkFirebaseConfigured,
 } from '../lib/firebase';
 import { FirebaseConfigModal } from '../components/auth/FirebaseConfigModal';
+import { idbClearAllUserData } from '../lib/idb';
 
 export type AuthState = 'AUTH_LOADING' | 'GUEST' | 'AUTHENTICATED' | 'AUTH_ERROR';
 
@@ -359,6 +360,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('vocabflow_refresh_token');
       localStorage.removeItem('leximind_access_token');
       localStorage.removeItem('leximind_refresh_token');
+
+      // Purge IndexedDB offline cache so switching accounts never leaks previous user's data
+      await idbClearAllUserData().catch(() => {});
+
       // Revert to Anonymous Guest session without reload
       const anonUid = getOrCreateAnonymousUid();
       setUser({

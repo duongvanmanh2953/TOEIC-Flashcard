@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsString, IsOptional, IsArray, ValidateNested, IsBoolean, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CefrLevel } from '@prisma/client';
+import { CefrLevel, ModerationStatus } from '@prisma/client';
 
 export class CreateWordItemDto {
   @ApiProperty({ example: 'synergy' })
@@ -137,6 +137,11 @@ export class UpdateDeckDto {
   @IsOptional()
   @IsString()
   password?: string;
+
+  @ApiPropertyOptional({ enum: ModerationStatus })
+  @IsOptional()
+  @IsEnum(ModerationStatus)
+  status?: ModerationStatus;
 }
 
 export class UpdateWordItemDto {
