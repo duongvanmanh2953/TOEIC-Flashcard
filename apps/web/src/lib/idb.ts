@@ -26,6 +26,9 @@ export interface LocalDeck {
   createdAt: number;
   updatedAt: number;
   isSyncedToCloud?: boolean;
+  isCloned?: boolean;
+  isReadOnly?: boolean;
+  author?: { id: string; displayName: string; avatar?: string };
 }
 
 export interface CachedWordItem {
@@ -111,25 +114,45 @@ export async function idbGetMeta<T = any>(key: string): Promise<T | null> {
 // VOCABULARY CRUD OPERATIONS
 // =============================================================================
 
-export async function idbSaveWords(words: any[]): Promise<void> {
+export async function idbSaveWords(
+  words: any[],
+  onProgress?: (saved: number, total: number) => void
+): Promise<void> {
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_VOCAB, 'readwrite');
-    const store = tx.objectStore(STORE_VOCAB);
-    for (const word of words) {
-      if (!word) continue;
-      const wordObj = { ...word };
-      if (!wordObj.id) {
-        const cleanW = (wordObj.vocabulary?.word || wordObj.word || '')
-          .toString()
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '_');
-        wordObj.id = `idb_vocab_${cleanW || Math.random().toString(36).substring(2)}`;
+    const BATCH_SIZE = 50;
+    const total = words.length;
+
+    for (let i = 0; i < total; i += BATCH_SIZE) {
+      const chunk = words.slice(i, i + BATCH_SIZE);
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_VOCAB, 'readwrite');
+        const store = tx.objectStore(STORE_VOCAB);
+        for (const word of chunk) {
+          if (!word) continue;
+          const wordObj = { ...word };
+          if (!wordObj.id) {
+            const cleanW = (wordObj.vocabulary?.word || wordObj.word || '')
+              .toString()
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '_');
+            wordObj.id = `idb_vocab_${cleanW || Math.random().toString(36).substring(2)}`;
+          }
+          // Ensure real topic is not lost
+          wordObj.topic = wordObj.topic || wordObj.vocabulary?.topic || 'General';
+          store.put(wordObj);
+        }
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+
+      if (onProgress) {
+        onProgress(Math.min(i + BATCH_SIZE, total), total);
       }
-      // Ensure real topic is not lost
-      wordObj.topic = wordObj.topic || wordObj.vocabulary?.topic || 'General';
-      store.put(wordObj);
+
+      // Yield to main thread so the browser never stutters or drops frames
+      await new Promise((r) => setTimeout(r, 0));
     }
     await idbSetMeta('vocab_last_updated', Date.now());
   } catch (err) {

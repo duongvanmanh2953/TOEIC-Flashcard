@@ -469,6 +469,7 @@ a.card-brand-effect {
 .btn-glass-secondary,
 .btn-glass-emerald,
 .btn-glass-amber,
+.btn-glass-purple,
 .btn-glass-danger {
   position: relative;
   overflow: hidden;
@@ -489,6 +490,7 @@ a.card-brand-effect {
 .btn-glass-secondary:active,
 .btn-glass-emerald:active,
 .btn-glass-amber:active,
+.btn-glass-purple:active,
 .btn-glass-danger:active {
   transform: scale(0.97);
 }
@@ -498,6 +500,7 @@ a.card-brand-effect {
 .btn-glass-secondary::after,
 .btn-glass-emerald::after,
 .btn-glass-amber::after,
+.btn-glass-purple::after,
 .btn-glass-danger::after {
   content: '';
   position: absolute;
@@ -522,6 +525,7 @@ a.card-brand-effect {
 .btn-glass-secondary:hover::after,
 .btn-glass-emerald:hover::after,
 .btn-glass-amber:hover::after,
+.btn-glass-purple:hover::after,
 .btn-glass-danger:hover::after {
   left: 190%;
   opacity: 1;
@@ -645,6 +649,41 @@ a.card-brand-effect {
   box-shadow: none;
   transform: translateY(-1px);
 }
+
+/* Purple Glass Button: Rich Gradient Violet/Indigo */
+.btn-glass-purple {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.92) 0%, rgba(99, 102, 241, 0.92) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.btn-glass-purple:hover {
+  background: linear-gradient(135deg, rgba(126, 34, 206, 0.98) 0%, rgba(79, 70, 229, 0.98) 100%);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+/* Liquid Glass Sizing Helpers */
+.btn-glass-sm {
+  padding: 0.375rem 0.85rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  border-radius: 0.75rem !important;
+  height: 2.25rem !important; /* h-9 */
+  gap: 0.375rem !important;
+}
+
+.btn-glass-icon {
+  padding: 0.375rem !important;
+  border-radius: 0.625rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 
 /* ==========================================================================
    AUTHENTIC LIQUID GLASS METRIC CARDS — LUMINOUS, LIGHT-BEVELED & SPECUlAR

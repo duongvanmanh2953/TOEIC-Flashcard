@@ -960,29 +960,30 @@ export const CommunityDecksPage: React.FC = () => {
       {/* Create & Share Deck Modal — ModalPortal to document.body */}
       <ModalPortal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
         <div
-          className="m-auto relative max-w-3xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-5 shadow-2xl max-h-[88vh] overflow-y-auto"
+          className="m-auto relative max-w-4xl w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/90 p-8 sm:p-10 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-snug">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   Tạo & Đóng Góp Bộ Từ Vựng Cộng Đồng
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Chia sẻ các từ vựng từ kho cá nhân của bạn hoặc nhập thêm từ mới để chia sẻ cùng cộng đồng.
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Chia sẻ các từ vựng từ kho cá nhân của bạn hoặc nhập thêm từ mới để chia sẻ cùng cộng đồng học viên TOEIC.
                 </p>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold transition"
+                className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                aria-label="Đóng cửa sổ"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateDeck} className="space-y-4 text-xs sm:text-sm">
+            <form onSubmit={handleCreateDeck} className="space-y-5 text-xs sm:text-sm">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
+                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
                   Tên bộ từ *
                 </label>
                 <input
@@ -991,13 +992,13 @@ export const CommunityDecksPage: React.FC = () => {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ví dụ: Collocations Dành Cho Viết Email Công Sở"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-indigo-500"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold text-sm sm:text-base focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
                     Chủ đề
                   </label>
                   <CustomDropdown
@@ -1014,7 +1015,7 @@ export const CommunityDecksPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
                     Khung CEFR
                   </label>
                   <CustomDropdown
@@ -1035,15 +1036,20 @@ export const CommunityDecksPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">
-                  Mô tả ngắn
-                </label>
-                <input
-                  type="text"
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
+                    Lý do đóng góp & Mô tả mục tiêu bộ từ vựng
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    (Ít nhất 4-5 dòng để mô tả lộ trình)
+                  </span>
+                </div>
+                <textarea
+                  rows={5}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Mô tả mục tiêu và đối tượng của bộ từ vựng..."
-                  className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  placeholder={"Nhập lý do tạo kho và mục tiêu học tập (ví dụ:\n• Lý do đóng góp: Bộ từ thực chiến chắt lọc sau khi thi đạt 850 TOEIC.\n• Đối tượng phù hợp: Học viên đang ở band 500-650 muốn bứt phá từ vựng Part 5, 6, 7.\n• Lộ trình khuyến nghị: Học 15 từ mỗi ngày kết hợp làm mini test...)"}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs sm:text-sm leading-relaxed resize-y min-h-[130px] placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 />
               </div>
 

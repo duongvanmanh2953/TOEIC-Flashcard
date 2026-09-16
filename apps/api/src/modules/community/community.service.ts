@@ -128,7 +128,8 @@ export class CommunityService {
   }
 
   async getMyDecks(userId: string) {
-    const decks = await this.prisma.communityDeck.findMany({
+    // 1. Decks created by this user
+    const createdDecks = await this.prisma.communityDeck.findMany({
       where: { userId },
       include: {
         author: {
@@ -142,8 +143,41 @@ export class CommunityService {
       orderBy: { createdAt: 'desc' },
     });
 
+    // 2. Decks cloned by this user from community
+    const clonedRecords = await this.prisma.deckClone.findMany({
+      where: { userId },
+      include: {
+        deck: {
+          include: {
+            author: {
+              select: { id: true, displayName: true, avatar: true },
+            },
+            words: true,
+            _count: {
+              select: { words: true, clones: true },
+            },
+          },
+        },
+      },
+      orderBy: { clonedAt: 'desc' },
+    });
+
+    const clonedDecks = clonedRecords
+      .map((r) => r.deck)
+      .filter((d) => Boolean(d) && d.userId !== userId)
+      .map((d) => ({
+        ...d,
+        isCloned: true,
+        isReadOnly: true, // CLONED DECKS CANNOT BE MODIFIED BY CLONER
+      }));
+
+    const allDecks = [
+      ...createdDecks.map((d) => ({ ...d, isCloned: false, isReadOnly: false })),
+      ...clonedDecks,
+    ];
+
     // Never expose passwordHash
-    return decks.map(({ passwordHash, ...rest }) => ({
+    return allDecks.map(({ passwordHash, ...rest }) => ({
       ...rest,
       hasPassword: rest.isProtected,
     }));
@@ -532,7 +566,21 @@ export class CommunityService {
   async deleteDeck(userId: string, deckId: string) {
     const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
     if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
-    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền xóa kho từ vựng này');
+    
+    // If not owner, check if user cloned it and remove clone
+    if (deck.userId !== userId) {
+      const clone = await this.prisma.deckClone.findUnique({
+        where: { userId_deckId: { userId, deckId } },
+      });
+      if (clone) {
+        await this.prisma.deckClone.delete({
+          where: { userId_deckId: { userId, deckId } },
+        });
+        await this.cacheService.invalidateDeck(deckId);
+        return { success: true, message: 'Đã xóa kho từ khỏi danh sách của bạn' };
+      }
+      throw new ForbiddenException('Bạn không có quyền xóa kho từ vựng này');
+    }
 
     await this.prisma.communityDeck.delete({ where: { id: deckId } });
     await this.cacheService.invalidateDeck(deckId);
@@ -541,13 +589,22 @@ export class CommunityService {
 
   async bulkDeleteDecks(userId: string, deckIds: string[]) {
     if (!deckIds || deckIds.length === 0) return { success: true, deletedCount: 0 };
+    
+    // 1. Delete owned decks
     const res = await this.prisma.communityDeck.deleteMany({
       where: { id: { in: deckIds }, userId },
     });
+    
+    // 2. Remove any cloned deck references
+    const cloneRes = await this.prisma.deckClone.deleteMany({
+      where: { deckId: { in: deckIds }, userId },
+    });
+
     for (const id of deckIds) {
       await this.cacheService.invalidateDeck(id);
     }
-    return { success: true, message: `Đã xóa thành công ${res.count} kho từ vựng`, deletedCount: res.count };
+    const totalDeleted = res.count + cloneRes.count;
+    return { success: true, message: `Đã xóa thành công ${totalDeleted} kho từ vựng`, deletedCount: totalDeleted };
   }
 
   async addWordToDeck(userId: string, deckId: string, dto: CreateWordItemDto) {

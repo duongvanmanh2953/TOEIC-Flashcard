@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 
 interface LeaderboardItem {
   rank: number;
@@ -251,19 +252,21 @@ export const LeaderboardPage: React.FC = () => {
         {/* Timeframe & Mode Selector */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
           {activeTab === 'games' && (
-            <select
+            <CustomDropdown
               value={selectedMode}
-              onChange={(e) => setSelectedMode(e.target.value)}
-              className="text-xs font-bold px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 w-full sm:w-auto"
-            >
-              <option value="ALL">Tất Cả Game Mode</option>
-              <option value="TRANSLATION_RUSH">Translation Rush</option>
-              <option value="WORD_BLITZ">Word Blitz</option>
-              <option value="SENTENCE_SPRINT">Sentence Sprint</option>
-              <option value="MISSING_WORD">Missing Word</option>
-              <option value="LISTENING_RUSH">Listening Rush</option>
-              <option value="SYNONYM_BATTLE">Synonym Battle</option>
-            </select>
+              onChange={(val) => setSelectedMode(val)}
+              options={[
+                { value: 'ALL', label: 'Tất Cả Game Mode' },
+                { value: 'TRANSLATION_RUSH', label: 'Translation Rush' },
+                { value: 'WORD_BLITZ', label: 'Word Blitz' },
+                { value: 'SENTENCE_SPRINT', label: 'Sentence Sprint' },
+                { value: 'MISSING_WORD', label: 'Missing Word' },
+                { value: 'LISTENING_RUSH', label: 'Listening Rush' },
+                { value: 'SYNONYM_BATTLE', label: 'Synonym Battle' },
+              ]}
+              size="sm"
+              className="w-full sm:w-52 h-9"
+            />
           )}
 
           <div className="grid grid-cols-3 sm:flex items-center w-full sm:w-auto p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 text-xs font-bold">

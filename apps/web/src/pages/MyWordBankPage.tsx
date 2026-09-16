@@ -58,6 +58,9 @@ import {
   Globe,
   SlidersHorizontal,
   Folder,
+  LayoutGrid,
+  List,
+  Table,
 } from 'lucide-react';
 import {
   downloadVocabularyTemplate,
@@ -116,6 +119,28 @@ export const MyWordBankPage: React.FC = () => {
   const [allWordTopicFilter, setAllWordTopicFilter] = useState('ALL');
   const [allWordCefrFilter, setAllWordCefrFilter] = useState('ALL');
   const [allWordSearch, setAllWordSearch] = useState('');
+
+  // View Modes: 'grid' (dưới ô) vs 'list' (danh sách)
+  const [deckViewMode, setDeckViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('leximind_deck_view_mode') as 'grid' | 'list') || 'grid';
+  });
+  const [wordViewMode, setWordViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('leximind_word_view_mode') as 'grid' | 'list') || 'grid';
+  });
+
+  const toggleDeckViewMode = (mode: 'grid' | 'list') => {
+    setDeckViewMode(mode);
+    try {
+      localStorage.setItem('leximind_deck_view_mode', mode);
+    } catch {}
+  };
+
+  const toggleWordViewMode = (mode: 'grid' | 'list') => {
+    setWordViewMode(mode);
+    try {
+      localStorage.setItem('leximind_word_view_mode', mode);
+    } catch {}
+  };
 
   // Lazy loading count for smooth infinite list rendering
   const [displayCount, setDisplayCount] = useState(24);
@@ -177,6 +202,7 @@ export const MyWordBankPage: React.FC = () => {
   const [importProgressMsg, setImportProgressMsg] = useState<string | null>(null);
   const [importDeckMode, setImportDeckMode] = useState<'existing' | 'new'>('existing');
   const [importTargetDeckName, setImportTargetDeckName] = useState('');
+  const [idbSyncMsg, setIdbSyncMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Share Deck Modal
@@ -258,6 +284,9 @@ export const MyWordBankPage: React.FC = () => {
             createdAt: new Date(d.createdAt).getTime(),
             updatedAt: new Date(d.updatedAt || d.createdAt).getTime(),
             isSyncedToCloud: true,
+            isCloned: Boolean(d.isCloned),
+            isReadOnly: Boolean(d.isReadOnly),
+            author: d.author,
           }));
 
           // Merge local-only decks with cloud decks
@@ -295,7 +324,15 @@ export const MyWordBankPage: React.FC = () => {
 
           if (cloudWords.length > 0) {
             setWords(cloudWords);
-            await idbSaveWords(cloudWords);
+            if (forceCloudSync) {
+              setIdbSyncMsg(`Đang lưu ${cloudWords.length} từ vào IndexedDB...`);
+            }
+            await idbSaveWords(cloudWords, (saved, total) => {
+              if (forceCloudSync) {
+                setIdbSyncMsg(`Đang lưu IndexedDB: ${saved}/${total} từ (${Math.round((saved / total) * 100)}%)...`);
+              }
+            });
+            setIdbSyncMsg(null);
           }
         }
       } catch (cloudErr) {
@@ -1114,8 +1151,12 @@ export const MyWordBankPage: React.FC = () => {
         };
       });
 
-      // 1. Immediately save to IndexedDB
-      await idbSaveWords(itemsToSave);
+      // 1. Immediately save to IndexedDB with chunking and progress
+      setImportProgressMsg(`Đang lưu vào bộ nhớ máy (IndexedDB): 0/${itemsToSave.length} từ...`);
+      await idbSaveWords(itemsToSave, (saved, total) => {
+        const pct = Math.round((saved / total) * 100);
+        setImportProgressMsg(`Đang lưu vào bộ nhớ máy (IndexedDB): ${saved}/${total} từ (${pct}%)...`);
+      });
 
       // 2. Reflect in state
       setWords((prev) => {
@@ -1139,8 +1180,10 @@ export const MyWordBankPage: React.FC = () => {
 
         const CHUNK_SIZE = 50;
         for (let i = 0; i < payload.length; i += CHUNK_SIZE) {
+          const currentCount = Math.min(i + CHUNK_SIZE, payload.length);
+          const pct = Math.round((currentCount / payload.length) * 100);
+          setImportProgressMsg(`Đang đồng bộ Đám mây: ${currentCount}/${payload.length} từ (${pct}%)...`);
           const chunk = payload.slice(i, i + CHUNK_SIZE);
-          setImportProgressMsg(`Đang nạp lên đám mây (${Math.min(i + CHUNK_SIZE, payload.length)}/${payload.length} từ)...`);
           try {
             await api.post('/community/words/batch-add', { words: chunk });
           } catch (netErr) {
@@ -1257,8 +1300,8 @@ export const MyWordBankPage: React.FC = () => {
         </div>
 
         {/* Action Buttons Top Toolbar */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {/* Cloud Sync Button - Modern, State-of-the-art Design */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Cloud Sync Button */}
           <button
             onClick={() => {
               if (isGuest || !user) {
@@ -1268,19 +1311,19 @@ export const MyWordBankPage: React.FC = () => {
               loadData(true);
             }}
             disabled={syncingCloud}
-            className={`h-9 px-3.5 rounded-xl font-bold text-xs transition-all duration-200 inline-flex items-center gap-2 shadow-xs active:scale-95 ${
+            className={`btn-glass-sm transition-all duration-200 inline-flex items-center gap-2 ${
               syncingCloud
-                ? 'bg-blue-50 dark:bg-blue-950/70 border border-blue-400 text-blue-600 dark:text-blue-400 cursor-wait'
+                ? 'btn-glass-secondary text-blue-600 dark:text-blue-400 cursor-wait'
                 : justSynced
-                ? 'bg-emerald-600 text-white shadow-emerald-500/25 ring-2 ring-emerald-400/50'
-                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white shadow-indigo-500/20 hover:shadow-md hover:shadow-indigo-500/25 border border-indigo-400/30'
+                ? 'btn-glass-emerald'
+                : 'btn-glass-primary'
             }`}
             title="Đồng bộ 2 chiều toàn bộ Kho và Từ vựng với Cloud"
             aria-label="Đồng bộ Cloud"
           >
             {syncingCloud ? (
               <>
-                <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />
+                <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
                 <span>Đang đồng bộ...</span>
               </>
             ) : justSynced ? (
@@ -1302,47 +1345,9 @@ export const MyWordBankPage: React.FC = () => {
             )}
           </button>
 
-          {/* Import Excel / CSV Button */}
-          <button
-            onClick={() => {
-              setSelectedFile(null);
-              setParsedWords([]);
-              setParsingError(null);
-              setImportTargetDeckName(selectedDeck?.title || decks[0]?.title || '');
-              setShowImportModal(true);
-            }}
-            className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-semibold text-[11px] hover:bg-emerald-500 transition inline-flex items-center gap-1 shadow-sm"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Nhập Excel / CSV</span>
-          </button>
-
-          {/* Export CSV Button */}
-          <button
-            onClick={() =>
-              exportWordsToExcelOrCsv(
-                selectedDeck ? wordsInSelectedDeck : words,
-                selectedDeck ? `kho_${selectedDeck.title}` : 'danh_sach_tu_vung',
-                'csv'
-              )
-            }
-            className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-semibold text-[11px] hover:bg-slate-50 dark:hover:bg-slate-700 transition inline-flex items-center gap-1"
-            title="Xuất file .csv"
-          >
-            <Download className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Xuất CSV</span>
-          </button>
-
-          {/* Add Word Button */}
-          <button
-            onClick={handleOpenAddWord}
-            className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold text-[11px] hover:bg-indigo-500 transition inline-flex items-center gap-1 shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm từ mới</span>
-          </button>
-
-          {/* Create Deck Button (When in Decks tab and no deck opened) */}
+          {/* TRANG QUẢN LÝ KHO (Khi ở danh sách Kho):
+              ẨN TOÀN BỘ CÁC NÚT THÊM TỪ / NHẬP EXCEL / CSV vì chưa mở kho nào!
+              Chỉ hiển thị nút: "+ Tạo kho mới" */}
           {!selectedDeck && activeTab === 'decks' && (
             <button
               onClick={() => {
@@ -1351,14 +1356,139 @@ export const MyWordBankPage: React.FC = () => {
                 setDeckPasswordInput('');
                 setShowCreateDeckModal(true);
               }}
-              className="px-3 py-1.5 rounded-xl bg-purple-600 text-white font-semibold text-[11px] hover:bg-purple-500 transition inline-flex items-center gap-1 shadow-sm"
+              className="btn-glass-purple btn-glass-sm"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               <span>Tạo kho mới</span>
             </button>
           )}
+
+          {/* TRONG KHO (Khi đã mở 1 kho cụ thể):
+              Hiển thị các nút thao tác cho từ vựng của kho đó */}
+          {selectedDeck && (
+            <>
+              {!selectedDeck.isReadOnly && (
+                <>
+                  <button
+                    onClick={handleOpenAddWord}
+                    className="btn-glass-primary btn-glass-sm"
+                    aria-label="Thêm từ mới vào kho này"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Thêm từ mới</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setParsedWords([]);
+                      setParsingError(null);
+                      setImportDeckMode('existing');
+                      setImportTargetDeckName(selectedDeck.title);
+                      setShowImportModal(true);
+                    }}
+                    className="btn-glass-emerald btn-glass-sm"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Nhập Excel / CSV</span>
+                  </button>
+                </>
+              )}
+
+              {/* Download Excel */}
+              <button
+                onClick={() =>
+                  exportWordsToExcelOrCsv(
+                    wordsInSelectedDeck,
+                    `kho_${selectedDeck.title}`,
+                    'xlsx'
+                  )
+                }
+                className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300"
+                title="Tải toàn bộ từ vựng trong kho này ra file Excel (.xlsx)"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Tải Excel</span>
+              </button>
+
+              {/* Download CSV */}
+              <button
+                onClick={() =>
+                  exportWordsToExcelOrCsv(
+                    wordsInSelectedDeck,
+                    `kho_${selectedDeck.title}`,
+                    'csv'
+                  )
+                }
+                className="btn-glass-secondary btn-glass-sm text-slate-700 dark:text-slate-200"
+                title="Tải từ vựng trong kho này ra file CSV (.csv)"
+              >
+                <Download className="w-4 h-4 text-indigo-500" />
+                <span>Tải CSV</span>
+              </button>
+            </>
+          )}
+
+          {/* TAB TẤT CẢ TỪ:
+              Cho phép Tải tất cả từ ra Excel / CSV */}
+          {!selectedDeck && activeTab === 'all_words' && (
+            <>
+              {decks.length > 0 && (
+                <button
+                  onClick={handleOpenAddWord}
+                  className="btn-glass-primary btn-glass-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Thêm từ mới</span>
+                </button>
+              )}
+
+              <button
+                onClick={() =>
+                  exportWordsToExcelOrCsv(
+                    words,
+                    'tat_ca_tu_vung',
+                    'xlsx'
+                  )
+                }
+                className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300"
+                title="Tải toàn bộ từ vựng ra file Excel (.xlsx)"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Tải tất cả Excel</span>
+              </button>
+
+              <button
+                onClick={() =>
+                  exportWordsToExcelOrCsv(
+                    words,
+                    'tat_ca_tu_vung',
+                    'csv'
+                  )
+                }
+                className="btn-glass-secondary btn-glass-sm text-slate-700 dark:text-slate-200"
+                title="Tải toàn bộ từ vựng ra file CSV (.csv)"
+              >
+                <Download className="w-4 h-4 text-indigo-500" />
+                <span>Tải tất cả CSV</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Real-time IndexedDB Activity Progress Notification Banner */}
+      {idbSyncMsg && (
+        <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center justify-between gap-3 animate-in fade-in shadow-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <span className="truncate">{idbSyncMsg}</span>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 shrink-0">
+            IndexedDB Sync
+          </span>
+        </div>
+      )}
 
       {/* Action Success Toast Banner */}
       {actionSuccessMsg && (
@@ -1375,11 +1505,11 @@ export const MyWordBankPage: React.FC = () => {
             onClick={() => setActiveTab('decks')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeTab === 'decks'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                ? 'btn-glass-primary !py-1.5 !px-3.5 shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <FolderKanban className="w-4 h-4 text-indigo-500" />
+            <FolderKanban className="w-4 h-4" />
             <span>Kho Của Tôi ({decks.length})</span>
           </button>
 
@@ -1387,11 +1517,11 @@ export const MyWordBankPage: React.FC = () => {
             onClick={() => setActiveTab('all_words')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeTab === 'all_words'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                ? 'btn-glass-primary !py-1.5 !px-3.5 shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <BookOpen className="w-4 h-4 text-indigo-500" />
+            <BookOpen className="w-4 h-4" />
             <span>Tất Cả Từ ({words.length})</span>
           </button>
         </div>
@@ -1402,7 +1532,7 @@ export const MyWordBankPage: React.FC = () => {
           ============================================================================= */}
       {!selectedDeck && activeTab === 'decks' && (
         <div className="space-y-4">
-          {/* Deck Search & Bulk Action Bar */}
+          {/* Deck Search, View Switcher & Bulk Action Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
             <div className="flex flex-wrap items-center gap-2">
               {/* Select All Checkbox */}
@@ -1414,7 +1544,7 @@ export const MyWordBankPage: React.FC = () => {
                     setSelectedDeckIds(filteredDecks.map((d) => d.id));
                   }
                 }}
-                className="h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs transition inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
+                className="btn-glass-secondary btn-glass-sm"
               >
                 {selectedDeckIds.length > 0 && selectedDeckIds.length === filteredDecks.length ? (
                   <CheckSquare className="w-4 h-4 text-indigo-600" />
@@ -1428,7 +1558,7 @@ export const MyWordBankPage: React.FC = () => {
               {selectedDeckIds.length > 0 && (
                 <button
                   onClick={() => setShowBulkDeleteDecksModal(true)}
-                  className="h-9 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition inline-flex items-center gap-1.5 shadow-sm animate-in fade-in"
+                  className="btn-glass-danger btn-glass-sm animate-in fade-in"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Xóa {selectedDeckIds.length} kho đã chọn</span>
@@ -1436,37 +1566,302 @@ export const MyWordBankPage: React.FC = () => {
               )}
             </div>
 
-            {/* Deck Search Box */}
-            <div className="relative w-full sm:w-64 h-9">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={deckSearch}
-                onChange={(e) => setDeckSearch(e.target.value)}
-                placeholder="Tìm kiếm tên kho từ..."
-                className="w-full h-full pl-8 pr-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
-              />
+            <div className="flex items-center gap-2">
+              {/* View Mode Switcher (Dưới ô vs Danh sách) */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => toggleDeckViewMode('grid')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    deckViewMode === 'grid'
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Hiển thị: Dưới ô"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Dưới ô</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleDeckViewMode('list')}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    deckViewMode === 'list'
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                  title="Hiển thị: Danh sách"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Danh sách</span>
+                </button>
+              </div>
+
+              {/* Deck Search Box */}
+              <div className="relative w-full sm:w-60 h-9">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={deckSearch}
+                  onChange={(e) => setDeckSearch(e.target.value)}
+                  placeholder="Tìm kiếm tên kho từ..."
+                  className="w-full h-full pl-8 pr-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Decks Grid */}
+          {/* Decks Display: Loading, Empty, List, or Grid */}
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
           ) : filteredDecks.length === 0 ? (
-            <div className="text-center py-20 text-slate-400 space-y-3 bg-white/50 dark:bg-slate-900/50 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 p-8">
-              <FolderKanban className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-700" />
-              <p className="text-sm font-medium">Chưa có kho từ vựng nào.</p>
+            <div className="text-center py-16 px-6 text-slate-400 space-y-4 bg-white/70 dark:bg-slate-900/60 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 max-w-xl mx-auto my-6 shadow-sm">
+              <div className="w-16 h-16 rounded-3xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto shadow-inner">
+                <FolderKanban className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  {deckSearch ? 'Không tìm thấy kho từ vựng nào' : 'Bạn chưa có kho từ vựng cá nhân nào'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+                  {deckSearch
+                    ? 'Hãy thử tìm kiếm bằng từ khóa khác hoặc xóa ô tìm kiếm.'
+                    : 'Hãy tạo kho từ vựng đầu tiên của bạn để bắt đầu thêm từ, nhập file Excel/CSV và quản lý từ vựng!'}
+                </p>
+              </div>
               <button
-                onClick={() => setShowCreateDeckModal(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition"
+                onClick={() => {
+                  setDeckTitleInput('');
+                  setDeckDescInput('');
+                  setDeckPasswordInput('');
+                  setShowCreateDeckModal(true);
+                }}
+                className="btn-glass-purple btn-glass-sm !px-5 !py-2.5 !h-auto text-xs"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Tạo kho từ vựng mới ngay</span>
+                <Plus className="w-4 h-4" />
+                <span>Tạo kho từ vựng đầu tiên ngay</span>
               </button>
             </div>
+          ) : deckViewMode === 'list' ? (
+            /* =================================================================
+               LIST VIEW FOR DECKS (DANH SÁCH KHO TỪ)
+               ================================================================= */
+            <div className="overflow-hidden rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs backdrop-blur-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                      <th className="py-3 px-4 w-10">
+                        <button
+                          onClick={() => {
+                            if (selectedDeckIds.length === filteredDecks.length) {
+                              setSelectedDeckIds([]);
+                            } else {
+                              setSelectedDeckIds(filteredDecks.map((d) => d.id));
+                            }
+                          }}
+                          className="p-0.5 text-slate-400 hover:text-indigo-600 transition"
+                        >
+                          {selectedDeckIds.length > 0 && selectedDeckIds.length === filteredDecks.length ? (
+                            <CheckSquare className="w-4 h-4 text-indigo-600" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </th>
+                      <th className="py-3 px-4">Kho từ vựng</th>
+                      <th className="py-3 px-3">Lĩnh vực</th>
+                      <th className="py-3 px-3 text-center">Cấp độ</th>
+                      <th className="py-3 px-3 text-center">Số từ</th>
+                      <th className="py-3 px-4 min-w-[140px]">Tiến độ</th>
+                      <th className="py-3 px-3 text-center">Trạng thái</th>
+                      <th className="py-3 px-4 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
+                    {filteredDecks.map((deck) => {
+                      const isSelected = selectedDeckIds.includes(deck.id);
+                      return (
+                        <tr
+                          key={deck.id}
+                          className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 ${
+                            isSelected ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''
+                          }`}
+                        >
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() =>
+                                setSelectedDeckIds((prev) =>
+                                  prev.includes(deck.id) ? prev.filter((id) => id !== deck.id) : [...prev, deck.id]
+                                )
+                              }
+                              className="p-0.5 text-slate-400 hover:text-indigo-600 transition"
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 text-indigo-600" />
+                              ) : (
+                                <Square className="w-4 h-4" />
+                              )}
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div
+                              onClick={() => {
+                                setSelectedDeck(deck);
+                                setSelectedWordIds([]);
+                              }}
+                              className="cursor-pointer group flex items-start gap-2.5"
+                            >
+                              <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
+                                <Folder className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition truncate max-w-xs sm:max-w-md">
+                                  {deck.title}
+                                </div>
+                                {deck.description && (
+                                  <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{deck.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
+                              {deck.category || 'General'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded font-black text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              {deck.cefrLevel || 'B1'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            {deck.computedWordCount} từ
+                          </td>
+                          <td className="py-3 px-4 min-w-[140px]">
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                                <span>{deck.masteredCount} từ</span>
+                                <span className="text-indigo-600 dark:text-indigo-400">{deck.percentMastered}%</span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full"
+                                  style={{ width: `${deck.percentMastered}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <div className="inline-flex items-center gap-1">
+                              {deck.isSyncedToCloud ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1">
+                                  <CloudUpload className="w-2.5 h-2.5" />
+                                  <span>Cloud</span>
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold border border-slate-200 inline-flex items-center gap-1">
+                                  <HardDrive className="w-2.5 h-2.5" />
+                                  <span>Local</span>
+                                </span>
+                              )}
+                              {deck.hasPassword && (
+                                <span className="p-1 rounded bg-amber-50 dark:bg-amber-950 text-amber-600" title="Có mật khẩu">
+                                  <Lock className="w-2.5 h-2.5" />
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setSelectedDeck(deck);
+                                  setSelectedWordIds([]);
+                                }}
+                                className="btn-glass-primary btn-glass-sm text-xs"
+                                title="Xem và quản lý từ trong kho"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Xem từ</span>
+                              </button>
+                              <button
+                                onClick={() => navigate(`/review?topic=${encodeURIComponent(deck.title)}`)}
+                                className="btn-glass-amber btn-glass-sm text-xs"
+                                title="Ôn tập kho này"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 fill-amber-500" />
+                                <span>Ôn tập</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const deckWords = words.filter((w) => w.deckId === deck.id || w.deckName === deck.title);
+                                  exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'xlsx');
+                                }}
+                                className="btn-glass-secondary btn-glass-icon"
+                                title="Tải Excel (.xlsx)"
+                              >
+                                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const deckWords = words.filter((w) => w.deckId === deck.id || w.deckName === deck.title);
+                                  exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'csv');
+                                }}
+                                className="btn-glass-secondary btn-glass-icon"
+                                title="Tải CSV (.csv)"
+                              >
+                                <Download className="w-3.5 h-3.5 text-indigo-500" />
+                              </button>
+                              {!deck.isReadOnly && (
+                                <>
+                                  <button
+                                    onClick={(e) => handleOpenEditDeck(deck, e)}
+                                    className="btn-glass-secondary btn-glass-icon"
+                                    title="Sửa thông tin kho"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShareModalDeck(deck);
+                                      setSharePasswordInput('');
+                                    }}
+                                    className="btn-glass-secondary btn-glass-icon"
+                                    title="Chia sẻ kho này"
+                                  >
+                                    <Share2 className="w-3.5 h-3.5 text-purple-600" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeckToDelete(deck);
+                                    }}
+                                    className="btn-glass-danger btn-glass-icon"
+                                    title="Xóa kho"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           ) : (
+            /* =================================================================
+               GRID VIEW FOR DECKS (DƯỚI Ô)
+               ================================================================= */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredDecks.map((deck) => {
                 const isSelected = selectedDeckIds.includes(deck.id);
@@ -1478,12 +1873,12 @@ export const MyWordBankPage: React.FC = () => {
                     className={`p-5 flex flex-col justify-between space-y-4 border transition duration-200 shadow-sm hover:shadow-md ${
                       isSelected
                         ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
-                        : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/50'
+                        : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40'
                     }`}
                   >
                     <div>
-                      {/* Top Header: Checkbox + Badges */}
-                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                      {/* Top Bar: Checkbox + Tags */}
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -1493,7 +1888,7 @@ export const MyWordBankPage: React.FC = () => {
                                 prev.includes(deck.id) ? prev.filter((id) => id !== deck.id) : [...prev, deck.id]
                               );
                             }}
-                            className="p-1 rounded-md text-slate-400 hover:text-indigo-600 transition"
+                            className="p-1 text-slate-400 hover:text-indigo-600 transition"
                           >
                             {isSelected ? (
                               <CheckSquare className="w-4 h-4 text-indigo-600" />
@@ -1502,38 +1897,33 @@ export const MyWordBankPage: React.FC = () => {
                             )}
                           </button>
 
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">
+                            {deck.cefrLevel || 'B1'}
+                          </span>
+
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {deck.category || 'General'}
+                          </span>
+
+                          {/* Cloud / Local Sync Badge */}
                           {deck.isSyncedToCloud ? (
-                            <button
-                              type="button"
-                              onClick={(e) => handleUploadDeckToCloud(deck, e)}
-                              disabled={syncingDeckId === deck.id}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-300/80 dark:border-emerald-800 transition active:scale-95 shadow-2xs group"
-                              title="Kho đã được lưu trên Cloud. Bấm để cập nhật lại"
-                              aria-label="Cập nhật kho lên Cloud"
-                            >
-                              {syncingDeckId === deck.id ? (
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                              ) : (
-                                <div className="relative flex items-center">
-                                  <CloudUpload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5 animate-pulse" />
-                                </div>
-                              )}
-                              <span>{syncingDeckId === deck.id ? 'Đang lưu...' : 'Cloud Synced'}</span>
-                            </button>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800">
+                              <CloudUpload className="w-2.5 h-2.5" />
+                              <span>Cloud</span>
+                            </span>
                           ) : (
                             <button
                               type="button"
                               onClick={(e) => handleUploadDeckToCloud(deck, e)}
                               disabled={syncingDeckId === deck.id}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-bold shadow-xs hover:shadow-sm transition active:scale-95 group"
+                              className="btn-glass-primary btn-glass-sm !h-6 !px-2 text-[10px]"
                               title="Kho này đang lưu ở máy (Local). Nhấn để lưu lên Cloud an toàn"
                               aria-label="Đẩy kho này lên Cloud"
                             >
                               {syncingDeckId === deck.id ? (
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                                <RefreshCw className="w-3 h-3 animate-spin text-white" />
                               ) : (
-                                <CloudUpload className="w-3.5 h-3.5 text-white group-hover:-translate-y-0.5 transition-transform" />
+                                <CloudUpload className="w-3 h-3 text-white" />
                               )}
                               <span>{syncingDeckId === deck.id ? 'Đang đẩy...' : 'Lưu lên Cloud'}</span>
                             </button>
@@ -1543,6 +1933,13 @@ export const MyWordBankPage: React.FC = () => {
                             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold border border-amber-200">
                               <Lock className="w-2.5 h-2.5" />
                               <span>Khóa</span>
+                            </span>
+                          )}
+
+                          {deck.isReadOnly && (
+                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold border border-purple-200 dark:border-purple-800">
+                              <Lock className="w-2.5 h-2.5" />
+                              <span>Clone (Chỉ đọc)</span>
                             </span>
                           )}
                         </div>
@@ -1590,7 +1987,7 @@ export const MyWordBankPage: React.FC = () => {
                             setSelectedDeck(deck);
                             setSelectedWordIds([]);
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition flex items-center gap-1 shadow-xs"
+                          className="btn-glass-primary btn-glass-sm"
                           aria-label="Xem và quản lý từ trong kho"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -1599,49 +1996,79 @@ export const MyWordBankPage: React.FC = () => {
 
                         <button
                           onClick={() => navigate(`/review?topic=${encodeURIComponent(deck.title)}`)}
-                          className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 font-bold text-xs transition flex items-center gap-1 border border-emerald-200 dark:border-emerald-800"
+                          className="btn-glass-amber btn-glass-sm"
                           title="Ôn tập riêng kho này"
                           aria-label="Ôn tập riêng kho này"
                         >
-                          <Sparkles className="w-3.5 h-3.5 fill-emerald-500" />
+                          <Sparkles className="w-3.5 h-3.5 fill-amber-500" />
                           <span>Ôn tập</span>
                         </button>
                       </div>
 
                       <div className="flex items-center gap-1">
+                        {/* Download Deck Excel */}
                         <button
-                          onClick={(e) => handleOpenEditDeck(deck, e)}
-                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition"
-                          title="Sửa thông tin kho"
-                          aria-label="Sửa thông tin kho"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const deckWords = words.filter(
+                              (w) => w.deckId === deck.id || w.deckName === deck.title
+                            );
+                            exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'xlsx');
+                          }}
+                          className="btn-glass-secondary btn-glass-icon"
+                          title="Tải kho này dưới dạng Excel (.xlsx)"
+                          aria-label="Tải Excel"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
                         </button>
+
+                        {/* Download Deck CSV */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const deckWords = words.filter(
+                              (w) => w.deckId === deck.id || w.deckName === deck.title
+                            );
+                            exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'csv');
+                          }}
+                          className="btn-glass-secondary btn-glass-icon"
+                          title="Tải kho này dưới dạng CSV (.csv)"
+                          aria-label="Tải CSV"
+                        >
+                          <Download className="w-3.5 h-3.5 text-indigo-500" />
+                        </button>
+
+                        {!deck.isReadOnly && (
+                          <button
+                            onClick={(e) => handleOpenEditDeck(deck, e)}
+                            className="btn-glass-secondary btn-glass-icon"
+                            title="Sửa thông tin kho"
+                            aria-label="Sửa thông tin kho"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
 
                         <button
                           onClick={(e) => handleOpenShareDeck(deck, e)}
-                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 transition"
+                          className="btn-glass-secondary btn-glass-icon"
                           title="Chia sẻ lên cộng đồng"
                           aria-label="Chia sẻ lên cộng đồng"
                         >
-                          <Share2 className="w-3.5 h-3.5" />
+                          <Share2 className="w-3.5 h-3.5 text-purple-600" />
                         </button>
 
                         <button
                           onClick={(e) => handleUploadDeckToCloud(deck, e)}
                           disabled={syncingDeckId === deck.id}
-                          className={`p-1.5 rounded-lg transition border ${
-                            deck.isSyncedToCloud
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100'
-                              : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
-                          }`}
+                          className="btn-glass-secondary btn-glass-icon"
                           title={deck.isSyncedToCloud ? 'Đồng bộ cập nhật kho này lên Cloud' : 'Đẩy kho này lên Cloud'}
                           aria-label={deck.isSyncedToCloud ? 'Cập nhật Cloud' : 'Đẩy lên Cloud'}
                         >
                           {syncingDeckId === deck.id ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            <CloudUpload className="w-3.5 h-3.5" />
+                            <CloudUpload className="w-3.5 h-3.5 text-blue-500" />
                           )}
                         </button>
 
@@ -1671,35 +2098,75 @@ export const MyWordBankPage: React.FC = () => {
           ============================================================================= */}
       {selectedDeck && (
         <div className="space-y-4">
+          {/* Read-Only Notice for Cloned Decks */}
+          {selectedDeck.isReadOnly && (
+            <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-medium">
+              <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>
+                <strong>Kho được sao chép từ cộng đồng:</strong> Bạn có thể học và ôn tập kho từ này như kho cá nhân, nhưng không thể chỉnh sửa hoặc xóa từ vựng trong kho gốc.
+              </span>
+            </div>
+          )}
+
           {/* Deck Detail Top Banner & Control Bar */}
           <div className="bg-slate-50/90 dark:bg-slate-900/80 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 space-y-3">
             {/* Row 1: Actions inside Deck */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div className="flex flex-wrap items-center gap-2">
-                {/* Select All Words Checkbox */}
-                <button
-                  onClick={() => {
-                    if (selectedWordIds.length === filteredWordsInDeck.length) {
-                      setSelectedWordIds([]);
-                    } else {
-                      setSelectedWordIds(filteredWordsInDeck.map((w) => w.id));
-                    }
-                  }}
-                  className="h-9 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 font-bold text-xs transition inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
-                >
-                  {selectedWordIds.length > 0 && selectedWordIds.length === filteredWordsInDeck.length ? (
-                    <CheckSquare className="w-4 h-4 text-indigo-600" />
-                  ) : (
-                    <Square className="w-4 h-4 text-slate-400" />
-                  )}
-                  <span>Chọn tất cả ({filteredWordsInDeck.length})</span>
-                </button>
+                {/* Inside Deck Word Actions */}
+                {!selectedDeck.isReadOnly && (
+                  <>
+                    <button
+                      onClick={handleOpenAddWord}
+                      className="btn-glass-primary btn-glass-sm"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm từ</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setParsedWords([]);
+                        setParsingError(null);
+                        setImportDeckMode('existing');
+                        setImportTargetDeckName(selectedDeck.title);
+                        setShowImportModal(true);
+                      }}
+                      className="btn-glass-emerald btn-glass-sm"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      <span>Nhập CSV/Excel</span>
+                    </button>
+                  </>
+                )}
+
+                {/* Select All Words Checkbox (Only if not read-only or has words) */}
+                {!selectedDeck.isReadOnly && (
+                  <button
+                    onClick={() => {
+                      if (selectedWordIds.length === filteredWordsInDeck.length) {
+                        setSelectedWordIds([]);
+                      } else {
+                        setSelectedWordIds(filteredWordsInDeck.map((w) => w.id));
+                      }
+                    }}
+                    className="btn-glass-secondary btn-glass-sm"
+                  >
+                    {selectedWordIds.length > 0 && selectedWordIds.length === filteredWordsInDeck.length ? (
+                      <CheckSquare className="w-4 h-4 text-indigo-600" />
+                    ) : (
+                      <Square className="w-4 h-4 text-slate-400" />
+                    )}
+                    <span>Chọn tất cả ({filteredWordsInDeck.length})</span>
+                  </button>
+                )}
 
                 {/* Bulk Delete Words Button */}
-                {selectedWordIds.length > 0 && (
+                {selectedWordIds.length > 0 && !selectedDeck.isReadOnly && (
                   <button
                     onClick={() => setShowBulkDeleteWordsModal(true)}
-                    className="h-9 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition inline-flex items-center gap-1.5 shadow-sm animate-in fade-in"
+                    className="btn-glass-danger btn-glass-sm animate-in fade-in"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Xóa {selectedWordIds.length} từ đã chọn</span>
@@ -1766,10 +2233,10 @@ export const MyWordBankPage: React.FC = () => {
                   <button
                     key={t.key}
                     onClick={() => setDeckWordStatusFilter(t.key as any)}
-                    className={`px-3 py-1 rounded-xl transition text-xs font-bold ${
+                    className={`btn-glass-sm !h-7 !px-2.5 text-xs transition ${
                       deckWordStatusFilter === t.key
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-700'
+                        ? 'btn-glass-primary'
+                        : 'btn-glass-secondary'
                     }`}
                   >
                     {t.label}
@@ -1778,33 +2245,61 @@ export const MyWordBankPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                {/* View Mode Switcher (Dưới ô vs Danh sách) */}
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleWordViewMode('grid')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      wordViewMode === 'grid'
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="Hiển thị: Dưới ô"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Dưới ô</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleWordViewMode('list')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                      wordViewMode === 'list'
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    title="Hiển thị: Danh sách"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Danh sách</span>
+                  </button>
+                </div>
+
                 <span className="text-xs text-slate-500 font-semibold hidden sm:inline-block">
                   Hiển thị <strong className="text-indigo-600 dark:text-indigo-400">{filteredWordsInDeck.length}</strong> từ
                 </span>
 
-                <button
-                  type="button"
-                  onClick={() => handleUploadDeckToCloud(selectedDeck)}
-                  disabled={syncingDeckId === selectedDeck.id || syncingCloud}
-                  className={`h-8 px-3 rounded-xl font-bold text-xs transition inline-flex items-center gap-1.5 shadow-xs active:scale-95 ${
-                    selectedDeck.isSyncedToCloud
-                      ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/20'
-                  }`}
-                  title="Đồng bộ tất cả từ vựng trong kho này lên Cloud"
-                  aria-label="Đồng bộ kho này lên Cloud"
-                >
-                  {syncingDeckId === selectedDeck.id ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <CloudUpload className="w-3.5 h-3.5" />
-                  )}
-                  <span>{selectedDeck.isSyncedToCloud ? 'Đã lưu Cloud' : 'Lưu kho lên Cloud'}</span>
-                </button>
+                {!selectedDeck.isReadOnly && (
+                  <button
+                    type="button"
+                    onClick={() => handleUploadDeckToCloud(selectedDeck)}
+                    disabled={syncingDeckId === selectedDeck.id || syncingCloud}
+                    className="btn-glass-primary btn-glass-sm"
+                    title="Đồng bộ tất cả từ vựng trong kho này lên Cloud"
+                    aria-label="Đồng bộ kho này lên Cloud"
+                  >
+                    {syncingDeckId === selectedDeck.id ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CloudUpload className="w-3.5 h-3.5" />
+                    )}
+                    <span>{selectedDeck.isSyncedToCloud ? 'Đã lưu Cloud' : 'Lưu kho lên Cloud'}</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => navigate(`/review?topic=${encodeURIComponent(selectedDeck.title)}`)}
-                  className="h-8 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs shadow-sm transition inline-flex items-center gap-1.5"
+                  className="btn-glass-amber btn-glass-sm"
                   aria-label="Ôn tập kho này"
                 >
                   <Sparkles className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
@@ -1814,20 +2309,196 @@ export const MyWordBankPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Word Cards Grid inside Deck */}
+          {/* Word Display inside Deck: Empty, List, or Grid */}
           {filteredWordsInDeck.length === 0 ? (
             <div className="text-center py-20 text-slate-400 space-y-3 bg-white/50 dark:bg-slate-900/50 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 p-8">
               <BookOpen className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
               <p className="text-sm font-medium">Chưa có từ vựng nào trong kho phù hợp với bộ lọc.</p>
-              <button
-                onClick={handleOpenAddWord}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Thêm từ mới vào kho này</span>
-              </button>
+              {!selectedDeck.isReadOnly && (
+                <button
+                  onClick={handleOpenAddWord}
+                  className="btn-glass-primary btn-glass-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm từ mới vào kho này</span>
+                </button>
+              )}
+            </div>
+          ) : wordViewMode === 'list' ? (
+            /* =================================================================
+               LIST VIEW FOR WORDS INSIDE DECK (DANH SÁCH TỪ VỰNG)
+               ================================================================= */
+            <div className="overflow-hidden rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs backdrop-blur-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                      <th className="py-3 px-4 w-10">
+                        {!selectedDeck.isReadOnly && (
+                          <button
+                            onClick={() => {
+                              if (selectedWordIds.length === filteredWordsInDeck.length) {
+                                setSelectedWordIds([]);
+                              } else {
+                                setSelectedWordIds(filteredWordsInDeck.map((w) => w.id));
+                              }
+                            }}
+                            className="p-0.5 text-slate-400 hover:text-indigo-600 transition"
+                          >
+                            {selectedWordIds.length > 0 && selectedWordIds.length === filteredWordsInDeck.length ? (
+                              <CheckSquare className="w-4 h-4 text-indigo-600" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                      </th>
+                      <th className="py-3 px-2 w-10 text-center">Nghe</th>
+                      <th className="py-3 px-4">Từ vựng & Phiên âm</th>
+                      <th className="py-3 px-4">Nghĩa tiếng Việt</th>
+                      <th className="py-3 px-3">Chủ đề</th>
+                      <th className="py-3 px-3 text-center">Cấp độ</th>
+                      <th className="py-3 px-3 text-center">Trạng thái</th>
+                      <th className="py-3 px-2 w-10 text-center">Thích</th>
+                      <th className="py-3 px-4 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
+                    {filteredWordsInDeck.map((item) => {
+                      const isSelected = selectedWordIds.includes(item.id);
+                      const isFav = favoriteIds.includes(item.id) || item.isFavorite;
+                      const realTopic = item.topic || item.vocabulary?.topic || 'General';
+                      const cefrLevel = item.cefrLevel || item.vocabulary?.cefrLevel || 'B1';
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 ${
+                            isSelected ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''
+                          }`}
+                        >
+                          <td className="py-3 px-4">
+                            {!selectedDeck.isReadOnly && (
+                              <button
+                                onClick={() =>
+                                  setSelectedWordIds((prev) =>
+                                    prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id]
+                                  )
+                                }
+                                className="p-0.5 text-slate-400 hover:text-indigo-600 transition"
+                              >
+                                {isSelected ? (
+                                  <CheckSquare className="w-4 h-4 text-indigo-600" />
+                                ) : (
+                                  <Square className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <button
+                              onClick={(e) => handlePlayAudio(item.word, e)}
+                              className="btn-glass-secondary btn-glass-icon text-slate-500 hover:text-indigo-600"
+                              title="Phát âm chuẩn (Web Speech)"
+                            >
+                              <Volume2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-black text-slate-900 dark:text-white text-sm">
+                                {item.word}
+                              </span>
+                              {item.partOfSpeech && (
+                                <span className="text-[10px] text-slate-400 italic">
+                                  ({item.partOfSpeech})
+                                </span>
+                              )}
+                            </div>
+                            {item.phonetic && (
+                              <span className="text-[11px] text-indigo-500/90 font-mono">
+                                {item.phonetic}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 max-w-xs sm:max-w-sm">
+                            <p className="text-slate-800 dark:text-slate-200 font-bold line-clamp-1">
+                              {item.meaning}
+                            </p>
+                            {item.example && (
+                              <p className="text-[11px] text-slate-400 italic line-clamp-1 mt-0.5">
+                                "{item.example}"
+                              </p>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">
+                              {realTopic}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              {cefrLevel}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                item.status === 'MASTERED'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 border border-emerald-200'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                              }`}
+                            >
+                              {item.status === 'MASTERED' ? 'Đã thuộc' : 'Đang học'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <button
+                              onClick={(e) => handleToggleFavorite(item.id, e)}
+                              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-rose-500"
+                              title={isFav ? 'Bỏ yêu thích' : 'Yêu thích từ này'}
+                            >
+                              <Heart
+                                className={`w-3.5 h-3.5 ${
+                                  isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-400'
+                                }`}
+                              />
+                            </button>
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            {!selectedDeck.isReadOnly && (
+                              <div className="inline-flex items-center justify-end gap-1">
+                                <button
+                                  onClick={(e) => handleOpenEditWord(item, e)}
+                                  className="btn-glass-secondary btn-glass-icon"
+                                  title="Sửa từ này"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setWordToDelete(item);
+                                  }}
+                                  className="btn-glass-danger btn-glass-icon"
+                                  title="Xóa từ này"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : (
+            /* =================================================================
+               GRID VIEW FOR WORDS INSIDE DECK (DƯỚI Ô)
+               ================================================================= */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredWordsInDeck.map((item) => {
                 const isSelected = selectedWordIds.includes(item.id);
@@ -1851,22 +2522,24 @@ export const MyWordBankPage: React.FC = () => {
                       <div className="flex items-center justify-between gap-2 mb-2">
                         {/* Left: Checkbox + Topic Tag + CEFR */}
                         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedWordIds((prev) =>
-                                prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id]
-                              );
-                            }}
-                            className="p-0.5 text-slate-400 hover:text-indigo-600 transition shrink-0"
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="w-4 h-4 text-indigo-600" />
-                            ) : (
-                              <Square className="w-4 h-4" />
-                            )}
-                          </button>
+                          {!selectedDeck.isReadOnly && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedWordIds((prev) =>
+                                  prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id]
+                                );
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-indigo-600 transition shrink-0"
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 text-indigo-600" />
+                              ) : (
+                                <Square className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
 
                           <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 truncate max-w-[130px]" title={`Chủ đề: ${realTopic}`}>
                             {realTopic}
@@ -1881,7 +2554,7 @@ export const MyWordBankPage: React.FC = () => {
                         <div className="flex items-center gap-1 shrink-0 ml-1">
                           <button
                             onClick={(e) => handlePlayAudio(item.word, e)}
-                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 transition"
+                            className="btn-glass-secondary btn-glass-icon text-slate-500 hover:text-indigo-600"
                             title="Phát âm chuẩn (Web Speech)"
                           >
                             <Volume2 className="w-3.5 h-3.5" />
@@ -1889,7 +2562,7 @@ export const MyWordBankPage: React.FC = () => {
 
                           <button
                             onClick={(e) => handleToggleFavorite(item.id, e)}
-                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 transition text-slate-400 hover:text-rose-500"
+                            className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-rose-500"
                             title={isFav ? 'Bỏ yêu thích' : 'Yêu thích từ này'}
                           >
                             <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
@@ -1935,25 +2608,32 @@ export const MyWordBankPage: React.FC = () => {
                         {item.status === 'MASTERED' ? 'Đã thuộc' : 'Đang học'}
                       </span>
 
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => handleOpenEditWord(item, e)}
-                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white transition"
-                          title="Sửa từ này"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setWordToDelete(item);
-                          }}
-                          className="p-1 rounded-md text-slate-400 hover:text-rose-500 transition"
-                          title="Xóa từ này khỏi kho"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {selectedDeck.isReadOnly ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-200/50">
+                          <Lock className="w-2.5 h-2.5" />
+                          Chỉ đọc
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => handleOpenEditWord(item, e)}
+                            className="btn-glass-secondary btn-glass-icon"
+                            title="Sửa từ này"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setWordToDelete(item);
+                            }}
+                            className="btn-glass-danger btn-glass-icon"
+                            title="Xóa từ này khỏi kho"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </GlassCard>
                 );
@@ -1986,10 +2666,10 @@ export const MyWordBankPage: React.FC = () => {
                   <button
                     key={t.key}
                     onClick={() => setAllWordStatusFilter(t.key as any)}
-                    className={`h-9 px-3.5 rounded-xl transition text-xs font-extrabold shrink-0 ${
+                    className={`btn-glass-sm !h-8 !px-3 text-xs transition shrink-0 ${
                       allWordStatusFilter === t.key
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-700'
+                        ? 'btn-glass-primary'
+                        : 'btn-glass-secondary'
                     }`}
                   >
                     {t.label}
@@ -2021,16 +2701,16 @@ export const MyWordBankPage: React.FC = () => {
                     value={allWordCefrFilter}
                     onChange={(val) => setAllWordCefrFilter(val)}
                     options={[
-                      { value: 'ALL', label: 'Mọi trình độ (CEFR)' },
-                      { value: 'A1', label: 'A1 - Beginner' },
-                      { value: 'A2', label: 'A2 - Elementary' },
-                      { value: 'B1', label: 'B1 - Intermediate' },
-                      { value: 'B2', label: 'B2 - Upper Inter' },
-                      { value: 'C1', label: 'C1 - Advanced' },
-                      { value: 'C2', label: 'C2 - Mastery' },
+                      { value: 'ALL', label: 'Tất cả trình độ (CEFR)', badge: 'ALL' },
+                      { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
+                      { value: 'A2', label: 'A2 — Elementary', badge: 'A2' },
+                      { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
+                      { value: 'B2', label: 'B2 — Upper-Inter', badge: 'B2' },
+                      { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
+                      { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
                     ]}
                     size="sm"
-                    className="w-44 h-9"
+                    className="w-48 h-9"
                   />
                 </div>
 
@@ -2043,7 +2723,7 @@ export const MyWordBankPage: React.FC = () => {
                       setAllWordCefrFilter('ALL');
                       setAllWordSearch('');
                     }}
-                    className="h-9 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-200 font-bold text-xs transition inline-flex items-center gap-1.5"
+                    className="btn-glass-secondary btn-glass-sm"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>Đặt lại bộ lọc</span>
@@ -2065,14 +2745,44 @@ export const MyWordBankPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Results Summary Counter */}
+          {/* Results Summary Counter & View Switcher */}
           <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-semibold">
             <span>
               Hiển thị <strong className="text-indigo-600 dark:text-indigo-400">{allFilteredWords.length}</strong> từ vựng
             </span>
+
+            {/* View Mode Switcher (Dưới ô vs Danh sách) */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+              <button
+                type="button"
+                onClick={() => toggleWordViewMode('grid')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  wordViewMode === 'grid'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+                title="Hiển thị: Dưới ô"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Dưới ô</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleWordViewMode('list')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  wordViewMode === 'list'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+                title="Hiển thị: Danh sách"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Danh sách</span>
+              </button>
+            </div>
           </div>
 
-          {/* Words Grid for "Tất cả từ" */}
+          {/* Words Display for "Tất cả từ": Empty, List, or Grid */}
           {allFilteredWords.length === 0 ? (
             <div className="text-center py-20 text-slate-400 space-y-3 bg-white/50 dark:bg-slate-900/50 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 p-8">
               <BookOpen className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
@@ -2084,12 +2794,149 @@ export const MyWordBankPage: React.FC = () => {
                   setAllWordCefrFilter('ALL');
                   setAllWordSearch('');
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition"
+                className="btn-glass-primary btn-glass-sm"
               >
                 <span>Xóa bộ lọc</span>
               </button>
             </div>
+          ) : wordViewMode === 'list' ? (
+            /* =================================================================
+               LIST VIEW FOR ALL WORDS (DANH SÁCH TẤT CẢ TỪ)
+               ================================================================= */
+            <div className="overflow-hidden rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs backdrop-blur-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                      <th className="py-3 px-3 w-10 text-center">Nghe</th>
+                      <th className="py-3 px-4">Từ vựng & Phiên âm</th>
+                      <th className="py-3 px-4">Nghĩa tiếng Việt</th>
+                      <th className="py-3 px-3">Kho chứa</th>
+                      <th className="py-3 px-3">Chủ đề</th>
+                      <th className="py-3 px-3 text-center">Cấp độ</th>
+                      <th className="py-3 px-3 text-center">Trạng thái</th>
+                      <th className="py-3 px-2 w-10 text-center">Thích</th>
+                      <th className="py-3 px-4 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
+                    {visibleAllWords.map((item) => {
+                      const isFav = favoriteIds.includes(item.id) || item.isFavorite;
+                      const realTopic = item.topic || item.vocabulary?.topic || 'General';
+                      const cefrLevel = item.cefrLevel || item.vocabulary?.cefrLevel || 'B1';
+
+                      return (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150"
+                        >
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              onClick={(e) => handlePlayAudio(item.word, e)}
+                              className="btn-glass-secondary btn-glass-icon text-slate-500 hover:text-indigo-600"
+                              title="Phát âm chuẩn (Web Speech)"
+                            >
+                              <Volume2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-black text-slate-900 dark:text-white text-sm">
+                                {item.word}
+                              </span>
+                              {item.partOfSpeech && (
+                                <span className="text-[10px] text-slate-400 italic">
+                                  ({item.partOfSpeech})
+                                </span>
+                              )}
+                            </div>
+                            {item.phonetic && (
+                              <span className="text-[11px] text-indigo-500/90 font-mono">
+                                {item.phonetic}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 max-w-xs sm:max-w-sm">
+                            <p className="text-slate-800 dark:text-slate-200 font-bold line-clamp-1">
+                              {item.meaning}
+                            </p>
+                            {item.example && (
+                              <p className="text-[11px] text-slate-400 italic line-clamp-1 mt-0.5">
+                                "{item.example}"
+                              </p>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                              {item.deckName || 'General'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">
+                              {realTopic}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                              {cefrLevel}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                item.status === 'MASTERED'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 border border-emerald-200'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                              }`}
+                            >
+                              {item.status === 'MASTERED' ? 'Đã thuộc' : 'Đang học'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <button
+                              onClick={(e) => handleToggleFavorite(item.id, e)}
+                              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-rose-500"
+                              title={isFav ? 'Bỏ yêu thích' : 'Yêu thích từ này'}
+                            >
+                              <Heart
+                                className={`w-3.5 h-3.5 ${
+                                  isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-400'
+                                }`}
+                              />
+                            </button>
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <div className="inline-flex items-center justify-end gap-1">
+                              <button
+                                onClick={(e) => handleOpenEditWord(item, e)}
+                                className="btn-glass-secondary btn-glass-icon"
+                                title="Sửa từ này"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setWordToDelete(item);
+                                }}
+                                className="btn-glass-danger btn-glass-icon"
+                                title="Xóa từ này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           ) : (
+            /* =================================================================
+               GRID VIEW FOR ALL WORDS (DƯỚI Ô)
+               ================================================================= */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {visibleAllWords.map((item) => {
                 const isFav = favoriteIds.includes(item.id) || item.isFavorite;
@@ -2124,7 +2971,7 @@ export const MyWordBankPage: React.FC = () => {
                         <div className="flex items-center gap-1 shrink-0 ml-1">
                           <button
                             onClick={(e) => handlePlayAudio(item.word, e)}
-                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 transition"
+                            className="btn-glass-secondary btn-glass-icon text-slate-500 hover:text-indigo-600"
                             title="Phát âm chuẩn (Web Speech)"
                           >
                             <Volume2 className="w-3.5 h-3.5" />
@@ -2132,7 +2979,7 @@ export const MyWordBankPage: React.FC = () => {
 
                           <button
                             onClick={(e) => handleToggleFavorite(item.id, e)}
-                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 transition text-slate-400 hover:text-rose-500"
+                            className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-rose-500"
                             title={isFav ? 'Bỏ yêu thích' : 'Yêu thích từ này'}
                           >
                             <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
@@ -2181,7 +3028,7 @@ export const MyWordBankPage: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => handleOpenEditWord(item, e)}
-                          className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white transition"
+                          className="btn-glass-secondary btn-glass-icon"
                           title="Sửa từ này"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -2191,7 +3038,7 @@ export const MyWordBankPage: React.FC = () => {
                             e.stopPropagation();
                             setWordToDelete(item);
                           }}
-                          className="p-1 rounded-md text-slate-400 hover:text-rose-500 transition"
+                          className="btn-glass-danger btn-glass-icon"
                           title="Xóa từ này"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -2219,98 +3066,147 @@ export const MyWordBankPage: React.FC = () => {
 
       {/* 1. CREATE DECK MODAL */}
       <ModalPortal isOpen={showCreateDeckModal} onClose={() => setShowCreateDeckModal(false)}>
-        <form onSubmit={handleConfirmCreateDeck} className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Folder className="w-4 h-4 text-indigo-600" />
-              <span>Tạo Kho Từ Vựng Mới</span>
-            </h3>
-            <button type="button" onClick={() => setShowCreateDeckModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
+        <form
+          onSubmit={handleConfirmCreateDeck}
+          className="m-auto max-w-3xl w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-8 sm:p-10 space-y-7 shadow-2xl animate-fade-in text-left max-h-[90vh] overflow-y-auto"
+        >
+          <div className="flex items-center justify-between pb-5 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/20 dark:from-indigo-950/80 dark:to-purple-950/80 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 shadow-sm">
+                <Folder className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Tạo Kho Từ Vựng Mới
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Thiết lập thông tin kho từ vựng cá nhân để lưu trữ, ôn tập theo lộ trình và chia sẻ
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCreateDeckModal(false)}
+              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              aria-label="Đóng cửa sổ tạo kho"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-3 text-xs">
+          <div className="space-y-5 text-xs sm:text-sm">
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Tên kho từ vựng *</label>
+              <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                Tên kho từ vựng <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
                 required
                 value={deckTitleInput}
                 onChange={(e) => setDeckTitleInput(e.target.value)}
-                placeholder="Ví dụ: TOEIC 600 Essential Words"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 font-medium"
+                placeholder="Ví dụ: TOEIC 600 Essential Words, IELTS Speaking Part 1, Business Email..."
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-sm sm:text-base text-slate-900 dark:text-white transition placeholder:text-slate-400"
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                  Lĩnh vực / Danh mục
+                </label>
+                <CustomDropdown
+                  value={deckCatInput}
+                  onChange={(val) => setDeckCatInput(val)}
+                  options={[
+                    { value: 'Business English', label: 'Business English' },
+                    { value: 'TOEIC Test', label: 'TOEIC Test' },
+                    { value: 'IELTS Academic', label: 'IELTS Academic' },
+                    { value: 'Daily Communication', label: 'Giao tiếp hàng ngày' },
+                    { value: 'Technology', label: 'Công nghệ / IT' },
+                  ]}
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                  Cấp độ chuẩn (CEFR)
+                </label>
+                <CustomDropdown
+                  value={deckCefrInput}
+                  onChange={(val) => setDeckCefrInput(val)}
+                  options={[
+                    { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
+                    { value: 'A2', label: 'A2 — Elementary', badge: 'A2' },
+                    { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
+                    { value: 'B2', label: 'B2 — Upper-Inter', badge: 'B2' },
+                    { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
+                    { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
+                  ]}
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* LÝ DO TẠO KHO & MỤC TIÊU HỌC TẬP - TEXTAREA RỘNG RÃI 5 DÒNG */}
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Mô tả kho</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
+                  <span>Lý do tạo kho & Mô tả mục tiêu học tập</span>
+                  <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+                    (Tối thiểu 4-5 dòng để định hình rõ lộ trình)
+                  </span>
+                </label>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                  {deckDescInput.length} ký tự
+                </span>
+              </div>
               <textarea
-                rows={2}
+                rows={5}
                 value={deckDescInput}
                 onChange={(e) => setDeckDescInput(e.target.value)}
-                placeholder="Mô tả mục tiêu của kho từ này..."
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 font-medium"
+                placeholder={"Ví dụ:\n• Lý do: Chuẩn bị thi TOEIC đạt mốc 750+ vào tháng 11 để phục vụ công việc.\n• Mục tiêu: Nắm vững 30 từ vựng hợp đồng kinh tế và báo cáo tài chính mỗi tuần.\n• Nguồn tài liệu: Trích xuất từ đề thi ETS 2024 và tài liệu thực tế tại văn phòng..."}
+                className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs sm:text-sm leading-relaxed text-slate-900 dark:text-white transition resize-y min-h-[140px] placeholder:text-slate-400 dark:placeholder:text-slate-600"
               />
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
+                Mô tả chi tiết giúp bạn duy trì kỷ luật học tập và giúp bạn bè hiểu rõ giá trị khi bạn chia sẻ kho từ này.
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Lĩnh vực</label>
-                <select
-                  value={deckCatInput}
-                  onChange={(e) => setDeckCatInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                >
-                  <option value="Business English">Business English</option>
-                  <option value="TOEIC Test">TOEIC Test</option>
-                  <option value="IELTS Academic">IELTS Academic</option>
-                  <option value="Daily Communication">Giao tiếp hàng ngày</option>
-                  <option value="Technology">Công nghệ / IT</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Cấp độ (CEFR)</label>
-                <select
-                  value={deckCefrInput}
-                  onChange={(e) => setDeckCefrInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                >
-                  <option value="A1">A1 - Beginner</option>
-                  <option value="A2">A2 - Elementary</option>
-                  <option value="B1">B1 - Intermediate</option>
-                  <option value="B2">B2 - Upper-Inter</option>
-                  <option value="C1">C1 - Advanced</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Mật khẩu bảo mật kho (Tùy chọn)</label>
+            <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+              <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-xs sm:text-sm">
+                <Lock className="w-4 h-4 text-amber-500" />
+                <span>Mật khẩu bảo mật kho (Tùy chọn)</span>
+              </label>
               <input
                 type="password"
                 value={deckPasswordInput}
                 onChange={(e) => setDeckPasswordInput(e.target.value)}
-                placeholder="Để trống nếu không đặt mật khẩu"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 font-medium"
+                placeholder="Nhập mã PIN hoặc mật khẩu nếu muốn bảo vệ quyền truy cập..."
+                className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs sm:text-sm text-slate-900 dark:text-white transition"
               />
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Nếu đặt mật khẩu, người khác bắt buộc phải nhập đúng mã PIN để xem hoặc sao chép kho này khi chia sẻ công khai.
+              </p>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setShowCreateDeckModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+              className="btn-glass-secondary btn-glass-sm !px-5"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition shadow-md"
+              className="btn-glass-purple btn-glass-sm !px-6 font-bold"
             >
-              Xác nhận tạo kho
+              <Plus className="w-4 h-4" />
+              <span>Xác nhận tạo kho</span>
             </button>
           </div>
         </form>
@@ -2318,96 +3214,143 @@ export const MyWordBankPage: React.FC = () => {
 
       {/* 2. EDIT DECK MODAL */}
       <ModalPortal isOpen={showEditDeckModal} onClose={() => setShowEditDeckModal(false)}>
-        <form onSubmit={handleConfirmEditDeck} className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Edit3 className="w-4 h-4 text-indigo-600" />
-              <span>Sửa Thông Tin Kho Từ Vựng</span>
-            </h3>
-            <button type="button" onClick={() => setShowEditDeckModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
+        <form
+          onSubmit={handleConfirmEditDeck}
+          className="m-auto max-w-3xl w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-8 sm:p-10 space-y-7 shadow-2xl animate-fade-in text-left max-h-[90vh] overflow-y-auto"
+        >
+          <div className="flex items-center justify-between pb-5 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/20 dark:from-indigo-950/80 dark:to-purple-950/80 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 shadow-sm">
+                <Edit3 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Sửa Thông Tin Kho Từ Vựng
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Cập nhật tên, lý do, mục tiêu học tập, danh mục hoặc mật khẩu bảo mật của kho từ
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowEditDeckModal(false)}
+              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              aria-label="Đóng cửa sổ sửa kho"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-3 text-xs">
+          <div className="space-y-5 text-xs sm:text-sm">
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Tên kho từ vựng *</label>
+              <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                Tên kho từ vựng <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
                 required
                 value={deckTitleInput}
                 onChange={(e) => setDeckTitleInput(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-sm sm:text-base text-slate-900 dark:text-white transition"
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                  Lĩnh vực / Danh mục
+                </label>
+                <CustomDropdown
+                  value={deckCatInput}
+                  onChange={(val) => setDeckCatInput(val)}
+                  options={[
+                    { value: 'Business English', label: 'Business English' },
+                    { value: 'TOEIC Test', label: 'TOEIC Test' },
+                    { value: 'IELTS Academic', label: 'IELTS Academic' },
+                    { value: 'Daily Communication', label: 'Giao tiếp hàng ngày' },
+                    { value: 'Technology', label: 'Công nghệ / IT' },
+                  ]}
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                  Cấp độ chuẩn (CEFR)
+                </label>
+                <CustomDropdown
+                  value={deckCefrInput}
+                  onChange={(val) => setDeckCefrInput(val)}
+                  options={[
+                    { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
+                    { value: 'A2', label: 'A2 — Elementary', badge: 'A2' },
+                    { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
+                    { value: 'B2', label: 'B2 — Upper-Inter', badge: 'B2' },
+                    { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
+                    { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
+                  ]}
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* LÝ DO TẠO KHO & MỤC TIÊU HỌC TẬP - TEXTAREA RỘNG RÃI 5 DÒNG */}
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Mô tả kho</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
+                  <span>Lý do tạo kho & Mô tả mục tiêu học tập</span>
+                  <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+                    (Tối thiểu 4-5 dòng để định hình rõ lộ trình)
+                  </span>
+                </label>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                  {deckDescInput.length} ký tự
+                </span>
+              </div>
               <textarea
-                rows={2}
+                rows={5}
                 value={deckDescInput}
                 onChange={(e) => setDeckDescInput(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                placeholder={"Ví dụ:\n• Lý do: Chuẩn bị thi TOEIC đạt mốc 750+ vào tháng 11 để phục vụ công việc.\n• Mục tiêu: Nắm vững 30 từ vựng hợp đồng kinh tế và báo cáo tài chính mỗi tuần.\n• Nguồn tài liệu: Trích xuất từ đề thi ETS 2024 và tài liệu thực tế tại văn phòng..."}
+                className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs sm:text-sm leading-relaxed text-slate-900 dark:text-white transition resize-y min-h-[140px]"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Lĩnh vực</label>
-                <select
-                  value={deckCatInput}
-                  onChange={(e) => setDeckCatInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                >
-                  <option value="Business English">Business English</option>
-                  <option value="TOEIC Test">TOEIC Test</option>
-                  <option value="IELTS Academic">IELTS Academic</option>
-                  <option value="Daily Communication">Giao tiếp hàng ngày</option>
-                  <option value="Technology">Công nghệ / IT</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Cấp độ (CEFR)</label>
-                <select
-                  value={deckCefrInput}
-                  onChange={(e) => setDeckCefrInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                >
-                  <option value="A1">A1 - Beginner</option>
-                  <option value="A2">A2 - Elementary</option>
-                  <option value="B1">B1 - Intermediate</option>
-                  <option value="B2">B2 - Upper-Inter</option>
-                  <option value="C1">C1 - Advanced</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Mật khẩu bảo mật kho (Tùy chọn)</label>
+            <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+              <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-xs sm:text-sm">
+                <Lock className="w-4 h-4 text-amber-500" />
+                <span>Mật khẩu bảo mật kho (Tùy chọn)</span>
+              </label>
               <input
                 type="password"
                 value={deckPasswordInput}
                 onChange={(e) => setDeckPasswordInput(e.target.value)}
-                placeholder="Để trống nếu không đổi mật khẩu"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                placeholder="Để trống để giữ nguyên hoặc xóa trắng nếu muốn mở khóa..."
+                className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs sm:text-sm text-slate-900 dark:text-white transition"
               />
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Để trống nếu muốn giữ nguyên mật khẩu cũ, hoặc xóa trắng để gỡ bỏ bảo vệ PIN.
+              </p>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setShowEditDeckModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+              className="btn-glass-secondary btn-glass-sm !px-5"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition shadow-md"
+              className="btn-glass-primary btn-glass-sm !px-6 font-bold"
             >
-              Lưu thay đổi
+              <CheckCircle className="w-4 h-4" />
+              <span>Lưu thay đổi</span>
             </button>
           </div>
         </form>
@@ -2416,13 +3359,13 @@ export const MyWordBankPage: React.FC = () => {
       {/* 3. DELETE SINGLE DECK CONFIRMATION MODAL */}
       <ModalPortal isOpen={Boolean(deckToDelete)} onClose={() => setDeckToDelete(null)}>
         {deckToDelete && (
-          <div className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5" />
+          <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
+            <div className="flex items-center gap-3.5 text-rose-600">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Xóa Kho Từ Vựng?</h3>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Kho Từ Vựng?</h3>
                 <p className="text-xs text-slate-500">Hành động này không thể hoàn tác.</p>
               </div>
             </div>
@@ -2431,11 +3374,11 @@ export const MyWordBankPage: React.FC = () => {
               Bạn có chắc chắn muốn xóa kho từ <strong className="text-indigo-600 dark:text-indigo-400">{deckToDelete.title}</strong> không? Toàn bộ từ vựng thuộc kho này sẽ bị xóa khỏi bộ nhớ và dữ liệu cá nhân của bạn.
             </p>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setDeckToDelete(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                className="btn-glass-secondary btn-glass-sm"
               >
                 Hủy
               </button>
@@ -2443,7 +3386,7 @@ export const MyWordBankPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmDeleteDeck}
                 disabled={deletingDecks}
-                className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition disabled:opacity-50 shadow-md"
+                className="btn-glass-danger btn-glass-sm"
               >
                 {deletingDecks ? 'Đang xóa...' : 'Xác nhận xóa kho'}
               </button>
@@ -2454,26 +3397,26 @@ export const MyWordBankPage: React.FC = () => {
 
       {/* 4. BULK DELETE DECKS MODAL */}
       <ModalPortal isOpen={showBulkDeleteDecksModal} onClose={() => setShowBulkDeleteDecksModal(false)}>
-        <div className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in">
-          <div className="flex items-center gap-3 text-rose-600">
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center shrink-0">
-              <Trash2 className="w-5 h-5" />
+        <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
+          <div className="flex items-center gap-3.5 text-rose-600">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
+              <Trash2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Xóa Nhiều Kho Từ Vựng?</h3>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Nhiều Kho Từ Vựng?</h3>
               <p className="text-xs text-slate-500">Đã chọn {selectedDeckIds.length} kho từ vựng.</p>
             </div>
           </div>
 
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Bạn có chắc chắn muốn xóa <strong className="text-rose-600">{selectedDeckIds.length} kho từ vựng đã chọn</strong>? Toàn bộ từ vựng thuộc các kho này cũng sẽ bị xóa.
+            Bạn có chắc chắn muốn xóa <strong className="text-rose-600 font-bold">{selectedDeckIds.length} kho từ vựng đã chọn</strong>? Toàn bộ từ vựng thuộc các kho này cũng sẽ bị xóa vĩnh viễn.
           </p>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setShowBulkDeleteDecksModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+              className="btn-glass-secondary btn-glass-sm"
             >
               Hủy
             </button>
@@ -2481,7 +3424,7 @@ export const MyWordBankPage: React.FC = () => {
               type="button"
               onClick={handleConfirmBulkDeleteDecks}
               disabled={deletingDecks}
-              className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition disabled:opacity-50 shadow-md"
+              className="btn-glass-danger btn-glass-sm"
             >
               {deletingDecks ? 'Đang xóa...' : 'Xác nhận xóa các kho'}
             </button>
@@ -2499,165 +3442,225 @@ export const MyWordBankPage: React.FC = () => {
       >
         <form
           onSubmit={showEditWordModal ? handleConfirmEditWord : handleConfirmAddWord}
-          className="m-auto max-w-lg w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in"
+          className="m-auto max-w-3xl w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 sm:p-8 space-y-6 shadow-2xl animate-fade-in text-left"
         >
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              {showEditWordModal ? <Edit3 className="w-4 h-4 text-indigo-600" /> : <Plus className="w-4 h-4 text-indigo-600" />}
-              <span>{showEditWordModal ? 'Sửa Từ Vựng' : 'Thêm Từ Vựng Mới'}</span>
-            </h3>
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                {showEditWordModal ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  {showEditWordModal ? 'Chỉnh Sửa Từ Vựng' : 'Thêm Từ Vựng Mới'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Nhập thông tin chi tiết của từ vựng, phiên âm, định nghĩa và ví dụ minh họa
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => {
                 setShowAddWordModal(false);
                 setShowEditWordModal(false);
               }}
-              className="p-1 text-slate-400 hover:text-slate-700"
+              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-3 text-xs max-h-[70vh] overflow-y-auto pr-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Từ tiếng Anh *</label>
-                <input
-                  type="text"
-                  required
-                  value={wordFormWord}
-                  onChange={(e) => setWordFormWord(e.target.value)}
-                  placeholder="Ví dụ: agreement"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Phiên âm IPA</label>
-                <input
-                  type="text"
-                  value={wordFormPhonetic}
-                  onChange={(e) => setWordFormPhonetic(e.target.value)}
-                  placeholder="/əˈɡriː.mənt/"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Loại từ</label>
-                <select
-                  value={wordFormPos}
-                  onChange={(e) => setWordFormPos(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+          <div className="space-y-4 text-xs max-h-[72vh] overflow-y-auto pr-1">
+            {decks.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-200 text-center space-y-3 my-2">
+                <p className="font-bold text-base">Chưa có kho từ vựng nào!</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Để thêm từ vựng, trước tiên bạn cần tạo ít nhất một kho từ để lưu trữ và quản lý từ vựng của bạn.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddWordModal(false);
+                    setShowCreateDeckModal(true);
+                  }}
+                  className="btn-glass-purple btn-glass-sm"
                 >
-                  <option value="noun">Danh từ (noun)</option>
-                  <option value="verb">Động từ (verb)</option>
-                  <option value="adjective">Tính từ (adjective)</option>
-                  <option value="adverb">Trạng từ (adverb)</option>
-                  <option value="preposition">Giới từ (preposition)</option>
-                </select>
+                  <Plus className="w-4 h-4" />
+                  <span>Tạo kho từ vựng ngay</span>
+                </button>
               </div>
+            ) : (
+              <>
+                {/* Row 1: Word & Phonetic */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                      Từ tiếng Anh <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={wordFormWord}
+                      onChange={(e) => setWordFormWord(e.target.value)}
+                      placeholder="Ví dụ: agreement"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm text-slate-900 dark:text-white transition"
+                    />
+                  </div>
 
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Cấp độ (CEFR)</label>
-                <select
-                  value={wordFormCefr}
-                  onChange={(e) => setWordFormCefr(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                >
-                  <option value="A1">A1 - Beginner</option>
-                  <option value="A2">A2 - Elementary</option>
-                  <option value="B1">B1 - Intermediate</option>
-                  <option value="B2">B2 - Upper-Inter</option>
-                  <option value="C1">C1 - Advanced</option>
-                  <option value="C2">C2 - Mastery</option>
-                </select>
-              </div>
-            </div>
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                      Phiên âm IPA
+                    </label>
+                    <input
+                      type="text"
+                      value={wordFormPhonetic}
+                      onChange={(e) => setWordFormPhonetic(e.target.value)}
+                      placeholder="/əˈɡriː.mənt/"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-mono text-xs text-indigo-600 dark:text-indigo-400 transition"
+                    />
+                  </div>
+                </div>
 
+                {/* Row 2: Meaning & Part of Speech */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                      Nghĩa tiếng Việt <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={wordFormMeaning}
+                      onChange={(e) => setWordFormMeaning(e.target.value)}
+                      placeholder="sự thỏa thuận, hợp đồng..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                      Loại từ
+                    </label>
+                    <CustomDropdown
+                      value={wordFormPos}
+                      onChange={(val) => setWordFormPos(val)}
+                      options={[
+                        { value: 'noun', label: 'Danh từ (noun)', badge: 'n' },
+                        { value: 'verb', label: 'Động từ (verb)', badge: 'v' },
+                        { value: 'adjective', label: 'Tính từ (adjective)', badge: 'adj' },
+                        { value: 'adverb', label: 'Trạng từ (adverb)', badge: 'adv' },
+                        { value: 'preposition', label: 'Giới từ (preposition)', badge: 'prep' },
+                      ]}
+                      size="sm"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 3: Real Topic & Target Deck */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                      Chủ đề thực tế của từ (Topic) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={wordFormTopic}
+                      onChange={(e) => setWordFormTopic(e.target.value)}
+                      placeholder="Ví dụ: Contracts, Marketing, Travel, Finance..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Lưu ý: Đây là chủ đề thực tế của từ (như Hợp đồng, Du lịch...), không phải tên kho.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                      Kho từ vựng chứa
+                    </label>
+                    <CustomDropdown
+                      value={wordFormTargetDeck}
+                      onChange={(val) => setWordFormTargetDeck(val)}
+                      options={decks.map((d) => ({
+                        value: d.title,
+                        label: `Kho: ${d.title}`,
+                        badge: d.cefrLevel,
+                      }))}
+                      size="sm"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 4: CEFR Level */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                      Cấp độ (CEFR)
+                    </label>
+                    <CustomDropdown
+                      value={wordFormCefr}
+                      onChange={(val) => setWordFormCefr(val)}
+                      options={[
+                        { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
+                        { value: 'A2', label: 'A2 — Elementary', badge: 'A2' },
+                        { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
+                        { value: 'B2', label: 'B2 — Upper-Inter', badge: 'B2' },
+                        { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
+                        { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
+                      ]}
+                      size="sm"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Examples */}
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Nghĩa tiếng Việt *</label>
-              <input
-                type="text"
-                required
-                value={wordFormMeaning}
-                onChange={(e) => setWordFormMeaning(e.target.value)}
-                placeholder="sự thỏa thuận, hợp đồng"
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Chủ đề thực tế của từ (Topic) *
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                Câu ví dụ tiếng Anh
               </label>
-              <input
-                type="text"
-                required
-                value={wordFormTopic}
-                onChange={(e) => setWordFormTopic(e.target.value)}
-                placeholder="Ví dụ: Contracts, Marketing, Travel..."
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-              />
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                Lưu ý: Đây là chủ đề thực tế của từ (như Hợp đồng, Du lịch...), không phải tên kho.
-              </p>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Kho từ vựng chứa</label>
-              <select
-                value={wordFormTargetDeck}
-                onChange={(e) => setWordFormTargetDeck(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-              >
-                {decks.map((d) => (
-                  <option key={d.id} value={d.title}>
-                    Kho: {d.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Câu ví dụ tiếng Anh</label>
               <textarea
                 rows={2}
                 value={wordFormExample}
                 onChange={(e) => setWordFormExample(e.target.value)}
                 placeholder="They reached an agreement after a lengthy negotiation."
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
               />
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Dịch câu ví dụ</label>
+              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                Dịch câu ví dụ
+              </label>
               <input
                 type="text"
                 value={wordFormExampleTrans}
                 onChange={(e) => setWordFormExampleTrans(e.target.value)}
                 placeholder="Họ đã đạt được thỏa thuận sau một cuộc đàm phán kéo dài."
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => {
                 setShowAddWordModal(false);
                 setShowEditWordModal(false);
               }}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+              className="btn-glass-secondary btn-glass-sm"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition shadow-md"
+              className="btn-glass-primary btn-glass-sm"
             >
               {showEditWordModal ? 'Lưu thay đổi' : 'Thêm từ vựng'}
             </button>
@@ -2668,26 +3671,26 @@ export const MyWordBankPage: React.FC = () => {
       {/* 6. DELETE SINGLE WORD MODAL */}
       <ModalPortal isOpen={Boolean(wordToDelete)} onClose={() => setWordToDelete(null)}>
         {wordToDelete && (
-          <div className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center shrink-0">
-                <Trash2 className="w-5 h-5" />
+          <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
+            <div className="flex items-center gap-3.5 text-rose-600">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Xóa Từ Vựng?</h3>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Từ Vựng?</h3>
                 <p className="text-xs text-slate-500">Từ vựng: "{wordToDelete.word}"</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Bạn có chắc chắn muốn xóa từ vựng <strong className="text-indigo-600 dark:text-indigo-400">{wordToDelete.word}</strong> ({wordToDelete.meaning}) không?
+              Bạn có chắc chắn muốn xóa từ vựng <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{wordToDelete.word}</strong> ({wordToDelete.meaning}) không?
             </p>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setWordToDelete(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                className="btn-glass-secondary btn-glass-sm"
               >
                 Hủy
               </button>
@@ -2695,7 +3698,7 @@ export const MyWordBankPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmDeleteWord}
                 disabled={deletingWords}
-                className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition disabled:opacity-50 shadow-md"
+                className="btn-glass-danger btn-glass-sm"
               >
                 {deletingWords ? 'Đang xóa...' : 'Xác nhận xóa'}
               </button>
@@ -2706,26 +3709,26 @@ export const MyWordBankPage: React.FC = () => {
 
       {/* 7. BULK DELETE WORDS MODAL */}
       <ModalPortal isOpen={showBulkDeleteWordsModal} onClose={() => setShowBulkDeleteWordsModal(false)}>
-        <div className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in">
-          <div className="flex items-center gap-3 text-rose-600">
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center shrink-0">
-              <Trash2 className="w-5 h-5" />
+        <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
+          <div className="flex items-center gap-3.5 text-rose-600">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
+              <Trash2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Xóa Nhiều Từ Vựng?</h3>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Nhiều Từ Vựng?</h3>
               <p className="text-xs text-slate-500">Đã chọn {selectedWordIds.length} từ vựng.</p>
             </div>
           </div>
 
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Bạn có chắc chắn muốn xóa <strong className="text-rose-600">{selectedWordIds.length} từ vựng đã chọn</strong> khỏi kho từ?
+            Bạn có chắc chắn muốn xóa <strong className="text-rose-600 font-bold">{selectedWordIds.length} từ vựng đã chọn</strong> khỏi kho từ?
           </p>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setShowBulkDeleteWordsModal(false)}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+              className="btn-glass-secondary btn-glass-sm"
             >
               Hủy
             </button>
@@ -2733,7 +3736,7 @@ export const MyWordBankPage: React.FC = () => {
               type="button"
               onClick={handleConfirmBulkDeleteWords}
               disabled={deletingWords}
-              className="px-4 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition disabled:opacity-50 shadow-md"
+              className="btn-glass-danger btn-glass-sm"
             >
               {deletingWords ? 'Đang xóa...' : 'Xác nhận xóa các từ'}
             </button>
@@ -2743,55 +3746,69 @@ export const MyWordBankPage: React.FC = () => {
 
       {/* 8. EXCEL / CSV IMPORT MODAL */}
       <ModalPortal isOpen={showImportModal} onClose={() => setShowImportModal(false)}>
-        <div className="m-auto max-w-4xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in max-h-[88vh] flex flex-col">
+        <div className="m-auto max-w-4xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-7 space-y-5 shadow-2xl animate-fade-in max-h-[88vh] flex flex-col text-left">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                <span>Nhập Dữ Liệu Từ Vựng từ Excel / CSV</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Tự động nhận diện 7 cột chuẩn: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic.
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Nhập Dữ Liệu Từ Vựng từ Excel / CSV
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Tự động nhận diện 7 cột chuẩn: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic.
+                </p>
+              </div>
             </div>
-            <button type="button" onClick={() => setShowImportModal(false)} className="p-1 text-slate-400 hover:text-slate-700">
-              <X className="w-5 h-5" />
+            <button
+              type="button"
+              onClick={() => setShowImportModal(false)}
+              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
+            >
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Options: Target Deck & Template Download */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700">
             <div>
               <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Nạp vào Kho Từ Vựng nào?</label>
               <div className="flex items-center gap-2">
-                <select
-                  value={importDeckMode}
-                  onChange={(e) => setImportDeckMode(e.target.value as any)}
-                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium"
-                >
-                  <option value="existing">Kho có sẵn</option>
-                  <option value="new">Tạo kho mới</option>
-                </select>
+                <CustomDropdown
+                  value={decks.length === 0 ? 'new' : importDeckMode}
+                  onChange={(val) => setImportDeckMode(val as any)}
+                  options={
+                    decks.length === 0
+                      ? [{ value: 'new', label: 'Tạo kho mới' }]
+                      : [
+                          { value: 'existing', label: 'Kho có sẵn' },
+                          { value: 'new', label: 'Tạo kho mới' },
+                        ]
+                  }
+                  size="sm"
+                  className="w-32"
+                />
 
-                {importDeckMode === 'existing' ? (
-                  <select
+                {importDeckMode === 'existing' && decks.length > 0 ? (
+                  <CustomDropdown
                     value={importTargetDeckName}
-                    onChange={(e) => setImportTargetDeckName(e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium"
-                  >
-                    {decks.map((d) => (
-                      <option key={d.id} value={d.title}>
-                        {d.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setImportTargetDeckName(val)}
+                    options={decks.map((d) => ({
+                      value: d.title,
+                      label: d.title,
+                      badge: d.cefrLevel,
+                    }))}
+                    size="sm"
+                    className="flex-1"
+                  />
                 ) : (
                   <input
                     type="text"
                     value={importTargetDeckName}
                     onChange={(e) => setImportTargetDeckName(e.target.value)}
-                    placeholder="Nhập tên kho mới..."
-                    className="flex-1 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium"
+                    placeholder={decks.length === 0 ? "Nhập tên kho mới cho các từ..." : "Nhập tên kho mới..."}
+                    className="flex-1 h-9 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-xs"
                   />
                 )}
               </div>
@@ -2801,7 +3818,7 @@ export const MyWordBankPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => downloadVocabularyTemplate('xlsx')}
-                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border border-emerald-300 font-bold hover:bg-emerald-50 transition inline-flex items-center gap-1"
+                className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Tải mẫu .xlsx</span>
@@ -2809,7 +3826,7 @@ export const MyWordBankPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => downloadVocabularyTemplate('csv')}
-                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-indigo-300 font-bold hover:bg-indigo-50 transition inline-flex items-center gap-1"
+                className="btn-glass-secondary btn-glass-sm text-indigo-600 dark:text-indigo-400"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Tải mẫu .csv</span>
@@ -2820,7 +3837,7 @@ export const MyWordBankPage: React.FC = () => {
           {/* File Upload Drop Zone */}
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-4 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
+            className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-5 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
           >
             <input
               ref={fileInputRef}
@@ -2887,8 +3904,14 @@ export const MyWordBankPage: React.FC = () => {
           )}
 
           {importProgressMsg && (
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 text-indigo-700 dark:text-indigo-300 text-xs font-bold text-center">
-              {importProgressMsg}
+            <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold text-center space-y-2 animate-in fade-in">
+              <div className="flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
+                <span>{importProgressMsg}</span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-indigo-200/60 dark:bg-indigo-900/60 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 rounded-full animate-pulse w-full"></div>
+              </div>
             </div>
           )}
 
@@ -2901,7 +3924,7 @@ export const MyWordBankPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                className="btn-glass-secondary btn-glass-sm"
               >
                 Hủy
               </button>
@@ -2909,7 +3932,7 @@ export const MyWordBankPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmBatchImport}
                 disabled={isImporting || parsedWords.length === 0}
-                className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition disabled:opacity-50 shadow-md inline-flex items-center gap-1.5"
+                className="btn-glass-emerald btn-glass-sm inline-flex items-center gap-1.5"
               >
                 {isImporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
                 <span>{isImporting ? 'Đang nạp...' : 'Xác nhận nạp vào kho'}</span>
@@ -2922,54 +3945,78 @@ export const MyWordBankPage: React.FC = () => {
       {/* 9. SHARE DECK MODAL */}
       <ModalPortal isOpen={Boolean(shareModalDeck)} onClose={() => setShareModalDeck(null)}>
         {shareModalDeck && (
-          <form onSubmit={handleConfirmShareDeck} className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Share2 className="w-4 h-4 text-indigo-600" />
-                <span>Chia Sẻ Kho Lên Cộng Đồng</span>
-              </h3>
-              <button type="button" onClick={() => setShareModalDeck(null)} className="p-1 text-slate-400 hover:text-slate-700">
+          <form
+            onSubmit={handleConfirmShareDeck}
+            className="m-auto max-w-xl w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 sm:p-8 space-y-6 shadow-2xl animate-fade-in text-left"
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    Chia Sẻ Kho Lên Cộng Đồng
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Kho từ của bạn sẽ được đăng lên thư viện cộng đồng để mọi người cùng học tập
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShareModalDeck(null)}
+                className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Tiêu đề chia sẻ *</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                  Tiêu đề chia sẻ <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={shareTitle}
                   onChange={(e) => setShareTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Mô tả kho</label>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                  Mô tả kho
+                </label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={shareDescription}
                   onChange={(e) => setShareDescription(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Danh mục</label>
-                <select
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
+                  Danh mục
+                </label>
+                <CustomDropdown
                   value={shareCategory}
-                  onChange={(e) => setShareCategory(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
-                >
-                  <option value="Business English">Business English</option>
-                  <option value="TOEIC Test">TOEIC Test</option>
-                  <option value="IELTS Academic">IELTS Academic</option>
-                  <option value="Daily Communication">Giao tiếp hàng ngày</option>
-                </select>
+                  onChange={(val) => setShareCategory(val)}
+                  options={[
+                    { value: 'Business English', label: 'Business English' },
+                    { value: 'TOEIC Test', label: 'TOEIC Test' },
+                    { value: 'IELTS Academic', label: 'IELTS Academic' },
+                    { value: 'Daily Communication', label: 'Giao tiếp hàng ngày' },
+                  ]}
+                  size="sm"
+                  className="w-full"
+                />
               </div>
 
-              <div className="pt-1">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
                 <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
                   <input
                     type="checkbox"
@@ -2985,25 +4032,25 @@ export const MyWordBankPage: React.FC = () => {
                     required
                     value={sharePassword}
                     onChange={(e) => setSharePassword(e.target.value)}
-                    placeholder="Nhập mật khẩu..."
-                    className="w-full mt-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium"
+                    placeholder="Nhập mật khẩu truy cập kho..."
+                    className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-xs text-slate-900 dark:text-white"
                   />
                 )}
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setShareModalDeck(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs"
+                className="btn-glass-secondary btn-glass-sm"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={sharing}
-                className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition disabled:opacity-50 shadow-md"
+                className="btn-glass-purple btn-glass-sm"
               >
                 {sharing ? 'Đang chia sẻ...' : 'Xác nhận chia sẻ'}
               </button>
