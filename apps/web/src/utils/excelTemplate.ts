@@ -140,66 +140,86 @@ export const parseVocabularyFile = async (file: File): Promise<ParsedWordItem[]>
             const val = String(row[key] || '').trim();
             if (!val) continue;
 
+            // 1. Part of Speech / POS / Loại từ (Check FIRST to prevent 'Loại từ' matching 'từ')
             if (
-              lowerKey.includes('word') ||
-              lowerKey.includes('từ') ||
-              lowerKey.includes('vocab') ||
-              lowerKey.includes('term') ||
-              lowerKey.includes('tiếng anh') ||
-              lowerKey.includes('english')
+              lowerKey.includes('part') ||
+              lowerKey.includes('loại từ') ||
+              lowerKey.includes('pos') ||
+              lowerKey === 'loại' ||
+              lowerKey.includes('partofspeech')
             ) {
-              word = val;
-              hasMatchedKeys = true;
-            } else if (
+              partOfSpeech = val;
+            }
+            // 2. Phonetic / IPA / Phiên âm
+            else if (
               lowerKey.includes('phonetic') ||
               lowerKey.includes('phiên') ||
               lowerKey.includes('ipa') ||
               lowerKey.includes('pronunciation')
             ) {
               phonetic = val;
-            } else if (
-              lowerKey.includes('part') ||
-              lowerKey.includes('loại') ||
-              lowerKey.includes('pos') ||
-              lowerKey.includes('type')
-            ) {
-              partOfSpeech = val;
-            } else if (
-              lowerKey.includes('meaning') ||
-              lowerKey.includes('nghĩa') ||
-              lowerKey.includes('định nghĩa') ||
-              lowerKey.includes('definition') ||
-              lowerKey.includes('translation') ||
-              lowerKey.includes('tiếng việt') ||
-              lowerKey.includes('vietnamese')
-            ) {
-              meaning = val;
-              hasMatchedKeys = true;
-            } else if (
+            }
+            // 3. Example translation / Dịch ví dụ
+            else if (
               lowerKey.includes('example translation') ||
               lowerKey.includes('dịch ví dụ') ||
               lowerKey.includes('nghĩa ví dụ')
             ) {
               exampleTranslation = val;
-            } else if (
+            }
+            // 4. Example sentence / Ví dụ
+            else if (
               lowerKey.includes('example') ||
               lowerKey.includes('ví dụ') ||
               lowerKey.includes('sentence')
             ) {
               example = val;
-            } else if (
+            }
+            // 5. CEFR / Trình độ / Cấp độ
+            else if (
               lowerKey.includes('cefr') ||
               lowerKey.includes('cấp độ') ||
               lowerKey.includes('level') ||
               lowerKey.includes('trình độ')
             ) {
               cefrLevel = val;
-            } else if (
+            }
+            // 6. Topic / Chủ đề / Category
+            else if (
               lowerKey.includes('topic') ||
               lowerKey.includes('chủ đề') ||
               lowerKey.includes('category')
             ) {
               topic = val;
+            }
+            // 7. Meaning / Nghĩa / Định nghĩa / Definition / Translation / Tiếng Việt
+            else if (
+              lowerKey.includes('meaning') ||
+              lowerKey.includes('nghĩa') ||
+              lowerKey.includes('định nghĩa') ||
+              lowerKey.includes('definition') ||
+              lowerKey.includes('translation') ||
+              lowerKey.includes('tiếng việt') ||
+              lowerKey.includes('vietnamese') ||
+              lowerKey.includes('back') ||
+              lowerKey.includes('explain')
+            ) {
+              meaning = val;
+              hasMatchedKeys = true;
+            }
+            // 8. Word / Từ tiếng Anh / English / Vocab / Term / Front / Entry / Từ (only if not loại từ)
+            else if (
+              lowerKey.includes('word') ||
+              lowerKey.includes('từ tiếng anh') ||
+              lowerKey.includes('english') ||
+              lowerKey.includes('vocab') ||
+              lowerKey.includes('term') ||
+              lowerKey.includes('front') ||
+              lowerKey.includes('entry') ||
+              (lowerKey.includes('từ') && !lowerKey.includes('loại'))
+            ) {
+              word = val;
+              hasMatchedKeys = true;
             }
           }
 
@@ -215,7 +235,17 @@ export const parseVocabularyFile = async (file: File): Promise<ParsedWordItem[]>
             }
           }
 
-          if (word && meaning && word.toLowerCase() !== 'word' && word.toLowerCase() !== 'từ tiếng anh') {
+          const lowerWord = word.toLowerCase().trim();
+          const isHeaderRow =
+            lowerWord === 'word' ||
+            lowerWord === 'từ tiếng anh' ||
+            lowerWord === 'từ' ||
+            lowerWord === 'term' ||
+            lowerWord === 'front' ||
+            lowerWord === 'english' ||
+            lowerWord === 'vocab';
+
+          if (word && meaning && !isHeaderRow) {
             parsedWords.push({
               word,
               phonetic: phonetic || undefined,
@@ -245,4 +275,62 @@ export const parseVocabularyFile = async (file: File): Promise<ParsedWordItem[]>
 
     reader.readAsArrayBuffer(file);
   });
+};
+
+/**
+ * Universal Export for Words / Decks to Excel (.xlsx) or CSV (.csv)
+ * Uses the exact same 7 unified column headers as the import template.
+ */
+export const exportWordsToExcelOrCsv = (
+  words: any[],
+  filename: string = 'vocabflow_vocabulary_export',
+  format: 'xlsx' | 'csv' = 'xlsx'
+) => {
+  const exportData = words.map((w) => {
+    const v = w.vocabulary || {};
+    const wordText = v.word || w.word || '';
+    const phoneticText = v.phonetic || w.phonetic || '';
+    const posText = v.partOfSpeech || w.partOfSpeech || 'noun';
+    const meaningText =
+      v.meanings?.[0]?.meaning ||
+      v.shortDefinition ||
+      v.definition ||
+      w.meaning ||
+      '';
+    const exampleText =
+      v.examples?.[0]?.sentence || w.example || '';
+    const cefrText = v.cefrLevel || w.cefrLevel || 'B1';
+    const topicText = v.topic || w.topic || 'General';
+
+    return {
+      'Word (Từ tiếng Anh)': wordText,
+      'Phonetic (Phiên âm)': phoneticText,
+      'PartOfSpeech (Loại từ)': posText,
+      'Meaning (Nghĩa tiếng Việt)': meaningText,
+      'Example (Câu ví dụ)': exampleText,
+      'CEFR (Trình độ)': cefrText,
+      'Topic (Chủ đề)': topicText,
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  ws['!cols'] = [
+    { wch: 22 },
+    { wch: 18 },
+    { wch: 15 },
+    { wch: 35 },
+    { wch: 45 },
+    { wch: 12 },
+    { wch: 22 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vocabulary');
+
+  const cleanFilename = filename.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  if (format === 'csv') {
+    XLSX.writeFile(wb, `${cleanFilename}.csv`, { bookType: 'csv' });
+  } else {
+    XLSX.writeFile(wb, `${cleanFilename}.xlsx`, { bookType: 'xlsx' });
+  }
 };

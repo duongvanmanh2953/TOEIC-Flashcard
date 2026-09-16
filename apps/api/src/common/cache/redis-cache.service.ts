@@ -1,0 +1,146 @@
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import Redis from 'ioredis';
+
+@Injectable()
+export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RedisCacheService.name);
+  private client: Redis | null = null;
+  private isConnected = false;
+  private inMemoryFallback = new Map<string, { value: string; expiresAt: number }>();
+
+  onModuleInit() {
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    try {
+      this.client = new Redis(redisUrl, {
+        maxRetriesPerRequest: 1,
+        retryStrategy: (times) => {
+          if (times > 3) {
+            this.logger.warn(`Redis connection retry limit reached. Using in-memory fallback.`);
+            return null;
+          }
+          return Math.min(times * 100, 2000);
+        },
+        lazyConnect: true,
+      });
+
+      this.client.connect().then(() => {
+        this.isConnected = true;
+        this.logger.log(`Connected to Redis cache at ${redisUrl}`);
+      }).catch((err) => {
+        this.isConnected = false;
+        this.logger.warn(`Could not connect to Redis (${err.message}). Using memory fallback.`);
+      });
+
+      this.client.on('error', (err) => {
+        this.isConnected = false;
+        this.logger.warn(`Redis client error: ${err.message}`);
+      });
+
+      this.client.on('connect', () => {
+        this.isConnected = true;
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to initialize Redis client: ${err.message}. Using memory fallback.`);
+    }
+  }
+
+  async onModuleDestroy() {
+    if (this.client) {
+      try {
+        await this.client.quit();
+      } catch (_) {}
+    }
+  }
+
+  async get<T = any>(key: string): Promise<T | null> {
+    if (this.isConnected && this.client) {
+      try {
+        const raw = await this.client.get(key);
+        if (raw) return JSON.parse(raw);
+      } catch (err: any) {
+        this.logger.warn(`Redis get error for key ${key}: ${err.message}`);
+      }
+    }
+
+    // Fallback to in-memory
+    const item = this.inMemoryFallback.get(key);
+    if (item) {
+      if (item.expiresAt > Date.now()) {
+        try {
+          return JSON.parse(item.value);
+        } catch {
+          return null;
+        }
+      } else {
+        this.inMemoryFallback.delete(key);
+      }
+    }
+    return null;
+  }
+
+  async set(key: string, value: any, ttlSeconds: number = 3600): Promise<void> {
+    const serialized = JSON.stringify(value);
+
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.set(key, serialized, 'EX', ttlSeconds);
+        return;
+      } catch (err: any) {
+        this.logger.warn(`Redis set error for key ${key}: ${err.message}`);
+      }
+    }
+
+    // Fallback to in-memory
+    this.inMemoryFallback.set(key, {
+      value: serialized,
+      expiresAt: Date.now() + ttlSeconds * 1000,
+    });
+  }
+
+  async del(key: string): Promise<void> {
+    if (this.isConnected && this.client) {
+      try {
+        await this.client.del(key);
+      } catch (err: any) {
+        this.logger.warn(`Redis del error for key ${key}: ${err.message}`);
+      }
+    }
+    this.inMemoryFallback.delete(key);
+  }
+
+  async delPattern(pattern: string): Promise<void> {
+    if (this.isConnected && this.client) {
+      try {
+        const keys = await this.client.keys(pattern);
+        if (keys.length > 0) {
+          await this.client.del(...keys);
+        }
+      } catch (err: any) {
+        this.logger.warn(`Redis delPattern error for pattern ${pattern}: ${err.message}`);
+      }
+    }
+
+    // In-memory pattern deletion
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    for (const key of this.inMemoryFallback.keys()) {
+      if (regex.test(key)) {
+        this.inMemoryFallback.delete(key);
+      }
+    }
+  }
+
+  async invalidateUserVocab(userId: string): Promise<void> {
+    await this.delPattern(`vocabulary:all:${userId}*`);
+    await this.delPattern(`vocabulary:my-words:${userId}*`);
+  }
+
+  async invalidateDeck(deckId: string): Promise<void> {
+    await this.delPattern(`vocabulary:deck:${deckId}*`);
+    await this.delPattern(`community:decks*`);
+  }
+
+  async invalidateTopics(): Promise<void> {
+    await this.del(`topic:list`);
+    await this.del(`level:list`);
+  }
+}

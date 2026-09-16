@@ -1,13 +1,15 @@
 /**
  * IndexedDB Offline Cache & High-Speed Storage for VocabFlow
- * Provides asynchronous, zero-blocking storage for vocabulary lists, search indexes, and review state.
+ * Provides asynchronous, zero-blocking storage for vocabulary lists, word banks (decks),
+ * search indexes, and review state with versioning and cache invalidation.
  */
 
 const DB_NAME = 'vocabflow_offline_db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_VOCAB = 'vocabulary';
 const STORE_CACHE = 'api_cache';
 const STORE_DECKS = 'local_decks';
+const STORE_META = 'metadata';
 
 export interface LocalDeck {
   id: string;
@@ -15,13 +17,35 @@ export interface LocalDeck {
   description?: string;
   category?: string;
   cefrLevel?: string;
-  words: any[];
+  words?: any[];
+  wordCount?: number;
   isProtected?: boolean;
   hasPassword?: boolean;
+  password?: string;
   status?: string;
   createdAt: number;
   updatedAt: number;
   isSyncedToCloud?: boolean;
+}
+
+export interface CachedWordItem {
+  id: string;
+  deckId?: string;
+  deckName?: string;
+  word: string;
+  phonetic?: string;
+  partOfSpeech?: string;
+  meaning: string;
+  definition?: string;
+  example?: string;
+  exampleTranslation?: string;
+  topic?: string;
+  cefrLevel?: string;
+  status?: string;
+  isFavorite?: boolean;
+  vocabulary?: any;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 function openDB(): Promise<IDBDatabase> {
@@ -35,13 +59,18 @@ function openDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_VOCAB)) {
-        db.createObjectStore(STORE_VOCAB, { keyPath: 'id' });
+        const vocabStore = db.createObjectStore(STORE_VOCAB, { keyPath: 'id' });
+        vocabStore.createIndex('deckId', 'deckId', { unique: false });
+        vocabStore.createIndex('topic', 'topic', { unique: false });
       }
       if (!db.objectStoreNames.contains(STORE_CACHE)) {
         db.createObjectStore(STORE_CACHE, { keyPath: 'key' });
       }
       if (!db.objectStoreNames.contains(STORE_DECKS)) {
         db.createObjectStore(STORE_DECKS, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORE_META)) {
+        db.createObjectStore(STORE_META, { keyPath: 'key' });
       }
     };
 
@@ -50,16 +79,61 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+// =============================================================================
+// METADATA & VERSIONING
+// =============================================================================
+
+export async function idbSetMeta(key: string, value: any): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_META, 'readwrite');
+    const store = tx.objectStore(STORE_META);
+    store.put({ key, value, updatedAt: Date.now() });
+  } catch (_) {}
+}
+
+export async function idbGetMeta<T = any>(key: string): Promise<T | null> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_META, 'readonly');
+      const store = tx.objectStore(STORE_META);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result?.value ?? null);
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+// =============================================================================
+// VOCABULARY CRUD OPERATIONS
+// =============================================================================
+
 export async function idbSaveWords(words: any[]): Promise<void> {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_VOCAB, 'readwrite');
     const store = tx.objectStore(STORE_VOCAB);
     for (const word of words) {
-      store.put(word);
+      if (!word) continue;
+      const wordObj = { ...word };
+      if (!wordObj.id) {
+        const cleanW = (wordObj.vocabulary?.word || wordObj.word || '')
+          .toString()
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '_');
+        wordObj.id = `idb_vocab_${cleanW || Math.random().toString(36).substring(2)}`;
+      }
+      // Ensure real topic is not lost
+      wordObj.topic = wordObj.topic || wordObj.vocabulary?.topic || 'General';
+      store.put(wordObj);
     }
+    await idbSetMeta('vocab_last_updated', Date.now());
   } catch (err) {
-    console.warn('IDB write failure (fallback to RAM):', err);
+    console.warn('IDB write failure:', err);
   }
 }
 
@@ -78,38 +152,100 @@ export async function idbGetWords(): Promise<any[]> {
   }
 }
 
-export async function idbSetCache(key: string, data: any, ttlMs: number = 3600000): Promise<void> {
+export async function idbUpdateWord(id: string, updates: Partial<CachedWordItem>): Promise<void> {
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_CACHE, 'readwrite');
-    const store = tx.objectStore(STORE_CACHE);
-    store.put({ key, data, expiresAt: Date.now() + ttlMs });
-  } catch {
-    // Ignored
+    const tx = db.transaction(STORE_VOCAB, 'readwrite');
+    const store = tx.objectStore(STORE_VOCAB);
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (existing) {
+        const updated = {
+          ...existing,
+          ...updates,
+          vocabulary: {
+            ...(existing.vocabulary || {}),
+            ...(updates.vocabulary || {}),
+            ...(updates.word ? { word: updates.word } : {}),
+            ...(updates.meaning ? { definition: updates.meaning, shortDefinition: updates.meaning } : {}),
+            ...(updates.phonetic !== undefined ? { phonetic: updates.phonetic } : {}),
+            ...(updates.topic ? { topic: updates.topic } : {}),
+            ...(updates.cefrLevel ? { cefrLevel: updates.cefrLevel } : {}),
+          },
+          updatedAt: Date.now(),
+        };
+        store.put(updated);
+      }
+    };
+  } catch (err) {
+    console.warn('IDB update word failure:', err);
   }
 }
 
-export async function idbGetCache<T = any>(key: string): Promise<T | null> {
+export async function idbDeleteWord(id: string): Promise<void> {
   try {
     const db = await openDB();
-    return new Promise((resolve) => {
-      const tx = db.transaction(STORE_CACHE, 'readonly');
-      const store = tx.objectStore(STORE_CACHE);
-      const req = store.get(key);
-      req.onsuccess = () => {
-        const item = req.result;
-        if (item && item.expiresAt > Date.now()) {
-          resolve(item.data as T);
-        } else {
-          resolve(null);
-        }
-      };
-      req.onerror = () => resolve(null);
-    });
-  } catch {
-    return null;
+    const tx = db.transaction(STORE_VOCAB, 'readwrite');
+    const store = tx.objectStore(STORE_VOCAB);
+    store.delete(id);
+  } catch (err) {
+    console.warn('IDB delete word failure:', err);
   }
 }
+
+export async function idbDeleteWords(ids: string[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_VOCAB, 'readwrite');
+    const store = tx.objectStore(STORE_VOCAB);
+    for (const id of ids) {
+      store.delete(id);
+    }
+  } catch (err) {
+    console.warn('IDB bulk delete words failure:', err);
+  }
+}
+
+export async function idbToggleFavorite(id: string): Promise<boolean> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_VOCAB, 'readwrite');
+    const store = tx.objectStore(STORE_VOCAB);
+    return new Promise((resolve) => {
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const item = req.result;
+        if (item) {
+          item.isFavorite = !item.isFavorite;
+          if (item.vocabulary) item.vocabulary.isFavorite = item.isFavorite;
+          store.put(item);
+          resolve(item.isFavorite);
+        } else {
+          resolve(false);
+        }
+      };
+      req.onerror = () => resolve(false);
+    });
+  } catch {
+    return false;
+  }
+}
+
+export async function idbClearAllWords(): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_VOCAB, 'readwrite');
+    const store = tx.objectStore(STORE_VOCAB);
+    store.clear();
+  } catch (err) {
+    console.warn('IDB clear words failure:', err);
+  }
+}
+
+// =============================================================================
+// DECK / WORD BANK CRUD OPERATIONS
+// =============================================================================
 
 export async function idbSaveLocalDeck(deck: LocalDeck): Promise<void> {
   try {
@@ -119,6 +255,23 @@ export async function idbSaveLocalDeck(deck: LocalDeck): Promise<void> {
     store.put(deck);
   } catch (err) {
     console.warn('IDB deck write failure:', err);
+  }
+}
+
+export async function idbUpdateLocalDeck(id: string, updates: Partial<LocalDeck>): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_DECKS, 'readwrite');
+    const store = tx.objectStore(STORE_DECKS);
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const existing = req.result;
+      if (existing) {
+        store.put({ ...existing, ...updates, updatedAt: Date.now() });
+      }
+    };
+  } catch (err) {
+    console.warn('IDB deck update failure:', err);
   }
 }
 
@@ -146,4 +299,82 @@ export async function idbDeleteLocalDeck(id: string): Promise<void> {
   } catch (err) {
     console.warn('IDB deck delete failure:', err);
   }
+}
+
+export async function idbDeleteLocalDecks(ids: string[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_DECKS, 'readwrite');
+    const store = tx.objectStore(STORE_DECKS);
+    for (const id of ids) {
+      store.delete(id);
+    }
+  } catch (err) {
+    console.warn('IDB bulk delete decks failure:', err);
+  }
+}
+
+export async function idbClearAllDecks(): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_DECKS, 'readwrite');
+    const store = tx.objectStore(STORE_DECKS);
+    store.clear();
+  } catch (err) {
+    console.warn('IDB clear decks failure:', err);
+  }
+}
+
+// =============================================================================
+// API CACHE OPERATIONS (TTL, Invalidation)
+// =============================================================================
+
+export async function idbSetCache(key: string, data: any, ttlMs: number = 3600000): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_CACHE, 'readwrite');
+    const store = tx.objectStore(STORE_CACHE);
+    store.put({ key, data, expiresAt: Date.now() + ttlMs, cachedAt: Date.now() });
+  } catch {
+    // Ignored
+  }
+}
+
+export async function idbGetCache<T = any>(key: string): Promise<T | null> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_CACHE, 'readonly');
+      const store = tx.objectStore(STORE_CACHE);
+      const req = store.get(key);
+      req.onsuccess = () => {
+        const item = req.result;
+        if (item && item.expiresAt > Date.now()) {
+          resolve(item.data as T);
+        } else {
+          resolve(null);
+        }
+      };
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function idbInvalidateCache(keyPrefix: string): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_CACHE, 'readwrite');
+    const store = tx.objectStore(STORE_CACHE);
+    const req = store.getAllKeys();
+    req.onsuccess = () => {
+      const keys = req.result as string[];
+      for (const k of keys) {
+        if (typeof k === 'string' && k.startsWith(keyPrefix)) {
+          store.delete(k);
+        }
+      }
+    };
+  } catch (_) {}
 }

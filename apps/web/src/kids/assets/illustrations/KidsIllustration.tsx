@@ -141,8 +141,8 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
           <circle cx="63.5" cy="50" r="1.8" fill="#fff" />
           {/* Pink Nose & Buck Teeth */}
           <ellipse cx="50" cy="62" rx="3.5" ry="2.5" fill="#f472b6" />
-          <rect x="47" y="65" width="6" height="5" rx="1.5" fill="#fff" stroke="#006ae9" strokeWidth="1" />
-          <line x1="50" y1="65" x2="50" y2="70" stroke="#006ae9" strokeWidth="1" />
+          <rect x="47" y="65" width="6" height="5" rx="1.5" fill="#fff" stroke="#5fa8ff" strokeWidth="1" />
+          <line x1="50" y1="65" x2="50" y2="70" stroke="#5fa8ff" strokeWidth="1" />
           {/* Whiskers */}
           <line x1="24" y1="60" x2="36" y2="61" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
           <line x1="22" y1="66" x2="36" y2="64" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
@@ -531,9 +531,9 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
           <circle cx="82" cy="58" r="3.5" fill="#fff" />
           {/* Wheels */}
           <circle cx="30" cy="70" r="10" fill="#1e293b" />
-          <circle cx="30" cy="70" r="4" fill="#006ae9" />
+          <circle cx="30" cy="70" r="4" fill="#5fa8ff" />
           <circle cx="70" cy="70" r="10" fill="#1e293b" />
-          <circle cx="70" cy="70" r="4" fill="#006ae9" />
+          <circle cx="70" cy="70" r="4" fill="#5fa8ff" />
         </svg>
       );
 
@@ -592,7 +592,7 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
           <polygon points="46,50 30,76 44,72 58,50" fill="#2563eb" />
           <polygon points="46,46 30,20 44,24 58,46" fill="#2563eb" />
           {/* Fuselage Body */}
-          <ellipse cx="50" cy="48" rx="38" ry="8" fill="#f8fafc" stroke="#006ae9" strokeWidth="2" />
+          <ellipse cx="50" cy="48" rx="38" ry="8" fill="#f8fafc" stroke="#5fa8ff" strokeWidth="2" />
           {/* Cockpit Window */}
           <path d="M80 46 Q86 48 80 50 Z" fill="#0284c7" />
         </svg>
@@ -690,8 +690,8 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
         <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Kitchen'}>
           <rect width="100" height="100" rx="16" fill="#fef3c7" />
           {/* Chef Hat */}
-          <path d="M36 40 C30 30 44 20 50 26 C56 20 70 30 64 40 Z" fill="#ffffff" stroke="#006ae9" strokeWidth="2" />
-          <rect x="36" y="38" width="28" height="8" rx="2" fill="#ffffff" stroke="#006ae9" strokeWidth="2" />
+          <path d="M36 40 C30 30 44 20 50 26 C56 20 70 30 64 40 Z" fill="#ffffff" stroke="#5fa8ff" strokeWidth="2" />
+          <rect x="36" y="38" width="28" height="8" rx="2" fill="#ffffff" stroke="#5fa8ff" strokeWidth="2" />
           {/* Wooden Cutting Board */}
           <rect x="24" y="58" width="52" height="24" rx="4" fill="#d97706" />
           <rect x="28" y="62" width="44" height="16" rx="2" fill="#f59e0b" />
@@ -749,14 +749,14 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
         <svg viewBox="0 0 100 100" className={className} style={style} aria-label={alt || 'Book'}>
           {/* Open Book Wings */}
           <path d="M16 34 C30 32 46 36 50 40 L50 78 C46 74 30 70 16 72 Z" fill="#60a5fa" stroke="#2563eb" strokeWidth="2" />
-          <path d="M84 34 C70 32 54 36 50 40 L50 78 C54 74 70 70 84 72 Z" fill="#f8fafc" stroke="#006ae9" strokeWidth="2" />
+          <path d="M84 34 C70 32 54 36 50 40 L50 78 C54 74 70 70 84 72 Z" fill="#f8fafc" stroke="#5fa8ff" strokeWidth="2" />
           {/* Left Pages */}
           <path d="M20 38 C32 36 44 40 48 44 L48 74 C44 70 32 66 20 68 Z" fill="#ffffff" />
           {/* Text Lines */}
           <line x1="26" y1="48" x2="42" y2="48" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round" />
           <line x1="26" y1="56" x2="42" y2="56" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round" />
-          <line x1="58" y1="48" x2="74" y2="48" stroke="#006ae9" strokeWidth="2" strokeLinecap="round" />
-          <line x1="58" y1="56" x2="74" y2="56" stroke="#006ae9" strokeWidth="2" strokeLinecap="round" />
+          <line x1="58" y1="48" x2="74" y2="48" stroke="#5fa8ff" strokeWidth="2" strokeLinecap="round" />
+          <line x1="58" y1="56" x2="74" y2="56" stroke="#5fa8ff" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
 

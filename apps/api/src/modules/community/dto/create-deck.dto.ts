@@ -38,6 +38,16 @@ export class CreateWordItemDto {
   @IsOptional()
   @IsString()
   exampleTranslation?: string;
+
+  @ApiPropertyOptional({ example: 'Business English' })
+  @IsOptional()
+  @IsString()
+  topic?: string;
+
+  @ApiPropertyOptional({ example: 'B1' })
+  @IsOptional()
+  @IsString()
+  cefrLevel?: string;
 }
 
 export class CreateDeckDto {
@@ -95,4 +105,100 @@ export class SyncCloudDto {
   @IsOptional()
   @IsArray()
   decks?: any[];
+}
+
+export class UpdateDeckDto {
+  @ApiPropertyOptional({ example: 'Updated Deck Title' })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiPropertyOptional({ example: 'Updated Description' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 'Business English' })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiPropertyOptional({ enum: CefrLevel })
+  @IsOptional()
+  @IsEnum(CefrLevel)
+  cefrLevel?: CefrLevel;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @ApiPropertyOptional({ example: 'NewSecret123!' })
+  @IsOptional()
+  @IsString()
+  password?: string;
+}
+
+export class UpdateWordItemDto {
+  @ApiPropertyOptional({ example: 'synergy' })
+  @IsOptional()
+  @IsString()
+  word?: string;
+
+  @ApiPropertyOptional({ example: '/ˈsɪnədʒi/' })
+  @IsOptional()
+  @IsString()
+  phonetic?: string;
+
+  @ApiPropertyOptional({ example: 'noun' })
+  @IsOptional()
+  @IsString()
+  partOfSpeech?: string;
+
+  @ApiPropertyOptional({ example: 'sự cộng hưởng' })
+  @IsOptional()
+  @IsString()
+  meaning?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  definition?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  example?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  exampleTranslation?: string;
+
+  @ApiPropertyOptional({ example: 'Business English' })
+  @IsOptional()
+  @IsString()
+  topic?: string;
+
+  @ApiPropertyOptional({ example: 'B1' })
+  @IsOptional()
+  @IsString()
+  cefrLevel?: string;
+
+  @ApiPropertyOptional({ example: 'LEARNING' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isFavorite?: boolean;
+}
+
+export class BulkDeleteDto {
+  @ApiProperty({ example: ['id1', 'id2'] })
+  @IsArray()
+  @IsString({ each: true })
+  ids: string[];
 }

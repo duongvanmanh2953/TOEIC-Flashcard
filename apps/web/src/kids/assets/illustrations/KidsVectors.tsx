@@ -41,7 +41,7 @@ export const VectorElephant: React.FC<VectorProps> = ({ className = 'w-16 h-16',
     <circle cx="76" cy="48" r="22" fill="#94A3B8" />
     <circle cx="76" cy="48" r="15" fill="#FBCFE8" opacity="0.8" />
     {/* Head */}
-    <circle cx="50" cy="50" r="30" fill="#006ae9" />
+    <circle cx="50" cy="50" r="30" fill="#5fa8ff" />
     {/* Eyes */}
     <circle cx="40" cy="44" r="4" fill="#0F172A" />
     <circle cx="41.5" cy="42.5" r="1.5" fill="#FFFFFF" />

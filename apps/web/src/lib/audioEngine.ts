@@ -202,34 +202,17 @@ class AudioEngine {
       }
     };
 
-    // 1. Direct audioUrl playback if available
+    // Direct instantaneous Web Speech API playback (Zero network latency)
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.playViaSpeechSynthesis(text, rate, lang, sessionId, options);
+      return;
+    }
+
+    // Direct audioUrl playback if provided
     if (options.audioUrl) {
       const success = await this.playFromUrl(options.audioUrl, rate, sessionId, options);
       if (success) return;
     }
-
-    // 2. For single clean English words, attempt high-quality Free Dictionary CDN
-    const cleanWord = text.trim().toLowerCase();
-    const isSingleWord = /^[a-zA-Z\s'-]+$/.test(cleanWord) && cleanWord.split(/\s+/).length === 1;
-
-    if (isSingleWord && cleanWord.length > 1) {
-      const dictAudioUrl = `https://api.dictionaryapi.dev/media/pronunciations/en/${encodeURIComponent(cleanWord)}-us.mp3`;
-      const dictSuccess = await this.playFromUrl(dictAudioUrl, rate, sessionId, options);
-      if (dictSuccess) return;
-    }
-
-    // 3. For Vietnamese text or requested Vietnamese language, use genuine Vietnamese TTS
-    const isVietnameseText =
-      lang.startsWith('vi') ||
-      /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(text);
-
-    if (isVietnameseText) {
-      this.playGoogleVietnameseTTS(text, sessionId, options);
-      return;
-    }
-
-    // 4. Robust Web Speech API implementation for English
-    this.playViaSpeechSynthesis(text, rate, lang, sessionId, options);
   }
 
   /**

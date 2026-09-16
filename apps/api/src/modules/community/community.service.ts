@@ -1,12 +1,23 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateDeckDto, CreateWordItemDto, SyncCloudDto } from './dto/create-deck.dto';
+import { RedisCacheService } from '../../common/cache/redis-cache.service';
+import {
+  CreateDeckDto,
+  CreateWordItemDto,
+  SyncCloudDto,
+  UpdateDeckDto,
+  UpdateWordItemDto,
+  BulkDeleteDto,
+} from './dto/create-deck.dto';
 import { CefrLevel, ModerationStatus, VocabStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class CommunityService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: RedisCacheService,
+  ) {}
 
   async getPublicDecks(search?: string, category?: string, cefrLevel?: CefrLevel) {
     const where: any = {
@@ -325,6 +336,45 @@ export class CommunityService {
       }
     }
 
+    if (dto.topic && dto.topic.trim()) {
+      const topicName = dto.topic.trim();
+      const normalizeSlug = (str: string) => {
+        const clean = str
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/đ/g, 'd')
+          .replace(/Đ/g, 'd')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        return clean || `topic-${Buffer.from(str).toString('hex').substring(0, 12)}`;
+      };
+      const slug = normalizeSlug(topicName);
+      try {
+        const topic = await this.prisma.vocabularyTopic.upsert({
+          where: { name: topicName },
+          update: { name: topicName, slug },
+          create: { name: topicName, slug },
+        });
+
+        await this.prisma.vocabularyTopicItem.upsert({
+          where: {
+            topicId_vocabularyId: {
+              topicId: topic.id,
+              vocabularyId: vocab.id,
+            },
+          },
+          update: {},
+          create: {
+            topicId: topic.id,
+            vocabularyId: vocab.id,
+          },
+        });
+      } catch (topicErr) {
+        console.warn('Topic upsert notice:', topicErr);
+      }
+    }
+
     const userVocab = await this.prisma.userVocabulary.upsert({
       where: {
         userId_vocabularyId: { userId, vocabularyId: vocab.id },
@@ -340,11 +390,25 @@ export class CommunityService {
         nextReviewAt: new Date(),
       },
       include: {
-        vocabulary: true,
+        vocabulary: {
+          include: {
+            topicItems: {
+              include: { topic: true },
+            },
+          },
+        },
       },
     });
 
-    return userVocab;
+    const topicName = (userVocab as any).vocabulary?.topicItems?.[0]?.topic?.name || dto.topic || 'General';
+    return {
+      ...userVocab,
+      topic: topicName,
+      vocabulary: {
+        ...userVocab.vocabulary,
+        topic: topicName,
+      },
+    };
   }
 
   async batchAddWords(userId: string, words: CreateWordItemDto[]) {
@@ -383,18 +447,215 @@ export class CommunityService {
       where.status = { in: [VocabStatus.NEW, VocabStatus.LEARNING, VocabStatus.REVIEW] };
     }
 
-    return this.prisma.userVocabulary.findMany({
+    const list = await this.prisma.userVocabulary.findMany({
       where,
       include: {
         vocabulary: {
           include: {
             meanings: true,
             examples: { take: 1 },
+            topicItems: {
+              include: { topic: true },
+            },
           },
         },
       },
       orderBy: { lastReviewedAt: 'desc' },
     });
+
+    return list.map((item: any) => {
+      const topicName = item.vocabulary?.topicItems?.[0]?.topic?.name || 'General';
+      return {
+        ...item,
+        topic: topicName,
+        vocabulary: {
+          ...item.vocabulary,
+          topic: topicName,
+        },
+      };
+    });
+  }
+
+  async clearAllMyWords(userId: string) {
+    // 1. Delete user vocabularies
+    const vocabResult = await this.prisma.userVocabulary.deleteMany({
+      where: { userId },
+    });
+
+    // 2. Delete user personal community decks
+    const deckResult = await this.prisma.communityDeck.deleteMany({
+      where: { userId },
+    });
+
+    await this.cacheService.invalidateUserVocab(userId);
+
+    return {
+      success: true,
+      message: `Đã xóa thành công ${vocabResult.count} từ vựng và ${deckResult.count} kho từ vựng cá nhân trên cơ sở dữ liệu!`,
+      deletedVocabCount: vocabResult.count,
+      deletedDeckCount: deckResult.count,
+    };
+  }
+
+  async updateDeck(userId: string, deckId: string, dto: UpdateDeckDto) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
+    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền sửa kho từ vựng này');
+
+    const data: any = {};
+    if (dto.title !== undefined) data.title = dto.title.trim();
+    if (dto.description !== undefined) data.description = dto.description?.trim();
+    if (dto.category !== undefined) data.category = dto.category;
+    if (dto.cefrLevel !== undefined) data.cefrLevel = dto.cefrLevel;
+    if (dto.isPublic !== undefined) data.isPublic = dto.isPublic;
+    if (dto.password !== undefined) {
+      if (dto.password.trim().length > 0) {
+        data.isProtected = true;
+        data.passwordHash = await bcrypt.hash(dto.password.trim(), 10);
+      } else {
+        data.isProtected = false;
+        data.passwordHash = null;
+      }
+    }
+
+    const updated = await this.prisma.communityDeck.update({
+      where: { id: deckId },
+      data,
+      include: { words: true, _count: { select: { words: true } } },
+    });
+
+    await this.cacheService.invalidateDeck(deckId);
+    const { passwordHash, ...safeDeck } = updated;
+    return { ...safeDeck, hasPassword: safeDeck.isProtected };
+  }
+
+  async deleteDeck(userId: string, deckId: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
+    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền xóa kho từ vựng này');
+
+    await this.prisma.communityDeck.delete({ where: { id: deckId } });
+    await this.cacheService.invalidateDeck(deckId);
+    return { success: true, message: 'Đã xóa kho từ vựng thành công' };
+  }
+
+  async bulkDeleteDecks(userId: string, deckIds: string[]) {
+    if (!deckIds || deckIds.length === 0) return { success: true, deletedCount: 0 };
+    const res = await this.prisma.communityDeck.deleteMany({
+      where: { id: { in: deckIds }, userId },
+    });
+    for (const id of deckIds) {
+      await this.cacheService.invalidateDeck(id);
+    }
+    return { success: true, message: `Đã xóa thành công ${res.count} kho từ vựng`, deletedCount: res.count };
+  }
+
+  async addWordToDeck(userId: string, deckId: string, dto: CreateWordItemDto) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
+    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền thêm từ vào kho này');
+
+    const cleanW = dto.word.trim().toLowerCase();
+    const created = await this.prisma.communityWord.create({
+      data: {
+        deckId,
+        word: cleanW,
+        phonetic: dto.phonetic,
+        partOfSpeech: dto.partOfSpeech,
+        meaning: dto.meaning.trim(),
+        definition: dto.definition,
+        example: dto.example,
+        exampleTranslation: dto.exampleTranslation,
+      },
+    });
+
+    await this.cacheService.invalidateDeck(deckId);
+    return created;
+  }
+
+  async updateWordInDeck(userId: string, deckId: string, wordId: string, dto: UpdateWordItemDto) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
+    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền sửa từ trong kho này');
+
+    const data: any = {};
+    if (dto.word !== undefined) data.word = dto.word.trim().toLowerCase();
+    if (dto.phonetic !== undefined) data.phonetic = dto.phonetic;
+    if (dto.partOfSpeech !== undefined) data.partOfSpeech = dto.partOfSpeech;
+    if (dto.meaning !== undefined) data.meaning = dto.meaning.trim();
+    if (dto.definition !== undefined) data.definition = dto.definition;
+    if (dto.example !== undefined) data.example = dto.example;
+    if (dto.exampleTranslation !== undefined) data.exampleTranslation = dto.exampleTranslation;
+
+    const updated = await this.prisma.communityWord.update({
+      where: { id: wordId },
+      data,
+    });
+
+    await this.cacheService.invalidateDeck(deckId);
+    return updated;
+  }
+
+  async deleteWordFromDeck(userId: string, deckId: string, wordId: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
+    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền xóa từ trong kho này');
+
+    await this.prisma.communityWord.delete({ where: { id: wordId } });
+    await this.cacheService.invalidateDeck(deckId);
+    return { success: true, message: 'Đã xóa từ khỏi kho thành công' };
+  }
+
+  async bulkDeleteWordsFromDeck(userId: string, deckId: string, wordIds: string[]) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Không tìm thấy kho từ vựng');
+    if (deck.userId !== userId) throw new ForbiddenException('Bạn không có quyền xóa từ trong kho này');
+
+    const res = await this.prisma.communityWord.deleteMany({
+      where: { id: { in: wordIds }, deckId },
+    });
+    await this.cacheService.invalidateDeck(deckId);
+    return { success: true, message: `Đã xóa thành công ${res.count} từ khỏi kho`, deletedCount: res.count };
+  }
+
+  async toggleWordFavorite(userId: string, id: string) {
+    let userVocab = await this.prisma.userVocabulary.findUnique({ where: { id } });
+    if (!userVocab) {
+      userVocab = await this.prisma.userVocabulary.findFirst({
+        where: { userId, vocabularyId: id },
+      });
+    }
+
+    if (!userVocab) {
+      throw new NotFoundException('Không tìm thấy bản ghi từ vựng');
+    }
+
+    const updated = await this.prisma.userVocabulary.update({
+      where: { id: userVocab.id },
+      data: { isFavorite: !userVocab.isFavorite },
+    });
+
+    await this.cacheService.invalidateUserVocab(userId);
+    return { isFavorite: updated.isFavorite };
+  }
+
+  async deleteUserWord(userId: string, userVocabId: string) {
+    const item = await this.prisma.userVocabulary.findFirst({
+      where: { id: userVocabId, userId },
+    });
+    if (!item) throw new NotFoundException('Không tìm thấy từ vựng trong kho của bạn');
+
+    await this.prisma.userVocabulary.delete({ where: { id: userVocabId } });
+    await this.cacheService.invalidateUserVocab(userId);
+    return { success: true, message: 'Đã xóa từ vựng thành công' };
+  }
+
+  async bulkDeleteUserWords(userId: string, ids: string[]) {
+    const res = await this.prisma.userVocabulary.deleteMany({
+      where: { id: { in: ids }, userId },
+    });
+    await this.cacheService.invalidateUserVocab(userId);
+    return { success: true, message: `Đã xóa thành công ${res.count} từ vựng`, deletedCount: res.count };
   }
 
   async syncCloud(userId: string, dto: SyncCloudDto) {
@@ -430,6 +691,8 @@ export class CommunityService {
       const res = await this.batchAddWords(userId, dto.words);
       syncedWordsCount = res.importedCount;
     }
+
+    await this.cacheService.invalidateUserVocab(userId);
 
     return {
       success: true,

@@ -206,7 +206,7 @@ export const DashboardPage: React.FC = () => {
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-emerald-500/15 border-2 border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm relative pr-10 animate-fade-in">
           <button
             onClick={dismissSpotlight}
-            className="absolute top-3 right-3 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition"
+            className="absolute top-1 right-1 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition"
             title="Ẩn thông báo này"
           >
             <X className="w-4 h-4" />
