@@ -14,6 +14,7 @@ import {
 import { KidsMascot, MascotMood } from './KidsMascot';
 import { celebrationManager } from '../services/celebration/CelebrationManager';
 import { Play, RotateCcw, Volume2, Mic, CheckCircle2, Headphones, Sparkles, BookOpen } from 'lucide-react';
+import { evaluatePronunciation } from '../../lib/pronunciationEvaluator';
 
 export type ActivityState =
   | 'loading'
@@ -111,12 +112,12 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
         recognition.lang = 'en-US';
 
         recognition.onresult = (e: any) => {
-          const spoken = (e.results[0][0]?.transcript || '').toLowerCase().trim();
-          const match = spoken.includes(targetWord) || targetWord.includes(spoken);
+          const spoken = (e.results?.[0]?.[0]?.transcript || '').trim();
+          const evalRes = evaluatePronunciation(targetWord, spoken, 'kid');
           setHasVoiceInput(true);
           // Wait briefly after word detected so child finishes
           setTimeout(() => {
-            handleFinishSpeaking(match);
+            handleFinishSpeaking(evalRes.isPassing, evalRes.score, evalRes.feedback);
           }, 600);
         };
 
@@ -218,7 +219,11 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
   };
 
   // Step 3: Evaluating child's speech with genuine delay
-  const handleFinishSpeaking = (isConfident: boolean = true) => {
+  const handleFinishSpeaking = (
+    isConfident: boolean = true,
+    score: number = 0,
+    customFeedback?: string
+  ) => {
     cleanupAudio();
     setState('processing');
     setMascotMood('speaking');
@@ -229,7 +234,7 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
       if (isConfident) {
         kidsSound.play('correct');
         setMascotMood('celebrate');
-        const praise = 'Yeahhh! Bé giỏi quá! Đọc rất chuẩn luôn!';
+        const praise = customFeedback || 'Yeahhh! Bé giỏi quá! Đọc rất chuẩn luôn!';
         setSpeechFeedback(praise);
         kidsSpeech.speakVi(praise);
         // Trigger star burst celebration on card
@@ -239,7 +244,11 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
       } else {
         kidsSound.play('encourage');
         setMascotMood('encourage');
-        const encourage = 'Bé đọc to lắm! Luyện thêm chút nữa là 100 điểm nhé!';
+        const encourage =
+          customFeedback ||
+          (score > 0
+            ? `Bé đạt ${score}%. Cần từ 50% để hoàn thành. Bé đọc to và rõ hơn nhé!`
+            : 'Chưa nghe rõ giọng đọc. Bé đọc lại to hơn nhé!');
         setSpeechFeedback(encourage);
         kidsSpeech.speakVi(encourage);
       }
@@ -681,6 +690,7 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
   const audioContextRef = useRef<any>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<any>(null);
+  const spokenTextRef = useRef<string>('');
 
   useEffect(() => {
     onBusyStateChange?.(state === 'userAnswering' || state === 'processing');
@@ -692,6 +702,7 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
 
   const startRecord = () => {
     setSpokenText('');
+    spokenTextRef.current = '';
     setSpeakingScore(null);
     kidsSound.play('pop');
     setState('userAnswering');
@@ -707,7 +718,8 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
         recognition.lang = 'en-US';
 
         recognition.onresult = (e: any) => {
-          const res = e.results[0][0].transcript;
+          const res = (e.results?.[0]?.[0]?.transcript || '').trim();
+          spokenTextRef.current = res;
           setSpokenText(res);
         };
 
@@ -782,18 +794,16 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
     setTimeout(() => {
       setState('feedback');
       const target = (activity.targetWord || '').toLowerCase().trim();
-      const spoken = (spokenText || target).toLowerCase().trim();
+      const spoken = (spokenTextRef.current || spokenText || '').toLowerCase().trim();
 
-      let score = 92;
-      if (spoken.includes(target) || target.includes(spoken)) {
-        score = Math.floor(Math.random() * 8) + 92;
-      } else {
-        score = Math.floor(Math.random() * 15) + 78;
-      }
+      const evalResult = evaluatePronunciation(target, spoken, 'kid');
+      const score = evalResult.score;
+      const isPass = evalResult.isPassing; // score >= 50
 
       setSpeakingScore(score);
-      kidsSound.play(score >= 80 ? 'correct' : 'encourage');
-      setMascotMood(score >= 80 ? 'celebrate' : 'encourage');
+      kidsSound.play(isPass ? 'correct' : 'encourage');
+      setMascotMood(isPass ? 'celebrate' : 'encourage');
+      kidsSpeech.speakVi(evalResult.feedback);
     }, 1200);
   };
 
@@ -803,8 +813,10 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
         mood={mascotMood}
         size="sm"
         speechText={
-          speakingScore
-            ? `Bé đạt ${speakingScore} điểm! Phát âm tuyệt vời lắm! 🌟`
+          speakingScore !== null
+            ? speakingScore >= 50
+              ? `Bé đạt ${speakingScore} điểm! Đạt chuẩn phát âm rồi nè! 🌟`
+              : `Bé đạt ${speakingScore} điểm. Cần từ 50 điểm để vượt qua. Bé bấm luyện lại nhé! 💪`
             : state === 'userAnswering'
             ? `Gấu Bobby đang lắng nghe nè! Bé hãy nói thật to nhé! 🎙️`
             : 'Bé hãy bấm vào chiếc mic lớn rồi đọc từ này nhé!'
@@ -857,13 +869,23 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
 
       {/* FEEDBACK & RETRY/CONTINUE BUTTONS */}
       {speakingScore !== null && state === 'feedback' && (
-        <div className="w-full max-w-sm p-4 rounded-3xl kids-liquid-emerald border-2 border-emerald-500 text-center space-y-3 animate-fadeIn">
+        <div
+          className={`w-full max-w-sm p-4 rounded-3xl border-2 text-center space-y-3 animate-fadeIn ${
+            speakingScore >= 50
+              ? 'kids-liquid-emerald border-emerald-500'
+              : 'bg-amber-50 border-amber-400'
+          }`}
+        >
           <div className="flex items-center justify-center gap-1.5 text-amber-500">
-            <KidsStarIcon size={22} filled />
-            <span className="text-2xl font-black text-emerald-950">
-              {speakingScore}% Chuẩn Xác
+            <KidsStarIcon size={22} filled={speakingScore >= 50} />
+            <span
+              className={`text-2xl font-black ${
+                speakingScore >= 50 ? 'text-emerald-950' : 'text-amber-900'
+              }`}
+            >
+              {speakingScore}% {speakingScore >= 50 ? 'Đạt Chuẩn (>=50%)' : 'Chưa Đạt (<50%)'}
             </span>
-            <KidsStarIcon size={22} filled />
+            <KidsStarIcon size={22} filled={speakingScore >= 80} />
           </div>
           {spokenText && (
             <p className="text-xs font-black text-slate-800">
@@ -874,21 +896,25 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={startRecord}
-              className="w-1/3 py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-black text-xs border-2 border-slate-300 transition cursor-pointer flex items-center justify-center gap-1.5"
+              className={`${
+                speakingScore >= 50 ? 'w-1/3' : 'w-full'
+              } py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-black text-xs border-2 border-slate-300 transition cursor-pointer flex items-center justify-center gap-1.5`}
             >
               <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-              <span>Nói Lại</span>
+              <span>{speakingScore >= 50 ? 'Nói Lại' : 'Thử Lại Ngay (Cần >=50%)'}</span>
             </button>
-            <button
-              onClick={() => {
-                kidsSound.play('success');
-                onDone(true, speakingScore, activity.targetWord);
-              }}
-              className="w-2/3 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm border-b-4 border-emerald-700 transition cursor-pointer active:scale-95 animate-bounce flex items-center justify-center gap-1.5"
-            >
-              <span>HOÀN THÀNH BÀI NÓI</span>
-              <Play className="w-3.5 h-3.5 fill-current" />
-            </button>
+            {speakingScore >= 50 && (
+              <button
+                onClick={() => {
+                  kidsSound.play('success');
+                  onDone(true, speakingScore, activity.targetWord);
+                }}
+                className="w-2/3 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm border-b-4 border-emerald-700 transition cursor-pointer active:scale-95 animate-bounce flex items-center justify-center gap-1.5"
+              >
+                <span>HOÀN THÀNH BÀI NÓI</span>
+                <Play className="w-3.5 h-3.5 fill-current" />
+              </button>
+            )}
           </div>
         </div>
       )}

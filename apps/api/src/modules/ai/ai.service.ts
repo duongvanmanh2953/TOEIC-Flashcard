@@ -885,10 +885,22 @@ Return strict JSON:
 
   /**
    * Feature 13 & 14: PRONUNCIATION LAB & PHONEME ANALYSIS
+   * Real edit-distance + bigram similarity scoring
+   * Kids: pass rate >= 50%
+   * Adults: pass rate > 90%
    */
-  async evaluatePronunciation(targetWord: string, userSpokenText: string) {
-    const cleanTarget = targetWord.trim().toLowerCase();
-    const cleanSpoken = userSpokenText.trim().toLowerCase();
+  async evaluatePronunciation(targetWord: string, userSpokenText: string, mode: 'kid' | 'adult' = 'adult') {
+    const cleanTarget = (targetWord || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const cleanSpoken = (userSpokenText || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
     // Key phoneme database for Vietnamese ESL learners
     const phonemeGuides: Record<string, { phoneme: string; tips: string; tonguePosition: string; commonMistake: string }> = {
@@ -918,8 +930,97 @@ Return strict JSON:
       },
     };
 
-    const isMatch = cleanTarget === cleanSpoken;
-    const similarity = isMatch ? 94 : Math.max(45, Math.min(88, 100 - cleanTarget.length * 5));
+    const threshold = mode === 'kid' ? 50 : 90;
+
+    // Handle empty speech
+    if (!cleanSpoken) {
+      const guide = phonemeGuides.th;
+      return {
+        targetWord: cleanTarget,
+        spokenText: '',
+        accuracy: 0,
+        isPassing: false,
+        threshold,
+        mode,
+        feedback:
+          mode === 'kid'
+            ? 'Chưa nghe thấy tiếng bé nói. Bé bật micro và đọc to lại nhé! 🎙️'
+            : 'Chưa nhận diện được giọng nói tiếng Anh. Vui lòng bật micro và đọc to, rõ từ. ❌',
+        phonemeAnalysis: {
+          targetPhoneme: guide.phoneme,
+          accuracyScore: 0,
+          tonguePositionGuide: guide.tonguePosition,
+          techniqueTips: guide.tips,
+          pitfallAlert: guide.commonMistake,
+        },
+        prosody: {
+          stressAccuracy: 0,
+          rhythmScore: 0,
+          intonationScore: 0,
+        },
+        audioFeedbackAudioUrl: null,
+      };
+    }
+
+    // Levenshtein edit distance calculation
+    const levDist = (a: string, b: string): number => {
+      const dp: number[][] = [];
+      for (let i = 0; i <= b.length; i++) dp[i] = [i];
+      for (let j = 0; j <= a.length; j++) dp[0][j] = j;
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            dp[i][j] = dp[i - 1][j - 1];
+          } else {
+            dp[i][j] = Math.min(dp[i - 1][j - 1] + 1, dp[i][j - 1] + 1, dp[i - 1][j] + 1);
+          }
+        }
+      }
+      return dp[b.length][a.length];
+    };
+
+    // Bigram Dice similarity
+    const diceSim = (a: string, b: string): number => {
+      if (a === b) return 1.0;
+      if (a.length < 2 || b.length < 2) return a === b ? 1.0 : 0.0;
+      const getBg = (s: string) => {
+        const set = new Set<string>();
+        for (let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2));
+        return set;
+      };
+      const bgA = getBg(a);
+      const bgB = getBg(b);
+      let match = 0;
+      bgA.forEach((x) => {
+        if (bgB.has(x)) match++;
+      });
+      return (2 * match) / (bgA.size + bgB.size);
+    };
+
+    let score = 0;
+    if (cleanTarget === cleanSpoken) {
+      score = 98;
+    } else {
+      const dist = levDist(cleanTarget, cleanSpoken);
+      const maxLen = Math.max(cleanTarget.length, cleanSpoken.length);
+      const levScore = Math.max(0, 1 - dist / maxLen);
+      const diceScore = diceSim(cleanTarget, cleanSpoken);
+
+      // Check if target word exists inside spoken sentence
+      const spokenWords = cleanSpoken.split(' ');
+      let wordBestMatch = 0;
+      spokenWords.forEach((sw) => {
+        const d = levDist(cleanTarget, sw);
+        const m = Math.max(cleanTarget.length, sw.length);
+        const s = Math.max(0, 1 - d / m);
+        if (s > wordBestMatch) wordBestMatch = s;
+      });
+
+      const combined = Math.max(levScore * 0.5 + diceScore * 0.5, wordBestMatch);
+      score = Math.min(100, Math.max(0, Math.round(combined * 100)));
+    }
+
+    const isPassing = mode === 'kid' ? score >= threshold : score > threshold;
 
     // Detect target phoneme
     let detectedKey = 'th';
@@ -929,22 +1030,38 @@ Return strict JSON:
 
     const guide = phonemeGuides[detectedKey] || phonemeGuides.th;
 
+    let feedback = '';
+    if (mode === 'kid') {
+      feedback =
+        score >= 50
+          ? `Bé đạt ${score}%! Đạt chuẩn phát âm cho trẻ em (>=50%)! 🌟`
+          : `Bé đạt ${score}%. Cần từ 50% để vượt qua. Bé đọc lại to hơn nhé! 💪`;
+    } else {
+      feedback =
+        score > 90
+          ? `Xuất sắc (${score}%)! Đạt chuẩn phát âm người lớn (>90%). ✅`
+          : `Chưa đạt (${score}%). Yêu cầu người lớn >90%. Máy nghe thành: "${cleanSpoken}". Hãy chú ý âm cuối và trọng âm. ⚠️`;
+    }
+
     return {
       targetWord: cleanTarget,
       spokenText: cleanSpoken,
-      accuracy: similarity,
-      isPassing: similarity >= 75,
+      accuracy: score,
+      isPassing,
+      threshold,
+      mode,
+      feedback,
       phonemeAnalysis: {
         targetPhoneme: guide.phoneme,
-        accuracyScore: similarity,
+        accuracyScore: score,
         tonguePositionGuide: guide.tonguePosition,
         techniqueTips: guide.tips,
         pitfallAlert: guide.commonMistake,
       },
       prosody: {
-        stressAccuracy: similarity >= 80 ? 92 : 68,
-        rhythmScore: similarity >= 75 ? 88 : 70,
-        intonationScore: 84,
+        stressAccuracy: isPassing ? Math.min(100, score + 2) : Math.max(35, Math.round(score * 0.9)),
+        rhythmScore: isPassing ? Math.min(100, score) : Math.max(40, Math.round(score * 0.85)),
+        intonationScore: isPassing ? Math.min(100, score + 1) : Math.max(38, Math.round(score * 0.88)),
       },
       audioFeedbackAudioUrl: null,
     };

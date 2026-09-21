@@ -11,9 +11,15 @@ import {
   AlertCircle,
   Headphones,
   Clock,
+  XCircle,
 } from 'lucide-react';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import {
+  evaluatePronunciation,
+  listenEnglishSpeech,
+  PronunciationEvaluationResult,
+} from '../../lib/pronunciationEvaluator';
 
 interface PronunciationPracticeCardProps {
   word: string;
@@ -37,7 +43,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
     recordedUrl,
     isPlayingRecording,
     recordingSeconds,
-    errorMessage,
+    errorMessage: recorderError,
     startRecording,
     stopRecording,
     replayRecording,
@@ -45,7 +51,10 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
     resetRecording,
   } = useVoiceRecorder();
 
-  const [score, setScore] = useState<number | null>(null);
+  const [evaluation, setEvaluation] = useState<PronunciationEvaluationResult | null>(null);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const recognitionControllerRef = React.useRef<{ stop: () => void } | null>(null);
+  const speechTranscriptRef = React.useRef<string>('');
 
   const handlePlayNative = (rate: number = 1.0) => {
     stopReplay();
@@ -54,17 +63,48 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
 
   const handleStartRecord = async () => {
     stopNative();
-    setScore(null);
+    setEvaluation(null);
+    setSpeechError(null);
+    speechTranscriptRef.current = '';
+
+    // Start audio recorder for playback
     await startRecording();
+
+    // Start real en-US speech recognition
+    try {
+      const controller = listenEnglishSpeech({
+        maxDurationMs: 10000,
+        onResult: (transcript) => {
+          speechTranscriptRef.current = transcript;
+        },
+        onError: (err) => {
+          if (err?.message === 'SPEECH_RECOGNITION_NOT_SUPPORTED') {
+            setSpeechError('Trình duyệt chưa hỗ trợ Web Speech API. Vui lòng dùng Google Chrome / MS Edge.');
+          }
+        },
+      });
+      recognitionControllerRef.current = controller;
+    } catch (e) {
+      console.warn('Speech recognition init error:', e);
+    }
   };
 
   const handleStopRecord = async () => {
+    // Stop speech recognition controller
+    if (recognitionControllerRef.current) {
+      recognitionControllerRef.current.stop();
+      recognitionControllerRef.current = null;
+    }
+
     const res = await stopRecording();
-    if (res && res.durationSec > 0.3) {
-      // Calculate a realistic pronunciation score
-      const calcScore = Math.min(98, Math.max(76, Math.floor(82 + Math.random() * 15)));
-      setScore(calcScore);
-      onScored?.(calcScore);
+    if (res && res.durationSec > 0.2) {
+      // Small pause to allow speechRecognition onresult to flush
+      setTimeout(() => {
+        const spoken = speechTranscriptRef.current;
+        const evalResult = evaluatePronunciation(word, spoken, 'adult');
+        setEvaluation(evalResult);
+        onScored?.(evalResult.score);
+      }, 150);
     }
   };
 
@@ -95,19 +135,52 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
           {meaning && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{meaning}</p>}
         </div>
 
-        {score !== null && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs self-start sm:self-auto">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Điểm phát âm: {score}%</span>
+        {evaluation && (
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs self-start sm:self-auto ${
+              evaluation.isPassing
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                : 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+            }`}
+          >
+            {evaluation.isPassing ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+            ) : (
+              <XCircle className="w-4 h-4 shrink-0 text-rose-500" />
+            )}
+            <div>
+              <span className="font-extrabold">{evaluation.score}%</span>
+              <span className="ml-1 text-[11px] opacity-90">
+                {evaluation.isPassing ? '(Đạt chuẩn >90%)' : '(Chưa đạt, cần >90%)'}
+              </span>
+            </div>
           </div>
         )}
       </div>
 
+      {/* Evaluation Feedback Detail if available */}
+      {evaluation && (
+        <div
+          className={`p-3 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+            evaluation.isPassing
+              ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
+              : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300'
+          }`}
+        >
+          <div>
+            <p className="font-semibold">{evaluation.feedback}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Hệ thống nhận diện giọng đọc: <strong className="font-mono text-indigo-600 dark:text-indigo-400">"{evaluation.spoken || '(Không nghe thấy âm thanh)'}"</strong>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Error Message if Mic permission denied */}
-      {errorMessage && (
+      {(recorderError || speechError) && (
         <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{errorMessage}</span>
+          <span>{recorderError || speechError}</span>
         </div>
       )}
 

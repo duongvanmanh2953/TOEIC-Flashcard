@@ -47,6 +47,7 @@ import {
 import { ModalPortal } from '../components/common/ModalPortal';
 import { audioEngine } from '../lib/audioEngine';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
+import { evaluatePronunciation } from '../lib/pronunciationEvaluator';
 
 interface ChatMessage {
   id: string;
@@ -423,6 +424,7 @@ export const AICoachStudioPage: React.FC = () => {
   const [showAddWordModal, setShowAddWordModal] = useState(false);
   const [loadingFlashcards, setLoadingFlashcards] = useState(false);
   const pronunciationRecRef = useRef<any>(null);
+  const recordedSpokenWordRef = useRef<string>('');
 
   const [practiceWords, setPracticeWords] = useState<Array<{ word: string; ipa: string; phoneme: string; meaning: string; isCustom?: boolean }>>([
     { word: 'thoroughly', ipa: '/ˈθɜːrəli/', phoneme: '/θ/', meaning: 'Kỹ lưỡng, thấu đáo' },
@@ -537,12 +539,13 @@ export const AICoachStudioPage: React.FC = () => {
       return;
     }
     setRecordedSpokenWord('');
+    recordedSpokenWordRef.current = '';
     setPronunciationResult(null);
 
     // 1. Start cross-platform microphone recording (MediaRecorder / PCM)
     await startPronVoiceRecording();
 
-    // 2. Try Web SpeechRecognition if browser supports it
+    // 2. Start Web SpeechRecognition in strict en-US
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       try {
@@ -551,8 +554,12 @@ export const AICoachStudioPage: React.FC = () => {
         recognition.interimResults = false;
         recognition.lang = 'en-US';
         recognition.onresult = (event: any) => {
-          const spoken = event.results[0][0].transcript.toLowerCase().trim();
+          const spoken = (event.results?.[0]?.[0]?.transcript || '').trim();
+          recordedSpokenWordRef.current = spoken;
           setRecordedSpokenWord(spoken);
+        };
+        recognition.onerror = () => {
+          // Keep whatever we have or empty
         };
         pronunciationRecRef.current = recognition;
         recognition.start();
@@ -565,9 +572,13 @@ export const AICoachStudioPage: React.FC = () => {
       pronunciationRecRef.current?.stop();
     } catch (_) {}
 
-    const result = await stopPronVoiceRecording();
-    const spoken = recordedSpokenWord || selectedWord;
-    evaluatePronunciationMatch(selectedWord, spoken);
+    await stopPronVoiceRecording();
+
+    // Give SpeechRecognition a moment to flush final transcript
+    setTimeout(() => {
+      const spoken = recordedSpokenWordRef.current || recordedSpokenWord || '';
+      evaluatePronunciationMatch(selectedWord, spoken);
+    }, 200);
   };
 
   const handleToggleReplayPronRecording = () => {
@@ -584,41 +595,39 @@ export const AICoachStudioPage: React.FC = () => {
       const res = await api.post('/ai/pronunciation', {
         word: target,
         spokenText: spoken,
+        mode: 'adult',
       });
       const data = res.data?.data || res.data;
       if (data && data.accuracy !== undefined) {
         setPronunciationResult(data);
+        setEvaluatingPronunciation(false);
         return;
       }
     } catch (_) {}
 
-    // Smart local scoring calculation
-    const isExact = spoken.toLowerCase().includes(target.toLowerCase());
-    const targetLen = target.length;
-    let matchCount = 0;
-    for (let i = 0; i < Math.min(targetLen, spoken.length); i++) {
-      if (target[i] === spoken[i]) matchCount++;
-    }
-    const similarity = Math.round((matchCount / targetLen) * 100);
-    const score = isExact ? 94 : Math.max(62, similarity);
+    // Accurate local scoring engine (Levenshtein + Dice + Token Jaccard) with Adult threshold > 90%
+    const evalResult = evaluatePronunciation(target, spoken, 'adult');
+    const score = evalResult.score;
+    const isPassing = evalResult.isPassing; // Adult requires > 90%
     const details = phonemeDetails[target] || phonemeDetails['thoroughly'];
 
     setPronunciationResult({
       targetWord: target,
       spokenText: spoken,
       accuracy: score,
-      isPassing: score >= 75,
+      isPassing,
+      feedback: evalResult.feedback,
       phonemeAnalysis: {
-        targetPhoneme: details.targetPhoneme,
+        targetPhoneme: details?.targetPhoneme || '/th/',
         accuracyScore: score,
-        tonguePositionGuide: details.tonguePositionGuide,
-        techniqueTips: details.techniqueTips,
-        pitfallAlert: details.pitfallAlert,
+        tonguePositionGuide: details?.tonguePositionGuide || 'Đặt đầu lưỡi gần vòm họng và giữ luồng hơi ổn định.',
+        techniqueTips: details?.techniqueTips || 'Luyện tập phát âm rõ từng âm tiết, đặc biệt chú ý âm cuối (ending sound).',
+        pitfallAlert: details?.pitfallAlert || 'Người học hay nuốt âm cuối hoặc đặt sai trọng âm của từ.',
       },
       prosody: {
-        stressAccuracy: isExact ? 96 : 82,
-        rhythmScore: isExact ? 92 : 78,
-        intonationScore: isExact ? 90 : 80,
+        stressAccuracy: isPassing ? Math.min(100, score + 2) : Math.max(35, Math.round(score * 0.9)),
+        rhythmScore: isPassing ? Math.min(100, score) : Math.max(40, Math.round(score * 0.85)),
+        intonationScore: isPassing ? Math.min(100, score + 1) : Math.max(38, Math.round(score * 0.88)),
       },
     });
     setEvaluatingPronunciation(false);
@@ -1612,11 +1621,58 @@ export const AICoachStudioPage: React.FC = () => {
 
                 {pronunciationResult && (
                   <div className="space-y-4">
+                    {/* Pass/Fail Status Banner (Adult threshold > 90%) */}
+                    <div
+                      className={`p-4 rounded-2xl border text-xs flex items-center justify-between gap-3 ${
+                        pronunciationResult.isPassing
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        {pronunciationResult.isPassing ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                        )}
+                        <div>
+                          <div className="font-extrabold text-sm flex items-center gap-2">
+                            <span>
+                              {pronunciationResult.isPassing
+                                ? 'ĐẠT CHUẨN PHÁT ÂM (>90%)'
+                                : 'CHƯA ĐẠT (Yêu cầu người lớn >90%)'}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                pronunciationResult.isPassing
+                                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                                  : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                              }`}
+                            >
+                              {pronunciationResult.accuracy}% / 100%
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[11px] opacity-90 leading-relaxed">
+                            {pronunciationResult.feedback ||
+                              (pronunciationResult.isPassing
+                                ? 'Phát âm chuẩn âm vị, ngữ điệu và trọng âm đạt yêu cầu bài thi.'
+                                : `Cần đạt trên 90% để vượt qua. Bạn đạt ${pronunciationResult.accuracy}%. Hãy nghe lại từ mẫu và đọc rõ từng âm.`)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Score Bar */}
                     <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 text-center">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 block">Độ Chính Xác Âm Vị</span>
-                        <span className="text-2xl font-black text-emerald-500">{pronunciationResult.accuracy}%</span>
+                        <span
+                          className={`text-2xl font-black ${
+                            pronunciationResult.isPassing ? 'text-emerald-500' : 'text-rose-500'
+                          }`}
+                        >
+                          {pronunciationResult.accuracy}%
+                        </span>
                       </div>
                       <div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 block">Trọng Âm (Stress)</span>

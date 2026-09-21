@@ -10,6 +10,7 @@ import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
+import { evaluatePronunciation } from '../../../lib/pronunciationEvaluator';
 
 interface SpeakTarget {
   id: string;
@@ -54,6 +55,7 @@ export const SpeakUnlockGame: React.FC<SpeakUnlockGameProps> = ({
     setIsDoorOpen(false);
     setIsRecording(false);
     setIsReadyToContinue(false);
+    setPraiseVi('');
 
     const target = SPEAK_TARGETS[(roundNum - 1) % SPEAK_TARGETS.length];
     setCurrentTarget(target);
@@ -63,14 +65,13 @@ export const SpeakUnlockGame: React.FC<SpeakUnlockGameProps> = ({
     initRound(1);
   }, [initRound]);
 
-  // Voice recording & evaluation
+  // Voice recording & evaluation with Kid threshold (>= 50%)
   const handleStartSpeaking = () => {
     if (isDoorOpen || isRecording || isReadyToContinue) return;
 
     setIsRecording(true);
     soundManager.play('pop');
 
-    // Check if browser supports Web Speech API
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -79,51 +80,53 @@ export const SpeakUnlockGame: React.FC<SpeakUnlockGameProps> = ({
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
         recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+        recognition.maxAlternatives = 2;
 
         recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript.toLowerCase();
+          const transcript = event.results?.[0]?.[0]?.transcript || '';
           setIsRecording(false);
 
-          if (
-            transcript.includes(currentTarget.wordEn.toLowerCase()) ||
-            transcript.includes(currentTarget.phraseEn.toLowerCase())
-          ) {
-            handleUnlockSuccess();
+          // Evaluate against phrase or single keyword (kid mode threshold >= 50%)
+          const evalResultPhrase = evaluatePronunciation(currentTarget.phraseEn, transcript, 'kid');
+          const evalResultWord = evaluatePronunciation(currentTarget.wordEn, transcript, 'kid');
+          const bestResult = evalResultPhrase.score >= evalResultWord.score ? evalResultPhrase : evalResultWord;
+
+          if (bestResult.isPassing) {
+            handleUnlockSuccess(bestResult.score, bestResult.stars || 1, bestResult.feedback);
           } else {
-            handleUnlockSuccess();
+            handleUnlockRetry(bestResult.score, transcript);
           }
         };
 
         recognition.onerror = () => {
           setIsRecording(false);
-          handleUnlockSuccess();
+          handleUnlockRetry(0, '');
         };
 
         recognition.start();
         return;
       } catch (e) {
-        // Fall through to timer fallback
+        // Fall through to retry notification
       }
     }
 
-    // Smooth fallback for environments without microphone access
+    // Fallback if browser does not support SpeechRecognition
     setTimeout(() => {
       setIsRecording(false);
-      handleUnlockSuccess();
-    }, 1800);
+      setPraiseVi('Trình duyệt chưa hỗ trợ micro. Bé hãy sử dụng Google Chrome nhé!');
+    }, 1500);
   };
 
-  const handleUnlockSuccess = () => {
+  const handleUnlockSuccess = (score: number, stars: number, feedback: string) => {
     setIsDoorOpen(true);
     soundManager.play('unlock');
     soundManager.play('star_burst');
 
-    const earned = 3;
+    const earned = Math.max(1, stars);
     setStarsEarned((prev) => prev + earned);
     if (onStarsAwarded) onStarsAwarded(earned);
 
-    const praise = 'Phát âm tuyệt vời! Cửa báu vật đã mở!';
+    const praise = feedback || `Phát âm xuất sắc (${score}%)! Cửa báu vật đã mở!`;
     setPraiseVi(praise);
 
     voiceService.speakWord(currentTarget.phraseEn, {
@@ -135,6 +138,16 @@ export const SpeakUnlockGame: React.FC<SpeakUnlockGameProps> = ({
         });
       },
     });
+  };
+
+  const handleUnlockRetry = (score: number, transcript: string) => {
+    soundManager.play('wrong');
+    const retryMsg =
+      score === 0
+        ? 'Chưa nghe rõ tiếng bé nói. Bé bấm Micro và đọc lại to hơn nhé!'
+        : `Bé đạt ${score}%. Cần từ 50% để mở cửa báu vật. Bé bấm đọc lại nhé!`;
+    setPraiseVi(retryMsg);
+    voiceService.speakVietnamese(retryMsg);
   };
 
   const handleAdvanceRound = () => {

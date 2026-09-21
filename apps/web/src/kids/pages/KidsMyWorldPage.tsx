@@ -8,6 +8,7 @@ import { STICKERS_DATA, BADGES_DATA } from '../data/rewardsData';
 import { KIDS_CATEGORIES } from '../data/categories/categoriesData';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../data/vocabulary/vocabularyData';
 import { DAILY_PHRASES, KidPhrase } from '../data/phrases/phrasesData';
+import { evaluatePronunciation } from '../../lib/pronunciationEvaluator';
 import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 import {
   Volume2,
@@ -244,23 +245,24 @@ export const KidsMyWorldPage: React.FC = () => {
         recognition.interimResults = false;
 
         recognition.onresult = (e: any) => {
-          const spoken = (e.results[0][0]?.transcript || '').toLowerCase().trim();
+          const spoken = (e.results?.[0]?.[0]?.transcript || '').trim();
           setIsListeningMic(false);
-          const target = activeWordModal.word.toLowerCase().trim();
+          const target = activeWordModal.word.trim();
 
-          if (spoken.includes(target) || target.includes(spoken)) {
+          const evalResult = evaluatePronunciation(target, spoken, 'kid');
+          if (evalResult.isPassing) {
             soundManager.playFanfare();
-            celebrationManager.celebrate('small', 'Bé phát âm rất chuẩn!');
-            setMicFeedback('Xuất sắc! Bé phát âm rất chuẩn!');
+            celebrationManager.celebrate('small', evalResult.feedback);
+            setMicFeedback(evalResult.feedback);
           } else {
             soundManager.playIncorrect();
-            setMicFeedback(`Bé vừa đọc: "${spoken}". Hãy thử lại to hơn nhé!`);
+            setMicFeedback(evalResult.feedback);
           }
         };
 
         recognition.onerror = () => {
           setIsListeningMic(false);
-          setMicFeedback('Bé đọc lại thật to và rõ ràng nhé!');
+          setMicFeedback('Chưa nghe rõ giọng đọc. Bé đọc lại thật to và rõ ràng nhé!');
         };
 
         recognition.start();
@@ -275,10 +277,8 @@ export const KidsMyWorldPage: React.FC = () => {
   const fallbackPractice = () => {
     setTimeout(() => {
       setIsListeningMic(false);
-      soundManager.playFanfare();
-      celebrationManager.celebrate('small', 'Bé phát âm rất hay!');
-      setMicFeedback('Giỏi lắm! Bé phát âm rất chuẩn!');
-    }, 1400);
+      setMicFeedback('Trình duyệt chưa hỗ trợ ghi âm. Bé hãy mở trên Chrome để luyện phát âm nhé!');
+    }, 1000);
   };
 
   // Filtered words based on category and search

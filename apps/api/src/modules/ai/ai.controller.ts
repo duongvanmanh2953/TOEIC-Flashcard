@@ -217,8 +217,9 @@ export class AIController {
   evaluatePronunciation(
     @Body('word') word: string,
     @Body('spokenText') spokenText: string,
+    @Body('mode') mode?: 'kid' | 'adult',
   ) {
-    return this.aiService.evaluatePronunciation(word, spokenText);
+    return this.aiService.evaluatePronunciation(word, spokenText, mode);
   }
 
   @UseGuards(JwtAuthGuard)
