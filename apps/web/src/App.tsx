@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { I18nProvider } from './i18n';
 import { AppShell } from './components/layout/AppShell';
@@ -65,6 +65,19 @@ import { KidsGamesPage } from './kids/pages/KidsGamesPage';
 import { KidsMyWorldPage } from './kids/pages/KidsMyWorldPage';
 import { KidsParentDashboardPage } from './kids/pages/KidsParentDashboardPage';
 import { KidsFlashcardsPage } from './kids/pages/KidsFlashcardsPage';
+import { kidsAudioManager } from './kids/services/audio/KidsAudioManager';
+import { voiceService } from './kids/services/voice/voiceService';
+
+const RouteAudioWatcher: React.FC = () => {
+  const location = useLocation();
+  useEffect(() => {
+    if (!location.pathname.startsWith('/kids')) {
+      kidsAudioManager.stopAll();
+      voiceService.stop();
+    }
+  }, [location.pathname]);
+  return null;
+};
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
   children,
@@ -126,6 +139,7 @@ export const App: React.FC = () => {
     <I18nProvider>
       <AuthProvider>
         <BrowserRouter>
+          <RouteAudioWatcher />
           <ScrollToTop />
           <ContextualLoginModal />
           <Routes>

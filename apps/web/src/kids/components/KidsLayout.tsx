@@ -59,6 +59,10 @@ export const KidsLayout: React.FC = () => {
   // Ensure global world ambient music starts softly on interaction if enabled
   useEffect(() => {
     kidsAudioManager.startWorldMusic('world');
+    return () => {
+      kidsAudioManager.stopAll();
+      voiceService.stop();
+    };
   }, []);
 
   // Update sound state from storage or listener
@@ -350,6 +354,8 @@ export const KidsLayout: React.FC = () => {
           type="button"
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
+            kidsAudioManager.stopAll();
+            voiceService.stop();
             navigate('/dashboard');
           }}
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-slate-500 hover:text-slate-800 text-[11px] font-bold transition cursor-pointer"

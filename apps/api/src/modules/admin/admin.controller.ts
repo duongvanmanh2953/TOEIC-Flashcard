@@ -283,10 +283,11 @@ export class AdminController {
   }
 
   @Post('shared-vocabulary/:id/moderate')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN, Role.MODERATOR)
   @ApiOperation({ summary: 'Approve or reject a shared community deck with optional feedback' })
   moderateSharedDeck(
     @Param('id') deckId: string,
-    @Body('action') action: 'APPROVE' | 'REJECT',
+    @Body('action') action: 'APPROVE' | 'REJECT' | 'PENDING',
     @Body('reason') reason?: string,
     @CurrentUser('id') actorId?: string,
   ) {

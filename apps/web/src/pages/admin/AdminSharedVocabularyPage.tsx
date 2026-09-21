@@ -70,7 +70,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
   const [selectedDeck, setSelectedDeck] = useState<SharedDeck | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [targetDeckForAction, setTargetDeckForAction] = useState<SharedDeck | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showApproveConfirmModal, setShowApproveConfirmModal] = useState(false);
+  const [showUnapproveConfirmModal, setShowUnapproveConfirmModal] = useState(false);
   const [messageToast, setMessageToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const showToast = (type: 'success' | 'error', text: string) => {
@@ -104,11 +107,15 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [fetchDecks]);
 
-  const handleModerate = async (action: 'APPROVE' | 'REJECT') => {
-    if (!selectedDeck) return;
+  const handleModerate = async (
+    action: 'APPROVE' | 'REJECT' | 'PENDING',
+    overrideDeck?: SharedDeck,
+  ) => {
+    const deck = overrideDeck || targetDeckForAction || selectedDeck;
+    if (!deck) return;
     setActionLoading(true);
     try {
-      await api.post(`/admin/shared-vocabulary/${selectedDeck.id}/moderate`, {
+      await api.post(`/admin/shared-vocabulary/${deck.id}/moderate`, {
         action,
         reason: action === 'REJECT' ? rejectReason.trim() : undefined,
       });
@@ -116,17 +123,38 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       showToast(
         'success',
         action === 'APPROVE'
-          ? `Đã duyệt và công khai bộ từ "${selectedDeck.title}"!`
-          : `Đã từ chối bộ từ "${selectedDeck.title}". Thông báo đã gửi đến học viên.`,
+          ? `Đã duyệt và công khai bộ từ "${deck.title}"!`
+          : action === 'REJECT'
+          ? `Đã từ chối bộ từ "${deck.title}". Thông báo đã gửi đến học viên.`
+          : `Đã hoàn tác duyệt bộ từ "${deck.title}" về chờ duyệt.`,
       );
 
       setShowRejectModal(false);
+      setShowApproveConfirmModal(false);
+      setShowUnapproveConfirmModal(false);
+      setTargetDeckForAction(null);
       setRejectReason('');
-      setSelectedDeck(null);
+
+      // If drawer is open on this deck, update its status
+      if (selectedDeck && selectedDeck.id === deck.id) {
+        setSelectedDeck((prev) =>
+          prev
+            ? {
+                ...prev,
+                status:
+                  action === 'APPROVE'
+                    ? 'APPROVED'
+                    : action === 'REJECT'
+                    ? 'REJECTED'
+                    : 'PENDING',
+              }
+            : null,
+        );
+      }
       fetchDecks();
     } catch (err: any) {
       console.error('Moderation error:', err);
-      showToast('error', err?.response?.data?.message || 'Có lỗi khi xử lý kiểm duyệt.');
+      showToast('error', err?.response?.data?.message || err?.message || 'Có lỗi khi xử lý kiểm duyệt.');
     } finally {
       setActionLoading(false);
     }
@@ -383,16 +411,84 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedDeck(deck);
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] transition inline-flex items-center gap-1 border border-slate-700/60"
-                        >
-                          <span>Chi tiết</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {deck.status === 'PENDING' && (
+                            <>
+                              <button
+                                type="button"
+                                title="Phê duyệt nhanh"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTargetDeckForAction(deck);
+                                  setShowApproveConfirmModal(true);
+                                }}
+                                disabled={actionLoading}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Duyệt</span>
+                              </button>
+                              <button
+                                type="button"
+                                title="Từ chối"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTargetDeckForAction(deck);
+                                  setShowRejectModal(true);
+                                }}
+                                disabled={actionLoading}
+                                className="px-2.5 py-1 rounded-lg bg-rose-600/20 text-rose-300 border border-rose-500/30 hover:bg-rose-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Từ chối</span>
+                              </button>
+                            </>
+                          )}
+                          {deck.status === 'APPROVED' && (
+                            <button
+                              type="button"
+                              title="Hủy phê duyệt"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTargetDeckForAction(deck);
+                                setShowUnapproveConfirmModal(true);
+                              }}
+                              disabled={actionLoading}
+                              className="px-2.5 py-1 rounded-lg bg-amber-600/20 text-amber-300 border border-amber-500/30 hover:bg-amber-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Hủy duyệt</span>
+                            </button>
+                          )}
+                          {deck.status === 'REJECTED' && (
+                            <button
+                              type="button"
+                              title="Phê duyệt lại"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTargetDeckForAction(deck);
+                                setShowApproveConfirmModal(true);
+                              }}
+                              disabled={actionLoading}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Duyệt lại</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDeck(deck);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] transition inline-flex items-center gap-1 border border-slate-700/60 cursor-pointer"
+                          >
+                            <span>Chi tiết</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -521,32 +617,64 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             {/* Modal Footer Controls */}
             <div className="p-6 border-t border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
               <button
+                type="button"
                 onClick={handlePublishToMaster}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
               >
                 <UploadCloud className="w-4 h-4" />
                 <span>Xuất Bản Vào Từ Điển Hệ Thống (Master)</span>
               </button>
 
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowRejectModal(true)}
-                  disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Từ Chối</span>
-                </button>
+                {selectedDeck.status === 'APPROVED' ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Đã Phê Duyệt
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetDeckForAction(selectedDeck);
+                        setShowUnapproveConfirmModal(true);
+                      }}
+                      disabled={actionLoading}
+                      className="px-4 py-2 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>Hủy Duyệt (Thu Hồi)</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetDeckForAction(selectedDeck);
+                        setShowRejectModal(true);
+                      }}
+                      disabled={actionLoading}
+                      className="px-4 py-2 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Từ Chối</span>
+                    </button>
 
-                <button
-                  onClick={() => handleModerate('APPROVE')}
-                  disabled={actionLoading}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition disabled:opacity-50"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>Phê Duyệt Bộ Từ</span>
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetDeckForAction(selectedDeck);
+                        setShowApproveConfirmModal(true);
+                      }}
+                      disabled={actionLoading}
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition disabled:opacity-50 cursor-pointer"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>{selectedDeck.status === 'REJECTED' ? 'Phê Duyệt Lại' : 'Phê Duyệt Bộ Từ'}</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -555,11 +683,22 @@ export const AdminSharedVocabularyPage: React.FC = () => {
 
       {/* Reject Reason Confirmation Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 z-60 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-white">Lý Do Từ Chối Bộ Từ Vựng</h3>
-            <p className="text-xs text-slate-400">
-              Nhập lý do hoặc hướng dẫn cụ thể để học viên biết và cải thiện chất lượng từ vựng trước khi gửi lại:
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative z-[110] animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                <XCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Từ Chối Bộ Từ Vựng</h3>
+                <p className="text-xs text-slate-400 truncate max-w-[280px]">
+                  {targetDeckForAction?.title || selectedDeck?.title}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Nhập lý do hoặc hướng dẫn cụ thể để học viên nhận được thông báo giải thích và cải thiện nội dung:
             </p>
 
             <textarea
@@ -572,17 +711,116 @@ export const AdminSharedVocabularyPage: React.FC = () => {
 
             <div className="flex justify-end gap-2 pt-2">
               <button
-                onClick={() => setShowRejectModal(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                type="button"
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setTargetDeckForAction(null);
+                }}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
               >
-                Hủy
+                Hủy bỏ
               </button>
               <button
+                type="button"
                 onClick={() => handleModerate('REJECT')}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 transition shadow-lg shadow-rose-600/20"
+                className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 transition shadow-lg shadow-rose-600/20 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
               >
-                Xác Nhận Từ Chối
+                {actionLoading && <span className="animate-spin">⏳</span>}
+                <span>Xác Nhận Từ Chối</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Confirmation Modal */}
+      {showApproveConfirmModal && (
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative z-[110] animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Xác Nhận Phê Duyệt Bộ Từ</h3>
+                <p className="text-xs text-slate-400 truncate max-w-[280px]">
+                  {targetDeckForAction?.title || selectedDeck?.title}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Bạn có chắc chắn muốn phê duyệt bộ từ vựng này? Sau khi phê duyệt, bộ từ sẽ được công khai ngay lập tức lên kho từ vựng cộng đồng cho tất cả học viên có thể học và sao chép.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowApproveConfirmModal(false);
+                  setTargetDeckForAction(null);
+                }}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModerate('APPROVE')}
+                disabled={actionLoading}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition disabled:opacity-50 cursor-pointer"
+              >
+                {actionLoading ? <span className="animate-spin">⏳</span> : <Check className="w-4 h-4" />}
+                <span>Xác Nhận Duyệt Ngay</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unapprove / Revoke Confirmation Modal */}
+      {showUnapproveConfirmModal && (
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative z-[110] animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Xác Nhận Hủy Phê Duyệt</h3>
+                <p className="text-xs text-slate-400 truncate max-w-[280px]">
+                  {targetDeckForAction?.title || selectedDeck?.title}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Bạn có chắc chắn muốn hủy phê duyệt (thu hồi) bộ từ này? Bộ từ sẽ được chuyển về trạng thái Chờ Duyệt (PENDING) và ẩn khỏi danh sách bộ từ công khai trên cộng đồng.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUnapproveConfirmModal(false);
+                  setTargetDeckForAction(null);
+                }}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleModerate('PENDING')}
+                disabled={actionLoading}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-600/25 transition disabled:opacity-50 cursor-pointer"
+              >
+                {actionLoading ? <span className="animate-spin">⏳</span> : <RotateCcw className="w-4 h-4" />}
+                <span>Xác Nhận Thu Hồi</span>
               </button>
             </div>
           </div>

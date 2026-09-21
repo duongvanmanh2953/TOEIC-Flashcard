@@ -278,6 +278,16 @@ class KidsAudioManager {
       }
     };
 
+    if (this.ctx && this.musicGainNode) {
+      const targetVol = this.musicEnabled
+        ? (this.isDucked ? this.duckedMusicVolume : this.baseMusicVolume)
+        : 0;
+      try {
+        this.musicGainNode.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.musicGainNode.gain.setValueAtTime(targetVol, this.ctx.currentTime);
+      } catch (e) {}
+    }
+
     // Upbeat rhythmic tempo (360ms per step = 166 BPM lively child tempo)
     playPlayfulBeat();
     this.melodyIntervalId = setInterval(playPlayfulBeat, 380);
@@ -288,7 +298,31 @@ class KidsAudioManager {
       clearInterval(this.melodyIntervalId);
       this.melodyIntervalId = null;
     }
+    if (this.ctx && this.musicGainNode) {
+      try {
+        this.musicGainNode.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.musicGainNode.gain.setValueAtTime(0, this.ctx.currentTime);
+      } catch (e) {}
+    }
     this.isPlaying = false;
+  }
+
+  /**
+   * Stop all music, sfx and suspend AudioContext completely
+   */
+  public stopAll(): void {
+    this.stopAmbientMusic();
+    if (this.ctx && this.sfxGainNode) {
+      try {
+        this.sfxGainNode.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.sfxGainNode.gain.setValueAtTime(0, this.ctx.currentTime);
+      } catch (e) {}
+    }
+    if (this.ctx && this.ctx.state === 'running') {
+      try {
+        this.ctx.suspend().catch(() => {});
+      } catch (e) {}
+    }
   }
 
   /* ----------------------------------------------------

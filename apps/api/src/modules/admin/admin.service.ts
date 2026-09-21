@@ -1171,7 +1171,7 @@ export class AdminService {
 
   async moderateSharedDeck(
     deckId: string,
-    action: 'APPROVE' | 'REJECT',
+    action: 'APPROVE' | 'REJECT' | 'PENDING',
     reason?: string,
     actorId?: string,
   ) {
@@ -1181,41 +1181,63 @@ export class AdminService {
     });
     if (!deck) throw new NotFoundException('Shared deck not found');
 
-    const status = action === 'APPROVE' ? ModerationStatus.APPROVED : ModerationStatus.REJECTED;
+    const status =
+      action === 'APPROVE'
+        ? ModerationStatus.APPROVED
+        : action === 'REJECT'
+        ? ModerationStatus.REJECTED
+        : ModerationStatus.PENDING;
+
+    const isPublic = action === 'APPROVE';
+
     const updated = await this.prisma.communityDeck.update({
       where: { id: deckId },
-      data: { status, updatedAt: new Date() },
+      data: { status, isPublic, updatedAt: new Date() },
     });
 
-    // Send in-app notification to contributor
-    await this.prisma.notification.create({
-      data: {
-        userId: deck.userId,
-        type: 'SYSTEM',
-        title:
-          action === 'APPROVE'
-            ? 'Bộ từ vựng đóng góp đã được phê duyệt!'
-            : 'Phản hồi về bộ từ vựng đóng góp',
-        body:
-          action === 'APPROVE'
-            ? `Chúc mừng! Bộ từ vựng "${deck.title}" của bạn đã được kiểm duyệt và công khai trên hệ thống.`
-            : `Bộ từ vựng "${deck.title}" chưa được xuất bản. ${
-                reason ? 'Góp ý từ quản trị viên: ' + reason : 'Vui lòng kiểm tra lại chất lượng ví dụ câu và định nghĩa.'
-              }`,
-      },
-    });
+    // Send in-app notification to contributor safely
+    if (deck.userId) {
+      try {
+        await this.prisma.notification.create({
+          data: {
+            userId: deck.userId,
+            type: 'SYSTEM',
+            title:
+              action === 'APPROVE'
+                ? 'Bộ từ vựng đóng góp đã được phê duyệt!'
+                : action === 'REJECT'
+                ? 'Phản hồi về bộ từ vựng đóng góp'
+                : 'Trạng thái bộ từ vựng đã được hoàn tác về chờ duyệt',
+            body:
+              action === 'APPROVE'
+                ? `Chúc mừng! Bộ từ vựng "${deck.title}" của bạn đã được kiểm duyệt và công khai trên hệ thống.`
+                : action === 'REJECT'
+                ? `Bộ từ vựng "${deck.title}" chưa được xuất bản. ${
+                    reason ? 'Góp ý từ quản trị viên: ' + reason : 'Vui lòng kiểm tra lại chất lượng ví dụ câu và định nghĩa.'
+                  }`
+                : `Bộ từ vựng "${deck.title}" đã được quản trị viên thu hồi phê duyệt để tiếp tục xem xét.`,
+          },
+        });
+      } catch (notifErr) {
+        this.logger.warn(`Could not send notification to user ${deck.userId}: ${notifErr}`);
+      }
+    }
 
-    // Audit log
+    // Audit log safely
     if (actorId) {
-      await this.prisma.auditLog.create({
-        data: {
-          actorId,
-          action: `MODERATE_SHARED_DECK_${action}`,
-          targetType: 'COMMUNITY_DECK',
-          targetId: deckId,
-          metadata: { deckTitle: deck.title, newStatus: status, reason },
-        },
-      });
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: `MODERATE_SHARED_DECK_${action}`,
+            targetType: 'COMMUNITY_DECK',
+            targetId: deckId,
+            metadata: { deckTitle: deck.title, newStatus: status, reason },
+          },
+        });
+      } catch (auditErr) {
+        this.logger.warn(`Could not create audit log: ${auditErr}`);
+      }
     }
 
     return updated;
