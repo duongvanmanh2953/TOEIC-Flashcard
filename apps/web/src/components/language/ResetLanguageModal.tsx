@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { LanguageDefinition } from '../../config/languages';
 import { useLearningContext } from '../../contexts/LearningContext';
 import { AlertTriangle, Check, RotateCcw, X, ShieldCheck } from 'lucide-react';
+import { ModalPortal } from '../common/ModalPortal';
 
 interface ResetLanguageModalProps {
   language: LanguageDefinition;
+  isOpen?: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
 export const ResetLanguageModal: React.FC<ResetLanguageModalProps> = ({
   language,
+  isOpen = true,
   onClose,
   onSuccess,
 }) => {
@@ -30,9 +33,14 @@ export const ResetLanguageModal: React.FC<ResetLanguageModalProps> = ({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl p-6 space-y-5">
+    <ModalPortal isOpen={isOpen} onClose={onClose}>
+      <div
+        className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl p-6 space-y-5 my-auto animate-scale-up"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header with Icon */}
         <div className="flex items-start justify-between">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
@@ -108,6 +116,6 @@ export const ResetLanguageModal: React.FC<ResetLanguageModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 };

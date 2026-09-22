@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 
 interface ModalPortalProps {
   children: React.ReactNode;
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose?: () => void;
   className?: string;
   backdropClassName?: string;
@@ -11,7 +11,7 @@ interface ModalPortalProps {
 
 export const ModalPortal: React.FC<ModalPortalProps> = ({
   children,
-  isOpen,
+  isOpen = true,
   onClose,
   className = '',
   backdropClassName = '',

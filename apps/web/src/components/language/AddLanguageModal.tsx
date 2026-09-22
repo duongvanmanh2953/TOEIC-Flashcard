@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLearningContext } from '../../contexts/LearningContext';
 import { SUPPORTED_LANGUAGES, LanguageDefinition, getLanguage } from '../../config/languages';
 import {
@@ -18,13 +18,16 @@ import {
   MessageCircle,
   CheckCircle2,
 } from 'lucide-react';
+import { ModalPortal } from '../common/ModalPortal';
 
 interface AddLanguageModalProps {
+  isOpen?: boolean;
   onClose: () => void;
   preselectedLanguageId?: string;
 }
 
 export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
+  isOpen = true,
   onClose,
   preselectedLanguageId,
 }) => {
@@ -41,6 +44,14 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
   const [selectedGoal, setSelectedGoal] = useState<string>('Conversation');
   const [dailyMinutes, setDailyMinutes] = useState<number>(15);
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (preselectedLanguageId) {
+      setSelectedLangId(preselectedLanguageId);
+      const lang = getLanguage(preselectedLanguageId);
+      setSelectedLevel(lang.defaultLevel);
+    }
+  }, [preselectedLanguageId]);
 
   const targetLang = getLanguage(selectedLangId);
 
@@ -93,9 +104,14 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <ModalPortal isOpen={isOpen} onClose={onClose}>
+      <div
+        className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto animate-scale-up"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Top Header */}
         <div className="p-5 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -362,6 +378,6 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 };

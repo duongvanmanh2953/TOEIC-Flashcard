@@ -348,19 +348,17 @@ export const MyLanguagesPage: React.FC = () => {
       </GlassCard>
 
       {/* Modals */}
-      {showAddModal && (
-        <ModalPortal>
-          <AddLanguageModal onClose={() => setShowAddModal(false)} />
-        </ModalPortal>
-      )}
+      <AddLanguageModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+      />
 
       {resetTargetLang && (
-        <ModalPortal>
-          <ResetLanguageModal
-            language={resetTargetLang}
-            onClose={() => setResetTargetLang(null)}
-          />
-        </ModalPortal>
+        <ResetLanguageModal
+          isOpen={Boolean(resetTargetLang)}
+          language={resetTargetLang}
+          onClose={() => setResetTargetLang(null)}
+        />
       )}
     </div>
   );
