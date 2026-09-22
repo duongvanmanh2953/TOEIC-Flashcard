@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth, isProUser } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
+import { useLearningContext } from '../contexts/LearningContext';
+import { idbGetWords } from '../lib/idb';
 import { GlassCard } from '../components/common/GlassCard';
 import { MemoryRescueCard } from '../components/dashboard/MemoryRescueCard';
 import { QuotaMeter } from '../components/common/QuotaMeter';
@@ -33,8 +35,10 @@ import {
 export const DashboardPage: React.FC = () => {
   const { user, isGuest } = useAuth();
   const { t } = useTranslation();
+  const { activeLanguage, activeProfile, isSwitching } = useLearningContext();
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
+  const [localWords, setLocalWords] = useState<any[]>([]);
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [memoryRescue, setMemoryRescue] = useState<any>(null);
   const [quotas, setQuotas] = useState<any>(null);
@@ -52,16 +56,18 @@ export const DashboardPage: React.FC = () => {
     const fetchDashboard = async () => {
       try {
         const quotaEndpoint = isGuest ? '/subscriptions/guest-quotas' : '/subscriptions/my-quotas';
-        const [dashRes, heatRes, rescueRes, quotaRes]: any = await Promise.all([
-          api.get('/dashboard').catch(() => ({ data: {} })),
+        const [dashRes, heatRes, rescueRes, quotaRes, words]: any = await Promise.all([
+          api.get('/dashboard', { params: { language: activeLanguage.id } }).catch(() => ({ data: {} })),
           api.get('/dashboard/heatmap').catch(() => ({ data: [] })),
-          api.get('/reviews/memory-rescue').catch(() => ({ data: null })),
+          api.get('/reviews/memory-rescue', { params: { language: activeLanguage.id } }).catch(() => ({ data: null })),
           api.get(quotaEndpoint).catch(() => ({ data: null })),
+          idbGetWords(user?.id, activeLanguage.id),
         ]);
         setData(dashRes.data || dashRes || {});
         setHeatmap(heatRes.data || heatRes || []);
         setMemoryRescue(rescueRes?.data || rescueRes || null);
         setQuotas(quotaRes?.data || quotaRes || null);
+        setLocalWords(words || []);
       } catch (err) {
         console.error('Error loading dashboard data', err);
       } finally {
@@ -69,7 +75,7 @@ export const DashboardPage: React.FC = () => {
       }
     };
     fetchDashboard();
-  }, [isGuest]);
+  }, [isGuest, activeLanguage.id, user?.id]);
 
   if (loading) {
     return (
@@ -88,10 +94,13 @@ export const DashboardPage: React.FC = () => {
     timeGreeting = t('dashboard.greetingEvening', 'Chào buổi tối');
   }
 
-  const dailyGoal = data?.dailyGoal || 20;
+  const dailyGoal = activeProfile?.dailyWordGoal || data?.dailyGoal || 20;
   const completedToday = data?.completedToday || 0;
   const goalPercent = Math.min(100, Math.round((completedToday / dailyGoal) * 100));
-  const reviewDue = data?.reviewDue || 0;
+  const reviewDue = Math.max(
+    localWords.filter((w) => (w.dueAt || 0) <= Date.now()).length,
+    data?.reviewDue || 0
+  );
 
   // Real 7-day activity data from API
   const weeklyData = data?.weeklyData && data.weeklyData.length > 0 ? data.weeklyData : [
@@ -119,9 +128,9 @@ export const DashboardPage: React.FC = () => {
       {/* 1. Hero / Today's Plan — High Contrast Translucent Card (Compact & Focused) */}
       <GlassCard variant="liquid" className="p-4 sm:p-5 md:p-6 relative overflow-hidden bg-white/95 dark:bg-slate-900/95 border border-indigo-500/25 dark:border-indigo-500/30 shadow-lg rounded-2xl">
         <div className="max-w-3xl relative z-10 space-y-2.5">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Spaced Repetition System • VocabFlow AI</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
+            <span className="text-base leading-none">{activeLanguage.flag}</span>
+            <span>Không gian {activeLanguage.name} ({activeLanguage.nativeName}) • Trình độ {activeProfile.level}</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-snug tracking-tight">
@@ -131,9 +140,15 @@ export const DashboardPage: React.FC = () => {
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
             Hôm nay bạn có{' '}
             <strong className="text-indigo-600 dark:text-indigo-400 font-black">
-              {reviewDue} từ vựng
+              {reviewDue} từ {activeLanguage.name}
             </strong>{' '}
             {t('dashboard.heroSubtitle', 'đang trong thời điểm vàng cần kích hoạt trí nhớ dài hạn.')}
+            {activeProfile.currentStreak > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 font-bold text-amber-500">
+                <Flame className="w-3.5 h-3.5 fill-amber-500" />
+                {activeProfile.currentStreak} ngày liên tục
+              </span>
+            )}
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
@@ -200,6 +215,39 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </GlassCard>
+
+      {/* Empty State Banner if no words learned yet in this language */}
+      {localWords.length === 0 && (
+        <GlassCard variant="liquid" className="p-6 sm:p-8 rounded-3xl border-2 border-dashed border-indigo-400/40 bg-white/95 dark:bg-slate-900/95 text-center space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-3xl shadow-sm">
+            {activeLanguage.flag}
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white">
+              Chào mừng bạn đến với không gian học {activeLanguage.name} ({activeLanguage.nativeName})
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
+              Không gian học này đã sẵn sàng. Hãy bắt đầu ôn tập bộ từ vựng căn bản {activeLanguage.name} Starter để xây dựng phản xạ ngay hôm nay!
+            </p>
+          </div>
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/review')}
+              className="btn-glass-primary text-xs sm:text-sm !py-2.5 !px-5 gap-2 shadow-lg shadow-indigo-500/25"
+            >
+              <Sparkles className="w-4 h-4 fill-white" />
+              <span>Bắt đầu học ngay ({activeLanguage.name} Starter)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => navigate('/word-bank')}
+              className="btn-glass-secondary text-xs sm:text-sm !py-2.5 !px-4"
+            >
+              Xem kho từ vựng
+            </button>
+          </div>
+        </GlassCard>
+      )}
 
       {/* Next Best Action Spotlight with Dismiss X */}
       {showSpotlight && (

@@ -41,13 +41,17 @@ import {
   Gamepad2,
   LogIn,
   Baby,
+  Globe,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { LanguageSwitcher } from '../language/LanguageSwitcher';
+import { useLearningContext } from '../../contexts/LearningContext';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
 import { VirtualChatPane } from '../chat/VirtualChatPane';
 
 export const AppShell: React.FC = () => {
+  const { activeLanguage, activeProfile } = useLearningContext();
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
   const { t } = useTranslation();
 
@@ -297,6 +301,7 @@ export const AppShell: React.FC = () => {
       title: 'HỌC TẬP & PHẢN XẠ',
       items: [
         { to: '/dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard },
+        { to: '/languages', label: 'My Languages', icon: Globe, highlight: true, badge: 'MULTI' },
         { to: '/games', label: 'Đấu Trường Realtime', icon: Gamepad2, highlight: true, badge: '20:00' },
         { to: '/coach', label: 'AI Personal Coach', icon: Mic, highlight: true, badge: 'VOICE' },
         { to: '/leaderboard', label: 'Bảng Xếp Hạng', icon: Trophy, badge: 'FAIR-PLAY' },
@@ -385,7 +390,9 @@ export const AppShell: React.FC = () => {
                 <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
                   VocabFlow
                 </h2>
-                <p className="text-[11px] text-slate-400 font-medium truncate">Smart Adaptive English</p>
+                <p className="text-[11px] text-slate-400 font-medium truncate flex items-center gap-1">
+                  <span>Multi-Language Learning</span>
+                </p>
               </div>
             </div>
           </div>
@@ -393,11 +400,11 @@ export const AppShell: React.FC = () => {
           {/* User Streak Pill — Pinned Directly Under Logo */}
           <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0 shadow-xs">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs min-w-0 truncate">
-              <Flame className="w-4 h-4 fill-amber-500 text-amber-500 shrink-0" />
-              <span className="truncate">{user?.streak?.currentStreak || 0} Day Streak</span>
+              <span className="text-base leading-none shrink-0">{activeLanguage.flag}</span>
+              <span className="truncate">{activeProfile.currentStreak || 0} Day Streak</span>
             </div>
             <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-extrabold shrink-0 ml-1 border border-amber-500/30">
-              Lvl {user?.xp?.currentLevel || 1}
+              {activeProfile.level}
             </span>
           </div>
         </div>
@@ -545,15 +552,14 @@ export const AppShell: React.FC = () => {
       <div className={`flex-1 flex flex-col min-w-0 relative z-10 ${isFullHeightChat ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
         {/* Mobile Header — Sticky fixed at top */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors shrink-0">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <img
               src="/vocabflow-logo-256.png"
               alt="VocabFlow"
-              className="w-8 h-8 rounded-xl object-contain shrink-0"
+              className="w-7 h-7 rounded-xl object-contain shrink-0 cursor-pointer"
+              onClick={() => navigate('/dashboard')}
             />
-            <span className="font-extrabold text-base text-slate-900 dark:text-white">
-              VocabFlow
-            </span>
+            <LanguageSwitcher variant="compact" />
           </div>
           <div className="flex items-center gap-2">
             {!isPro && (
@@ -659,10 +665,14 @@ export const AppShell: React.FC = () => {
 
         {/* Desktop Top Header Bar — Sticky fixed at top, balanced & polished */}
         <header className="hidden lg:flex items-center justify-between px-4 lg:px-6 xl:px-8 h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-30 transition-colors shrink-0">
-          <div className="flex items-center gap-2.5 shrink-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-xs shadow-emerald-500/50" />
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 tracking-tight">
-              VocabFlow AI <span className="hidden xl:inline text-slate-400 dark:text-slate-500 font-normal mx-1">•</span> <span className="hidden xl:inline">Personal English Coach</span>
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Multi-Language Switcher */}
+            <LanguageSwitcher variant="header" />
+            <span className="hidden xl:inline text-xs font-semibold text-slate-400 dark:text-slate-500">
+              •
+            </span>
+            <span className="hidden xl:inline text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Không gian học <strong className="text-slate-900 dark:text-white font-extrabold">{activeLanguage.name}</strong>
             </span>
           </div>
 

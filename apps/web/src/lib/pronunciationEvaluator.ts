@@ -27,15 +27,15 @@ export interface PronunciationEvaluationResult {
 }
 
 /**
- * Normalize text for accurate linguistic comparison
+ * Normalize text for accurate linguistic comparison across all world writing scripts
+ * Preserves Latin diacritics (ä, ö, ü, ñ, é), Asian scripts (Hanzi, Kana, Hangul, Thai),
+ * while stripping extraneous punctuation and excess whitespace.
  */
 export function normalizeText(text: string): string {
   if (!text) return '';
   return text
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // remove diacritics if any
-    .replace(/[^a-z0-9\s']/g, ' ')  // keep only letters, numbers, spaces, apostrophes
+    .replace(/[.,/#!$%^&*;:{}=\-_`~()?"'“”‘’[\]<>«»]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

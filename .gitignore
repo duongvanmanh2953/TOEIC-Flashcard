@@ -44,6 +44,7 @@ postgres_data/
 .system_generated/
 
 # Local data & spreadsheet files (migrated to PostgreSQL)
-data/
+/data/
 *.csv
 *.xlsx
+!apps/web/src/kids/data/

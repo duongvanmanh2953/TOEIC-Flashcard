@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LearningProvider } from './contexts/LearningContext';
 import { I18nProvider } from './i18n';
 import { AppShell } from './components/layout/AppShell';
 import { LandingPage } from './pages/LandingPage';
@@ -8,6 +9,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { MyLanguagesPage } from './pages/MyLanguagesPage';
 import { ReviewSessionPage } from './pages/ReviewSessionPage';
 import { VocabularyExplorerPage } from './pages/VocabularyExplorerPage';
 import { PlacementTestPage } from './pages/PlacementTestPage';
@@ -138,28 +140,30 @@ export const App: React.FC = () => {
   return (
     <I18nProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <RouteAudioWatcher />
-          <ScrollToTop />
-          <ContextualLoginModal />
-          <Routes>
-            {/* Public Entry Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <LearningProvider>
+          <BrowserRouter>
+            <RouteAudioWatcher />
+            <ScrollToTop />
+            <ContextualLoginModal />
+            <Routes>
+              {/* Public Entry Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-            {/* User Learning Application Shell */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/review" element={<ReviewSessionPage />} />
-              <Route path="/vocabulary" element={<VocabularyExplorerPage />} />
+              {/* User Learning Application Shell */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/languages" element={<MyLanguagesPage />} />
+                <Route path="/review" element={<ReviewSessionPage />} />
+                <Route path="/vocabulary" element={<VocabularyExplorerPage />} />
               <Route
                 path="/word-bank"
                 element={
@@ -240,9 +244,10 @@ export const App: React.FC = () => {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </I18nProvider>
-  );
+      </LearningProvider>
+    </AuthProvider>
+  </I18nProvider>
+);
 };
 
 export default App;

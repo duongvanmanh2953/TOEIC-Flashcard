@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useLearningContext } from '../contexts/LearningContext';
+import { SUPPORTED_LANGUAGES } from '../config/languages';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
@@ -41,10 +43,13 @@ import {
   AlertCircle,
   AlertTriangle,
   RefreshCw,
+  Globe,
 } from 'lucide-react';
 
 export const CommunityDecksPage: React.FC = () => {
   const { user, isGuest, promptLogin } = useAuth();
+  const { activeLanguage } = useLearningContext();
+  const [selectedLanguageFilter, setSelectedLanguageFilter] = useState<string>(activeLanguage.id);
   const [mainTab, setMainTab] = useState<'community' | 'my-decks'>('community');
   const [decks, setDecks] = useState<any[]>([]);
   const [myDecks, setMyDecks] = useState<any[]>([]);
@@ -54,6 +59,11 @@ export const CommunityDecksPage: React.FC = () => {
   const [selectedDeck, setSelectedDeck] = useState<any | null>(null);
   const [cloneSuccess, setCloneSuccess] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Sync selected language filter with activeLearningLanguage when changed from header
+  useEffect(() => {
+    setSelectedLanguageFilter(activeLanguage.id);
+  }, [activeLanguage.id]);
 
   // Password Protection & Unlock State
   const [enablePassword, setEnablePassword] = useState(false);
@@ -93,7 +103,13 @@ export const CommunityDecksPage: React.FC = () => {
   const fetchDecks = async () => {
     setLoading(true);
     try {
-      const res: any = await api.get('/community/decks', { params: { search } });
+      const langParam = selectedLanguageFilter === 'ALL' ? undefined : selectedLanguageFilter;
+      const res: any = await api.get('/community/decks', {
+        params: {
+          search,
+          languageId: langParam,
+        },
+      });
       if (res?.success) setDecks(res.data);
     } catch (err) {
       console.error('Failed to load community decks', err);
@@ -106,9 +122,10 @@ export const CommunityDecksPage: React.FC = () => {
     if (!user) return;
     setLoadingMyDecks(true);
     try {
+      const langParam = selectedLanguageFilter === 'ALL' ? undefined : selectedLanguageFilter;
       const [remoteRes, localDecks]: any = await Promise.all([
-        api.get('/community/my-decks').catch(() => ({ data: [] })),
-        idbGetLocalDecks().catch(() => []),
+        api.get('/community/my-decks', { params: { languageId: langParam } }).catch(() => ({ data: [] })),
+        idbGetLocalDecks(user.id, langParam).catch(() => []),
       ]);
       const remoteList = Array.isArray(remoteRes?.data)
         ? remoteRes.data
@@ -128,7 +145,8 @@ export const CommunityDecksPage: React.FC = () => {
   const fetchMyWords = async () => {
     setLoadingMyWords(true);
     try {
-      const res: any = await api.get('/words/my-bank', { params: { limit: 100 } });
+      const langParam = selectedLanguageFilter === 'ALL' ? undefined : selectedLanguageFilter;
+      const res: any = await api.get('/words/my-bank', { params: { limit: 100, languageId: langParam } });
       const data = res?.data?.items || res?.data || [];
       setMyWords(data);
       if (selectedMyWordIds.length === 0 && data.length > 0) {
@@ -143,13 +161,13 @@ export const CommunityDecksPage: React.FC = () => {
 
   useEffect(() => {
     fetchDecks();
-  }, [search]);
+  }, [search, selectedLanguageFilter]);
 
   useEffect(() => {
     if (user) {
       fetchMyDecks();
     }
-  }, [user, mainTab]);
+  }, [user, mainTab, selectedLanguageFilter]);
 
   const isVip = Boolean(
     user &&
@@ -271,9 +289,11 @@ export const CommunityDecksPage: React.FC = () => {
       const res: any = await api.post(`/community/decks/${deck.id}/clone`, { password });
       if (res?.success) {
         // Save copy to IndexedDB so it appears directly in "Kho từ vựng của tôi" with full attribution
+        const targetLangId = deck.languageId || activeLanguage.id;
         const localDeckCopy: any = {
           id: `cloned_${deck.id}`,
           userId: user.id,
+          languageId: targetLangId,
           title: deck.title,
           description: deck.description || '',
           category: deck.category || 'General',
@@ -281,6 +301,7 @@ export const CommunityDecksPage: React.FC = () => {
           words: (deck.words || []).map((w: any) => ({
             id: `cloned_w_${w.id || Math.random().toString(36).substring(2, 9)}`,
             userId: user.id,
+            languageId: targetLangId,
             word: w.word,
             phonetic: w.phonetic,
             meaning: w.meaning || w.definition,
@@ -426,11 +447,13 @@ export const CommunityDecksPage: React.FC = () => {
     }
 
     try {
+      const targetLangId = selectedLanguageFilter === 'ALL' ? activeLanguage.id : selectedLanguageFilter;
       const res: any = await api.post('/community/decks', {
         title,
         description,
         category,
         cefrLevel,
+        languageId: targetLangId,
         isPublic: true,
         password: enablePassword && deckPassword.trim() ? deckPassword.trim() : undefined,
         words: finalWords,
@@ -440,6 +463,8 @@ export const CommunityDecksPage: React.FC = () => {
         // Save copy to local IndexedDB
         await idbSaveLocalDeck({
           id: res?.data?.id || res?.id || `local_${Date.now()}`,
+          userId: user?.id,
+          languageId: targetLangId,
           title,
           description,
           category,
@@ -451,7 +476,7 @@ export const CommunityDecksPage: React.FC = () => {
           createdAt: Date.now(),
           updatedAt: Date.now(),
           isSyncedToCloud: false,
-        });
+        }, user?.id);
 
         setShowCreateModal(false);
         setTitle('');
@@ -648,6 +673,39 @@ export const CommunityDecksPage: React.FC = () => {
             className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
           />
         </div>
+      </div>
+
+      {/* Multi-Language Filter Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
+          <Globe className="w-3.5 h-3.5 text-indigo-500" />
+          Ngôn ngữ:
+        </span>
+        <button
+          onClick={() => setSelectedLanguageFilter('ALL')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 border ${
+            selectedLanguageFilter === 'ALL'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+              : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }`}
+        >
+          <span>🌐</span>
+          <span>Tất cả ngôn ngữ</span>
+        </button>
+        {SUPPORTED_LANGUAGES.map((lang) => (
+          <button
+            key={lang.id}
+            onClick={() => setSelectedLanguageFilter(lang.id)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 border ${
+              selectedLanguageFilter === lang.id
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <span>{lang.flag}</span>
+            <span>{lang.nativeName}</span>
+          </button>
+        ))}
       </div>
 
       {/* TAB 1: COMMUNITY DECKS */}

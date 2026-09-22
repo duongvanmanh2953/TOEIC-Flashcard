@@ -23,9 +23,11 @@ import {
 import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
 import { useI18n } from '../../i18n';
+import { SUPPORTED_LANGUAGES } from '../../config/languages';
 
 interface VocabularyItem {
   id: string;
+  languageId?: string;
   word: string;
   normalizedWord: string;
   definition: string;
@@ -52,6 +54,7 @@ export const AdminVocabularyPage: React.FC = () => {
   const [items, setItems] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [languageFilter, setLanguageFilter] = useState('ALL');
   const [cefrFilter, setCefrFilter] = useState('ALL');
   const [posFilter, setPosFilter] = useState('ALL');
   const [page, setPage] = useState(1);
@@ -96,6 +99,7 @@ export const AdminVocabularyPage: React.FC = () => {
           cefrLevel: cefrFilter !== 'ALL' ? cefrFilter : undefined,
           cefr: cefrFilter !== 'ALL' ? cefrFilter : undefined,
           partOfSpeech: posFilter !== 'ALL' ? posFilter : undefined,
+          languageId: languageFilter !== 'ALL' ? languageFilter : undefined,
         },
       });
 
@@ -113,10 +117,8 @@ export const AdminVocabularyPage: React.FC = () => {
         else flags.push('Thiếu định nghĩa');
 
         if (item.phonetic) score += 15;
-        else flags.push('Thiếu IPA');
-
         if (item.examples && item.examples.length > 0) score += 20;
-        else flags.push('Thiếu ví dụ');
+        else flags.push('Thiếu câu ví dụ');
 
         return {
           ...item,
@@ -134,7 +136,7 @@ export const AdminVocabularyPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search, cefrFilter, posFilter]);
+  }, [page, search, cefrFilter, posFilter, languageFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -302,6 +304,14 @@ export const AdminVocabularyPage: React.FC = () => {
   };
 
   // Filter Options
+  const languageOptions = [
+    { value: 'ALL', label: '🌐 Tất cả ngôn ngữ' },
+    ...SUPPORTED_LANGUAGES.map((l) => ({
+      value: l.id,
+      label: `${l.flag} ${l.name}`,
+    })),
+  ];
+
   const cefrOptions = [
     { value: 'ALL', label: 'Tất cả cấp độ CEFR' },
     { value: 'A1', label: 'A1 • Sơ cấp 1' },
@@ -373,6 +383,7 @@ export const AdminVocabularyPage: React.FC = () => {
             onClick={() => {
               setEditingItem({
                 word: '',
+                languageId: languageFilter !== 'ALL' ? languageFilter : 'en',
                 partOfSpeech: 'noun',
                 cefrLevel: 'B1',
                 difficulty: 3.0,
@@ -403,6 +414,13 @@ export const AdminVocabularyPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <FilterSelect
+            value={languageFilter}
+            onChange={setLanguageFilter}
+            options={languageOptions}
+            className="w-52"
+          />
+
           <FilterSelect
             value={cefrFilter}
             onChange={setCefrFilter}
@@ -690,6 +708,19 @@ export const AdminVocabularyPage: React.FC = () => {
                   onChange={(e) => setEditingItem({ ...editingItem, phonetic: e.target.value })}
                   placeholder="e.g. /əˈkʌm.plɪʃ/"
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 tabular-nums focus:border-indigo-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-slate-400 font-medium">Ngôn ngữ (Language) *</label>
+                <FilterSelect
+                  value={editingItem.languageId || (languageFilter !== 'ALL' ? languageFilter : 'en')}
+                  onChange={(val) => setEditingItem({ ...editingItem, languageId: val })}
+                  options={SUPPORTED_LANGUAGES.map((l) => ({
+                    value: l.id,
+                    label: `${l.flag} ${l.name}`,
+                  }))}
+                  className="w-full"
                 />
               </div>
 

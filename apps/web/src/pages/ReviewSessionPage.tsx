@@ -30,6 +30,9 @@ import {
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { PronunciationPracticeCard } from '../components/audio/PronunciationPracticeCard';
+import { useAuth } from '../contexts/AuthContext';
+import { useLearningContext } from '../contexts/LearningContext';
+import { LanguageFlashcard } from '../components/flashcard/LanguageFlashcard';
 import {
   idbGetLocalDecks,
   idbGetWords,
@@ -56,6 +59,15 @@ export interface ReviewQueueItem {
   deckTitle?: string;
   options: string[];
   correctAnswer: string;
+  // Multi-language metadata
+  article?: string;
+  gender?: string;
+  pinyin?: string;
+  tone?: string;
+  romaji?: string;
+  transliteration?: string;
+  script?: string;
+  languageId?: string;
   // Spaced Repetition (FSRS-compatible) parameters
   dueAt: number;
   lastReviewedAt: number;
@@ -180,6 +192,15 @@ function mapToReviewItem(raw: any, defaultTopic = 'General', origin = 'DECK'): R
     origin,
     deckId: raw.deckId || v.deckId,
     deckTitle: raw.deckName || v.deckName || defaultTopic,
+    // Multi-language metadata
+    article: v.article || raw.article,
+    gender: v.gender || raw.gender,
+    pinyin: v.pinyin || raw.pinyin,
+    tone: v.tone || raw.tone,
+    romaji: v.romaji || raw.romaji,
+    transliteration: v.transliteration || raw.transliteration,
+    script: v.script || raw.script,
+    languageId: v.languageId || raw.languageId,
     options: [
       wordMeaning,
       'Sự trì hoãn trong công việc và dự án',
@@ -208,6 +229,8 @@ function mapToReviewItem(raw: any, defaultTopic = 'General', origin = 'DECK'): R
 export const ReviewSessionPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { activeLanguage, recordStudyActivity } = useLearningContext();
 
   // Mode: 3D Flashcard vs Multiple Choice Quiz
   const [studyMode, setStudyMode] = useState<'flashcard' | 'quiz'>('flashcard');
@@ -256,12 +279,12 @@ export const ReviewSessionPage: React.FC = () => {
   const startTimeRef = useRef<number>(Date.now());
   const sessionDurationRef = useRef<number>(Date.now());
 
-  // Load user decks & system topics on mount
+  // Load user decks & system topics on mount or when language changes
   useEffect(() => {
     Promise.allSettled([
-      idbGetLocalDecks(),
-      api.get('/community/my-decks').catch(() => []),
-      api.get('/vocabulary/topics').catch(() => ({ data: [] })),
+      idbGetLocalDecks(user?.id, activeLanguage.id),
+      api.get('/community/my-decks', { params: { languageId: activeLanguage.id } }).catch(() => []),
+      api.get('/vocabulary/topics', { params: { languageId: activeLanguage.id } }).catch(() => ({ data: [] })),
     ]).then(([localDecksRes, cloudDecksRes, topicsRes]) => {
       const localDecks: LocalDeck[] =
         localDecksRes.status === 'fulfilled' && Array.isArray(localDecksRes.value) ? localDecksRes.value : [];
@@ -280,7 +303,7 @@ export const ReviewSessionPage: React.FC = () => {
       setSystemTopics(sysTopics);
 
       const opts: any[] = [
-        { id: 'ALL', label: '⚡ Tất cả từ cần ôn (SRS Smart)', icon: Sparkles },
+        { id: 'ALL', label: `⚡ Tất cả từ cần ôn (${activeLanguage.name} SRS)`, icon: Sparkles },
         { id: 'MEMORY_RESCUE', label: '🚑 Giải cứu trí nhớ (Slipping Words)', icon: Flame },
         { id: 'MY_WORDS', label: '⭐ Kho từ của tôi (Tất cả)', icon: Bookmark },
       ];
@@ -313,7 +336,7 @@ export const ReviewSessionPage: React.FC = () => {
 
       setTopicOptions(opts);
     });
-  }, []);
+  }, [user?.id, activeLanguage.id]);
 
   // Smart Break Monitor: Trigger gentle reminder after 25 minutes of continuous study
   useEffect(() => {
@@ -329,7 +352,10 @@ export const ReviewSessionPage: React.FC = () => {
   // Find next deck with reviewable words when current deck clears
   const findNextReviewableDeck = async (currentTopicKey: string) => {
     try {
-      const [localDecks, allWords] = await Promise.all([idbGetLocalDecks(), idbGetWords()]);
+      const [localDecks, allWords] = await Promise.all([
+        idbGetLocalDecks(user?.id, activeLanguage.id),
+        idbGetWords(user?.id, activeLanguage.id),
+      ]);
       const cleanCurrentId = currentTopicKey.replace('deck_', '');
 
       const otherDecks = localDecks.filter(
@@ -363,15 +389,15 @@ export const ReviewSessionPage: React.FC = () => {
     try {
       // 1. MEMORY RESCUE
       if (topicKey === 'MEMORY_RESCUE') {
-        const res: any = await api.post('/reviews/memory-rescue/session').catch(() => ({ data: { items: [] } }));
+        const res: any = await api.post('/reviews/memory-rescue/session', { languageId: activeLanguage.id }).catch(() => ({ data: { items: [] } }));
         if (res?.success && res.data?.items?.length > 0) {
           setSession(res.data.session);
           const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Memory Rescue', 'MEMORY_RESCUE'));
           mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
           setItems(mapped);
         } else {
-          // Fallback to local slipping words
-          const localWords = await idbGetWords();
+          // Fallback to local slipping words for this language
+          const localWords = await idbGetWords(user?.id, activeLanguage.id);
           const slipping = localWords
             .filter((w) => (w.wrongCount || 0) > 0 || (w.stability || 1.0) < 1.5)
             .map((w) => mapToReviewItem(w, 'Memory Rescue', 'LOCAL'));
@@ -381,9 +407,9 @@ export const ReviewSessionPage: React.FC = () => {
       }
       // 2. MY WORDS (ALL)
       else if (topicKey === 'MY_WORDS') {
-        let localWords = await idbGetWords();
+        let localWords = await idbGetWords(user?.id, activeLanguage.id);
         if (localWords.length === 0) {
-          const cloudRes: any = await api.get('/community/my-words?filter=ALL').catch(() => []);
+          const cloudRes: any = await api.get(`/community/my-words?filter=ALL&languageId=${activeLanguage.id}`).catch(() => []);
           localWords = Array.isArray(cloudRes) ? cloudRes : cloudRes?.data || [];
         }
         const mapped = localWords.map((item: any) => mapToReviewItem(item, 'My Words', 'WORD_BANK'));
@@ -400,7 +426,10 @@ export const ReviewSessionPage: React.FC = () => {
           ? topicKey.replace('deck_', '')
           : searchParams.get('deckId');
 
-        const [localDecks, allLocalWords] = await Promise.all([idbGetLocalDecks(), idbGetWords()]);
+        const [localDecks, allLocalWords] = await Promise.all([
+          idbGetLocalDecks(user?.id, activeLanguage.id),
+          idbGetWords(user?.id, activeLanguage.id),
+        ]);
 
         let matchedDeck = targetDeckId
           ? localDecks.find((d) => d.id === targetDeckId) || userDecks.find((d) => d.id === targetDeckId)
@@ -431,7 +460,7 @@ export const ReviewSessionPage: React.FC = () => {
 
         // If still empty and deckId is present, query Cloud API
         if (deckWords.length === 0 && deckIdToSearch) {
-          const cloudDeck: any = await api.get(`/community/decks/${deckIdToSearch}`).catch(() => null);
+          const cloudDeck: any = await api.get(`/community/decks/${deckIdToSearch}`, { params: { languageId: activeLanguage.id } }).catch(() => null);
           if (cloudDeck?.words && cloudDeck.words.length > 0) {
             deckWords = cloudDeck.words;
           }
@@ -451,22 +480,25 @@ export const ReviewSessionPage: React.FC = () => {
       }
       // 4. ALL DUE (SMART SRS SESSION)
       else if (topicKey === 'ALL') {
-        const [localDecks, allLocalWords] = await Promise.all([idbGetLocalDecks(), idbGetWords()]);
+        const [localDecks, allLocalWords] = await Promise.all([
+          idbGetLocalDecks(user?.id, activeLanguage.id),
+          idbGetWords(user?.id, activeLanguage.id),
+        ]);
 
         if (allLocalWords.length > 0) {
           const mapped = allLocalWords.map((item: any) => mapToReviewItem(item, 'General', 'WORD_BANK'));
-          mapped.sort((a, b) => b.priorityScore - a.priorityScore);
+          mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
           setItems(mapped);
         } else {
           // Fall back to server vocabulary session
-          const res: any = await api.post('/reviews/smart-session', { limit: 50 }).catch(() => null);
+          const res: any = await api.post('/reviews/smart-session', { limit: 50, languageId: activeLanguage.id }).catch(() => null);
           if (res?.success && res.data?.items?.length > 0) {
             setSession(res.data.session);
             const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Smart Review', 'SYSTEM'));
             mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
             setItems(mapped);
           } else {
-            const vocabRes: any = await api.get('/vocabulary', { params: { limit: 50 } }).catch(() => ({ data: { items: [] } }));
+            const vocabRes: any = await api.get('/vocabulary', { params: { limit: 50, languageId: activeLanguage.id } }).catch(() => ({ data: { items: [] } }));
             const raw = vocabRes.data?.items || vocabRes.data || [];
             const mapped = raw.map((v: any) => mapToReviewItem(v, 'Vocabulary', 'VOCABULARY'));
             mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
@@ -477,7 +509,7 @@ export const ReviewSessionPage: React.FC = () => {
       // 5. TOPIC SLUG
       else {
         const cleanSlug = topicKey.startsWith('topic_') ? topicKey.replace('topic_', '') : topicKey;
-        const res: any = await api.get('/vocabulary', { params: { topic: cleanSlug, limit: 100 } }).catch(() => ({ data: { items: [] } }));
+        const res: any = await api.get('/vocabulary', { params: { topic: cleanSlug, limit: 100, languageId: activeLanguage.id } }).catch(() => ({ data: { items: [] } }));
         const rawList = res?.data?.items || res?.data || [];
         const totalPages = res?.meta?.pagination?.totalPages || res?.data?.pagination?.totalPages || 1;
 
@@ -485,7 +517,7 @@ export const ReviewSessionPage: React.FC = () => {
         if (totalPages > 1) {
           const nextPages = await Promise.allSettled(
             Array.from({ length: Math.min(totalPages, 5) - 1 }, (_, i) =>
-              api.get('/vocabulary', { params: { topic: cleanSlug, page: i + 2, limit: 100 } })
+              api.get('/vocabulary', { params: { topic: cleanSlug, page: i + 2, limit: 100, languageId: activeLanguage.id } })
             )
           );
           nextPages.forEach((p) => {
@@ -512,7 +544,7 @@ export const ReviewSessionPage: React.FC = () => {
 
   useEffect(() => {
     loadStudyItems(selectedTopic);
-  }, [selectedTopic]);
+  }, [selectedTopic, activeLanguage.id, user?.id]);
 
   const currentItem = items[currentIndex];
 
@@ -635,6 +667,9 @@ export const ReviewSessionPage: React.FC = () => {
       });
     }
 
+    // Record study activity in multi-language LearningContext
+    recordStudyActivity(1, rating === 'AGAIN' ? 0 : 1, 1);
+
     // Post review answer if cloud session exists
     if (session?.id) {
       try {
@@ -726,6 +761,7 @@ export const ReviewSessionPage: React.FC = () => {
 
   const handleNextQuiz = async () => {
     const wasCorrect = feedback?.isCorrect;
+    recordStudyActivity(1, wasCorrect ? 1 : 0, 1);
     setFeedback(null);
     setUserAnswer('');
     setShowHint(false);
@@ -871,19 +907,21 @@ export const ReviewSessionPage: React.FC = () => {
   if (!currentItem) {
     return (
       <div className="max-w-md mx-auto text-center py-16 space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 mx-auto flex items-center justify-center">
-          <CheckCircle2 className="w-7 h-7" />
+        <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 text-2xl mx-auto flex items-center justify-center shadow-sm">
+          <span>{activeLanguage.flag}</span>
         </div>
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Không còn từ vựng nào cần ôn lúc này!</h3>
-        <p className="text-xs text-slate-500">
-          Tất cả các từ trong chủ đề này đã được củng cố và chưa đến hạn ôn tập tiếp theo. Bạn có thể chọn chủ đề khác hoặc quay về kho từ.
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+          Không còn từ vựng {activeLanguage.nativeName} ({activeLanguage.name}) cần ôn lúc này!
+        </h3>
+        <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          Tất cả các thẻ trong không gian học tập này đã được củng cố và chưa đến hạn chu kỳ FSRS tiếp theo. Bạn có thể ôn lại tất cả hoặc thêm từ vựng mới.
         </p>
         <div className="flex justify-center gap-2 pt-2">
           <button
             onClick={() => setSelectedTopic('ALL')}
             className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-xs hover:bg-indigo-700 transition"
           >
-            Ôn tất cả từ
+            Ôn tất cả từ ({activeLanguage.name})
           </button>
           <button
             onClick={() => navigate('/word-bank')}
@@ -1030,128 +1068,43 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {studyMode === 'flashcard' && (
         <div className="space-y-4">
-          {/* 3D Flip Card Container */}
-          <div
-            className="perspective-1000 w-full min-h-[380px] max-h-[calc(100dvh-16rem)] cursor-pointer select-none"
-            onClick={() => setIsFlipped(!isFlipped)}
-          >
-            <div
-              className={`transform-style-3d relative w-full h-full min-h-[380px] rounded-3xl transition-transform duration-500 ${
-                isFlipped ? 'rotate-y-180' : ''
-              }`}
+          {/* Multi-Language Generic Flashcard */}
+          <LanguageFlashcard
+            language={activeLanguage}
+            item={{
+              id: currentItem.vocabularyId,
+              word: currentItem.word,
+              meaning: currentItem.meaning || currentItem.meaningVi,
+              definition: currentItem.englishDefinition,
+              phonetic: currentItem.pronunciation,
+              pronunciation: currentItem.pronunciation,
+              partOfSpeech: currentItem.partOfSpeech,
+              cefrLevel: currentItem.cefrLevel,
+              topic: currentItem.topic,
+              example: currentItem.example,
+              exampleTranslation: currentItem.exampleTranslation,
+              article: currentItem.article,
+              gender: currentItem.gender,
+              pinyin: currentItem.pinyin,
+              tone: currentItem.tone,
+              romaji: currentItem.romaji,
+              transliteration: currentItem.transliteration,
+              script: currentItem.script,
+            }}
+            isFlipped={isFlipped}
+            onFlip={() => setIsFlipped(!isFlipped)}
+          />
+
+          {/* Quick Voice Practice Modal Trigger */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowVoicePractice(true)}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/50 dark:border-slate-800 transition active:scale-95 flex items-center gap-1.5 text-xs font-semibold"
             >
-              {/* FRONT OF THE FLASHCARD */}
-              <div className="backface-hidden absolute inset-0 w-full h-full p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col justify-between overflow-y-auto">
-                {/* Top Badges */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                      {currentItem.topic || 'General'}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">
-                      CEFR {currentItem.cefrLevel || 'B1'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <SpeechButton text={currentItem.word} showSlowOption={true} />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowVoicePractice(true);
-                      }}
-                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/50 dark:border-slate-800 transition active:scale-95 flex items-center gap-1"
-                      title="Thu âm & Luyện phát âm AI"
-                    >
-                      <Mic className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Center Word Content */}
-                <div className="text-center py-6 space-y-3">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
-                    {currentItem.word}
-                  </h2>
-                  {currentItem.pronunciation && (
-                    <p className="text-base tabular-nums text-slate-400 font-medium tracking-wide">
-                      {currentItem.pronunciation}
-                    </p>
-                  )}
-                  {currentItem.partOfSpeech && (
-                    <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60">
-                      {currentItem.partOfSpeech}
-                    </span>
-                  )}
-                  {/* Cloze / Hint Context Sentence */}
-                  {currentItem.example && (
-                    <div className="max-w-md mx-auto pt-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/60">
-                      "{getClozeSentence(currentItem.example, currentItem.word)}"
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom Card Flip Cue */}
-                <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-                    🔄 Nhấn vào thẻ hoặc bấm phím Space để xem nghĩa tiếng Việt & ví dụ
-                  </span>
-                </div>
-              </div>
-
-              {/* BACK OF THE FLASHCARD */}
-              <div className="backface-hidden rotate-y-180 absolute inset-0 w-full h-full p-6 sm:p-8 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-900 shadow-2xl flex flex-col justify-between overflow-y-auto">
-                {/* Top Badges */}
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
-                      {currentItem.word}
-                    </span>
-                    <span className="text-xs tabular-nums text-slate-400">{currentItem.pronunciation}</span>
-                  </div>
-                  <SpeechButton text={currentItem.word} />
-                </div>
-
-                {/* Vietnamese Meaning & Context Details */}
-                <div className="py-3 space-y-3 overflow-y-auto flex-1">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase text-slate-400">Nghĩa tiếng Việt:</span>
-                    <p className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                      {currentItem.meaning ||
-                        currentItem.meaningVi ||
-                        currentItem.shortDefinition ||
-                        currentItem.definition ||
-                        'Nghĩa từ vựng'}
-                    </p>
-                  </div>
-
-                  {currentItem.englishDefinition && (
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-400">Định nghĩa tiếng Anh:</span>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">
-                        {currentItem.englishDefinition}
-                      </p>
-                    </div>
-                  )}
-
-                  {currentItem.example && (
-                    <div className="p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 text-xs space-y-1">
-                      <p className="font-medium text-indigo-950 dark:text-indigo-200">"{currentItem.example}"</p>
-                      {currentItem.exampleTranslation && (
-                        <p className="text-slate-500 dark:text-slate-400 italic">
-                          🇻🇳 "{currentItem.exampleTranslation}"
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Flip Back Cue */}
-                <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="text-[11px] text-slate-400">Bấm Space hoặc chạm thẻ để lật lại</span>
-                </div>
-              </div>
-            </div>
+              <Mic className="w-3.5 h-3.5 text-rose-500" />
+              <span>Luyện phát âm AI ({activeLanguage.name})</span>
+            </button>
           </div>
 
           {/* Voice Practice & Recording Modal */}

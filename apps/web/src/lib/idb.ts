@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'vocabflow_offline_db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_VOCAB = 'vocabulary';
 const STORE_CACHE = 'api_cache';
 const STORE_DECKS = 'local_decks';
@@ -14,6 +14,7 @@ const STORE_META = 'metadata';
 export interface LocalDeck {
   id: string;
   userId?: string;
+  languageId?: string; // 'en' | 'de' | 'es' | 'zh' | 'ja' | 'ko' | 'th' | etc.
   originDeckId?: string;
   title: string;
   description?: string;
@@ -36,10 +37,12 @@ export interface LocalDeck {
 export interface CachedWordItem {
   id: string;
   userId?: string;
+  languageId?: string; // 'en' | 'de' | 'es' | 'zh' | 'ja' | 'ko' | 'th' | etc.
   deckId?: string;
   deckName?: string;
   word: string;
   phonetic?: string;
+  pronunciation?: string;
   partOfSpeech?: string;
   meaning: string;
   definition?: string;
@@ -52,6 +55,14 @@ export interface CachedWordItem {
   vocabulary?: any;
   createdAt?: number;
   updatedAt?: number;
+  // Multi-language specific attributes
+  article?: string; // 'der' | 'die' | 'das' | 'el' | 'la'
+  gender?: string; // 'masculine' | 'feminine' | 'neuter'
+  pinyin?: string; // Chinese Pinyin e.g. 'nǐ hǎo'
+  tone?: string; // Chinese tone notation
+  romaji?: string; // Japanese Romaji e.g. 'konnichiwa'
+  transliteration?: string; // Thai / Korean romanization
+  script?: string;
   // Spaced Repetition (FSRS-compatible) tracking fields
   dueAt?: number;
   lastReviewedAt?: number;
@@ -76,17 +87,40 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      let vocabStore: IDBObjectStore;
       if (!db.objectStoreNames.contains(STORE_VOCAB)) {
-        const vocabStore = db.createObjectStore(STORE_VOCAB, { keyPath: 'id' });
+        vocabStore = db.createObjectStore(STORE_VOCAB, { keyPath: 'id' });
         vocabStore.createIndex('deckId', 'deckId', { unique: false });
         vocabStore.createIndex('topic', 'topic', { unique: false });
+        vocabStore.createIndex('languageId', 'languageId', { unique: false });
+      } else {
+        const tx = (event.target as IDBOpenDBRequest).transaction;
+        if (tx) {
+          vocabStore = tx.objectStore(STORE_VOCAB);
+          if (!vocabStore.indexNames.contains('languageId')) {
+            vocabStore.createIndex('languageId', 'languageId', { unique: false });
+          }
+        }
       }
+
       if (!db.objectStoreNames.contains(STORE_CACHE)) {
         db.createObjectStore(STORE_CACHE, { keyPath: 'key' });
       }
+
+      let deckStore: IDBObjectStore;
       if (!db.objectStoreNames.contains(STORE_DECKS)) {
-        db.createObjectStore(STORE_DECKS, { keyPath: 'id' });
+        deckStore = db.createObjectStore(STORE_DECKS, { keyPath: 'id' });
+        deckStore.createIndex('languageId', 'languageId', { unique: false });
+      } else {
+        const tx = (event.target as IDBOpenDBRequest).transaction;
+        if (tx) {
+          deckStore = tx.objectStore(STORE_DECKS);
+          if (!deckStore.indexNames.contains('languageId')) {
+            deckStore.createIndex('languageId', 'languageId', { unique: false });
+          }
+        }
       }
+
       if (!db.objectStoreNames.contains(STORE_META)) {
         db.createObjectStore(STORE_META, { keyPath: 'key' });
       }
@@ -132,7 +166,8 @@ export async function idbGetMeta<T = any>(key: string): Promise<T | null> {
 export async function idbSaveWords(
   words: any[],
   userId?: string,
-  onProgress?: (saved: number, total: number) => void
+  onProgress?: (saved: number, total: number) => void,
+  languageId?: string
 ): Promise<void> {
   try {
     const db = await openDB();
@@ -150,6 +185,9 @@ export async function idbSaveWords(
           if (userId) {
             wordObj.userId = userId;
           }
+          // Ensure languageId is preserved or assigned
+          wordObj.languageId = wordObj.languageId || languageId || 'en';
+
           if (!wordObj.id) {
             const cleanW = (wordObj.vocabulary?.word || wordObj.word || '')
               .toString()
@@ -179,7 +217,7 @@ export async function idbSaveWords(
   }
 }
 
-export async function idbGetWords(userId?: string): Promise<any[]> {
+export async function idbGetWords(userId?: string, languageId?: string): Promise<any[]> {
   try {
     const db = await openDB();
     return new Promise((resolve) => {
@@ -188,11 +226,17 @@ export async function idbGetWords(userId?: string): Promise<any[]> {
       const req = store.getAll();
       req.onsuccess = () => {
         const all: any[] = req.result || [];
-        if (!userId) return resolve(all);
-        // Isolate by user: match user ID or guest session
-        const filtered = all.filter(
-          (w) => w.userId === userId || (!w.userId && (userId === 'guest' || userId.startsWith('anon_')))
-        );
+        const filtered = all.filter((w) => {
+          // Isolate by user: match user ID or guest session
+          const userMatch = !userId || w.userId === userId || (!w.userId && (userId === 'guest' || userId.startsWith('anon_')));
+          if (!userMatch) return false;
+
+          // Isolate by language: match specified languageId (or treat missing as 'en' for backward compatibility)
+          if (languageId) {
+            return w.languageId === languageId || (!w.languageId && languageId === 'en');
+          }
+          return true;
+        });
         resolve(filtered);
       };
       req.onerror = () => resolve([]);
@@ -339,7 +383,7 @@ export async function idbClearAllWords(): Promise<void> {
 // DECK / WORD BANK CRUD OPERATIONS
 // =============================================================================
 
-export async function idbSaveLocalDeck(deck: LocalDeck, userId?: string): Promise<void> {
+export async function idbSaveLocalDeck(deck: LocalDeck, userId?: string, languageId?: string): Promise<void> {
   try {
     const db = await openDB();
     const tx = db.transaction(STORE_DECKS, 'readwrite');
@@ -348,6 +392,7 @@ export async function idbSaveLocalDeck(deck: LocalDeck, userId?: string): Promis
     if (userId) {
       deckToSave.userId = userId;
     }
+    deckToSave.languageId = deckToSave.languageId || languageId || 'en';
     store.put(deckToSave);
   } catch (err) {
     console.warn('IDB deck write failure:', err);
@@ -371,7 +416,7 @@ export async function idbUpdateLocalDeck(id: string, updates: Partial<LocalDeck>
   }
 }
 
-export async function idbGetLocalDecks(userId?: string): Promise<LocalDeck[]> {
+export async function idbGetLocalDecks(userId?: string, languageId?: string): Promise<LocalDeck[]> {
   try {
     const db = await openDB();
     return new Promise((resolve) => {
@@ -380,16 +425,89 @@ export async function idbGetLocalDecks(userId?: string): Promise<LocalDeck[]> {
       const req = store.getAll();
       req.onsuccess = () => {
         const all: LocalDeck[] = req.result || [];
-        if (!userId) return resolve(all);
-        const filtered = all.filter(
-          (d) => d.userId === userId || (!d.userId && (userId === 'guest' || userId.startsWith('anon_')))
-        );
+        const filtered = all.filter((d) => {
+          const userMatch = !userId || d.userId === userId || (!d.userId && (userId === 'guest' || userId.startsWith('anon_')));
+          if (!userMatch) return false;
+
+          if (languageId) {
+            return d.languageId === languageId || (!d.languageId && languageId === 'en');
+          }
+          return true;
+        });
         resolve(filtered);
       };
       req.onerror = () => resolve([]);
     });
   } catch {
     return [];
+  }
+}
+
+/**
+ * Resets all words and decks for a specific language without affecting other languages or user profile
+ */
+export async function idbResetLanguageData(userId: string | undefined, languageId: string): Promise<void> {
+  try {
+    const words = await idbGetWords(userId, languageId);
+    const wordIds = words.map((w) => w.id);
+    if (wordIds.length > 0) {
+      await idbDeleteWords(wordIds);
+    }
+
+    const decks = await idbGetLocalDecks(userId, languageId);
+    const deckIds = decks.map((d) => d.id);
+    if (deckIds.length > 0) {
+      await idbDeleteLocalDecks(deckIds);
+    }
+  } catch (err) {
+    console.warn(`IDB reset language [${languageId}] failure:`, err);
+  }
+}
+
+/**
+ * Idempotent data migration: ensures all existing un-tagged records are assigned to 'en' (English)
+ */
+export async function migrateUserLearningData(userId?: string): Promise<void> {
+  try {
+    const db = await openDB();
+    const MIGRATION_FLAG = `vocalflow:migration:v4:${userId || 'guest'}`;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(MIGRATION_FLAG) === 'completed') {
+      return;
+    }
+
+    // 1. Tag legacy words missing languageId as 'en'
+    const wordsTx = db.transaction(STORE_VOCAB, 'readwrite');
+    const wordsStore = wordsTx.objectStore(STORE_VOCAB);
+    const wordsReq = wordsStore.getAll();
+    wordsReq.onsuccess = () => {
+      const allWords: any[] = wordsReq.result || [];
+      for (const w of allWords) {
+        if (!w.languageId) {
+          w.languageId = 'en';
+          wordsStore.put(w);
+        }
+      }
+    };
+
+    // 2. Tag legacy decks missing languageId as 'en'
+    const decksTx = db.transaction(STORE_DECKS, 'readwrite');
+    const decksStore = decksTx.objectStore(STORE_DECKS);
+    const decksReq = decksStore.getAll();
+    decksReq.onsuccess = () => {
+      const allDecks: any[] = decksReq.result || [];
+      for (const d of allDecks) {
+        if (!d.languageId) {
+          d.languageId = 'en';
+          decksStore.put(d);
+        }
+      }
+    };
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(MIGRATION_FLAG, 'completed');
+    }
+  } catch (err) {
+    console.warn('Migration to multi-language schema completed with note:', err);
   }
 }
 

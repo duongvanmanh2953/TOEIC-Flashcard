@@ -563,56 +563,69 @@ class AudioEngine {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = rate; // fast & crisp (1.25x)
 
+      // Determine target language
+      let targetLocale = lang || 'en-US';
       const hasVi = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(text);
-      const isVi = hasVi || lang.startsWith('vi');
-      utterance.lang = isVi ? 'vi-VN' : 'en-US';
+      if (hasVi && (!lang || lang.startsWith('en'))) {
+        targetLocale = 'vi-VN';
+      }
 
-      // Select optimal Windows / OS Male voice (NamMinh Northern Male / Guy / Christopher)
+      utterance.lang = targetLocale;
+      const langPrefix = targetLocale.split(/[-_]/)[0].toLowerCase();
+
+      // Select optimal OS voice matching language and gender preference
       const voices = window.speechSynthesis.getVoices();
 
       if (voices && voices.length > 0) {
         let chosenVoice: SpeechSynthesisVoice | undefined;
+        const matchingVoices = voices.filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(langPrefix));
+        const genderPref = this.getPreferredVoiceGender(); // 'male' | 'female'
 
-        if (isVi) {
-          // Priority 1: Windows Northern Male voice (Microsoft NamMinh Online / Natural - Vietnamese)
-          chosenVoice = voices.find((v) => {
-            const name = v.name.toLowerCase();
-            return v.lang.toLowerCase().startsWith('vi') && (name.includes('nam') || name.includes('minh') || name.includes('male'));
-          });
-
-          // Priority 2: Any Vietnamese voice (Google Tiếng Việt / Microsoft HoaiMy / Apple Linh)
-          if (!chosenVoice) {
-            chosenVoice = voices.find((v) => v.lang.toLowerCase().startsWith('vi'));
+        if (matchingVoices.length > 0) {
+          if (genderPref === 'female') {
+            chosenVoice = matchingVoices.find((v) => {
+              const n = v.name.toLowerCase();
+              return (
+                n.includes('female') ||
+                n.includes('woman') ||
+                n.includes('zira') ||
+                n.includes('samantha') ||
+                n.includes('kyoko') ||
+                n.includes('yuna') ||
+                n.includes('xiaoxiao') ||
+                n.includes('katja') ||
+                n.includes('monica')
+              );
+            });
+          } else {
+            chosenVoice = matchingVoices.find((v) => {
+              const n = v.name.toLowerCase();
+              return (
+                n.includes('male') ||
+                n.includes('guy') ||
+                n.includes('christopher') ||
+                n.includes('david') ||
+                n.includes('brian') ||
+                n.includes('stefan') ||
+                n.includes('nam') ||
+                n.includes('yunxi') ||
+                n.includes('jorge')
+              );
+            });
           }
-        } else {
-          // Priority 1: High-fidelity natural American Male voices
-          chosenVoice = voices.find((v) => {
-            const name = v.name.toLowerCase();
-            const isEn = v.lang.toLowerCase().startsWith('en');
-            return (
-              isEn &&
-              (name.includes('guy') ||
-                name.includes('christopher') ||
-                name.includes('brian') ||
-                name.includes('david') ||
-                (name.includes('male') && !name.includes('female')))
-            );
-          });
-        }
 
-        // Fallback: any voice
-        if (!chosenVoice) {
-          chosenVoice = isVi
-            ? voices.find((v) => v.lang.toLowerCase().startsWith('vi'))
-            : voices.find((v) => v.lang.toLowerCase().startsWith('en'));
+          if (!chosenVoice) {
+            chosenVoice = matchingVoices[0];
+          }
         }
 
         if (chosenVoice) {
           utterance.voice = chosenVoice;
-        } else if (isVi) {
-          // If Windows has zero Vietnamese voices installed, stream from server Neural NamMinh proxy
-          const url = `/api/v1/ai/tts?text=${encodeURIComponent(text)}&voice=namminh&lang=vi`;
-          this.playFromUrl(url, 1.0, sessionId, callbacks);
+        } else {
+          // If browser has no local voice for this language (e.g. Thai, German, Russian), stream from fallback TTS
+          const cleanText = text.replace(/[*#_`]/g, '').trim();
+          const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${langPrefix}&client=tw-ob`;
+          this.playFromUrl(fallbackUrl, rate, sessionId, callbacks);
           return;
         }
       }

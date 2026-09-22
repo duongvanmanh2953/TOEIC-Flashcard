@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
+import { useLearningContext } from '../contexts/LearningContext';
+import { AddLanguageModal } from '../components/language/AddLanguageModal';
+import { ResetLanguageModal } from '../components/language/ResetLanguageModal';
 import { GlassCard } from '../components/common/GlassCard';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
@@ -34,14 +37,32 @@ import {
   MessageCircle,
   Layers,
   LayoutGrid,
+  Flame,
+  Plus,
 } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { user, theme, toggleTheme } = useAuth();
   const { locale, setLocale, t } = useTranslation();
+  const {
+    activeLanguage,
+    activeProfile,
+    userLanguages,
+    switchLanguage,
+  } = useLearningContext();
 
   // Navigation Sub-tabs for space optimization & scientific categorization
-  const [activeTab, setActiveTab] = useState<'all' | 'appearance' | 'audio_study' | 'security' | 'data'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'languages' | 'appearance' | 'audio_study' | 'security' | 'data'>('all');
+  const [showAddLanguageModal, setShowAddLanguageModal] = useState(false);
+  const [showResetLanguageModal, setShowResetLanguageModal] = useState(false);
+
+  // Multi-Language Pronunciation & Script preferences
+  const [voiceGender, setVoiceGender] = useState<'female' | 'male'>(() => {
+    return (localStorage.getItem('vocabflow_voice_gender') as 'female' | 'male') || 'female';
+  });
+  const [showScriptAids, setShowScriptAids] = useState<boolean>(() => {
+    return localStorage.getItem('vocabflow_show_script_aids') !== 'false';
+  });
 
   // 1. Giao diện settings
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>(() => {
@@ -285,6 +306,7 @@ export const SettingsPage: React.FC = () => {
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {[
           { id: 'all', label: 'Tất cả mục', icon: LayoutGrid },
+          { id: 'languages', label: 'Ngôn ngữ học tập', icon: Globe },
           { id: 'appearance', label: 'Giao diện & Hiển thị', icon: Palette },
           { id: 'audio_study', label: 'Âm thanh & Học tập', icon: Volume2 },
           { id: 'security', label: 'Bảo mật & Phiên', icon: Shield },
@@ -311,6 +333,209 @@ export const SettingsPage: React.FC = () => {
 
       {/* Responsive 2-Column Grid (Tối ưu diện tích màn hình) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* ========================================================================= */}
+        {/* SECTION 0: KHÔNG GIAN NGÔN NGỮ HỌC TẬP (MULTI-LANGUAGE SPACES)           */}
+        {/* ========================================================================= */}
+        {(activeTab === 'all' || activeTab === 'languages') && (
+          <GlassCard variant="liquid" className="p-6 space-y-5 lg:col-span-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg">
+                  {activeLanguage.flag}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug flex items-center gap-2">
+                    <span>Không Gian Ngôn Ngữ Học Tập</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 font-extrabold border border-indigo-200 dark:border-indigo-800">
+                      Đang học: {activeLanguage.nativeName}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Một tài khoản, nhiều ngôn ngữ. Mỗi ngôn ngữ có kho từ vựng, chuỗi streak và tiến trình FSRS hoàn toàn độc lập.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <button
+                  onClick={() => setShowAddLanguageModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Thêm ngôn ngữ</span>
+                </button>
+              </div>
+            </div>
+
+            {/* List of User's Enrolled Learning Spaces */}
+            <div className="space-y-2">
+              <label className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[10px]">
+                Các ngôn ngữ trong tài khoản của bạn ({userLanguages.length})
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {userLanguages.map((profile) => {
+                  const isActive = profile.languageId === activeLanguage.id;
+                  return (
+                    <div
+                      key={profile.languageId}
+                      className={`p-3.5 rounded-2xl border transition relative flex flex-col justify-between space-y-3 ${
+                        isActive
+                          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 ring-1 ring-indigo-500 shadow-sm'
+                          : 'border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{profile.flag}</span>
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
+                              {profile.nativeName}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{profile.name}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {profile.currentLevel}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                        <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                          <Flame className="w-3 h-3 fill-amber-500" />
+                          <span>{profile.streakDays} ngày</span>
+                        </div>
+                        <span className="text-slate-400 font-medium">
+                          {profile.wordsLearned} từ vựng
+                        </span>
+                      </div>
+
+                      {isActive ? (
+                        <div className="w-full text-center py-1 rounded-xl bg-indigo-600 text-white font-bold text-[11px]">
+                          ✓ Không gian đang mở
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => switchLanguage(profile.languageId)}
+                          className="w-full text-center py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/80 hover:text-indigo-600 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition"
+                        >
+                          Chuyển sang học
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Pronunciation & Script Preferences for Active Language */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80 space-y-4 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
+                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Volume2 className="w-4 h-4 text-indigo-500" />
+                  Cấu hình phát âm bản ngữ: {activeLanguage.flag} {activeLanguage.name} ({activeLanguage.speechLocale})
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Native TTS Engine</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Voice Gender */}
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-600 dark:text-slate-400 text-[11px]">Giọng phát âm</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoiceGender('female');
+                        localStorage.setItem('vocabflow_voice_gender', 'female');
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-bold transition ${
+                        voiceGender === 'female'
+                          ? 'border-indigo-500 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                      }`}
+                    >
+                      Nữ (Female)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoiceGender('male');
+                        localStorage.setItem('vocabflow_voice_gender', 'male');
+                      }}
+                      className={`p-2 rounded-xl border text-xs font-bold transition ${
+                        voiceGender === 'male'
+                          ? 'border-indigo-500 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                      }`}
+                    >
+                      Nam (Male)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Speed */}
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-600 dark:text-slate-400 text-[11px]">Tốc độ phát âm</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[0.75, 1.0, 1.25].map((spd) => (
+                      <button
+                        key={spd}
+                        type="button"
+                        onClick={() => setVoiceSpeed(spd)}
+                        className={`p-2 rounded-xl border text-xs font-bold transition ${
+                          voiceSpeed === spd
+                            ? 'border-indigo-500 bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                            : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                        }`}
+                      >
+                        {spd}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Script & Tone Aids */}
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-slate-600 dark:text-slate-400 text-[11px]">Hỗ trợ phiên âm / Romaji</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !showScriptAids;
+                      setShowScriptAids(next);
+                      localStorage.setItem('vocabflow_show_script_aids', String(next));
+                    }}
+                    className={`w-full p-2 rounded-xl border text-xs font-bold transition flex items-center justify-between ${
+                      showScriptAids
+                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-500'
+                    }`}
+                  >
+                    <span>{showScriptAids ? '✓ Hiển thị Pinyin / Romaji' : '✕ Chỉ xem ký tự gốc'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Isolated Language Reset Danger Card */}
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="space-y-1">
+                <p className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Đặt lại tiến trình tiếng {activeLanguage.nativeName} ({activeLanguage.name})
+                </p>
+                <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
+                  Chỉ đặt lại từ vựng, thống kê và streak của tiếng {activeLanguage.name}. Các ngôn ngữ khác và tài khoản không bị ảnh hưởng.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowResetLanguageModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shrink-0 transition"
+              >
+                Đặt lại {activeLanguage.name}
+              </button>
+            </div>
+          </GlassCard>
+        )}
         {/* ========================================================================= */}
         {/* SECTION 1: GIAO DIỆN & HIỂN THỊ                                           */}
         {/* ========================================================================= */}
@@ -963,6 +1188,17 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </ModalPortal>
+
+      {/* Multi-Language Modals */}
+      <AddLanguageModal
+        isOpen={showAddLanguageModal}
+        onClose={() => setShowAddLanguageModal(false)}
+      />
+
+      <ResetLanguageModal
+        isOpen={showResetLanguageModal}
+        onClose={() => setShowResetLanguageModal(false)}
+      />
     </div>
   );
 };

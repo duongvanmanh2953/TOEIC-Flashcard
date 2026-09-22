@@ -4,6 +4,8 @@ import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
 import { usePageSEO } from '../hooks/usePageSEO';
+import { useLearningContext } from '../contexts/LearningContext';
+import { audioEngine } from '../lib/audioEngine';
 import {
   idbSaveWords,
   idbGetWords,
@@ -75,6 +77,7 @@ export const MyWordBankPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isGuest, promptLogin } = useAuth();
   const { locale } = useTranslation();
+  const { activeLanguage } = useLearningContext();
 
   // Navigation tab: 'decks' (Kho của tôi) vs 'all_words' (Tất cả từ)
   const [activeTab, setActiveTab] = useState<'decks' | 'all_words'>('decks');
@@ -251,12 +254,12 @@ export const MyWordBankPage: React.FC = () => {
 
     const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
 
-    // 1. Instant Cache-First Load from IndexedDB scoped strictly to current user
+    // 1. Instant Cache-First Load from IndexedDB scoped strictly to current user and active language
     let cachedDecks: LocalDeck[] = [];
     try {
       const [idbDecks, cachedWords] = await Promise.all([
-        idbGetLocalDecks(currentUserId),
-        idbGetWords(currentUserId),
+        idbGetLocalDecks(currentUserId, activeLanguage.id),
+        idbGetWords(currentUserId, activeLanguage.id),
       ]);
 
       cachedDecks = idbDecks || [];
@@ -275,12 +278,12 @@ export const MyWordBankPage: React.FC = () => {
       console.warn('IDB read warning:', err);
     }
 
-    // 2. Background Revalidation from Cloud API
+    // 2. Background Revalidation from Cloud API scoped to active language
     if (user && !isGuest) {
       try {
         const [cloudDecksRes, cloudWordsRes] = await Promise.allSettled([
-          api.get('/community/my-decks'),
-          api.get('/community/my-words'),
+          api.get('/community/my-decks', { params: { languageId: activeLanguage.id } }),
+          api.get('/community/my-words', { params: { languageId: activeLanguage.id } }),
         ]);
 
         let updatedDecks: LocalDeck[] = [];
@@ -288,6 +291,7 @@ export const MyWordBankPage: React.FC = () => {
           const apiDecks: LocalDeck[] = cloudDecksRes.value.map((d: any) => ({
             id: d.id,
             userId: currentUserId,
+            languageId: activeLanguage.id,
             title: d.title,
             description: d.description,
             category: d.category,
@@ -305,7 +309,7 @@ export const MyWordBankPage: React.FC = () => {
             author: d.author,
           }));
 
-          // Merge local-only decks strictly belonging to this user
+          // Merge local-only decks strictly belonging to this user and language
           const localOnly = cachedDecks.filter(
             (ld) => ld.userId === currentUserId && !ld.isSyncedToCloud && !apiDecks.some((cd) => cd.id === ld.id)
           );
@@ -323,6 +327,7 @@ export const MyWordBankPage: React.FC = () => {
             return {
               id: item.id,
               userId: currentUserId,
+              languageId: activeLanguage.id,
               status: item.status || 'NEW',
               isFavorite: Boolean(item.isFavorite),
               word: item.vocabulary?.word || item.word,
@@ -336,7 +341,10 @@ export const MyWordBankPage: React.FC = () => {
               topic: rawTopic, // TRUE TOPIC - NEVER DECK NAME
               deckName: item.deckName || undefined,
               deckId: item.deckId || undefined,
-              vocabulary: item.vocabulary,
+              vocabulary: {
+                ...item.vocabulary,
+                languageId: activeLanguage.id,
+              },
               createdAt: new Date(item.createdAt || Date.now()).getTime(),
             };
           });
@@ -370,32 +378,24 @@ export const MyWordBankPage: React.FC = () => {
   };
 
   useEffect(() => {
-    // Zero stale leakage when switching users
+    // Zero stale leakage when switching users or learning language
     setDecks([]);
     setWords([]);
     setSelectedDeck(null);
     setSelectedDeckIds([]);
     setUnlockedPersonalDeckIds({});
     loadData();
-  }, [user?.id]);
+  }, [user?.id, activeLanguage.id]);
 
   // Synchronize Favorite IDs with localStorage
   useEffect(() => {
     localStorage.setItem('vocabflow_favorites', JSON.stringify(favoriteIds));
   }, [favoriteIds]);
 
-
-
-  // Instant Native Browser Speech (0ms latency, zero slow-down)
+  // Multi-Language Native Browser Speech
   const handlePlayAudio = (text: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 1.0;
-      window.speechSynthesis.speak(utterance);
-    }
+    audioEngine.speak(text, activeLanguage.speechLocale);
   };
 
   // 2-Way Favorite Toggle (♡ <-> ♥)
@@ -484,6 +484,7 @@ export const MyWordBankPage: React.FC = () => {
     const newDeck: LocalDeck = {
       id: newDeckId,
       userId: currentUserId,
+      languageId: activeLanguage.id,
       title: deckTitleInput.trim(),
       description: deckDescInput.trim() || undefined,
       category: deckCatInput,
@@ -511,6 +512,7 @@ export const MyWordBankPage: React.FC = () => {
           description: newDeck.description,
           category: newDeck.category,
           cefrLevel: newDeck.cefrLevel,
+          languageId: activeLanguage.id,
           isPublic: true,
           password: newDeck.password,
           words: [],
@@ -518,7 +520,7 @@ export const MyWordBankPage: React.FC = () => {
         if (res?.id) {
           newDeck.id = res.id;
           newDeck.isSyncedToCloud = true;
-          await idbSaveLocalDeck(newDeck);
+          await idbSaveLocalDeck(newDeck, currentUserId);
           setDecks((prev) => prev.map((d) => (d.id === newDeckId ? newDeck : d)));
         }
       } catch (err) {
@@ -1006,9 +1008,12 @@ export const MyWordBankPage: React.FC = () => {
     const targetDeckName = wordFormTargetDeck || selectedDeck?.title || 'General';
     const targetDeckObj = decks.find((d) => d.title === targetDeckName) || selectedDeck;
 
+    const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
     const id = `word_${cleanW.replace(/[^a-z0-9]/g, '_')}_${Date.now()}`;
     const newWordItem = {
       id,
+      userId: currentUserId,
+      languageId: activeLanguage.id,
       word: cleanW,
       phonetic: wordFormPhonetic.trim(),
       partOfSpeech: wordFormPos,
@@ -1023,6 +1028,7 @@ export const MyWordBankPage: React.FC = () => {
       isFavorite: false,
       vocabulary: {
         id,
+        languageId: activeLanguage.id,
         word: cleanW,
         phonetic: wordFormPhonetic.trim(),
         partOfSpeech: wordFormPos,
@@ -1037,7 +1043,7 @@ export const MyWordBankPage: React.FC = () => {
     };
 
     // 1. Save locally to IndexedDB
-    await idbSaveWords([newWordItem]);
+    await idbSaveWords([newWordItem], currentUserId);
     setWords((prev) => [newWordItem, ...prev]);
 
     // 2. Sync to Cloud API if authenticated
@@ -1052,6 +1058,7 @@ export const MyWordBankPage: React.FC = () => {
           exampleTranslation: newWordItem.exampleTranslation,
           topic: realTopic,
           cefrLevel: wordFormCefr,
+          languageId: activeLanguage.id,
         });
       } catch (err) {
         console.warn('Cloud word quick add notice:', err);
@@ -1232,12 +1239,16 @@ export const MyWordBankPage: React.FC = () => {
         ? importTargetDeckName.trim() || 'Custom Word Deck'
         : selectedDeck?.title || importTargetDeckName || decks[0]?.title || 'General';
 
+    const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
+
     // Check or create deck for imported words
     let deckObj = decks.find((d) => d.title === targetDeckTitle);
     if (!deckObj) {
       const newDeckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
       deckObj = {
         id: newDeckId,
+        userId: currentUserId,
+        languageId: activeLanguage.id,
         title: targetDeckTitle,
         category: 'Business English',
         cefrLevel: 'B1',
@@ -1247,7 +1258,7 @@ export const MyWordBankPage: React.FC = () => {
         updatedAt: Date.now(),
         isSyncedToCloud: false,
       };
-      await idbSaveLocalDeck(deckObj);
+      await idbSaveLocalDeck(deckObj, currentUserId);
       setDecks((prev) => [deckObj!, ...prev]);
     }
 
@@ -1261,6 +1272,8 @@ export const MyWordBankPage: React.FC = () => {
 
         return {
           id,
+          userId: currentUserId,
+          languageId: activeLanguage.id,
           word: cleanW,
           phonetic: item.phonetic || '',
           partOfSpeech: item.partOfSpeech || 'noun',
@@ -1275,6 +1288,7 @@ export const MyWordBankPage: React.FC = () => {
           isFavorite: false,
           vocabulary: {
             id,
+            languageId: activeLanguage.id,
             word: cleanW,
             phonetic: item.phonetic || '',
             partOfSpeech: item.partOfSpeech || 'noun',
@@ -1291,7 +1305,7 @@ export const MyWordBankPage: React.FC = () => {
 
       // 1. Immediately save to IndexedDB with chunking and progress
       setImportProgressMsg(`Đang lưu vào bộ nhớ máy (IndexedDB): 0/${itemsToSave.length} từ...`);
-      await idbSaveWords(itemsToSave, (saved, total) => {
+      await idbSaveWords(itemsToSave, currentUserId, (saved, total) => {
         const pct = Math.round((saved / total) * 100);
         setImportProgressMsg(`Đang lưu vào bộ nhớ máy (IndexedDB): ${saved}/${total} từ (${pct}%)...`);
       });
@@ -1424,6 +1438,10 @@ export const MyWordBankPage: React.FC = () => {
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider border border-indigo-500/20">
                   <Bookmark className="w-3.5 h-3.5" />
                   <span>Personal Word Bank</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
+                  <span>{activeLanguage.flag}</span>
+                  <span>{activeLanguage.name}</span>
                 </div>
                 <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
                   <HardDrive className="w-3 h-3 text-indigo-500" />
