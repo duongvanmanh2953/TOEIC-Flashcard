@@ -7,12 +7,12 @@ import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { ToggleSwitch } from '../components/common/ToggleSwitch';
 import { LanguageSelector } from '../components/language/LanguageSelector';
 import { LanguageBadge } from '../components/language/LanguageBadge';
-import { CountryFlag } from '../components/language/CountryFlag';
-import { idbSaveLocalDeck, idbGetLocalDecks, idbSaveWords } from '../lib/idb';
-import { useScrollLoad } from '../hooks/useScrollLoad';
+import { idbSaveLocalDeck, idbGetLocalDecks, idbGetWords, idbSaveWords } from '../lib/idb';
 import * as XLSX from 'xlsx';
+import { useScrollLoad } from '../hooks/useScrollLoad';
 import {
   Users,
   Copy,
@@ -99,6 +99,12 @@ export const CommunityDecksPage: React.FC = () => {
   const [loadingMyWords, setLoadingMyWords] = useState(false);
   const [selectedMyWordIds, setSelectedMyWordIds] = useState<string[]>([]);
   const [myWordsSearch, setMyWordsSearch] = useState('');
+
+  // Personal decks available for sharing/contributing
+  const [personalDecks, setPersonalDecks] = useState<any[]>([]);
+  const [selectedDeckToShareId, setSelectedDeckToShareId] = useState<string>('');
+  const [deckWordsToShare, setDeckWordsToShare] = useState<any[]>([]);
+  const [loadingPersonalDecks, setLoadingPersonalDecks] = useState(false);
 
   // Manual words text
   const [wordsText, setWordsText] = useState('');
@@ -256,14 +262,80 @@ export const CommunityDecksPage: React.FC = () => {
     }
   };
 
-  const handleOpenCreateModal = () => {
+  const selectPersonalDeck = async (deckId: string, decksList = personalDecks) => {
+    setSelectedDeckToShareId(deckId);
+    const deck = decksList.find((d) => d.id === deckId);
+    if (!deck) return;
+
+    setTitle(deck.title || '');
+    setDescription(deck.description || '');
+    setCategory(deck.category || 'Business English');
+    setCefrLevel(deck.cefrLevel || 'B1');
+    setCreateDeckLang(deck.languageId || activeLanguage.id);
+    setEnablePassword(Boolean(deck.isProtected || deck.hasPassword));
+    setDeckPassword(deck.password || '');
+
+    // Gather words for this deck
+    let foundWords: any[] = [];
+    if (Array.isArray(deck.words) && deck.words.length > 0) {
+      foundWords = deck.words;
+    } else {
+      try {
+        const idbWords = await idbGetWords(user?.id);
+        foundWords = idbWords.filter(
+          (w: any) => w.deckId === deck.id || w.deckName === deck.title
+        );
+      } catch (err) {
+        console.warn('IDB words query error', err);
+      }
+    }
+
+    if (foundWords.length === 0 && deck.id && !deck.id.startsWith('local_')) {
+      try {
+        const res: any = await api.get(`/community/decks/${deck.id}`);
+        if (Array.isArray(res?.data?.words || res?.words)) {
+          foundWords = res?.data?.words || res?.words;
+        }
+      } catch {}
+    }
+
+    setDeckWordsToShare(foundWords);
+  };
+
+  const handleOpenCreateModal = async () => {
     if (isGuest || !user) {
       promptLogin('Đăng nhập để tạo và chia sẻ bộ từ vựng cộng đồng');
       return;
     }
-    setCreateDeckLang(activeLanguage.id);
     setShowCreateModal(true);
-    fetchMyWords();
+    setLoadingPersonalDecks(true);
+    try {
+      const [remoteRes, localDecks]: any = await Promise.all([
+        api.get('/community/my-decks').catch(() => ({ data: [] })),
+        idbGetLocalDecks(user.id).catch(() => []),
+      ]);
+      const remoteList = Array.isArray(remoteRes?.data)
+        ? remoteRes.data
+        : Array.isArray(remoteRes)
+        ? remoteRes
+        : [];
+      const map = new Map<string, any>();
+      [...localDecks, ...remoteList].forEach((d: any) => {
+        if (d && d.id && !map.has(d.id)) {
+          map.set(d.id, d);
+        }
+      });
+      const allDecks = Array.from(map.values());
+      setPersonalDecks(allDecks);
+
+      if (allDecks.length > 0) {
+        await selectPersonalDeck(allDecks[0].id, allDecks);
+      }
+    } catch (err) {
+      console.error('Failed to load personal decks for modal', err);
+    } finally {
+      setLoadingPersonalDecks(false);
+    }
   };
 
   const handleToggleWord = (wordId: string) => {
@@ -413,40 +485,45 @@ export const CommunityDecksPage: React.FC = () => {
 
   const handleCreateDeck = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim()) {
+      alert('Vui lòng nhập tên bộ từ.');
+      return;
+    }
+
     setCreating(true);
 
-    // 1. Gather words selected from personal word bank
-    const selectedBankWords = myWords
-      .filter((item) => selectedMyWordIds.includes(item.id))
-      .map((item) => {
-        const v = item.vocabulary;
+    // 1. Gather words from selected personal deck
+    let finalWords = deckWordsToShare
+      .map((w: any) => {
+        const v = w.vocabulary || w;
         return {
-          word: v?.word || 'word',
-          phonetic: v?.phonetic || '',
-          meaning: v?.shortDefinition || v?.definition || v?.word,
-          example: v?.examples?.[0]?.sentence || '',
-        };
-      });
-
-    // 2. Gather words typed manually
-    const manualLines = wordsText.split('\n').filter((l) => l.trim().length > 0);
-    const manualWords = manualLines
-      .map((line) => {
-        const parts = line.split('|').map((p) => p.trim());
-        return {
-          word: parts[0] || '',
-          phonetic: parts[1] || '',
-          meaning: parts[2] || parts[0],
-          example: parts[3] || '',
+          word: v.word || w.word,
+          phonetic: v.phonetic || w.phonetic || '',
+          meaning: v.shortDefinition || v.definition || v.meaning || w.meaning || '',
+          example: v.examples?.[0]?.sentence || v.example || w.example || '',
+          exampleTranslation: v.examples?.[0]?.translation || v.exampleTranslation || w.exampleTranslation || '',
         };
       })
-      .filter((w) => w.word.length > 0);
+      .filter((w) => Boolean(w.word));
 
-    // Combine both sources
-    const finalWords = [...selectedBankWords, ...manualWords];
+    // 2. Fallback to manually typed words
+    if (finalWords.length === 0 && wordsText.trim()) {
+      const manualLines = wordsText.split('\n').filter((l) => l.trim().length > 0);
+      finalWords = manualLines
+        .map((line) => {
+          const parts = line.split('|').map((p) => p.trim());
+          return {
+            word: parts[0] || '',
+            phonetic: parts[1] || '',
+            meaning: parts[2] || parts[0],
+            example: parts[3] || '',
+          };
+        })
+        .filter((w) => w.word.length > 0);
+    }
 
     if (finalWords.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 từ từ kho cá nhân hoặc nhập thủ công để chia sẻ.');
+      alert('Kho từ này chưa có từ vựng nào để đóng góp. Vui lòng thêm từ vào kho trước hoặc nhập thủ công.');
       setCreating(false);
       return;
     }
@@ -454,8 +531,8 @@ export const CommunityDecksPage: React.FC = () => {
     try {
       const targetLangId = createDeckLang || activeLanguage.id;
       const res: any = await api.post('/community/decks', {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         category,
         cefrLevel,
         languageId: targetLangId,
@@ -465,45 +542,19 @@ export const CommunityDecksPage: React.FC = () => {
       });
 
       if (res?.success || res?.id) {
-        // Save copy to local IndexedDB
-        await idbSaveLocalDeck({
-          id: res?.data?.id || res?.id || `local_${Date.now()}`,
-          userId: user?.id,
-          languageId: targetLangId,
-          title,
-          description,
-          category,
-          cefrLevel,
-          words: finalWords,
-          hasPassword: enablePassword,
-          isProtected: enablePassword,
-          status: user?.role === 'ADMIN' ? 'APPROVED' : 'PENDING',
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          isSyncedToCloud: false,
-        }, user?.id);
-
         setShowCreateModal(false);
-        setTitle('');
-        setDescription('');
-        setSelectedMyWordIds([]);
-        setWordsText('');
-        setDeckPassword('');
-        setEnablePassword(false);
+        setCloneSuccess(`Đã gửi đóng góp bộ từ "${title}" lên cộng đồng thành công!`);
         fetchDecks();
         fetchMyDecks();
-        setMainTab('my-decks');
-        setCloneSuccess(
-          `Kho từ "${title}" (${finalWords.length} từ) đã được tạo thành công và đang chờ Admin duyệt!`
-        );
-        setTimeout(() => setCloneSuccess(null), 6000);
+        setTimeout(() => setCloneSuccess(null), 4000);
       }
     } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || 'Lỗi khi tạo bộ từ.');
+      alert('Không thể đóng góp bộ từ: ' + (err?.response?.data?.message || err?.message || 'Đã có lỗi xảy ra.'));
     } finally {
       setCreating(false);
     }
   };
+
 
   const filteredMyWords = myWords.filter((item) => {
     const w = (item.vocabulary?.word || '').toLowerCase();
@@ -581,26 +632,10 @@ export const CommunityDecksPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* VIP Cloud Sync Button */}
-          <button
-            onClick={handleSyncCloud}
-            disabled={syncingCloud}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-bold text-xs shadow-md hover:opacity-95 transition"
-          >
-            {syncingCloud ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            ) : isVip ? (
-              <CloudUpload className="w-3.5 h-3.5" />
-            ) : (
-              <Crown className="w-3.5 h-3.5 text-amber-200" />
-            )}
-            <span>{syncingCloud ? 'Đang đồng bộ...' : isVip ? 'Đồng bộ Cloud' : 'Đồng bộ Cloud (VIP)'}</span>
-          </button>
-
           {/* Create Deck Button */}
           <button
             onClick={handleOpenCreateModal}
-            className="btn-glass-primary text-xs !py-2.5 gap-2 shadow-md"
+            className="btn-glass-primary text-xs !py-2.5 gap-2 shadow-md cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tạo & Đóng góp bộ từ</span>
@@ -624,12 +659,12 @@ export const CommunityDecksPage: React.FC = () => {
       )}
 
       {/* Tabs & Search Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
         {/* Main Tab Switcher */}
         <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 self-start">
           <button
             onClick={() => setMainTab('community')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
               mainTab === 'community'
                 ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
@@ -651,7 +686,7 @@ export const CommunityDecksPage: React.FC = () => {
               setMainTab('my-decks');
               fetchMyDecks();
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
               mainTab === 'my-decks'
                 ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
@@ -667,50 +702,38 @@ export const CommunityDecksPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm bộ từ theo chủ đề, CEFR..."
-            className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
-          />
-        </div>
-      </div>
+        {/* Filter controls: Language Select & Search Bar */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full lg:w-auto">
+          <div className="w-full sm:w-56 shrink-0">
+            <CustomDropdown
+              value={selectedLanguageFilter}
+              onChange={(val) => setSelectedLanguageFilter(val)}
+              options={[
+                { value: 'ALL', label: '🌐 Tất cả ngôn ngữ' },
+                ...SUPPORTED_LANGUAGES.map((lang) => ({
+                  value: lang.id,
+                  label: `${lang.nativeName} (${lang.name})`,
+                  badge: lang.code.toUpperCase(),
+                })),
+              ]}
+              searchable={true}
+              searchPlaceholder="Tìm kiếm ngôn ngữ..."
+              size="sm"
+              className="w-full"
+            />
+          </div>
 
-      {/* Multi-Language Filter Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-        <span className="text-[11px] font-bold text-slate-400 shrink-0 uppercase tracking-wider flex items-center gap-1">
-          <Globe className="w-3.5 h-3.5 text-indigo-500" />
-          Ngôn ngữ:
-        </span>
-        <button
-          onClick={() => setSelectedLanguageFilter('ALL')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 border ${
-            selectedLanguageFilter === 'ALL'
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-              : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700'
-          }`}
-        >
-          <span>🌐</span>
-          <span>Tất cả ngôn ngữ</span>
-        </button>
-        {SUPPORTED_LANGUAGES.map((lang) => (
-          <button
-            key={lang.id}
-            onClick={() => setSelectedLanguageFilter(lang.id)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 border ${
-              selectedLanguageFilter === lang.id
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="xs" />
-            <span>{lang.nativeName}</span>
-          </button>
-        ))}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm bộ từ theo chủ đề, CEFR..."
+              className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
+            />
+          </div>
+        </div>
       </div>
 
       {/* TAB 1: COMMUNITY DECKS */}
@@ -1208,316 +1231,234 @@ export const CommunityDecksPage: React.FC = () => {
       {/* Create & Share Deck Modal — ModalPortal to document.body */}
       <ModalPortal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
         <div
-          className="m-auto relative max-w-4xl w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/90 p-8 sm:p-10 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+          className="m-auto relative max-w-2xl w-full rounded-3xl bg-white/95 dark:bg-slate-800 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-6 sm:p-8 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto text-left"
           onClick={(e) => e.stopPropagation()}
         >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                  Tạo & Đóng Góp Bộ Từ Vựng Cộng Đồng
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Chia sẻ các từ vựng từ kho cá nhân của bạn hoặc nhập thêm từ mới để chia sẻ cùng cộng đồng học viên TOEIC.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
-                aria-label="Đóng cửa sổ"
-              >
-                ✕
-              </button>
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                Đóng Góp Bộ Từ Vựng Lên Cộng Đồng
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Chọn kho từ vựng cá nhân của bạn để chia sẻ cho cộng đồng cùng học tập và ôn luyện.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(false)}
+              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              aria-label="Đóng cửa sổ"
+            >
+              ✕
+            </button>
+          </div>
+
+          <form onSubmit={handleCreateDeck} className="space-y-4 text-xs sm:text-sm">
+            {/* 1. CHOOSE FROM PERSONAL DECKS */}
+            <div>
+              <label className="block text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1.5">
+                Chọn kho từ cá nhân của bạn để đóng góp *
+              </label>
+
+              {loadingPersonalDecks ? (
+                <div className="p-3 text-center text-xs text-slate-400 rounded-xl bg-slate-50 dark:bg-slate-800 animate-pulse">
+                  Đang tải danh sách kho từ cá nhân...
+                </div>
+              ) : personalDecks.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs space-y-2">
+                  <p className="font-semibold">Bạn chưa có kho từ cá nhân nào trong Kho Từ Vựng.</p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                    Vui lòng vào trang <strong>Kho từ của tôi</strong> tạo kho và thêm từ vựng trước khi đóng góp lên cộng đồng.
+                  </p>
+                </div>
+              ) : (
+                <CustomDropdown
+                  value={selectedDeckToShareId}
+                  onChange={(val) => selectPersonalDeck(val)}
+                  options={personalDecks.map((d) => ({
+                    value: d.id,
+                    label: `${d.title} (${d.wordCount || d.words?.length || 0} từ) — ${d.category || 'General'}`,
+                    badge: d.category || 'General',
+                  }))}
+                  searchable={true}
+                  searchPlaceholder="Tìm kiếm kho từ của bạn..."
+                  placeholder="-- Chọn kho từ cần đóng góp --"
+                  size="md"
+                  className="w-full"
+                />
+              )}
             </div>
 
-            <form onSubmit={handleCreateDeck} className="space-y-5 text-xs sm:text-sm">
+            {/* DECK SUMMARY & DETAILS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
-                  Tên bộ từ *
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Tên bộ từ hiển thị trên cộng đồng *
                 </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ví dụ: Collocations Dành Cho Viết Email Công Sở"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold text-sm sm:text-base focus:outline-none focus:border-indigo-500"
+                  placeholder="Ví dụ: TOEIC 600 Essential Words..."
+                  className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold text-xs sm:text-sm focus:outline-none focus:border-indigo-500"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <LanguageSelector
-                    label="NGÔN NGỮ BỘ TỪ"
-                    value={createDeckLang}
-                    onChange={(langId) => setCreateDeckLang(langId)}
-                    availableOnly={true}
-                    size="sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
-                    Chủ đề
-                  </label>
-                  <CustomDropdown
-                    value={category}
-                    onChange={(val) => setCategory(val)}
-                    options={[
-                      { value: 'Business English', label: 'Business (Kinh doanh)' },
-                      { value: 'Technology', label: 'Technology & AI (Công nghệ)' },
-                      { value: 'IELTS Prep', label: 'IELTS Academic (Luyện thi)' },
-                      { value: 'Daily Life', label: 'Daily Conversation (Đời sống)' },
-                      { value: 'Travel & Hospitality', label: 'Travel & Hospitality (Du lịch)' },
-                    ]}
-                    size="sm"
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
-                    Khung CEFR
-                  </label>
-                  <CustomDropdown
-                    value={cefrLevel}
-                    onChange={(val) => setCefrLevel(val)}
-                    options={[
-                      { value: 'ALL', label: 'ALL — Tất cả trình độ', badge: 'ALL' },
-                      { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
-                      { value: 'A2', label: 'A2 — Pre-intermediate', badge: 'A2' },
-                      { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
-                      { value: 'B2', label: 'B2 — Upper Intermediate', badge: 'B2' },
-                      { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
-                      { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
-                    ]}
-                    size="sm"
-                    className="w-full"
-                  />
-                </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400">
-                    Lý do đóng góp & Mô tả mục tiêu bộ từ vựng
-                  </label>
-                  <span className="text-[11px] text-slate-400">
-                    (Ít nhất 4-5 dòng để mô tả lộ trình)
-                  </span>
-                </div>
-                <textarea
-                  rows={5}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={"Nhập lý do tạo kho và mục tiêu học tập (ví dụ:\n• Lý do đóng góp: Bộ từ thực chiến chắt lọc sau khi thi đạt 850 TOEIC.\n• Đối tượng phù hợp: Học viên đang ở band 500-650 muốn bứt phá từ vựng Part 5, 6, 7.\n• Lộ trình khuyến nghị: Học 15 từ mỗi ngày kết hợp làm mini test...)"}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs sm:text-sm leading-relaxed resize-y min-h-[130px] placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Chủ đề / Danh mục
+                </label>
+                <CustomDropdown
+                  value={category}
+                  onChange={(val) => setCategory(val)}
+                  options={[
+                    { value: 'Business English', label: 'Business English (Kinh doanh)' },
+                    { value: 'Technology', label: 'Technology & AI (Công nghệ)' },
+                    { value: 'IELTS Prep', label: 'IELTS Academic (Luyện thi)' },
+                    { value: 'Daily Life', label: 'Daily Conversation (Đời sống)' },
+                    { value: 'Travel & Hospitality', label: 'Travel & Hospitality (Du lịch)' },
+                    { value: 'General', label: 'General (Tổng hợp)' },
+                  ]}
+                  searchable={true}
+                  size="md"
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <LanguageSelector
+                  label="Ngôn ngữ bộ từ"
+                  value={createDeckLang}
+                  onChange={(langId) => setCreateDeckLang(langId)}
+                  availableOnly={true}
+                  size="md"
                 />
               </div>
 
-              {/* Password Protection Option */}
-              <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/50 space-y-2.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={enablePassword}
-                    onChange={(e) => setEnablePassword(e.target.checked)}
-                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                  />
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-amber-500" />
-                    Đặt mật khẩu bảo vệ kho từ (Tùy chọn)
-                  </span>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Khung trình độ (CEFR)
                 </label>
-
-                {enablePassword && (
-                  <div className="space-y-1.5 pl-6 pt-1 animate-fade-in">
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={deckPassword}
-                        onChange={(e) => setDeckPassword(e.target.value)}
-                        placeholder="Nhập mã bảo vệ (ví dụ: 123456 hoặc SecretPass)..."
-                        className="w-full text-xs px-3.5 py-2 pr-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                      >
-                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5 leading-relaxed">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                      <span>
-                        Mật khẩu được mã hóa an toàn (bcrypt). Admin duyệt chất lượng từ vựng nhưng không xem được mật khẩu của bạn.
-                      </span>
-                    </p>
-                  </div>
-                )}
+                <CustomDropdown
+                  value={cefrLevel}
+                  onChange={(val) => setCefrLevel(val)}
+                  options={[
+                    { value: 'ALL', label: 'ALL — Tất cả trình độ', badge: 'ALL' },
+                    { value: 'A1', label: 'A1 — Beginner (Căn bản)', badge: 'A1' },
+                    { value: 'A2', label: 'A2 — Elementary (Sơ cấp)', badge: 'A2' },
+                    { value: 'B1', label: 'B1 — Intermediate (Trung cấp)', badge: 'B1' },
+                    { value: 'B2', label: 'B2 — Upper-Intermediate', badge: 'B2' },
+                    { value: 'C1', label: 'C1 — Advanced (Cao cấp)', badge: 'C1' },
+                    { value: 'C2', label: 'C2 — Mastery (Thành thạo)', badge: 'C2' },
+                  ]}
+                  size="md"
+                  className="w-full"
+                />
               </div>
+            </div>
 
-              {/* VOCABULARY SELECTION METHOD TABS */}
-              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
-                    Nguồn từ vựng đưa vào bộ đề:
-                  </span>
-                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setCreateDeckTab('my-words')}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                        createDeckTab === 'my-words'
-                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      <Bookmark className="w-3.5 h-3.5" />
-                      <span>Chọn từ kho cá nhân ({selectedMyWordIds.length})</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCreateDeckTab('manual')}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                        createDeckTab === 'manual'
-                          ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Nhập thêm thủ công</span>
-                    </button>
-                  </div>
-                </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Lý do đóng góp & Mô tả mục tiêu học tập
+              </label>
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Mô tả lý do chia sẻ kho từ và đối tượng học viên phù hợp..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs leading-relaxed resize-y placeholder:text-slate-400"
+              />
+            </div>
 
-                {/* TAB 1: SELECT FROM MY PERSONAL WORDS */}
-                {createDeckTab === 'my-words' && (
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="relative flex-1">
-                        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="text"
-                          value={myWordsSearch}
-                          onChange={(e) => setMyWordsSearch(e.target.value)}
-                          placeholder="Lọc từ trong kho cá nhân của bạn..."
-                          className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleSelectAllMyWords}
-                        className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-xs font-semibold text-slate-700 dark:text-slate-300 transition shrink-0"
-                      >
-                        {selectedMyWordIds.length === filteredMyWords.length
-                          ? 'Bỏ chọn tất cả'
-                          : `Chọn tất cả (${filteredMyWords.length})`}
-                      </button>
-                    </div>
-
-                    {loadingMyWords ? (
-                      <div className="py-6 text-center text-xs text-slate-400">
-                        Đang tải kho từ vựng cá nhân...
-                      </div>
-                    ) : filteredMyWords.length === 0 ? (
-                      <div className="py-6 text-center text-xs text-slate-400">
-                        Chưa có từ vựng nào trong kho cá nhân. Bạn có thể chuyển sang tab "Nhập thêm thủ công" bên cạnh.
-                      </div>
-                    ) : (
-                      <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
-                        {visibleFilteredMyWords.map((item) => {
-                          const isChecked = selectedMyWordIds.includes(item.id);
-                          const v = item.vocabulary;
-                          return (
-                            <div
-                              key={item.id}
-                              onClick={() => handleToggleWord(item.id)}
-                              className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition text-xs cv-auto-row ${
-                                isChecked
-                                  ? 'bg-indigo-50/80 dark:bg-indigo-950/50 border-indigo-500/40 text-indigo-900 dark:text-indigo-200'
-                                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700/60 hover:border-slate-300'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                {isChecked ? (
-                                  <CheckSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                                ) : (
-                                  <Square className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
-                                )}
-                                <span className="font-bold">{v?.word}</span>
-                                {v?.phonetic && (
-                                  <span className="tabular-nums text-[11px] text-slate-400">{v.phonetic}</span>
-                                )}
-                                <span className="text-slate-500 dark:text-slate-400 truncate">
-                                  {v?.shortDefinition || v?.definition}
-                                </span>
-                              </div>
-                              <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 shrink-0">
-                                {v?.cefrLevel || 'B1'}
-                              </span>
-                            </div>
-                          );
-                        })}
-
-                        {/* Infinite Scroll Sentinel for My Words selection */}
-                        <div ref={filteredMyWordsSentinelRef} className="py-2 text-center">
-                          {isLoadingMoreFilteredMyWords ? (
-                            <span className="text-[11px] text-indigo-500 animate-pulse font-medium">Đang tải thêm từ...</span>
-                          ) : hasMoreFilteredMyWords ? (
-                            <span className="text-[11px] text-slate-400">Cuộn để xem tiếp...</span>
-                          ) : null}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* TAB 2: MANUAL TEXT INPUT */}
-                {createDeckTab === 'manual' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
-                      Nhập danh sách từ bổ sung (Mỗi dòng 1 từ: Từ | Phiên âm | Nghĩa | Ví dụ)
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={wordsText}
-                      onChange={(e) => setWordsText(e.target.value)}
-                      placeholder="synergy | /ˈsɪnədʒi/ | sự cộng hưởng, hiệp đồng | The team synergy was great."
-                      className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 tabular-nums text-xs text-slate-900 dark:text-white"
-                    ></textarea>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-xs text-slate-500">
-                  Tổng từ sẽ chia sẻ:{' '}
-                  <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold">
-                    {selectedMyWordIds.length +
-                      wordsText.split('\n').filter((l) => l.trim().length > 0).length}{' '}
-                    từ
-                  </strong>
+            {/* WORDS PREVIEW CARD */}
+            <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-slate-800/60 border border-indigo-200/50 dark:border-slate-700/60 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  Số lượng từ vựng trong kho sẽ chia sẻ:
                 </span>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="btn-glass-secondary text-xs !py-2 !px-4"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creating}
-                    className="btn-glass-primary text-xs !py-2.5 !px-5 disabled:opacity-50"
-                  >
-                    {creating ? 'Đang xuất bản...' : 'Lưu & Đăng Lên Cộng Đồng'}
-                  </button>
-                </div>
               </div>
-            </form>
-          </div>
-        </ModalPortal>
+              <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-indigo-600 text-white shadow-xs">
+                {deckWordsToShare.length} từ vựng
+              </span>
+            </div>
+
+            {/* PASSWORD PROTECTION OPTION */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 space-y-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Đặt mã bảo vệ kho từ (Tùy chọn)
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Chỉ người có mật mã mới sao chép được kho từ này
+                    </div>
+                  </div>
+                </div>
+                <ToggleSwitch
+                  checked={enablePassword}
+                  onChange={(checked) => setEnablePassword(checked)}
+                  size="sm"
+                />
+              </div>
+
+              {enablePassword && (
+                <div className="space-y-1.5 pt-1 animate-fade-in">
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={deckPassword}
+                      onChange={(e) => setDeckPassword(e.target.value)}
+                      placeholder="Nhập mã bảo vệ..."
+                      className="w-full text-xs px-3.5 py-2 pr-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="btn-glass-secondary text-xs !py-2 !px-4"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="submit"
+                disabled={creating || personalDecks.length === 0}
+                className="btn-glass-primary text-xs !py-2.5 !px-5 font-bold disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                {creating ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang đóng góp...</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>Đóng Góp Bộ Từ Này Lên Cộng Đồng</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </ModalPortal>
 
       {/* UNLOCK PROTECTED DECK MODAL */}
       <ModalPortal isOpen={Boolean(unlockModalDeck)} onClose={() => setUnlockModalDeck(null)}>

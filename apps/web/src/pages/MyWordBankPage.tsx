@@ -26,6 +26,7 @@ import { GlassCard } from '../components/common/GlassCard';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { ToggleSwitch } from '../components/common/ToggleSwitch';
 import { LanguageSelector } from '../components/language/LanguageSelector';
 import { LanguageBadge } from '../components/language/LanguageBadge';
 import { getLanguage } from '../config/languages';
@@ -3274,7 +3275,7 @@ export const MyWordBankPage: React.FC = () => {
                               )}
                             </div>
                             {item.phonetic && (
-                              <span className="text-xs text-indigo-500/90 font-mono tracking-tight">
+                              <span className="text-xs text-sky-500 dark:text-sky-300 font-mono tracking-tight">
                                 {item.phonetic}
                               </span>
                             )}
@@ -3452,7 +3453,7 @@ export const MyWordBankPage: React.FC = () => {
                           )}
                         </div>
                         {item.phonetic && (
-                          <p className="text-xs text-indigo-500/90 font-mono tracking-tight mt-0.5 truncate">
+                          <p className="text-xs text-sky-500 dark:text-sky-300 font-mono tracking-tight mt-0.5 truncate">
                             {item.phonetic}
                           </p>
                         )}
@@ -3741,7 +3742,7 @@ export const MyWordBankPage: React.FC = () => {
                               )}
                             </div>
                             {item.phonetic && (
-                              <span className="text-[11px] text-indigo-500/90 font-mono">
+                              <span className="text-[11px] text-sky-500 dark:text-sky-300 font-mono">
                                 {item.phonetic}
                               </span>
                             )}
@@ -3901,7 +3902,7 @@ export const MyWordBankPage: React.FC = () => {
                           )}
                         </div>
                         {item.phonetic && (
-                          <p className="text-xs text-indigo-500/90 font-mono tracking-tight mt-0.5 truncate">
+                          <p className="text-xs text-sky-500 dark:text-sky-300 font-mono tracking-tight mt-0.5 truncate">
                             {item.phonetic}
                           </p>
                         )}
@@ -5270,16 +5271,27 @@ export const MyWordBankPage: React.FC = () => {
                 />
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700 dark:text-slate-300">
-                  <input
-                    type="checkbox"
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                      <Lock className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Đặt mật khẩu bảo vệ kho
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        Chỉ ai có mật khẩu mới sao chép được kho từ này
+                      </div>
+                    </div>
+                  </div>
+                  <ToggleSwitch
                     checked={shareEnablePassword}
-                    onChange={(e) => setShareEnablePassword(e.target.checked)}
-                    className="rounded text-indigo-600"
+                    onChange={(checked) => setShareEnablePassword(checked)}
+                    size="sm"
                   />
-                  <span>Đặt mật khẩu bảo vệ kho (Chỉ ai có pass mới sao chép được)</span>
-                </label>
+                </div>
                 {shareEnablePassword && (
                   <input
                     type="password"
