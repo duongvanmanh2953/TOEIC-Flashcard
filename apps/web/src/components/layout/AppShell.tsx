@@ -302,51 +302,55 @@ export const AppShell: React.FC = () => {
 
   const navSections = [
     {
-      title: 'HỌC TẬP & PHẢN XẠ',
+      title: 'HỌC',
       items: [
-        { to: '/dashboard', label: t('nav.dashboard', 'Dashboard'), icon: LayoutDashboard },
-        { to: '/languages', label: 'My Languages', icon: Globe, highlight: true, badge: 'MULTI' },
-        { to: '/games', label: 'Đấu Trường Realtime', icon: Gamepad2, highlight: true, badge: '20:00' },
-        { to: '/coach', label: 'AI Personal Coach', icon: Mic, highlight: true, badge: 'VOICE' },
-        { to: '/leaderboard', label: 'Bảng Xếp Hạng', icon: Trophy, badge: 'FAIR-PLAY' },
-        { to: '/review', label: t('nav.review', 'Smart Review'), icon: Sparkles, badge: 'SRS' },
+        { to: '/dashboard', label: t('nav.dashboard', 'Bảng điều khiển'), icon: LayoutDashboard },
+        { to: '/languages', label: 'My Languages', icon: Globe },
+        { to: '/review', label: t('nav.review', 'Ôn tập thông minh'), icon: Sparkles },
+        { to: '/games', label: 'Đấu trường phản xạ', icon: Gamepad2 },
       ],
     },
     ...(isKidSupported
       ? [
           {
-            title: 'KIDS / HỌC CÙNG BÉ',
+            title: 'KIDS',
             items: [
               {
                 to: '/kids',
-                label: 'Học cùng bé (Kids Mode)',
+                label: 'Học cùng bé',
                 icon: Baby,
-                highlight: true,
-                badge: 'ENGLISH 🌟',
+                badge: 'NEW',
               },
             ],
           },
         ]
       : []),
     {
-      title: 'KHO TỪ & LUYỆN TẬP',
+      title: 'KHO TỪ',
       items: [
-        { to: '/vocabulary', label: t('nav.vocabulary', 'Vocab Explorer'), icon: BookOpen },
-        { to: '/word-bank', label: t('nav.wordBank', 'My Word Bank'), icon: Bookmark },
-        { to: '/custom-quiz', label: t('nav.customQuiz', 'Dynamic Quiz'), icon: HelpCircle },
-        { to: '/community', label: t('nav.community', 'Community Decks'), icon: Share2 },
+        { to: '/vocabulary', label: t('nav.vocabulary', 'Thư viện từ vựng'), icon: BookOpen },
+        { to: '/word-bank', label: t('nav.wordBank', 'Kho từ của tôi'), icon: Bookmark },
+        { to: '/community', label: t('nav.community', 'Kho cộng đồng'), icon: Share2 },
+        { to: '/custom-quiz', label: t('nav.customQuiz', 'Trắc nghiệm tùy chọn'), icon: HelpCircle },
       ],
     },
     {
-      title: 'AI & NĂNG LỰC',
+      title: 'AI',
       items: [
-        { to: '/ai-tutor', label: t('nav.aiTutor', 'AI Tutor Studio'), icon: BrainCircuit },
-        { to: '/placement-test', label: t('nav.placementTest', 'Placement Test'), icon: Compass },
-        { to: '/progress', label: t('nav.progress', 'Progress & Stats'), icon: Award },
+        { to: '/coach', label: 'AI Personal Coach', icon: Mic },
+        { to: '/ai-tutor', label: t('nav.aiTutor', 'Gia Sư AI Studio'), icon: BrainCircuit },
       ],
     },
     {
-      title: 'TÀI KHOẢN & HỆ THỐNG',
+      title: 'TIẾN TRÌNH',
+      items: [
+        { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
+        { to: '/progress', label: t('nav.progress', 'Tiến trình học tập'), icon: Award },
+        { to: '/placement-test', label: t('nav.placementTest', 'Kiểm tra năng lực'), icon: Compass },
+      ],
+    },
+    {
+      title: 'TÀI KHOẢN',
       items: [
         {
           to: '/upgrade',
@@ -358,7 +362,7 @@ export const AppShell: React.FC = () => {
         },
         { to: '/notifications', label: 'Thông báo', icon: Bell },
         { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
-        { to: '/settings', label: t('nav.settings', 'Settings'), icon: Settings },
+        { to: '/settings', label: t('nav.settings', 'Cài đặt'), icon: Settings },
         ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
       ],
     },

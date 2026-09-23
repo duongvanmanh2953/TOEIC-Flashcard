@@ -21,6 +21,7 @@ import { CustomDropdown } from '../components/common/CustomDropdown';
 import { idbSetCache, idbGetCache, idbSaveWords } from '../lib/idb';
 import { audioEngine } from '../lib/audioEngine';
 import { useScrollLoad } from '../hooks/useScrollLoad';
+import { CountryFlag } from '../components/language/CountryFlag';
 
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -567,8 +568,9 @@ export const VocabularyExplorerPage: React.FC = () => {
                     "{selectedWord.examples?.[0]?.sentence || selectedWord.example}"
                   </p>
                   {(selectedWord.examples?.[0]?.translation || selectedWord.exampleTranslation) && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      🇻🇳 "{selectedWord.examples?.[0]?.translation || selectedWord.exampleTranslation}"
+                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <CountryFlag languageId="vi" size="xs" />
+                      <span>"{selectedWord.examples?.[0]?.translation || selectedWord.exampleTranslation}"</span>
                     </p>
                   )}
                 </div>

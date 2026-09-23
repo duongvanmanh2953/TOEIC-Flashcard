@@ -1031,7 +1031,7 @@ export const AdminPlansPage: React.FC = () => {
                       onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
                       className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400 font-bold text-xs hover:bg-indigo-100"
                     >
-                      + Thêm gạch đầu dòng
+                      Thêm gạch đầu dòng
                     </button>
                   </div>
 

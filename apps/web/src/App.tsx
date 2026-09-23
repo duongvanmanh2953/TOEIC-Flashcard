@@ -173,6 +173,16 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/word-bank/:deckId"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <MyWordBankPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/my-words" element={<Navigate to="/word-bank" replace />} />
+              <Route path="/my-words/:deckId" element={<Navigate to="/word-bank" replace />} />
               <Route path="/community" element={<CommunityDecksPage />} />
               <Route path="/custom-quiz" element={<CustomQuizPage />} />
               <Route path="/placement-test" element={<PlacementTestPage />} />

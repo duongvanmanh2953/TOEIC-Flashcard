@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Volume2, Sparkles, BookOpen, CheckCircle2, HelpCircle, Lightbulb } from 'lucide-react';
 import { audioEngine } from '../../lib/audioEngine';
+import { CountryFlag } from '../language/CountryFlag';
 
 interface RichAIMessageRendererProps {
   content: string;
@@ -173,8 +174,8 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
             return (
               <div key={idx} className="p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 my-2 space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
-                    <span>🇬🇧</span> English Sentence
+                  <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <CountryFlag languageId="en" size="xs" /> English Sentence
                   </span>
                   <button
                     onClick={() => handlePlayAudio(cleanEn, 'en-US')}
@@ -185,7 +186,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
                   </button>
                 </div>
                 <p className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-100 leading-relaxed italic">
-                  {formatInline(trimmed.replace(/^🇬🇧\s*/, ''))}
+                  {formatInline(trimmed.replace(/[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/g, '').replace(/^[*\s"'“”]+|[*\s"'“”]+$/g, '').trim())}
                 </p>
               </div>
             );
@@ -193,12 +194,12 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
 
           // Vietnamese Translation Line (🇻🇳)
           if (trimmed.includes('🇻🇳')) {
-            const cleanVi = trimmed.replace(/^[🇻🇳\s*"'“]+|[*\s"'”]+$/g, '').replace(/^🇻🇳\s*/, '').replace(/[*"]/g, '');
+            const cleanVi = trimmed.replace(/^[🇻🇳\s*"'“]+|[*\s"'”]+$/g, '').replace(/^🇻🇳\s*/, '').replace(/[*\"]/g, '');
             return (
               <div key={idx} className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50 my-2 space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-                    <span>🇻🇳</span> Bản Dịch Tiếng Việt
+                  <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <CountryFlag languageId="vi" size="xs" /> Bản Dịch Tiếng Việt
                   </span>
                   <button
                     onClick={() => handlePlayAudio(cleanVi, 'vi-VN')}
@@ -210,7 +211,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
                   </button>
                 </div>
                 <p className="text-xs sm:text-sm font-medium text-emerald-950 dark:text-emerald-100 leading-relaxed">
-                  {formatInline(trimmed.replace(/^🇻🇳\s*/, ''))}
+                  {formatInline(trimmed.replace(/[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/g, '').replace(/^[*\s"'“”]+|[*\s"'“”]+$/g, '').trim())}
                 </p>
               </div>
             );

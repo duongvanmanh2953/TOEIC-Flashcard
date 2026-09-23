@@ -83,7 +83,7 @@ export const LevelSelector: React.FC<LevelSelectorProps> = ({
               className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 isSelected
                   ? 'border-indigo-600 bg-indigo-50/90 dark:bg-indigo-950/60 shadow-xs ring-1 ring-indigo-500/30'
-                  : 'border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 bg-white/70 dark:bg-slate-800/40'
+                  : 'border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-white/70 dark:bg-slate-800/70'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">

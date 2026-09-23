@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
+import { CountryFlag } from '../../components/language/CountryFlag';
 
 interface MatchCard {
   id: string;
@@ -234,8 +235,9 @@ export const WordMatchGame: React.FC = () => {
               >
                 {card.isFlipped || card.isMatched ? (
                   <>
-                    <span className="text-xs opacity-75 uppercase tracking-wider mb-1 font-semibold">
-                      {card.type === 'WORD' ? '🇬🇧 Tiếng Anh' : '🇻🇳 Tiếng Việt'}
+                    <span className="text-xs opacity-75 uppercase tracking-wider mb-1 font-semibold flex items-center gap-1">
+                      <CountryFlag languageId={card.type === 'WORD' ? 'en' : 'vi'} size="xs" />
+                      <span>{card.type === 'WORD' ? 'Tiếng Anh' : 'Tiếng Việt'}</span>
                     </span>
                     <span className="text-sm sm:text-base line-clamp-2 px-1">
                       {card.content}

@@ -47,21 +47,41 @@ export function CustomSelect<T extends string | number>({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [dropUp, setDropUp] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLUListElement>(null);
   const id = useId();
 
-  const filteredOptions = searchable && searchQuery.trim()
-    ? options.filter((opt) =>
-        opt.label.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        (opt.description && opt.description.toLowerCase().includes(searchQuery.toLowerCase().trim()))
-      )
+  // Smart search trigger: automatically enable search when options >= 6 or explicitly requested
+  const shouldSearch = searchable || options.length >= 6;
+
+  // Accent-insensitive normalization for Vietnamese & English
+  const normalize = (str: string) =>
+    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+  const filteredOptions = shouldSearch && searchQuery.trim()
+    ? options.filter((opt) => {
+        const q = normalize(searchQuery);
+        const labelNorm = normalize(opt.label);
+        const descNorm = opt.description ? normalize(opt.description) : '';
+        return labelNorm.includes(q) || descNorm.includes(q);
+      })
     : options;
 
   const selectedOption = options.find((opt) => opt.value === value);
   const SelectedIcon = selectedOption?.icon;
+
+  // Collision detection: Check if dropdown needs to flip upwards
+  const updatePosition = () => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const screenH = window.innerHeight;
+    const spaceBelow = screenH - rect.bottom;
+    const spaceAbove = rect.top;
+    setDropUp(spaceBelow < 280 && spaceAbove > spaceBelow);
+  };
 
   // Handle click outside to close
   useEffect(() => {
@@ -72,14 +92,21 @@ export function CustomSelect<T extends string | number>({
       }
     };
     if (isOpen) {
+      updatePosition();
       document.addEventListener('mousedown', handleOutsideClick);
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
     }
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
   }, [isOpen]);
 
   // Focus search input when dropdown opens
   useEffect(() => {
-    if (isOpen && searchable) {
+    if (isOpen && shouldSearch) {
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 50);
@@ -91,7 +118,7 @@ export function CustomSelect<T extends string | number>({
       setSearchQuery('');
       setFocusedIndex(-1);
     }
-  }, [isOpen, searchable, value]);
+  }, [isOpen, shouldSearch, value]);
 
   // Scroll focused option into view
   useEffect(() => {
@@ -169,20 +196,20 @@ export function CustomSelect<T extends string | number>({
           onClick={() => setIsOpen(!isOpen)}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          className={`w-full flex items-center justify-between gap-2 bg-white dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-900 text-left border ${
+          className={`w-full flex items-center justify-between gap-2 bg-white dark:bg-[#162033] hover:bg-slate-50 dark:hover:bg-[#1a273e] text-left border ${
             error
               ? 'border-rose-500/80 ring-1 ring-rose-500/30'
               : isOpen
               ? 'border-indigo-500 ring-2 ring-indigo-500/20'
-              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+              : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
           } backdrop-blur-xl transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
         >
-          <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
-            {LeftIcon && <LeftIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {LeftIcon && <LeftIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0" />}
             {SelectedIcon && <SelectedIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />}
             <span
               className={`truncate font-medium ${
-                selectedOption ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'
+                selectedOption ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-400'
               }`}
             >
               {selectedOption ? selectedOption.label : placeholder}
@@ -212,22 +239,24 @@ export function CustomSelect<T extends string | number>({
               </span>
             )}
             <ChevronDown
-              className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 ${
+              className={`w-4 h-4 text-slate-400 dark:text-slate-400 transition-transform duration-200 ${
                 isOpen ? 'rotate-180 text-indigo-500 dark:text-indigo-400' : ''
               }`}
             />
           </div>
         </button>
 
-        {/* Dropdown Menu */}
+        {/* Dropdown Menu with Collision Drop-Up Detection */}
         {isOpen && (
           <div
-            className={`absolute z-50 mt-1.5 w-full min-w-[220px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 text-xs animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
+            className={`absolute z-50 ${
+              dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+            } w-full min-w-[220px] max-w-[min(50vw,520px)] sm:max-w-none bg-white/95 dark:bg-[#162033]/98 backdrop-blur-2xl border border-slate-200 dark:border-slate-700/80 rounded-xl p-1.5 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
             style={{ maxHeight: '300px', display: 'flex', flexDirection: 'column' }}
           >
             {/* Search Input */}
-            {searchable && (
-              <div className="p-1.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            {shouldSearch && (
+              <div className="p-1.5 border-b border-slate-100 dark:border-slate-700/60 shrink-0">
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                   <input
@@ -239,7 +268,7 @@ export function CustomSelect<T extends string | number>({
                       setFocusedIndex(0);
                     }}
                     placeholder={searchPlaceholder}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
@@ -251,10 +280,10 @@ export function CustomSelect<T extends string | number>({
               ref={listboxRef}
               role="listbox"
               className="overflow-y-auto p-0.5 space-y-0.5 chat-scrollbar flex-1 min-h-0"
-              style={{ maxHeight: searchable ? '220px' : '260px' }}
+              style={{ maxHeight: shouldSearch ? '220px' : '260px' }}
             >
               {filteredOptions.length === 0 ? (
-                <li className="py-4 text-center text-xs text-slate-400 dark:text-slate-500 select-none">
+                <li className="py-4 text-center text-xs text-slate-400 dark:text-slate-400 select-none">
                   Không tìm thấy lựa chọn phù hợp
                 </li>
               ) : (
@@ -279,10 +308,10 @@ export function CustomSelect<T extends string | number>({
                         opt.disabled
                           ? 'opacity-40 cursor-not-allowed text-slate-400'
                           : isSelected
-                          ? 'bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-200 font-semibold border border-indigo-200 dark:border-indigo-500/30'
+                          ? 'bg-indigo-50 dark:bg-indigo-600/25 text-indigo-700 dark:text-indigo-200 font-semibold border border-indigo-200 dark:border-indigo-500/40'
                           : isFocused
-                          ? 'bg-slate-100 dark:bg-slate-800/90 text-slate-900 dark:text-white'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-slate-100 dark:bg-slate-700/60 text-slate-900 dark:text-white'
+                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -293,10 +322,10 @@ export function CustomSelect<T extends string | number>({
                             }`}
                           />
                         )}
-                        <div className="flex flex-col min-w-0">
-                          <span className="truncate">{opt.label}</span>
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="whitespace-normal break-words leading-snug">{opt.label}</span>
                           {opt.description && (
-                            <span className="text-[11px] text-slate-500 truncate">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 whitespace-normal break-words">
                               {opt.description}
                             </span>
                           )}
@@ -307,7 +336,7 @@ export function CustomSelect<T extends string | number>({
                         {opt.badge !== undefined && (
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              opt.badgeColor || 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                              opt.badgeColor || 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                             }`}
                           >
                             {opt.badge}

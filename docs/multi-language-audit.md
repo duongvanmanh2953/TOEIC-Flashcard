@@ -96,7 +96,7 @@ Currently, `apps/web/src/i18n/index.tsx` manages `locale`:
 2. `apps/web/src/contexts/LearningContext.tsx`:
    * Provides `activeLanguage`, `availableLanguages`, `userProfiles`, `switchLanguage()`, `addLanguage()`, `resetLanguage()`, `removeLanguage()`, `activeProfile`, and helper methods.
 3. `apps/web/src/components/language/LanguageSwitcher.tsx`:
-   * Premium header pill (`🇬🇧 English ▾`, `🇩🇪 Deutsch ▾`), popup modal/drawer with search, categorized tabs (All, Europe, Asia, Americas), active streak & level indicators, and "+ Add a new language" trigger.
+   * Premium header pill (`🇬🇧 English ▾`, `🇩🇪 Deutsch ▾`), popup modal/drawer with search, categorized tabs (All, Europe, Asia, Americas), active streak & level indicators, and "Add a new language" trigger.
 4. `apps/web/src/components/language/AddLanguageModal.tsx`:
    * 5-step onboarding wizard: Select language → Choose CEFR level / placement → Select goal → Daily study commitment → Profile generation & celebration.
 5. `apps/web/src/components/language/ResetLanguageModal.tsx`:

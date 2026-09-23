@@ -365,7 +365,7 @@ export const SettingsPage: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>+ Thêm ngôn ngữ</span>
+                  <span>Thêm ngôn ngữ</span>
                 </button>
               </div>
             </div>
@@ -581,7 +581,7 @@ export const SettingsPage: React.FC = () => {
                           : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                       }`}
                     >
-                      <span>🇻🇳</span>
+                      <CountryFlag languageId="vi" size="xs" />
                       <span>Tiếng Việt</span>
                     </button>
                     <button
@@ -593,7 +593,7 @@ export const SettingsPage: React.FC = () => {
                           : 'border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                       }`}
                     >
-                      <span>🇬🇧</span>
+                      <CountryFlag languageId="en" size="xs" />
                       <span>English</span>
                     </button>
                   </div>
@@ -758,9 +758,9 @@ export const SettingsPage: React.FC = () => {
                     value={voiceAccent}
                     onChange={(val) => setVoiceAccent(val as any)}
                     options={[
-                      { value: 'en-US', label: '🇺🇸 Tiếng Anh - Giọng Mỹ (US)' },
-                      { value: 'en-GB', label: '🇬🇧 Tiếng Anh - Giọng Anh (UK)' },
-                      { value: 'en-AU', label: '🇦🇺 Tiếng Anh - Giọng Úc (AU)' },
+                      { value: 'en-US', label: 'Tiếng Anh - Giọng Mỹ (US)' },
+                      { value: 'en-GB', label: 'Tiếng Anh - Giọng Anh (UK)' },
+                      { value: 'en-AU', label: 'Tiếng Anh - Giọng Úc (AU)' },
                     ]}
                     size="sm"
                     className="w-full"

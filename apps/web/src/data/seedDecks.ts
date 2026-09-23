@@ -424,7 +424,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'zh_hsk1',
       languageId: 'zh',
-      title: '🇨🇳 Mandarin Chinese HSK 1 Core',
+      title: 'Mandarin Chinese HSK 1 Core',
       description: 'Master standard Hanzi characters, Pinyin with tone markers, and high-frequency everyday conversation.',
       category: 'Foundation',
       cefrLevel: 'HSK 1',
@@ -618,7 +618,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'ja_starter',
       languageId: 'ja',
-      title: '🇯🇵 Japanese N5 Starter',
+      title: 'Japanese N5 Starter',
       description: 'Kana and core N5 vocabulary with Romaji support for smooth pronunciation mastery.',
       category: 'Foundation',
       cefrLevel: 'JLPT N5',
@@ -794,7 +794,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'vi_starter',
       languageId: 'vi',
-      title: '🇻🇳 Tiếng Việt Hàng Ngày',
+      title: 'Tiếng Việt Hàng Ngày',
       description: 'Từ vựng giao tiếp căn bản, phát âm thanh điệu chuẩn và cách chào hỏi văn minh.',
       category: 'Foundation',
       cefrLevel: 'A1',
@@ -831,7 +831,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'en_starter_toeic',
       languageId: 'en',
-      title: '🇬🇧 TOEIC & Business English 850+',
+      title: 'TOEIC & Business English 850+',
       description: 'High-frequency professional English vocabulary for meetings, negotiations, and workplace success.',
       category: 'Business English',
       cefrLevel: 'B1',

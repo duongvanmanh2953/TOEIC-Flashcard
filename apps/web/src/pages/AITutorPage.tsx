@@ -6,6 +6,7 @@ import { SpeechButton } from '../components/common/SpeechButton';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
+import { CountryFlag } from '../components/language/CountryFlag';
 import { useTranslation } from '../i18n';
 import { useAuth, isProUser } from '../contexts/AuthContext';
 import {
@@ -501,8 +502,9 @@ export const AITutorPage: React.FC = () => {
                       </div>
 
                       <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800/80 space-y-1">
-                        <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
-                          🇻🇳 {msg.vocabularyCard.meaningVi}
+                        <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                          <CountryFlag languageId="vi" size="xs" />
+                          <span>{msg.vocabularyCard.meaningVi}</span>
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
                           {msg.vocabularyCard.definition}

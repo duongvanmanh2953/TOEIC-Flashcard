@@ -40,9 +40,21 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
   const [modalPreselectedLangId, setModalPreselectedLangId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
+  const [alignRight, setAlignRight] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click and calculate alignment
+  useEffect(() => {
+    if (isOpen && panelRef.current) {
+      const rect = panelRef.current.getBoundingClientRect();
+      if (rect.left + 384 > window.innerWidth - 16) {
+        setAlignRight(true);
+      } else {
+        setAlignRight(false);
+      }
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -131,7 +143,9 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           />
 
           <div
-            className="fixed sm:absolute top-14 sm:top-full left-2.5 right-2.5 sm:left-0 sm:right-auto sm:mt-2 sm:w-96 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[999] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className={`fixed sm:absolute top-14 sm:top-full left-2.5 right-2.5 ${
+              alignRight ? 'sm:right-0 sm:left-auto' : 'sm:left-0 sm:right-auto'
+            } sm:mt-2 sm:w-96 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[999] overflow-hidden animate-in fade-in zoom-in-95 duration-150`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -211,14 +225,14 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                 })}
               </div>
 
-              {/* Action: + Add Language */}
+              {/* Action: Add Language */}
               <button
                 type="button"
                 onClick={() => handleOpenAddWizard()}
                 className="mt-3 w-full py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition flex items-center justify-center gap-1.5 border border-indigo-500/20 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ Thêm ngôn ngữ học mới</span>
+                <span>Thêm ngôn ngữ học mới</span>
               </button>
             </div>
 
