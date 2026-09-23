@@ -418,21 +418,18 @@ export const AdminVocabularyPage: React.FC = () => {
             value={languageFilter}
             onChange={(val) => setLanguageFilter(String(val))}
             options={languageOptions}
-            className="w-52"
           />
 
           <FilterSelect
             value={cefrFilter}
             onChange={(val) => setCefrFilter(String(val))}
             options={cefrOptions}
-            className="w-48"
           />
 
           <FilterSelect
             value={posFilter}
             onChange={(val) => setPosFilter(String(val))}
             options={posOptions}
-            className="w-48"
           />
 
           <button
