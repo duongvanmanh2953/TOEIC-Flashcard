@@ -28,6 +28,7 @@ import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { LanguageSelector } from '../components/language/LanguageSelector';
 import { LanguageBadge } from '../components/language/LanguageBadge';
+import { getLanguage } from '../config/languages';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import { useVirtualList } from '../hooks/useVirtualList';
 import {
@@ -174,6 +175,59 @@ export const MyWordBankPage: React.FC = () => {
   const [deckPasswordInput, setDeckPasswordInput] = useState('');
   const [deckStatusInput, setDeckStatusInput] = useState<'PENDING' | 'PRIVATE' | 'APPROVED'>('PRIVATE');
   const [creatingDeck, setCreatingDeck] = useState(false);
+
+  // Dynamic levels calculation based on selected language definition (CEFR, JLPT, HSK, TOPIK, etc.)
+  const selectedDeckLangDef = useMemo(() => {
+    return getLanguage(deckLangInput || activeLanguage.id);
+  }, [deckLangInput, activeLanguage.id]);
+
+  const dynamicLevelOptions = useMemo(() => {
+    const levels = selectedDeckLangDef?.supportedLevels || ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    return levels.map((lvl) => {
+      let label = lvl;
+      let badge = lvl;
+      if (lvl.startsWith('JLPT')) {
+        label = `${lvl} — Tiếng Nhật`;
+      } else if (lvl.startsWith('HSK')) {
+        label = `${lvl} — Tiếng Trung (Hanzi)`;
+      } else if (lvl.startsWith('TOPIK')) {
+        label = `${lvl} — Tiếng Hàn (Hangul)`;
+      } else if (lvl === 'Beginner') {
+        label = 'Beginner — Sơ cấp';
+        badge = 'BEG';
+      } else if (lvl === 'Elementary') {
+        label = 'Elementary — Căn bản';
+        badge = 'ELE';
+      } else if (lvl === 'Intermediate') {
+        label = 'Intermediate — Trung cấp';
+        badge = 'INT';
+      } else if (lvl === 'Advanced') {
+        label = 'Advanced — Cao cấp';
+        badge = 'ADV';
+      } else if (lvl === 'A1') {
+        label = 'A1 — Beginner (Căn bản)';
+      } else if (lvl === 'A2') {
+        label = 'A2 — Elementary (Sơ cấp)';
+      } else if (lvl === 'B1') {
+        label = 'B1 — Intermediate (Trung cấp)';
+      } else if (lvl === 'B2') {
+        label = 'B2 — Upper-Inter (Trung cao)';
+      } else if (lvl === 'C1') {
+        label = 'C1 — Advanced (Cao cấp)';
+      } else if (lvl === 'C2') {
+        label = 'C2 — Mastery (Thành thạo)';
+      }
+      return { value: lvl, label, badge };
+    });
+  }, [selectedDeckLangDef]);
+
+  const handleDeckLanguageChange = (newLangId: string) => {
+    setDeckLangInput(newLangId);
+    const langDef = getLanguage(newLangId);
+    if (langDef && langDef.supportedLevels && langDef.supportedLevels.length > 0) {
+      setDeckCefrInput(langDef.defaultLevel || langDef.supportedLevels[0]);
+    }
+  };
 
   // Password Protection for opening & studying decks
   const [deckToUnlock, setDeckToUnlock] = useState<LocalDeck | null>(null);
@@ -2024,7 +2078,7 @@ export const MyWordBankPage: React.FC = () => {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setShareModalDeck(deck);
-                                      setSharePasswordInput('');
+                                      setSharePassword('');
                                     }}
                                     className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-purple-600 transition"
                                     title="Chia sẻ kho này"
@@ -3418,14 +3472,15 @@ export const MyWordBankPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
               <div>
                 <LanguageSelector
                   label="Ngôn ngữ kho từ *"
                   value={deckLangInput}
-                  onChange={(langId) => setDeckLangInput(langId)}
+                  onChange={handleDeckLanguageChange}
                   availableOnly={true}
-                  size="sm"
+                  size="md"
+                  className="w-full"
                 />
               </div>
 
@@ -3442,28 +3497,22 @@ export const MyWordBankPage: React.FC = () => {
                     { value: 'IELTS Academic', label: 'IELTS Academic' },
                     { value: 'Daily Communication', label: 'Giao tiếp hàng ngày' },
                     { value: 'Technology', label: 'Công nghệ / IT' },
+                    { value: 'Culture & Travel', label: 'Du lịch & Văn hóa' },
                   ]}
-                  size="sm"
+                  size="md"
                   className="w-full"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
-                  Cấp độ chuẩn (CEFR)
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm truncate">
+                  Cấp độ ({selectedDeckLangDef.nativeName})
                 </label>
                 <CustomDropdown
                   value={deckCefrInput}
                   onChange={(val) => setDeckCefrInput(val)}
-                  options={[
-                    { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
-                    { value: 'A2', label: 'A2 — Elementary', badge: 'A2' },
-                    { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
-                    { value: 'B2', label: 'B2 — Upper-Inter', badge: 'B2' },
-                    { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
-                    { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
-                  ]}
-                  size="sm"
+                  options={dynamicLevelOptions}
+                  size="md"
                   className="w-full"
                 />
               </div>

@@ -176,7 +176,7 @@ export const AdminSettingsPage: React.FC = () => {
   // Settings State State Record
   const [settings, setSettings] = useState<Record<string, any>>({
     general: {
-      siteName: 'LexiMind AI - TOEIC Master',
+      siteName: 'VocalFlow AI - Multi-Language Platform',
       tagline: 'Làm chủ từ vựng TOEIC với Spaced Repetition & AI Tutor',
       supportEmail: 'support@vocabflow.edu.vn',
       maintenanceMode: false,

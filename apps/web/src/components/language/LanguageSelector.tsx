@@ -59,9 +59,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }, [isOpen]);
 
   const sizeStyles = {
-    sm: 'py-1.5 px-2.5 text-xs rounded-xl',
-    md: 'py-2.5 px-3.5 text-xs sm:text-sm rounded-2xl',
-    lg: 'py-3 px-4 text-sm rounded-2xl',
+    sm: 'h-9 px-3 text-xs rounded-xl',
+    md: 'h-10 px-3.5 text-xs sm:text-sm rounded-xl',
+    lg: 'h-12 px-4 text-sm rounded-2xl',
   };
 
   return (
@@ -92,7 +92,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Search Box */}
           <div className="p-2 border-b border-slate-200/60 dark:border-slate-800/60">
             <div className="relative">

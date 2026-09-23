@@ -126,12 +126,12 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
         <>
           {/* Backdrop overlay for outside click on mobile and desktop */}
           <div
-            className="fixed inset-0 z-40 bg-black/20 dark:bg-black/40 backdrop-blur-[1px] sm:bg-transparent sm:backdrop-blur-none"
+            className="fixed inset-0 z-[998] bg-black/40 backdrop-blur-xs"
             onClick={() => setIsOpen(false)}
           />
 
           <div
-            className="fixed sm:absolute top-14 sm:top-full left-2.5 right-2.5 sm:left-0 sm:right-auto sm:mt-2 sm:w-96 rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className="fixed sm:absolute top-14 sm:top-full left-2.5 right-2.5 sm:left-0 sm:right-auto sm:mt-2 sm:w-96 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[999] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -223,7 +223,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
             </div>
 
             {/* Search & Discover Other World Languages */}
-            <div className="p-3 bg-slate-50/50 dark:bg-slate-950/40 space-y-2.5">
+            <div className="p-3 bg-slate-50 dark:bg-slate-950 space-y-2.5">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input

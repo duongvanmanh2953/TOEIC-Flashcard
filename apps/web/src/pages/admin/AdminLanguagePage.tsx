@@ -28,6 +28,7 @@ import {
   getActiveLanguages,
 } from '../../config/languages';
 import { GlassCard } from '../../components/common/GlassCard';
+import { CustomDropdown } from '../../components/common/CustomDropdown';
 import { ModalPortal } from '../../components/common/ModalPortal';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { LanguageBadge } from '../../components/language/LanguageBadge';
@@ -332,19 +333,21 @@ export const AdminLanguagePage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500 uppercase">Ngôn ngữ:</span>
-              <select
+              <span className="text-xs font-bold text-slate-500 uppercase shrink-0">Ngôn ngữ:</span>
+              <CustomDropdown
                 value={reportSelectedLang}
-                onChange={(e) => setReportSelectedLang(e.target.value)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-              >
-                <option value="ALL">🌐 Tất cả ngôn ngữ</option>
-                {SUPPORTED_LANGUAGES.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.nativeName} ({l.name})
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setReportSelectedLang(String(val))}
+                options={[
+                  { value: 'ALL', label: '🌐 Tất cả ngôn ngữ' },
+                  ...SUPPORTED_LANGUAGES.map((l) => ({
+                    value: l.id,
+                    label: `${l.nativeName} (${l.name})`,
+                    badge: l.code.toUpperCase(),
+                  })),
+                ]}
+                size="sm"
+                className="w-48 sm:w-56"
+              />
             </div>
           </div>
 

@@ -17,7 +17,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  const isOfflineFallback = provider === 'leximind-core' || content.includes('LexiMind AI');
+  const isOfflineFallback = provider === 'vocabflow-core' || content.includes('VocalFlow AI');
   const isGemini = provider?.includes('gemini');
   const isOpenAI = provider?.includes('openai');
 
@@ -80,7 +80,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-black text-xs sm:text-sm tracking-wide">LexiMind AI Tutor</span>
+              <span className="font-black text-xs sm:text-sm tracking-wide">VocalFlow AI Tutor</span>
               {cefrLevel && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 uppercase tracking-wider shadow-xs">
                   Level {cefrLevel}

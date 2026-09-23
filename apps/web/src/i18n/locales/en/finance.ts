@@ -14,7 +14,7 @@ export const enFinance = {
   noFailed: 'No failed payment orders. Gateway operates at 100% stability.',
   accountingLedger: 'Financial Accounting Ledger',
   emptyTitle: 'No financial transaction records in database',
-  emptyDesc: 'LexiMind enforces an authentic accounting policy (Zero Fake Data). As soon as learners complete payment orders via VietQR or PayOS, live charts and ledgers will activate.',
+  emptyDesc: 'VocalFlow enforces an authentic accounting policy (Zero Fake Data). As soon as learners complete payment orders via VietQR or PayOS, live charts and ledgers will activate.',
   timeframe: {
     today: 'Today',
     sevenDays: '7 Days',

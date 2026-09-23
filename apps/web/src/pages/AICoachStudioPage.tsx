@@ -1095,7 +1095,7 @@ export const AICoachStudioPage: React.FC = () => {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <h3 className="font-extrabold text-xs sm:text-base text-slate-900 dark:text-white truncate leading-tight">
-                        LexiMind AI Coach
+                        VocalFlow AI Coach
                       </h3>
                       <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -1140,8 +1140,8 @@ export const AICoachStudioPage: React.FC = () => {
                           {
                             id: 'welcome-' + Date.now(),
                             role: 'assistant',
-                            content: "Xin chào! Tôi là Gia sư AI LexiMind. Hôm nay bạn muốn luyện tập chủ đề gì? Bạn có thể nói bằng tiếng Việt hoặc tiếng Anh tùy thích nhé!",
-                            viTranslation: 'Xin chào! Tôi là Gia sư AI LexiMind.',
+                            content: "Xin chào! Tôi là Gia sư AI VocalFlow. Hôm nay bạn muốn luyện tập chủ đề gì? Bạn có thể nói bằng tiếng Việt hoặc tiếng Anh tùy thích nhé!",
+                            viTranslation: 'Xin chào! Tôi là Gia sư AI VocalFlow.',
                             timestamp: new Date(),
                           },
                         ]);
