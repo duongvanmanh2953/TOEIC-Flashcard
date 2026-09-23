@@ -6,6 +6,7 @@ import { GlassCard } from '../components/common/GlassCard';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { AddLanguageModal } from '../components/language/AddLanguageModal';
 import { ResetLanguageModal } from '../components/language/ResetLanguageModal';
+import { CountryFlag } from '../components/language/CountryFlag';
 import { audioEngine } from '../lib/audioEngine';
 import {
   Globe,
@@ -144,7 +145,7 @@ export const MyLanguagesPage: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
             <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Không gian kích hoạt</p>
             <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
-              <span>{activeLanguage.flag}</span>
+              <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="sm" />
               <span className="text-base truncate">{activeLanguage.name}</span>
             </p>
           </div>
@@ -194,7 +195,7 @@ export const MyLanguagesPage: React.FC = () => {
                 {/* Header: Flag, Name, Active Badge */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl leading-none">{lang.flag}</span>
+                    <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="lg" />
                     <div>
                       <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
                         <span>{lang.nativeName}</span>
@@ -321,7 +322,7 @@ export const MyLanguagesPage: React.FC = () => {
                     >
                       <div className="min-w-0 pr-1 truncate">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-base leading-none">{t.flag}</span>
+                          <CountryFlag languageId={t.langId} size="xs" />
                           <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                             {t.word}
                           </p>

@@ -3,6 +3,7 @@ import { LanguageDefinition } from '../../config/languages';
 import { useLearningContext } from '../../contexts/LearningContext';
 import { AlertTriangle, Check, RotateCcw, X, ShieldCheck } from 'lucide-react';
 import { ModalPortal } from '../common/ModalPortal';
+import { CountryFlag } from './CountryFlag';
 
 interface ResetLanguageModalProps {
   language: LanguageDefinition;
@@ -59,7 +60,7 @@ export const ResetLanguageModal: React.FC<ResetLanguageModalProps> = ({
         <div>
           <h3 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
             <span>Đặt lại tiến trình {language.name}?</span>
-            <span>{language.flag}</span>
+            <CountryFlag languageId={language.id} countryCode={language.countryCode} size="sm" />
           </h3>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
             Hành động này sẽ làm mới toàn bộ tiến trình học tập của riêng tiếng {language.nativeName}.

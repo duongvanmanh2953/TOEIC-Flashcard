@@ -32,6 +32,7 @@ import { SpeechButton } from '../components/common/SpeechButton';
 import { PronunciationPracticeCard } from '../components/audio/PronunciationPracticeCard';
 import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
+import { CountryFlag } from '../components/language/CountryFlag';
 import { LanguageFlashcard } from '../components/flashcard/LanguageFlashcard';
 import {
   idbGetLocalDecks,
@@ -908,7 +909,7 @@ export const ReviewSessionPage: React.FC = () => {
     return (
       <div className="max-w-md mx-auto text-center py-16 space-y-4">
         <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 text-2xl mx-auto flex items-center justify-center shadow-sm">
-          <span>{activeLanguage.flag}</span>
+          <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="lg" />
         </div>
         <h3 className="text-lg font-bold text-slate-900 dark:text-white">
           Không còn từ vựng {activeLanguage.nativeName} ({activeLanguage.name}) cần ôn lúc này!

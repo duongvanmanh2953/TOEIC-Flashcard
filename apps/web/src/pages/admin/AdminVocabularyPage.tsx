@@ -308,7 +308,7 @@ export const AdminVocabularyPage: React.FC = () => {
     { value: 'ALL', label: '🌐 Tất cả ngôn ngữ' },
     ...SUPPORTED_LANGUAGES.map((l) => ({
       value: l.id,
-      label: `${l.flag} ${l.name}`,
+      label: `${l.name} (${l.nativeName})`,
     })),
   ];
 
@@ -416,21 +416,21 @@ export const AdminVocabularyPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           <FilterSelect
             value={languageFilter}
-            onChange={setLanguageFilter}
+            onChange={(val) => setLanguageFilter(String(val))}
             options={languageOptions}
             className="w-52"
           />
 
           <FilterSelect
             value={cefrFilter}
-            onChange={setCefrFilter}
+            onChange={(val) => setCefrFilter(String(val))}
             options={cefrOptions}
             className="w-48"
           />
 
           <FilterSelect
             value={posFilter}
-            onChange={setPosFilter}
+            onChange={(val) => setPosFilter(String(val))}
             options={posOptions}
             className="w-48"
           />
@@ -718,7 +718,7 @@ export const AdminVocabularyPage: React.FC = () => {
                   onChange={(val) => setEditingItem({ ...editingItem, languageId: val })}
                   options={SUPPORTED_LANGUAGES.map((l) => ({
                     value: l.id,
-                    label: `${l.flag} ${l.name}`,
+                    label: `${l.name} (${l.nativeName})`,
                   }))}
                   className="w-full"
                 />

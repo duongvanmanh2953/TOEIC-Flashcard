@@ -6,6 +6,7 @@ import { useTranslation } from '../i18n';
 import { useLearningContext } from '../contexts/LearningContext';
 import { idbGetWords } from '../lib/idb';
 import { GlassCard } from '../components/common/GlassCard';
+import { CountryFlag } from '../components/language/CountryFlag';
 import { MemoryRescueCard } from '../components/dashboard/MemoryRescueCard';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { PremiumBadge } from '../components/common/PremiumBadge';
@@ -129,7 +130,7 @@ export const DashboardPage: React.FC = () => {
       <GlassCard variant="liquid" className="p-4 sm:p-5 md:p-6 relative overflow-hidden bg-white/95 dark:bg-slate-900/95 border border-indigo-500/25 dark:border-indigo-500/30 shadow-lg rounded-2xl">
         <div className="max-w-3xl relative z-10 space-y-2.5">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
-            <span className="text-base leading-none">{activeLanguage.flag}</span>
+            <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
             <span>Không gian {activeLanguage.name} ({activeLanguage.nativeName}) • Trình độ {activeProfile.level}</span>
           </div>
 
@@ -219,8 +220,8 @@ export const DashboardPage: React.FC = () => {
       {/* Empty State Banner if no words learned yet in this language */}
       {localWords.length === 0 && (
         <GlassCard variant="liquid" className="p-6 sm:p-8 rounded-3xl border-2 border-dashed border-indigo-400/40 bg-white/95 dark:bg-slate-900/95 text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-3xl shadow-sm">
-            {activeLanguage.flag}
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
+            <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="lg" />
           </div>
           <div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white">

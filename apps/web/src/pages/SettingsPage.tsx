@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
 import { useLearningContext } from '../contexts/LearningContext';
+import { getLanguage } from '../config/languages';
 import { AddLanguageModal } from '../components/language/AddLanguageModal';
 import { ResetLanguageModal } from '../components/language/ResetLanguageModal';
 import { GlassCard } from '../components/common/GlassCard';
+import { CountryFlag } from '../components/language/CountryFlag';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
@@ -48,6 +50,7 @@ export const SettingsPage: React.FC = () => {
     activeLanguage,
     activeProfile,
     userLanguages,
+    learningProfiles,
     switchLanguage,
   } = useLearningContext();
 
@@ -340,8 +343,8 @@ export const SettingsPage: React.FC = () => {
           <GlassCard variant="liquid" className="p-6 space-y-5 lg:col-span-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg">
-                  {activeLanguage.flag}
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center overflow-hidden">
+                  <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="md" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug flex items-center gap-2">
@@ -373,11 +376,13 @@ export const SettingsPage: React.FC = () => {
                 Các ngôn ngữ trong tài khoản của bạn ({userLanguages.length})
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {userLanguages.map((profile) => {
-                  const isActive = profile.languageId === activeLanguage.id;
+                {userLanguages.map((langId) => {
+                  const lang = getLanguage(langId);
+                  const profile = learningProfiles[langId] || activeProfile;
+                  const isActive = langId === activeLanguage.id;
                   return (
                     <div
-                      key={profile.languageId}
+                      key={langId}
                       className={`p-3.5 rounded-2xl border transition relative flex flex-col justify-between space-y-3 ${
                         isActive
                           ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/40 ring-1 ring-indigo-500 shadow-sm'
@@ -386,26 +391,26 @@ export const SettingsPage: React.FC = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl">{profile.flag}</span>
+                          <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="md" />
                           <div>
                             <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
-                              {profile.nativeName}
+                              {lang.nativeName}
                             </p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">{profile.name}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{lang.name}</p>
                           </div>
                         </div>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {profile.currentLevel}
+                          {profile.level}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-800/80">
                         <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
                           <Flame className="w-3 h-3 fill-amber-500" />
-                          <span>{profile.streakDays} ngày</span>
+                          <span>{profile.currentStreak || 0} ngày</span>
                         </div>
                         <span className="text-slate-400 font-medium">
-                          {profile.wordsLearned} từ vựng
+                          {profile.wordsLearned || 0} từ vựng
                         </span>
                       </div>
 
@@ -415,7 +420,7 @@ export const SettingsPage: React.FC = () => {
                         </div>
                       ) : (
                         <button
-                          onClick={() => switchLanguage(profile.languageId)}
+                          onClick={() => switchLanguage(langId)}
                           className="w-full text-center py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/80 hover:text-indigo-600 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition"
                         >
                           Chuyển sang học
@@ -432,7 +437,9 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-2">
                 <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <Volume2 className="w-4 h-4 text-indigo-500" />
-                  Cấu hình phát âm bản ngữ: {activeLanguage.flag} {activeLanguage.name} ({activeLanguage.speechLocale})
+                  <span>Cấu hình phát âm bản ngữ:</span>
+                  <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
+                  <span>{activeLanguage.name} ({activeLanguage.speechLocale})</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium">Native TTS Engine</span>
               </div>
@@ -1196,6 +1203,7 @@ export const SettingsPage: React.FC = () => {
       />
 
       <ResetLanguageModal
+        language={activeLanguage}
         isOpen={showResetLanguageModal}
         onClose={() => setShowResetLanguageModal(false)}
       />

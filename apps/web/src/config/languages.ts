@@ -19,6 +19,7 @@ export interface LanguageFeatures {
   supportsGender?: boolean; // German der/die/das, French le/la, Spanish el/la
   supportsConjugation?: boolean;
   supportsScriptToggle?: boolean; // e.g. Show/Hide Pinyin or Romaji
+  supportsKidMode?: boolean; // Kid Mode support capability
 }
 
 export interface LanguageDefinition {
@@ -27,6 +28,7 @@ export interface LanguageDefinition {
   name: string; // English display name e.g. 'German'
   nativeName: string; // Native name e.g. 'Deutsch'
   flag: string; // Emoji flag or icon code
+  countryCode?: string; // e.g. 'GB', 'DE', 'JP'
   region: 'Europe' | 'Asia' | 'Americas' | 'Global' | 'Middle East';
   script: ScriptType;
   direction: TextDirection;
@@ -61,6 +63,7 @@ export const SUPPORTED_LANGUAGES: LanguageDefinition[] = [
     name: 'English',
     nativeName: 'English',
     flag: '🇬🇧',
+    countryCode: 'GB',
     region: 'Global',
     script: 'Latin',
     direction: 'ltr',
@@ -86,6 +89,7 @@ export const SUPPORTED_LANGUAGES: LanguageDefinition[] = [
       supportsIPA: true,
       supportsRomanization: false,
       supportsGender: false,
+      supportsKidMode: true,
     },
     description: 'Global standard for international business, academia, and travel.',
     sampleWord: {
@@ -525,4 +529,22 @@ export function getActiveLanguages(): LanguageDefinition[] {
 export function getLanguagesByRegion(region: string): LanguageDefinition[] {
   if (region === 'All') return SUPPORTED_LANGUAGES;
   return SUPPORTED_LANGUAGES.filter((lang) => lang.region === region);
+}
+
+export function isKidSupportedLanguage(langOrId?: LanguageDefinition | string): boolean {
+  if (!langOrId) return false;
+  const lang = typeof langOrId === 'string' ? getLanguage(langOrId) : langOrId;
+  return Boolean(lang?.features?.supportsKidMode ?? (lang?.id === 'en' || lang?.code === 'en'));
+}
+
+export function getLanguageFlag(idOrCode?: string): string {
+  if (!idOrCode) return '🌐';
+  const lang = getLanguage(idOrCode);
+  return lang?.flag || '🌐';
+}
+
+export function getSpeechLocale(idOrCode?: string): string {
+  if (!idOrCode) return 'en-US';
+  const lang = getLanguage(idOrCode);
+  return lang?.speechLocale || 'en-US';
 }

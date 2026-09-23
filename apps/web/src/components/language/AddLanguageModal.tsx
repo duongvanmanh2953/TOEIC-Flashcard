@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ModalPortal } from '../common/ModalPortal';
+import { CountryFlag } from './CountryFlag';
 
 interface AddLanguageModalProps {
   isOpen?: boolean;
@@ -172,7 +173,7 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <span className="text-3xl leading-none">{lang.flag}</span>
+                      <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="lg" />
                       {isAlreadyAdded && (
                         <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                           Đã thêm
@@ -304,7 +305,7 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
           {step === 5 && (
             <div className="text-center py-4 space-y-4 animate-fade-in">
               <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-600 to-brand-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/30">
-                <span className="text-3xl leading-none">{targetLang.flag}</span>
+                <CountryFlag languageId={targetLang.id} countryCode={targetLang.countryCode} size="xl" />
               </div>
 
               <div>
@@ -321,7 +322,7 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 font-medium">Ngôn ngữ:</span>
                   <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span>{targetLang.flag}</span>
+                    <CountryFlag languageId={targetLang.id} countryCode={targetLang.countryCode} size="xs" />
                     <span>{targetLang.name} ({targetLang.nativeName})</span>
                   </span>
                 </div>

@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
-import { SUPPORTED_LANGUAGES } from '../config/languages';
+import { SUPPORTED_LANGUAGES, getLanguage } from '../config/languages';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { LanguageSelector } from '../components/language/LanguageSelector';
+import { LanguageBadge } from '../components/language/LanguageBadge';
+import { CountryFlag } from '../components/language/CountryFlag';
 import { idbSaveLocalDeck, idbGetLocalDecks, idbSaveWords } from '../lib/idb';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import * as XLSX from 'xlsx';
@@ -88,6 +91,7 @@ export const CommunityDecksPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Business English');
   const [cefrLevel, setCefrLevel] = useState('ALL');
+  const [createDeckLang, setCreateDeckLang] = useState<string>(activeLanguage.id);
   const [createDeckTab, setCreateDeckTab] = useState<'my-words' | 'manual'>('my-words');
 
   // Words from personal bank
@@ -257,6 +261,7 @@ export const CommunityDecksPage: React.FC = () => {
       promptLogin('Đăng nhập để tạo và chia sẻ bộ từ vựng cộng đồng');
       return;
     }
+    setCreateDeckLang(activeLanguage.id);
     setShowCreateModal(true);
     fetchMyWords();
   };
@@ -447,7 +452,7 @@ export const CommunityDecksPage: React.FC = () => {
     }
 
     try {
-      const targetLangId = selectedLanguageFilter === 'ALL' ? activeLanguage.id : selectedLanguageFilter;
+      const targetLangId = createDeckLang || activeLanguage.id;
       const res: any = await api.post('/community/decks', {
         title,
         description,
@@ -702,7 +707,7 @@ export const CommunityDecksPage: React.FC = () => {
                 : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            <span>{lang.flag}</span>
+            <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="xs" />
             <span>{lang.nativeName}</span>
           </button>
         ))}
@@ -733,36 +738,58 @@ export const CommunityDecksPage: React.FC = () => {
               {visibleDecks.map((deck) => {
                 const isProtected = deck.hasPassword || deck.isProtected;
                 const isUnlocked = unlockedDeckIds[deck.id] || (user && deck.userId === user.id);
+                const isMyDeck = Boolean(user && (deck.userId === user.id || deck.author?.id === user.id));
+                const isAlreadyCloned = myDecks.some(
+                  (md) => md.originDeckId === deck.id || md.id === deck.id || md.id === `cloned_${deck.id}`
+                );
+                const targetLang = deck.languageId || activeLanguage.id;
+
                 return (
                   <div
                     key={deck.id}
-                    className="p-5 md:p-6 flex flex-col justify-between relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md transition duration-150 cv-auto-card"
+                    className="p-5 flex flex-col justify-between relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md transition duration-150 cv-auto-card"
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900">
-                          {deck.cefrLevel === 'ALL' ? 'Tất cả trình độ' : `CEFR ${deck.cefrLevel}`}
-                        </span>
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <LanguageBadge languageIdOrCode={targetLang} size="xs" />
+                          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900 shrink-0">
+                            {deck.cefrLevel === 'ALL' ? 'Tất cả' : `CEFR ${deck.cefrLevel}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isMyDeck ? (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                              Của tôi
+                            </span>
+                          ) : isAlreadyCloned ? (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+                              Đã lưu
+                            </span>
+                          ) : null}
                           {isProtected && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-900">
                               {isUnlocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                              <span>{isUnlocked ? 'Đã mở khóa' : 'Có mật khẩu'}</span>
                             </span>
                           )}
-                          <span className="text-xs text-slate-400 font-medium">{deck.category}</span>
                         </div>
                       </div>
 
-                      <h3 className="text-lg font-bold leading-snug text-slate-900 dark:text-white flex items-center gap-2">
-                        <span>{deck.title}</span>
+                      <h3 className="text-base font-extrabold leading-snug text-slate-900 dark:text-white line-clamp-1 break-all" title={deck.title}>
+                        {deck.title}
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+
+                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mt-1 mb-2">
+                        <span className="truncate">Bởi <strong className="font-bold text-slate-700 dark:text-slate-300">{deck.author?.displayName || (isMyDeck ? 'Bạn' : 'Cộng đồng')}</strong></span>
+                        <span className="shrink-0 text-[11px] font-semibold">{deck.words?.length || deck._count?.words || 0} từ</span>
+                      </div>
+
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                         {deck.description || 'Bộ từ vựng tiếng Anh chuyên sâu.'}
                       </p>
 
                       {/* Words Preview Chips */}
-                      <div className="mt-3.5 flex flex-wrap gap-1.5">
+                      <div className="mt-3 flex flex-wrap gap-1.5">
                         {deck.words?.slice(0, 4).map((w: any) => (
                           <span
                             key={w.id}
@@ -779,7 +806,7 @@ export const CommunityDecksPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs text-slate-400">
                         <Copy className="w-3.5 h-3.5" />
                         <span>{deck.cloneCount || 0} lượt clone</span>
@@ -793,13 +820,36 @@ export const CommunityDecksPage: React.FC = () => {
                           {isProtected && !isUnlocked && <Lock className="w-3 h-3 text-amber-500" />}
                           <span>Xem trước</span>
                         </button>
-                        <button
-                          onClick={() => handleActionOnDeck(deck, 'clone')}
-                          className="btn-glass-primary !shadow-none px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Lưu / Tải về</span>
-                        </button>
+
+                        {isMyDeck ? (
+                          <button
+                            onClick={() => setSelectedDeck(deck)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 hover:bg-emerald-500/20 transition cursor-pointer"
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>Mở kho của tôi</span>
+                          </button>
+                        ) : isAlreadyCloned ? (
+                          <button
+                            onClick={() => {
+                              setMainTab('my-decks');
+                              fetchMyDecks();
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs font-bold flex items-center gap-1 hover:bg-blue-500/20 transition cursor-pointer"
+                            title="Bộ từ đã có trong kho từ vựng cá nhân của bạn"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Đã có trong kho</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleActionOnDeck(deck, 'clone')}
+                            className="btn-glass-primary !shadow-none px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Lưu / Tải về</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1194,7 +1244,16 @@ export const CommunityDecksPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <LanguageSelector
+                    label="NGÔN NGỮ BỘ TỪ"
+                    value={createDeckLang}
+                    onChange={(langId) => setCreateDeckLang(langId)}
+                    availableOnly={true}
+                    size="sm"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">
                     Chủ đề
@@ -1203,12 +1262,13 @@ export const CommunityDecksPage: React.FC = () => {
                     value={category}
                     onChange={(val) => setCategory(val)}
                     options={[
-                      { value: 'Business English', label: 'Business English (Kinh doanh)' },
+                      { value: 'Business English', label: 'Business (Kinh doanh)' },
                       { value: 'Technology', label: 'Technology & AI (Công nghệ)' },
                       { value: 'IELTS Prep', label: 'IELTS Academic (Luyện thi)' },
                       { value: 'Daily Life', label: 'Daily Conversation (Đời sống)' },
                       { value: 'Travel & Hospitality', label: 'Travel & Hospitality (Du lịch)' },
                     ]}
+                    size="sm"
                     className="w-full"
                   />
                 </div>
@@ -1228,6 +1288,7 @@ export const CommunityDecksPage: React.FC = () => {
                       { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
                       { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
                     ]}
+                    size="sm"
                     className="w-full"
                   />
                 </div>

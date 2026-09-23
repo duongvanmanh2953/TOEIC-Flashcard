@@ -45,7 +45,9 @@ import {
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
+import { CountryFlag } from '../language/CountryFlag';
 import { useLearningContext } from '../../contexts/LearningContext';
+import { isKidSupportedLanguage } from '../../config/languages';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
 import { VirtualChatPane } from '../chat/VirtualChatPane';
@@ -296,6 +298,8 @@ export const AppShell: React.FC = () => {
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isPro = isProUser(user);
 
+  const isKidSupported = isKidSupportedLanguage(activeLanguage);
+
   const navSections = [
     {
       title: 'HỌC TẬP & PHẢN XẠ',
@@ -308,18 +312,22 @@ export const AppShell: React.FC = () => {
         { to: '/review', label: t('nav.review', 'Smart Review'), icon: Sparkles, badge: 'SRS' },
       ],
     },
-    {
-      title: 'KIDS / HỌC CÙNG BÉ',
-      items: [
-        {
-          to: '/kids',
-          label: 'Học cùng bé (Kids Mode)',
-          icon: Baby,
-          highlight: true,
-          badge: 'NEW 🌟',
-        },
-      ],
-    },
+    ...(isKidSupported
+      ? [
+          {
+            title: 'KIDS / HỌC CÙNG BÉ',
+            items: [
+              {
+                to: '/kids',
+                label: 'Học cùng bé (Kids Mode)',
+                icon: Baby,
+                highlight: true,
+                badge: 'ENGLISH 🌟',
+              },
+            ],
+          },
+        ]
+      : []),
     {
       title: 'KHO TỪ & LUYỆN TẬP',
       items: [
@@ -400,7 +408,7 @@ export const AppShell: React.FC = () => {
           {/* User Streak Pill — Pinned Directly Under Logo */}
           <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0 shadow-xs">
             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs min-w-0 truncate">
-              <span className="text-base leading-none shrink-0">{activeLanguage.flag}</span>
+              <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
               <span className="truncate">{activeProfile.currentStreak || 0} Day Streak</span>
             </div>
             <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-extrabold shrink-0 ml-1 border border-amber-500/30">

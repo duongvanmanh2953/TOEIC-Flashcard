@@ -14,6 +14,9 @@ import { voiceService } from '../services/voice/voiceService';
 import { KidsParentPinModal } from './KidsParentPinModal';
 import { KidsHeaderStatCard } from './KidsHeaderStatCard';
 import { KidsSoundToggle } from './KidsSoundToggle';
+import { useLearningContext } from '../../contexts/LearningContext';
+import { isKidSupportedLanguage } from '../../config/languages';
+import { CountryFlag } from '../../components/language/CountryFlag';
 import {
   Flame,
   Sparkles,
@@ -28,11 +31,16 @@ import {
   Compass,
   Smile,
   Trophy,
+  Baby,
+  Globe,
 } from 'lucide-react';
 
 export const KidsLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { activeLanguage, switchLanguage } = useLearningContext();
+  const isSupported = isKidSupportedLanguage(activeLanguage);
+
   const [progress, setProgress] = useState<KidProgressState>(() =>
     curriculumProgress.getState()
   );
@@ -530,6 +538,48 @@ export const KidsLayout: React.FC = () => {
         onClose={() => setParentModalOpen(false)}
         onSuccess={handleParentVerified}
       />
+
+      {/* Unsupported Language Switch Prompt Overlay */}
+      {!isSupported && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border-2 border-amber-400 shadow-2xl text-center space-y-4 animate-scale-up">
+            <div className="w-16 h-16 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-2xl font-black shadow-inner">
+              👶 🌟
+            </div>
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+              Chương trình Kid Mode hiện tối ưu cho Tiếng Anh
+            </h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed flex items-center justify-center flex-wrap gap-1">
+              <span>Bạn đang chọn không gian ngôn ngữ</span>
+              <strong className="flex items-center gap-1">
+                {activeLanguage.name} <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
+              </strong>.
+              <span>Vui lòng chuyển sang</span>
+              <strong className="flex items-center gap-1">
+                Tiếng Anh <CountryFlag languageId="en" countryCode="GB" size="xs" />
+              </strong>
+              <span>để đồng hành cùng bé trong thế giới trò chơi tương tác!</span>
+            </p>
+            <div className="pt-2 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => switchLanguage('en')}
+                className="w-full py-3 px-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs sm:text-sm transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Globe className="w-4 h-4" />
+                <span>Chuyển sang Tiếng Anh & Bắt đầu</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+              >
+                Quay lại Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

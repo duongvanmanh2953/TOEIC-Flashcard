@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LanguageDefinition } from '../../config/languages';
+import { CountryFlag } from '../language/CountryFlag';
 import { audioEngine } from '../../lib/audioEngine';
 import {
   Volume2,
@@ -116,7 +117,7 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
-                <span className="text-sm">{language.flag}</span>
+                <CountryFlag languageId={language.id} countryCode={language.countryCode} size="xs" />
                 <span>{language.name}</span>
               </span>
 

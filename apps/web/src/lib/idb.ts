@@ -30,7 +30,10 @@ export interface LocalDeck {
   updatedAt: number;
   isSyncedToCloud?: boolean;
   isCloned?: boolean;
+  isImported?: boolean;
   isReadOnly?: boolean;
+  authorName?: string;
+  sourceName?: string;
   author?: { id: string; displayName: string; avatar?: string };
 }
 

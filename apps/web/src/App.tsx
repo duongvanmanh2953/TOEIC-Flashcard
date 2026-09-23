@@ -56,6 +56,7 @@ import { WordMatchGame } from './pages/games/WordMatchGame';
 import { WordScrambleGame } from './pages/games/WordScrambleGame';
 import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
 import { AdminFirebasePage } from './pages/admin/AdminFirebasePage';
+import { AdminLanguagePage } from './pages/admin/AdminLanguagePage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 
 // Kids English Learning System
@@ -212,6 +213,7 @@ export const App: React.FC = () => {
               <Route path="feedback" element={<AdminFeedbackPage />} />
               <Route path="vocabulary" element={<AdminVocabularyPage />} />
               <Route path="shared-vocabulary" element={<AdminSharedVocabularyPage />} />
+              <Route path="languages" element={<AdminLanguagePage />} />
               <Route path="learning" element={<AdminLearningPage />} />
               <Route path="resources" element={<AdminResourcesPage />} />
               <Route path="notifications" element={<AdminNotificationsPage />} />

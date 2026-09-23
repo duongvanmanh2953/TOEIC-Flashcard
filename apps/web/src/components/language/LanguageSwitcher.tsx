@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ModalPortal } from '../common/ModalPortal';
 import { AddLanguageModal } from './AddLanguageModal';
+import { CountryFlag } from './CountryFlag';
 
 interface LanguageSwitcherProps {
   variant?: 'header' | 'mobile' | 'compact';
@@ -86,7 +87,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           className="h-8 px-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold flex items-center gap-1.5 transition border border-slate-200/60 dark:border-slate-700/60 cursor-pointer"
           title="Chuyển đổi không gian học"
         >
-          <span className="text-base leading-none">{activeLanguage.flag}</span>
+          <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
           <span className="truncate">{activeLanguage.nativeName}</span>
           <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -97,9 +98,12 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
           className="h-8 px-2.5 sm:px-3 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-900 dark:text-white text-xs font-bold flex items-center gap-2 transition border border-slate-200/80 dark:border-slate-700/80 shadow-xs group cursor-pointer"
           title="Chọn ngôn ngữ đang học"
         >
-          <span className="text-base leading-none group-hover:scale-110 transition-transform">
-            {activeLanguage.flag}
-          </span>
+          <CountryFlag
+            languageId={activeLanguage.id}
+            countryCode={activeLanguage.countryCode}
+            size="sm"
+            className="group-hover:scale-110 transition-transform"
+          />
           <span className="truncate font-extrabold">{activeLanguage.nativeName}</span>
 
           {activeProfile.currentStreak > 0 && (
@@ -168,7 +172,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-2xl leading-none shrink-0">{lang.flag}</span>
+                        <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="md" />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
@@ -261,7 +265,7 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({
                       className="p-2 rounded-xl bg-white dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-left transition group cursor-pointer"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-base shrink-0">{lang.flag}</span>
+                        <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="xs" />
                         <div className="min-w-0 truncate">
                           <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
                             {lang.name}

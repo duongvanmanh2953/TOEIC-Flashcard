@@ -255,7 +255,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <FilterSelect
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(val) => setStatusFilter(String(val))}
             options={statusOptions}
             className="w-56"
           />

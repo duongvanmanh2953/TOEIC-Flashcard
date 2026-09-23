@@ -23,8 +23,11 @@ import {
   LocalDeck,
 } from '../lib/idb';
 import { GlassCard } from '../components/common/GlassCard';
+import { CountryFlag } from '../components/language/CountryFlag';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { LanguageSelector } from '../components/language/LanguageSelector';
+import { LanguageBadge } from '../components/language/LanguageBadge';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import { useVirtualList } from '../hooks/useVirtualList';
 import {
@@ -167,8 +170,10 @@ export const MyWordBankPage: React.FC = () => {
   const [deckDescInput, setDeckDescInput] = useState('');
   const [deckCatInput, setDeckCatInput] = useState('Business English');
   const [deckCefrInput, setDeckCefrInput] = useState('B1');
+  const [deckLangInput, setDeckLangInput] = useState<string>(activeLanguage.id);
   const [deckPasswordInput, setDeckPasswordInput] = useState('');
   const [deckStatusInput, setDeckStatusInput] = useState<'PENDING' | 'PRIVATE' | 'APPROVED'>('PRIVATE');
+  const [creatingDeck, setCreatingDeck] = useState(false);
 
   // Password Protection for opening & studying decks
   const [deckToUnlock, setDeckToUnlock] = useState<LocalDeck | null>(null);
@@ -395,7 +400,7 @@ export const MyWordBankPage: React.FC = () => {
   // Multi-Language Native Browser Speech
   const handlePlayAudio = (text: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    audioEngine.speak(text, activeLanguage.speechLocale);
+    audioEngine.playWord(text, { lang: activeLanguage.speechLocale });
   };
 
   // 2-Way Favorite Toggle (♡ <-> ♥)
@@ -477,63 +482,69 @@ export const MyWordBankPage: React.FC = () => {
   // Create Deck
   const handleConfirmCreateDeck = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!deckTitleInput.trim()) return;
+    if (!deckTitleInput.trim() || creatingDeck) return;
+    setCreatingDeck(true);
 
-    const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
-    const newDeckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const newDeck: LocalDeck = {
-      id: newDeckId,
-      userId: currentUserId,
-      languageId: activeLanguage.id,
-      title: deckTitleInput.trim(),
-      description: deckDescInput.trim() || undefined,
-      category: deckCatInput,
-      cefrLevel: deckCefrInput,
-      wordCount: 0,
-      words: [],
-      isProtected: Boolean(deckPasswordInput.trim()),
-      hasPassword: Boolean(deckPasswordInput.trim()),
-      password: deckPasswordInput.trim() || undefined,
-      status: 'APPROVED',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      isSyncedToCloud: false,
-    };
+    try {
+      const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
+      const targetLangId = deckLangInput || activeLanguage.id;
+      const newDeckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const newDeck: LocalDeck = {
+        id: newDeckId,
+        userId: currentUserId,
+        languageId: targetLangId,
+        title: deckTitleInput.trim(),
+        description: deckDescInput.trim() || undefined,
+        category: deckCatInput,
+        cefrLevel: deckCefrInput,
+        wordCount: 0,
+        words: [],
+        isProtected: Boolean(deckPasswordInput.trim()),
+        hasPassword: Boolean(deckPasswordInput.trim()),
+        password: deckPasswordInput.trim() || undefined,
+        status: 'APPROVED',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        isSyncedToCloud: false,
+      };
 
-    // 1. Save locally to IndexedDB
-    await idbSaveLocalDeck(newDeck, currentUserId);
-    setDecks((prev) => [newDeck, ...prev]);
+      // 1. Save locally to IndexedDB
+      await idbSaveLocalDeck(newDeck, currentUserId);
+      setDecks((prev) => [newDeck, ...prev]);
 
-    // 2. Sync to Cloud API if authenticated
-    if (user && !isGuest) {
-      try {
-        const res: any = await api.post('/community/decks', {
-          title: newDeck.title,
-          description: newDeck.description,
-          category: newDeck.category,
-          cefrLevel: newDeck.cefrLevel,
-          languageId: activeLanguage.id,
-          isPublic: true,
-          password: newDeck.password,
-          words: [],
-        });
-        if (res?.id) {
-          newDeck.id = res.id;
-          newDeck.isSyncedToCloud = true;
-          await idbSaveLocalDeck(newDeck, currentUserId);
-          setDecks((prev) => prev.map((d) => (d.id === newDeckId ? newDeck : d)));
+      // 2. Sync to Cloud API if authenticated
+      if (user && !isGuest) {
+        try {
+          const res: any = await api.post('/community/decks', {
+            title: newDeck.title,
+            description: newDeck.description,
+            category: newDeck.category,
+            cefrLevel: newDeck.cefrLevel,
+            languageId: targetLangId,
+            isPublic: true,
+            password: newDeck.password,
+            words: [],
+          });
+          if (res?.id) {
+            newDeck.id = res.id;
+            newDeck.isSyncedToCloud = true;
+            await idbSaveLocalDeck(newDeck, currentUserId);
+            setDecks((prev) => prev.map((d) => (d.id === newDeckId ? newDeck : d)));
+          }
+        } catch (err) {
+          console.warn('Cloud deck creation notice (saved locally):', err);
         }
-      } catch (err) {
-        console.warn('Cloud deck creation notice (saved locally):', err);
       }
-    }
 
-    setShowCreateDeckModal(false);
-    setDeckTitleInput('');
-    setDeckDescInput('');
-    setDeckPasswordInput('');
-    setActionSuccessMsg(`Đã tạo thành công kho từ vựng "${newDeck.title}"!`);
-    setTimeout(() => setActionSuccessMsg(null), 3500);
+      setShowCreateDeckModal(false);
+      setDeckTitleInput('');
+      setDeckDescInput('');
+      setDeckPasswordInput('');
+      setActionSuccessMsg(`Đã tạo thành công kho từ vựng "${newDeck.title}"!`);
+      setTimeout(() => setActionSuccessMsg(null), 3500);
+    } finally {
+      setCreatingDeck(false);
+    }
   };
 
   // Edit Deck
@@ -1440,7 +1451,7 @@ export const MyWordBankPage: React.FC = () => {
                   <span>Personal Word Bank</span>
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700">
-                  <span>{activeLanguage.flag}</span>
+                  <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
                   <span>{activeLanguage.name}</span>
                 </div>
                 <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
@@ -3407,9 +3418,19 @@ export const MyWordBankPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                <LanguageSelector
+                  label="Ngôn ngữ kho từ *"
+                  value={deckLangInput}
+                  onChange={(langId) => setDeckLangInput(langId)}
+                  availableOnly={true}
+                  size="sm"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
                   Lĩnh vực / Danh mục
                 </label>
                 <CustomDropdown
@@ -3428,7 +3449,7 @@ export const MyWordBankPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
                   Cấp độ chuẩn (CEFR)
                 </label>
                 <CustomDropdown
@@ -3495,16 +3516,27 @@ export const MyWordBankPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowCreateDeckModal(false)}
+              disabled={creatingDeck}
               className="btn-glass-secondary btn-glass-sm !px-5"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="btn-glass-purple btn-glass-sm !px-6 font-bold"
+              disabled={creatingDeck}
+              className="btn-glass-purple btn-glass-sm !px-6 font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              <span>Xác nhận tạo kho</span>
+              {creatingDeck ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Đang tạo kho...</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>Xác nhận tạo kho</span>
+                </>
+              )}
             </button>
           </div>
         </form>

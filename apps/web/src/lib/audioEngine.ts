@@ -223,6 +223,7 @@ class AudioEngine {
   public async playBilingualText(
     text: string,
     options: {
+      rate?: number;
       onStart?: () => void;
       onEnd?: () => void;
       onError?: (err: any) => void;
@@ -256,7 +257,7 @@ class AudioEngine {
           options.onError?.(err);
         }
       },
-    }, 1.14);
+    }, options.rate || 1.14);
   }
 
   /**
