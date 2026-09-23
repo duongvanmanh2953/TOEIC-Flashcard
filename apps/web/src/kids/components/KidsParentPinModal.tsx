@@ -75,7 +75,7 @@ export const KidsParentPinModal: React.FC<KidsParentPinModalProps> = ({
           <h3 className="text-lg font-black text-slate-900 tracking-tight">
             Khu Vực Phụ Huynh
           </h3>
-          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+          <p className="text-xs font-bold text-slate-700 mt-1 leading-relaxed">
             Nhấn và giữ nút tròn bên dưới để mở khóa.
           </p>
         </div>

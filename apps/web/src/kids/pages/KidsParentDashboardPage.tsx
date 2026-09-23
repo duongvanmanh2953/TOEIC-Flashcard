@@ -91,7 +91,7 @@ export const KidsParentDashboardPage: React.FC = () => {
         <div className="bg-white rounded-3xl p-5 border-2 border-emerald-200/80">
           <div className="text-xs font-black text-slate-600 uppercase mb-1">Bài Đã Hoàn Thành</div>
           <div className="text-2xl md:text-3xl font-black text-emerald-600">
-            {completedLessonsCount} <span className="text-sm font-bold text-slate-500">/ {totalCurriculumLessons}</span>
+            {completedLessonsCount} <span className="text-sm font-bold text-slate-700">/ {totalCurriculumLessons}</span>
           </div>
           <div className="text-[11px] text-slate-600 font-bold mt-1">{progressPercent}% lộ trình toàn bộ</div>
         </div>

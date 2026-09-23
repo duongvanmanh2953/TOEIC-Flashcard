@@ -11,8 +11,10 @@ export interface DropdownOption {
 }
 
 export interface CustomDropdownProps {
-  value: string | number;
-  onChange: (value: any) => void;
+  value?: string | number;
+  onChange?: (value: any) => void;
+  onSelect?: (value: any) => void;
+  align?: 'left' | 'right';
   options: DropdownOption[];
   placeholder?: string;
   icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
@@ -40,6 +42,8 @@ const normalizeText = (text: string) =>
 export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   value,
   onChange,
+  onSelect,
+  align,
   options,
   placeholder = 'Chọn một mục...',
   icon: LeftIcon,
@@ -119,9 +123,9 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     // Dynamic horizontal alignment:
     // If opening from rect.left would overflow the right viewport edge,
     // OR if trigger is positioned in the right half of the screen,
-    // anchor the dropdown's RIGHT edge to the trigger's RIGHT edge.
+    // OR align is explicitly 'right', anchor the dropdown's RIGHT edge to the trigger's RIGHT edge.
     const wouldOverflowRight = rect.left + minWidth > screenW - 12;
-    const isRightAnchored = rect.right > screenW * 0.6 || wouldOverflowRight;
+    const isRightAnchored = align === 'right' || rect.right > screenW * 0.6 || wouldOverflowRight;
 
     let left: number | undefined = undefined;
     let right: number | undefined = undefined;
@@ -204,6 +208,11 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       }
     };
 
+    const triggerChange = (val: any) => {
+      onChange?.(val);
+      onSelect?.(val);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -220,7 +229,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       } else if (e.key === 'Enter') {
         e.preventDefault();
         if (focusedIndex >= 0 && focusedIndex < filteredOptions.length) {
-          onChange(filteredOptions[focusedIndex].value);
+          triggerChange(filteredOptions[focusedIndex].value);
           handleClose();
         } else if (creatable && searchQuery.trim() && !exactMatchExists) {
           handleCreateOption();
@@ -247,7 +256,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       window.removeEventListener('resize', handleScrollOrResize);
       window.removeEventListener('scroll', handleScrollOrResize, true);
     };
-  }, [isOpen, updatePosition, isSearchable, filteredOptions, focusedIndex, creatable, searchQuery, exactMatchExists]);
+  }, [isOpen, updatePosition, isSearchable, filteredOptions, focusedIndex, creatable, searchQuery, exactMatchExists, onChange, onSelect]);
 
   const handleCreateOption = () => {
     const trimmed = searchQuery.trim();
@@ -255,7 +264,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     if (onCreateOption) {
       onCreateOption(trimmed);
     } else {
-      onChange(trimmed);
+      onChange?.(trimmed);
+      onSelect?.(trimmed);
     }
     handleClose();
   };
@@ -325,7 +335,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onChange('');
+                  onChange?.('');
+                  onSelect?.('');
                 }}
                 className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
                 title="Xóa lựa chọn"
@@ -410,7 +421,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                       role="option"
                       aria-selected={isSelected}
                       onClick={() => {
-                        onChange(option.value);
+                        onChange?.(option.value);
+                        onSelect?.(option.value);
                         handleClose();
                       }}
                       className={`w-full text-left px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 transition-colors ${

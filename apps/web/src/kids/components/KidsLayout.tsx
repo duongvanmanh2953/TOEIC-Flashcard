@@ -246,12 +246,12 @@ export const KidsLayout: React.FC = () => {
             <div className="flex items-center justify-center gap-1 py-1 px-2 rounded-xl bg-white/90 border border-amber-200 shadow-2xs">
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
               <span className="text-xs font-black text-slate-900">{progress.totalStars || 0}</span>
-              <span className="text-[10px] font-bold text-slate-500">Sao</span>
+              <span className="text-[10px] font-bold text-slate-700">Sao</span>
             </div>
             <div className="flex items-center justify-center gap-1 py-1 px-2 rounded-xl bg-white/90 border border-rose-200 shadow-2xs">
               <Flame className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
               <span className="text-xs font-black text-slate-900">{progress.streakDays || 1}</span>
-              <span className="text-[10px] font-bold text-slate-500">Ngày</span>
+              <span className="text-[10px] font-bold text-slate-700">Ngày</span>
             </div>
           </div>
         </div>

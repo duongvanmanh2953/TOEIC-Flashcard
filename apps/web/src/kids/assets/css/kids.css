@@ -43,6 +43,18 @@
   border-width: 3px;
 }
 
+/* Light Mode Kids High Contrast Rules (Ensure secondary text is crisp and legible on light/white surfaces) */
+:not(.dark) .kids-layout .text-slate-500,
+:not(.dark) .kids-layout .text-gray-500,
+:not(.dark) .kids-layout .text-neutral-500 {
+  color: #334155; /* Slate 700: High contrast (> 5.5:1 on white), readable without being harsh */
+}
+
+:not(.dark) .kids-layout .text-slate-400:not(.cursor-not-allowed),
+:not(.dark) .kids-layout .text-gray-400:not(.cursor-not-allowed) {
+  color: #475569; /* Slate 600: High contrast, readable metadata */
+}
+
 /* Dark Mode Semantic Text System (Guarantees readable, eye-friendly soft blue instead of dark gray) */
 .dark .text-slate-500,
 .dark .text-gray-500,

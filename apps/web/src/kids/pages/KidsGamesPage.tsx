@@ -269,7 +269,7 @@ export const KidsGamesPage: React.FC = () => {
               Gợi Ý Cho Bé Hôm Nay
             </h2>
           </div>
-          <span className="text-xs font-bold text-slate-500">
+          <span className="text-xs font-bold text-slate-700">
             Dựa trên kỹ năng cần rèn luyện
           </span>
         </div>
@@ -294,7 +294,7 @@ export const KidsGamesPage: React.FC = () => {
                     <h3 className="text-base font-black text-slate-900 group-hover:text-amber-600 transition-colors mt-0.5">
                       {game.titleVi}
                     </h3>
-                    <p className="text-xs text-slate-500 font-bold line-clamp-1">
+                    <p className="text-xs text-slate-700 font-bold line-clamp-1">
                       {game.titleEn}
                     </p>
                   </div>
@@ -419,7 +419,7 @@ export const KidsGamesPage: React.FC = () => {
                       <p className="text-xs font-bold text-amber-700">
                         {game.titleEn}
                       </p>
-                      <p className="text-xs text-slate-500 font-medium line-clamp-2 pt-1">
+                      <p className="text-xs text-slate-700 font-medium line-clamp-2 pt-1">
                         {game.coreMechanicVi}
                       </p>
                     </div>

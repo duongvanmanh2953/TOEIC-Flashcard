@@ -809,7 +809,7 @@ export const KidsJourneyPage: React.FC = () => {
                         >
                           <div>
                             <div className="flex items-center justify-between gap-1">
-                              <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                              <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">
                                 {node.chapterTitle}
                               </span>
                               {node.stars > 0 && (

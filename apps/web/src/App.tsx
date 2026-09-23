@@ -24,6 +24,13 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { AICoachStudioPage } from './pages/AICoachStudioPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
 
+// Exam Bank & Evaluation Engine Pages
+import { ExamBankPage } from './pages/exams/ExamBankPage';
+import { ExamEditorPage } from './pages/exams/ExamEditorPage';
+import { ExamSessionPage } from './pages/exams/ExamSessionPage';
+import { ExamResultPage } from './pages/exams/ExamResultPage';
+import { WrongAnswerReviewPage } from './pages/exams/WrongAnswerReviewPage';
+
 // User Portal Pages
 import { SupportCenterPage } from './pages/SupportCenterPage';
 import { FeedbackPortalPage } from './pages/FeedbackPortalPage';
@@ -184,6 +191,15 @@ export const App: React.FC = () => {
               <Route path="/my-words" element={<Navigate to="/word-bank" replace />} />
               <Route path="/my-words/:deckId" element={<Navigate to="/word-bank" replace />} />
               <Route path="/community" element={<CommunityDecksPage />} />
+              
+              {/* Exam Bank & Adaptive Test Engine */}
+              <Route path="/exams" element={<ExamBankPage />} />
+              <Route path="/exams/editor" element={<ProtectedRoute requireAuth={true}><ExamEditorPage /></ProtectedRoute>} />
+              <Route path="/exams/editor/:examId" element={<ProtectedRoute requireAuth={true}><ExamEditorPage /></ProtectedRoute>} />
+              <Route path="/exams/session/:attemptId" element={<ExamSessionPage />} />
+              <Route path="/exams/result/:attemptId" element={<ExamResultPage />} />
+              <Route path="/exams/review-wrong" element={<ProtectedRoute requireAuth={true}><WrongAnswerReviewPage /></ProtectedRoute>} />
+
               <Route path="/custom-quiz" element={<CustomQuizPage />} />
               <Route path="/placement-test" element={<PlacementTestPage />} />
               <Route path="/ai-tutor" element={<AICoachStudioPage />} />

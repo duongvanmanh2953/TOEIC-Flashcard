@@ -42,6 +42,7 @@ import {
   LogIn,
   Baby,
   Globe,
+  GraduationCap,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
@@ -302,7 +303,7 @@ export const AppShell: React.FC = () => {
 
   const navSections = [
     {
-      title: 'HỌC',
+      title: 'HỌC TẬP & LUYỆN TẬP',
       items: [
         { to: '/dashboard', label: t('nav.dashboard', 'Bảng điều khiển'), icon: LayoutDashboard },
         { to: '/languages', label: 'My Languages', icon: Globe },
@@ -313,7 +314,7 @@ export const AppShell: React.FC = () => {
     ...(isKidSupported
       ? [
           {
-            title: 'KIDS',
+            title: 'TIẾNG ANH CHO BÉ',
             items: [
               {
                 to: '/kids',
@@ -326,23 +327,24 @@ export const AppShell: React.FC = () => {
         ]
       : []),
     {
-      title: 'KHO TỪ',
+      title: 'KHO TỪ VỰNG & BỘ ĐỀ',
       items: [
         { to: '/vocabulary', label: t('nav.vocabulary', 'Thư viện từ vựng'), icon: BookOpen },
         { to: '/word-bank', label: t('nav.wordBank', 'Kho từ của tôi'), icon: Bookmark },
-        { to: '/community', label: t('nav.community', 'Kho cộng đồng'), icon: Share2 },
+        { to: '/community', label: t('nav.community', 'Cộng đồng kho từ'), icon: Share2 },
+        { to: '/exams', label: 'Ngân hàng bộ đề', icon: GraduationCap, badge: 'HOT' },
         { to: '/custom-quiz', label: t('nav.customQuiz', 'Trắc nghiệm tùy chọn'), icon: HelpCircle },
       ],
     },
     {
-      title: 'AI',
+      title: 'TRỢ LÝ HỌC TẬP AI',
       items: [
         { to: '/coach', label: 'AI Personal Coach', icon: Mic },
         { to: '/ai-tutor', label: t('nav.aiTutor', 'Gia Sư AI Studio'), icon: BrainCircuit },
       ],
     },
     {
-      title: 'TIẾN TRÌNH',
+      title: 'TIẾN TRÌNH & NĂNG LỰC',
       items: [
         { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
         { to: '/progress', label: t('nav.progress', 'Tiến trình học tập'), icon: Award },
@@ -350,7 +352,7 @@ export const AppShell: React.FC = () => {
       ],
     },
     {
-      title: 'TÀI KHOẢN',
+      title: 'TÀI KHOẢN & HỆ THỐNG',
       items: [
         {
           to: '/upgrade',

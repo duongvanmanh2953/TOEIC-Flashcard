@@ -27,8 +27,9 @@ export class CommunityController {
     @Query('search') search?: string,
     @Query('category') category?: string,
     @Query('cefrLevel') cefrLevel?: CefrLevel,
+    @CurrentUser('id') userId?: string,
   ) {
-    return this.communityService.getPublicDecks(search, category, cefrLevel);
+    return this.communityService.getPublicDecks(search, category, cefrLevel, userId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -228,4 +229,64 @@ export class CommunityController {
   clearAllMyWords(@CurrentUser('id') userId: string) {
     return this.communityService.clearAllMyWords(userId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('decks/:id/like')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle like on a community vocabulary deck' })
+  toggleLikeDeck(@CurrentUser('id') userId: string, @Param('id') deckId: string) {
+    return this.communityService.toggleLikeDeck(userId, deckId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('decks/:id/dislike')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle dislike on a community vocabulary deck' })
+  toggleDislikeDeck(@CurrentUser('id') userId: string, @Param('id') deckId: string) {
+    return this.communityService.toggleDislikeDeck(userId, deckId);
+  }
+
+  @Public()
+  @Get('decks/:id/comments')
+  @ApiOperation({ summary: 'Get comments and nested replies of a community deck' })
+  getDeckComments(@Param('id') deckId: string) {
+    return this.communityService.getDeckComments(deckId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('decks/:id/comments')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add a comment or reply to a community deck' })
+  addDeckComment(
+    @CurrentUser('id') userId: string,
+    @Param('id') deckId: string,
+    @Body() body: { content: string; parentId?: string },
+  ) {
+    return this.communityService.addDeckComment(userId, deckId, body.content, body.parentId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('comments/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Edit own comment' })
+  updateDeckComment(
+    @CurrentUser('id') userId: string,
+    @Param('id') commentId: string,
+    @Body() body: { content: string },
+  ) {
+    return this.communityService.updateDeckComment(userId, commentId, body.content);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('comments/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete comment (author or admin)' })
+  deleteDeckComment(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+    @Param('id') commentId: string,
+  ) {
+    return this.communityService.deleteDeckComment(userId, commentId, role);
+  }
 }
+

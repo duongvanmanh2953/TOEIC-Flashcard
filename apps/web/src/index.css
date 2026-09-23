@@ -53,8 +53,8 @@
     --color-background: #0b1120;
     --color-surface: #162033;
     --color-surface-elevated: #1e293b;
-    --color-border: rgba(255, 255, 255, 0.18);
-    --color-border-subtle: rgba(255, 255, 255, 0.10);
+    --color-border: #7676766b;
+    --color-border-subtle: #76767640;
     --color-text: #f8fafc;
     --color-text-secondary: #e2e8f0;
     --color-text-muted: #94a3b8;
@@ -77,14 +77,29 @@
     --text-secondary: #f1f5f9;
     --text-muted: #cbd5e1;
 
-    /* Dark Borders & Glass - Clear, visible definition */
-    --card-border: rgba(255, 255, 255, 0.20);
-    --card-border-hover: rgba(255, 255, 255, 0.45);
-    --glass-border: rgba(255, 255, 255, 0.20);
-    --glass-border-hover: rgba(255, 255, 255, 0.45);
+    /* Dark Borders & Glass - Tuned to #7676766b */
+    --card-border: #7676766b;
+    --card-border-hover: rgba(255, 255, 255, 0.35);
+    --glass-border: #7676766b;
+    --glass-border-hover: rgba(255, 255, 255, 0.35);
     --glass-shadow: none;
     --glass-shadow-hover: none;
+    border-color: #7676766b;
   }
+
+  /* Universal Dark Mode Border Override (#e5e7eb -> #7676766b) */
+  .dark .border,
+  .dark .border-slate-200,
+  .dark .border-gray-200,
+  .dark .border-zinc-200,
+  .dark .border-slate-700,
+  .dark .border-slate-800,
+  .dark .border-gray-700,
+  .dark .border-gray-800,
+  .dark .border-slate-300 {
+    border-color: #7676766b !important;
+  }
+
 
   /* Universal High-Contrast Overrides for Gray/Muted Classes */
   .text-slate-400,

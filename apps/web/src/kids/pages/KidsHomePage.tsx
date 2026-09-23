@@ -78,7 +78,7 @@ export const KidsHomePage: React.FC = () => {
             <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
               Chào bé yêu!
             </h1>
-            <p className="text-xs sm:text-sm font-bold text-slate-500">
+            <p className="text-xs sm:text-sm font-bold text-slate-700">
               Hôm nay cùng khám phá những cuộc phiêu lưu kỳ thú nhé!
             </p>
           </div>
@@ -139,7 +139,7 @@ export const KidsHomePage: React.FC = () => {
                 <h3 className="text-lg sm:text-xl font-black text-slate-950">
                   Trò Chơi Tiêu Điểm Hôm Nay
                 </h3>
-                <p className="text-xs font-bold text-slate-500">
+                <p className="text-xs font-bold text-slate-700">
                   Thao tác vật lý thật trong thế giới game tương tác
                 </p>
               </div>
@@ -224,10 +224,10 @@ export const KidsHomePage: React.FC = () => {
               <h3 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-wide">
                 APPLE
               </h3>
-              <p className="text-sm font-bold text-slate-600">
+              <p className="text-sm font-bold text-slate-700">
                 /ˈæp.əl/ • <span className="text-amber-900 font-black">Quả Táo</span>
               </p>
-              <p className="text-xs font-bold text-slate-500 max-w-sm">
+              <p className="text-xs font-bold text-slate-700 max-w-sm">
                 "The apple is sweet, red and crunchy!" (Quả táo đỏ giòn ngọt thơm lành).
               </p>
 

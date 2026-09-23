@@ -19,7 +19,7 @@ export class CommunityService {
     private cacheService: RedisCacheService,
   ) {}
 
-  async getPublicDecks(search?: string, category?: string, cefrLevel?: CefrLevel) {
+  async getPublicDecks(search?: string, category?: string, cefrLevel?: CefrLevel, userId?: string) {
     const where: any = {
       isPublic: true,
       status: ModerationStatus.APPROVED,
@@ -50,16 +50,33 @@ export class CommunityService {
           take: 5,
         },
         _count: {
-          select: { words: true, clones: true },
+          select: { words: true, clones: true, comments: true },
         },
       },
-      orderBy: [{ cloneCount: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ cloneCount: 'desc' }, { likeCount: 'desc' }, { createdAt: 'desc' }],
     });
+
+    const userLikes = userId
+      ? await this.prisma.deckLike.findMany({
+          where: { userId, deckId: { in: decks.map((d) => d.id) } },
+          select: { deckId: true },
+        })
+      : [];
+    const userDislikes = userId
+      ? await this.prisma.deckDislike.findMany({
+          where: { userId, deckId: { in: decks.map((d) => d.id) } },
+          select: { deckId: true },
+        })
+      : [];
+    const likedSet = new Set(userLikes.map((l) => l.deckId));
+    const dislikedSet = new Set(userDislikes.map((d) => d.deckId));
 
     // Never expose passwordHash to public clients
     return decks.map(({ passwordHash, ...rest }) => ({
       ...rest,
       hasPassword: rest.isProtected,
+      userLiked: likedSet.has(rest.id),
+      userDisliked: dislikedSet.has(rest.id),
     }));
   }
 
@@ -841,5 +858,204 @@ export class CommunityService {
       syncedWordsCount,
       syncedAt: new Date(),
     };
+  }
+
+  async toggleLikeDeck(userId: string, deckId: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Kho từ vựng không tồn tại');
+
+    const existingLike = await this.prisma.deckLike.findUnique({
+      where: { userId_deckId: { userId, deckId } },
+    });
+
+    if (existingLike) {
+      await this.prisma.deckLike.delete({ where: { id: existingLike.id } });
+      const updated = await this.prisma.communityDeck.update({
+        where: { id: deckId },
+        data: { likeCount: { decrement: 1 } },
+        select: { likeCount: true, dislikeCount: true },
+      });
+      return { liked: false, disliked: false, likeCount: Math.max(0, updated.likeCount), dislikeCount: updated.dislikeCount };
+    } else {
+      const existingDislike = await this.prisma.deckDislike.findUnique({
+        where: { userId_deckId: { userId, deckId } },
+      });
+      if (existingDislike) {
+        await this.prisma.deckDislike.delete({ where: { id: existingDislike.id } });
+        await this.prisma.communityDeck.update({
+          where: { id: deckId },
+          data: { dislikeCount: { decrement: 1 } },
+        });
+      }
+
+      await this.prisma.deckLike.create({
+        data: { userId, deckId },
+      });
+
+      const updated = await this.prisma.communityDeck.update({
+        where: { id: deckId },
+        data: { likeCount: { increment: 1 } },
+        select: { likeCount: true, dislikeCount: true },
+      });
+
+      return { liked: true, disliked: false, likeCount: updated.likeCount, dislikeCount: Math.max(0, updated.dislikeCount) };
+    }
+  }
+
+  async toggleDislikeDeck(userId: string, deckId: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Kho từ vựng không tồn tại');
+
+    const existingDislike = await this.prisma.deckDislike.findUnique({
+      where: { userId_deckId: { userId, deckId } },
+    });
+
+    if (existingDislike) {
+      await this.prisma.deckDislike.delete({ where: { id: existingDislike.id } });
+      const updated = await this.prisma.communityDeck.update({
+        where: { id: deckId },
+        data: { dislikeCount: { decrement: 1 } },
+        select: { likeCount: true, dislikeCount: true },
+      });
+      return { liked: false, disliked: false, likeCount: Math.max(0, updated.likeCount), dislikeCount: updated.dislikeCount };
+    } else {
+      const existingLike = await this.prisma.deckLike.findUnique({
+        where: { userId_deckId: { userId, deckId } },
+      });
+      if (existingLike) {
+        await this.prisma.deckLike.delete({ where: { id: existingLike.id } });
+        await this.prisma.communityDeck.update({
+          where: { id: deckId },
+          data: { likeCount: { decrement: 1 } },
+        });
+      }
+
+      await this.prisma.deckDislike.create({
+        data: { userId, deckId },
+      });
+
+      const updated = await this.prisma.communityDeck.update({
+        where: { id: deckId },
+        data: { dislikeCount: { increment: 1 } },
+        select: { likeCount: true, dislikeCount: true },
+      });
+
+      return { liked: false, disliked: true, likeCount: Math.max(0, updated.likeCount), dislikeCount: updated.dislikeCount };
+    }
+  }
+
+  async getDeckComments(deckId: string) {
+    const comments = await this.prisma.deckComment.findMany({
+      where: { deckId, parentId: null },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, displayName: true, avatar: true, role: true } },
+        replies: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            user: { select: { id: true, displayName: true, avatar: true, role: true } },
+            replies: {
+              orderBy: { createdAt: 'asc' },
+              include: {
+                user: { select: { id: true, displayName: true, avatar: true, role: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const totalCount = await this.prisma.deckComment.count({ where: { deckId, deletedAt: null } });
+    return { comments, totalCount };
+  }
+
+  async addDeckComment(userId: string, deckId: string, content: string, parentId?: string) {
+    if (!content || !content.trim()) throw new BadRequestException('Nội dung bình luận không được để trống');
+
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Kho từ vựng không tồn tại');
+
+    if (parentId) {
+      const parent = await this.prisma.deckComment.findUnique({ where: { id: parentId } });
+      if (!parent) throw new NotFoundException('Bình luận gốc không tồn tại');
+    }
+
+    const comment = await this.prisma.deckComment.create({
+      data: {
+        userId,
+        deckId,
+        content: content.trim(),
+        parentId: parentId || null,
+      },
+      include: {
+        user: { select: { id: true, displayName: true, avatar: true, role: true } },
+      },
+    });
+
+    await this.prisma.communityDeck.update({
+      where: { id: deckId },
+      data: { commentCount: { increment: 1 } },
+    });
+
+    if (parentId) {
+      await this.prisma.deckComment.update({
+        where: { id: parentId },
+        data: { replyCount: { increment: 1 } },
+      });
+    }
+
+    return comment;
+  }
+
+  async updateDeckComment(userId: string, commentId: string, content: string) {
+    if (!content || !content.trim()) throw new BadRequestException('Nội dung bình luận không được để trống');
+
+    const comment = await this.prisma.deckComment.findUnique({ where: { id: commentId } });
+    if (!comment) throw new NotFoundException('Bình luận không tồn tại');
+    if (comment.userId !== userId) throw new ForbiddenException('Bạn chỉ có thể chỉnh sửa bình luận của chính mình');
+
+    return this.prisma.deckComment.update({
+      where: { id: commentId },
+      data: { content: content.trim(), isEdited: true },
+      include: {
+        user: { select: { id: true, displayName: true, avatar: true, role: true } },
+      },
+    });
+  }
+
+  async deleteDeckComment(userId: string, commentId: string, userRole?: string) {
+    const comment = await this.prisma.deckComment.findUnique({
+      where: { id: commentId },
+      include: { _count: { select: { replies: true } } },
+    });
+    if (!comment) throw new NotFoundException('Bình luận không tồn tại');
+
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    if (comment.userId !== userId && !isAdmin) {
+      throw new ForbiddenException('Bạn không có quyền xóa bình luận này');
+    }
+
+    if (comment._count.replies > 0) {
+      await this.prisma.deckComment.update({
+        where: { id: commentId },
+        data: { content: '[Bình luận đã bị xóa]', deletedAt: new Date() },
+      });
+    } else {
+      await this.prisma.deckComment.delete({ where: { id: commentId } });
+    }
+
+    await this.prisma.communityDeck.update({
+      where: { id: comment.deckId },
+      data: { commentCount: { decrement: 1 } },
+    });
+
+    if (comment.parentId) {
+      await this.prisma.deckComment.update({
+        where: { id: comment.parentId },
+        data: { replyCount: { decrement: 1 } },
+      });
+    }
+
+    return { success: true };
   }
 }

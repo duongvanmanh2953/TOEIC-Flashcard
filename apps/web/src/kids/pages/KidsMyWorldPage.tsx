@@ -473,7 +473,7 @@ export const KidsMyWorldPage: React.FC = () => {
                     <span className="text-lg leading-none">{cat.icon || '📖'}</span>
                     <div className="leading-tight">
                       <p className="truncate">{cat.nameVi}</p>
-                      <p className="text-[10px] font-bold text-slate-500 truncate">({cat.nameEn})</p>
+                      <p className="text-[10px] font-bold text-slate-700 truncate">({cat.nameEn})</p>
                     </div>
                   </button>
                 );
@@ -551,7 +551,7 @@ export const KidsMyWorldPage: React.FC = () => {
                         <h3 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-wide break-words">
                           {item.word}
                         </h3>
-                        <span className="text-xs font-bold text-slate-500">{item.phonetic}</span>
+                        <span className="text-xs font-bold text-slate-700">{item.phonetic}</span>
                       </div>
                       <p className="text-xs sm:text-sm font-black text-emerald-700 mt-0.5">
                         {item.viMeaning}
@@ -645,13 +645,13 @@ export const KidsMyWorldPage: React.FC = () => {
                   <span className="px-3 py-1 rounded-full bg-sky-100 border border-sky-300 text-xs font-black text-sky-950">
                     {phr.categoryVi}
                   </span>
-                  <span className="text-xs font-bold text-slate-500">{phr.pronunciationTip}</span>
+                  <span className="text-xs font-bold text-slate-700">{phr.pronunciationTip}</span>
                 </div>
 
                 <div>
                   <h3 className="text-xl font-black text-slate-950">{phr.english}</h3>
                   <p className="text-sm font-black text-emerald-700 mt-0.5">{phr.vietnamese}</p>
-                  <p className="text-xs font-bold text-slate-500 mt-1 flex items-center gap-1">
+                  <p className="text-xs font-bold text-slate-700 mt-1 flex items-center gap-1">
                     <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span>{phr.contextVi}</span>
                   </p>
@@ -884,7 +884,7 @@ export const KidsMyWorldPage: React.FC = () => {
                 <h2 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-wide">
                   {activeWordModal.word}
                 </h2>
-                <p className="text-sm font-bold text-slate-500">{activeWordModal.phonetic}</p>
+                <p className="text-sm font-bold text-slate-700">{activeWordModal.phonetic}</p>
                 <p className="text-xl font-black text-emerald-700 mt-1">
                   {activeWordModal.viMeaning}
                 </p>

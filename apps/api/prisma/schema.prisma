@@ -110,6 +110,15 @@ model User {
   feedbacks        Feedback[]
   feedbackVotes    FeedbackVote[]
   gameResults      GameResult[]
+  deckLikes        DeckLike[]
+  deckDislikes     DeckDislike[]
+  deckComments     DeckComment[]
+  createdExams     Exam[]                @relation("UserExams")
+  examLikes        ExamLike[]
+  examDislikes     ExamDislike[]
+  examComments     ExamComment[]
+  savedExams       ExamSaved[]
+  examAttempts     ExamAttempt[]
 
   @@index([email])
   @@index([role])
@@ -426,12 +435,18 @@ model CommunityDeck {
   isProtected  Boolean          @default(false)
   passwordHash String?
   cloneCount   Int              @default(0)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  likeCount    Int              @default(0)
+  dislikeCount Int              @default(0)
+  commentCount Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  author User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  words  CommunityWord[]
-  clones DeckClone[]
+  author   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  words    CommunityWord[]
+  clones   DeckClone[]
+  likes    DeckLike[]
+  dislikes DeckDislike[]
+  comments DeckComment[]
 
   @@index([userId])
   @@index([status])
@@ -469,6 +484,284 @@ model DeckClone {
   @@index([userId])
   @@index([deckId])
 }
+
+model DeckLike {
+  id        String   @id @default(uuid())
+  userId    String
+  deckId    String
+  createdAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deckId])
+  @@index([userId])
+  @@index([deckId])
+}
+
+model DeckDislike {
+  id        String   @id @default(uuid())
+  userId    String
+  deckId    String
+  createdAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deckId])
+  @@index([userId])
+  @@index([deckId])
+}
+
+model DeckComment {
+  id         String    @id @default(uuid())
+  deckId     String
+  userId     String
+  parentId   String?
+  content    String
+  likeCount  Int       @default(0)
+  replyCount Int       @default(0)
+  isEdited   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  deck    CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  DeckComment?  @relation("DeckCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies DeckComment[] @relation("DeckCommentReplies")
+
+  @@index([deckId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+// =============================================================================
+// EXAM BANK & SMART EVALUATION SYSTEM
+// =============================================================================
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  PRIVATE
+  ARCHIVED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  MULTIPLE_SELECT
+  TRUE_FALSE
+  FILL_IN_BLANK
+  MATCHING
+  ORDERING
+  SHORT_ANSWER
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Exam {
+  id               String           @id @default(uuid())
+  authorId         String
+  title            String
+  description      String?
+  coverImage       String?
+  languageId       String           @default("en")
+  examType         String           @default("TOEIC") // TOEIC, IELTS, HSK, JLPT, TOPIK, SAT, THPT, GENERAL_QUIZ, CUSTOM
+  section          String?          @default("Full")  // Reading, Listening, Full, Grammar, Vocabulary
+  level            String?          @default("Intermediate") // A1-C2, Band 6.0, N3, HSK4, etc.
+  durationMinutes  Int              @default(60)
+  totalQuestions   Int              @default(0)
+  totalScore       Float            @default(100.0)
+  passingScore     Float?           @default(50.0)
+  status           ExamStatus       @default(DRAFT)
+  moderationStatus ModerationStatus @default(PENDING)
+  isProtected      Boolean          @default(false)
+  passwordHash     String?
+  likeCount        Int              @default(0)
+  dislikeCount     Int              @default(0)
+  commentCount     Int              @default(0)
+  attemptCount     Int              @default(0)
+  tags             String[]         @default([])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  author    User           @relation("UserExams", fields: [authorId], references: [id], onDelete: Cascade)
+  questions ExamQuestion[]
+  likes     ExamLike[]
+  dislikes  ExamDislike[]
+  comments  ExamComment[]
+  saves     ExamSaved[]
+  attempts  ExamAttempt[]
+
+  @@index([authorId])
+  @@index([examType])
+  @@index([status])
+  @@index([moderationStatus])
+  @@index([languageId])
+}
+
+model ExamQuestion {
+  id                 String             @id @default(uuid())
+  examId             String
+  questionNumber     Int
+  questionText       String
+  questionHtml       String?
+  imageUrl           String?
+  audioUrl           String?
+  questionType       QuestionType       @default(MULTIPLE_CHOICE)
+  correctAnswer      Json               // e.g. ["B"] or ["A", "C"] or "completed"
+  acceptedAnswers    String[]           @default([])
+  explanation        String?
+  sourceExplanation  String?
+  optionExplanations Json?              // { "A": "...", "B": "...", "C": "...", "D": "..." }
+  grammarType        String?            // Past Simple, Preposition, Passive Voice...
+  partOfSpeech       String?            // Verb, Noun, Adjective...
+  difficulty         QuestionDifficulty @default(MEDIUM)
+  category           String?            @default("Grammar")
+  skill              String?            @default("Reading")
+  points             Float              @default(1.0)
+  tags               String[]           @default([])
+  vocabularyIds      String[]           @default([]) // Link to Vocabulary entity for 1-click review bank adding
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options ExamOption[]
+  answers ExamAnswer[]
+
+  @@index([examId])
+  @@index([questionNumber])
+  @@index([grammarType])
+  @@index([category])
+}
+
+model ExamOption {
+  id           String  @id @default(uuid())
+  questionId   String
+  key          String  // A, B, C, D...
+  text         String
+  imageUrl     String?
+  displayOrder Int     @default(0)
+
+  question ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model ExamLike {
+  id        String   @id @default(uuid())
+  userId    String
+  examId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([userId])
+  @@index([examId])
+}
+
+model ExamDislike {
+  id        String   @id @default(uuid())
+  userId    String
+  examId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([userId])
+  @@index([examId])
+}
+
+model ExamComment {
+  id         String    @id @default(uuid())
+  examId     String
+  userId     String
+  parentId   String?
+  content    String
+  likeCount  Int       @default(0)
+  replyCount Int       @default(0)
+  isEdited   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  exam    Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  ExamComment?  @relation("ExamCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies ExamComment[] @relation("ExamCommentReplies")
+
+  @@index([examId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model ExamSaved {
+  id        String   @id @default(uuid())
+  userId    String
+  examId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([userId])
+  @@index([examId])
+}
+
+model ExamAttempt {
+  id                 String    @id @default(uuid())
+  examId             String
+  userId             String
+  startedAt          DateTime  @default(now())
+  submittedAt        DateTime?
+  durationSeconds    Int       @default(0)
+  score              Float     @default(0.0)
+  totalPossibleScore Float     @default(0.0)
+  percentage         Float     @default(0.0)
+  correctCount       Int       @default(0)
+  wrongCount         Int       @default(0)
+  skippedCount       Int       @default(0)
+  isPassed           Boolean   @default(false)
+  analytics          Json?     // { accuracyByCategory, accuracyByGrammar, accuracyBySkill, accuracyByDifficulty, weakAreas }
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers ExamAnswer[]
+
+  @@index([userId])
+  @@index([examId])
+  @@index([startedAt])
+}
+
+model ExamAnswer {
+  id               String   @id @default(uuid())
+  attemptId        String
+  questionId       String
+  selectedAnswer   Json     // e.g. ["B"] or ["A", "C"]
+  correctAnswer    Json
+  isCorrect        Boolean  @default(false)
+  pointsAwarded    Float    @default(0.0)
+  timeSpentSeconds Int      @default(0)
+  category         String?
+  skill            String?
+  grammarType      String?
+  partOfSpeech     String?
+  difficulty       String?
+
+  attempt  ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
+}
+
 
 model Plan {
   id               String           @id @default(uuid())

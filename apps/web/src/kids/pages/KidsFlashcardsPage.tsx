@@ -611,11 +611,11 @@ export const KidsFlashcardsPage: React.FC = () => {
               <div>
                 <h3 className="text-xl font-black text-slate-950 uppercase">{card.word}</h3>
                 <p className="text-xs font-black text-emerald-700 mt-0.5">{card.viMeaning}</p>
-                <p className="text-[11px] font-bold text-slate-500">{card.phonetic}</p>
+                <p className="text-[11px] font-bold text-slate-700">{card.phonetic}</p>
               </div>
 
               <div className="w-full pt-2 border-t border-slate-200/80 flex items-center justify-between gap-1">
-                <span className="text-[10px] font-bold text-slate-500 truncate">{card.categoryVi}</span>
+                <span className="text-[10px] font-bold text-slate-700 truncate">{card.categoryVi}</span>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={(e) => {

@@ -13,6 +13,7 @@ import { LanguageBadge } from '../components/language/LanguageBadge';
 import { idbSaveLocalDeck, idbGetLocalDecks, idbGetWords, idbSaveWords } from '../lib/idb';
 import * as XLSX from 'xlsx';
 import { useScrollLoad } from '../hooks/useScrollLoad';
+import { CommunityCommentSection } from '../components/community/CommunityCommentSection';
 import {
   Users,
   Copy,
@@ -47,6 +48,10 @@ import {
   AlertTriangle,
   RefreshCw,
   Globe,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+  X,
 } from 'lucide-react';
 
 export const CommunityDecksPage: React.FC = () => {
@@ -166,6 +171,66 @@ export const CommunityDecksPage: React.FC = () => {
       console.error('Failed to load personal words', err);
     } finally {
       setLoadingMyWords(false);
+    }
+  };
+
+  const [commentModalDeck, setCommentModalDeck] = useState<any | null>(null);
+
+  const handleToggleDeckLike = async (deck: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để like bộ từ vựng cộng đồng');
+      return;
+    }
+    try {
+      const res: any = await api.post(`/community/decks/${deck.id}/like`);
+      const data = res?.data?.data || res?.data || res;
+      if (data) {
+        setDecks((prev) =>
+          prev.map((d) =>
+            d.id === deck.id
+              ? {
+                  ...d,
+                  likeCount: data.likeCount ?? d.likeCount,
+                  dislikeCount: data.dislikeCount ?? d.dislikeCount,
+                  userLiked: Boolean(data.liked),
+                  userDisliked: Boolean(data.disliked),
+                }
+              : d
+          )
+        );
+      }
+    } catch (err: any) {
+      console.error('Like deck error', err);
+    }
+  };
+
+  const handleToggleDeckDislike = async (deck: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để đánh giá bộ từ vựng cộng đồng');
+      return;
+    }
+    try {
+      const res: any = await api.post(`/community/decks/${deck.id}/dislike`);
+      const data = res?.data?.data || res?.data || res;
+      if (data) {
+        setDecks((prev) =>
+          prev.map((d) =>
+            d.id === deck.id
+              ? {
+                  ...d,
+                  likeCount: data.likeCount ?? d.likeCount,
+                  dislikeCount: data.dislikeCount ?? d.dislikeCount,
+                  userLiked: Boolean(data.liked),
+                  userDisliked: Boolean(data.disliked),
+                }
+              : d
+          )
+        );
+      }
+    } catch (err: any) {
+      console.error('Dislike deck error', err);
     }
   };
 
@@ -829,51 +894,92 @@ export const CommunityDecksPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>{deck.cloneCount || 0} lượt clone</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
+                    {/* Community Engagement Stats: Like, Dislike, Comment, Clone */}
+                    <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1">
                         <button
-                          onClick={() => handleActionOnDeck(deck, 'view')}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1"
+                          onClick={(e) => handleToggleDeckLike(deck, e)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                            deck.userLiked
+                              ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800'
+                              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                          title="Thích bộ từ này"
                         >
-                          {isProtected && !isUnlocked && <Lock className="w-3 h-3 text-amber-500" />}
-                          <span>Xem trước</span>
+                          <ThumbsUp className="w-3.5 h-3.5" />
+                          <span>{deck.likeCount || 0}</span>
                         </button>
 
-                        {isMyDeck ? (
-                          <button
-                            onClick={() => setSelectedDeck(deck)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 hover:bg-emerald-500/20 transition cursor-pointer"
-                          >
-                            <BookOpen className="w-3.5 h-3.5" />
-                            <span>Mở kho của tôi</span>
-                          </button>
-                        ) : isAlreadyCloned ? (
-                          <button
-                            onClick={() => {
-                              setMainTab('my-decks');
-                              fetchMyDecks();
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs font-bold flex items-center gap-1 hover:bg-blue-500/20 transition cursor-pointer"
-                            title="Bộ từ đã có trong kho từ vựng cá nhân của bạn"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Đã có trong kho</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleActionOnDeck(deck, 'clone')}
-                            className="btn-glass-primary !shadow-none px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Lưu / Tải về</span>
-                          </button>
-                        )}
+                        <button
+                          onClick={(e) => handleToggleDeckDislike(deck, e)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                            deck.userDisliked
+                              ? 'bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-800'
+                              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                          title="Không thích bộ từ này"
+                        >
+                          <ThumbsDown className="w-3.5 h-3.5" />
+                          <span>{deck.dislikeCount || 0}</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCommentModalDeck(deck);
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                          title="Bình luận & Nhận xét"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>{deck.commentCount || 0}</span>
+                        </button>
                       </div>
+
+                      <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                        <Copy className="w-3 h-3" />
+                        <span>{deck.cloneCount || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-2.5 flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleActionOnDeck(deck, 'view')}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1"
+                      >
+                        {isProtected && !isUnlocked && <Lock className="w-3 h-3 text-amber-500" />}
+                        <span>Xem trước</span>
+                      </button>
+
+                      {isMyDeck ? (
+                        <button
+                          onClick={() => setSelectedDeck(deck)}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 hover:bg-emerald-500/20 transition cursor-pointer"
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>Mở kho của tôi</span>
+                        </button>
+                      ) : isAlreadyCloned ? (
+                        <button
+                          onClick={() => {
+                            setMainTab('my-decks');
+                            fetchMyDecks();
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs font-bold flex items-center gap-1 hover:bg-blue-500/20 transition cursor-pointer"
+                          title="Bộ từ đã có trong kho từ vựng cá nhân của bạn"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Đã có trong kho</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleActionOnDeck(deck, 'clone')}
+                          className="btn-glass-primary !shadow-none px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Lưu / Tải về</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -1618,6 +1724,46 @@ export const CommunityDecksPage: React.FC = () => {
             </button>
           </div>
         </div>
+      </ModalPortal>
+
+      {/* VOCABULARY DECK COMMENT MODAL */}
+      <ModalPortal isOpen={Boolean(commentModalDeck)} onClose={() => setCommentModalDeck(null)}>
+        {commentModalDeck && (
+          <div
+            className="m-auto relative max-w-2xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-5 shadow-2xl animate-fade-in max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-4 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-1">
+                    Bình luận & Đánh giá: {commentModalDeck.title}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Bởi {commentModalDeck.author?.displayName || 'Cộng đồng'} • {commentModalDeck.words?.length || 0} từ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCommentModalDeck(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 pr-1">
+              <CommunityCommentSection
+                targetType="deck"
+                targetId={commentModalDeck.id}
+                initialCount={commentModalDeck.commentCount || 0}
+              />
+            </div>
+          </div>
+        )}
       </ModalPortal>
     </div>
   );
