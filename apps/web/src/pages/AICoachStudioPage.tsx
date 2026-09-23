@@ -48,6 +48,60 @@ import { ModalPortal } from '../components/common/ModalPortal';
 import { audioEngine } from '../lib/audioEngine';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { evaluatePronunciation } from '../lib/pronunciationEvaluator';
+import { useLearningContext } from '../contexts/LearningContext';
+import { getLanguage, SUPPORTED_LANGUAGES, getSpeechLocale } from '../config/languages';
+
+const LANGUAGE_PRACTICE_WORDS: Record<string, Array<{ word: string; ipa: string; phoneme: string; meaning: string }>> = {
+  en: [
+    { word: 'thoroughly', ipa: '/ˈθɜːrəli/', phoneme: '/θ/', meaning: 'Kỹ lưỡng, thấu đáo' },
+    { word: 'schedule', ipa: '/ˈskedʒuːl/', phoneme: '/sk/', meaning: 'Lịch trình, kế hoạch' },
+    { word: 'vulnerable', ipa: '/ˈvʌlnərəbl/', phoneme: '/v/', meaning: 'Dễ bị tổn thương' },
+    { word: 'architecture', ipa: '/ˈɑːrkɪtektʃər/', phoneme: '/tʃ/', meaning: 'Kiến trúc hệ thống' },
+    { word: 'regularly', ipa: '/ˈreɡjələrli/', phoneme: '/r/ & /l/', meaning: 'Thường xuyên' },
+  ],
+  de: [
+    { word: 'Zuverlässigkeit', ipa: '/ˈtsuːfɛɐ̯ˌlɛsɪçkaɪt/', phoneme: '/ç/ & /z/', meaning: 'Sự đáng tin cậy' },
+    { word: 'Entwicklung', ipa: '/ɛntˈvɪklʊŋ/', phoneme: '/pf/ & /ŋ/', meaning: 'Sự phát triển' },
+    { word: 'Geschwindigkeit', ipa: '/ɡəˈʃvɪndɪçkaɪt/', phoneme: '/ʃv/', meaning: 'Tốc độ, nhanh nhẹn' },
+    { word: 'Wunderbar', ipa: '/ˈvʊndɐbaːɐ̯/', phoneme: '/v/ & /r/', meaning: 'Tuyệt vời, kỳ diệu' },
+    { word: 'Verständnis', ipa: '/fɛɐ̯ˈʃtɛntnɪs/', phoneme: '/f/ & /ʃt/', meaning: 'Sự thấu hiểu' },
+  ],
+  ja: [
+    { word: '改善', ipa: '/kaizen/', phoneme: 'かいぜん', meaning: 'Cải tiến liên tục' },
+    { word: 'ありがとうございます', ipa: '/aɾiɡatoː gozaimasɯ/', phoneme: '有難う', meaning: 'Cảm ơn chân thành' },
+    { word: '一生懸命', ipa: '/iɕːoːkeːmeː/', phoneme: 'いっしょうけんめい', meaning: 'Hết sức cố gắng' },
+    { word: '素晴らしい', ipa: '/sɯbaɾaɕiː/', phoneme: 'すばらしい', meaning: 'Tuyệt vời' },
+    { word: '効率的', ipa: '/koːɾitsɯteki/', phoneme: 'こうりつてき', meaning: 'Mang tính hiệu quả' },
+  ],
+  zh: [
+    { word: '坚持不懈', ipa: '/tɕjɛn˥ ʈʂʰʐ̩˧˥ pu˥˩ ɕjɛ˥˩/', phoneme: 'jiān chí bù xiè', meaning: 'Kiên trì không ngừng nghỉ' },
+    { word: '脚踏实地', ipa: '/tɕjaʊ˨˩˦ tʰa˥˩ ʂʐ̩˧˥ ti˥˩/', phoneme: 'jiǎo tà shí dì', meaning: 'Thiết thực, vững vàng' },
+    { word: '齐心协力', ipa: '/tɕʰi˧˥ ɕin˥ ɕjɛ˧˥ li˥˩/', phoneme: 'qí xīn xié lì', meaning: 'Đồng tâm hiệp lực' },
+    { word: '独具匠心', ipa: '/tu˧˥ tɕy˥˩ tɕjaŋ˥˩ ɕin˥/', phoneme: 'dú jù jiàng xīn', meaning: 'Sáng tạo độc đáo' },
+    { word: '蒸蒸日上', ipa: '/ʈʂɤŋ˥ ʈʂɤŋ˥ ʐʐ̩˥˩ ʂaŋ˥˩/', phoneme: 'zhēng zhēng rì shàng', meaning: 'Phát triển ngày một đi lên' },
+  ],
+  fr: [
+    { word: 'Épanouissement', ipa: '/e.pa.nwi.smɑ̃/', phoneme: '/ɑ̃/', meaning: 'Sự nở rộ, thăng hoa' },
+    { word: 'Inoubliable', ipa: '/i.nu.bli.jabl/', phoneme: '/bl/', meaning: 'Không thể nào quên' },
+    { word: 'Bienveillance', ipa: '/bjɛ̃.vɛ.jɑ̃s/', phoneme: '/bjɛ̃/', meaning: 'Lòng nhân từ, thiện chí' },
+    { word: 'Développement', ipa: '/de.vlɔp.mɑ̃/', phoneme: '/mɑ̃/', meaning: 'Sự phát triển bền vững' },
+    { word: 'Magnifique', ipa: '/ma.ɲi.fik/', phoneme: '/ɲ/', meaning: 'Tráng lệ, tuyệt đẹp' },
+  ],
+  es: [
+    { word: 'Desarrollo', ipa: '/desaˈroʎo/', phoneme: '/rr/ & /ll/', meaning: 'Sự phát triển' },
+    { word: 'Inquebrantable', ipa: '/iŋkeβɾanˈtaβle/', phoneme: '/β/ & /ɾ/', meaning: 'Kiên định, không thể lung lay' },
+    { word: 'Agradecimiento', ipa: '/aɣɾaðeθiˈmjento/', phoneme: '/θ/ & /ð/', meaning: 'Lòng biết ơn sâu sắc' },
+    { word: 'Maravilloso', ipa: '/maɾaβiˈʎoso/', phoneme: '/ʎ/', meaning: 'Kỳ diệu, tuyệt vời' },
+    { word: 'Responsabilidad', ipa: '/responsaβiliˈðað/', phoneme: '/ðað/', meaning: 'Tinh thần trách nhiệm' },
+  ],
+  ko: [
+    { word: '성장', ipa: '/sʰʌ̹ŋdʑa̠ŋ/', phoneme: 'Seongjang', meaning: 'Sự trưởng thành, phát triển' },
+    { word: '감사합니다', ipa: '/kam.sa.ham.ni.da/', phoneme: 'Gamsahamnida', meaning: 'Cảm ơn chân thành' },
+    { word: '열심히', ipa: '/jʌ̹l.s͈im.hi/', phoneme: 'Yeolsimhi', meaning: 'Chăm chỉ, hết mình' },
+    { word: '아름답다', ipa: '/a.ɾɯm.dap̚.t͈a/', phoneme: 'Areumdapda', meaning: 'Đẹp đẽ, tuyệt diệu' },
+    { word: '도전하다', ipa: '/to.dʑʌn.ha.da/', phoneme: 'Dojeonhada', meaning: 'Thử thách, chinh phục' },
+  ],
+};
 
 interface ChatMessage {
   id: string;
@@ -60,6 +114,15 @@ interface ChatMessage {
 
 export const AICoachStudioPage: React.FC = () => {
   const { user, isGuest, promptLogin } = useAuth();
+
+  let learningCtx: any = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    learningCtx = useLearningContext();
+  } catch (_) {}
+
+  const activeLanguage = learningCtx?.activeLanguage || getLanguage('en');
+  const targetLocale = activeLanguage.speechLocale || 'en-US';
 
   // Primary navigation tabs
   const [activeTab, setActiveTab] = useState<'voice' | 'pronunciation' | 'simulator' | 'error-bank' | 'sound-better'>('voice');
@@ -85,8 +148,8 @@ export const AICoachStudioPage: React.FC = () => {
     {
       id: 'welcome',
       role: 'assistant',
-      content: "Hello! I'm your AI Personal English Coach. What did you work on today? Feel free to speak in English, or switch to Vietnamese whenever you feel stuck.",
-      viTranslation: 'Xin chào! Tôi là Huấn luyện viên AI của bạn. Hôm nay bạn đã làm việc gì? Cứ thoải mái nói tiếng Anh, hoặc chuyển sang tiếng Việt khi bí nhé.',
+      content: `Hello! I'm your AI Personal ${activeLanguage.name} Coach. What did you work on today? Feel free to speak in ${activeLanguage.name}, or switch to Vietnamese whenever you feel stuck.`,
+      viTranslation: `Xin chào! Tôi là Huấn luyện viên AI ${activeLanguage.name} của bạn. Hôm nay bạn đã làm việc gì? Cứ thoải mái nói tiếng ${activeLanguage.name}, hoặc chuyển sang tiếng Việt khi bí nhé.`,
       timestamp: new Date(),
     },
   ]);
@@ -98,12 +161,30 @@ export const AICoachStudioPage: React.FC = () => {
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  // User Voice & Speech Input Language Preference (Default: Tiếng Việt / Giọng Ngọc Huyền)
+  // User Voice & Speech Input Language Preference (Syncs with active learning language setting)
   const [voiceLang, setVoiceLang] = useState<'vi' | 'en' | 'auto'>(() => {
     return audioEngine.getPreferredVoiceLang();
   });
-  const [speechInputLang, setSpeechInputLang] = useState<'vi-VN' | 'en-US'>('vi-VN');
+  const [speechInputLang, setSpeechInputLang] = useState<string>(() => {
+    return activeLanguage.speechLocale || 'en-US';
+  });
   const [chatLanguageMode, setChatLanguageMode] = useState<'bilingual' | 'vi' | 'en'>('bilingual');
+
+  // Synchronize target audio & mic recognition when user changes language
+  useEffect(() => {
+    if (activeLanguage?.speechLocale) {
+      audioEngine.setPreferredTargetLocale(activeLanguage.speechLocale);
+      setSpeechInputLang(activeLanguage.speechLocale);
+    }
+  }, [activeLanguage?.speechLocale]);
+
+  useEffect(() => {
+    if (recognitionRef.current && speechInputLang) {
+      try {
+        recognitionRef.current.lang = speechInputLang;
+      } catch (_) {}
+    }
+  }, [speechInputLang]);
 
   interface ChatSuggestion {
     id: string;
@@ -349,10 +430,11 @@ export const AICoachStudioPage: React.FC = () => {
       const res = await api.post('/ai/tutor', {
         message: msg,
         contextWord: coachPersonality,
+        language: activeLanguage.id,
       });
 
       const data = res.data?.data || res.data || res;
-      const assistantReply = data?.reply || data?.content || data?.text || "That's an insightful point! How would you describe the next milestone?";
+      const assistantReply = data?.reply || data?.content || data?.text || `That's an insightful point! How would you describe the next milestone?`;
       
       const botMsg: ChatMessage & { provider?: string } = {
         id: String(Date.now() + 1),
@@ -365,7 +447,7 @@ export const AICoachStudioPage: React.FC = () => {
       setMessages((prev) => [...prev, botMsg]);
       speakText(assistantReply);
     } catch (err) {
-      const fallbackReply = "I heard you clearly! To make that even more natural in professional English, you can say: 'I managed key deliverables today.' What's next on your agenda?";
+      const fallbackReply = `I heard you clearly! Let's continue practicing ${activeLanguage.name}. What would you like to explore next?`;
       setMessages((prev) => [
         ...prev,
         {
@@ -391,6 +473,7 @@ export const AICoachStudioPage: React.FC = () => {
 
     audioEngine.playBilingualText(text, {
       rate,
+      targetLocale: activeLanguage.speechLocale,
       onEnd: () => {
         if (isCallActiveRef.current) {
           setCallStatus('listening');
@@ -426,13 +509,25 @@ export const AICoachStudioPage: React.FC = () => {
   const pronunciationRecRef = useRef<any>(null);
   const recordedSpokenWordRef = useRef<string>('');
 
-  const [practiceWords, setPracticeWords] = useState<Array<{ word: string; ipa: string; phoneme: string; meaning: string; isCustom?: boolean }>>([
-    { word: 'thoroughly', ipa: '/ˈθɜːrəli/', phoneme: '/θ/', meaning: 'Kỹ lưỡng, thấu đáo' },
-    { word: 'schedule', ipa: '/ˈskedʒuːl/', phoneme: '/sk/', meaning: 'Lịch trình, kế hoạch' },
-    { word: 'vulnerable', ipa: '/ˈvʌlnərəbl/', phoneme: '/v/', meaning: 'Dễ bị tổn thương' },
-    { word: 'architecture', ipa: '/ˈɑːrkɪtektʃər/', phoneme: '/tʃ/', meaning: 'Kiến trúc hệ thống' },
-    { word: 'regularly', ipa: '/ˈreɡjələrli/', phoneme: '/r/ & /l/', meaning: 'Thường xuyên' },
-  ]);
+  const [practiceWords, setPracticeWords] = useState<Array<{ word: string; ipa: string; phoneme: string; meaning: string; isCustom?: boolean }>>(() => {
+    return LANGUAGE_PRACTICE_WORDS[activeLanguage.id] || LANGUAGE_PRACTICE_WORDS['en'];
+  });
+
+  // Automatically update practice words when active learning language changes
+  useEffect(() => {
+    const list = LANGUAGE_PRACTICE_WORDS[activeLanguage.id] || LANGUAGE_PRACTICE_WORDS['en'];
+    setPracticeWords(list);
+    if (list[0]) {
+      setSelectedWord(list[0].word);
+    }
+  }, [activeLanguage.id]);
+
+  const speakWord = (word: string, rate: number = 1.0) => {
+    audioEngine.playWord(word, {
+      rate,
+      lang: activeLanguage.speechLocale,
+    });
+  };
 
   // Load words from user's flashcards/vault
   const handleLoadUserFlashcards = async () => {
@@ -545,14 +640,14 @@ export const AICoachStudioPage: React.FC = () => {
     // 1. Start cross-platform microphone recording (MediaRecorder / PCM)
     await startPronVoiceRecording();
 
-    // 2. Start Web SpeechRecognition in strict en-US
+    // 2. Start Web SpeechRecognition matching active language locale
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       try {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = 'en-US';
+        recognition.lang = activeLanguage.speechLocale || 'en-US';
         recognition.onresult = (event: any) => {
           const spoken = (event.results?.[0]?.[0]?.transcript || '').trim();
           recordedSpokenWordRef.current = spoken;
@@ -596,6 +691,7 @@ export const AICoachStudioPage: React.FC = () => {
         word: target,
         spokenText: spoken,
         mode: 'adult',
+        language: activeLanguage.id,
       });
       const data = res.data?.data || res.data;
       if (data && data.accuracy !== undefined) {
@@ -606,7 +702,7 @@ export const AICoachStudioPage: React.FC = () => {
     } catch (_) {}
 
     // Accurate local scoring engine (Levenshtein + Dice + Token Jaccard) with Adult threshold > 90%
-    const evalResult = evaluatePronunciation(target, spoken, 'adult');
+    const evalResult = evaluatePronunciation(target, spoken, 'adult', activeLanguage.id);
     const score = evalResult.score;
     const isPassing = evalResult.isPassing; // Adult requires > 90%
     const details = phonemeDetails[target] || phonemeDetails['thoroughly'];
@@ -969,7 +1065,7 @@ export const AICoachStudioPage: React.FC = () => {
                     Ngôn Ngữ Nhận Diện Micro
                   </span>
                   <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                    {speechInputLang === 'vi-VN' ? 'Đang nghe Tiếng Việt' : 'Đang nghe Tiếng Anh'}
+                    {speechInputLang === 'vi-VN' ? '🇻🇳 Đang nghe Tiếng Việt' : `${activeLanguage.flag} Đang nghe ${activeLanguage.name}`}
                   </span>
                 </label>
                 <div className="grid grid-cols-2 gap-2 pt-1">
@@ -986,22 +1082,23 @@ export const AICoachStudioPage: React.FC = () => {
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <span>Nói Tiếng Việt</span>
+                    <span>🇻🇳 Nói Tiếng Việt</span>
                   </button>
                   <button
                     onClick={() => {
-                      setSpeechInputLang('en-US');
+                      const targetLoc = activeLanguage.speechLocale || 'en-US';
+                      setSpeechInputLang(targetLoc);
                       if (recognitionRef.current) {
-                        try { recognitionRef.current.lang = 'en-US'; } catch (_) {}
+                        try { recognitionRef.current.lang = targetLoc; } catch (_) {}
                       }
                     }}
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                      speechInputLang === 'en-US'
+                      speechInputLang === activeLanguage.speechLocale
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <span>Nói Tiếng Anh</span>
+                    <span>{activeLanguage.flag} Nói {activeLanguage.name}</span>
                   </button>
                 </div>
               </div>
@@ -1317,11 +1414,12 @@ export const AICoachStudioPage: React.FC = () => {
 
               {/* Voice Input & Action Bar */}
               <div className="p-2 sm:p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                {/* Sleek Language Switch Button (Tiếng Việt <-> English) */}
+                {/* Sleek Language Switch Button (Tiếng Việt <-> [Ngôn ngữ đang học]) */}
                 <button
                   type="button"
                   onClick={() => {
-                    const nextLang = speechInputLang === 'vi-VN' ? 'en-US' : 'vi-VN';
+                    const targetLoc = activeLanguage.speechLocale || 'en-US';
+                    const nextLang = speechInputLang === 'vi-VN' ? targetLoc : 'vi-VN';
                     setSpeechInputLang(nextLang);
                     if (recognitionRef.current) {
                       try { recognitionRef.current.lang = nextLang; } catch (_) {}
@@ -1332,14 +1430,26 @@ export const AICoachStudioPage: React.FC = () => {
                       ? 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
                       : 'border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
                   }`}
-                  title="Bấm để đổi ngôn ngữ thu âm Micro: Tiếng Việt hoặc English"
+                  title={`Bấm để đổi ngôn ngữ thu âm Micro: Tiếng Việt (vi-VN) hoặc ${activeLanguage.name} (${activeLanguage.speechLocale})`}
                 >
                   <span
                     className={`w-2 h-2 rounded-full ${
                       speechInputLang === 'vi-VN' ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500 animate-pulse'
                     }`}
                   />
-                  <span className="font-extrabold">{speechInputLang === 'vi-VN' ? 'Tiếng Việt' : 'English'}</span>
+                  <span className="font-extrabold flex items-center gap-1">
+                    {speechInputLang === 'vi-VN' ? (
+                      <>
+                        <span>🇻🇳</span>
+                        <span>Tiếng Việt</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>{activeLanguage.flag}</span>
+                        <span>{activeLanguage.name}</span>
+                      </>
+                    )}
+                  </span>
                 </button>
 
                 {/* Refined Push-To-Talk Microphone Button (Ấn giữ để nói, thả tay để gửi) */}
@@ -1510,10 +1620,10 @@ export const AICoachStudioPage: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        speakText(item.word);
+                        speakWord(item.word);
                       }}
                       className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 text-indigo-600 transition"
-                      title="Nghe phát âm chuẩn"
+                      title={`Nghe phát âm chuẩn ${activeLanguage.name}`}
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
@@ -1527,13 +1637,18 @@ export const AICoachStudioPage: React.FC = () => {
               <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Từ Đang Phân Tích</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Từ Đang Phân Tích</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50">
+                        {activeLanguage.flag} {activeLanguage.name} ({activeLanguage.speechLocale})
+                      </span>
+                    </div>
                     <div className="flex items-center gap-3 mt-1">
                       <h2 className="text-3xl font-black text-indigo-600 dark:text-indigo-400">{selectedWord}</h2>
                       <button
-                        onClick={() => speakText(selectedWord)}
+                        onClick={() => speakWord(selectedWord)}
                         className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 hover:bg-indigo-100 transition"
-                        title="Nghe phát âm bản xứ"
+                        title={`Nghe phát âm bản xứ (${activeLanguage.name})`}
                       >
                         <Volume2 className="w-5 h-5" />
                       </button>
@@ -1545,17 +1660,17 @@ export const AICoachStudioPage: React.FC = () => {
                     {/* Native Listen / Replay Button */}
                     <button
                       type="button"
-                      onClick={() => speakText(selectedWord, 1.0)}
+                      onClick={() => speakWord(selectedWord, 1.0)}
                       className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 shadow-xs"
-                      title="Nghe lại phát âm bản xứ chuẩn"
+                      title={`Nghe lại phát âm bản xứ chuẩn (${activeLanguage.name})`}
                     >
                       <Volume2 className="w-4 h-4" />
-                      <span>Nghe phát âm chuẩn</span>
+                      <span>Nghe chuẩn {activeLanguage.flag}</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => speakText(selectedWord, 0.75)}
+                      onClick={() => speakWord(selectedWord, 0.75)}
                       className="px-3 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-500/10 text-slate-600 dark:text-slate-300 hover:text-amber-600 font-bold text-xs transition active:scale-95 flex items-center gap-1.5"
                       title="Nghe lại ở tốc độ chậm 0.75x"
                     >
@@ -1569,9 +1684,10 @@ export const AICoachStudioPage: React.FC = () => {
                         type="button"
                         onClick={handleStartPronRecording}
                         className="px-4 py-2.5 rounded-2xl btn-glass-primary text-white font-extrabold text-xs shadow-md shadow-indigo-600/25 flex items-center gap-2 transition active:scale-95"
+                        title={`Thu âm nhận diện giọng ${activeLanguage.name} (${activeLanguage.speechLocale})`}
                       >
                         <Mic className="w-4 h-4" />
-                        <span>{pronRecordedUrl ? 'Thu âm lại' : 'Bắt đầu thu âm'}</span>
+                        <span>{pronRecordedUrl ? `Thu lại (${activeLanguage.flag})` : `Thu âm (${activeLanguage.flag})`}</span>
                       </button>
                     ) : (
                       <button
@@ -1581,7 +1697,7 @@ export const AICoachStudioPage: React.FC = () => {
                       >
                         <Square className="w-4 h-4 fill-white" />
                         <span>
-                          Dừng thu âm ({pronRecordingSeconds < 10 ? `0${pronRecordingSeconds}` : pronRecordingSeconds}s)
+                          Dừng mic {activeLanguage.flag} ({pronRecordingSeconds < 10 ? `0${pronRecordingSeconds}` : pronRecordingSeconds}s)
                         </span>
                       </button>
                     )}
@@ -1700,11 +1816,24 @@ export const AICoachStudioPage: React.FC = () => {
                         2. Nhại lại ngay lập tức theo ngữ điệu và ngữ âm, không ngắt quãng câu.
                       </p>
                       <button
-                        onClick={() => speakText(`I thoroughly inspected the code before deployment.`)}
+                        type="button"
+                        onClick={() => {
+                          const shadowingMap: Record<string, string> = {
+                            en: 'I thoroughly inspected the code before deployment.',
+                            de: 'Ich habe den Code vor der Bereitstellung gründlich überprüft.',
+                            ja: '本番リリースの前にコードを徹底的に検証しました。',
+                            zh: '我们在系统部署之前仔细检查了所有代码。',
+                            fr: "J'ai inspecté minutieusement le code avant le déploiement.",
+                            es: 'Inspeccioné a fondo el código antes del despliegue.',
+                            ko: '배포 전에 코드를 철저하게 검토했습니다.',
+                          };
+                          const sentence = shadowingMap[activeLanguage.id] || shadowingMap.en;
+                          speakWord(sentence, 0.9);
+                        }}
                         className="mt-2 px-3 py-1.5 rounded-xl btn-glass-primary font-bold flex items-center gap-1.5"
                       >
                         <Volume2 className="w-3.5 h-3.5" />
-                        <span>Nghe câu mẫu Shadowing</span>
+                        <span>Nghe câu mẫu Shadowing ({activeLanguage.flag} {activeLanguage.name})</span>
                       </button>
                     </div>
                   </div>
@@ -2173,29 +2302,42 @@ export const AICoachStudioPage: React.FC = () => {
                       Ngôn Ngữ Nhận Diện Micro
                     </span>
                     <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                      {speechInputLang === 'vi-VN' ? 'Đang nghe Tiếng Việt' : 'Đang nghe Tiếng Anh'}
+                      {speechInputLang === 'vi-VN' ? 'Đang nghe Tiếng Việt' : `Đang nghe ${activeLanguage.name} (${activeLanguage.flag})`}
                     </span>
                   </label>
                   <div className="grid grid-cols-2 gap-1.5 pt-1">
                     <button
-                      onClick={() => setSpeechInputLang('vi-VN')}
+                      type="button"
+                      onClick={() => {
+                        setSpeechInputLang('vi-VN');
+                        if (recognitionRef.current) {
+                          try { recognitionRef.current.lang = 'vi-VN'; } catch (_) {}
+                        }
+                      }}
                       className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                         speechInputLang === 'vi-VN'
                           ? 'bg-indigo-600 text-white shadow-sm'
                           : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}
                     >
-                      <span>Nói Tiếng Việt</span>
+                      <span>🇻🇳 Nói Tiếng Việt</span>
                     </button>
                     <button
-                      onClick={() => setSpeechInputLang('en-US')}
+                      type="button"
+                      onClick={() => {
+                        const targetLoc = activeLanguage.speechLocale || 'en-US';
+                        setSpeechInputLang(targetLoc);
+                        if (recognitionRef.current) {
+                          try { recognitionRef.current.lang = targetLoc; } catch (_) {}
+                        }
+                      }}
                       className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                        speechInputLang === 'en-US'
+                        speechInputLang !== 'vi-VN'
                           ? 'bg-indigo-600 text-white shadow-sm'
                           : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}
                     >
-                      <span>Nói Tiếng Anh</span>
+                      <span>{activeLanguage.flag} Nói {activeLanguage.name}</span>
                     </button>
                   </div>
                 </div>

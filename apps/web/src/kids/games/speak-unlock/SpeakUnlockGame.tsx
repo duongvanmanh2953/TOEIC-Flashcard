@@ -11,6 +11,7 @@ import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 import { evaluatePronunciation } from '../../../lib/pronunciationEvaluator';
+import { useLearningContext } from '../../../contexts/LearningContext';
 
 interface SpeakTarget {
   id: string;
@@ -38,6 +39,7 @@ export const SpeakUnlockGame: React.FC<SpeakUnlockGameProps> = ({
   onStarsAwarded,
   onNextGame,
 }) => {
+  const { activeLanguage } = useLearningContext();
   const gameDef = KIDS_GAMES_REGISTRY.find((g) => g.id === 'speak_unlock') || KIDS_GAMES_REGISTRY[8];
 
   const TOTAL_ROUNDS = 5;
@@ -78,7 +80,7 @@ export const SpeakUnlockGame: React.FC<SpeakUnlockGameProps> = ({
     if (SpeechRecognition) {
       try {
         const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
+        recognition.lang = activeLanguage?.speechLocale || 'en-US';
         recognition.interimResults = false;
         recognition.maxAlternatives = 2;
 

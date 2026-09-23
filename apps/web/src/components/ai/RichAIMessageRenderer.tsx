@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Volume2, Sparkles, BookOpen, CheckCircle2, HelpCircle, Lightbulb } from 'lucide-react';
 import { audioEngine } from '../../lib/audioEngine';
 import { CountryFlag } from '../language/CountryFlag';
+import { useLearningContext } from '../../contexts/LearningContext';
 
 interface RichAIMessageRendererProps {
   content: string;
@@ -17,17 +18,20 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
   className = '',
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const { activeLanguage } = useLearningContext();
+  const effectiveTargetLocale = activeLanguage?.speechLocale || 'en-US';
 
   const isOfflineFallback = provider === 'vocabflow-core' || content.includes('VocalFlow AI');
   const isGemini = provider?.includes('gemini');
   const isOpenAI = provider?.includes('openai');
 
   // Helper to play single sentence/phrase
-  const handlePlayAudio = (text: string, lang: 'en-US' | 'vi-VN' = 'en-US') => {
+  const handlePlayAudio = (text: string, lang?: string) => {
+    const playLang = lang || effectiveTargetLocale;
     setIsPlayingAudio(true);
     audioEngine.playWord(text, {
-      lang,
-      rate: lang === 'en-US' ? 0.9 : 1.0,
+      lang: playLang,
+      rate: playLang === 'vi-VN' ? 1.0 : 0.9,
       onEnd: () => setIsPlayingAudio(false),
       onError: () => setIsPlayingAudio(false),
     });
@@ -168,21 +172,30 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
             );
           }
 
-          // English Example Sentence Line (🇬🇧)
-          if (trimmed.includes('🇬🇧')) {
-            const cleanEn = trimmed.replace(/^[🇬🇧\s*"'“”]+|[*\s"'“”]+$/g, '').replace(/^🇬🇧\s*/, '').replace(/[*"]/g, '');
+          // Target Language Example Sentence Line (🇬🇧, 🇩🇪, 🇯🇵, etc.)
+          const isTargetLangLine =
+            trimmed.includes('🇬🇧') ||
+            (activeLanguage?.flag && trimmed.includes(activeLanguage.flag));
+
+          if (isTargetLangLine) {
+            const cleanTarget = trimmed
+              .replace(/[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/g, '')
+              .replace(/^[*\s"'“”]+|[*\s"'“”]+$/g, '')
+              .replace(/[*"]/g, '');
             return (
               <div key={idx} className="p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 my-2 space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <CountryFlag languageId="en" size="xs" /> English Sentence
+                    <CountryFlag languageId={activeLanguage?.id || 'en'} size="xs" /> {activeLanguage?.name || 'Target'} Sentence
                   </span>
                   <button
-                    onClick={() => handlePlayAudio(cleanEn, 'en-US')}
+                    type="button"
+                    onClick={() => handlePlayAudio(cleanTarget, effectiveTargetLocale)}
                     className="px-2 py-0.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition shadow-xs"
+                    title={`Nghe câu ví dụ bằng ${activeLanguage?.name || 'tiếng bản xứ'}`}
                   >
                     <Volume2 className="w-3 h-3 text-amber-300" />
-                    <span>Nghe EN</span>
+                    <span>Nghe {activeLanguage?.id?.toUpperCase() || 'EN'}</span>
                   </button>
                 </div>
                 <p className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-100 leading-relaxed italic">

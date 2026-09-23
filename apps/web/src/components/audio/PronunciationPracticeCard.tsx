@@ -15,9 +15,11 @@ import {
 } from 'lucide-react';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
+import { useLearningContext } from '../../contexts/LearningContext';
+import { getSpeechLocale } from '../../config/languages';
 import {
   evaluatePronunciation,
-  listenEnglishSpeech,
+  listenSpeech,
   PronunciationEvaluationResult,
 } from '../../lib/pronunciationEvaluator';
 
@@ -26,6 +28,9 @@ interface PronunciationPracticeCardProps {
   ipa?: string;
   meaning?: string;
   className?: string;
+  lang?: string; // BCP-47 locale (e.g. 'de-DE', 'ja-JP') or language ID ('de', 'ja')
+  languageName?: string;
+  languageFlag?: string;
   onScored?: (score: number) => void;
 }
 
@@ -34,9 +39,23 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
   ipa,
   meaning,
   className = '',
+  lang,
+  languageName,
+  languageFlag,
   onScored,
 }) => {
-  const { speak, stop: stopNative, isPlaying: isPlayingNative } = useAudioPronunciation();
+  let learningContext: any = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    learningContext = useLearningContext();
+  } catch (_) {}
+
+  const activeLang = learningContext?.activeLanguage;
+  const effectiveLocale = getSpeechLocale(lang || activeLang?.speechLocale || 'en-US');
+  const effectiveName = languageName || activeLang?.name || 'English';
+  const effectiveFlag = languageFlag || activeLang?.flag || '🌐';
+
+  const { speak, stop: stopNative, isPlaying: isPlayingNative } = useAudioPronunciation(effectiveLocale);
   const {
     status: recordStatus,
     isRecording,
@@ -58,7 +77,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
 
   const handlePlayNative = (rate: number = 1.0) => {
     stopReplay();
-    speak(word, rate);
+    speak(word, rate, effectiveLocale);
   };
 
   const handleStartRecord = async () => {
@@ -70,9 +89,10 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
     // Start audio recorder for playback
     await startRecording();
 
-    // Start real en-US speech recognition
+    // Start real speech recognition matching selected language locale
     try {
-      const controller = listenEnglishSpeech({
+      const controller = listenSpeech({
+        lang: effectiveLocale,
         maxDurationMs: 10000,
         onResult: (transcript) => {
           speechTranscriptRef.current = transcript;
@@ -124,13 +144,21 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
       {/* Header: Word + IPA + Meaning */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <h3 className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{word}</h3>
             {ipa && (
               <span className="text-sm font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg">
                 {ipa}
               </span>
             )}
+            <span
+              className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg inline-flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50"
+              title={`Ngôn ngữ kiểm tra phát âm: ${effectiveName} (${effectiveLocale})`}
+            >
+              <span>{effectiveFlag}</span>
+              <span>{effectiveName}</span>
+              <span className="text-[10px] font-mono text-slate-400">({effectiveLocale})</span>
+            </span>
           </div>
           {meaning && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{meaning}</p>}
         </div>
@@ -192,7 +220,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
             <span className="font-extrabold uppercase text-slate-400 tracking-wider text-[10px]">
               1. Giọng Bản Xứ (Reference)
             </span>
-            <span className="text-[10px] text-slate-400 font-semibold">Chuẩn US / UK</span>
+            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">{effectiveName} ({effectiveLocale})</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -249,7 +277,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
                   className="w-full py-2.5 px-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 transition active:scale-95 animate-pulse"
                 >
                   <Square className="w-4 h-4 fill-white" />
-                  <span>Dừng thu âm (Stop)</span>
+                  <span>Dừng thu âm ({effectiveName} - {effectiveLocale})</span>
                 </button>
               ) : (
                 <button
@@ -258,7 +286,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
                   className="w-full py-2.5 px-3.5 rounded-xl btn-glass-primary text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 transition active:scale-95"
                 >
                   <Mic className="w-4 h-4" />
-                  <span>Bắt đầu thu âm giọng bạn</span>
+                  <span>Thu âm giọng bạn ({effectiveName})</span>
                 </button>
               )}
             </div>

@@ -158,9 +158,10 @@ export class AIController {
   tutorChat(
     @Body('message') message: string,
     @Body('contextWord') contextWord: string,
+    @Body('language') language: string,
     @CurrentUser('id') userId: string,
   ) {
-    return this.aiService.tutorChat(message, userId, contextWord);
+    return this.aiService.tutorChat(message, userId, contextWord, language);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -218,8 +219,9 @@ export class AIController {
     @Body('word') word: string,
     @Body('spokenText') spokenText: string,
     @Body('mode') mode?: 'kid' | 'adult',
+    @Body('language') language?: string,
   ) {
-    return this.aiService.evaluatePronunciation(word, spokenText, mode);
+    return this.aiService.evaluatePronunciation(word, spokenText, mode, language);
   }
 
   @UseGuards(JwtAuthGuard)

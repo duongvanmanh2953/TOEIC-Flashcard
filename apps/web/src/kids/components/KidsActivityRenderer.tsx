@@ -15,6 +15,7 @@ import { KidsMascot, MascotMood } from './KidsMascot';
 import { celebrationManager } from '../services/celebration/CelebrationManager';
 import { Play, RotateCcw, Volume2, Mic, CheckCircle2, Headphones, Sparkles, BookOpen } from 'lucide-react';
 import { evaluatePronunciation } from '../../lib/pronunciationEvaluator';
+import { useLearningContext } from '../../contexts/LearningContext';
 
 export type ActivityState =
   | 'loading'
@@ -37,6 +38,8 @@ interface ActivityProps {
 // State Machine: loading -> instruction -> audioPlaying -> waitingForUser -> userAnswering -> processing -> feedback -> completed
 // =========================================================================
 const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateChange }) => {
+  const { activeLanguage } = useLearningContext();
+  const effectiveSpeechLocale = activeLanguage?.speechLocale || 'en-US';
   const [state, setState] = useState<ActivityState>('loading');
   const [mascotMood, setMascotMood] = useState<MascotMood>('speaking');
   const [isFlipped, setIsFlipped] = useState(true);
@@ -109,7 +112,7 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = 'en-US';
+        recognition.lang = effectiveSpeechLocale;
 
         recognition.onresult = (e: any) => {
           const spoken = (e.results?.[0]?.[0]?.transcript || '').trim();
@@ -679,6 +682,8 @@ const ListenChoiceActivity: React.FC<ActivityProps> = ({ activity, onDone, onBus
 // 3. SPEAK & PRONUNCIATION ACTIVITY COMPONENT
 // =========================================================================
 const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateChange }) => {
+  const { activeLanguage } = useLearningContext();
+  const effectiveSpeechLocale = activeLanguage?.speechLocale || 'en-US';
   const [state, setState] = useState<ActivityState>('waitingForUser');
   const [mascotMood, setMascotMood] = useState<MascotMood>('happy');
   const [spokenText, setSpokenText] = useState('');
@@ -715,7 +720,7 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = 'en-US';
+        recognition.lang = effectiveSpeechLocale;
 
         recognition.onresult = (e: any) => {
           const res = (e.results?.[0]?.[0]?.transcript || '').trim();

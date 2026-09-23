@@ -208,9 +208,9 @@ export function evaluatePronunciation(
       if (finalScore >= 95) {
         feedback = `Xuất sắc (${finalScore}%)! Chuẩn âm vị bản xứ. 🎯`;
       } else if (finalScore > 90) {
-        feedback = `Đạt chuẩn TOEIC (${finalScore}%)! Đạt yêu cầu (>90%). ✅`;
+        feedback = `Đạt chuẩn phát âm (${finalScore}%)! Đạt yêu cầu (>90%). ✅`;
       } else if (finalScore >= 75) {
-        feedback = `Gần đạt (${finalScore}%). Người lớn cần đạt >90%. Hãy chú ý trọng âm và âm cuối (ending sound) của từ "${targetWordOrPhrase}". ⚠️`;
+        feedback = `Gần đạt (${finalScore}%). Người lớn cần đạt >90%. Hãy chú ý trọng âm và âm cuối của từ "${targetWordOrPhrase}". ⚠️`;
       } else {
         feedback = `Chưa đạt (${finalScore}%). Yêu cầu >90%. Máy nhận diện: "${userSpokenText}". Hãy nghe lại và đọc rõ từng âm. ❌`;
       }
@@ -295,10 +295,11 @@ export function evaluatePronunciation(
 }
 
 /**
- * Cross-browser SpeechRecognition runner for English pronunciation
+ * Cross-browser SpeechRecognition runner supporting any language locale (BCP 47)
  */
-export function listenEnglishSpeech(options: {
+export function listenSpeech(options: {
   maxDurationMs?: number;
+  lang?: string; // BCP 47 locale e.g. 'en-US', 'de-DE', 'ja-JP', 'fr-FR', 'zh-CN', 'vi-VN'
   onResult: (spokenText: string) => void;
   onError?: (err: any) => void;
   onEnd?: () => void;
@@ -319,7 +320,7 @@ export function listenEnglishSpeech(options: {
 
   try {
     recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
+    recognition.lang = options.lang || 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 3;
@@ -381,3 +382,6 @@ export function listenEnglishSpeech(options: {
     return null;
   }
 }
+
+// Backward-compatible alias for previous callers
+export const listenEnglishSpeech = listenSpeech;

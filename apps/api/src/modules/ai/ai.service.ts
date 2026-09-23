@@ -230,7 +230,7 @@ export class AIService {
    * Advanced Multi-Tier AI Pipeline:
    * Learner Profile -> Semantic Search + Learning Engine -> AI Task Router -> Model/Rules -> Evaluation -> Feedback
    */
-  async pipelineQuery(userId: string, userQuery: string, contextWord?: string) {
+  async pipelineQuery(userId: string, userQuery: string, contextWord?: string, targetLang: string = 'en') {
     const cleanQuery = (userQuery || '').trim();
     if (!cleanQuery) {
       return { reply: 'Xin chào! Bạn muốn học từ vựng hay luyện câu gì hôm nay?' };
@@ -292,12 +292,28 @@ export class AIService {
     const contextResults = await this.semanticSearch(contextWord || userQuery, 3);
     const contextTerms = contextResults.map((v) => `${v.word} (${v.shortDefinition})`).join(', ');
 
-    // Detect if user query is in Vietnamese or English
+    // Detect if user query is in Vietnamese or foreign language
     const isVietnameseQuery = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(userQuery);
 
+    const langNames: Record<string, string> = {
+      en: 'English',
+      de: 'German (Deutsch)',
+      ja: 'Japanese (日本語)',
+      zh: 'Chinese (中文)',
+      fr: 'French (Français)',
+      ko: 'Korean (한국어)',
+      es: 'Spanish (Español)',
+      it: 'Italian (Italiano)',
+      ru: 'Russian (Русский)',
+      pt: 'Portuguese (Português)',
+      ar: 'Arabic (العربية)',
+    };
+    const currentLangName = langNames[targetLang] || 'English';
+
     // 3. AI Task Router: Build pedagogical prompt with bilingual matching & context history
-    const prompt = `You are VocalFlow AI Personal English Tutor (An empathetic, expert bilingual ESL coach).
-Learner CEFR Level: ${userCefr}.
+    const prompt = `You are VocalFlow AI Personal ${currentLangName} Tutor (An empathetic, expert bilingual language coach).
+Target Language: ${currentLangName}.
+Learner Level: ${userCefr}.
 Learner Weak Words: [${weakWordList.join(', ')}].
 Knowledge Graph Context: [${contextTerms}].
 
@@ -308,18 +324,18 @@ Current Learner Query: "${userQuery}"
 
 CRITICAL INSTRUCTIONS FOR RESPONSE:
 1. DYNAMIC BILINGUAL LANGUAGE MATCHING:
-   - If the learner query is in Vietnamese (or mixed), explain concepts, nuances, and rules in clear, encouraging Vietnamese, while teaching English words, phrases, and examples.
-   - If the learner query is in English, reply in English, BUT ALWAYS include Vietnamese translations for key vocabulary, collocations, and example sentences so learners at CEFR ${userCefr} fully understand.
+   - If the learner query is in Vietnamese (or mixed), explain concepts, nuances, and rules in clear, encouraging Vietnamese, while teaching ${currentLangName} words, phrases, and examples.
+   - If the learner query is in ${currentLangName}, reply in ${currentLangName}, BUT ALWAYS include Vietnamese translations for key vocabulary, collocations, and example sentences so learners at CEFR ${userCefr} fully understand.
    - Link response naturally to previous context in history if relevant.
 
 2. MANDATORY PEDAGOGICAL STRUCTURE (Strict Markdown format):
    ### 💡 [Tiêu đề phản hồi / Lời chào ngắn gọn phù hợp câu hỏi]
 
    1. 📌 **Giải thích & Ngữ cảnh (Explanation):**
-      [Giải thích trực diện, đễ hiểu, phân tích bản chất từ/câu hỏi calibrated cho CEFR ${userCefr}]
+      [Giải thích trực diện, dễ hiểu, phân tích bản chất từ/câu hỏi calibrated cho CEFR ${userCefr}]
 
-   2. 🇬🇧 🇻🇳 **Ví dụ thực tế song ngữ (Bilingual Examples):**
-      🇬🇧 *"English sentence example"*
+   2. 🌐 🇻🇳 **Ví dụ thực tế song ngữ (Bilingual Examples):**
+      🌐 *"${currentLangName} sentence example"*
       🇻🇳 *"Dịch nghĩa tiếng Việt tự nhiên"*
 
    3. 🔗 **Từ vựng & Cấu trúc liên quan (Related Vocabulary/Phrases):**
@@ -635,8 +651,8 @@ Reply with your answer A, B, or C to test your recall!`;
     return suggestions.slice(0, 6);
   }
 
-  async tutorChat(message: string, userId: string, contextWord?: string) {
-    return this.pipelineQuery(userId, message, contextWord);
+  async tutorChat(message: string, userId: string, contextWord?: string, language: string = 'en') {
+    return this.pipelineQuery(userId, message, contextWord, language);
   }
 
   /**
@@ -889,16 +905,16 @@ Return strict JSON:
    * Kids: pass rate >= 50%
    * Adults: pass rate > 90%
    */
-  async evaluatePronunciation(targetWord: string, userSpokenText: string, mode: 'kid' | 'adult' = 'adult') {
+  async evaluatePronunciation(targetWord: string, userSpokenText: string, mode: 'kid' | 'adult' = 'adult', language: string = 'en') {
     const cleanTarget = (targetWord || '')
       .toLowerCase()
-      .replace(/[^a-z0-9\s']/g, ' ')
+      .replace(/[.,/#!$%^&*;:{}=\-_`~()?"'“”‘’[\]<>«»]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
     const cleanSpoken = (userSpokenText || '')
       .toLowerCase()
-      .replace(/[^a-z0-9\s']/g, ' ')
+      .replace(/[.,/#!$%^&*;:{}=\-_`~()?"'“”‘’[\]<>«»]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 

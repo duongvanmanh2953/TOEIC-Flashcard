@@ -55,6 +55,26 @@ class AudioEngine {
     return this.preferredVoiceLang;
   }
 
+  private preferredTargetLocale: string = 'en-US';
+
+  public setPreferredTargetLocale(locale: string) {
+    if (!locale) return;
+    this.preferredTargetLocale = locale;
+    try {
+      localStorage.setItem('leximind_target_locale', locale);
+    } catch (_) {}
+  }
+
+  public getPreferredTargetLocale(): string {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('leximind_target_locale');
+      if (saved) {
+        this.preferredTargetLocale = saved;
+      }
+    }
+    return this.preferredTargetLocale;
+  }
+
   /**
    * Initializes automatic unlocking of audio primitives on the first user interaction.
    * Mobile browsers (iOS Safari, Chrome Mobile) require a user gesture to unlock Audio and AudioContext.
@@ -190,7 +210,7 @@ class AudioEngine {
     this.stop();
     const sessionId = ++this.currentSessionId;
     const rate = options.rate || 1.0;
-    const lang = options.lang || 'en-US';
+    const lang = options.lang || this.getPreferredTargetLocale() || 'en-US';
 
     this.isCurrentlyPlaying = true;
     options.onStart?.();
@@ -224,6 +244,7 @@ class AudioEngine {
     text: string,
     options: {
       rate?: number;
+      targetLocale?: string;
       onStart?: () => void;
       onEnd?: () => void;
       onError?: (err: any) => void;
@@ -244,32 +265,41 @@ class AudioEngine {
     this.isCurrentlyPlaying = true;
     options.onStart?.();
 
-    this.playMultilingualMaleTTS(cleanText, sessionId, {
-      onEnd: () => {
-        if (this.currentSessionId === sessionId) {
-          this.isCurrentlyPlaying = false;
-          options.onEnd?.();
-        }
+    const effectiveLocale = options.targetLocale || this.getPreferredTargetLocale() || 'en-US';
+
+    this.playMultilingualMaleTTS(
+      cleanText,
+      sessionId,
+      {
+        onEnd: () => {
+          if (this.currentSessionId === sessionId) {
+            this.isCurrentlyPlaying = false;
+            options.onEnd?.();
+          }
+        },
+        onError: (err) => {
+          if (this.currentSessionId === sessionId) {
+            this.isCurrentlyPlaying = false;
+            options.onError?.(err);
+          }
+        },
       },
-      onError: (err) => {
-        if (this.currentSessionId === sessionId) {
-          this.isCurrentlyPlaying = false;
-          options.onError?.(err);
-        }
-      },
-    }, options.rate || 1.14);
+      options.rate || 1.14,
+      effectiveLocale
+    );
   }
 
   /**
    * Fluid Multilingual Male Speech (Windows / OS Speech Synthesis & Neural Male Fallback):
-   * Plays English with authentic American Male voice and Vietnamese with genuine Northern Male voice (Nam Minh),
+   * Plays Target Language with authentic native voice and Vietnamese with genuine Northern Male voice (Nam Minh),
    * seamlessly queued with zero network pauses at balanced 1.14x tempo.
    */
   public playMultilingualMaleTTS(
     text: string,
     sessionId: number,
     callbacks: { onEnd?: () => void; onError?: (err: any) => void },
-    rate: number = 1.14
+    rate: number = 1.14,
+    targetLocale: string = 'en-US'
   ) {
     if (this.currentSessionId !== sessionId) {
       callbacks.onEnd?.();
@@ -281,6 +311,10 @@ class AudioEngine {
       callbacks.onEnd?.();
       return;
     }
+
+    const effectiveLocale = targetLocale || this.getPreferredTargetLocale() || 'en-US';
+    const targetLangPrefix = effectiveLocale.split(/[-_]/)[0].toLowerCase();
+    const genderPref = this.getPreferredVoiceGender();
 
     // 1. If SpeechSynthesis is available, use seamless in-browser queueing (zero network latency)
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -316,6 +350,45 @@ class AudioEngine {
         });
         if (!enVoice) {
           enVoice = voices.find((v) => v.lang.toLowerCase().startsWith('en'));
+        }
+
+        // Find Target Language voice matching language prefix & gender
+        let targetVoice = voices.find((v) => {
+          const isTargetLang = v.lang.toLowerCase().replace('_', '-').startsWith(targetLangPrefix);
+          if (!isTargetLang) return false;
+          const name = v.name.toLowerCase();
+          if (genderPref === 'male') {
+            return (
+              !name.includes('female') &&
+              !name.includes('woman') &&
+              (name.includes('male') ||
+                name.includes('guy') ||
+                name.includes('christopher') ||
+                name.includes('david') ||
+                name.includes('brian') ||
+                name.includes('stefan') ||
+                name.includes('keita') ||
+                name.includes('yunxi') ||
+                name.includes('martin'))
+            );
+          } else {
+            return (
+              name.includes('female') ||
+              name.includes('woman') ||
+              name.includes('zira') ||
+              name.includes('samantha') ||
+              name.includes('kyoko') ||
+              name.includes('xiaoxiao') ||
+              name.includes('katja') ||
+              name.includes('monica')
+            );
+          }
+        });
+        if (!targetVoice) {
+          targetVoice = voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(targetLangPrefix));
+        }
+        if (!targetVoice && targetLangPrefix === 'en') {
+          targetVoice = enVoice;
         }
 
         // Parse into large bilingual blocks (merge consecutive sentences of same language)
@@ -357,8 +430,9 @@ class AudioEngine {
             utterance.lang = 'vi-VN';
             if (viVoice) utterance.voice = viVoice;
           } else {
-            utterance.lang = 'en-US';
-            if (enVoice) utterance.voice = enVoice;
+            utterance.lang = effectiveLocale;
+            if (targetVoice) utterance.voice = targetVoice;
+            else if (enVoice && targetLangPrefix === 'en') utterance.voice = enVoice;
           }
 
           activeSpeechUtterances.add(utterance);
@@ -396,7 +470,7 @@ class AudioEngine {
 
     // 2. Direct Server-Side Neural Male Stream Fallback
     const hasVi = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(clean);
-    const url = `/api/v1/ai/tts?text=${encodeURIComponent(clean)}&voice=namminh&lang=${hasVi ? 'vi' : 'en'}`;
+    const url = `/api/v1/ai/tts?text=${encodeURIComponent(clean)}&voice=namminh&lang=${hasVi ? 'vi' : targetLangPrefix}`;
     this.playFromUrl(url, 1.0, sessionId, callbacks);
   }
 

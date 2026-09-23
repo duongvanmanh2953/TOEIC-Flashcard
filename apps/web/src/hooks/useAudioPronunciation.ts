@@ -1,17 +1,19 @@
 import { useState, useCallback } from 'react';
 import { audioEngine } from '../lib/audioEngine';
 
-export const useAudioPronunciation = () => {
+export const useAudioPronunciation = (defaultLang?: string) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentText, setCurrentText] = useState('');
 
-  const speak = useCallback((text: string, rate: number = 1.0, lang: string = 'en-US') => {
+  const speak = useCallback((text: string, rate: number = 1.0, lang?: string) => {
     if (!text) return;
     setCurrentText(text);
 
+    const effectiveLang = lang || defaultLang || audioEngine.getPreferredTargetLocale() || 'en-US';
+
     audioEngine.playWord(text, {
       rate,
-      lang,
+      lang: effectiveLang,
       onStart: () => setIsPlaying(true),
       onEnd: () => setIsPlaying(false),
       onError: (err) => {
@@ -19,7 +21,7 @@ export const useAudioPronunciation = () => {
         setIsPlaying(false);
       },
     });
-  }, []);
+  }, [defaultLang]);
 
   const stop = useCallback(() => {
     audioEngine.stop();

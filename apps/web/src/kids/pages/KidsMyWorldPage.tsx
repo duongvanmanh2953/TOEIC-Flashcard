@@ -9,6 +9,7 @@ import { KIDS_CATEGORIES } from '../data/categories/categoriesData';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../data/vocabulary/vocabularyData';
 import { DAILY_PHRASES, KidPhrase } from '../data/phrases/phrasesData';
 import { evaluatePronunciation } from '../../lib/pronunciationEvaluator';
+import { useLearningContext } from '../../contexts/LearningContext';
 import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 import {
   Volume2,
@@ -138,6 +139,7 @@ const ISLAND_ZONES: IslandZone[] = [
 ];
 
 export const KidsMyWorldPage: React.FC = () => {
+  const { activeLanguage } = useLearningContext();
   const [progress] = useState(getKidsProgress());
   const [activeZone, setActiveZone] = useState<string>('animal_bay');
   const [selectedCategory, setSelectedCategory] = useState<string>('animals');
@@ -240,7 +242,7 @@ export const KidsMyWorldPage: React.FC = () => {
     if (SpeechRecognition) {
       try {
         const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
+        recognition.lang = activeLanguage?.speechLocale || 'en-US';
         recognition.continuous = false;
         recognition.interimResults = false;
 

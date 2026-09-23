@@ -1126,6 +1126,9 @@ export const ReviewSessionPage: React.FC = () => {
                   word={currentItem.word}
                   ipa={currentItem.pronunciation}
                   meaning={currentItem.meaningVi || currentItem.meaning}
+                  lang={activeLanguage?.speechLocale || activeLanguage?.id}
+                  languageName={activeLanguage?.name}
+                  languageFlag={activeLanguage?.flag}
                 />
               </div>
             </div>
@@ -1242,7 +1245,7 @@ export const ReviewSessionPage: React.FC = () => {
             <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
               {currentItem.topic} • {currentItem.cefrLevel}
             </span>
-            <SpeechButton text={currentItem.word} />
+            <SpeechButton text={currentItem.word} lang={activeLanguage?.speechLocale || 'en-US'} />
           </div>
 
           <div className="text-center py-2 space-y-2">
