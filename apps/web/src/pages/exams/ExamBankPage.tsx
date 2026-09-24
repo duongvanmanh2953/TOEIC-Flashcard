@@ -259,17 +259,50 @@ export const ExamBankPage: React.FC = () => {
     }
   };
 
+  const handleOpenDetailModal = async (exam: any) => {
+    setDetailModalExam(exam);
+    try {
+      const res: any = await api.get(`/exams/${exam.id}`);
+      const data = res?.data?.data || res?.data || res;
+      if (data && data.id === exam.id) {
+        setDetailModalExam((prev: any) => ({ ...prev, ...data }));
+      }
+    } catch (err) {
+      console.warn('Failed to load full exam detail preview:', err);
+    }
+  };
+
   const handleDuplicateExam = async (examId: string) => {
     if (!user || isGuest) {
-      promptLogin('Đăng nhập để nhân bản bộ đề');
+      promptLogin('Đăng nhập để sao chép bộ đề vào danh sách của bạn');
+      return;
+    }
+    const targetExam = exams.find((e) => e.id === examId) || (detailModalExam?.id === examId ? detailModalExam : null);
+    if (targetExam && (targetExam.isOwner || targetExam.authorId === user.id)) {
+      alert('Bạn là tác giả của bộ đề này, không cần sao chép!');
+      return;
+    }
+    if (targetExam?.isCloned) {
+      alert('Bộ đề này đã có trong danh sách đề thi của bạn!');
       return;
     }
     try {
-      await api.post(`/exams/${examId}/duplicate`);
-      alert('Đã sao chép bộ đề về danh sách "Đề thi của tôi" thành công!');
-      setActiveTab('my-exams');
+      const res: any = await api.post(`/exams/${examId}/duplicate`);
+      const data = res?.data?.data || res?.data || res;
+      if (data?.alreadyCloned) {
+        alert(data.message || 'Bộ đề này đã có trong bộ đề thi của bạn.');
+      } else {
+        alert('Đã sao chép bộ đề về danh sách "Đề thi của tôi" thành công!');
+      }
+      setExams((prev) =>
+        prev.map((e) => (e.id === examId ? { ...e, isCloned: true } : e))
+      );
+      if (detailModalExam && detailModalExam.id === examId) {
+        setDetailModalExam((prev: any) => ({ ...prev, isCloned: true }));
+      }
+      fetchExams();
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Không thể nhân bản đề thi.');
+      alert(err?.response?.data?.message || 'Không thể sao chép đề thi.');
     }
   };
 
@@ -399,7 +432,7 @@ export const ExamBankPage: React.FC = () => {
                 }
                 navigate('/exams/editor');
               }}
-              className="btn-glass-primary text-xs !py-2.5 !px-4 flex items-center gap-2 font-bold shadow-lg"
+              className="btn-solid-primary text-xs !py-2.5 !px-4 flex items-center gap-2 font-bold"
             >
               <Plus className="w-4 h-4" />
               <span>Tạo bộ đề mới</span>
@@ -444,26 +477,21 @@ export const ExamBankPage: React.FC = () => {
 
 
       {/* Main Tabs Navigation */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 overflow-x-auto pb-1 text-xs font-bold">
+      <div className="tab-pill-container self-start overflow-x-auto max-w-full scrollbar-none flex-nowrap">
         <button
           onClick={() => setActiveTab('explore')}
-          className={`px-4 py-2.5 rounded-2xl flex items-center gap-2 transition ${
-            activeTab === 'explore'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'explore' ? 'tab-pill-active' : ''}`}
         >
           <BookOpen className="w-4 h-4" />
-          <span>Khám phá bộ đề ({activeTab === 'explore' ? exams.length : '...'})</span>
+          <span>Khám phá bộ đề</span>
+          <span className="tab-pill-badge">
+            {activeTab === 'explore' ? exams.length : '...'}
+          </span>
         </button>
 
         <button
           onClick={() => setActiveTab('my-exams')}
-          className={`px-4 py-2.5 rounded-2xl flex items-center gap-2 transition ${
-            activeTab === 'my-exams'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'my-exams' ? 'tab-pill-active' : ''}`}
         >
           <Layers className="w-4 h-4" />
           <span>Đề của tôi</span>
@@ -471,11 +499,7 @@ export const ExamBankPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('saved')}
-          className={`px-4 py-2.5 rounded-2xl flex items-center gap-2 transition ${
-            activeTab === 'saved'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'saved' ? 'tab-pill-active' : ''}`}
         >
           <Bookmark className="w-4 h-4" />
           <span>Đề đã lưu</span>
@@ -483,11 +507,7 @@ export const ExamBankPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('history')}
-          className={`px-4 py-2.5 rounded-2xl flex items-center gap-2 transition ${
-            activeTab === 'history'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'history' ? 'tab-pill-active' : ''}`}
         >
           <Clock className="w-4 h-4" />
           <span>Lịch sử làm bài</span>
@@ -495,14 +515,10 @@ export const ExamBankPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('wrong-answers')}
-          className={`px-4 py-2.5 rounded-2xl flex items-center gap-2 transition ${
-            activeTab === 'wrong-answers'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'wrong-answers' ? 'tab-pill-active' : ''}`}
         >
-          <ShieldAlert className="w-4 h-4 text-amber-500" />
-          <span>Ôn câu sai của tôi</span>
+          <ShieldAlert className="w-4 h-4 text-amber-400" />
+          <span>Ôn câu sai</span>
         </button>
       </div>
 
@@ -653,11 +669,12 @@ export const ExamBankPage: React.FC = () => {
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                     {displayedExams.map((exam) => {
-                      const isOwner = user?.id === exam.authorId;
+                      const isOwner = Boolean(user?.id && (exam.authorId === user.id || exam.isOwner));
+                      const isCloned = Boolean(exam.isCloned);
                       return (
                         <GlassCard
                           key={exam.id}
-                          onClick={() => setDetailModalExam(exam)}
+                          onClick={() => handleOpenDetailModal(exam)}
                           className="p-5 flex flex-col justify-between space-y-4 hover:shadow-xl hover:border-indigo-400/50 transition group cursor-pointer"
                         >
                           <div className="space-y-3">
@@ -672,6 +689,15 @@ export const ExamBankPage: React.FC = () => {
                                     {exam.level}
                                   </span>
                                 )}
+                                {isOwner ? (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                                    Của tôi
+                                  </span>
+                                ) : isCloned ? (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+                                    Đã có trong bộ đề
+                                  </span>
+                                ) : null}
                                 {exam.status === 'DRAFT' && (
                                   <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
                                     Bản nháp
@@ -682,7 +708,7 @@ export const ExamBankPage: React.FC = () => {
                                     Chờ duyệt
                                   </span>
                                 )}
-                                {exam.status === 'PUBLISHED' && (
+                                {exam.status === 'PUBLISHED' && !isOwner && !isCloned && (
                                   <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
                                     Đã xuất bản
                                   </span>
@@ -873,17 +899,25 @@ export const ExamBankPage: React.FC = () => {
                                     </button>
                                   }
                                   options={[
-                                    { value: 'duplicate', label: 'Sao chép về đề của tôi', icon: Copy },
-                                    { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
                                     ...(isOwner
                                       ? [
                                           { value: 'edit', label: 'Chỉnh sửa đề thi', icon: Edit },
+                                          { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
                                           { value: 'delete', label: 'Xóa đề thi', icon: Trash2 },
                                         ]
-                                      : []),
+                                      : [
+                                          {
+                                            value: isCloned ? 'already_cloned' : 'duplicate',
+                                            label: isCloned ? 'Đã có trong đề của tôi' : 'Sao chép về đề của tôi',
+                                            icon: isCloned ? CheckCircle : Copy,
+                                            disabled: isCloned,
+                                          },
+                                          { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
+                                        ]),
                                   ]}
                                   onSelect={(val) => {
                                     if (val === 'duplicate') handleDuplicateExam(exam.id);
+                                    else if (val === 'already_cloned') setActiveTab('my-exams');
                                     else if (val === 'export_excel') exportExamToExcel(exam);
                                     else if (val === 'edit') navigate(`/exams/editor/${exam.id}`);
                                     else if (val === 'delete') handleDeleteMyExam(exam.id);
@@ -1017,202 +1051,442 @@ export const ExamBankPage: React.FC = () => {
       )}
 
       {/* EXAM DETAIL MODAL (BLOG / POST DETAIL STYLE) */}
-      {detailModalExam && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
-              {/* Header / Cover Banner */}
-              <div className="relative p-6 sm:p-8 bg-gradient-to-br from-indigo-900 via-indigo-950 to-purple-950 text-white shrink-0">
-                <button
-                  onClick={() => setDetailModalExam(null)}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition z-10"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+      {detailModalExam && (() => {
+        const isOwner = Boolean(user?.id && (detailModalExam.authorId === user.id || detailModalExam.isOwner));
+        const isCloned = Boolean(detailModalExam.isCloned);
+        const displayTags = (detailModalExam.tags || []).filter(
+          (t: string) => !t.startsWith('source:') && !t.startsWith('cloned_from:')
+        );
 
-                <div className="space-y-3 max-w-xl">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider bg-indigo-500/30 border border-indigo-400/40 text-indigo-200">
-                      {detailModalExam.examType}
-                    </span>
-                    {detailModalExam.level && (
-                      <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-white/15 text-white">
-                        {detailModalExam.level}
-                      </span>
-                    )}
-                    {detailModalExam.isProtected && (
-                      <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 flex items-center gap-1">
-                        <Lock className="w-3 h-3" />
-                        Có bảo vệ
-                      </span>
-                    )}
-                  </div>
+        return (
+          <ModalPortal>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/75 backdrop-blur-md animate-fade-in overflow-y-auto">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
+                {/* Header / Cover Banner */}
+                <div className="relative p-6 sm:p-8 bg-gradient-to-br from-indigo-900 via-indigo-950 to-purple-950 text-white shrink-0">
+                  <button
+                    onClick={() => setDetailModalExam(null)}
+                    className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition z-10"
+                    title="Đóng modal"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
 
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight tracking-tight">
-                    {detailModalExam.title}
-                  </h2>
-
-                  {/* Author & Published Info */}
-                  <div className="flex items-center gap-3 pt-1 text-xs text-indigo-200/90 font-medium">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-indigo-500/30 flex items-center justify-center font-bold text-xs">
-                        {detailModalExam.author?.displayName?.[0]?.toUpperCase() || <UserIcon className="w-3.5 h-3.5" />}
-                      </div>
-                      <span className="font-bold text-white">
-                        {detailModalExam.author?.displayName || 'Cộng đồng VocalFlow'}
-                      </span>
-                    </div>
-                    <span>•</span>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>
-                        {detailModalExam.createdAt
-                          ? new Date(detailModalExam.createdAt).toLocaleDateString('vi-VN')
-                          : 'Gần đây'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scrollable Content Body */}
-              <div className="p-5 sm:p-7 overflow-y-auto flex-1 space-y-6">
-                {/* Description */}
-                {detailModalExam.description && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Giới thiệu bộ đề</h4>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                      {detailModalExam.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Functional Information Grid */}
-                <div className="space-y-2.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Thông tin bộ đề</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[11px] font-semibold text-slate-500 block">Số câu hỏi</span>
-                      <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">
-                        {detailModalExam.totalQuestions || detailModalExam._count?.questions || 0} câu
-                      </span>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[11px] font-semibold text-slate-500 block">Thời gian làm</span>
-                      <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">
-                        {detailModalExam.durationMinutes} phút
-                      </span>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[11px] font-semibold text-slate-500 block">Kỳ thi</span>
-                      <span className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+                  <div className="space-y-3 max-w-2xl">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider bg-indigo-500/30 border border-indigo-400/40 text-indigo-200">
                         {detailModalExam.examType}
                       </span>
+                      {detailModalExam.level && (
+                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-white/15 text-white">
+                          {detailModalExam.level}
+                        </span>
+                      )}
+                      {detailModalExam.section && (
+                        <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-white/10 text-indigo-200">
+                          {detailModalExam.section}
+                        </span>
+                      )}
+                      {detailModalExam.languageId && (
+                        <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-white/10 text-indigo-200 uppercase">
+                          {detailModalExam.languageId}
+                        </span>
+                      )}
+                      {isOwner ? (
+                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-500/25 border border-emerald-400/40 text-emerald-200">
+                          Của tôi
+                        </span>
+                      ) : isCloned ? (
+                        <span className="px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider bg-blue-500/25 border border-blue-400/40 text-blue-200">
+                          Đã có trong bộ đề
+                        </span>
+                      ) : null}
+                      {detailModalExam.isProtected && (
+                        <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-400/30 flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
+                          Có mã bảo vệ
+                        </span>
+                      )}
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[11px] font-semibold text-slate-500 block">Lượt thi</span>
-                      <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">
-                        {detailModalExam.attemptCount || 0} lượt
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-black leading-tight tracking-tight text-white">
+                      {detailModalExam.title}
+                    </h2>
+
+                    {/* Author & Published Info */}
+                    <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-indigo-200/90 font-medium">
+                      <div className="flex items-center gap-2">
+                        {detailModalExam.author?.avatar ? (
+                          <img
+                            src={detailModalExam.author.avatar}
+                            alt="Avatar"
+                            className="w-6 h-6 rounded-full object-cover border border-white/20"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-indigo-500/40 border border-white/20 flex items-center justify-center font-bold text-xs text-white">
+                            {detailModalExam.author?.displayName?.[0]?.toUpperCase() || <UserIcon className="w-3.5 h-3.5" />}
+                          </div>
+                        )}
+                        <span className="font-bold text-white">
+                          {detailModalExam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocalFlow')}
+                        </span>
+                      </div>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>
+                          {detailModalExam.createdAt
+                            ? new Date(detailModalExam.createdAt).toLocaleDateString('vi-VN')
+                            : 'Gần đây'}
+                        </span>
+                      </div>
+                      <span>•</span>
+                      <span className="px-2 py-0.5 rounded-md bg-white/10 text-[11px] font-semibold">
+                        {detailModalExam.status === 'PUBLISHED' ? 'Công khai' : 'Bản nháp'}
                       </span>
                     </div>
+
+                    {/* Tags */}
+                    {displayTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {displayTags.map((tag: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-white/10 text-indigo-100 border border-white/15"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Primary Prominent CTA */}
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const examToRun = detailModalExam;
-                      setDetailModalExam(null);
-                      handleStartExam(examToRun);
-                    }}
-                    className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-base shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-3 transition transform active:scale-[0.99]"
-                  >
-                    <Play className="w-5 h-5 fill-current" />
-                    <span>LÀM ĐỀ NGAY</span>
-                  </button>
-                </div>
-
-                {/* Interaction & Reaction Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-b border-slate-100 dark:border-slate-800/80 py-3">
+                {/* Statistics Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 px-6 py-3.5 text-xs text-slate-600 dark:text-slate-400">
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleLike(detailModalExam.id)}
-                      className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
-                        detailModalExam.userLiked
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
-                    >
-                      <ThumbsUp className="w-4 h-4" />
-                      <span>{detailModalExam.likeCount || 0} Thích</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleDislike(detailModalExam.id)}
-                      className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
-                        detailModalExam.userDisliked
-                          ? 'bg-rose-600 text-white shadow-xs'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
-                    >
-                      <ThumbsDown className="w-4 h-4" />
-                      <span>{detailModalExam.dislikeCount || 0}</span>
-                    </button>
-
-                    <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 px-2">
-                      <MessageSquare className="w-4 h-4" />
-                      <span>{detailModalExam.commentCount || detailModalExam._count?.comments || 0} bình luận</span>
+                    <Eye className="w-4 h-4 text-slate-400" />
+                    <div>
+                      <span className="text-[11px] text-slate-400 block font-medium">Lượt thi</span>
+                      <strong className="text-sm font-bold text-slate-900 dark:text-white">
+                        {detailModalExam.attemptCount || 0}
+                      </strong>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleSave(detailModalExam.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
-                        detailModalExam.userSaved
-                          ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-300'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
-                    >
-                      <Bookmark className="w-4 h-4" />
-                      <span>{detailModalExam.userSaved ? 'Đã lưu' : 'Lưu bộ đề'}</span>
-                    </button>
+                    <ThumbsUp className="w-4 h-4 text-indigo-500" />
+                    <div>
+                      <span className="text-[11px] text-slate-400 block font-medium">Lượt thích</span>
+                      <strong className="text-sm font-bold text-slate-900 dark:text-white">
+                        {detailModalExam.likeCount || 0}
+                      </strong>
+                    </div>
+                  </div>
 
+                  <div className="flex items-center gap-2">
+                    <ThumbsDown className="w-4 h-4 text-rose-500" />
+                    <div>
+                      <span className="text-[11px] text-slate-400 block font-medium">Không thích</span>
+                      <strong className="text-sm font-bold text-slate-900 dark:text-white">
+                        {detailModalExam.dislikeCount || 0}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-emerald-500" />
+                    <div>
+                      <span className="text-[11px] text-slate-400 block font-medium">Bình luận</span>
+                      <strong className="text-sm font-bold text-slate-900 dark:text-white">
+                        {detailModalExam.commentCount || detailModalExam._count?.comments || 0}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Bookmark className="w-4 h-4 text-amber-500" />
+                    <div>
+                      <span className="text-[11px] text-slate-400 block font-medium">Lưu trữ</span>
+                      <strong className="text-sm font-bold text-slate-900 dark:text-white">
+                        {detailModalExam.userSaved ? 'Đã lưu' : 'Có thể lưu'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scrollable Content Body */}
+                <div className="p-5 sm:p-7 overflow-y-auto flex-1 space-y-6">
+                  {/* Description */}
+                  {detailModalExam.description && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Giới thiệu bộ đề</h4>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                        {detailModalExam.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Functional Information Grid */}
+                  <div className="space-y-2.5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Thông tin chi tiết</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+                        <span className="text-[11px] font-semibold text-slate-500 block">Số câu hỏi</span>
+                        <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">
+                          {detailModalExam.totalQuestions || detailModalExam._count?.questions || 0} câu
+                        </span>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+                        <span className="text-[11px] font-semibold text-slate-500 block">Thời gian làm</span>
+                        <span className="text-base font-black text-slate-900 dark:text-white mt-0.5 block">
+                          {detailModalExam.durationMinutes} phút
+                        </span>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+                        <span className="text-[11px] font-semibold text-slate-500 block">Tổng điểm</span>
+                        <span className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+                          {detailModalExam.totalScore || 100} điểm
+                        </span>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+                        <span className="text-[11px] font-semibold text-slate-500 block">Điểm đạt</span>
+                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                          {detailModalExam.passingScore || 50} điểm
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sample Questions Preview Section */}
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Một số câu hỏi mẫu (Preview)</span>
+                      </h4>
+                      {detailModalExam.questions && detailModalExam.questions.length > 0 && (
+                        <span className="text-[11px] font-semibold text-slate-400">
+                          Hiển thị {Math.min(3, detailModalExam.questions.length)} / {detailModalExam.totalQuestions || detailModalExam.questions.length} câu
+                        </span>
+                      )}
+                    </div>
+
+                    {detailModalExam.isProtected && !isOwner && detailModalExam.requiresPassword ? (
+                      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-3">
+                        <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-sm text-slate-900 dark:text-white">Bộ đề có mật khẩu bảo vệ</p>
+                          <p className="mt-0.5 text-slate-600 dark:text-slate-400">
+                            Nội dung chi tiết các câu hỏi được tác giả bảo mật. Bạn có thể nhập mã mở khóa khi nhấn "Làm đề ngay" để bắt đầu bài thi.
+                          </p>
+                        </div>
+                      </div>
+                    ) : detailModalExam.questions && detailModalExam.questions.length > 0 ? (
+                      <div className="space-y-3">
+                        {detailModalExam.questions.slice(0, 3).map((q: any, idx: number) => (
+                          <div
+                            key={q.id || idx}
+                            className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2.5"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold">
+                                Câu {q.questionNumber || idx + 1}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                {q.grammarType && (
+                                  <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold">
+                                    {q.grammarType}
+                                  </span>
+                                )}
+                                {q.difficulty && (
+                                  <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold">
+                                    {q.difficulty}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                              {q.questionText}
+                            </p>
+
+                            {/* Options preview */}
+                            {q.options && q.options.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                {q.options.map((opt: any) => (
+                                  <div
+                                    key={opt.id || opt.key}
+                                    className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/60 text-xs flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                                  >
+                                    <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
+                                      {opt.key}.
+                                    </span>
+                                    <span className="truncate">{opt.text}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        {detailModalExam.totalQuestions > 3 && (
+                          <div className="py-2 text-center text-xs font-semibold text-slate-400">
+                            +{detailModalExam.totalQuestions - 3} câu hỏi khác trong bài thi chính thức
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-xs text-slate-400 border border-dashed rounded-2xl">
+                        Bấm "Làm đề ngay" để tải và hoàn thành toàn bộ bài thi.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Primary & Secondary Action Buttons Bar */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
                     <button
                       type="button"
                       onClick={() => {
-                        navigator.clipboard.writeText(window.location.href);
-                        alert('Đã sao chép liên kết bộ đề vào bộ nhớ tạm!');
+                        const examToRun = detailModalExam;
+                        setDetailModalExam(null);
+                        handleStartExam(examToRun);
                       }}
-                      className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition"
-                      title="Chia sẻ liên kết"
+                      className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full flex items-center justify-center gap-2 font-black"
                     >
-                      <Share2 className="w-4 h-4" />
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>LÀM ĐỀ NGAY</span>
                     </button>
-                  </div>
-                </div>
 
-                {/* Embedded Blog-style Comments Section */}
-                <div className="space-y-3 pt-2">
-                  <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-indigo-500" />
-                    <span>Bình luận & Thảo luận ({detailModalExam.commentCount || 0})</span>
-                  </h4>
-                  <CommunityCommentSection targetType="exam" targetId={detailModalExam.id} />
+                    {isOwner ? (
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate(`/exams/editor/${detailModalExam.id}`);
+                          }}
+                          className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Chỉnh sửa đề</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDeleteMyExam(detailModalExam.id);
+                            setDetailModalExam(null);
+                          }}
+                          className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 transition"
+                          title="Xóa đề thi của tôi"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        {isCloned ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDetailModalExam(null);
+                              setActiveTab('my-exams');
+                            }}
+                            className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800"
+                          >
+                            <CheckCircle className="w-4 h-4 text-blue-500" />
+                            <span>Đã có trong bộ đề của tôi</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateExam(detailModalExam.id)}
+                            className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Sao chép về đề của tôi</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Social Reaction Bar: 👍 Like | 👎 Dislike | 💬 Comment | ↗ Share */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-b border-slate-100 dark:border-slate-800/80 py-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLike(detailModalExam.id)}
+                        className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
+                          detailModalExam.userLiked
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        <ThumbsUp className="w-4 h-4" />
+                        <span> {detailModalExam.likeCount || 0}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDislike(detailModalExam.id)}
+                        className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
+                          detailModalExam.userDisliked
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        <ThumbsDown className="w-4 h-4" />
+                        <span> {detailModalExam.dislikeCount || 0}</span>
+                      </button>
+
+                      <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 px-2">
+                        <MessageSquare className="w-4 h-4" />
+                        <span> {detailModalExam.commentCount || detailModalExam._count?.comments || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSave(detailModalExam.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                          detailModalExam.userSaved
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-300'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        <Bookmark className="w-4 h-4" />
+                        <span>{detailModalExam.userSaved ? 'Đã lưu' : 'Lưu'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.origin + '/exams?exam=' + detailModalExam.id);
+                          alert('Đã sao chép liên kết bộ đề vào bộ nhớ tạm!');
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition"
+                        title="Chia sẻ liên kết đề thi"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        <span>↗ Chia sẻ</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Embedded Blog-style Comments Section */}
+                  <div className="pt-2">
+                    <CommunityCommentSection targetType="exam" targetId={detailModalExam.id} />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </ModalPortal>
-      )}
+          </ModalPortal>
+        );
+      })()}
 
       {/* MODERN UPLOAD DROPZONE MODAL */}
       {uploadModalOpen && (

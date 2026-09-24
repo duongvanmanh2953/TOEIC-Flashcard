@@ -189,7 +189,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route path="/my-words" element={<Navigate to="/word-bank" replace />} />
-              <Route path="/my-words/:deckId" element={<Navigate to="/word-bank" replace />} />
+              <Route
+                path="/my-words/:deckId"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <MyWordBankPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/community" element={<CommunityDecksPage />} />
               
               {/* Exam Bank & Adaptive Test Engine */}

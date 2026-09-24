@@ -620,4 +620,21 @@ export async function idbGetWordsByDeck(deckId: string): Promise<any[]> {
 
 export const idbGetDecks = idbGetLocalDecks;
 
+export function getSessionUnlockedDecks(): Record<string, boolean> {
+  try {
+    const raw = sessionStorage.getItem('vocabflow_unlocked_decks');
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveSessionUnlockedDeck(deckId: string): void {
+  try {
+    const existing = getSessionUnlockedDecks();
+    existing[deckId] = true;
+    sessionStorage.setItem('vocabflow_unlocked_decks', JSON.stringify(existing));
+  } catch {}
+}
+
 

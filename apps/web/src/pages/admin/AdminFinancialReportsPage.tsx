@@ -19,8 +19,10 @@ import {
   ArrowDownRight,
   ShieldCheck,
   CreditCard,
+  Lock,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   AdminButton,
   AdminFilterBar,
@@ -39,6 +41,9 @@ export type ReportType =
   | 'ROOM_PERFORMANCE';
 
 export const AdminFinancialReportsPage: React.FC = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
   const [reportType, setReportType] = useState<ReportType>('ALL');
   const [datePreset, setDatePreset] = useState<string>('this_month');
   const [startDate, setStartDate] = useState<string>('');
@@ -65,13 +70,15 @@ export const AdminFinancialReportsPage: React.FC = () => {
       });
       const raw = res?.data?.data || res?.data || {};
 
-      // Build structured report preview
-      const grossRev = raw.metrics?.grossRevenue || 128500000;
-      const netRev = raw.metrics?.netRevenue || 116200000;
+      // Real or calculated metrics from backend
+      const rawGross = raw.metrics?.grossRevenue;
+      const grossRev = typeof rawGross === 'number' && rawGross > 0 ? rawGross : 128500000;
+      const gatewayFee = Math.round(grossRev * 0.015);
+      const netRev = raw.metrics?.netRevenue || (grossRev - gatewayFee);
+
       const staffCost = 28000000;
       const infraCost = 14500000;
       const aiCost = 18200000;
-      const gatewayFee = 4650000;
       const marketingCost = 12000000;
       const totalCost = staffCost + infraCost + aiCost + gatewayFee + marketingCost;
       const grossProfit = grossRev - totalCost;
@@ -83,6 +90,8 @@ export const AdminFinancialReportsPage: React.FC = () => {
         datePreset,
         kpi: {
           revenue: grossRev,
+          netRevenue: netRev,
+          gatewayFee,
           cost: totalCost,
           grossProfit,
           netProfit,
@@ -97,20 +106,20 @@ export const AdminFinancialReportsPage: React.FC = () => {
           { category: 'Chi phí AI & LLM Inference', amount: -aiCost, share: '23.5%', type: 'EXPENSE', status: 'Biến đổi' },
           { category: 'Chi phí Hạ tầng Server & Database', amount: -infraCost, share: '18.7%', type: 'EXPENSE', status: 'Cố định' },
           { category: 'Marketing & Thu hút người dùng', amount: -marketingCost, share: '15.5%', type: 'EXPENSE', status: 'Kiểm soát' },
-          { category: 'Phí Cổng Thanh toán PayOS / Ngân hàng', amount: -gatewayFee, share: '6.0%', type: 'EXPENSE', status: 'Theo GD' },
+          { category: 'Phí Cổng Thanh toán PayOS / Ngân hàng (1.5%)', amount: -gatewayFee, share: '6.0%', type: 'EXPENSE', status: 'Theo GD' },
         ],
         costBreakdown: [
           { name: 'Nhân sự Engineering & AI Team', amount: 28000000, share: '36.2%', trend: '+0.0%' },
           { name: 'Google Gemini & OpenAI Token Inference', amount: 18200000, share: '23.5%', trend: '+12.4%' },
           { name: 'Cloud Server, Postgres DB & Redis Cache', amount: 14500000, share: '18.7%', trend: '+5.1%' },
           { name: 'Kênh Quảng Cáo & Chuyển Đổi Học Viên', amount: 12000000, share: '15.5%', trend: '-4.2%' },
-          { name: 'Phí Giao Dịch Cổng Thanh Toán (PayOS, VietQR)', amount: 4650000, share: '6.0%', trend: '+8.3%' },
+          { name: 'Phí Giao Dịch Cổng Thanh Toán (PayOS, VietQR)', amount: gatewayFee, share: '6.0%', trend: '+8.3%' },
         ],
         cashFlowItems: [
-          { title: 'Dòng tiền từ Hoạt động Kinh doanh (CFO)', inflow: 116200000, outflow: 77350000, net: 38850000 },
+          { title: 'Dòng tiền từ Hoạt động Kinh doanh (CFO)', inflow: netRev, outflow: 77350000, net: netRev - 77350000 },
           { title: 'Dòng tiền từ Hoạt động Đầu tư (CFI)', inflow: 0, outflow: 12000000, net: -12000000 },
           { title: 'Dòng tiền từ Hoạt động Tài chính (CFF)', inflow: 0, outflow: 0, net: 0 },
-          { title: 'Dòng tiền Thuần trong Kỳ (Net Cash Flow)', inflow: 116200000, outflow: 89350000, net: 26850000 },
+          { title: 'Dòng tiền Thuần trong Kỳ (Net Cash Flow)', inflow: netRev, outflow: 89350000, net: netRev - 89350000 },
         ],
         gameROI: [
           { name: 'Translation Rush', revenue: 24500000, sessions: 1840, avgPrice: 13300, profit: 16800000, margin: '68.6%' },
@@ -222,12 +231,17 @@ export const AdminFinancialReportsPage: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1 border border-indigo-200 dark:border-indigo-500/20">
             <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>Financial Reporting Suite</span>
+            {user?.role === 'SUPER_ADMIN' && (
+              <span className="ml-1 px-2 py-0.2 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold tracking-normal">
+                Super Admin Clearance
+              </span>
+            )}
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Trung Tâm Báo Cáo Tài Chính (Financial Reports)
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Trích xuất, phân tích dòng tiền và xuất báo cáo kiểm toán doanh nghiệp chuẩn mực.
+            Trích xuất, phân tích dòng tiền, doanh thu thuần và xuất báo cáo kiểm toán doanh nghiệp chuẩn mực.
           </p>
         </div>
 
@@ -261,7 +275,7 @@ export const AdminFinancialReportsPage: React.FC = () => {
 
       {/* Modern Interactive Tab Bar */}
       <div
-        className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200 dark:border-slate-800 flex-nowrap"
+        className="tab-pill-container overflow-x-auto pb-1 scrollbar-none flex-nowrap max-w-full"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {REPORT_TABS.map((tab) => {
@@ -271,20 +285,12 @@ export const AdminFinancialReportsPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setReportType(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 border whitespace-nowrap ${
-                isActive
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/60'
-              }`}
+              className={`tab-pill shrink-0 ${isActive ? 'tab-pill-active' : ''}`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+              <Icon className="w-3.5 h-3.5" />
               <span>{tab.label}</span>
               {tab.countBadge && (
-                <span
-                  className={`px-1.5 py-0.2 text-[9px] rounded-md font-extrabold uppercase ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
-                  }`}
-                >
+                <span className="tab-pill-badge uppercase">
                   {tab.countBadge}
                 </span>
               )}
@@ -319,17 +325,27 @@ export const AdminFinancialReportsPage: React.FC = () => {
           <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
             <div className="min-w-0">
               <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Doanh Thu Gộp</span>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate block mt-0.5">+14.2% so kỳ trước</span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate block mt-0.5">Tổng dòng tiền vào</span>
             </div>
             <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tabular-nums shrink-0">
-              {(reportData.kpi.revenue / 1000000).toFixed(1)}M ₫
+              {((reportData.kpi.grossRevenue ?? reportData.kpi.revenue) / 1000000).toFixed(1)}M ₫
+            </span>
+          </div>
+
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Doanh Thu Thuần</span>
+              <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium truncate block mt-0.5">Sau phí cổng 1.5%</span>
+            </div>
+            <span className="text-base sm:text-lg font-bold text-indigo-600 dark:text-indigo-400 tabular-nums shrink-0">
+              {((reportData.kpi.netRevenue ?? reportData.kpi.grossProfit) / 1000000).toFixed(1)}M ₫
             </span>
           </div>
 
           <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
             <div className="min-w-0">
               <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Chi Phí Vận Hành</span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate block mt-0.5">Lương & hạ tầng AI</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate block mt-0.5">Hạ tầng & nhân sự</span>
             </div>
             <span className="text-base sm:text-lg font-bold text-rose-600 dark:text-rose-300 tabular-nums shrink-0">
               {(reportData.kpi.cost / 1000000).toFixed(1)}M ₫
@@ -338,20 +354,10 @@ export const AdminFinancialReportsPage: React.FC = () => {
 
           <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
             <div className="min-w-0">
-              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Lợi Nhuận Gộp</span>
-              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate block mt-0.5">Tỷ suất gộp tốt</span>
+              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Lợi Nhuận Ròng</span>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium truncate block mt-0.5">Sau toàn bộ CP</span>
             </div>
             <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums shrink-0">
-              {(reportData.kpi.grossProfit / 1000000).toFixed(1)}M ₫
-            </span>
-          </div>
-
-          <div className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs">
-            <div className="min-w-0">
-              <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate block">Lợi Nhuận Ròng</span>
-              <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium truncate block mt-0.5">Sau chi phí</span>
-            </div>
-            <span className="text-base sm:text-lg font-bold text-indigo-600 dark:text-indigo-400 tabular-nums shrink-0">
               {(reportData.kpi.netProfit / 1000000).toFixed(1)}M ₫
             </span>
           </div>

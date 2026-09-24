@@ -89,6 +89,21 @@ export class ExamsService {
         })
       : [];
 
+    const userExams = userId
+      ? await this.prisma.exam.findMany({
+          where: { authorId: userId },
+          select: { id: true, tags: true },
+        })
+      : [];
+    const userClonedSourceIds = new Set<string>();
+    userExams.forEach((ue) => {
+      (ue.tags || []).forEach((t) => {
+        if (t.startsWith('source:')) {
+          userClonedSourceIds.add(t.replace('source:', ''));
+        }
+      });
+    });
+
     const likedSet = new Set(userLikes.map((l) => l.examId));
     const dislikedSet = new Set(userDislikes.map((d) => d.examId));
     const savedSet = new Set(userSaved.map((s) => s.examId));
@@ -96,6 +111,8 @@ export class ExamsService {
     return exams.map(({ passwordHash, ...rest }) => ({
       ...rest,
       hasPassword: rest.isProtected,
+      isOwner: userId ? rest.authorId === userId : false,
+      isCloned: userClonedSourceIds.has(rest.id),
       userLiked: likedSet.has(rest.id),
       userDisliked: dislikedSet.has(rest.id),
       userSaved: savedSet.has(rest.id),
@@ -106,15 +123,22 @@ export class ExamsService {
     const exams = await this.prisma.exam.findMany({
       where: { authorId: userId },
       include: {
+        author: { select: { id: true, displayName: true, avatar: true } },
         _count: { select: { questions: true, attempts: true, comments: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return exams.map(({ passwordHash, ...rest }) => ({
-      ...rest,
-      hasPassword: rest.isProtected,
-    }));
+    return exams.map(({ passwordHash, ...rest }) => {
+      const sourceExamId = (rest.tags || []).find((t) => t.startsWith('source:'))?.replace('source:', '') || null;
+      return {
+        ...rest,
+        hasPassword: rest.isProtected,
+        isOwner: true,
+        isCloned: Boolean(sourceExamId),
+        sourceExamId,
+      };
+    });
   }
 
   async getSavedExams(userId: string) {
@@ -185,15 +209,24 @@ export class ExamsService {
     let userDisliked = false;
     let userSaved = false;
 
+    let isCloned = false;
     if (userId) {
-      const [l, d, s] = await Promise.all([
+      const [l, d, s, c] = await Promise.all([
         this.prisma.examLike.findUnique({ where: { userId_examId: { userId, examId } } }),
         this.prisma.examDislike.findUnique({ where: { userId_examId: { userId, examId } } }),
         this.prisma.examSaved.findUnique({ where: { userId_examId: { userId, examId } } }),
+        this.prisma.exam.findFirst({
+          where: {
+            authorId: userId,
+            tags: { has: `source:${examId}` },
+          },
+          select: { id: true },
+        }),
       ]);
       userLiked = Boolean(l);
       userDisliked = Boolean(d);
       userSaved = Boolean(s);
+      isCloned = Boolean(c);
     }
 
     const { passwordHash, ...safeExam } = exam;
@@ -209,6 +242,8 @@ export class ExamsService {
       ...safeExam,
       questions: safeQuestions,
       hasPassword: exam.isProtected,
+      isOwner: Boolean(userId && exam.authorId === userId),
+      isCloned,
       userLiked,
       userDisliked,
       userSaved,
@@ -464,7 +499,35 @@ export class ExamsService {
     });
     if (!original) throw new NotFoundException('Bộ đề gốc không tồn tại');
 
+    // Rule 1: Owner cannot clone their own item
+    if (original.authorId === userId) {
+      throw new BadRequestException('Bạn là tác giả của bộ đề này, không cần sao chép!');
+    }
+
+    // Rule 2: Check if current user already has this exam in their collection
+    const existingClone = await this.prisma.exam.findFirst({
+      where: {
+        authorId: userId,
+        tags: { has: `source:${examId}` },
+      },
+      include: {
+        author: { select: { id: true, displayName: true, avatar: true } },
+        _count: { select: { questions: true } },
+      },
+    });
+    if (existingClone) {
+      return {
+        ...existingClone,
+        alreadyCloned: true,
+        message: 'Bộ đề này đã có trong bộ đề thi của bạn.',
+      };
+    }
+
     const copyTitle = `${original.title} (Bản sao)`;
+    const cleanTags = (original.tags || []).filter(
+      (t) => !t.startsWith('source:') && !t.startsWith('cloned_from:')
+    );
+    const tagsWithSource = [...cleanTags, `source:${original.id}`, `cloned_from:${original.id}`];
 
     const duplicated = await this.prisma.exam.create({
       data: {
@@ -482,7 +545,7 @@ export class ExamsService {
         passingScore: original.passingScore,
         status: ExamStatus.DRAFT,
         moderationStatus: ModerationStatus.APPROVED,
-        tags: original.tags,
+        tags: tagsWithSource,
         questions: {
           create: original.questions.map((q) => ({
             questionNumber: q.questionNumber,
@@ -517,7 +580,11 @@ export class ExamsService {
       },
     });
 
-    return duplicated;
+    return {
+      ...duplicated,
+      alreadyCloned: false,
+      message: 'Đã sao chép bộ đề về danh sách "Đề thi của tôi" thành công!',
+    };
   }
 
   // ===========================================================================

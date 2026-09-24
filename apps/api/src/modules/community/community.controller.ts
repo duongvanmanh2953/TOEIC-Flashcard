@@ -43,8 +43,8 @@ export class CommunityController {
   @Public()
   @Get('decks/:id')
   @ApiOperation({ summary: 'Get details and word list of a community deck' })
-  getDeckDetails(@Param('id') id: string) {
-    return this.communityService.getDeckDetails(id);
+  getDeckDetails(@Param('id') id: string, @CurrentUser('id') userId?: string) {
+    return this.communityService.getDeckDetails(id, userId);
   }
 
   @Public()

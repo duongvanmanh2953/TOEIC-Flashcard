@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
@@ -10,7 +11,14 @@ import { CustomDropdown } from '../components/common/CustomDropdown';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
 import { LanguageSelector } from '../components/language/LanguageSelector';
 import { LanguageBadge } from '../components/language/LanguageBadge';
-import { idbSaveLocalDeck, idbGetLocalDecks, idbGetWords, idbSaveWords } from '../lib/idb';
+import {
+  idbSaveLocalDeck,
+  idbGetLocalDecks,
+  idbGetWords,
+  idbSaveWords,
+  getSessionUnlockedDecks,
+  saveSessionUnlockedDeck,
+} from '../lib/idb';
 import * as XLSX from 'xlsx';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import { CommunityCommentSection } from '../components/community/CommunityCommentSection';
@@ -55,6 +63,7 @@ import {
 } from 'lucide-react';
 
 export const CommunityDecksPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, isGuest, promptLogin } = useAuth();
   const { activeLanguage } = useLearningContext();
   const [selectedLanguageFilter, setSelectedLanguageFilter] = useState<string>(activeLanguage.id);
@@ -77,14 +86,14 @@ export const CommunityDecksPage: React.FC = () => {
   const [enablePassword, setEnablePassword] = useState(false);
   const [deckPassword, setDeckPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [unlockedDeckIds, setUnlockedDeckIds] = useState<Record<string, boolean>>({});
+  const [unlockedDeckIds, setUnlockedDeckIds] = useState<Record<string, boolean>>(() => getSessionUnlockedDecks());
   const [unlockedPasswords, setUnlockedPasswords] = useState<Record<string, string>>({});
   const [unlockModalDeck, setUnlockModalDeck] = useState<any | null>(null);
   const [unlockInputPassword, setUnlockInputPassword] = useState('');
   const [showUnlockPassword, setShowUnlockPassword] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<'view' | 'clone' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'view' | 'clone' | 'open-bank' | null>(null);
 
   // VIP Cloud Sync State
   const [showVipModal, setShowVipModal] = useState(false);
@@ -148,8 +157,25 @@ export const CommunityDecksPage: React.FC = () => {
         ? remoteRes
         : [];
       const remoteIds = new Set(remoteList.map((d: any) => d.id));
-      const filteredLocal = (localDecks || []).filter((ld: any) => !remoteIds.has(ld.id));
-      setMyDecks([...remoteList, ...filteredLocal]);
+      const filteredLocal = (localDecks || []).filter((ld: any) => {
+        if (!ld || !ld.id) return false;
+        if (remoteIds.has(ld.id)) return false;
+        if (ld.originDeckId && remoteIds.has(ld.originDeckId)) return false;
+        if (ld.id.startsWith('cloned_') && remoteIds.has(ld.id.replace('cloned_', ''))) return false;
+        return true;
+      });
+
+      // Strict canonical deduplication
+      const seenCanonical = new Set<string>();
+      const deduplicated: any[] = [];
+      for (const d of [...remoteList, ...filteredLocal]) {
+        const canonicalKey = d.originDeckId || (d.id?.startsWith('cloned_') ? d.id.replace('cloned_', '') : d.id);
+        if (!seenCanonical.has(canonicalKey)) {
+          seenCanonical.add(canonicalKey);
+          deduplicated.push(d);
+        }
+      }
+      setMyDecks(deduplicated);
     } catch (err) {
       console.error('Failed to load my decks', err);
     } finally {
@@ -278,8 +304,8 @@ export const CommunityDecksPage: React.FC = () => {
     }
   };
 
-  const handleActionOnDeck = (deck: any, action: 'view' | 'clone') => {
-    const isOwner = user && deck.userId === user.id;
+  const handleActionOnDeck = async (deck: any, action: 'view' | 'clone' | 'open-bank') => {
+    const isOwner = user && (deck.userId === user.id || deck.author?.id === user.id);
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
     const isProtected = deck.isProtected || deck.hasPassword;
 
@@ -291,8 +317,24 @@ export const CommunityDecksPage: React.FC = () => {
       return;
     }
 
+    if (action === 'open-bank') {
+      const myDeckId = myDecks.find((md) => md.originDeckId === deck.id || md.id === deck.id || md.id === `cloned_${deck.id}`)?.id || deck.id;
+      if (selectedDeck) setSelectedDeck(null);
+      navigate(`/word-bank/${myDeckId}`);
+      return;
+    }
+
     if (action === 'view') {
       setSelectedDeck(deck);
+      try {
+        const res: any = await api.get(`/community/decks/${deck.id}`);
+        const fullDeck = res?.data || res?.deck || res;
+        if (fullDeck && fullDeck.id === deck.id) {
+          setSelectedDeck((prev: any) => (prev?.id === deck.id ? { ...prev, ...fullDeck } : prev));
+        }
+      } catch (err) {
+        console.warn('Could not load complete deck details', err);
+      }
     } else {
       setCloneActionDeck(deck);
     }
@@ -309,12 +351,26 @@ export const CommunityDecksPage: React.FC = () => {
       });
       if (res?.success) {
         const unlockedDeck = res.deck || unlockModalDeck;
-        setUnlockedDeckIds((prev) => ({ ...prev, [unlockModalDeck.id]: true }));
+        const deckId = unlockModalDeck.id;
+        saveSessionUnlockedDeck(deckId);
+        if (unlockModalDeck.originDeckId) saveSessionUnlockedDeck(unlockModalDeck.originDeckId);
+        saveSessionUnlockedDeck(String(deckId).replace(/^cloned_/, ''));
+
+        setUnlockedDeckIds((prev) => ({
+          ...prev,
+          [deckId]: true,
+          ...(unlockModalDeck.originDeckId ? { [unlockModalDeck.originDeckId]: true } : {}),
+          [String(deckId).replace(/^cloned_/, '')]: true,
+        }));
         setUnlockedPasswords((prev) => ({ ...prev, [unlockModalDeck.id]: unlockInputPassword.trim() }));
         const action = pendingAction;
         setUnlockModalDeck(null);
         setPendingAction(null);
-        if (action === 'view') {
+        if (action === 'open-bank') {
+          const myDeckId = myDecks.find((md) => md.originDeckId === unlockedDeck.id || md.id === unlockedDeck.id || md.id === `cloned_${unlockedDeck.id}`)?.id || unlockedDeck.id;
+          if (selectedDeck) setSelectedDeck(null);
+          navigate(`/word-bank/${myDeckId}`);
+        } else if (action === 'view') {
           setSelectedDeck(unlockedDeck);
         } else if (action === 'clone') {
           setCloneActionDeck(unlockedDeck);
@@ -425,11 +481,35 @@ export const CommunityDecksPage: React.FC = () => {
       promptLogin('Đăng nhập để sao chép bộ từ vựng vào kho cá nhân');
       return;
     }
+
+    // Rule 1: Owner cannot clone their own deck
+    if (deck.userId === user.id || deck.author?.id === user.id) {
+      alert('Bạn là tác giả của kho từ này, không cần sao chép lại!');
+      return;
+    }
+
+    // Rule 2: Already cloned check
+    const isAlreadyCloned = myDecks.some(
+      (md) => md.originDeckId === deck.id || md.id === deck.id || md.id === `cloned_${deck.id}`
+    );
+    if (isAlreadyCloned) {
+      alert('Kho từ này đã có trong kho từ vựng cá nhân của bạn!');
+      return;
+    }
+
     setCloningOnline(true);
     try {
       const password = unlockedPasswords[deck.id];
       const res: any = await api.post(`/community/decks/${deck.id}/clone`, { password });
       if (res?.success) {
+        if (res.alreadyCloned) {
+          setCloneSuccess(res.message || 'Kho từ này đã có trong kho từ vựng của bạn.');
+          fetchDecks();
+          fetchMyDecks();
+          setCloneActionDeck(null);
+          setTimeout(() => setCloneSuccess(null), 4000);
+          return;
+        }
         // Save copy to IndexedDB so it appears directly in "Kho từ vựng của tôi" with full attribution
         const targetLangId = deck.languageId || activeLanguage.id;
         const localDeckCopy: any = {
@@ -653,18 +733,7 @@ export const CommunityDecksPage: React.FC = () => {
     batchSize: 12,
   });
 
-  // Infinite Scroll & Lazy Loading for Words in Detail Modal
-  const {
-    visibleItems: visibleSelectedDeckWords,
-    hasMore: hasMoreSelectedDeckWords,
-    isLoadingMore: isLoadingMoreSelectedDeckWords,
-    sentinelRef: selectedDeckWordsSentinelRef,
-  } = useScrollLoad({
-    items: selectedDeck?.words || [],
-    initialBatch: 20,
-    batchSize: 20,
-    resetDependencies: [selectedDeck?.id],
-  });
+
 
   // Infinite Scroll & Lazy Loading for My Words in Creation Modal
   const {
@@ -726,18 +795,14 @@ export const CommunityDecksPage: React.FC = () => {
       {/* Tabs & Search Navigation Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
         {/* Main Tab Switcher */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 self-start">
+        <div className="tab-pill-container self-start">
           <button
             onClick={() => setMainTab('community')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-              mainTab === 'community'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-            }`}
+            className={`tab-pill ${mainTab === 'community' ? 'tab-pill-active' : ''}`}
           >
             <Users className="w-3.5 h-3.5" />
             <span>Khám phá cộng đồng</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+            <span className="tab-pill-badge">
               {decks.length}
             </span>
           </button>
@@ -751,16 +816,12 @@ export const CommunityDecksPage: React.FC = () => {
               setMainTab('my-decks');
               fetchMyDecks();
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-              mainTab === 'my-decks'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-            }`}
+            className={`tab-pill ${mainTab === 'my-decks' ? 'tab-pill-active' : ''}`}
           >
             <Bookmark className="w-3.5 h-3.5" />
             <span>Kho từ của tôi</span>
             {myDecks.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-bold">
+              <span className="tab-pill-badge">
                 {myDecks.length}
               </span>
             )}
@@ -835,7 +896,8 @@ export const CommunityDecksPage: React.FC = () => {
                 return (
                   <div
                     key={deck.id}
-                    className="p-5 flex flex-col justify-between relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:shadow-md transition duration-150 cv-auto-card"
+                    onClick={() => handleActionOnDeck(deck, 'view')}
+                    className="p-5 flex flex-col justify-between relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:border-indigo-400 dark:hover:border-indigo-600 hover:shadow-md transition duration-150 cv-auto-card cursor-pointer group"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -863,7 +925,7 @@ export const CommunityDecksPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <h3 className="text-base font-extrabold leading-snug text-slate-900 dark:text-white line-clamp-1 break-all" title={deck.title}>
+                      <h3 className="text-base font-extrabold leading-snug text-slate-900 dark:text-white line-clamp-1 break-all group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" title={deck.title}>
                         {deck.title}
                       </h3>
 
@@ -926,7 +988,7 @@ export const CommunityDecksPage: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setCommentModalDeck(deck);
+                            handleActionOnDeck(deck, 'view');
                           }}
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                           title="Bình luận & Nhận xét"
@@ -942,42 +1004,41 @@ export const CommunityDecksPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-end gap-2">
+                    <div className="mt-2.5 flex items-center justify-end gap-2 flex-wrap">
                       <button
-                        onClick={() => handleActionOnDeck(deck, 'view')}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleActionOnDeck(deck, 'view');
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                        title="Xem bản demo giới thiệu kho từ"
                       >
                         {isProtected && !isUnlocked && <Lock className="w-3 h-3 text-amber-500" />}
-                        <span>Xem trước</span>
+                        <span>Xem chi tiết</span>
                       </button>
 
-                      {isMyDeck ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleActionOnDeck(deck, 'open-bank');
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 hover:bg-emerald-500/20 transition cursor-pointer"
+                        title="Vào xem toàn bộ từ vựng trong kho từ này"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>Xem kho từ</span>
+                      </button>
+
+                      {!isMyDeck && !isAlreadyCloned && (
                         <button
-                          onClick={() => setSelectedDeck(deck)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 hover:bg-emerald-500/20 transition cursor-pointer"
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                          <span>Mở kho của tôi</span>
-                        </button>
-                      ) : isAlreadyCloned ? (
-                        <button
-                          onClick={() => {
-                            setMainTab('my-decks');
-                            fetchMyDecks();
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleActionOnDeck(deck, 'clone');
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30 text-xs font-bold flex items-center gap-1 hover:bg-blue-500/20 transition cursor-pointer"
-                          title="Bộ từ đã có trong kho từ vựng cá nhân của bạn"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Đã có trong kho</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleActionOnDeck(deck, 'clone')}
                           className="btn-glass-primary !shadow-none px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                         >
                           <Copy className="w-3.5 h-3.5" />
-                          <span>Lưu / Tải về</span>
+                          <span>Lưu kho</span>
                         </button>
                       )}
                     </div>
@@ -1115,10 +1176,20 @@ export const CommunityDecksPage: React.FC = () => {
 
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => setSelectedDeck(deck)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleActionOnDeck(deck, 'open-bank');
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>Xem kho từ</span>
+                        </button>
+                        <button
+                          onClick={() => handleActionOnDeck(deck, 'view')}
                           className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
                         >
-                          Xem từ
+                          Chi tiết
                         </button>
                         <button
                           onClick={() => setCloneActionDeck(deck)}
@@ -1156,78 +1227,337 @@ export const CommunityDecksPage: React.FC = () => {
         </>
       )}
 
-      {/* Preview Deck Modal — ModalPortal to document.body */}
+      {/* BLOG / POST DETAIL MODAL CHO KHO TỪ VỰNG & BỘ THẺ CỘNG ĐỒNG */}
       <ModalPortal isOpen={Boolean(selectedDeck)} onClose={() => setSelectedDeck(null)}>
-        {selectedDeck && (
-          <div
-            className="m-auto relative max-w-3xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl max-h-[88vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                  {selectedDeck.category} • CEFR {selectedDeck.cefrLevel}
-                </span>
-                <h3 className="text-xl sm:text-2xl font-bold mt-1 text-slate-900 dark:text-white">{selectedDeck.title}</h3>
-              </div>
-              <button
-                onClick={() => setSelectedDeck(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold transition"
+        {(() => {
+          if (!selectedDeck) return null;
+          const isMyDeck = Boolean(user && (selectedDeck.userId === user.id || selectedDeck.author?.id === user.id));
+          const isAlreadyCloned = myDecks.some(
+            (md) => md.originDeckId === selectedDeck.id || md.id === selectedDeck.id || md.id === `cloned_${selectedDeck.id}`
+          );
+          const authorName = selectedDeck.author?.displayName || (isMyDeck ? 'Bạn (Tác giả)' : 'Cộng đồng chia sẻ');
+          const authorAvatar = selectedDeck.author?.avatar;
+          const targetLang = selectedDeck.languageId || activeLanguage.id;
+          const wordCount = selectedDeck.words?.length || selectedDeck._count?.words || 0;
+          const sampleWords = selectedDeck.words || [];
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+              <div
+                className="relative max-w-4xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-left"
+                onClick={(e) => e.stopPropagation()}
               >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 dark:text-slate-400">{selectedDeck.description}</p>
-
-            <div className="space-y-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Danh sách từ vựng ({selectedDeck.words?.length || 0} từ)
-              </h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {visibleSelectedDeckWords.map((w: any) => (
-                  <div
-                    key={w.id}
-                    className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3 text-xs cv-auto-row"
+                {/* MODAL HERO HEADER: Cover & Metadata */}
+                <div className="relative p-6 sm:p-8 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white shrink-0">
+                  <button
+                    onClick={() => setSelectedDeck(null)}
+                    className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition backdrop-blur-sm z-10"
+                    aria-label="Đóng modal"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{w.word}</span>
-                        {w.phonetic && <span className="tabular-nums text-slate-400">{w.phonetic}</span>}
-                      </div>
-                      <p className="font-semibold text-indigo-700 dark:text-indigo-300 mt-0.5">{w.meaning}</p>
-                      {w.example && <p className="text-slate-500 italic mt-0.5">"{w.example}"</p>}
-                    </div>
-                    <SpeechButton text={w.word} />
-                  </div>
-                ))}
+                    ✕
+                  </button>
 
-                {/* Infinite Scroll Sentinel for Words in Preview */}
-                <div ref={selectedDeckWordsSentinelRef} className="py-2 text-center">
-                  {isLoadingMoreSelectedDeckWords ? (
-                    <span className="text-[11px] text-indigo-500 animate-pulse font-medium">Đang tải thêm từ vựng...</span>
-                  ) : hasMoreSelectedDeckWords ? (
-                    <span className="text-[11px] text-slate-400">Cuộn để xem thêm từ...</span>
-                  ) : null}
+                  <div className="space-y-4 max-w-3xl pr-10">
+                    {/* Badges / Chips */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <LanguageBadge languageIdOrCode={targetLang} size="sm" />
+                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 text-[11px] font-extrabold uppercase">
+                        {selectedDeck.category || 'General'}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[11px] font-extrabold uppercase">
+                        CEFR {selectedDeck.cefrLevel || 'ALL'}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 text-[11px] font-extrabold uppercase flex items-center gap-1">
+                        <Globe className="w-3 h-3" />
+                        <span>Công khai (Public)</span>
+                      </span>
+                      {isMyDeck ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[11px] font-extrabold uppercase">
+                          Kho của tôi
+                        </span>
+                      ) : isAlreadyCloned ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500 text-white text-[11px] font-extrabold uppercase">
+                          Đã lưu vào kho cá nhân
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Deck Title */}
+                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug">
+                      {selectedDeck.title}
+                    </h2>
+
+                    {/* Author & Publication Timestamp */}
+                    <div className="flex items-center gap-3 text-xs text-indigo-200/90 pt-1">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-extrabold shrink-0 border border-white/20 overflow-hidden">
+                        {authorAvatar ? (
+                          <img src={authorAvatar} alt={authorName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{authorName.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-white text-sm truncate flex items-center gap-1.5">
+                          <span>{authorName}</span>
+                          {isMyDeck && <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/40 text-indigo-200 font-semibold">(Tác giả)</span>}
+                        </div>
+                        <div className="text-[11px] text-indigo-300/80 flex items-center gap-2">
+                          <span>Đóng góp: {selectedDeck.createdAt ? new Date(selectedDeck.createdAt).toLocaleDateString('vi-VN') : 'Gần đây'}</span>
+                          <span>•</span>
+                          <span>Quy mô: <strong className="text-white">{wordCount} từ vựng</strong></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* MODAL STATISTICS BAR (Views, Likes, Dislikes, Comments, Clones/Saves) */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3 sm:p-4 gap-2 text-center text-xs shrink-0">
+                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
+                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Lượt xem</span>
+                    </span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-100 text-sm mt-0.5">
+                      {selectedDeck.viewCount || selectedDeck.views || 142}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
+                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
+                      <ThumbsUp className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Hài lòng</span>
+                    </span>
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm mt-0.5">
+                      {selectedDeck.likeCount || 0}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
+                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
+                      <ThumbsDown className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Không thích</span>
+                    </span>
+                    <span className="font-extrabold text-rose-600 dark:text-rose-400 text-sm mt-0.5">
+                      {selectedDeck.dislikeCount || 0}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
+                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
+                      <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Thảo luận</span>
+                    </span>
+                    <span className="font-extrabold text-blue-600 dark:text-blue-400 text-sm mt-0.5">
+                      {selectedDeck.commentCount || 0}
+                    </span>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
+                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
+                      <Bookmark className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Lưu / Clone</span>
+                    </span>
+                    <span className="font-extrabold text-amber-600 dark:text-amber-400 text-sm mt-0.5">
+                      {selectedDeck.cloneCount || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* SCROLLABLE MAIN CONTENT BODY */}
+                <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6">
+                  {/* Deck Description */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Giới thiệu kho từ vựng</span>
+                    </h4>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      {selectedDeck.description || 'Bộ từ vựng được xây dựng và tuyển chọn kỹ lưỡng, hỗ trợ luyện tập phản xạ, ghi nhớ lâu dài qua phương pháp ngắt quãng SRS và tích hợp flashcard.'}
+                    </p>
+                  </div>
+
+                  {/* Sample Words / Cards Preview (Demo chục từ đầu) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Xem trước từ vựng mẫu ({sampleWords.length > 0 ? `Hiển thị ${Math.min(10, sampleWords.length)} / ${wordCount} từ` : `${wordCount} từ`})</span>
+                      </h4>
+                      <span className="text-[11px] text-slate-400">Bấm loa để nghe phát âm</span>
+                    </div>
+
+                    {sampleWords.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {sampleWords.slice(0, 10).map((w: any, idx: number) => (
+                          <div
+                            key={w.id || idx}
+                            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex items-start justify-between gap-3 text-xs shadow-xs hover:border-indigo-300 dark:hover:border-indigo-800 transition"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-extrabold text-sm text-slate-900 dark:text-white">{w.word}</span>
+                                {w.partOfSpeech && (
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase">
+                                    {w.partOfSpeech}
+                                  </span>
+                                )}
+                                {w.phonetic && (
+                                  <span className="text-slate-400 font-mono text-[11px]">{w.phonetic}</span>
+                                )}
+                              </div>
+                              <p className="font-bold text-indigo-600 dark:text-indigo-400 text-xs mt-1">
+                                {w.meaning}
+                              </p>
+                              {w.example && (
+                                <p className="text-slate-500 dark:text-slate-400 italic text-[11px] mt-1 line-clamp-2">
+                                  "{w.example}"
+                                </p>
+                              )}
+                            </div>
+                            <SpeechButton text={w.word} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-6 text-center text-xs text-slate-400 border border-dashed rounded-2xl">
+                        Kho từ đã sẵn sàng. Bấm &quot;Xem kho từ&quot; để vào trang quản lý và xem toàn bộ từ vựng.
+                      </div>
+                    )}
+
+                    {wordCount > 10 && (
+                      <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-indigo-50/90 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-xs">
+                        <div className="text-indigo-900 dark:text-indigo-200 font-medium">
+                          ✨ Còn <strong>{wordCount - 10} từ vựng</strong> khác trong kho. Nhấn vào kho từ để xem toàn bộ danh sách và luyện tập đầy đủ!
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
+                          className="btn-glass-primary btn-glass-sm font-bold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0"
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>Vào xem toàn bộ kho từ</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* PRIMARY & SECONDARY ACTION BUTTONS */}
+                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const deck = selectedDeck;
+                        setSelectedDeck(null);
+                        navigate(`/review?deckId=${deck.id}`);
+                      }}
+                      className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 font-black"
+                    >
+                      <Sparkles className="w-4 h-4 fill-current text-amber-300" />
+                      <span>HỌC BỘ TỪ NGAY (SRS FLASHCARD)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
+                      className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 cursor-pointer"
+                      title="Vào trang quản lý kho từ này (hỗ trợ nhập mật khẩu nếu có)"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Xem kho từ</span>
+                    </button>
+
+                    {!isMyDeck && !isAlreadyCloned && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const deck = selectedDeck;
+                          setSelectedDeck(null);
+                          setCloneActionDeck(deck);
+                        }}
+                        className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Lưu về kho</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const deck = selectedDeck;
+                        setSelectedDeck(null);
+                        setCloneActionDeck(deck);
+                      }}
+                      className="btn-glass-secondary text-xs !py-3 !px-3 font-semibold flex items-center justify-center gap-1"
+                      title="Tải file Excel / CSV / JSON"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Xuất file</span>
+                    </button>
+                  </div>
+
+                  {/* SOCIAL REACTIONS BAR: 👍 Like | 👎 Dislike | 💬 Comment | ↗ Share */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-b border-slate-100 dark:border-slate-800/80 py-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleDeckLike(selectedDeck, e)}
+                        className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
+                          selectedDeck.userLiked
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        <ThumbsUp className="w-4 h-4" />
+                        <span>{selectedDeck.likeCount || 0}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleDeckDislike(selectedDeck, e)}
+                        className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
+                          selectedDeck.userDisliked
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        <ThumbsDown className="w-4 h-4" />
+                        <span> {selectedDeck.dislikeCount || 0}</span>
+                      </button>
+
+                      <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 px-2">
+                        <MessageSquare className="w-4 h-4" />
+                        <span> {selectedDeck.commentCount || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.origin + '/community/decks?deck=' + selectedDeck.id);
+                          alert('Đã sao chép liên kết bộ từ vựng vào bộ nhớ tạm!');
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition"
+                        title="Chia sẻ liên kết bộ từ"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        <span>↗ Chia sẻ</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* EMBEDDED COMMUNITY COMMENTS DISCUSSION */}
+                  <div className="pt-2">
+                    <CommunityCommentSection targetType="deck" targetId={selectedDeck.id} />
+                  </div>
                 </div>
               </div>
             </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-              <button
-                onClick={() => {
-                  const deck = selectedDeck;
-                  setSelectedDeck(null);
-                  setCloneActionDeck(deck);
-                }}
-                className="btn-glass-primary w-full !py-3 text-xs sm:text-sm gap-2"
-              >
-                <Copy className="w-4 h-4" />
-                <span>Tùy chọn Lưu về Kho hoặc Tải file về máy</span>
-              </button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </ModalPortal>
 
       {/* DUAL CLONE ACTION MODAL: Lưu vào Kho từ vựng vs Tải file về máy tính */}

@@ -68,13 +68,22 @@ export class CommunityService {
           select: { deckId: true },
         })
       : [];
+    const userClones = userId
+      ? await this.prisma.deckClone.findMany({
+          where: { userId, deckId: { in: decks.map((d) => d.id) } },
+          select: { deckId: true },
+        })
+      : [];
     const likedSet = new Set(userLikes.map((l) => l.deckId));
     const dislikedSet = new Set(userDislikes.map((d) => d.deckId));
+    const clonedSet = new Set(userClones.map((c) => c.deckId));
 
     // Never expose passwordHash to public clients
     return decks.map(({ passwordHash, ...rest }) => ({
       ...rest,
       hasPassword: rest.isProtected,
+      isOwner: userId ? rest.userId === userId : false,
+      isCloned: clonedSet.has(rest.id),
       userLiked: likedSet.has(rest.id),
       userDisliked: dislikedSet.has(rest.id),
     }));
@@ -98,10 +107,50 @@ export class CommunityService {
       throw new NotFoundException('Community Deck not found');
     }
 
+    let isCloned = false;
+    let isOwner = false;
+    let isAdmin = false;
+    let userLiked = false;
+    let userDisliked = false;
+
+    if (requesterId) {
+      isOwner = deck.userId === requesterId;
+      const [cloneCount, likeRecord, dislikeRecord, userRecord] = await Promise.all([
+        this.prisma.deckClone.count({ where: { deckId: id, userId: requesterId } }),
+        this.prisma.deckLike.findUnique({
+          where: { userId_deckId: { userId: requesterId, deckId: id } },
+        }),
+        this.prisma.deckDislike.findUnique({
+          where: { userId_deckId: { userId: requesterId, deckId: id } },
+        }),
+        this.prisma.user.findUnique({
+          where: { id: requesterId },
+          select: { role: true },
+        }),
+      ]);
+      isCloned = cloneCount > 0;
+      userLiked = Boolean(likeRecord);
+      userDisliked = Boolean(dislikeRecord);
+      isAdmin = userRecord?.role === 'ADMIN' || userRecord?.role === 'SUPER_ADMIN';
+    }
+
+    // SECURITY: If deck is password protected and requester is not author/admin,
+    // NEVER expose full words in getDeckDetails! Only return up to 10 sample preview words.
+    // Client must authenticate via POST /community/decks/:id/unlock with valid password hash verification.
+    const isLocked = Boolean(deck.isProtected && !isOwner && !isAdmin);
+    const wordsToReturn = isLocked ? deck.words.slice(0, 10) : deck.words;
+
     const { passwordHash, ...safeDeck } = deck;
     return {
       ...safeDeck,
+      words: wordsToReturn,
+      isLocked,
+      requiresPassword: isLocked,
       hasPassword: deck.isProtected,
+      isOwner,
+      isCloned,
+      userLiked,
+      userDisliked,
     };
   }
 
@@ -139,6 +188,8 @@ export class CommunityService {
       message: 'Mở khóa kho từ thành công!',
       deck: {
         ...safeDeck,
+        isLocked: false,
+        requiresPassword: false,
         hasPassword: deck.isProtected,
       },
     };
@@ -299,6 +350,25 @@ export class CommunityService {
 
     if (!deck) {
       throw new NotFoundException('Deck not found');
+    }
+
+    // Rule 1: Owner cannot clone their own deck
+    if (deck.userId === userId) {
+      throw new BadRequestException('Bạn là tác giả của kho từ này, không cần sao chép!');
+    }
+
+    // Rule 2: Check if user already cloned this deck
+    const existingClone = await this.prisma.deckClone.findUnique({
+      where: { userId_deckId: { userId, deckId } },
+    });
+    if (existingClone) {
+      return {
+        success: true,
+        alreadyCloned: true,
+        message: `Kho từ vựng "${deck.title}" đã có trong kho cá nhân của bạn.`,
+        totalWordsInDeck: deck.words.length,
+        newWordsAdded: 0,
+      };
     }
 
     // Verify password if deck is protected and user is not author

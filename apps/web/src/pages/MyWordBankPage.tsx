@@ -20,6 +20,8 @@ import {
   idbDeleteLocalDecks,
   idbSetCache,
   idbGetCache,
+  getSessionUnlockedDecks,
+  saveSessionUnlockedDeck,
   LocalDeck,
 } from '../lib/idb';
 import { GlassCard } from '../components/common/GlassCard';
@@ -58,6 +60,7 @@ import {
   Share2,
   Lock,
   Eye,
+  EyeOff,
   ChevronLeft,
   BookOpen,
   FolderKanban,
@@ -297,7 +300,8 @@ export const MyWordBankPage: React.FC = () => {
   const [deckUnlockInput, setDeckUnlockInput] = useState('');
   const [deckUnlockError, setDeckUnlockError] = useState<string | null>(null);
   const [deckUnlocking, setDeckUnlocking] = useState(false);
-  const [unlockedPersonalDeckIds, setUnlockedPersonalDeckIds] = useState<Record<string, boolean>>({});
+  const [showUnlockPass, setShowUnlockPass] = useState(false);
+  const [unlockedPersonalDeckIds, setUnlockedPersonalDeckIds] = useState<Record<string, boolean>>(() => getSessionUnlockedDecks());
   const [pendingDeckAction, setPendingDeckAction] = useState<(() => void) | null>(null);
 
   // Delete Deck Modal State
@@ -434,10 +438,27 @@ export const MyWordBankPage: React.FC = () => {
           }));
 
           // Merge local-only decks strictly belonging to this user and language
-          const localOnly = cachedDecks.filter(
-            (ld) => ld.userId === currentUserId && !ld.isSyncedToCloud && !apiDecks.some((cd) => cd.id === ld.id)
-          );
-          updatedDecks = [...apiDecks, ...localOnly];
+          const apiIds = new Set(apiDecks.map((cd) => cd.id));
+          const localOnly = cachedDecks.filter((ld) => {
+            if (!ld || !ld.id) return false;
+            if (ld.userId !== currentUserId) return false;
+            if (ld.isSyncedToCloud) return false;
+            if (apiIds.has(ld.id)) return false;
+            if (ld.originDeckId && apiIds.has(ld.originDeckId)) return false;
+            if (ld.id.startsWith('cloned_') && apiIds.has(ld.id.replace('cloned_', ''))) return false;
+            return true;
+          });
+
+          // Strict canonical deduplication
+          const seenCanonical = new Set<string>();
+          updatedDecks = [];
+          for (const d of [...apiDecks, ...localOnly]) {
+            const canonicalKey = d.originDeckId || (d.id?.startsWith('cloned_') ? d.id.replace('cloned_', '') : d.id);
+            if (!seenCanonical.has(canonicalKey)) {
+              seenCanonical.add(canonicalKey);
+              updatedDecks.push(d);
+            }
+          }
           setDecks(updatedDecks);
 
           for (const d of updatedDecks) {
@@ -872,61 +893,74 @@ export const MyWordBankPage: React.FC = () => {
     }
   };
 
-  // Synchronize route deckId with selectedDeck state and password check
+  // Synchronize route deckId with selectedDeck state
   useEffect(() => {
-    if (!loading && decks.length > 0) {
+    if (!loading) {
       if (routeDeckId) {
         const targetDeck = decks.find(
-          (d) => d.id === routeDeckId || d.originDeckId === routeDeckId
+          (d) =>
+            String(d.id) === String(routeDeckId) ||
+            String(d.originDeckId) === String(routeDeckId) ||
+            String(d.id).replace(/^cloned_/, '') === String(routeDeckId).replace(/^cloned_/, '')
         );
         if (targetDeck) {
-          const isProtected = targetDeck.isProtected || targetDeck.hasPassword;
-          if (isProtected && !unlockedPersonalDeckIds[targetDeck.id]) {
-            setDeckToUnlock(targetDeck);
-            setDeckUnlockInput('');
-            setDeckUnlockError(null);
-            setPendingDeckAction(() => () => {
-              setSelectedDeck(targetDeck);
-              setSelectedWordIds([]);
-            });
-          } else {
-            setSelectedDeck(targetDeck);
-            setSelectedWordIds([]);
-          }
+          setSelectedDeck(targetDeck);
+          setSelectedWordIds([]);
         } else {
-          // If deckId not found, navigate to root word bank
-          navigate('/word-bank', { replace: true });
+          // If not in local decks, try loading from community/cloud API
+          let isSubscribed = true;
+          (async () => {
+            try {
+              const res: any = await api.get(`/community/decks/${routeDeckId}`);
+              const fetchedDeck = res?.data || res?.deck || res;
+              if (isSubscribed && fetchedDeck && fetchedDeck.id) {
+                setSelectedDeck(fetchedDeck);
+                setSelectedWordIds([]);
+                return;
+              }
+            } catch (err) {
+              console.warn('Could not load deck by routeDeckId:', err);
+            }
+            if (isSubscribed) {
+              navigate('/word-bank', { replace: true });
+            }
+          })();
+          return () => {
+            isSubscribed = false;
+          };
         }
       } else {
         setSelectedDeck(null);
         setSelectedWordIds([]);
       }
     }
-  }, [routeDeckId, decks, loading, unlockedPersonalDeckIds]);
+  }, [routeDeckId, decks, loading]);
 
   // Open deck or run action with password check for protected/cloned decks
   const handleOpenDeckOrAction = (deck: LocalDeck, action?: () => void) => {
-    const isProtected = deck.isProtected || deck.hasPassword;
+    const isProtected = Boolean(deck.isProtected || deck.hasPassword || (deck as any).requiresPassword || (deck as any).isLocked);
+    const isAuthor = user && (deck.userId === user.id || (deck as any).author?.id === user.id);
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    const isUnlocked = unlockedPersonalDeckIds[deck.id] || (deck.originDeckId && unlockedPersonalDeckIds[deck.originDeckId]) || unlockedPersonalDeckIds[String(deck.id).replace(/^cloned_/, '')];
 
-    if (isProtected && !unlockedPersonalDeckIds[deck.id]) {
-      setDeckToUnlock(deck);
-      setDeckUnlockInput('');
-      setDeckUnlockError(null);
-      setPendingDeckAction(() => () => {
-        if (action) {
+    if (action) {
+      if (isProtected && !isAuthor && !isAdmin && !isUnlocked) {
+        setDeckToUnlock(deck);
+        setDeckUnlockInput('');
+        setDeckUnlockError(null);
+        setPendingDeckAction(() => () => {
           action();
-        } else {
-          navigate(`/word-bank/${deck.id}`);
-        }
-      });
+        });
+        return;
+      }
+      action();
       return;
     }
 
-    if (action) {
-      action();
-    } else {
-      navigate(`/word-bank/${deck.id}`);
-    }
+    // Default action: Open deck detail view (If protected and locked, in-place lock screen will render securely)
+    setSelectedDeck(deck);
+    setSelectedWordIds([]);
+    navigate(`/word-bank/${deck.id}`);
   };
 
   const handleUnlockPersonalDeckSubmit = async (e: React.FormEvent) => {
@@ -937,26 +971,100 @@ export const MyWordBankPage: React.FC = () => {
 
     try {
       const pass = deckUnlockInput.trim();
-      const remoteId = deckToUnlock.originDeckId || (deckToUnlock.isSyncedToCloud ? deckToUnlock.id : null);
-      if (remoteId) {
+      const remoteId = deckToUnlock.originDeckId || deckToUnlock.id;
+      let unlockedDeckData: any = null;
+
+      try {
         const res: any = await api.post(`/community/decks/${remoteId}/unlock`, { password: pass });
-        if (!res?.success) throw new Error('Mật khẩu kho từ không chính xác!');
-      } else if (deckToUnlock.password) {
-        if (deckToUnlock.password !== pass) {
-          throw new Error('Mật khẩu kho từ không chính xác!');
+        if (res?.success) {
+          unlockedDeckData = res.deck;
+        } else {
+          throw new Error(res?.message || 'Mật khẩu kho từ không chính xác!');
+        }
+      } catch (remoteErr: any) {
+        if (deckToUnlock.password && deckToUnlock.password === pass) {
+          unlockedDeckData = deckToUnlock;
+        } else {
+          throw remoteErr;
         }
       }
 
-      setUnlockedPersonalDeckIds((prev) => ({ ...prev, [deckToUnlock.id]: true }));
+      const unlockedDeck = unlockedDeckData || deckToUnlock;
+      const deckId = deckToUnlock.id;
+      saveSessionUnlockedDeck(deckId);
+      if (deckToUnlock.originDeckId) saveSessionUnlockedDeck(deckToUnlock.originDeckId);
+      saveSessionUnlockedDeck(String(deckId).replace(/^cloned_/, ''));
+
+      setUnlockedPersonalDeckIds((prev) => ({
+        ...prev,
+        [deckId]: true,
+        ...(deckToUnlock.originDeckId ? { [deckToUnlock.originDeckId]: true } : {}),
+        [String(deckId).replace(/^cloned_/, '')]: true,
+      }));
       const callback = pendingDeckAction;
-      const unlockedId = deckToUnlock.id;
       setDeckToUnlock(null);
       setPendingDeckAction(null);
+      setSelectedDeck(unlockedDeck);
+      setSelectedWordIds([]);
+      setDeckUnlockInput('');
+      setDeckUnlockError(null);
       if (callback) {
         callback();
       } else {
-        navigate(`/word-bank/${unlockedId}`);
+        navigate(`/word-bank/${unlockedDeck.id}`);
       }
+    } catch (err: any) {
+      setDeckUnlockError(err?.response?.data?.message || err?.message || 'Mật khẩu kho từ không chính xác!');
+    } finally {
+      setDeckUnlocking(false);
+    }
+  };
+
+  // Secure In-Place Unlock handler when viewing locked deck page
+  const handleUnlockCurrentDeck = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDeck || !deckUnlockInput.trim()) return;
+    setDeckUnlocking(true);
+    setDeckUnlockError(null);
+
+    try {
+      const pass = deckUnlockInput.trim();
+      const remoteId = selectedDeck.originDeckId || selectedDeck.id;
+      let unlockedDeckData: any = null;
+
+      try {
+        const res: any = await api.post(`/community/decks/${remoteId}/unlock`, { password: pass });
+        if (res?.success) {
+          unlockedDeckData = res.deck;
+        } else {
+          throw new Error(res?.message || 'Mật khẩu kho từ không chính xác!');
+        }
+      } catch (remoteErr: any) {
+        if (selectedDeck.password && selectedDeck.password === pass) {
+          unlockedDeckData = selectedDeck;
+        } else {
+          throw remoteErr;
+        }
+      }
+
+      const unlockedDeck = unlockedDeckData || selectedDeck;
+      const deckId = selectedDeck.id;
+      saveSessionUnlockedDeck(deckId);
+      if (selectedDeck.originDeckId) saveSessionUnlockedDeck(selectedDeck.originDeckId);
+      saveSessionUnlockedDeck(String(deckId).replace(/^cloned_/, ''));
+
+      setUnlockedPersonalDeckIds((prev) => ({
+        ...prev,
+        [deckId]: true,
+        ...(selectedDeck.originDeckId ? { [selectedDeck.originDeckId]: true } : {}),
+        [String(deckId).replace(/^cloned_/, '')]: true,
+      }));
+      setSelectedDeck(unlockedDeck);
+      setSelectedWordIds([]);
+      setDeckUnlockInput('');
+      setDeckUnlockError(null);
+      setActionSuccessMsg(`Đã mở khóa thành công kho từ "${unlockedDeck.title}"!`);
+      setTimeout(() => setActionSuccessMsg(null), 3000);
     } catch (err: any) {
       setDeckUnlockError(err?.response?.data?.message || err?.message || 'Mật khẩu kho từ không chính xác!');
     } finally {
@@ -1087,13 +1195,56 @@ export const MyWordBankPage: React.FC = () => {
   // WORDS INSIDE A DECK - FULL CRUD OPERATIONS
   // =============================================================================
 
-  // Words inside currently opened deck
-  const wordsInSelectedDeck = useMemo(() => {
-    if (!selectedDeck) return [];
-    return words.filter(
-      (w) => w.deckId === selectedDeck.id || (w.deckName && w.deckName === selectedDeck.title)
+  // Helper to determine if the currently active deck is locked and requires password authentication
+  const isSelectedDeckLocked = useMemo(() => {
+    if (!selectedDeck) return false;
+    const isProtected = Boolean(
+      selectedDeck.isProtected ||
+      selectedDeck.hasPassword ||
+      (selectedDeck as any).requiresPassword ||
+      (selectedDeck as any).isLocked
     );
-  }, [words, selectedDeck]);
+    if (!isProtected) return false;
+
+    // Author or admin can always access
+    const isAuthor = user && (selectedDeck.userId === user.id || (selectedDeck as any).author?.id === user.id);
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    if (isAuthor || isAdmin) return false;
+
+    // Check if unlocked in session
+    const idKey = selectedDeck.id;
+    const originKey = selectedDeck.originDeckId;
+    const cleanKey = String(selectedDeck.id).replace(/^cloned_/, '');
+    if (
+      unlockedPersonalDeckIds[idKey] ||
+      (originKey && unlockedPersonalDeckIds[originKey]) ||
+      unlockedPersonalDeckIds[cleanKey]
+    ) {
+      return false;
+    }
+
+    return true;
+  }, [selectedDeck, unlockedPersonalDeckIds, user]);
+
+  // Words inside currently opened deck (Protected decks strictly return [] if locked)
+  const wordsInSelectedDeck = useMemo(() => {
+    if (!selectedDeck || isSelectedDeckLocked) return [];
+    const directWords = words.filter(
+      (w) =>
+        w.deckId === selectedDeck.id ||
+        (selectedDeck.originDeckId && w.deckId === selectedDeck.originDeckId) ||
+        (w.deckName && w.deckName === selectedDeck.title)
+    );
+    if (directWords.length > 0) return directWords;
+    if (Array.isArray(selectedDeck.words) && selectedDeck.words.length > 0) {
+      return selectedDeck.words.map((w: any) => ({
+        ...w,
+        deckId: selectedDeck.id,
+        deckName: selectedDeck.title,
+      }));
+    }
+    return [];
+  }, [words, selectedDeck, isSelectedDeckLocked]);
 
   // Unique topics inside opened deck
   const subTopicsInSelectedDeck = useMemo(() => {
@@ -1737,7 +1888,9 @@ export const MyWordBankPage: React.FC = () => {
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
             {selectedDeck
-              ? `${wordsInSelectedDeck.length} từ vựng • ${selectedDeck.description || 'Kho từ vựng cá nhân, hỗ trợ ghi nhớ ngắt quãng'}`
+              ? isSelectedDeckLocked
+                ? (selectedDeck.wordCount ? `${selectedDeck.wordCount} từ vựng • Kho từ vựng được bảo vệ bằng mật khẩu` : 'Kho từ vựng được bảo vệ bằng mật khẩu')
+                : `${wordsInSelectedDeck.length} từ vựng • ${selectedDeck.description || 'Kho từ vựng cá nhân, hỗ trợ ghi nhớ ngắt quãng'}`
               : activeTab === 'decks'
               ? `Quản lý ${decks.length} kho từ vựng cá nhân, đồng bộ đám mây và chia sẻ cộng đồng.`
               : `Hiển thị danh sách đầy đủ ${allFilteredWords.length} từ vựng trên toàn hệ thống.`}
@@ -1748,6 +1901,12 @@ export const MyWordBankPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           {/* TRONG KHO ĐANG MỞ */}
           {selectedDeck ? (
+            isSelectedDeckLocked ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Yêu cầu mật khẩu để mở khóa</span>
+              </span>
+            ) : (
             <>
               {!selectedDeck.isReadOnly && (
                 <button
@@ -1886,7 +2045,7 @@ export const MyWordBankPage: React.FC = () => {
                 size="sm"
               />
             </>
-          ) : activeTab === 'decks' ? (
+          )) : activeTab === 'decks' ? (
             /* TRANG QUẢN LÝ TẤT CẢ KHO */
             <>
               <button
@@ -2144,29 +2303,23 @@ export const MyWordBankPage: React.FC = () => {
 
       {/* Main Mode Navigation Bar: "Kho của tôi" vs "Tất cả từ" */}
       {!selectedDeck && (
-        <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl w-fit border border-slate-200 dark:border-slate-700">
+        <div className="tab-pill-container self-start">
           <button
             onClick={() => setActiveTab('decks')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-              activeTab === 'decks'
-                ? 'btn-glass-primary !py-1.5 !px-3.5 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`tab-pill ${activeTab === 'decks' ? 'tab-pill-active' : ''}`}
           >
             <FolderKanban className="w-4 h-4" />
-            <span>Kho Của Tôi ({decks.length})</span>
+            <span>Kho Của Tôi</span>
+            <span className="tab-pill-badge">{decks.length}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('all_words')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-              activeTab === 'all_words'
-                ? 'btn-glass-primary !py-1.5 !px-3.5 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`tab-pill ${activeTab === 'all_words' ? 'tab-pill-active' : ''}`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Tất Cả Từ ({words.length})</span>
+            <span>Tất Cả Từ</span>
+            <span className="tab-pill-badge">{words.length}</span>
           </button>
         </div>
       )}
@@ -2357,10 +2510,7 @@ export const MyWordBankPage: React.FC = () => {
                           </td>
                           <td className="py-3 px-4">
                             <div
-                              onClick={() => {
-                                setSelectedDeck(deck);
-                                setSelectedWordIds([]);
-                              }}
+                              onClick={() => handleOpenDeckOrAction(deck)}
                               className="cursor-pointer group flex items-start gap-2.5"
                             >
                               <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
@@ -2565,7 +2715,8 @@ export const MyWordBankPage: React.FC = () => {
                 return (
                   <div
                     key={deck.id}
-                    className={`p-5 flex flex-col justify-between space-y-4 rounded-2xl bg-white dark:bg-slate-900 border transition duration-150 shadow-xs hover:shadow-md ${
+                    onClick={() => handleOpenDeckOrAction(deck)}
+                    className={`p-5 flex flex-col justify-between space-y-4 rounded-2xl bg-white dark:bg-slate-900 border transition duration-150 shadow-xs hover:shadow-md cursor-pointer ${
                       isSelected
                         ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
                         : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40'
@@ -2689,7 +2840,10 @@ export const MyWordBankPage: React.FC = () => {
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => handleOpenDeckOrAction(deck)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDeckOrAction(deck);
+                          }}
                           className="btn-glass-primary btn-glass-sm font-semibold"
                           aria-label="Xem và quản lý từ trong kho"
                         >
@@ -2698,7 +2852,10 @@ export const MyWordBankPage: React.FC = () => {
                         </button>
 
                         <button
-                          onClick={() => handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`));
+                          }}
                           className="btn-glass-primary btn-glass-sm font-semibold"
                           title="Ôn tập riêng kho này"
                           aria-label="Ôn tập riêng kho này"
@@ -2837,6 +2994,98 @@ export const MyWordBankPage: React.FC = () => {
           DECK DETAIL VIEW: "KHO CỦA TÔI -> KHO X -> QUẢN LÝ TỪ" (FULL CRUD WORDS INSIDE DECK)
           ============================================================================= */}
       {selectedDeck && (
+        isSelectedDeckLocked ? (
+          /* =============================================================================
+             SECURE LOCKED DECK AUTHENTICATION SCREEN (IN-PLACE, ZERO WORDS IN DOM)
+             Deleting DOM elements in DevTools CANNOT reveal words because words are not in DOM
+             and not yet fetched from API!
+             ============================================================================= */
+          <div className="max-w-md mx-auto my-12 p-7 sm:p-9 rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-amber-200/90 dark:border-amber-900/60 shadow-2xl text-center space-y-6 animate-fade-in">
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-xl shadow-amber-500/25">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider border border-amber-500/20">
+                Kho Từ Vựng Được Bảo Vệ Bằng Mật Khẩu
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                {selectedDeck.title}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                Kho từ này được cài đặt mật khẩu bảo vệ. Dữ liệu từ vựng được mã hóa an toàn trên máy chủ, vui lòng nhập mật khẩu để giải mã và mở khóa toàn bộ kho từ.
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleUnlockCurrentDeck}
+              className="space-y-4 max-w-sm mx-auto text-left"
+            >
+              {deckUnlockError && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{deckUnlockError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs">
+                  Mật khẩu mở khóa kho <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showUnlockPass ? 'text' : 'password'}
+                    required
+                    autoFocus
+                    value={deckUnlockInput}
+                    onChange={(e) => setDeckUnlockInput(e.target.value)}
+                    placeholder="Nhập mã PIN hoặc mật khẩu..."
+                    className="w-full h-11 px-4 pr-11 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-sm text-slate-900 dark:text-white transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowUnlockPass((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                  >
+                    {showUnlockPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/word-bank');
+                    setSelectedDeck(null);
+                    setDeckUnlockInput('');
+                    setDeckUnlockError(null);
+                  }}
+                  className="btn-glass-secondary btn-glass-sm flex-1 !py-2.5 font-bold"
+                >
+                  Quay lại
+                </button>
+                <button
+                  type="submit"
+                  disabled={deckUnlocking || !deckUnlockInput.trim()}
+                  className="btn-glass-primary btn-glass-sm flex-1 !py-2.5 font-bold disabled:opacity-50"
+                >
+                  {deckUnlocking ? (
+                    <span className="inline-flex items-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Đang giải mã...</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Mở khóa kho từ</span>
+                    </span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : (
         <div className="space-y-4">
           {/* Origin & Attribution Banner */}
           {(selectedDeck.authorName || selectedDeck.sourceName) && (
@@ -3527,6 +3776,7 @@ export const MyWordBankPage: React.FC = () => {
             </span>
           </div>
         </div>
+        )
       )}
 
       {/* =============================================================================
