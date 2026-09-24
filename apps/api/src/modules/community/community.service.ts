@@ -9,7 +9,7 @@ import {
   UpdateWordItemDto,
   BulkDeleteDto,
 } from './dto/create-deck.dto';
-import { CefrLevel, ModerationStatus, VocabStatus } from '@prisma/client';
+import { CefrLevel, ModerationStatus, VocabStatus, GrantStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -209,36 +209,42 @@ export class CommunityService {
           }
         }
 
-        // 2. If password/access key string is provided, verify against Access Key or Bank Password
+        // 2. If access key string is provided, verify strictly against personal BankAccessGrant
         if (!isAuthorized && password?.trim()) {
           const trimmed = password.trim();
 
-          // Check if it's an Access Key
+          // Find the grant matching this tokenHash for this bank
           const tokenHash = crypto.createHash('sha256').update(trimmed).digest('hex');
           const keyGrant = await this.prisma.bankAccessGrant.findFirst({
             where: {
               tokenHash,
               bankId: cleanId,
-              status: 'ACTIVE',
+              status: GrantStatus.ACTIVE,
               revokedAt: null,
-              ...(userId ? { userId } : {}),
             },
           });
 
-          if (keyGrant && (!keyGrant.expiresAt || keyGrant.expiresAt > new Date())) {
-            isAuthorized = true;
-            await this.prisma.bankAccessGrant.update({
-              where: { id: keyGrant.id },
-              data: { lastUsedAt: new Date() },
-            });
-          } else if (deck.passwordHash) {
-            // Master bank password check
-            isAuthorized = await bcrypt.compare(trimmed, deck.passwordHash);
+          if (!keyGrant) {
+            throw new ForbiddenException('Access Key không hợp lệ hoặc đã bị thu hồi. Mật khẩu của chủ kho không được dùng để cấp quyền cho tài khoản khác.');
           }
+
+          if (keyGrant.userId !== userId) {
+            throw new ForbiddenException('ACCESS_KEY_NOT_ASSIGNED_TO_USER: Access Key này được cấp riêng cho người dùng khác, bạn không có quyền sử dụng mã này');
+          }
+
+          if (keyGrant.expiresAt && keyGrant.expiresAt < new Date()) {
+            throw new ForbiddenException('Access Key này đã hết hạn sử dụng');
+          }
+
+          isAuthorized = true;
+          await this.prisma.bankAccessGrant.update({
+            where: { id: keyGrant.id },
+            data: { lastUsedAt: new Date() },
+          });
         }
 
         if (!isAuthorized) {
-          throw new UnauthorizedException('Mật khẩu kho từ hoặc Access Key không chính xác!');
+          throw new ForbiddenException('Kho từ vựng này được bảo vệ. Bạn cần nhập Access Key được cấp riêng cho tài khoản của bạn để mở khóa.');
         }
       }
     }

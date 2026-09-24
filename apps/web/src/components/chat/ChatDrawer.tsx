@@ -28,6 +28,7 @@ export interface ChatContextPayload {
   bankId?: string;
   bankTitle?: string;
   bankOwnerId?: string;
+  languageSpaceId?: string;
 }
 
 interface ChatDrawerProps {
@@ -44,7 +45,7 @@ interface ChatDrawerProps {
     avatar?: string;
   } | null;
   initialContext?: ChatContextPayload | null;
-  onViewBank?: (bankType: 'VOCABULARY' | 'EXAM', bankId: string) => void;
+  onViewBank?: (bankType: 'VOCABULARY' | 'EXAM', bankId: string, languageSpaceId?: string) => void;
 }
 
 interface ConversationItem {
@@ -54,6 +55,7 @@ interface ConversationItem {
   bankId?: string;
   bankTitle?: string;
   bankOwnerId?: string;
+  languageSpaceId?: string;
   lastMessageText: string;
   lastMessageType: string;
   lastMessageAt: string;
@@ -252,6 +254,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         bankId: context?.bankId,
         bankTitle: context?.bankTitle,
         bankOwnerId: context?.bankOwnerId,
+        languageSpaceId: context?.languageSpaceId,
       });
 
       if (res?.data) {
@@ -782,6 +785,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                         onViewBank(
                           activeConversation.bankType || 'VOCABULARY',
                           activeConversation.bankId!,
+                          activeConversation.languageSpaceId,
                         )
                       }
                       className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 flex-shrink-0"

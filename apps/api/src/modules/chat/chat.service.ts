@@ -26,6 +26,7 @@ export interface CreateConversationDto {
   bankId?: string;
   bankTitle?: string;
   bankOwnerId?: string;
+  languageSpaceId?: string;
 }
 
 export interface RegisterEncryptionKeyDto {
@@ -49,7 +50,7 @@ export class ChatService {
    * Get or initiate a conversation between two students (optionally contextualized by a Bank)
    */
   async getOrCreateConversation(currentUserId: string, dto: CreateConversationDto) {
-    const { targetUserId, contextType = 'GENERAL', bankType, bankId, bankTitle, bankOwnerId } = dto;
+    const { targetUserId, contextType = 'GENERAL', bankType, bankId, bankTitle, bankOwnerId, languageSpaceId } = dto;
 
     if (currentUserId === targetUserId) {
       throw new BadRequestException('Không thể tạo cuộc trò chuyện với chính mình');
@@ -91,6 +92,7 @@ export class ChatService {
           bankId,
           bankTitle,
           bankOwnerId,
+          languageSpaceId,
           participants: {
             create: [
               { userId: currentUserId },
@@ -168,6 +170,7 @@ export class ChatService {
       bankId: conv.bankId,
       bankTitle: conv.bankTitle,
       bankOwnerId: conv.bankOwnerId,
+      languageSpaceId: conv.languageSpaceId,
       lastMessageText: conv.lastMessageText,
       lastMessageType: conv.lastMessageType,
       lastMessageAt: conv.lastMessageAt,

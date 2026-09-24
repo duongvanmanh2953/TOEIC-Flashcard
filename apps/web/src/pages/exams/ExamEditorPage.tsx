@@ -27,12 +27,13 @@ import {
   InvalidExamQuestionRow,
 } from '../../utils/examTemplate';
 import { parseAndValidateExamPptx } from '../../utils/examPptxTemplate';
-
+import { useLearningContext } from '../../contexts/LearningContext';
 
 export const ExamEditorPage: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { activeLanguage } = useLearningContext();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -196,6 +197,7 @@ export const ExamEditorPage: React.FC = () => {
         description: description.trim(),
         examType,
         level,
+        languageId: activeLanguage.id,
         durationMinutes,
         passingScore,
         status,

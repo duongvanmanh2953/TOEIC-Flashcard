@@ -62,9 +62,12 @@ import {
   parseAndValidateExamPptx,
 } from '../../utils/examPptxTemplate';
 
+import { useLearningContext } from '../../contexts/LearningContext';
+
 export const ExamBankPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isGuest, promptLogin } = useAuth();
+  const { activeLanguage } = useLearningContext();
 
   const [activeTab, setActiveTab] = useState<'explore' | 'my-exams' | 'saved' | 'history' | 'wrong-answers'>('explore');
   const [myExamStatusFilter, setMyExamStatusFilter] = useState<'ALL' | 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED'>('ALL');
@@ -127,6 +130,7 @@ export const ExamBankPage: React.FC = () => {
               bankId: exam.id,
               bankTitle: exam.title,
               bankOwnerId: user.id,
+              languageSpaceId: exam.languageId || activeLanguage.id,
             },
           },
         }),
@@ -146,6 +150,7 @@ export const ExamBankPage: React.FC = () => {
             bankId: exam.id,
             bankTitle: exam.title,
             bankOwnerId: targetUserId,
+            languageSpaceId: exam.languageId || activeLanguage.id,
           },
         },
       }),
@@ -1921,20 +1926,20 @@ export const ExamBankPage: React.FC = () => {
                   <Lock className="w-6 h-6" />
                 </div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                  Mở khóa bài thi
+                  Mở khóa bộ đề thi
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Bộ đề "{unlockExam.title}" được tác giả đặt mã bảo vệ.
+                  Bộ đề "{unlockExam.title}" được tác giả bảo vệ. Vui lòng nhập mã Access Key riêng được cấp cho bạn.
                 </p>
               </div>
 
               <div>
                 <input
-                  type="password"
+                  type="text"
                   value={unlockPassword}
                   onChange={(e) => setUnlockPassword(e.target.value)}
-                  placeholder="Nhập mã bảo vệ..."
-                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  placeholder="VD: VF-EXM-XXXX-XXXXXXXXXXXXXXXX"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"
                 />
                 {unlockError && <p className="text-xs text-rose-500 mt-1">{unlockError}</p>}
               </div>
@@ -1989,6 +1994,7 @@ export const ExamBankPage: React.FC = () => {
                     bankId: accessKeyManageExam.id,
                     bankTitle: accessKeyManageExam.title,
                     bankOwnerId: accessKeyManageExam.authorId,
+                    languageSpaceId: accessKeyManageExam.languageId || activeLanguage.id,
                   },
                 },
               }),

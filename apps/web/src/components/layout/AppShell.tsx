@@ -48,7 +48,7 @@ import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
 import { CountryFlag } from '../language/CountryFlag';
 import { useLearningContext } from '../../contexts/LearningContext';
-import { isKidSupportedLanguage } from '../../config/languages';
+import { isKidSupportedLanguage, getLanguage } from '../../config/languages';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
 import { VirtualChatPane } from '../chat/VirtualChatPane';
@@ -56,7 +56,7 @@ import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 
 export const AppShell: React.FC = () => {
-  const { activeLanguage, activeProfile } = useLearningContext();
+  const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
   const { t } = useTranslation();
 
@@ -70,6 +70,47 @@ export const AppShell: React.FC = () => {
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
   const [chatTargetUser, setChatTargetUser] = useState<any | null>(null);
   const [chatContext, setChatContext] = useState<ChatContextPayload | null>(null);
+
+  // Cross-Language Space Navigation Warning State
+  const [crossSpaceWarning, setCrossSpaceWarning] = useState<{
+    targetLanguageId: string;
+    bankType: 'VOCABULARY' | 'EXAM';
+    bankId: string;
+  } | null>(null);
+
+  const handleViewBankFromChat = (
+    bankType: 'VOCABULARY' | 'EXAM',
+    bankId: string,
+    languageSpaceId?: string,
+  ) => {
+    if (languageSpaceId && languageSpaceId !== activeLanguage.id) {
+      setCrossSpaceWarning({
+        targetLanguageId: languageSpaceId,
+        bankType,
+        bankId,
+      });
+      return;
+    }
+    setChatDrawerOpen(false);
+    if (bankType === 'VOCABULARY') {
+      navigate(`/word-bank?deckId=${bankId}`);
+    } else {
+      navigate(`/exams`);
+    }
+  };
+
+  const handleConfirmCrossSpaceSwitch = async () => {
+    if (!crossSpaceWarning) return;
+    const { targetLanguageId, bankType, bankId } = crossSpaceWarning;
+    setCrossSpaceWarning(null);
+    setChatDrawerOpen(false);
+    await switchLanguage(targetLanguageId);
+    if (bankType === 'VOCABULARY') {
+      navigate(`/word-bank?deckId=${bankId}`);
+    } else {
+      navigate(`/exams`);
+    }
+  };
 
   useEffect(() => {
     const handleOpenChat = (e: any) => {
@@ -1266,16 +1307,75 @@ export const AppShell: React.FC = () => {
           }}
           initialTargetUser={chatTargetUser}
           initialContext={chatContext}
-          onViewBank={(bankType, bankId) => {
-            setChatDrawerOpen(false);
-            if (bankType === 'VOCABULARY') {
-              navigate(`/word-bank?deckId=${bankId}`);
-            } else {
-              navigate(`/exams`);
-            }
-          }}
+          onViewBank={handleViewBankFromChat}
         />
       )}
+
+      {/* Cross Language Space Navigation Warning Modal */}
+      <ModalPortal isOpen={Boolean(crossSpaceWarning)} onClose={() => setCrossSpaceWarning(null)}>
+        {crossSpaceWarning && (() => {
+          const targetLang = getLanguage(crossSpaceWarning.targetLanguageId) || {
+            name: crossSpaceWarning.targetLanguageId,
+            nativeName: crossSpaceWarning.targetLanguageId,
+            flag: '🌐',
+          };
+          return (
+            <div className="m-auto max-w-md w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-2xl animate-fade-in text-left">
+              <div className="flex items-center gap-3.5 text-amber-500">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
+                    Kho này thuộc không gian học khác
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Yêu cầu chuyển đổi không gian học tập để truy cập
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Không gian hiện tại:</span>
+                  <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>{activeLanguage.flag}</span>
+                    <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Kho thuộc không gian:</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                    <span>{targetLang.flag}</span>
+                    <span>{targetLang.nativeName} ({targetLang.name})</span>
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Bạn có muốn chuyển sang không gian <strong>{targetLang.name}</strong> để xem nội dung kho này không?
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setCrossSpaceWarning(null)}
+                  className="btn-glass-secondary btn-glass-sm !px-4"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCrossSpaceSwitch}
+                  className="btn-glass-primary btn-glass-sm !px-5 font-bold"
+                >
+                  Chuyển không gian & xem kho
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </ModalPortal>
     </div>
   );
 };

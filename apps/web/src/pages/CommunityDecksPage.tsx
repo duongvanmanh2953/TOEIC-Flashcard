@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
-import { SUPPORTED_LANGUAGES, getLanguage } from '../config/languages';
+import { getLanguage } from '../config/languages';
 import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
-import { LanguageSelector } from '../components/language/LanguageSelector';
 import { LanguageBadge } from '../components/language/LanguageBadge';
 import {
   idbSaveLocalDeck,
@@ -69,7 +68,7 @@ export const CommunityDecksPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isGuest, promptLogin } = useAuth();
   const { activeLanguage } = useLearningContext();
-  const [selectedLanguageFilter, setSelectedLanguageFilter] = useState<string>(activeLanguage.id);
+  const [selectedLevelFilter, setSelectedLevelFilter] = useState<string>('ALL');
   const [mainTab, setMainTab] = useState<'community' | 'my-decks'>('community');
   const [decks, setDecks] = useState<any[]>([]);
   const [myDecks, setMyDecks] = useState<any[]>([]);
@@ -80,9 +79,9 @@ export const CommunityDecksPage: React.FC = () => {
   const [cloneSuccess, setCloneSuccess] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Sync selected language filter with activeLearningLanguage when changed from header
+  // Sync selected level filter when active learning space changes
   useEffect(() => {
-    setSelectedLanguageFilter(activeLanguage.id);
+    setSelectedLevelFilter('ALL');
   }, [activeLanguage.id]);
 
   // Password Protection & Unlock State
@@ -133,6 +132,7 @@ export const CommunityDecksPage: React.FC = () => {
             bankId: deck.id,
             bankTitle: deck.title,
             bankOwnerId: targetUserId,
+            languageSpaceId: deck.languageId || activeLanguage.id,
           },
         },
       }),
@@ -171,14 +171,18 @@ export const CommunityDecksPage: React.FC = () => {
   const fetchDecks = async () => {
     setLoading(true);
     try {
-      const langParam = selectedLanguageFilter === 'ALL' ? undefined : selectedLanguageFilter;
       const res: any = await api.get('/community/decks', {
         params: {
           search,
-          languageId: langParam,
+          languageId: activeLanguage.id,
+          cefrLevel: selectedLevelFilter === 'ALL' ? undefined : selectedLevelFilter,
         },
       });
-      if (res?.success) setDecks(res.data);
+      let data = res?.success ? (res.data || []) : (Array.isArray(res) ? res : []);
+      if (selectedLevelFilter !== 'ALL') {
+        data = data.filter((d: any) => !d.cefrLevel || d.cefrLevel === selectedLevelFilter || d.cefrLevel === 'ALL');
+      }
+      setDecks(data);
     } catch (err) {
       console.error('Failed to load community decks', err);
     } finally {
@@ -190,7 +194,7 @@ export const CommunityDecksPage: React.FC = () => {
     if (!user) return;
     setLoadingMyDecks(true);
     try {
-      const langParam = selectedLanguageFilter === 'ALL' ? undefined : selectedLanguageFilter;
+      const langParam = activeLanguage.id;
       const [remoteRes, localDecks]: any = await Promise.all([
         api.get('/community/my-decks', { params: { languageId: langParam } }).catch(() => ({ data: [] })),
         idbGetLocalDecks(user.id, langParam).catch(() => []),
@@ -230,7 +234,7 @@ export const CommunityDecksPage: React.FC = () => {
   const fetchMyWords = async () => {
     setLoadingMyWords(true);
     try {
-      const langParam = selectedLanguageFilter === 'ALL' ? undefined : selectedLanguageFilter;
+      const langParam = activeLanguage.id;
       const res: any = await api.get('/words/my-bank', { params: { limit: 100, languageId: langParam } });
       const data = res?.data?.items || res?.data || [];
       setMyWords(data);
@@ -326,13 +330,13 @@ export const CommunityDecksPage: React.FC = () => {
 
   useEffect(() => {
     fetchDecks();
-  }, [search, selectedLanguageFilter]);
+  }, [search, selectedLevelFilter, activeLanguage.id]);
 
   useEffect(() => {
     if (user) {
       fetchMyDecks();
     }
-  }, [user, mainTab, selectedLanguageFilter]);
+  }, [user, mainTab, activeLanguage.id]);
 
   const isVip = Boolean(
     user &&
@@ -899,22 +903,20 @@ export const CommunityDecksPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Filter controls: Language Select & Search Bar */}
+        {/* Filter controls: Dynamic Level Select & Search Bar */}
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full lg:w-auto">
-          <div className="w-full sm:w-56 shrink-0">
+          <div className="w-full sm:w-48 shrink-0">
             <CustomDropdown
-              value={selectedLanguageFilter}
-              onChange={(val) => setSelectedLanguageFilter(val)}
+              value={selectedLevelFilter}
+              onChange={(val) => setSelectedLevelFilter(val)}
               options={[
-                { value: 'ALL', label: '🌐 Tất cả ngôn ngữ' },
-                ...SUPPORTED_LANGUAGES.map((lang) => ({
-                  value: lang.id,
-                  label: `${lang.nativeName} (${lang.name})`,
-                  badge: lang.code.toUpperCase(),
+                { value: 'ALL', label: 'Tất cả trình độ', badge: 'ALL' },
+                ...(activeLanguage.supportedLevels || []).map((lvl) => ({
+                  value: lvl,
+                  label: `Trình độ ${lvl}`,
+                  badge: lvl,
                 })),
               ]}
-              searchable={true}
-              searchPlaceholder="Tìm kiếm ngôn ngữ..."
               size="sm"
               className="w-full"
             />
@@ -926,7 +928,7 @@ export const CommunityDecksPage: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm bộ từ theo chủ đề, CEFR..."
+              placeholder="Tìm bộ từ theo chủ đề, tiêu đề..."
               className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
             />
           </div>
@@ -1964,30 +1966,29 @@ export const CommunityDecksPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <LanguageSelector
-                  label="Ngôn ngữ bộ từ"
-                  value={createDeckLang}
-                  onChange={(langId) => setCreateDeckLang(langId)}
-                  availableOnly={true}
-                  size="md"
-                />
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Không gian học tập (Tự động kế thừa)
+                </label>
+                <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white">
+                  <span className="text-base">{activeLanguage.flag}</span>
+                  <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Khung trình độ (CEFR)
+                  Khung trình độ
                 </label>
                 <CustomDropdown
                   value={cefrLevel}
                   onChange={(val) => setCefrLevel(val)}
                   options={[
                     { value: 'ALL', label: 'ALL — Tất cả trình độ', badge: 'ALL' },
-                    { value: 'A1', label: 'A1 — Beginner (Căn bản)', badge: 'A1' },
-                    { value: 'A2', label: 'A2 — Elementary (Sơ cấp)', badge: 'A2' },
-                    { value: 'B1', label: 'B1 — Intermediate (Trung cấp)', badge: 'B1' },
-                    { value: 'B2', label: 'B2 — Upper-Intermediate', badge: 'B2' },
-                    { value: 'C1', label: 'C1 — Advanced (Cao cấp)', badge: 'C1' },
-                    { value: 'C2', label: 'C2 — Mastery (Thành thạo)', badge: 'C2' },
+                    ...(activeLanguage.supportedLevels || []).map((lvl) => ({
+                      value: lvl,
+                      label: `${lvl} — Trình độ ${lvl}`,
+                      badge: lvl,
+                    })),
                   ]}
                   size="md"
                   className="w-full"
@@ -2124,23 +2125,23 @@ export const CommunityDecksPage: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Kho từ này đã được đặt mật khẩu bảo vệ. Bạn có thể nhập mật khẩu kho hoặc mã Access Key riêng được cấp bởi chủ kho để mở khóa.
+              Kho từ này được tác giả bảo vệ. Bạn cần nhập mã Access Key riêng được cấp bởi chủ kho để mở khóa.
             </p>
 
             <form onSubmit={handleUnlockSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
-                  Mật khẩu kho từ hoặc Mã Access Key
+                  Mã Access Key riêng của bạn
                 </label>
                 <div className="relative">
                   <input
-                    type={showUnlockPassword ? 'text' : 'password'}
+                    type="text"
                     required
                     autoFocus
                     value={unlockInputPassword}
                     onChange={(e) => setUnlockInputPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu kho hoặc mã Access Key (VD: VF-VCB-...)"
-                    className="w-full text-xs px-3.5 py-2.5 pr-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
+                    placeholder="VD: VF-VCB-XXXX-XXXXXXXXXXXXXXXX"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-mono font-medium"
                   />
                   <button
                     type="button"
@@ -2315,6 +2316,7 @@ export const CommunityDecksPage: React.FC = () => {
                     bankId: accessKeyManageDeck.id,
                     bankTitle: accessKeyManageDeck.title,
                     bankOwnerId: accessKeyManageDeck.userId,
+                    languageSpaceId: accessKeyManageDeck.languageId || activeLanguage.id,
                   },
                 },
               }),

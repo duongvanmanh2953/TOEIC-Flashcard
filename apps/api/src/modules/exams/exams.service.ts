@@ -13,7 +13,7 @@ import {
 } from './dto/exam.dto';
 import { ExamScoringService } from './exam-scoring.service';
 import { ExamAnalyticsService } from './exam-analytics.service';
-import { ExamStatus, ModerationStatus, QuestionType } from '@prisma/client';
+import { ExamStatus, ModerationStatus, QuestionType, GrantStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -218,31 +218,35 @@ export class ExamsService {
       }
 
       const trimmed = password.trim();
-      let match = false;
 
-      // 1. Check if it's an Access Key
+      // Find the grant matching this tokenHash for this exam
       const tokenHash = crypto.createHash('sha256').update(trimmed).digest('hex');
       const keyGrant = await this.prisma.bankAccessGrant.findFirst({
         where: {
           bankId: examId,
           tokenHash,
-          status: 'ACTIVE',
+          status: GrantStatus.ACTIVE,
           revokedAt: null,
-          ...(userId ? { userId } : {}),
         },
       });
 
-      if (keyGrant && (!keyGrant.expiresAt || keyGrant.expiresAt > new Date())) {
-        match = true;
-        await this.prisma.bankAccessGrant.update({
-          where: { id: keyGrant.id },
-          data: { lastUsedAt: new Date() },
-        });
-      } else if (exam.passwordHash) {
-        match = await bcrypt.compare(trimmed, exam.passwordHash);
+      if (!keyGrant) {
+        throw new ForbiddenException('Access Key không hợp lệ hoặc đã bị thu hồi. Mật khẩu của tác giả không được dùng để cấp quyền cho tài khoản khác.');
       }
 
-      if (!match) throw new ForbiddenException('Mật khẩu bảo vệ bộ đề hoặc Access Key không chính xác');
+      if (keyGrant.userId !== userId) {
+        throw new ForbiddenException('ACCESS_KEY_NOT_ASSIGNED_TO_USER: Access Key này được cấp riêng cho người dùng khác, bạn không có quyền sử dụng mã này');
+      }
+
+      if (keyGrant.expiresAt && keyGrant.expiresAt < new Date()) {
+        throw new ForbiddenException('Access Key này đã hết hạn sử dụng');
+      }
+
+      await this.prisma.bankAccessGrant.update({
+        where: { id: keyGrant.id },
+        data: { lastUsedAt: new Date() },
+      });
+      hasAccessGrant = true;
     }
 
     // Determine user reactions

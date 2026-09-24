@@ -30,7 +30,6 @@ import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { confirmModal } from '../components/common/ConfirmDialog';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
-import { LanguageSelector } from '../components/language/LanguageSelector';
 import { LanguageBadge } from '../components/language/LanguageBadge';
 import { getLanguage } from '../config/languages';
 import { useScrollLoad } from '../hooks/useScrollLoad';
@@ -4268,14 +4267,13 @@ export const MyWordBankPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
               <div>
-                <LanguageSelector
-                  label="Ngôn ngữ kho từ *"
-                  value={deckLangInput}
-                  onChange={handleDeckLanguageChange}
-                  availableOnly={true}
-                  size="md"
-                  className="w-full"
-                />
+                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
+                  Không gian học tập (Mặc định)
+                </label>
+                <div className="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-semibold text-xs text-slate-900 dark:text-white">
+                  <span className="text-base">{activeLanguage.flag}</span>
+                  <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
+                </div>
               </div>
 
               <div>
@@ -4882,23 +4880,20 @@ export const MyWordBankPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Row 4: CEFR Level */}
+                {/* Row 4: Level */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Cấp độ (CEFR)
+                      Cấp độ ({activeLanguage.nativeName})
                     </label>
                     <CustomDropdown
                       value={wordFormCefr}
                       onChange={(val) => setWordFormCefr(val)}
-                      options={[
-                        { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
-                        { value: 'A2', label: 'A2 — Elementary', badge: 'A2' },
-                        { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
-                        { value: 'B2', label: 'B2 — Upper-Inter', badge: 'B2' },
-                        { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
-                        { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
-                      ]}
+                      options={(activeLanguage.supportedLevels || ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).map((lvl) => ({
+                        value: lvl,
+                        label: `${lvl} — Trình độ ${lvl}`,
+                        badge: lvl,
+                      }))}
                       size="md"
                       className="w-full"
                     />

@@ -267,40 +267,9 @@ export const VocabularyExplorerPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Dynamic Topic Filter Pills from Real Database */}
-      <div className="tab-pill-container self-start overflow-x-auto pb-1 no-scrollbar flex-nowrap max-w-full">
-        <button
-          onClick={() => {
-            setSelectedTopic('');
-            setPage(1);
-          }}
-          className={`tab-pill shrink-0 ${selectedTopic === '' ? 'tab-pill-active' : ''}`}
-        >
-          <span>Tất cả chủ đề</span>
-          <span className="tab-pill-badge">{totalCount}</span>
-        </button>
-        {topics.slice(0, 10).map((t) => (
-          <button
-            key={t.id || t.slug}
-            onClick={() => {
-              setSelectedTopic(t.slug);
-              setPage(1);
-            }}
-            className={`tab-pill shrink-0 ${selectedTopic === t.slug ? 'tab-pill-active' : ''}`}
-          >
-            <span>{t.name}</span>
-            {t._count?.items !== undefined && (
-              <span className="tab-pill-badge">
-                {t._count.items}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 items-center">
+        <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
           <input
             type="text"
@@ -309,7 +278,7 @@ export const VocabularyExplorerPage: React.FC = () => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Tìm kiếm theo từ tiếng Anh, nghĩa tiếng Việt hoặc định nghĩa..."
+            placeholder="Tìm kiếm theo từ, nghĩa tiếng Việt hoặc định nghĩa..."
             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
           />
         </div>
@@ -322,7 +291,7 @@ export const VocabularyExplorerPage: React.FC = () => {
             setPage(1);
           }}
           options={[
-            { value: '', label: 'Tất cả cấp độ CEFR' },
+            { value: '', label: 'Tất cả cấp độ' },
             { value: 'A1', label: 'A1 — Căn bản', badge: 'A1' },
             { value: 'A2', label: 'A2 — Sơ cấp', badge: 'A2' },
             { value: 'B1', label: 'B1 — Trung cấp', badge: 'B1' },
@@ -330,26 +299,31 @@ export const VocabularyExplorerPage: React.FC = () => {
             { value: 'C1', label: 'C1 — Nâng cao', badge: 'C1' },
             { value: 'C2', label: 'C2 — Thành thạo', badge: 'C2' },
           ]}
-          className="w-full sm:w-56 shrink-0"
+          className="w-full sm:w-52 shrink-0"
         />
 
         {/* Topic Custom Dropdown */}
-        <CustomDropdown
-          value={selectedTopic}
-          onChange={(val) => {
-            setSelectedTopic(val);
-            setPage(1);
-          }}
-          options={[
-            { value: '', label: 'Tất cả chủ đề' },
-            ...topics.map((t) => ({
-              value: t.slug,
-              label: t.name,
-              badge: t._count?.items || 0,
-            })),
-          ]}
-          className="w-full sm:w-60 shrink-0"
-        />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 hidden sm:inline">Chủ đề:</span>
+          <CustomDropdown
+            value={selectedTopic}
+            onChange={(val) => {
+              setSelectedTopic(val);
+              setPage(1);
+            }}
+            placeholder="Tất cả chủ đề"
+            searchPlaceholder="Tìm kiếm chủ đề..."
+            options={[
+              { value: '', label: 'Tất cả chủ đề' },
+              ...topics.map((t) => ({
+                value: t.slug,
+                label: t.name,
+                badge: t._count?.items || 0,
+              })),
+            ]}
+            className="w-full sm:w-60 shrink-0"
+          />
+        </div>
       </div>
 
       {/* Error Message */}

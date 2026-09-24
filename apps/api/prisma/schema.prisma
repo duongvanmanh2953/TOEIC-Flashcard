@@ -1212,6 +1212,7 @@ model Conversation {
   bankId          String?
   bankTitle       String?
   bankOwnerId     String?
+  languageSpaceId String?
   lastMessageText String?
   lastMessageType String              @default("TEXT")
   lastMessageAt   DateTime            @default(now())
@@ -1223,6 +1224,7 @@ model Conversation {
 
   @@index([lastMessageAt])
   @@index([contextType, bankId])
+  @@index([languageSpaceId])
 }
 
 model ConversationParticipant {
