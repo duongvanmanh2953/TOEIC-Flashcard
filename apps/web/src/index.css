@@ -4,6 +4,14 @@
 @tailwind utilities;
 
 @layer base {
+  /* Suppress Edge / Chromium native password reveal and clear buttons */
+  ::-ms-reveal,
+  ::-ms-clear {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
   :root {
     --primary: #4f46e5;
     --primary-hover: #4338ca;
@@ -873,16 +881,20 @@ a.card-brand-effect {
 }
 
 .tab-pill-active {
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(238, 242, 255, 0.9) !important;
+  color: #4338ca !important;
+  border: 1.5px solid rgba(165, 180, 252, 0.7) !important;
   font-weight: 800 !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
 }
 
 .dark .tab-pill-active {
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
-  color: #ffffff !important;
-  border-color: rgba(165, 180, 252, 0.35) !important;
+  background: rgba(99, 102, 241, 0.24) !important;
+  color: #e0e7ff !important;
+  border: 1.5px solid rgba(129, 140, 248, 0.55) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
 }
 
 .tab-pill-badge {
@@ -898,17 +910,22 @@ a.card-brand-effect {
 }
 
 .tab-pill-active .tab-pill-badge {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
+  background: rgba(99, 102, 241, 0.14) !important;
+  color: #4338ca !important;
+}
+
+.dark .tab-pill-active .tab-pill-badge {
+  background: rgba(99, 102, 241, 0.35) !important;
+  color: #e0e7ff !important;
 }
 
 .tab-pill:not(.tab-pill-active) .tab-pill-badge {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.08);
   color: #4f46e5;
 }
 
 .dark .tab-pill:not(.tab-pill-active) .tab-pill-badge {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.18);
   color: #a5b4fc;
 }
 

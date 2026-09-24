@@ -177,14 +177,10 @@ export const FeedbackPortalPage: React.FC = () => {
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex items-center gap-2 border-b border-slate-200/60 dark:border-slate-800/60 pb-3">
+      <div className="tab-pill-container self-start">
         <button
           onClick={() => setActiveTab('ROADMAP')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-            activeTab === 'ROADMAP'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'ROADMAP' ? 'tab-pill-active' : ''}`}
         >
           <Compass className="w-3.5 h-3.5" />
           <span>Lộ Trình Cộng Đồng (Roadmap)</span>
@@ -192,11 +188,7 @@ export const FeedbackPortalPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('MY_FEEDBACK')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-            activeTab === 'MY_FEEDBACK'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'MY_FEEDBACK' ? 'tab-pill-active' : ''}`}
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>Ý Kiến Của Tôi</span>
@@ -204,11 +196,7 @@ export const FeedbackPortalPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('NEW')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-            activeTab === 'NEW'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill ${activeTab === 'NEW' ? 'tab-pill-active' : ''}`}
         >
           <MessageSquarePlus className="w-3.5 h-3.5" />
           <span>Gửi Ý Kiến</span>

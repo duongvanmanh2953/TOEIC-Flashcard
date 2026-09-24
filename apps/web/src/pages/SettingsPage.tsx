@@ -306,7 +306,7 @@ export const SettingsPage: React.FC = () => {
       )}
 
       {/* Quick Category Navigation Pills (Tối ưu trải nghiệm & diện tích) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <div className="tab-pill-container self-start overflow-x-auto pb-1 scrollbar-none flex-nowrap max-w-full">
         {[
           { id: 'all', label: 'Tất cả mục', icon: LayoutGrid },
           { id: 'languages', label: 'Ngôn ngữ học tập', icon: Globe },
@@ -321,11 +321,7 @@ export const SettingsPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 border ${
-                isActive
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/20'
-                  : 'bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
+              className={`tab-pill shrink-0 ${isActive ? 'tab-pill-active' : ''}`}
             >
               <Icon className="w-3.5 h-3.5" />
               <span>{tab.label}</span>

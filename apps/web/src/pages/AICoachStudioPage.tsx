@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { CustomSelect, SelectOption } from '../components/ui/CustomSelect';
 import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
+import { confirmModal } from '../components/common/ConfirmDialog';
 import {
   Mic,
   MicOff,
@@ -1231,8 +1232,15 @@ export const AICoachStudioPage: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => {
-                      if (window.confirm('Bạn có muốn làm mới cuộc trò chuyện này?')) {
+                    onClick={async () => {
+                      const ok = await confirmModal({
+                        title: 'Làm mới cuộc trò chuyện',
+                        message: 'Bạn có muốn làm mới cuộc trò chuyện này? Lịch sử tin nhắn hiện tại sẽ được khởi động lại.',
+                        type: 'warning',
+                        confirmText: 'Làm mới',
+                        cancelText: 'Giữ lại',
+                      });
+                      if (ok) {
                         setMessages([
                           {
                             id: 'welcome-' + Date.now(),
@@ -1244,7 +1252,7 @@ export const AICoachStudioPage: React.FC = () => {
                         ]);
                       }
                     }}
-                    className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition"
+                    className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition cursor-pointer"
                     title="Làm mới cuộc trò chuyện"
                   >
                     <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

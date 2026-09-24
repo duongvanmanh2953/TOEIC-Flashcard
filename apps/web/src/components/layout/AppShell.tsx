@@ -52,6 +52,8 @@ import { isKidSupportedLanguage } from '../../config/languages';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
 import { VirtualChatPane } from '../chat/VirtualChatPane';
+import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
+import { confirmModal } from '../common/ConfirmDialog';
 
 export const AppShell: React.FC = () => {
   const { activeLanguage, activeProfile } = useLearningContext();
@@ -63,6 +65,26 @@ export const AppShell: React.FC = () => {
   const [supportModalOpen, setSupportModalOpen] = useState(false);
   const location = useLocation();
   const isFullHeightChat = location.pathname.startsWith('/coach') || location.pathname.startsWith('/ai-tutor');
+
+  // Community E2EE Chat Drawer State
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
+  const [chatTargetUser, setChatTargetUser] = useState<any | null>(null);
+  const [chatContext, setChatContext] = useState<ChatContextPayload | null>(null);
+
+  useEffect(() => {
+    const handleOpenChat = (e: any) => {
+      if (e.detail?.targetUser) {
+        setChatTargetUser(e.detail.targetUser);
+      }
+      if (e.detail?.context) {
+        setChatContext(e.detail.context);
+      }
+      setChatDrawerOpen(true);
+    };
+
+    window.addEventListener('open_vocabflow_chat', handleOpenChat);
+    return () => window.removeEventListener('open_vocabflow_chat', handleOpenChat);
+  }, []);
 
   // Auto-close mobile drawer whenever route changes (Requirement 3)
   useEffect(() => {
@@ -587,6 +609,19 @@ export const AppShell: React.FC = () => {
             )}
             <NotificationBell />
             <button
+              onClick={() => {
+                if (!user || user.isAnonymous) {
+                  promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
+                  return;
+                }
+                setChatDrawerOpen(true);
+              }}
+              title="Tin nhắn học tập E2EE"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            >
+              <MessageSquare className="w-4 h-4 text-indigo-500" />
+            </button>
+            <button
               onClick={toggleTheme}
               className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
@@ -611,7 +646,10 @@ export const AppShell: React.FC = () => {
               aria-hidden="true"
             />
             {/* Drawer Menu Content */}
-            <div className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3 max-h-[80vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200">
+            <div
+              className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3 max-h-[80vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
               {navSections.map((section) => (
                 <div key={section.title} className="space-y-1">
                   <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -735,6 +773,22 @@ export const AppShell: React.FC = () => {
 
             {/* Notification Bell with Badge & Dropdown */}
             <NotificationBell />
+
+            {/* Student-to-Student E2EE Chat Button */}
+            <button
+              onClick={() => {
+                if (!user || user.isAnonymous) {
+                  promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
+                  return;
+                }
+                setChatDrawerOpen(true);
+              }}
+              title="Tin nhắn học tập E2EE"
+              className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">Tin nhắn</span>
+            </button>
           </div>
         </header>
 
@@ -912,7 +966,14 @@ export const AppShell: React.FC = () => {
           <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
             <button
               onClick={async () => {
-                if (window.confirm('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?')) {
+                const confirmed = await confirmModal({
+                  title: 'Đăng xuất tài khoản',
+                  message: 'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?',
+                  confirmText: 'Đăng xuất',
+                  cancelText: 'Ở lại',
+                  type: 'warning',
+                });
+                if (confirmed) {
                   setProfileModalOpen(false);
                   await logout();
                   navigate('/login');
@@ -1016,9 +1077,9 @@ export const AppShell: React.FC = () => {
       {/* Customer Support Floating Chat Widget (Hidden for Admin) */}
       {supportModalOpen && !isAdmin && (
         <>
-          {/* Mobile backdrop to dismiss */}
+          {/* Backdrop to dismiss when clicking outside */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 sm:hidden animate-fade-in"
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 animate-fade-in"
             onClick={() => setSupportModalOpen(false)}
             aria-hidden="true"
           />
@@ -1192,6 +1253,28 @@ export const AppShell: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+      {/* Community E2EE Chat Drawer */}
+      {user && !user.isAnonymous && (
+        <ChatDrawer
+          isOpen={chatDrawerOpen}
+          onClose={() => setChatDrawerOpen(false)}
+          currentUser={{
+            id: user.id,
+            displayName: user.displayName || 'Học viên',
+            avatar: user.avatar,
+          }}
+          initialTargetUser={chatTargetUser}
+          initialContext={chatContext}
+          onViewBank={(bankType, bankId) => {
+            setChatDrawerOpen(false);
+            if (bankType === 'VOCABULARY') {
+              navigate(`/word-bank?deckId=${bankId}`);
+            } else {
+              navigate(`/exams`);
+            }
+          }}
+        />
       )}
     </div>
   );

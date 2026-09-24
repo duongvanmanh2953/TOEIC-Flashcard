@@ -22,12 +22,15 @@ import {
 import * as XLSX from 'xlsx';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import { CommunityCommentSection } from '../components/community/CommunityCommentSection';
+import { AccessKeyManagementModal } from '../components/community/AccessKeyManagementModal';
+import { VerifyAccessKeyModal } from '../components/community/VerifyAccessKeyModal';
 import {
   Users,
   Copy,
   Plus,
   Search,
   BookOpen,
+  Key,
   CheckCircle,
   Share2,
   Sparkles,
@@ -92,8 +95,49 @@ export const CommunityDecksPage: React.FC = () => {
   const [unlockInputPassword, setUnlockInputPassword] = useState('');
   const [showUnlockPassword, setShowUnlockPassword] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
-  const [unlockError, setUnlockError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<'view' | 'clone' | 'open-bank' | null>(null);
+  const [pendingAction, setPendingAction] = useState<'clone' | 'open-bank' | 'like' | 'dislike' | null>(null);
+
+  const isDeckLocked = (d: any) => {
+    if (!d) return false;
+    const isOwner = Boolean(user && (d.userId === user.id || d.author?.id === user.id));
+    const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
+    const isKeyUnlocked = sessionStorage.getItem(`vf_unlocked_VOCABULARY_${d.id}`) === 'true';
+    const isProtected = Boolean(d.isProtected || d.hasPassword);
+    return Boolean(isProtected && !isOwner && !isAdmin && !unlockedDeckIds[d.id] && !isKeyUnlocked);
+  };
+
+  // Community Access Key Management & Verification State
+  const [accessKeyManageDeck, setAccessKeyManageDeck] = useState<any | null>(null);
+  const [verifyAccessKeyDeck, setVerifyAccessKeyDeck] = useState<any | null>(null);
+
+  const handleContactDeckOwner = (deck: any) => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để liên hệ với chủ kho');
+      return;
+    }
+    const targetUserId = deck.userId || deck.author?.id;
+    if (targetUserId === user.id) {
+      alert('Bạn là chủ sở hữu kho từ này!');
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent('open_vocabflow_chat', {
+        detail: {
+          targetUser: {
+            id: targetUserId,
+            displayName: deck.author?.displayName || 'Chủ kho',
+            avatar: deck.author?.avatar,
+          },
+          context: {
+            bankType: 'VOCABULARY',
+            bankId: deck.id,
+            bankTitle: deck.title,
+            bankOwnerId: targetUserId,
+          },
+        },
+      }),
+    );
+  };
 
   // VIP Cloud Sync State
   const [showVipModal, setShowVipModal] = useState(false);
@@ -202,62 +246,82 @@ export const CommunityDecksPage: React.FC = () => {
 
   const [commentModalDeck, setCommentModalDeck] = useState<any | null>(null);
 
-  const handleToggleDeckLike = async (deck: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isGuest || !user) {
-      promptLogin('Đăng nhập để like bộ từ vựng cộng đồng');
-      return;
-    }
+  const executeDeckLike = async (deck: any) => {
     try {
       const res: any = await api.post(`/community/decks/${deck.id}/like`);
       const data = res?.data?.data || res?.data || res;
       if (data) {
-        setDecks((prev) =>
-          prev.map((d) =>
-            d.id === deck.id
-              ? {
-                  ...d,
-                  likeCount: data.likeCount ?? d.likeCount,
-                  dislikeCount: data.dislikeCount ?? d.dislikeCount,
-                  userLiked: Boolean(data.liked),
-                  userDisliked: Boolean(data.disliked),
-                }
-              : d
-          )
-        );
+        const updateFn = (d: any) =>
+          d.id === deck.id
+            ? {
+                ...d,
+                likeCount: data.likeCount ?? d.likeCount,
+                dislikeCount: data.dislikeCount ?? d.dislikeCount,
+                userLiked: Boolean(data.liked),
+                userDisliked: Boolean(data.disliked),
+              }
+            : d;
+        setDecks((prev) => prev.map(updateFn));
+        setSelectedDeck((prev: any) => (prev?.id === deck.id ? updateFn(prev) : prev));
       }
     } catch (err: any) {
       console.error('Like deck error', err);
     }
   };
 
-  const handleToggleDeckDislike = async (deck: any, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleDeckLike = async (deck: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (isGuest || !user) {
-      promptLogin('Đăng nhập để đánh giá bộ từ vựng cộng đồng');
+      promptLogin('Đăng nhập để thích bộ từ vựng cộng đồng');
       return;
     }
+    if (isDeckLocked(deck)) {
+      setUnlockModalDeck(deck);
+      setPendingAction('like');
+      setUnlockInputPassword('');
+      setUnlockError(null);
+      return;
+    }
+    await executeDeckLike(deck);
+  };
+
+  const executeDeckDislike = async (deck: any) => {
     try {
       const res: any = await api.post(`/community/decks/${deck.id}/dislike`);
       const data = res?.data?.data || res?.data || res;
       if (data) {
-        setDecks((prev) =>
-          prev.map((d) =>
-            d.id === deck.id
-              ? {
-                  ...d,
-                  likeCount: data.likeCount ?? d.likeCount,
-                  dislikeCount: data.dislikeCount ?? d.dislikeCount,
-                  userLiked: Boolean(data.liked),
-                  userDisliked: Boolean(data.disliked),
-                }
-              : d
-          )
-        );
+        const updateFn = (d: any) =>
+          d.id === deck.id
+            ? {
+                ...d,
+                likeCount: data.likeCount ?? d.likeCount,
+                dislikeCount: data.dislikeCount ?? d.dislikeCount,
+                userLiked: Boolean(data.liked),
+                userDisliked: Boolean(data.disliked),
+              }
+            : d;
+        setDecks((prev) => prev.map(updateFn));
+        setSelectedDeck((prev: any) => (prev?.id === deck.id ? updateFn(prev) : prev));
       }
     } catch (err: any) {
       console.error('Dislike deck error', err);
     }
+  };
+
+  const handleToggleDeckDislike = async (deck: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để đánh giá bộ từ vựng cộng đồng');
+      return;
+    }
+    if (isDeckLocked(deck)) {
+      setUnlockModalDeck(deck);
+      setPendingAction('dislike');
+      setUnlockInputPassword('');
+      setUnlockError(null);
+      return;
+    }
+    await executeDeckDislike(deck);
   };
 
   useEffect(() => {
@@ -305,11 +369,21 @@ export const CommunityDecksPage: React.FC = () => {
   };
 
   const handleActionOnDeck = async (deck: any, action: 'view' | 'clone' | 'open-bank') => {
-    const isOwner = user && (deck.userId === user.id || deck.author?.id === user.id);
-    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-    const isProtected = deck.isProtected || deck.hasPassword;
+    if (action === 'view') {
+      setSelectedDeck(deck);
+      try {
+        const res: any = await api.get(`/community/decks/${deck.id}`);
+        const fullDeck = res?.data || res?.deck || res;
+        if (fullDeck && fullDeck.id === deck.id) {
+          setSelectedDeck((prev: any) => (prev?.id === deck.id ? { ...prev, ...fullDeck } : prev));
+        }
+      } catch (err) {
+        console.warn('Could not load complete deck details', err);
+      }
+      return;
+    }
 
-    if (isProtected && !isOwner && !isAdmin && !unlockedDeckIds[deck.id]) {
+    if (isDeckLocked(deck)) {
       setUnlockModalDeck(deck);
       setPendingAction(action);
       setUnlockInputPassword('');
@@ -324,18 +398,7 @@ export const CommunityDecksPage: React.FC = () => {
       return;
     }
 
-    if (action === 'view') {
-      setSelectedDeck(deck);
-      try {
-        const res: any = await api.get(`/community/decks/${deck.id}`);
-        const fullDeck = res?.data || res?.deck || res;
-        if (fullDeck && fullDeck.id === deck.id) {
-          setSelectedDeck((prev: any) => (prev?.id === deck.id ? { ...prev, ...fullDeck } : prev));
-        }
-      } catch (err) {
-        console.warn('Could not load complete deck details', err);
-      }
-    } else {
+    if (action === 'clone') {
       setCloneActionDeck(deck);
     }
   };
@@ -364,16 +427,24 @@ export const CommunityDecksPage: React.FC = () => {
         }));
         setUnlockedPasswords((prev) => ({ ...prev, [unlockModalDeck.id]: unlockInputPassword.trim() }));
         const action = pendingAction;
+        const currentUnlockDeck = unlockModalDeck;
         setUnlockModalDeck(null);
         setPendingAction(null);
+
+        if (selectedDeck?.id === deckId) {
+          setSelectedDeck((prev: any) => ({ ...prev, ...unlockedDeck }));
+        }
+
         if (action === 'open-bank') {
           const myDeckId = myDecks.find((md) => md.originDeckId === unlockedDeck.id || md.id === unlockedDeck.id || md.id === `cloned_${unlockedDeck.id}`)?.id || unlockedDeck.id;
           if (selectedDeck) setSelectedDeck(null);
           navigate(`/word-bank/${myDeckId}`);
-        } else if (action === 'view') {
-          setSelectedDeck(unlockedDeck);
         } else if (action === 'clone') {
           setCloneActionDeck(unlockedDeck);
+        } else if (action === 'like') {
+          executeDeckLike(currentUnlockDeck);
+        } else if (action === 'dislike') {
+          executeDeckDislike(currentUnlockDeck);
         }
       }
     } catch (err: any) {
@@ -1029,6 +1100,46 @@ export const CommunityDecksPage: React.FC = () => {
                         <span>Xem kho từ</span>
                       </button>
 
+                      {isMyDeck ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAccessKeyManageDeck(deck);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1 hover:bg-amber-500/20 transition cursor-pointer"
+                          title="Quản lý và cấp quyền truy cập bằng Access Key"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                          <span>Quản lý quyền</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleContactDeckOwner(deck);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 text-xs font-bold flex items-center gap-1 hover:bg-indigo-500/20 transition cursor-pointer"
+                          title="Nhắn tin với chủ kho về bộ từ này"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Liên hệ chủ kho</span>
+                        </button>
+                      )}
+
+                      {isProtected && !isUnlocked && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVerifyAccessKeyDeck(deck);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1 hover:bg-amber-500/20 transition cursor-pointer"
+                          title="Mở khóa bằng mã Access Key được cấp"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                          <span>Nhập Key</span>
+                        </button>
+                      )}
+
                       {!isMyDeck && !isAlreadyCloned && (
                         <button
                           onClick={(e) => {
@@ -1382,12 +1493,42 @@ export const CommunityDecksPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                         <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Xem trước từ vựng mẫu ({sampleWords.length > 0 ? `Hiển thị ${Math.min(10, sampleWords.length)} / ${wordCount} từ` : `${wordCount} từ`})</span>
+                        <span>Xem trước từ vựng mẫu ({!isDeckLocked(selectedDeck) && sampleWords.length > 0 ? `Hiển thị ${Math.min(10, sampleWords.length)} / ${wordCount} từ` : `${wordCount} từ`})</span>
                       </h4>
-                      <span className="text-[11px] text-slate-400">Bấm loa để nghe phát âm</span>
+                      {!isDeckLocked(selectedDeck) && <span className="text-[11px] text-slate-400">Bấm loa để nghe phát âm</span>}
                     </div>
 
-                    {sampleWords.length > 0 ? (
+                    {isDeckLocked(selectedDeck) ? (
+                      <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                          <Lock className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <h5 className="font-bold text-sm text-slate-900 dark:text-white">Kho từ vựng có mật khẩu bảo vệ</h5>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                            Danh sách từ vựng chi tiết và tính năng ôn tập được tác giả bảo vệ. Bạn có thể xem thảo luận đánh giá bên dưới hoặc nhập mật khẩu để mở khóa và vào kho từ.
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
+                            className="btn-glass-primary text-xs !py-2.5 !px-5 inline-flex items-center gap-2 font-bold cursor-pointer"
+                          >
+                            <Unlock className="w-4 h-4" />
+                            <span>Nhập mật khẩu để vào kho từ</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVerifyAccessKeyDeck(selectedDeck)}
+                            className="px-4 py-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-2 hover:bg-amber-500/25 transition cursor-pointer"
+                          >
+                            <Key className="w-4 h-4" />
+                            <span>Mở khóa bằng Access Key</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : sampleWords.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {sampleWords.slice(0, 10).map((w: any, idx: number) => (
                           <div
@@ -1425,7 +1566,7 @@ export const CommunityDecksPage: React.FC = () => {
                       </div>
                     )}
 
-                    {wordCount > 10 && (
+                    {!isDeckLocked(selectedDeck) && wordCount > 10 && (
                       <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-indigo-50/90 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-xs">
                         <div className="text-indigo-900 dark:text-indigo-200 font-medium">
                           ✨ Còn <strong>{wordCount - 10} từ vựng</strong> khác trong kho. Nhấn vào kho từ để xem toàn bộ danh sách và luyện tập đầy đủ!
@@ -1445,33 +1586,75 @@ export const CommunityDecksPage: React.FC = () => {
 
                   {/* PRIMARY & SECONDARY ACTION BUTTONS */}
                   <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const deck = selectedDeck;
-                        setSelectedDeck(null);
-                        navigate(`/review?deckId=${deck.id}`);
-                      }}
-                      className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 font-black"
-                    >
-                      <Sparkles className="w-4 h-4 fill-current text-amber-300" />
-                      <span>HỌC BỘ TỪ NGAY (SRS FLASHCARD)</span>
-                    </button>
+                    {isDeckLocked(selectedDeck) ? (
+                      <button
+                        type="button"
+                        onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
+                        className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 font-black cursor-pointer"
+                      >
+                        <Unlock className="w-4 h-4" />
+                        <span>XÁC THỰC MẬT KHẨU & VÀO KHO TỪ</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const deck = selectedDeck;
+                            setSelectedDeck(null);
+                            navigate(`/review?deckId=${deck.id}`);
+                          }}
+                          className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 font-black"
+                        >
+                          <Sparkles className="w-4 h-4 fill-current text-amber-300" />
+                          <span>HỌC BỘ TỪ NGAY (SRS FLASHCARD)</span>
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
-                      className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 cursor-pointer"
-                      title="Vào trang quản lý kho từ này (hỗ trợ nhập mật khẩu nếu có)"
-                    >
-                      <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Xem kho từ</span>
-                    </button>
+                        <button
+                          type="button"
+                          onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
+                          className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 cursor-pointer"
+                          title="Vào trang quản lý kho từ này (hỗ trợ nhập mật khẩu nếu có)"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Xem kho từ</span>
+                        </button>
+
+                        {isMyDeck ? (
+                          <button
+                            type="button"
+                            onClick={() => setAccessKeyManageDeck(selectedDeck)}
+                            className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 cursor-pointer"
+                            title="Quản lý các mã Access Key cấp cho học viên"
+                          >
+                            <Key className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Quản lý quyền</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleContactDeckOwner(selectedDeck)}
+                            className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-800 cursor-pointer"
+                            title="Nhắn tin với chủ kho về bộ từ này"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Liên hệ chủ kho</span>
+                          </button>
+                        )}
+                      </>
+                    )}
 
                     {!isMyDeck && !isAlreadyCloned && (
                       <button
                         type="button"
                         onClick={() => {
+                          if (isDeckLocked(selectedDeck)) {
+                            setUnlockModalDeck(selectedDeck);
+                            setPendingAction('clone');
+                            setUnlockInputPassword('');
+                            setUnlockError(null);
+                            return;
+                          }
                           const deck = selectedDeck;
                           setSelectedDeck(null);
                           setCloneActionDeck(deck);
@@ -1486,6 +1669,13 @@ export const CommunityDecksPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
+                        if (isDeckLocked(selectedDeck)) {
+                          setUnlockModalDeck(selectedDeck);
+                          setPendingAction('clone');
+                          setUnlockInputPassword('');
+                          setUnlockError(null);
+                          return;
+                        }
                         const deck = selectedDeck;
                         setSelectedDeck(null);
                         setCloneActionDeck(deck);
@@ -1551,7 +1741,17 @@ export const CommunityDecksPage: React.FC = () => {
 
                   {/* EMBEDDED COMMUNITY COMMENTS DISCUSSION */}
                   <div className="pt-2">
-                    <CommunityCommentSection targetType="deck" targetId={selectedDeck.id} />
+                    <CommunityCommentSection
+                      targetType="deck"
+                      targetId={selectedDeck.id}
+                      isLocked={isDeckLocked(selectedDeck)}
+                      onRequireUnlock={() => {
+                        setUnlockModalDeck(selectedDeck);
+                        setPendingAction(null);
+                        setUnlockInputPassword('');
+                        setUnlockError(null);
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -1924,13 +2124,13 @@ export const CommunityDecksPage: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Kho từ này đã được tác giả đặt mật khẩu bảo vệ. Vui lòng nhập đúng mật khẩu để xem chi tiết hoặc sao chép vào kho ôn tập cá nhân.
+              Kho từ này đã được đặt mật khẩu bảo vệ. Bạn có thể nhập mật khẩu kho hoặc mã Access Key riêng được cấp bởi chủ kho để mở khóa.
             </p>
 
             <form onSubmit={handleUnlockSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
-                  Mật khẩu kho từ
+                  Mật khẩu kho từ hoặc Mã Access Key
                 </label>
                 <div className="relative">
                   <input
@@ -1939,7 +2139,7 @@ export const CommunityDecksPage: React.FC = () => {
                     autoFocus
                     value={unlockInputPassword}
                     onChange={(e) => setUnlockInputPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu do tác giả chia sẻ..."
+                    placeholder="Nhập mật khẩu kho hoặc mã Access Key (VD: VF-VCB-...)"
                     className="w-full text-xs px-3.5 py-2.5 pr-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
                   />
                   <button
@@ -2095,6 +2295,52 @@ export const CommunityDecksPage: React.FC = () => {
           </div>
         )}
       </ModalPortal>
+
+      {/* Community Bank Access Key Management Modal (Owner View) */}
+      {accessKeyManageDeck && (
+        <AccessKeyManagementModal
+          isOpen={Boolean(accessKeyManageDeck)}
+          onClose={() => setAccessKeyManageDeck(null)}
+          bankType="VOCABULARY"
+          bankId={accessKeyManageDeck.id}
+          bankTitle={accessKeyManageDeck.title}
+          isProtected={Boolean(accessKeyManageDeck.isProtected || accessKeyManageDeck.hasPassword)}
+          onOpenChatWithUser={(targetUserId, targetUserName) => {
+            window.dispatchEvent(
+              new CustomEvent('open_vocabflow_chat', {
+                detail: {
+                  targetUser: { id: targetUserId, displayName: targetUserName },
+                  context: {
+                    bankType: 'VOCABULARY',
+                    bankId: accessKeyManageDeck.id,
+                    bankTitle: accessKeyManageDeck.title,
+                    bankOwnerId: accessKeyManageDeck.userId,
+                  },
+                },
+              }),
+            );
+          }}
+        />
+      )}
+
+      {/* Student Input Access Key Modal (Guest / Student Unlock) */}
+      {verifyAccessKeyDeck && (
+        <VerifyAccessKeyModal
+          isOpen={Boolean(verifyAccessKeyDeck)}
+          onClose={() => setVerifyAccessKeyDeck(null)}
+          bankType="VOCABULARY"
+          bankId={verifyAccessKeyDeck.id}
+          bankTitle={verifyAccessKeyDeck.title}
+          bankOwnerName={verifyAccessKeyDeck.author?.displayName}
+          onSuccess={() => {
+            setUnlockedDeckIds((prev) => ({ ...prev, [verifyAccessKeyDeck.id]: true }));
+            saveSessionUnlockedDeck(verifyAccessKeyDeck.id);
+            alert(`Đã mở khóa thành công kho từ "${verifyAccessKeyDeck.title}"!`);
+            handleActionOnDeck(verifyAccessKeyDeck, 'open-bank');
+          }}
+          onContactOwner={() => handleContactDeckOwner(verifyAccessKeyDeck)}
+        />
+      )}
     </div>
   );
 };

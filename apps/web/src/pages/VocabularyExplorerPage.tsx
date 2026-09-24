@@ -268,19 +268,16 @@ export const VocabularyExplorerPage: React.FC = () => {
       </div>
 
       {/* Dynamic Topic Filter Pills from Real Database */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+      <div className="tab-pill-container self-start overflow-x-auto pb-1 no-scrollbar flex-nowrap max-w-full">
         <button
           onClick={() => {
             setSelectedTopic('');
             setPage(1);
           }}
-          className={`px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
-            selectedTopic === ''
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
+          className={`tab-pill shrink-0 ${selectedTopic === '' ? 'tab-pill-active' : ''}`}
         >
-          Tất cả chủ đề ({totalCount})
+          <span>Tất cả chủ đề</span>
+          <span className="tab-pill-badge">{totalCount}</span>
         </button>
         {topics.slice(0, 10).map((t) => (
           <button
@@ -289,17 +286,11 @@ export const VocabularyExplorerPage: React.FC = () => {
               setSelectedTopic(t.slug);
               setPage(1);
             }}
-            className={`px-3.5 py-1.5 rounded-xl font-bold transition whitespace-nowrap flex items-center gap-1.5 ${
-              selectedTopic === t.slug
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            className={`tab-pill shrink-0 ${selectedTopic === t.slug ? 'tab-pill-active' : ''}`}
           >
             <span>{t.name}</span>
             {t._count?.items !== undefined && (
-              <span className={`px-1.5 py-0.2 rounded-md text-[10px] ${
-                selectedTopic === t.slug ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-              }`}>
+              <span className="tab-pill-badge">
                 {t._count.items}
               </span>
             )}

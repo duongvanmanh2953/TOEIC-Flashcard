@@ -65,6 +65,7 @@ import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
 import { AdminFirebasePage } from './pages/admin/AdminFirebasePage';
 import { AdminLanguagePage } from './pages/admin/AdminLanguagePage';
 import { ScrollToTop } from './components/common/ScrollToTop';
+import { GlobalConfirmDialog } from './components/common/ConfirmDialog';
 
 // Kids English Learning System
 import { KidsLayout } from './kids/components/KidsLayout';
@@ -153,6 +154,7 @@ export const App: React.FC = () => {
             <RouteAudioWatcher />
             <ScrollToTop />
             <ContextualLoginModal />
+            <GlobalConfirmDialog />
             <Routes>
               {/* Public Entry Routes */}
               <Route path="/" element={<LandingPage />} />

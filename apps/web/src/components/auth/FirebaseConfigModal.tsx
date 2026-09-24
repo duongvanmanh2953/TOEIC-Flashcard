@@ -16,6 +16,7 @@ import {
   clearFirebaseConfig,
   FirebaseClientConfig,
 } from '../../lib/firebase';
+import { confirmModal } from '../common/ConfirmDialog';
 
 interface FirebaseConfigModalProps {
   isOpen: boolean;
@@ -119,7 +120,14 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
   };
 
   const handleClear = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa cấu hình Firebase đã lưu trên trình duyệt?')) {
+    const ok = await confirmModal({
+      title: 'Xóa cấu hình Firebase',
+      message: 'Bạn có chắc chắn muốn xóa cấu hình Firebase đã lưu trên trình duyệt?',
+      type: 'danger',
+      confirmText: 'Xóa cấu hình',
+      cancelText: 'Hủy bỏ',
+    });
+    if (ok) {
       await clearFirebaseConfig();
       setConfig({
         apiKey: '',

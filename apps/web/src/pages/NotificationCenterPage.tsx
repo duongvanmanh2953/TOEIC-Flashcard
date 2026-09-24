@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { GlassCard } from '../components/common/GlassCard';
+import { confirmModal } from '../components/common/ConfirmDialog';
 import {
   Bell,
   CheckCircle2,
@@ -102,7 +103,14 @@ export const NotificationCenterPage: React.FC = () => {
   };
 
   const clearAll = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa toàn bộ thông báo?')) return;
+    const ok = await confirmModal({
+      title: 'Xóa toàn bộ thông báo',
+      message: 'Bạn có chắc chắn muốn xóa toàn bộ thông báo? Dữ liệu thông báo đã xóa sẽ không thể phục hồi.',
+      type: 'danger',
+      confirmText: 'Xóa toàn bộ',
+      cancelText: 'Hủy',
+    });
+    if (!ok) return;
     try {
       await api.delete('/notifications');
       setNotifications([]);
@@ -181,7 +189,7 @@ export const NotificationCenterPage: React.FC = () => {
       </div>
 
       {/* Tabs Filter Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
+      <div className="tab-pill-container self-start overflow-x-auto pb-1 scrollbar-none flex-nowrap max-w-full">
         {[
           { id: 'ALL', label: 'Tất cả' },
           { id: 'UNREAD', label: `Chưa đọc ${unreadCount > 0 ? `(${unreadCount})` : ''}` },
@@ -193,11 +201,7 @@ export const NotificationCenterPage: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3.5 py-1.5 rounded-xl transition shrink-0 ${
-              activeTab === tab.id
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
+            className={`tab-pill shrink-0 ${activeTab === tab.id ? 'tab-pill-active' : ''}`}
           >
             {tab.label}
           </button>

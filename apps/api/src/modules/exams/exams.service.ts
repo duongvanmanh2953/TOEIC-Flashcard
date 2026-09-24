@@ -15,6 +15,7 @@ import { ExamScoringService } from './exam-scoring.service';
 import { ExamAnalyticsService } from './exam-analytics.service';
 import { ExamStatus, ModerationStatus, QuestionType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class ExamsService {
@@ -184,9 +185,24 @@ export class ExamsService {
     if (!exam) throw new NotFoundException('Bộ đề thi không tồn tại');
 
     const isAuthor = userId && exam.authorId === userId;
+    let hasAccessGrant = false;
 
-    if (exam.isProtected && !isAuthor) {
-      if (!password) {
+    if (userId && exam.isProtected && !isAuthor) {
+      const grant = await this.prisma.bankAccessGrant.findFirst({
+        where: {
+          bankId: examId,
+          userId,
+          status: 'ACTIVE',
+          revokedAt: null,
+        },
+      });
+      if (grant && (!grant.expiresAt || grant.expiresAt > new Date())) {
+        hasAccessGrant = true;
+      }
+    }
+
+    if (exam.isProtected && !isAuthor && !hasAccessGrant) {
+      if (!password?.trim()) {
         return {
           id: exam.id,
           title: exam.title,
@@ -200,8 +216,33 @@ export class ExamsService {
           requiresPassword: true,
         };
       }
-      const match = await bcrypt.compare(password, exam.passwordHash || '');
-      if (!match) throw new ForbiddenException('Mật khẩu bảo vệ bộ đề không chính xác');
+
+      const trimmed = password.trim();
+      let match = false;
+
+      // 1. Check if it's an Access Key
+      const tokenHash = crypto.createHash('sha256').update(trimmed).digest('hex');
+      const keyGrant = await this.prisma.bankAccessGrant.findFirst({
+        where: {
+          bankId: examId,
+          tokenHash,
+          status: 'ACTIVE',
+          revokedAt: null,
+          ...(userId ? { userId } : {}),
+        },
+      });
+
+      if (keyGrant && (!keyGrant.expiresAt || keyGrant.expiresAt > new Date())) {
+        match = true;
+        await this.prisma.bankAccessGrant.update({
+          where: { id: keyGrant.id },
+          data: { lastUsedAt: new Date() },
+        });
+      } else if (exam.passwordHash) {
+        match = await bcrypt.compare(trimmed, exam.passwordHash);
+      }
+
+      if (!match) throw new ForbiddenException('Mật khẩu bảo vệ bộ đề hoặc Access Key không chính xác');
     }
 
     // Determine user reactions
@@ -603,6 +644,21 @@ export class ExamsService {
     });
     if (!exam) throw new NotFoundException('Bộ đề không tồn tại');
     if (exam.questions.length === 0) throw new BadRequestException('Bộ đề chưa có câu hỏi');
+
+    if (exam.isProtected && exam.authorId !== userId) {
+      const grant = await this.prisma.bankAccessGrant.findFirst({
+        where: {
+          bankId: examId,
+          userId,
+          status: 'ACTIVE',
+          revokedAt: null,
+        },
+      });
+      const hasValidGrant = grant && (!grant.expiresAt || grant.expiresAt > new Date());
+      if (!hasValidGrant) {
+        throw new ForbiddenException('Bộ đề thi này đã được bảo vệ. Vui lòng mở khóa bằng Access Key hoặc liên hệ tác giả để được cấp quyền.');
+      }
+    }
 
     const attempt = await this.prisma.examAttempt.create({
       data: {

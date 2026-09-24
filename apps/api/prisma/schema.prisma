@@ -119,6 +119,11 @@ model User {
   examComments     ExamComment[]
   savedExams       ExamSaved[]
   examAttempts     ExamAttempt[]
+  userAccessGrants    BankAccessGrant[]         @relation("UserAccessGrants")
+  createdAccessGrants BankAccessGrant[]         @relation("CreatedAccessGrants")
+  chatParticipants    ConversationParticipant[]
+  chatMessages        ChatMessage[]
+  encryptionKey       UserEncryptionKey?
 
   @@index([email])
   @@index([role])
@@ -1154,3 +1159,137 @@ model GameResult {
   @@index([gameMode])
   @@index([rank])
 }
+
+// =============================================================================
+// COMMUNITY ACCESS KEYS, REALTIME MESSAGING & E2EE ENCRYPTION
+// =============================================================================
+
+enum BankType {
+  VOCABULARY
+  EXAM
+}
+
+enum GrantStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model BankAccessGrant {
+  id         String      @id @default(uuid())
+  bankType   BankType    @default(VOCABULARY)
+  bankId     String
+  userId     String
+  createdBy  String
+  tokenHash  String
+  status     GrantStatus @default(ACTIVE)
+  createdAt  DateTime    @default(now())
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+
+  user    User @relation("UserAccessGrants", fields: [userId], references: [id], onDelete: Cascade)
+  creator User @relation("CreatedAccessGrants", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@unique([bankId, userId])
+  @@index([bankId])
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([status])
+  @@index([createdBy])
+}
+
+enum MessageContextType {
+  GENERAL
+  BANK
+}
+
+model Conversation {
+  id              String              @id @default(uuid())
+  participantIds  String[]
+  contextType     MessageContextType? @default(GENERAL)
+  bankType        BankType?
+  bankId          String?
+  bankTitle       String?
+  bankOwnerId     String?
+  lastMessageText String?
+  lastMessageType String              @default("TEXT")
+  lastMessageAt   DateTime            @default(now())
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  participants ConversationParticipant[]
+  messages     ChatMessage[]
+
+  @@index([lastMessageAt])
+  @@index([contextType, bankId])
+}
+
+model ConversationParticipant {
+  id                String    @id @default(uuid())
+  conversationId    String
+  userId            String
+  unreadCount       Int       @default(0)
+  lastReadMessageId String?
+  lastReadAt        DateTime?
+  clearedAt         DateTime?
+  isPinned          Boolean   @default(false)
+  isMuted           Boolean   @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, lastReadAt])
+}
+
+enum ChatMessageType {
+  TEXT
+  ACCESS_KEY
+  BANK_CONTEXT
+  SYSTEM
+}
+
+enum ChatMessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+model ChatMessage {
+  id             String            @id @default(uuid())
+  conversationId String
+  senderId       String
+  messageType    ChatMessageType   @default(TEXT)
+  ciphertext     String
+  encryptedKeys  Json?
+  iv             String?
+  status         ChatMessageStatus @default(SENT)
+  metadata       Json?
+  deletedFor     String[]          @default([])
+  isDeleted      Boolean           @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?
+  expiresAt      DateTime?
+  createdAt      DateTime          @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([expiresAt])
+}
+
+model UserEncryptionKey {
+  userId              String   @id
+  publicKey           String
+  encryptedPrivateKey String?
+  keyDerivationSalt   String?
+  keyAlgorithm        String   @default("ECDH-P256-AES-GCM")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

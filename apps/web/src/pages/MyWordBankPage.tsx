@@ -28,6 +28,7 @@ import { GlassCard } from '../components/common/GlassCard';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { confirmModal } from '../components/common/ConfirmDialog';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
 import { LanguageSelector } from '../components/language/LanguageSelector';
 import { LanguageBadge } from '../components/language/LanguageBadge';
@@ -863,13 +864,14 @@ export const MyWordBankPage: React.FC = () => {
     if (e) e.stopPropagation();
     if (!deck.isSyncedToCloud) return;
 
-    if (
-      !confirm(
-        `Bạn có chắc chắn muốn gỡ kho "${deck.title}" khỏi Cloud?\n\nKho sẽ được giữ lại an toàn ở chế độ Offline trên máy của bạn và gỡ bỏ hoàn toàn khỏi máy chủ/cộng đồng.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirmModal({
+      title: 'Gỡ kho khỏi Cloud',
+      message: `Bạn có chắc chắn muốn gỡ kho "${deck.title}" khỏi Cloud?\n\nKho sẽ được giữ lại an toàn ở chế độ Offline trên máy của bạn và gỡ bỏ hoàn toàn khỏi máy chủ/cộng đồng.`,
+      type: 'warning',
+      confirmText: 'Gỡ khỏi Cloud',
+      cancelText: 'Giữ lại',
+    });
+    if (!ok) return;
 
     try {
       if (user && !isGuest) {

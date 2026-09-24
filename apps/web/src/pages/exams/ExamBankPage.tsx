@@ -23,6 +23,7 @@ import {
   ArrowRight,
   ShieldAlert,
   Lock,
+  Key,
   Layers,
   HelpCircle,
   Trash2,
@@ -45,6 +46,9 @@ import { ModalPortal } from '../../components/common/ModalPortal';
 import { CustomDropdown } from '../../components/common/CustomDropdown';
 import { CommunityCommentSection } from '../../components/community/CommunityCommentSection';
 import { ExamImportPreviewModal } from '../../components/exams/ExamImportPreviewModal';
+import { AccessKeyManagementModal } from '../../components/community/AccessKeyManagementModal';
+import { VerifyAccessKeyModal } from '../../components/community/VerifyAccessKeyModal';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 import {
   downloadExamExcelTemplate,
   downloadExamCsvTemplate,
@@ -93,6 +97,60 @@ export const ExamBankPage: React.FC = () => {
   const [unlockExam, setUnlockExam] = useState<any | null>(null);
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
+  const [unlockedExamIds, setUnlockedExamIds] = useState<Record<string, boolean>>({});
+  const [pendingExamAction, setPendingExamAction] = useState<'start' | 'like' | 'dislike' | 'duplicate' | null>(null);
+
+  const isExamLocked = (exam: any) => {
+    if (!exam) return false;
+    const isOwner = Boolean(user?.id && (exam.authorId === user.id || exam.isOwner));
+    const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
+    const isKeyUnlocked = sessionStorage.getItem(`vf_unlocked_EXAM_${exam.id}`) === 'true';
+    return Boolean(exam.isProtected && !isOwner && !isAdmin && !unlockedExamIds[exam.id] && !isKeyUnlocked);
+  };
+
+  // Exam Access Key Management & Verification State
+  const [accessKeyManageExam, setAccessKeyManageExam] = useState<any | null>(null);
+  const [verifyAccessKeyExam, setVerifyAccessKeyExam] = useState<any | null>(null);
+
+  const handleContactExamAuthor = (exam: any) => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để liên hệ với tác giả bộ đề');
+      return;
+    }
+    const targetUserId = exam.authorId || exam.author?.id;
+    if (targetUserId === user.id) {
+      window.dispatchEvent(
+        new CustomEvent('open_vocabflow_chat', {
+          detail: {
+            context: {
+              bankType: 'EXAM',
+              bankId: exam.id,
+              bankTitle: exam.title,
+              bankOwnerId: user.id,
+            },
+          },
+        }),
+      );
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent('open_vocabflow_chat', {
+        detail: {
+          targetUser: {
+            id: targetUserId,
+            displayName: exam.author?.displayName || 'Tác giả đề thi',
+            avatar: exam.author?.avatar,
+          },
+          context: {
+            bankType: 'EXAM',
+            bankId: exam.id,
+            bankTitle: exam.title,
+            bankOwnerId: targetUserId,
+          },
+        },
+      }),
+    );
+  };
 
   // History & Wrong Answers state
   const [historyList, setHistoryList] = useState<any[]>([]);
@@ -155,6 +213,14 @@ export const ExamBankPage: React.FC = () => {
       promptLogin('Đăng nhập để đánh giá thích bộ đề');
       return;
     }
+    const target = exams.find((e) => e.id === examId) || (detailModalExam?.id === examId ? detailModalExam : null);
+    if (isExamLocked(target)) {
+      setUnlockExam(target);
+      setPendingExamAction('like');
+      setUnlockPassword('');
+      setUnlockError('');
+      return;
+    }
     try {
       const res: any = await api.post(`/exams/${examId}/like`);
       const data = res?.data?.data || res?.data || res;
@@ -179,6 +245,14 @@ export const ExamBankPage: React.FC = () => {
   const handleToggleDislike = async (examId: string) => {
     if (!user || isGuest) {
       promptLogin('Đăng nhập để đánh giá bộ đề');
+      return;
+    }
+    const target = exams.find((e) => e.id === examId) || (detailModalExam?.id === examId ? detailModalExam : null);
+    if (isExamLocked(target)) {
+      setUnlockExam(target);
+      setPendingExamAction('dislike');
+      setUnlockPassword('');
+      setUnlockError('');
       return;
     }
     try {
@@ -230,8 +304,9 @@ export const ExamBankPage: React.FC = () => {
       return;
     }
 
-    if (exam.isProtected && exam.authorId !== user.id) {
+    if (isExamLocked(exam)) {
       setUnlockExam(exam);
+      setPendingExamAction('start');
       setUnlockPassword('');
       setUnlockError('');
       return;
@@ -250,10 +325,27 @@ export const ExamBankPage: React.FC = () => {
     if (!unlockExam || !unlockPassword.trim()) return;
     try {
       await api.get(`/exams/${unlockExam.id}`, { params: { password: unlockPassword.trim() } });
-      const res: any = await api.post(`/exams/${unlockExam.id}/start`);
-      const data = res?.data?.data || res?.data || res;
-      setUnlockExam(null);
-      navigate(`/exams/session/${data.attemptId}`, { state: { examData: data } });
+      const currentExam = unlockExam;
+      const action = pendingExamAction;
+      setUnlockedExamIds((prev) => ({ ...prev, [currentExam.id]: true }));
+
+      if (action === 'start' || !action) {
+        const res: any = await api.post(`/exams/${currentExam.id}/start`);
+        const data = res?.data?.data || res?.data || res;
+        setUnlockExam(null);
+        setPendingExamAction(null);
+        navigate(`/exams/session/${data.attemptId}`, { state: { examData: data } });
+      } else {
+        setUnlockExam(null);
+        setPendingExamAction(null);
+        if (action === 'like') {
+          handleToggleLike(currentExam.id);
+        } else if (action === 'dislike') {
+          handleToggleDislike(currentExam.id);
+        } else if (action === 'duplicate') {
+          handleDuplicateExam(currentExam.id);
+        }
+      }
     } catch (err: any) {
       setUnlockError(err?.response?.data?.message || 'Mật khẩu bảo vệ không đúng.');
     }
@@ -286,6 +378,13 @@ export const ExamBankPage: React.FC = () => {
       alert('Bộ đề này đã có trong danh sách đề thi của bạn!');
       return;
     }
+    if (isExamLocked(targetExam)) {
+      setUnlockExam(targetExam);
+      setPendingExamAction('duplicate');
+      setUnlockPassword('');
+      setUnlockError('');
+      return;
+    }
     try {
       const res: any = await api.post(`/exams/${examId}/duplicate`);
       const data = res?.data?.data || res?.data || res;
@@ -307,7 +406,14 @@ export const ExamBankPage: React.FC = () => {
   };
 
   const handleDeleteMyExam = async (examId: string) => {
-    if (!confirm('Bạn có chắc muốn xóa vĩnh viễn bộ đề này?')) return;
+    const ok = await confirmModal({
+      title: 'Xóa vĩnh viễn bộ đề thi',
+      message: 'Bạn có chắc chắn muốn xóa vĩnh viễn bộ đề này? Toàn bộ danh sách câu hỏi và kết quả làm bài liên quan sẽ bị gỡ bỏ khỏi hệ thống.',
+      type: 'danger',
+      confirmText: 'Xóa vĩnh viễn',
+      cancelText: 'Giữ lại',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/exams/${examId}`);
       fetchExams();
@@ -586,8 +692,8 @@ export const ExamBankPage: React.FC = () => {
 
       {/* STATUS FILTER FOR MY EXAMS */}
       {activeTab === 'my-exams' && (
-        <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-slate-100/80 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs font-bold">
-          <span className="text-slate-500 text-[11px] px-2 uppercase tracking-wider">Trạng thái:</span>
+        <div className="tab-pill-container self-start overflow-x-auto pb-1 scrollbar-none flex-nowrap max-w-full">
+          <span className="text-slate-500 text-[11px] px-2 uppercase tracking-wider self-center">Trạng thái:</span>
           {[
             { key: 'ALL', label: 'Tất cả' },
             { key: 'DRAFT', label: 'Bản nháp' },
@@ -599,13 +705,11 @@ export const ExamBankPage: React.FC = () => {
               key={tab.key}
               type="button"
               onClick={() => setMyExamStatusFilter(tab.key as any)}
-              className={`px-3 py-1.5 rounded-xl transition ${
-                myExamStatusFilter === tab.key
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+              className={`tab-pill shrink-0 ${
+                myExamStatusFilter === tab.key ? 'tab-pill-active' : ''
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
             </button>
           ))}
         </div>
@@ -766,6 +870,30 @@ export const ExamBankPage: React.FC = () => {
                                 </div>
                               )}
                             </div>
+
+                            {/* Author info & quick message */}
+                            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100/80 dark:border-slate-800/80">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center text-[10px] shrink-0">
+                                  {exam.author?.displayName?.[0]?.toUpperCase() || 'U'}
+                                </div>
+                                <span className="truncate text-slate-600 dark:text-slate-400 text-[11px] font-medium">
+                                  {exam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocalFlow')}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleContactExamAuthor(exam);
+                                }}
+                                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                                title={isOwner ? 'Xem tin nhắn kho đề' : 'Nhắn tin với tác giả bộ đề'}
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                <span>{isOwner ? 'Tin nhắn' : 'Nhắn tin'}</span>
+                              </button>
+                            </div>
                           </div>
 
                           {/* Card Bottom: Interactions & Action */}
@@ -877,18 +1005,61 @@ export const ExamBankPage: React.FC = () => {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleStartExam(exam);
                                 }}
-                                className="btn-glass-primary text-xs !py-2 flex-1 flex items-center justify-center gap-1.5 font-bold shadow-md"
+                                className="btn-glass-primary text-xs !py-2 flex-1 min-w-[120px] flex items-center justify-center gap-1.5 font-bold shadow-md cursor-pointer"
                               >
                                 <Play className="w-3.5 h-3.5 fill-current" />
                                 <span>Làm đề ngay</span>
                               </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleContactExamAuthor(exam);
+                                }}
+                                className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                                title={isOwner ? 'Xem các tin nhắn về kho đề này' : 'Nhắn tin với tác giả bộ đề'}
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>{isOwner ? 'Tin nhắn' : 'Nhắn tin'}</span>
+                              </button>
+
+                              {isOwner && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAccessKeyManageExam(exam);
+                                  }}
+                                  className="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/80 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                                  title="Quản lý và cấp quyền Access Key cho học viên"
+                                >
+                                  <Key className="w-3.5 h-3.5" />
+                                  <span>Quyền truy cập</span>
+                                </button>
+                              )}
+
+                              {exam.isProtected && isExamLocked(exam) && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setVerifyAccessKeyExam(exam);
+                                  }}
+                                  className="px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                                  title="Mở khóa bằng mã Access Key cá nhân"
+                                >
+                                  <Key className="w-3.5 h-3.5" />
+                                  <span>Nhập Key</span>
+                                </button>
+                              )}
 
                               {/* More Actions (Fork, Export, Edit/Delete if owner) */}
                               <div onClick={(e) => e.stopPropagation()}>
@@ -901,11 +1072,16 @@ export const ExamBankPage: React.FC = () => {
                                   options={[
                                     ...(isOwner
                                       ? [
+                                          { value: 'manage_access', label: 'Quản lý quyền (Access Key)', icon: Key },
                                           { value: 'edit', label: 'Chỉnh sửa đề thi', icon: Edit },
                                           { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
                                           { value: 'delete', label: 'Xóa đề thi', icon: Trash2 },
                                         ]
                                       : [
+                                          { value: 'contact_author', label: 'Liên hệ tác giả đề', icon: MessageSquare },
+                                          ...(exam.isProtected && isExamLocked(exam)
+                                            ? [{ value: 'verify_key', label: 'Mở khóa bằng Access Key', icon: Key }]
+                                            : []),
                                           {
                                             value: isCloned ? 'already_cloned' : 'duplicate',
                                             label: isCloned ? 'Đã có trong đề của tôi' : 'Sao chép về đề của tôi',
@@ -916,7 +1092,10 @@ export const ExamBankPage: React.FC = () => {
                                         ]),
                                   ]}
                                   onSelect={(val) => {
-                                    if (val === 'duplicate') handleDuplicateExam(exam.id);
+                                    if (val === 'manage_access') setAccessKeyManageExam(exam);
+                                    else if (val === 'contact_author') handleContactExamAuthor(exam);
+                                    else if (val === 'verify_key') setVerifyAccessKeyExam(exam);
+                                    else if (val === 'duplicate') handleDuplicateExam(exam.id);
                                     else if (val === 'already_cloned') setActiveTab('my-exams');
                                     else if (val === 'export_excel') exportExamToExcel(exam);
                                     else if (val === 'edit') navigate(`/exams/editor/${exam.id}`);
@@ -1059,9 +1238,11 @@ export const ExamBankPage: React.FC = () => {
         );
 
         return (
-          <ModalPortal>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/75 backdrop-blur-md animate-fade-in overflow-y-auto">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
+          <ModalPortal isOpen={Boolean(detailModalExam)} onClose={() => setDetailModalExam(null)}>
+            <div
+              className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden my-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header / Cover Banner */}
                 <div className="relative p-6 sm:p-8 bg-gradient-to-br from-indigo-900 via-indigo-950 to-purple-950 text-white shrink-0">
                   <button
@@ -1275,15 +1456,25 @@ export const ExamBankPage: React.FC = () => {
                       )}
                     </div>
 
-                    {detailModalExam.isProtected && !isOwner && detailModalExam.requiresPassword ? (
-                      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-3">
-                        <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-bold text-sm text-slate-900 dark:text-white">Bộ đề có mật khẩu bảo vệ</p>
-                          <p className="mt-0.5 text-slate-600 dark:text-slate-400">
-                            Nội dung chi tiết các câu hỏi được tác giả bảo mật. Bạn có thể nhập mã mở khóa khi nhấn "Làm đề ngay" để bắt đầu bài thi.
+                    {isExamLocked(detailModalExam) ? (
+                      <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                          <Lock className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <h5 className="font-bold text-sm text-slate-900 dark:text-white">Bộ đề có mật khẩu bảo vệ</h5>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                            Nội dung chi tiết các câu hỏi được tác giả bảo mật. Bạn có thể xem bình luận thảo luận bên dưới hoặc nhập mật khẩu xác thực để mở khóa và bắt đầu làm bài.
                           </p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleStartExam(detailModalExam)}
+                          className="btn-glass-primary text-xs !py-2.5 !px-5 inline-flex items-center gap-2 font-bold cursor-pointer"
+                        >
+                          <Lock className="w-4 h-4" />
+                          <span>Nhập mật khẩu mở khóa</span>
+                        </button>
                       </div>
                     ) : detailModalExam.questions && detailModalExam.questions.length > 0 ? (
                       <div className="space-y-3">
@@ -1352,17 +1543,35 @@ export const ExamBankPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         const examToRun = detailModalExam;
-                        setDetailModalExam(null);
+                        if (!isExamLocked(examToRun)) {
+                          setDetailModalExam(null);
+                        }
                         handleStartExam(examToRun);
                       }}
-                      className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full flex items-center justify-center gap-2 font-black"
+                      className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full flex items-center justify-center gap-2 font-black cursor-pointer"
                     >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>LÀM ĐỀ NGAY</span>
+                      {isExamLocked(detailModalExam) ? (
+                        <Lock className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-current" />
+                      )}
+                      <span>
+                        {isExamLocked(detailModalExam)
+                          ? 'XÁC THỰC MẬT KHẨU & VÀO LÀM ĐỀ'
+                          : 'LÀM ĐỀ NGAY'}
+                      </span>
                     </button>
 
                     {isOwner ? (
                       <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => setAccessKeyManageExam(detailModalExam)}
+                          className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 cursor-pointer"
+                        >
+                          <Key className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Quản lý quyền</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -1387,6 +1596,24 @@ export const ExamBankPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleContactExamAuthor(detailModalExam)}
+                          className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-800 cursor-pointer"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+                          <span>Liên hệ tác giả</span>
+                        </button>
+                        {isExamLocked(detailModalExam) && (
+                          <button
+                            type="button"
+                            onClick={() => setVerifyAccessKeyExam(detailModalExam)}
+                            className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 cursor-pointer"
+                          >
+                            <Key className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Nhập Access Key</span>
+                          </button>
+                        )}
                         {isCloned ? (
                           <button
                             type="button"
@@ -1479,20 +1706,31 @@ export const ExamBankPage: React.FC = () => {
 
                   {/* Embedded Blog-style Comments Section */}
                   <div className="pt-2">
-                    <CommunityCommentSection targetType="exam" targetId={detailModalExam.id} />
+                    <CommunityCommentSection
+                      targetType="exam"
+                      targetId={detailModalExam.id}
+                      isLocked={isExamLocked(detailModalExam)}
+                      onRequireUnlock={() => {
+                        setUnlockExam(detailModalExam);
+                        setPendingExamAction(null);
+                        setUnlockPassword('');
+                        setUnlockError('');
+                      }}
+                    />
                   </div>
                 </div>
               </div>
-            </div>
           </ModalPortal>
         );
       })()}
 
       {/* MODERN UPLOAD DROPZONE MODAL */}
       {uploadModalOpen && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg p-6 space-y-5">
+        <ModalPortal isOpen={uploadModalOpen} onClose={() => { setUploadModalOpen(false); setSelectedUploadFile(null); }}>
+          <div
+            className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
@@ -1668,15 +1906,16 @@ export const ExamBankPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
         </ModalPortal>
       )}
 
       {/* UNLOCK PASSWORD MODAL */}
       {unlockExam && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border w-full max-w-sm p-6 space-y-4">
+        <ModalPortal isOpen={Boolean(unlockExam)} onClose={() => setUnlockExam(null)}>
+          <div
+            className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border w-full max-w-sm p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
                   <Lock className="w-6 h-6" />
@@ -1717,7 +1956,6 @@ export const ExamBankPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
         </ModalPortal>
       )}
 
@@ -1731,6 +1969,52 @@ export const ExamBankPage: React.FC = () => {
         invalidQuestions={invalidImportQuestions}
         onConfirmImport={handleConfirmImport}
       />
+
+      {/* Exam Access Key Management Modal (Owner View) */}
+      {accessKeyManageExam && (
+        <AccessKeyManagementModal
+          isOpen={Boolean(accessKeyManageExam)}
+          onClose={() => setAccessKeyManageExam(null)}
+          bankType="EXAM"
+          bankId={accessKeyManageExam.id}
+          bankTitle={accessKeyManageExam.title}
+          isProtected={Boolean(accessKeyManageExam.isProtected)}
+          onOpenChatWithUser={(targetUserId, targetUserName) => {
+            window.dispatchEvent(
+              new CustomEvent('open_vocabflow_chat', {
+                detail: {
+                  targetUser: { id: targetUserId, displayName: targetUserName },
+                  context: {
+                    bankType: 'EXAM',
+                    bankId: accessKeyManageExam.id,
+                    bankTitle: accessKeyManageExam.title,
+                    bankOwnerId: accessKeyManageExam.authorId,
+                  },
+                },
+              }),
+            );
+          }}
+        />
+      )}
+
+      {/* Student Input Access Key Modal (Guest / Student Unlock) */}
+      {verifyAccessKeyExam && (
+        <VerifyAccessKeyModal
+          isOpen={Boolean(verifyAccessKeyExam)}
+          onClose={() => setVerifyAccessKeyExam(null)}
+          bankType="EXAM"
+          bankId={verifyAccessKeyExam.id}
+          bankTitle={verifyAccessKeyExam.title}
+          bankOwnerName={verifyAccessKeyExam.author?.displayName}
+          onSuccess={() => {
+            setUnlockedExamIds((prev) => ({ ...prev, [verifyAccessKeyExam.id]: true }));
+            sessionStorage.setItem(`vf_unlocked_EXAM_${verifyAccessKeyExam.id}`, 'true');
+            alert(`Đã mở khóa thành công đề thi "${verifyAccessKeyExam.title}"!`);
+            handleStartExam(verifyAccessKeyExam);
+          }}
+          onContactOwner={() => handleContactExamAuthor(verifyAccessKeyExam)}
+        />
+      )}
     </div>
   );
 };

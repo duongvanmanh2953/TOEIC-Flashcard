@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 import {
   AdminButton,
   AdminFilterBar,
@@ -346,14 +347,28 @@ export const AdminGamesPage: React.FC = () => {
   };
 
   // Delete Game
-  const handleDeleteGame = (gameId: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa tựa game này?')) return;
+  const handleDeleteGame = async (gameId: string) => {
+    const ok = await confirmModal({
+      title: 'Xóa tựa game',
+      message: 'Bạn có chắc chắn muốn xóa tựa game này khỏi danh sách trò chơi?',
+      type: 'danger',
+      confirmText: 'Xóa game',
+      cancelText: 'Hủy',
+    });
+    if (!ok) return;
     setGames((prev) => prev.filter((g) => g.id !== gameId));
   };
 
   // Delete Room
-  const handleDeleteRoom = (roomId: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy phòng chơi này?')) return;
+  const handleDeleteRoom = async (roomId: string) => {
+    const ok = await confirmModal({
+      title: 'Hủy phòng chơi',
+      message: 'Bạn có chắc chắn muốn hủy phòng chơi này?',
+      type: 'danger',
+      confirmText: 'Hủy phòng',
+      cancelText: 'Đóng',
+    });
+    if (!ok) return;
     setRooms((prev) => prev.filter((r) => r.id !== roomId));
   };
 

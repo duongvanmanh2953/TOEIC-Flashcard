@@ -22,6 +22,7 @@ import {
   clearFirebaseConfig,
   FirebaseClientConfig,
 } from '../../lib/firebase';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 
 export const AdminFirebasePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'smart' | 'manual'>('smart');
@@ -116,7 +117,14 @@ export const AdminFirebasePage: React.FC = () => {
   };
 
   const handleClear = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa cấu hình Firebase đã lưu trên hệ thống?')) {
+    const ok = await confirmModal({
+      title: 'Xóa cấu hình Firebase',
+      message: 'Bạn có chắc chắn muốn xóa cấu hình Firebase đã lưu trên hệ thống?',
+      type: 'danger',
+      confirmText: 'Xóa cấu hình',
+      cancelText: 'Hủy bỏ',
+    });
+    if (ok) {
       await clearFirebaseConfig();
       setConfig({
         apiKey: '',

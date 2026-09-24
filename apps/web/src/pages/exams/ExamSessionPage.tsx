@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { ModalPortal } from '../../components/common/ModalPortal';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 
 export const ExamSessionPage: React.FC = () => {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -168,12 +169,19 @@ export const ExamSessionPage: React.FC = () => {
       <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3 min-w-0">
           <button
-            onClick={() => {
-              if (confirm('Bạn có chắc muốn rời phòng thi? Bài thi chưa nộp sẽ không được tính điểm.')) {
+            onClick={async () => {
+              const ok = await confirmModal({
+                title: 'Rời phòng thi',
+                message: 'Bạn có chắc chắn muốn rời phòng thi? Bài thi chưa nộp sẽ không được tính điểm.',
+                type: 'danger',
+                confirmText: 'Rời phòng thi',
+                cancelText: 'Tiếp tục làm bài',
+              });
+              if (ok) {
                 navigate('/exams');
               }
             }}
-            className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 shrink-0"
+            className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 shrink-0 cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>

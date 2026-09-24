@@ -199,50 +199,31 @@ export const LeaderboardPage: React.FC = () => {
       {/* 3. Navigation Tabs & Filters */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Main Category Tabs */}
-        <div
-          className="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-300/50 dark:border-slate-700/50 w-full sm:w-auto overflow-x-auto flex-nowrap scrollbar-none"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
+        <div className="tab-pill-container w-full sm:w-auto overflow-x-auto flex-nowrap scrollbar-none">
           <button
             onClick={() => setActiveTab('games')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'games'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`tab-pill shrink-0 ${activeTab === 'games' ? 'tab-pill-active' : ''}`}
           >
             <Gamepad2 className="w-4 h-4" />
             <span>{t('leaderboardSection.tabGames', 'Đấu Trường Realtime')}</span>
           </button>
           <button
             onClick={() => setActiveTab('xp')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'xp'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`tab-pill shrink-0 ${activeTab === 'xp' ? 'tab-pill-active' : ''}`}
           >
             <Zap className="w-4 h-4" />
             <span>Điểm Kinh Nghiệm (XP)</span>
           </button>
           <button
             onClick={() => setActiveTab('flashcards')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'flashcards'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`tab-pill shrink-0 ${activeTab === 'flashcards' ? 'tab-pill-active' : ''}`}
           >
             <Layers className="w-4 h-4" />
             <span>{t('leaderboardSection.tabFlashcards', 'Thành Thạo Từ Vựng')}</span>
           </button>
           <button
             onClick={() => setActiveTab('streak')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === 'streak'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            className={`tab-pill shrink-0 ${activeTab === 'streak' ? 'tab-pill-active' : ''}`}
           >
             <Flame className="w-4 h-4" />
             <span>{t('leaderboardSection.tabStreak', 'Chuỗi Học')}</span>

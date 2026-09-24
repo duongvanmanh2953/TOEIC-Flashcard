@@ -29,6 +29,7 @@ import api from '../../lib/api';
 import { useI18n } from '../../i18n';
 import { NumberInput } from '../../components/common/NumberInput';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 
 interface Plan {
   id: string;
@@ -236,7 +237,14 @@ export const AdminPlansPage: React.FC = () => {
   };
 
   const handleDeletePlan = async (plan: Plan) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa gói cước "${plan.name}"?`)) return;
+    const ok = await confirmModal({
+      title: 'Xóa gói cước',
+      message: `Bạn có chắc chắn muốn xóa gói cước "${plan.name}" khỏi hệ thống?`,
+      type: 'danger',
+      confirmText: 'Xóa gói cước',
+      cancelText: 'Hủy',
+    });
+    if (!ok) return;
 
     try {
       await api.delete(`/admin/plans/${plan.id}`);

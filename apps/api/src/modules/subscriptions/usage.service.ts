@@ -10,7 +10,9 @@ export type FeatureKey =
   | 'MEMORY_RESCUE'
   | 'DEEP_ANALYTICS'
   | 'TEXT_TO_VOCAB'
-  | 'PRONUNCIATION';
+  | 'PRONUNCIATION'
+  | 'MESSAGES'
+  | 'ACCESS_KEYS';
 
 export interface QuotaStatus {
   feature: FeatureKey;
@@ -110,6 +112,8 @@ export class UsageService {
         DEEP_ANALYTICS: 0,
         TEXT_TO_VOCAB: 0,
         PRONUNCIATION: 5,
+        MESSAGES: 5,
+        ACCESS_KEYS: 0,
       };
       const limit = guestLimits[feature] || 0;
       return {
@@ -196,6 +200,28 @@ export class UsageService {
           warningLevel: isPremium ? 'NORMAL' : 'DEPLETED_100',
         };
 
+      case 'MESSAGES': {
+        limit = isPro ? -1 : isPlus ? 300 : await this.getSystemConfigNumber('FREE_MESSAGES_DAILY_LIMIT', 30);
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        used = userId
+          ? await this.prisma.chatMessage.count({
+              where: { senderId: userId, createdAt: { gte: startOfDay } },
+            })
+          : 0;
+        break;
+      }
+
+      case 'ACCESS_KEYS': {
+        limit = isPro ? -1 : isPlus ? 50 : await this.getSystemConfigNumber('FREE_ACCESS_KEYS_LIMIT', 20);
+        used = userId
+          ? await this.prisma.bankAccessGrant.count({
+              where: { createdBy: userId, status: 'ACTIVE' },
+            })
+          : 0;
+        break;
+      }
+
       default:
         limit = 10;
         break;
@@ -247,6 +273,8 @@ export class UsageService {
       'DEEP_ANALYTICS',
       'TEXT_TO_VOCAB',
       'PRONUNCIATION',
+      'MESSAGES',
+      'ACCESS_KEYS',
     ];
 
     let isPro = false;
@@ -298,6 +326,8 @@ export class UsageService {
     quotaMap.memoryRescue = quotaMap.MEMORY_RESCUE;
     quotaMap.deepAnalytics = quotaMap.DEEP_ANALYTICS;
     quotaMap.pronunciation = quotaMap.PRONUNCIATION;
+    quotaMap.messages = quotaMap.MESSAGES;
+    quotaMap.accessKeys = quotaMap.ACCESS_KEYS;
 
     return quotaMap;
   }

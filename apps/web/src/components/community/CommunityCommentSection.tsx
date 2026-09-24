@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { confirmModal } from '../common/ConfirmDialog';
 
 export interface CommentUser {
   id: string;
@@ -39,12 +40,16 @@ export interface CommunityCommentSectionProps {
   targetType: 'deck' | 'exam';
   targetId: string;
   initialCount?: number;
+  isLocked?: boolean;
+  onRequireUnlock?: () => void;
 }
 
 export const CommunityCommentSection: React.FC<CommunityCommentSectionProps> = ({
   targetType,
   targetId,
   initialCount = 0,
+  isLocked = false,
+  onRequireUnlock,
 }) => {
   const { user, isGuest, promptLogin } = useAuth();
   const [comments, setComments] = useState<CommentItem[]>([]);
@@ -96,6 +101,11 @@ export const CommunityCommentSection: React.FC<CommunityCommentSectionProps> = (
       return;
     }
 
+    if (isLocked) {
+      if (onRequireUnlock) onRequireUnlock();
+      return;
+    }
+
     const contentToPost = newCommentText.trim();
     setNewCommentText('');
 
@@ -136,6 +146,11 @@ export const CommunityCommentSection: React.FC<CommunityCommentSectionProps> = (
 
     if (!user || isGuest) {
       promptLogin('Đăng nhập để gửi câu trả lời');
+      return;
+    }
+
+    if (isLocked) {
+      if (onRequireUnlock) onRequireUnlock();
       return;
     }
 
@@ -224,7 +239,14 @@ export const CommunityCommentSection: React.FC<CommunityCommentSectionProps> = (
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+    const ok = await confirmModal({
+      title: 'Xóa bình luận',
+      message: 'Bạn có chắc chắn muốn xóa bình luận này?',
+      type: 'danger',
+      confirmText: 'Xóa bình luận',
+      cancelText: 'Hủy',
+    });
+    if (!ok) return;
 
     // Optimistic local update
     const deleteItem = (list: CommentItem[]): CommentItem[] => {
@@ -464,13 +486,19 @@ export const CommunityCommentSection: React.FC<CommunityCommentSectionProps> = (
           onChange={(e) => setNewCommentText(e.target.value)}
           onClick={() => {
             if (!user || isGuest) {
-              promptLogin('Đăng nhập để nhận xét và thảo luận về bộ đề');
+              promptLogin('Đăng nhập để nhận xét và thảo luận');
+              return;
+            }
+            if (isLocked && onRequireUnlock) {
+              onRequireUnlock();
             }
           }}
           placeholder={
-            user && !isGuest
-              ? 'Viết nhận xét, chia sẻ mẹo làm bài...'
-              : 'Đăng nhập để nhận xét về bộ đề này...'
+            !user || isGuest
+              ? 'Đăng nhập để nhận xét...'
+              : isLocked
+              ? 'Kho được bảo vệ. Bấm để nhập mật khẩu mở khóa bình luận...'
+              : 'Viết nhận xét, chia sẻ mẹo học tập...'
           }
           className="flex-1 text-xs px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
         />

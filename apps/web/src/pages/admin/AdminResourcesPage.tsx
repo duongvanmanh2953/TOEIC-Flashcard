@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 
 interface LearningResource {
@@ -240,7 +241,14 @@ export const AdminResourcesPage: React.FC = () => {
   };
 
   const handleDeleteResource = async (res: LearningResource) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa tài nguyên "${res.title}"?`)) return;
+    const ok = await confirmModal({
+      title: 'Xóa tài nguyên học tập',
+      message: `Bạn có chắc chắn muốn xóa tài nguyên "${res.title}"? Dữ liệu tài liệu này sẽ bị xóa khỏi thư viện.`,
+      type: 'danger',
+      confirmText: 'Xóa tài nguyên',
+      cancelText: 'Hủy',
+    });
+    if (!ok) return;
 
     try {
       await api.delete(`/admin/resources/${res.id}`);

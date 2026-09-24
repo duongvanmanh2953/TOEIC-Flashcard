@@ -11,6 +11,7 @@ import {
 } from './dto/create-deck.dto';
 import { CefrLevel, ModerationStatus, VocabStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class CommunityService {
@@ -90,8 +91,9 @@ export class CommunityService {
   }
 
   async getDeckDetails(id: string, requesterId?: string) {
+    const cleanId = String(id).replace(/^cloned_/, '');
     const deck = await this.prisma.communityDeck.findUnique({
-      where: { id },
+      where: { id: cleanId },
       include: {
         author: {
           select: { id: true, displayName: true, avatar: true },
@@ -112,32 +114,45 @@ export class CommunityService {
     let isAdmin = false;
     let userLiked = false;
     let userDisliked = false;
+    let hasAccessGrant = false;
 
     if (requesterId) {
       isOwner = deck.userId === requesterId;
-      const [cloneCount, likeRecord, dislikeRecord, userRecord] = await Promise.all([
-        this.prisma.deckClone.count({ where: { deckId: id, userId: requesterId } }),
+      const [cloneCount, likeRecord, dislikeRecord, userRecord, grant] = await Promise.all([
+        this.prisma.deckClone.count({ where: { deckId: cleanId, userId: requesterId } }),
         this.prisma.deckLike.findUnique({
-          where: { userId_deckId: { userId: requesterId, deckId: id } },
+          where: { userId_deckId: { userId: requesterId, deckId: cleanId } },
         }),
         this.prisma.deckDislike.findUnique({
-          where: { userId_deckId: { userId: requesterId, deckId: id } },
+          where: { userId_deckId: { userId: requesterId, deckId: cleanId } },
         }),
         this.prisma.user.findUnique({
           where: { id: requesterId },
           select: { role: true },
         }),
+        deck.isProtected
+          ? this.prisma.bankAccessGrant.findFirst({
+              where: {
+                bankId: cleanId,
+                userId: requesterId,
+                status: 'ACTIVE',
+                revokedAt: null,
+              },
+            })
+          : Promise.resolve(null),
       ]);
       isCloned = cloneCount > 0;
       userLiked = Boolean(likeRecord);
       userDisliked = Boolean(dislikeRecord);
       isAdmin = userRecord?.role === 'ADMIN' || userRecord?.role === 'SUPER_ADMIN';
+      if (grant && (!grant.expiresAt || grant.expiresAt > new Date())) {
+        hasAccessGrant = true;
+      }
     }
 
-    // SECURITY: If deck is password protected and requester is not author/admin,
+    // SECURITY: If deck is password protected and requester is not author/admin and has no grant,
     // NEVER expose full words in getDeckDetails! Only return up to 10 sample preview words.
-    // Client must authenticate via POST /community/decks/:id/unlock with valid password hash verification.
-    const isLocked = Boolean(deck.isProtected && !isOwner && !isAdmin);
+    const isLocked = Boolean(deck.isProtected && !isOwner && !isAdmin && !hasAccessGrant);
     const wordsToReturn = isLocked ? deck.words.slice(0, 10) : deck.words;
 
     const { passwordHash, ...safeDeck } = deck;
@@ -151,12 +166,14 @@ export class CommunityService {
       isCloned,
       userLiked,
       userDisliked,
+      hasAccessGrant,
     };
   }
 
-  async unlockDeck(id: string, password?: string) {
+  async unlockDeck(id: string, password?: string, userId?: string) {
+    const cleanId = String(id).replace(/^cloned_/, '');
     const deck = await this.prisma.communityDeck.findUnique({
-      where: { id },
+      where: { id: cleanId },
       include: {
         author: {
           select: { id: true, displayName: true, avatar: true },
@@ -173,12 +190,56 @@ export class CommunityService {
     }
 
     if (deck.isProtected) {
-      if (!password || !deck.passwordHash) {
-        throw new UnauthorizedException('Mật khẩu mở khóa không được để trống.');
-      }
-      const isMatch = await bcrypt.compare(password, deck.passwordHash);
-      if (!isMatch) {
-        throw new UnauthorizedException('Mật khẩu kho từ không chính xác!');
+      const isOwner = userId && deck.userId === userId;
+      if (!isOwner) {
+        let isAuthorized = false;
+
+        // 1. If user is logged in, check if they already have an active access grant
+        if (userId) {
+          const grant = await this.prisma.bankAccessGrant.findFirst({
+            where: {
+              bankId: cleanId,
+              userId,
+              status: 'ACTIVE',
+              revokedAt: null,
+            },
+          });
+          if (grant && (!grant.expiresAt || grant.expiresAt > new Date())) {
+            isAuthorized = true;
+          }
+        }
+
+        // 2. If password/access key string is provided, verify against Access Key or Bank Password
+        if (!isAuthorized && password?.trim()) {
+          const trimmed = password.trim();
+
+          // Check if it's an Access Key
+          const tokenHash = crypto.createHash('sha256').update(trimmed).digest('hex');
+          const keyGrant = await this.prisma.bankAccessGrant.findFirst({
+            where: {
+              tokenHash,
+              bankId: cleanId,
+              status: 'ACTIVE',
+              revokedAt: null,
+              ...(userId ? { userId } : {}),
+            },
+          });
+
+          if (keyGrant && (!keyGrant.expiresAt || keyGrant.expiresAt > new Date())) {
+            isAuthorized = true;
+            await this.prisma.bankAccessGrant.update({
+              where: { id: keyGrant.id },
+              data: { lastUsedAt: new Date() },
+            });
+          } else if (deck.passwordHash) {
+            // Master bank password check
+            isAuthorized = await bcrypt.compare(trimmed, deck.passwordHash);
+          }
+        }
+
+        if (!isAuthorized) {
+          throw new UnauthorizedException('Mật khẩu kho từ hoặc Access Key không chính xác!');
+        }
       }
     }
 

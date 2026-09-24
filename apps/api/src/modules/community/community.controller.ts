@@ -49,9 +49,13 @@ export class CommunityController {
 
   @Public()
   @Post('decks/:id/unlock')
-  @ApiOperation({ summary: 'Unlock a protected community deck using its password' })
-  unlockDeck(@Param('id') id: string, @Body() dto: UnlockDeckDto) {
-    return this.communityService.unlockDeck(id, dto.password);
+  @ApiOperation({ summary: 'Unlock a protected community deck using its password or access key' })
+  unlockDeck(
+    @Param('id') id: string,
+    @Body() dto: UnlockDeckDto,
+    @CurrentUser('id') userId?: string,
+  ) {
+    return this.communityService.unlockDeck(id, dto.password, userId);
   }
 
   @UseGuards(JwtAuthGuard)

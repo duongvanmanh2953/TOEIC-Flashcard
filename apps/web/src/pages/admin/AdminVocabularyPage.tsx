@@ -24,6 +24,7 @@ import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
 import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 
 interface VocabularyItem {
   id: string;
@@ -209,7 +210,14 @@ export const AdminVocabularyPage: React.FC = () => {
 
   // Delete Single Item
   const handleDeleteItem = async (id: string, word: string) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa từ vựng "${word}"?`)) return;
+    const ok = await confirmModal({
+      title: 'Xóa từ vựng',
+      message: `Bạn có chắc chắn muốn xóa từ vựng "${word}" khỏi cơ sở dữ liệu hệ thống?`,
+      type: 'danger',
+      confirmText: 'Xóa từ vựng',
+      cancelText: 'Hủy bỏ',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/vocabulary/admin/${id}`);
       showToast('success', `Đã xóa từ vựng "${word}".`);
