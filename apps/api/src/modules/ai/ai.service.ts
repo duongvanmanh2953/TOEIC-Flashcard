@@ -233,7 +233,16 @@ export class AIService {
   async pipelineQuery(userId: string, userQuery: string, contextWord?: string, targetLang: string = 'en') {
     const cleanQuery = (userQuery || '').trim();
     if (!cleanQuery) {
-      return { reply: 'Xin chào! Bạn muốn học từ vựng hay luyện câu gì hôm nay?' };
+      const defaultGreetings: Record<string, string> = {
+        de: 'Hallo! Was möchtest du heute auf Deutsch lernen? (Xin chào! Bạn muốn học từ vựng hay luyện câu tiếng Đức gì hôm nay?)',
+        ja: 'こんにちは！今日はどの日本語を勉強したいですか？ (Xin chào! Bạn muốn học từ vựng hay luyện câu tiếng Nhật gì hôm nay?)',
+        zh: '你好！今天你想学习什么中文词汇或表达？ (Xin chào! Bạn muốn học từ vựng hay luyện câu tiếng Trung gì hôm nay?)',
+        fr: "Bonjour ! Que souhaitez-vous apprendre en français aujourd'hui ? (Xin chào! Bạn muốn học từ vựng hay luyện câu tiếng Pháp gì hôm nay?)",
+        es: '¡Hola! ¿Qué te gustaría practicar en español hoy? (Xin chào! Bạn muốn học từ vựng hay luyện câu tiếng Tây Ban Nha gì hôm nay?)',
+        ko: '안녕하세요! 오늘 어떤 한국어 단어나 문장을 연습하고 싶으신가요? (Xin chào! Bạn muốn học từ vựng hay luyện câu tiếng Hàn gì hôm nay?)',
+        en: 'Hello! What vocabulary or sentence would you like to practice today? (Xin chào! Bạn muốn học từ vựng hay luyện câu gì hôm nay?)',
+      };
+      return { reply: defaultGreetings[targetLang] || defaultGreetings.en };
     }
 
     // 0. Smart Database Cache Lookup (Saves tokens & returns instant pedagogical response)
@@ -328,7 +337,10 @@ CRITICAL INSTRUCTIONS FOR RESPONSE:
    - If the learner query is in ${currentLangName}, reply in ${currentLangName}, BUT ALWAYS include Vietnamese translations for key vocabulary, collocations, and example sentences so learners at CEFR ${userCefr} fully understand.
    - Link response naturally to previous context in history if relevant.
 
-2. MANDATORY PEDAGOGICAL STRUCTURE (Strict Markdown format):
+2. TARGET LANGUAGE GREETING:
+   - If the learner query is a greeting (e.g. "hi", "hello", "xin chào", "chào", "bonjour", "hallo", "konnichiwa", "ni hao", "hola", "annyeong", etc.), ALWAYS greet back in ${currentLangName} first (e.g. German 'Hallo!', Japanese 'こんにちは！', Chinese '你好！', French 'Bonjour !', Spanish '¡Hola!', Korean '안녕하세요!', English 'Hello!'), followed by supportive Vietnamese guidance.
+
+3. MANDATORY PEDAGOGICAL STRUCTURE (Strict Markdown format):
    ### 💡 [Tiêu đề phản hồi / Lời chào ngắn gọn phù hợp câu hỏi]
 
    1. 📌 **Giải thích & Ngữ cảnh (Explanation):**
@@ -361,17 +373,39 @@ CRITICAL INSTRUCTIONS FOR RESPONSE:
       const targetTerm = contextResults[0]?.word || contextWord || userQuery.split(' ')[0] || 'vocabulary';
       const targetMeaning = contextResults[0]?.shortDefinition || 'ngữ nghĩa liên quan';
 
-      if (isVietnameseQuery) {
-        responseText = `### 💡 Hướng dẫn từ Gia sư VocalFlow AI (Trình độ: **${userCefr}**)
+      const langFlags: Record<string, string> = {
+        de: '🇩🇪',
+        ja: '🇯🇵',
+        zh: '🇨🇳',
+        fr: '🇫🇷',
+        es: '🇪🇸',
+        ko: '🇰🇷',
+        en: '🇬🇧',
+      };
+      const flag = langFlags[targetLang] || '🌐';
 
-Chào bạn! Dựa trên câu hỏi của bạn và lịch sử học tập:
+      const offlineGreetings: Record<string, string> = {
+        de: 'Hallo! Als dein KI-Coach für Deutsch begleite ich dich gerne. (Chào bạn! Tôi là gia sư AI Tiếng Đức của bạn).',
+        ja: 'こんにちは！あなたのAI専属日本語チューターとして、喜んでお手伝いします。(Chào bạn! Tôi là gia sư AI Tiếng Nhật của bạn).',
+        zh: '你好！作为你的专属中文AI导师，我很乐意为你解答。(Chào bạn! Tôi là gia sư AI Tiếng Trung của bạn).',
+        fr: 'Bonjour ! En tant que votre tuteur IA pour le français, je suis ravi de vous guider. (Chào bạn! Tôi là gia sư AI Tiếng Pháp của bạn).',
+        es: '¡Hola! Como tu tutor de IA para español, me alegra acompañarte. (Chào bạn! Tôi là gia sư AI Tiếng Tây Ban Nha của bạn).',
+        ko: '안녕하세요! 당신의 전담 한국어 AI 튜터로서 기쁘게 도와드리겠습니다. (Chào bạn! Tôi là gia sư AI Tiếng Hàn của bạn).',
+        en: 'Hello! I am your VocalFlow AI English Tutor, ready to assist your learning journey. (Chào bạn! Tôi là gia sư VocabFlow AI Tiếng Anh đồng hành cùng bạn).',
+      };
+      const greetingHeader = offlineGreetings[targetLang] || offlineGreetings.en;
+
+      if (isVietnameseQuery) {
+        responseText = `### 💡 Hướng dẫn từ Gia sư VocalFlow AI ${currentLangName} (Trình độ: **${userCefr}**)
+
+${greetingHeader}
 
 1. 📌 **Giải thích & Ngữ cảnh:**
    Về câu hỏi **"${userQuery}"**, khái niệm chính liên quan là **${targetTerm.toUpperCase()}** (*${targetMeaning}*).
    Ở trình độ **${userCefr}**, bạn nên chú trọng cách phối hợp từ (Collocation) và sắc thái giao tiếp tự nhiên thay vì dịch từng chữ.
 
-2. 🇬🇧 🇻🇳 **Ví dụ thực tế song ngữ:**
-   🇬🇧 *"Our team agreed to **${targetTerm}** the key objectives to ensure long-term success."*
+2. ${flag} 🇻🇳 **Ví dụ thực tế song ngữ:**
+   ${flag} *"Our team agreed to **${targetTerm}** the key objectives to ensure long-term success."*
    🇻🇳 *"Đội ngũ của chúng tôi đã đồng ý xem xét các mục tiêu chính để đảm bảo thành công lâu dài."*
 
 3. 🔗 **Từ vựng & Cấu trúc liên quan:**
@@ -386,7 +420,9 @@ Chào bạn! Dựa trên câu hỏi của bạn và lịch sử học tập:
 
 Bạn hãy chọn A, B hoặc C để kiểm tra phản xạ nhé!`;
       } else {
-        responseText = `### 💡 VocalFlow AI Tutor Guide (Level: **${userCefr}**)
+        responseText = `### 💡 VocalFlow AI ${currentLangName} Tutor Guide (Level: **${userCefr}**)
+
+${greetingHeader}
 
 Great question! Here is the detailed explanation for: **"${userQuery}"**
 
@@ -395,8 +431,8 @@ Great question! Here is the detailed explanation for: **"${userQuery}"**
    At CEFR **${userCefr}**, focus on using this naturally in business and daily context.
    *(Dịch tiếng Việt: Tại trình độ ${userCefr}, bạn hãy chú trọng sử dụng tự nhiên trong văn cảnh làm việc và giao tiếp).*
 
-2. 🇬🇧 🇻🇳 **Bilingual Real-World Example:**
-   🇬🇧 *"Our team agreed to **${targetTerm}** the key objectives to ensure long-term success."*
+2. ${flag} 🇻🇳 **Bilingual Real-World Example:**
+   ${flag} *"Our team agreed to **${targetTerm}** the key objectives to ensure long-term success."*
    🇻🇳 *"Đội ngũ của chúng tôi đã đồng ý xem xét các mục tiêu chính để đảm bảo thành công lâu dài."*
 
 3. 🔗 **Related Vocabulary & Phrasal Patterns:**

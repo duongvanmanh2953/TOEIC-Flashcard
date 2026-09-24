@@ -9,6 +9,7 @@ import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { useTranslation } from '../i18n';
 import { useAuth, isProUser } from '../contexts/AuthContext';
+import { useLearningContext } from '../contexts/LearningContext';
 import {
   Send,
   BrainCircuit,
@@ -65,12 +66,23 @@ interface Message {
   createdAt: Date;
 }
 
+export const AI_TUTOR_LANGUAGE_GREETINGS: Record<string, string> = {
+  de: 'Hallo! Ich bin dein **VocabFlow KI-Tutor für Deutsch**. Ich helfe dir, Wortbedeutungen nach CEFR zu verstehen, ähnliche Wörter zu vergleichen, Reflexionsquizze zu lösen und praktische Beispielsätze zu bilden. Welches Wort möchtest du heute entdecken?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Đức của bạn. Bạn muốn khám phá từ vựng hay ngữ pháp nào hôm nay?)*',
+  ja: 'こんにちは！私はあなたの**VocabFlow AI日本語チューター**です。CEFRレベルに応じた語彙のニュアンス解説や類義語の使い分け、反射クイズ、実用的な例文作成をサポートします。今日はどの単語を勉強したいですか？\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Nhật của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  zh: '你好！我是你的**VocabFlow AI中文导师**。我可以帮你根据CEFR分级解析词汇深度含义、辨析近义词用法、生成互动测验以及构建真实的语境例句。今天你想学习哪个词汇？\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Trung của bạn. Bạn muốn khám phá từ nào hôm nay?)*',
+  fr: 'Bonjour ! Je suis votre **tuteur IA VocabFlow pour le français**. Je peux vous aider à comprendre les nuances du vocabulaire selon le CECRL, comparer des mots similaires, générer des quiz de réflexe et créer des exemples concrets. Quel mot souhaitez-vous explorer aujourd\'hui ?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Pháp của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  es: '¡Hola! Soy tu **tutor de IA VocabFlow para español**. Puedo ayudarte a comprender los matices del vocabulario según el MCER, comparar palabras similares, resolver cuestionarios de reflejos y practicar oraciones reales. ¿Qué palabra te gustaría explorar hoy?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Tây Ban Nha của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  ko: '안녕하세요! 저는 당신의 **VocabFlow AI 한국어 튜터**입니다. CEFR 레벨에 맞춘 단어 뉘앙스 해설, 헷갈리기 쉬운 단어 비교, 반사 퀴즈 및 실전 예문 생성을 도와드립니다. 오늘 어떤 단어를 함께 탐구해 볼까요?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Hàn của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  en: 'Xin chào! Tôi là **Gia sư VocabFlow AI**. Tôi có thể giúp bạn giải thích sắc thái từ vựng theo CEFR, so sánh các từ dễ nhầm lẫn (như economic vs economical), tạo câu đố phản xạ hoặc dệt câu chuyện thực tế từ các từ bạn muốn học. Bạn muốn khám phá từ nào hôm nay?',
+};
+
 export const AITutorPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialWord = searchParams.get('word') || '';
   const { t } = useTranslation();
   const { isGuest, promptLogin, user } = useAuth();
+  const { activeLanguage } = useLearningContext();
   const isPro = isProUser(user) || quotaStatus?.isPro || quotaStatus?.tier === 'PRO';
   const effectiveTier = isPro ? 'PRO' : (quotaStatus?.tier || 'FREE');
 
@@ -96,15 +108,35 @@ export const AITutorPage: React.FC = () => {
   const [storyResult, setStoryResult] = useState<any>(null);
   const [generatingStory, setGeneratingStory] = useState(false);
 
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: 'welcome',
       role: 'assistant',
       content:
-        'Xin chào! Tôi là **Gia sư VocabFlow AI**. Tôi có thể giúp bạn giải thích sắc thái từ vựng theo CEFR, so sánh các từ dễ nhầm lẫn (như economic vs economical), tạo câu đố phản xạ hoặc dệt câu chuyện thực tế từ các từ bạn muốn học. Bạn muốn khám phá từ nào hôm nay?',
+        AI_TUTOR_LANGUAGE_GREETINGS[activeLanguage?.id || 'en'] ||
+        AI_TUTOR_LANGUAGE_GREETINGS.en,
       createdAt: new Date(),
     },
   ]);
+
+  // Dynamically update greeting if user switches active learning language
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length <= 1 && (prev.length === 0 || prev[0]?.id?.startsWith('welcome'))) {
+        return [
+          {
+            id: 'welcome-' + (activeLanguage?.id || 'en'),
+            role: 'assistant',
+            content:
+              AI_TUTOR_LANGUAGE_GREETINGS[activeLanguage?.id || 'en'] ||
+              AI_TUTOR_LANGUAGE_GREETINGS.en,
+            createdAt: new Date(),
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [activeLanguage?.id]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +183,10 @@ export const AITutorPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const res: any = await api.post('/ai/tutor', { message: text });
+      const res: any = await api.post('/ai/tutor', {
+        message: text,
+        language: activeLanguage?.id || 'en',
+      });
       const data = res.data || res;
 
       // Refresh quota after usage
@@ -649,7 +684,7 @@ export const AITutorPage: React.FC = () => {
             <div>
               <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-snug flex items-center gap-2">
                 <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Dán Đoạn Văn Bản / Email Tiếng Anh Bất Kỳ</span>
+                <span>Dán Đoạn Văn Bản / Email {activeLanguage?.name || 'Ngoại Ngữ'} Bất Kỳ</span>
               </h2>
               <p className="text-xs text-slate-400 mt-1">
                 AI sẽ trích xuất tự động các từ vựng học thuật/công sở giá trị cao, giải nghĩa theo ngữ cảnh và tạo bài trắc nghiệm kiểm tra tức thì.
@@ -660,7 +695,7 @@ export const AITutorPage: React.FC = () => {
               rows={4}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              placeholder="Dán đoạn văn tiếng Anh ở đây (ví dụ: email đối tác, bài báo kinh tế, tài liệu dự án...)"
+              placeholder={`Dán đoạn văn ${activeLanguage?.name || 'ngoại ngữ'} ở đây (ví dụ: email đối tác, bài báo kinh tế, tài liệu dự án...)`}
               className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm focus:outline-none focus:border-indigo-500 text-slate-900 dark:text-white"
             />
 
