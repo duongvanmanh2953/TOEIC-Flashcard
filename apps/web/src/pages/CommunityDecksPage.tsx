@@ -62,6 +62,7 @@ import {
   ThumbsDown,
   MessageSquare,
   X,
+  MoreVertical,
 } from 'lucide-react';
 
 export const CommunityDecksPage: React.FC = () => {
@@ -844,7 +845,7 @@ export const CommunityDecksPage: React.FC = () => {
           {/* Create Deck Button */}
           <button
             onClick={handleOpenCreateModal}
-            className="btn-glass-primary text-xs !py-2.5 gap-2 shadow-md cursor-pointer"
+            className="h-10 px-4 rounded-xl btn-glass-primary text-xs font-bold gap-2 shadow-md cursor-pointer inline-flex items-center"
           >
             <Plus className="w-4 h-4" />
             <span>Tạo & Đóng góp bộ từ</span>
@@ -929,7 +930,7 @@ export const CommunityDecksPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm bộ từ theo chủ đề, tiêu đề..."
-              className="w-full pl-10 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
+              className="w-full h-10 pl-10 pr-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
             />
           </div>
         </div>
@@ -1046,8 +1047,9 @@ export const CommunityDecksPage: React.FC = () => {
                         </button>
 
                         <button
+                          type="button"
                           onClick={(e) => handleToggleDeckDislike(deck, e)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                          className={`inline-flex items-center gap-1 h-7.5 px-2.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                             deck.userDisliked
                               ? 'bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-800'
                               : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -1059,11 +1061,12 @@ export const CommunityDecksPage: React.FC = () => {
                         </button>
 
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleActionOnDeck(deck, 'view');
                           }}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                          className="inline-flex items-center gap-1 h-7.5 px-2.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                           title="Bình luận & Nhận xét"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
@@ -1077,83 +1080,68 @@ export const CommunityDecksPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-end gap-2 flex-wrap">
+                    {/* Action buttons row: Strictly h-9, no wrapping clutter */}
+                    <div className="mt-2.5 flex items-center gap-2">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleActionOnDeck(deck, 'view');
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                        title="Xem bản demo giới thiệu kho từ"
-                      >
-                        {isProtected && !isUnlocked && <Lock className="w-3 h-3 text-amber-500" />}
-                        <span>Xem chi tiết</span>
-                      </button>
-
-                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleActionOnDeck(deck, 'open-bank');
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1 hover:bg-emerald-500/20 transition cursor-pointer"
+                        className="h-9 px-3.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 text-xs font-bold transition flex-1 min-w-0 flex items-center justify-center gap-1.5 cursor-pointer truncate"
                         title="Vào xem toàn bộ từ vựng trong kho từ này"
                       >
-                        <BookOpen className="w-3.5 h-3.5" />
-                        <span>Xem kho từ</span>
+                        <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">Vào kho từ</span>
                       </button>
 
-                      {isMyDeck ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAccessKeyManageDeck(deck);
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1 hover:bg-amber-500/20 transition cursor-pointer"
-                          title="Quản lý và cấp quyền truy cập bằng Access Key"
-                        >
-                          <Key className="w-3.5 h-3.5" />
-                          <span>Quản lý quyền</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleContactDeckOwner(deck);
-                          }}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 text-xs font-bold flex items-center gap-1 hover:bg-indigo-500/20 transition cursor-pointer"
-                          title="Nhắn tin với chủ kho về bộ từ này"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>Liên hệ chủ kho</span>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleActionOnDeck(deck, 'view');
+                        }}
+                        className="h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                        title="Xem bản demo giới thiệu kho từ"
+                      >
+                        {isProtected && !isUnlocked ? <Lock className="w-3.5 h-3.5 text-amber-500" /> : <Eye className="w-3.5 h-3.5 text-slate-500" />}
+                        <span>Chi tiết</span>
+                      </button>
 
-                      {isProtected && !isUnlocked && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setVerifyAccessKeyDeck(deck);
+                      {/* Secondary Actions Dropdown */}
+                      <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                        <CustomDropdown
+                          trigger={
+                            <button
+                              type="button"
+                              className="h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition cursor-pointer"
+                              title="Thao tác khác"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          }
+                          options={[
+                            ...(!isMyDeck && !isAlreadyCloned
+                              ? [{ value: 'clone', label: 'Lưu về kho của tôi', icon: Copy }]
+                              : []),
+                            ...(isMyDeck
+                              ? [{ value: 'manage_access', label: 'Quản lý quyền (Access Key)', icon: Key }]
+                              : [{ value: 'contact_owner', label: 'Liên hệ chủ kho', icon: MessageSquare }]),
+                            ...(isProtected && !isUnlocked
+                              ? [{ value: 'verify_key', label: 'Mở khóa bằng Access Key', icon: Key }]
+                              : []),
+                            { value: 'export', label: 'Xuất file (Excel / CSV)', icon: Download },
+                          ]}
+                          onSelect={(val) => {
+                            if (val === 'clone') handleActionOnDeck(deck, 'clone');
+                            else if (val === 'manage_access') setAccessKeyManageDeck(deck);
+                            else if (val === 'contact_owner') handleContactDeckOwner(deck);
+                            else if (val === 'verify_key') setVerifyAccessKeyDeck(deck);
+                            else if (val === 'export') setCloneActionDeck(deck);
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1 hover:bg-amber-500/20 transition cursor-pointer"
-                          title="Mở khóa bằng mã Access Key được cấp"
-                        >
-                          <Key className="w-3.5 h-3.5" />
-                          <span>Nhập Key</span>
-                        </button>
-                      )}
-
-                      {!isMyDeck && !isAlreadyCloned && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleActionOnDeck(deck, 'clone');
-                          }}
-                          className="btn-glass-primary !shadow-none px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Lưu kho</span>
-                        </button>
-                      )}
+                          align="right"
+                        />
+                      </div>
                     </div>
                   </div>
                 );
@@ -1287,29 +1275,30 @@ export const CommunityDecksPage: React.FC = () => {
                         <span>{deck.words?.length || deck._count?.words || 0} từ</span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleActionOnDeck(deck, 'open-bank');
                           }}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                          className="h-9 px-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <BookOpen className="w-3.5 h-3.5" />
                           <span>Xem kho từ</span>
                         </button>
                         <button
                           onClick={() => handleActionOnDeck(deck, 'view')}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
+                          className="h-9 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition inline-flex items-center justify-center cursor-pointer"
                         >
                           Chi tiết
                         </button>
                         <button
                           onClick={() => setCloneActionDeck(deck)}
-                          className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition flex items-center gap-1"
+                          className="h-9 px-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer"
+                          title="Xuất file"
                         >
                           <Download className="w-3.5 h-3.5" />
-                          <span>Xuất file</span>
+                          <span className="hidden sm:inline">Xuất file</span>
                         </button>
                       </div>
                     </div>
@@ -1340,7 +1329,7 @@ export const CommunityDecksPage: React.FC = () => {
         </>
       )}
 
-      {/* BLOG / POST DETAIL MODAL CHO KHO TỪ VỰNG & BỘ THẺ CỘNG ĐỒNG */}
+      {/* BLOG / POST DETAIL MODAL CHO KHO TỪ VỰNG & BỘ THẺ CỘNG ĐỒNG - COMPACT & STREAMLINED */}
       <ModalPortal isOpen={Boolean(selectedDeck)} onClose={() => setSelectedDeck(null)}>
         {(() => {
           if (!selectedDeck) return null;
@@ -1357,203 +1346,194 @@ export const CommunityDecksPage: React.FC = () => {
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto">
               <div
-                className="relative max-w-4xl w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-left"
+                className="relative max-w-2xl w-full rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto max-h-[85vh] flex flex-col text-left"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* MODAL HERO HEADER: Cover & Metadata */}
-                <div className="relative p-6 sm:p-8 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white shrink-0">
+                {/* MODAL HERO HEADER: Compact Cover & Metadata */}
+                <div className="relative p-4 sm:p-5 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white shrink-0">
                   <button
                     onClick={() => setSelectedDeck(null)}
-                    className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition backdrop-blur-sm z-10"
+                    className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition backdrop-blur-sm z-10 text-sm cursor-pointer"
                     aria-label="Đóng modal"
                   >
                     ✕
                   </button>
 
-                  <div className="space-y-4 max-w-3xl pr-10">
+                  <div className="space-y-2 max-w-xl pr-8">
                     {/* Badges / Chips */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
                       <LanguageBadge languageIdOrCode={targetLang} size="sm" />
-                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 text-[11px] font-extrabold uppercase">
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 text-[10px] font-extrabold uppercase">
                         {selectedDeck.category || 'General'}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[11px] font-extrabold uppercase">
+                      <span className="px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/40 text-[10px] font-extrabold uppercase">
                         CEFR {selectedDeck.cefrLevel || 'ALL'}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 text-[11px] font-extrabold uppercase flex items-center gap-1">
-                        <Globe className="w-3 h-3" />
-                        <span>Công khai (Public)</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 text-[10px] font-extrabold uppercase flex items-center gap-1">
+                        <Globe className="w-2.5 h-2.5" />
+                        <span>Công khai</span>
                       </span>
                       {isMyDeck ? (
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[11px] font-extrabold uppercase">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-extrabold uppercase">
                           Kho của tôi
                         </span>
                       ) : isAlreadyCloned ? (
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500 text-white text-[11px] font-extrabold uppercase">
-                          Đã lưu vào kho cá nhân
+                        <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-extrabold uppercase">
+                          Đã lưu kho cá nhân
                         </span>
                       ) : null}
                     </div>
 
                     {/* Deck Title */}
-                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-snug">
+                    <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug line-clamp-2">
                       {selectedDeck.title}
                     </h2>
 
                     {/* Author & Publication Timestamp */}
-                    <div className="flex items-center gap-3 text-xs text-indigo-200/90 pt-1">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-extrabold shrink-0 border border-white/20 overflow-hidden">
+                    <div className="flex items-center gap-2.5 text-xs text-indigo-200/90 pt-0.5">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-extrabold shrink-0 border border-white/20 overflow-hidden text-xs">
                         {authorAvatar ? (
                           <img src={authorAvatar} alt={authorName} className="w-full h-full object-cover" />
                         ) : (
                           <span>{authorName.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <div className="font-bold text-white text-sm truncate flex items-center gap-1.5">
-                          <span>{authorName}</span>
-                          {isMyDeck && <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/40 text-indigo-200 font-semibold">(Tác giả)</span>}
-                        </div>
-                        <div className="text-[11px] text-indigo-300/80 flex items-center gap-2">
-                          <span>Đóng góp: {selectedDeck.createdAt ? new Date(selectedDeck.createdAt).toLocaleDateString('vi-VN') : 'Gần đây'}</span>
-                          <span>•</span>
-                          <span>Quy mô: <strong className="text-white">{wordCount} từ vựng</strong></span>
-                        </div>
+                      <div className="min-w-0 flex items-center gap-2 text-xs flex-wrap">
+                        <span className="font-bold text-white truncate max-w-[140px] sm:max-w-[200px]">{authorName}</span>
+                        {isMyDeck && <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-500/40 text-indigo-200 font-semibold">(Tác giả)</span>}
+                        <span className="text-indigo-300/60">•</span>
+                        <span className="text-[11px] text-indigo-300/80">
+                          {selectedDeck.createdAt ? new Date(selectedDeck.createdAt).toLocaleDateString('vi-VN') : 'Gần đây'}
+                        </span>
+                        <span className="text-indigo-300/60">•</span>
+                        <span className="text-[11px] text-indigo-200 font-bold">{wordCount} từ vựng</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* MODAL STATISTICS BAR (Views, Likes, Dislikes, Comments, Clones/Saves) */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 p-3 sm:p-4 gap-2 text-center text-xs shrink-0">
-                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-indigo-500" />
+                {/* SLIM 4-COLUMN METRICS STRIP */}
+                <div className="grid grid-cols-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 px-3 py-2 text-center text-xs shrink-0 divide-x divide-slate-200/60 dark:divide-slate-800/60">
+                  <div className="flex flex-col items-center justify-center py-0.5">
+                    <span className="text-slate-400 text-[10px] font-semibold flex items-center gap-1">
+                      <Eye className="w-3 h-3 text-indigo-500" />
                       <span>Lượt xem</span>
                     </span>
-                    <span className="font-extrabold text-slate-800 dark:text-slate-100 text-sm mt-0.5">
-                      {selectedDeck.viewCount || selectedDeck.views || 142}
+                    <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs mt-0.5">
+                      {selectedDeck.viewCount || selectedDeck.views || 0}
                     </span>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
-                      <ThumbsUp className="w-3.5 h-3.5 text-emerald-500" />
+                  <div className="flex flex-col items-center justify-center py-0.5">
+                    <span className="text-slate-400 text-[10px] font-semibold flex items-center gap-1">
+                      <ThumbsUp className="w-3 h-3 text-emerald-500" />
                       <span>Hài lòng</span>
                     </span>
-                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm mt-0.5">
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs mt-0.5">
                       {selectedDeck.likeCount || 0}
                     </span>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
-                      <ThumbsDown className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Không thích</span>
-                    </span>
-                    <span className="font-extrabold text-rose-600 dark:text-rose-400 text-sm mt-0.5">
-                      {selectedDeck.dislikeCount || 0}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
-                      <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                  <div className="flex flex-col items-center justify-center py-0.5">
+                    <span className="text-slate-400 text-[10px] font-semibold flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3 text-blue-500" />
                       <span>Thảo luận</span>
                     </span>
-                    <span className="font-extrabold text-blue-600 dark:text-blue-400 text-sm mt-0.5">
+                    <span className="font-extrabold text-blue-600 dark:text-blue-400 text-xs mt-0.5">
                       {selectedDeck.commentCount || 0}
                     </span>
                   </div>
 
-                  <div className="col-span-2 sm:col-span-1 flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-                    <span className="text-slate-400 text-[11px] font-semibold flex items-center gap-1">
-                      <Bookmark className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Lưu / Clone</span>
+                  <div className="flex flex-col items-center justify-center py-0.5">
+                    <span className="text-slate-400 text-[10px] font-semibold flex items-center gap-1">
+                      <Bookmark className="w-3 h-3 text-amber-500" />
+                      <span>Lưu trữ</span>
                     </span>
-                    <span className="font-extrabold text-amber-600 dark:text-amber-400 text-sm mt-0.5">
+                    <span className="font-extrabold text-amber-600 dark:text-amber-400 text-xs mt-0.5">
                       {selectedDeck.cloneCount || 0}
                     </span>
                   </div>
                 </div>
 
                 {/* SCROLLABLE MAIN CONTENT BODY */}
-                <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
                   {/* Deck Description */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Giới thiệu kho từ vựng</span>
-                    </h4>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                      {selectedDeck.description || 'Bộ từ vựng được xây dựng và tuyển chọn kỹ lưỡng, hỗ trợ luyện tập phản xạ, ghi nhớ lâu dài qua phương pháp ngắt quãng SRS và tích hợp flashcard.'}
-                    </p>
-                  </div>
-
-                  {/* Sample Words / Cards Preview (Demo chục từ đầu) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Xem trước từ vựng mẫu ({!isDeckLocked(selectedDeck) && sampleWords.length > 0 ? `Hiển thị ${Math.min(10, sampleWords.length)} / ${wordCount} từ` : `${wordCount} từ`})</span>
+                  {selectedDeck.description && (
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                        <FileText className="w-3 h-3 text-indigo-500" />
+                        <span>Giới thiệu</span>
                       </h4>
-                      {!isDeckLocked(selectedDeck) && <span className="text-[11px] text-slate-400">Bấm loa để nghe phát âm</span>}
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                        {selectedDeck.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Sample Words / Cards Preview (Rút gọn tối đa 6 từ để tiết kiệm diện tích) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                        <BookOpen className="w-3 h-3 text-indigo-500" />
+                        <span>Xem trước từ vựng ({!isDeckLocked(selectedDeck) && sampleWords.length > 0 ? `Hiển thị ${Math.min(6, sampleWords.length)} / ${wordCount} từ` : `${wordCount} từ`})</span>
+                      </h4>
+                      {!isDeckLocked(selectedDeck) && <span className="text-[10px] text-slate-400">Bấm loa để nghe phát âm</span>}
                     </div>
 
                     {isDeckLocked(selectedDeck) ? (
-                      <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
-                        <div className="w-12 h-12 mx-auto rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                          <Lock className="w-6 h-6" />
+                      <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-center space-y-2.5">
+                        <div className="w-10 h-10 mx-auto rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                          <Lock className="w-5 h-5" />
                         </div>
-                        <div className="space-y-1">
-                          <h5 className="font-bold text-sm text-slate-900 dark:text-white">Kho từ vựng có mật khẩu bảo vệ</h5>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                            Danh sách từ vựng chi tiết và tính năng ôn tập được tác giả bảo vệ. Bạn có thể xem thảo luận đánh giá bên dưới hoặc nhập mật khẩu để mở khóa và vào kho từ.
+                        <div className="space-y-0.5">
+                          <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">Kho từ vựng có mật khẩu bảo vệ</h5>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                            Danh sách từ vựng chi tiết được tác giả bảo vệ. Bạn có thể mở khóa bằng mật khẩu hoặc Access Key.
                           </p>
                         </div>
-                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                        <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
                           <button
                             type="button"
                             onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
-                            className="btn-glass-primary text-xs !py-2.5 !px-5 inline-flex items-center gap-2 font-bold cursor-pointer"
+                            className="h-9 px-4 rounded-xl btn-glass-primary text-xs inline-flex items-center gap-1.5 font-bold cursor-pointer"
                           >
-                            <Unlock className="w-4 h-4" />
-                            <span>Nhập mật khẩu để vào kho từ</span>
+                            <Unlock className="w-3.5 h-3.5" />
+                            <span>Nhập mật khẩu</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setVerifyAccessKeyDeck(selectedDeck)}
-                            className="px-4 py-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-2 hover:bg-amber-500/25 transition cursor-pointer"
+                            className="h-9 px-4 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold inline-flex items-center gap-1.5 hover:bg-amber-500/25 transition cursor-pointer"
                           >
-                            <Key className="w-4 h-4" />
-                            <span>Mở khóa bằng Access Key</span>
+                            <Key className="w-3.5 h-3.5" />
+                            <span>Dùng Access Key</span>
                           </button>
                         </div>
                       </div>
                     ) : sampleWords.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {sampleWords.slice(0, 10).map((w: any, idx: number) => (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {sampleWords.slice(0, 6).map((w: any, idx: number) => (
                           <div
                             key={w.id || idx}
-                            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex items-start justify-between gap-3 text-xs shadow-xs hover:border-indigo-300 dark:hover:border-indigo-800 transition"
+                            className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 flex items-start justify-between gap-2 text-xs shadow-xs hover:border-indigo-300 dark:hover:border-indigo-800 transition"
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-extrabold text-sm text-slate-900 dark:text-white">{w.word}</span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-extrabold text-xs text-slate-900 dark:text-white">{w.word}</span>
                                 {w.partOfSpeech && (
-                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase">
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase">
                                     {w.partOfSpeech}
                                   </span>
                                 )}
                                 {w.phonetic && (
-                                  <span className="text-slate-400 font-mono text-[11px]">{w.phonetic}</span>
+                                  <span className="text-slate-400 font-mono text-[10px]">{w.phonetic}</span>
                                 )}
                               </div>
-                              <p className="font-bold text-indigo-600 dark:text-indigo-400 text-xs mt-1">
+                              <p className="font-semibold text-indigo-600 dark:text-indigo-400 text-[11px] mt-0.5 truncate">
                                 {w.meaning}
                               </p>
                               {w.example && (
-                                <p className="text-slate-500 dark:text-slate-400 italic text-[11px] mt-1 line-clamp-2">
+                                <p className="text-slate-500 dark:text-slate-400 italic text-[10px] mt-0.5 line-clamp-1">
                                   "{w.example}"
                                 </p>
                               )}
@@ -1563,39 +1543,39 @@ export const CommunityDecksPage: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-6 text-center text-xs text-slate-400 border border-dashed rounded-2xl">
+                      <div className="p-4 text-center text-xs text-slate-400 border border-dashed rounded-xl">
                         Kho từ đã sẵn sàng. Bấm &quot;Xem kho từ&quot; để vào trang quản lý và xem toàn bộ từ vựng.
                       </div>
                     )}
 
-                    {!isDeckLocked(selectedDeck) && wordCount > 10 && (
-                      <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-indigo-50/90 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-xs">
-                        <div className="text-indigo-900 dark:text-indigo-200 font-medium">
-                          ✨ Còn <strong>{wordCount - 10} từ vựng</strong> khác trong kho. Nhấn vào kho từ để xem toàn bộ danh sách và luyện tập đầy đủ!
-                        </div>
+                    {!isDeckLocked(selectedDeck) && wordCount > 6 && (
+                      <div className="p-2.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 flex items-center justify-between gap-2 text-xs">
+                        <span className="text-indigo-900 dark:text-indigo-200 text-[11px]">
+                          ✨ Còn <strong>{wordCount - 6} từ vựng</strong> khác trong kho.
+                        </span>
                         <button
                           type="button"
                           onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
-                          className="btn-glass-primary btn-glass-sm font-bold whitespace-nowrap inline-flex items-center gap-1.5 shrink-0"
+                          className="h-8 px-3 rounded-lg btn-glass-primary font-bold whitespace-nowrap inline-flex items-center gap-1 shrink-0 text-xs"
                         >
-                          <BookOpen className="w-3.5 h-3.5" />
-                          <span>Vào xem toàn bộ kho từ</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          <BookOpen className="w-3 h-3" />
+                          <span>Vào kho từ</span>
+                          <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
                     )}
                   </div>
 
-                  {/* PRIMARY & SECONDARY ACTION BUTTONS */}
-                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5 flex-wrap">
+                  {/* PRIMARY & SECONDARY ACTION BUTTONS - UNIFORM HEIGHT h-10 */}
+                  <div className="pt-2 flex flex-wrap items-center gap-2">
                     {isDeckLocked(selectedDeck) ? (
                       <button
                         type="button"
                         onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
-                        className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 font-black cursor-pointer"
+                        className="h-10 px-5 rounded-xl btn-solid-primary text-xs font-bold flex-1 w-full sm:w-auto min-w-[200px] inline-flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Unlock className="w-4 h-4" />
-                        <span>XÁC THỰC MẬT KHẨU & VÀO KHO TỪ</span>
+                        <span>MỞ KHÓA & VÀO KHO TỪ</span>
                       </button>
                     ) : (
                       <>
@@ -1606,16 +1586,16 @@ export const CommunityDecksPage: React.FC = () => {
                             setSelectedDeck(null);
                             navigate(`/review?deckId=${deck.id}`);
                           }}
-                          className="btn-solid-primary text-sm !py-3.5 !px-6 flex-1 w-full sm:w-auto min-w-[220px] flex items-center justify-center gap-2 font-black"
+                          className="h-10 px-4 rounded-xl btn-solid-primary text-xs font-black flex-1 min-w-[170px] inline-flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <Sparkles className="w-4 h-4 fill-current text-amber-300" />
-                          <span>HỌC BỘ TỪ NGAY (SRS FLASHCARD)</span>
+                          <span>HỌC BỘ TỪ NGAY (SRS)</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => handleActionOnDeck(selectedDeck, 'open-bank')}
-                          className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 cursor-pointer"
+                          className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs font-bold inline-flex items-center justify-center gap-1.5 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 cursor-pointer"
                           title="Vào trang quản lý kho từ này (hỗ trợ nhập mật khẩu nếu có)"
                         >
                           <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
@@ -1626,7 +1606,7 @@ export const CommunityDecksPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setAccessKeyManageDeck(selectedDeck)}
-                            className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 cursor-pointer"
+                            className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs font-bold inline-flex items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 cursor-pointer"
                             title="Quản lý các mã Access Key cấp cho học viên"
                           >
                             <Key className="w-3.5 h-3.5 text-amber-500" />
@@ -1636,7 +1616,7 @@ export const CommunityDecksPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleContactDeckOwner(selectedDeck)}
-                            className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-800 cursor-pointer"
+                            className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs font-bold inline-flex items-center justify-center gap-1.5 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-800 cursor-pointer"
                             title="Nhắn tin với chủ kho về bộ từ này"
                           >
                             <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
@@ -1661,7 +1641,7 @@ export const CommunityDecksPage: React.FC = () => {
                           setSelectedDeck(null);
                           setCloneActionDeck(deck);
                         }}
-                        className="btn-glass-secondary text-xs !py-3 !px-4 font-bold flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
+                        className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Copy className="w-3.5 h-3.5 text-indigo-500" />
                         <span>Lưu về kho</span>
@@ -1682,7 +1662,7 @@ export const CommunityDecksPage: React.FC = () => {
                         setSelectedDeck(null);
                         setCloneActionDeck(deck);
                       }}
-                      className="btn-glass-secondary text-xs !py-3 !px-3 font-semibold flex items-center justify-center gap-1"
+                      className="h-10 px-3 rounded-xl btn-glass-secondary text-xs font-semibold inline-flex items-center justify-center gap-1 cursor-pointer"
                       title="Tải file Excel / CSV / JSON"
                     >
                       <Download className="w-3.5 h-3.5 text-emerald-600" />
@@ -1690,59 +1670,59 @@ export const CommunityDecksPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* SOCIAL REACTIONS BAR: 👍 Like | 👎 Dislike | 💬 Comment | ↗ Share */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-b border-slate-100 dark:border-slate-800/80 py-3">
-                    <div className="flex items-center gap-2">
+                  {/* SOCIAL REACTIONS BAR: 👍 Like | 👎 Dislike | 💬 Comment | ↗ Share - UNIFORM h-8 */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-b border-slate-100 dark:border-slate-800/80 py-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={(e) => handleToggleDeckLike(selectedDeck, e)}
-                        className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
+                        className={`h-8 px-2.5 rounded-lg inline-flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${
                           selectedDeck.userLiked
                             ? 'bg-indigo-600 text-white shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
                         }`}
                       >
-                        <ThumbsUp className="w-4 h-4" />
+                        <ThumbsUp className="w-3.5 h-3.5" />
                         <span>{selectedDeck.likeCount || 0}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={(e) => handleToggleDeckDislike(selectedDeck, e)}
-                        className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold transition ${
+                        className={`h-8 px-2.5 rounded-lg inline-flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${
                           selectedDeck.userDisliked
                             ? 'bg-rose-600 text-white shadow-xs'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
                         }`}
                       >
-                        <ThumbsDown className="w-4 h-4" />
-                        <span> {selectedDeck.dislikeCount || 0}</span>
+                        <ThumbsDown className="w-3.5 h-3.5" />
+                        <span>{selectedDeck.dislikeCount || 0}</span>
                       </button>
 
-                      <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 px-2">
-                        <MessageSquare className="w-4 h-4" />
-                        <span> {selectedDeck.commentCount || 0}</span>
+                      <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 px-1.5">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>{selectedDeck.commentCount || 0}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => {
                           navigator.clipboard.writeText(window.location.origin + '/community/decks?deck=' + selectedDeck.id);
                           alert('Đã sao chép liên kết bộ từ vựng vào bộ nhớ tạm!');
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition"
+                        className="h-8 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
                         title="Chia sẻ liên kết bộ từ"
                       >
-                        <Share2 className="w-4 h-4" />
-                        <span>↗ Chia sẻ</span>
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Chia sẻ</span>
                       </button>
                     </div>
                   </div>
 
                   {/* EMBEDDED COMMUNITY COMMENTS DISCUSSION */}
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <CommunityCommentSection
                       targetType="deck"
                       targetId={selectedDeck.id}

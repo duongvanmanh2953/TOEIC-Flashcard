@@ -2838,14 +2838,14 @@ export const MyWordBankPage: React.FC = () => {
                     </div>
 
                     {/* Action Controls */}
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1.5">
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1.5 flex-wrap">
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenDeckOrAction(deck);
                           }}
-                          className="btn-glass-primary btn-glass-sm font-semibold"
+                          className="h-8 px-3 rounded-lg btn-glass-primary text-xs font-semibold inline-flex items-center gap-1.5"
                           aria-label="Xem và quản lý từ trong kho"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -2857,7 +2857,7 @@ export const MyWordBankPage: React.FC = () => {
                             e.stopPropagation();
                             handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`));
                           }}
-                          className="btn-glass-primary btn-glass-sm font-semibold"
+                          className="h-8 px-3 rounded-lg btn-glass-primary text-xs font-semibold inline-flex items-center gap-1.5"
                           title="Ôn tập riêng kho này"
                           aria-label="Ôn tập riêng kho này"
                         >
@@ -2876,7 +2876,7 @@ export const MyWordBankPage: React.FC = () => {
                             );
                             exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'xlsx');
                           }}
-                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
+                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition inline-flex items-center justify-center cursor-pointer"
                           title="Tải kho này dưới dạng Excel (.xlsx)"
                           aria-label="Tải Excel"
                         >
@@ -2892,7 +2892,7 @@ export const MyWordBankPage: React.FC = () => {
                             );
                             exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'csv');
                           }}
-                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
+                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition inline-flex items-center justify-center cursor-pointer"
                           title="Tải kho này dưới dạng CSV (.csv)"
                           aria-label="Tải CSV"
                         >
@@ -2902,7 +2902,7 @@ export const MyWordBankPage: React.FC = () => {
                         {!deck.isReadOnly && (
                           <button
                             onClick={(e) => handleOpenEditDeck(deck, e)}
-                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-400 hover:text-indigo-600 transition"
+                            className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-400 hover:text-indigo-600 transition inline-flex items-center justify-center cursor-pointer"
                             title="Sửa thông tin kho"
                             aria-label="Sửa thông tin kho"
                           >
@@ -2913,7 +2913,7 @@ export const MyWordBankPage: React.FC = () => {
                         {deck.isSyncedToCloud && !deck.isReadOnly && (
                           <button
                             onClick={(e) => handleUnlinkFromCloud(deck, e)}
-                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 transition"
+                            className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 transition inline-flex items-center justify-center cursor-pointer"
                             title="Gỡ kho khỏi Cloud (Lưu về máy)"
                             aria-label="Gỡ khỏi Cloud"
                           >
@@ -2923,7 +2923,7 @@ export const MyWordBankPage: React.FC = () => {
 
                         <button
                           onClick={(e) => handleOpenShareDeck(deck, e)}
-                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-purple-600 transition"
+                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-purple-600 transition inline-flex items-center justify-center cursor-pointer"
                           title="Chia sẻ lên cộng đồng"
                           aria-label="Chia sẻ lên cộng đồng"
                         >
@@ -2933,7 +2933,7 @@ export const MyWordBankPage: React.FC = () => {
                         <button
                           onClick={(e) => handleUploadDeckToCloud(deck, e)}
                           disabled={syncingDeckId === deck.id}
-                          className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                          className={`h-8 px-2.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer ${
                             deck.isSyncedToCloud
                               ? 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80'
                               : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
@@ -2965,7 +2965,7 @@ export const MyWordBankPage: React.FC = () => {
                             e.stopPropagation();
                             setDeckToDelete(deck);
                           }}
-                          className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-600 transition"
+                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer"
                           title="Xóa kho từ vựng này"
                           aria-label="Xóa kho từ vựng này"
                         >
