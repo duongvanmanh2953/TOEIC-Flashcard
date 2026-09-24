@@ -239,9 +239,8 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white ${
-        isLockedHeightRoute ? 'h-dvh max-h-dvh overflow-hidden overscroll-none' : ''
-      }`}
+      className={`min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500 selection:text-white ${isLockedHeightRoute ? 'h-dvh max-h-dvh overflow-hidden overscroll-none' : ''
+        }`}
     >
       <CommandPaletteModal isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
@@ -257,9 +256,8 @@ export const AdminLayout: React.FC = () => {
           1. DEDICATED ADMIN SIDEBAR
           ======================================================================= */}
       <aside
-        className={`fixed lg:sticky top-0 h-dvh z-50 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${
-          sidebarCollapsed ? 'w-[68px] px-1.5' : 'w-64 px-3'
-        } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`fixed lg:sticky top-0 h-dvh z-50 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-[68px] px-1.5' : 'w-64 px-3'
+          } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand & Command Center Header */}
         <div className={`py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-1'}`}>
@@ -348,15 +346,13 @@ export const AdminLayout: React.FC = () => {
                     to={item.to}
                     onClick={() => setSidebarOpen(false)}
                     title={sidebarCollapsed ? item.label : undefined}
-                    className={`flex items-center rounded-xl transition relative ${
-                      sidebarCollapsed
-                        ? 'justify-center mx-auto w-9 h-9 p-0'
-                        : 'justify-between px-2.5 py-2'
-                    } ${
-                      isActive
+                    className={`flex items-center rounded-xl transition relative border-none ${sidebarCollapsed
+                      ? 'justify-center mx-auto w-9 h-9 p-0'
+                      : 'justify-between px-2.5 py-2'
+                      } ${isActive
                         ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 font-semibold'
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
-                    }`}
+                      }`}
                   >
                     <div className={`flex items-center min-w-0 ${sidebarCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                       <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
@@ -367,9 +363,8 @@ export const AdminLayout: React.FC = () => {
                         <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
                       ) : (
                         <span
-                          className={`px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase shrink-0 ${
-                            item.badgeColor || 'bg-indigo-600 text-white'
-                          }`}
+                          className={`px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase shrink-0 ${item.badgeColor || 'bg-indigo-600 text-white'
+                            }`}
                         >
                           {item.count}
                         </span>
@@ -379,11 +374,10 @@ export const AdminLayout: React.FC = () => {
                         <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-slate-900" />
                       ) : (
                         <span
-                          className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase shrink-0 ${
-                            isActive
-                              ? 'bg-indigo-100 dark:bg-white/20 text-indigo-700 dark:text-white'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                          }`}
+                          className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase shrink-0 ${isActive
+                            ? 'bg-indigo-100 dark:bg-white/20 text-indigo-700 dark:text-white'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                            }`}
                         >
                           {item.badge}
                         </span>
@@ -403,9 +397,8 @@ export const AdminLayout: React.FC = () => {
               setSidebarOpen(false);
               navigate('/dashboard');
             }}
-            className={`rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center border border-slate-200 dark:border-slate-700/60 ${
-              sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
-            }`}
+            className={`rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center border border-slate-200 dark:border-slate-700/60 ${sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
+              }`}
             title="Quay lại giao diện học tập của học viên"
           >
             <div className="flex items-center gap-2">
@@ -415,9 +408,8 @@ export const AdminLayout: React.FC = () => {
             {!sidebarCollapsed && <span className="text-[10px] text-slate-400">&rarr;</span>}
           </button>
 
-          <div className={`flex items-center rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 ${
-            sidebarCollapsed ? 'flex-col gap-1.5 p-1 w-9 mx-auto' : 'justify-between p-2'
-          }`}>
+          <div className={`flex items-center rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 ${sidebarCollapsed ? 'flex-col gap-1.5 p-1 w-9 mx-auto' : 'justify-between p-2'
+            }`}>
             <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
               <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
                 {user?.displayName?.charAt(0).toUpperCase() || 'A'}
@@ -434,9 +426,8 @@ export const AdminLayout: React.FC = () => {
 
             <button
               onClick={toggleTheme}
-              className={`rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition flex items-center justify-center ${
-                sidebarCollapsed ? 'w-7 h-7 p-0' : 'p-1.5'
-              }`}
+              className={`rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition flex items-center justify-center ${sidebarCollapsed ? 'w-7 h-7 p-0' : 'p-1.5'
+                }`}
               title="Đổi giao diện"
             >
               {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
@@ -449,34 +440,31 @@ export const AdminLayout: React.FC = () => {
           2. MAIN CONTENT AREA & DEDICATED ADMIN TOPBAR
           ======================================================================= */}
       <div
-        className={`flex-1 flex flex-col min-w-0 ${
-          isLockedHeightRoute
-            ? 'h-dvh max-h-dvh overflow-hidden overscroll-none'
-            : 'overflow-x-hidden'
-        }`}
+        className={`flex-1 flex flex-col min-w-0 ${isLockedHeightRoute
+          ? 'h-dvh max-h-dvh overflow-hidden overscroll-none'
+          : 'overflow-x-hidden'
+          }`}
       >
         {/* Real-time Operational Toast Banner */}
         {liveToast && (
           <div className="fixed top-14 right-4 z-50 max-w-sm w-full animate-in slide-in-from-top-3 duration-200">
             <div
-              className={`p-3 rounded-2xl border backdrop-blur-2xl shadow-2xl flex items-start gap-3 ${
-                liveToast.priority === 'CRITICAL'
-                  ? 'bg-rose-950/90 border-rose-500/80 text-white'
-                  : liveToast.priority === 'HIGH'
+              className={`p-3 rounded-2xl border backdrop-blur-2xl shadow-2xl flex items-start gap-3 ${liveToast.priority === 'CRITICAL'
+                ? 'bg-rose-950/90 border-rose-500/80 text-white'
+                : liveToast.priority === 'HIGH'
                   ? 'bg-amber-950/90 border-amber-500/80 text-white'
                   : 'bg-slate-900/95 border-slate-700/80 text-white'
-              }`}
+                }`}
             >
               <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-emerald-400 animate-ping" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1 mb-0.5">
                   <span className="text-xs font-bold truncate">{liveToast.title}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
-                      liveToast.priority === 'CRITICAL'
-                        ? 'bg-rose-500 text-white'
-                        : 'bg-slate-800 text-slate-300'
-                    }`}
+                    className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${liveToast.priority === 'CRITICAL'
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-slate-800 text-slate-300'
+                      }`}
                   >
                     {liveToast.priority}
                   </span>
@@ -571,11 +559,10 @@ export const AdminLayout: React.FC = () => {
 
         {/* Outlet for Sub-Pages */}
         <main
-          className={`flex-1 min-w-0 ${
-            isLockedHeightRoute
-              ? 'p-1 sm:p-1.5 overflow-hidden flex flex-col h-[calc(100dvh-56px)] max-h-[calc(100dvh-56px)] min-h-0'
-              : 'p-4 sm:p-5 lg:p-6 space-y-6'
-          }`}
+          className={`flex-1 min-w-0 ${isLockedHeightRoute
+            ? 'p-1 sm:p-1.5 overflow-hidden flex flex-col h-[calc(100dvh-56px)] max-h-[calc(100dvh-56px)] min-h-0'
+            : 'p-4 sm:p-5 lg:p-6 space-y-6'
+            }`}
         >
           <Outlet />
         </main>
