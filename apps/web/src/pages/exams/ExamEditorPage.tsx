@@ -402,6 +402,16 @@ export const ExamEditorPage: React.FC = () => {
           </div>
 
           <div>
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Không gian học tập (Tự động kế thừa)
+            </label>
+            <div className="flex items-center gap-2.5 h-[38px] px-3.5 rounded-xl border mt-1 bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white">
+              <span className="text-base">{activeLanguage.flag}</span>
+              <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
+            </div>
+          </div>
+
+          <div>
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Loại kỳ thi</label>
             <CustomDropdown
               trigger={
@@ -425,13 +435,26 @@ export const ExamEditorPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Cấp độ (Level)</label>
-            <input
-              type="text"
-              value={level}
-              onChange={(e) => setLevel(e.target.value)}
-              placeholder="B1-B2 / Band 6.5 / N3 / HSK4..."
-              className="w-full text-xs px-3.5 py-2.5 rounded-xl border mt-1 bg-white dark:bg-slate-900"
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Cấp độ ({activeLanguage.nativeName})
+            </label>
+            <CustomDropdown
+              trigger={
+                <button className="w-full text-xs p-2.5 rounded-xl border mt-1 bg-white dark:bg-slate-900 flex items-center justify-between">
+                  <span>{level || 'Chọn hoặc nhập cấp độ...'}</span>
+                </button>
+              }
+              options={[
+                ...(activeLanguage.supportedLevels || ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).map((lvl) => ({
+                  value: lvl,
+                  label: `${lvl} — Trình độ ${lvl}`,
+                })),
+                { value: 'Beginner', label: 'Beginner (Sơ cấp)' },
+                { value: 'Intermediate', label: 'Intermediate (Trung cấp)' },
+                { value: 'Advanced', label: 'Advanced (Nâng cao)' },
+              ]}
+              onSelect={(val) => setLevel(val)}
+              className="w-full"
             />
           </div>
 

@@ -22,6 +22,7 @@ import {
 import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
 import { useI18n } from '../../i18n';
+import { SUPPORTED_LANGUAGES } from '../../config/languages';
 
 interface CommunityWord {
   id: string;
@@ -185,7 +186,13 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     { value: 'REJECTED', label: '❌ Bị từ chối (Rejected)' },
   ];
 
-  const deckList = Array.isArray(decks) ? decks : [];
+  const [spaceFilter, setSpaceFilter] = useState('ALL');
+
+  const baseDecks = Array.isArray(decks) ? decks : [];
+  const deckList = baseDecks.filter((d: any) => {
+    if (spaceFilter === 'ALL') return true;
+    return d.languageId === spaceFilter || d.languageSpaceId === spaceFilter;
+  });
   const pendingCount = deckList.filter((d) => d.status === 'PENDING').length;
   const approvedCount = deckList.filter((d) => d.status === 'APPROVED').length;
 
@@ -254,10 +261,23 @@ export const AdminSharedVocabularyPage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <FilterSelect
+            value={spaceFilter}
+            onChange={(val) => setSpaceFilter(String(val))}
+            options={[
+              { value: 'ALL', label: '🌐 Tất cả không gian học' },
+              ...SUPPORTED_LANGUAGES.map((lang) => ({
+                value: lang.id,
+                label: `${lang.flag} ${lang.nativeName} (${lang.name})`,
+              })),
+            ]}
+            className="w-56"
+          />
+
+          <FilterSelect
             value={statusFilter}
             onChange={(val) => setStatusFilter(String(val))}
             options={statusOptions}
-            className="w-56"
+            className="w-48"
           />
 
           <button
