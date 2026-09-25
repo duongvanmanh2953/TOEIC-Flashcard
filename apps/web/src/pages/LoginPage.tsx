@@ -5,8 +5,8 @@ import { LogIn, AlertCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('pro@vocabflow.ai');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showForgot, setShowForgot] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -88,44 +88,7 @@ export const LoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Quick Demo Accounts Selection */}
-          <div className="p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/50 dark:border-indigo-800/40 space-y-2">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
-              ⚡ Tài khoản cố định có sẵn:
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('pro@vocabflow.ai');
-                  setPassword('password123');
-                }}
-                className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold border transition flex items-center justify-center gap-1 ${
-                  email === 'pro@vocabflow.ai'
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>Học Viên Pro</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('admin@vocabflow.ai');
-                  setPassword('admin123');
-                }}
-                className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold border transition flex items-center justify-center gap-1 ${
-                  email === 'admin@vocabflow.ai'
-                    ? 'bg-purple-600 text-white border-purple-500 shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <ShieldCheck className="w-3 h-3" />
-                <span>Admin Quản Trị</span>
-              </button>
-            </div>
-          </div>
+
 
           <button
             type="submit"
@@ -224,33 +187,7 @@ export const LoginPage: React.FC = () => {
           </Link>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5 text-center">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Tài khoản sẵn có để thử nghiệm:
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-[11px]">
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('pro@vocabflow.ai');
-                setPassword('password123');
-              }}
-              className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold transition flex items-center gap-1"
-            >
-              <span>👑 Full Pro (pro@vocabflow.ai)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('admin@vocabflow.ai');
-                setPassword('admin123');
-              }}
-              className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold transition flex items-center gap-1"
-            >
-              <span>🛡️ Admin (admin@vocabflow.ai)</span>
-            </button>
-          </div>
-        </div>
+
       </div>
 
       <ForgotPasswordModal

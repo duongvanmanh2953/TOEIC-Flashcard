@@ -26,6 +26,7 @@ import {
   BarChart3,
   Activity,
   Layers,
+  HelpCircle,
 } from 'lucide-react';
 import {
   AdminButton,
@@ -103,6 +104,22 @@ export const AdminOverviewPage: React.FC = () => {
           >
             Làm mới
           </AdminButton>
+
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            icon={<AlertTriangle className="w-3.5 h-3.5 text-rose-500" />}
+            onClick={() => {
+              const key = window.prompt('Nhập mã bảo mật để reset toàn bộ hệ thống (dữ liệu người dùng, v.v):');
+              if (key) {
+                api.post('/admin/system/reset-all', { passkey: key })
+                  .then(() => alert('Khôi phục hệ thống thành công!'))
+                  .catch(err => alert('Lỗi: ' + (err.response?.data?.message || err.message)));
+              }
+            }}
+          >
+            <span className="text-rose-500 font-bold">Reset All</span>
+          </AdminButton>
         </div>
       </div>
 
@@ -144,7 +161,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">Doanh Thu (MRR)</span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Doanh Thu (MRR) <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tổng doanh thu định kỳ hàng tháng từ các gói đăng ký VIP" /></span>
             <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5 mt-0.5 truncate">
               <ArrowUpRight className="w-3 h-3" /> +14.2% MoM
             </span>
@@ -162,7 +179,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">Lợi Nhuận Ròng</span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Lợi Nhuận Ròng <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Doanh thu trừ đi các chi phí vận hành, server, và nhân sự" /></span>
             <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium block mt-0.5 truncate">Margin: 45.4%</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
@@ -178,7 +195,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">Chi Phí Vận Hành</span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Chi Phí Vận Hành <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tổng chi phí trả cho AWS, OpenAI, TTS API và CDN" /></span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block mt-0.5 truncate">Kiểm soát định mức</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
@@ -194,7 +211,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">Dòng Tiền Thuần</span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Dòng Tiền Thuần <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tiền mặt thực tế thu về sau khi trừ các khoản giữ chỗ hoặc pending" /></span>
             <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium block mt-0.5 truncate">Thực nhận ví PayOS</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
@@ -210,7 +227,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">Tổng Học Viên</span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Tổng Học Viên <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tổng số học viên đã đăng ký tài khoản trên hệ thống" /></span>
             <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5 mt-0.5 truncate">
               <ArrowUpRight className="w-3 h-3" /> +120 tuần này
             </span>
@@ -228,7 +245,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate">Lấp Đầy Phòng Đấu</span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Lấp Đầy Phòng Đấu <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tỷ lệ người chơi hoạt động trong các phòng thi đấu đối kháng" /></span>
             <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium block mt-0.5 truncate">Khung 20:00 - 22:00</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">

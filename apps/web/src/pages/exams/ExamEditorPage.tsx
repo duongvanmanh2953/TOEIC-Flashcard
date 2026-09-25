@@ -108,6 +108,12 @@ export const ExamEditorPage: React.FC = () => {
   const [validImportQuestions, setValidImportQuestions] = useState<ParsedExamQuestion[]>([]);
   const [invalidImportQuestions, setInvalidImportQuestions] = useState<InvalidExamQuestionRow[]>([]);
 
+  // Guidance / Help Modal State
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
+  // Guidance / Help Modal State
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
   // Distinct parts / categories extracted from questions
   const availableParts = useMemo(() => {
     const parts = new Set<string>();
@@ -519,6 +525,15 @@ export const ExamEditorPage: React.FC = () => {
             className="hidden"
             onChange={(e) => handleEditorFileUpload(e, 'pptx')}
           />
+
+          <button
+            type="button"
+            onClick={() => setShowHelpModal(true)}
+            className="btn-glass-secondary text-xs !py-2.5 !px-4 font-bold shadow-sm flex items-center gap-1.5 cursor-pointer text-indigo-600 dark:text-indigo-400"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Hướng Dẫn</span>
+          </button>
 
           <button
             type="button"
@@ -1343,6 +1358,70 @@ export const ExamEditorPage: React.FC = () => {
         invalidQuestions={invalidImportQuestions}
         onConfirmImport={handleAppendImportedQuestions}
       />
+
+      {/* Help / Guidance Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowHelpModal(false)} />
+          <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                  <HelpCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Hướng dẫn tạo Bộ Đề thi</h3>
+                  <p className="text-xs text-slate-500">Tìm hiểu cách thiết lập một bộ đề tiêu chuẩn</p>
+                </div>
+              </div>
+              <button onClick={() => setShowHelpModal(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-6 text-sm text-slate-600 dark:text-slate-300">
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-500" />
+                  1. Thông tin cơ bản
+                </h4>
+                <p>Điền đầy đủ thông tin mô tả bộ đề. Nếu bạn đặt <strong>Mật khẩu bảo vệ</strong>, học viên sẽ phải nhập đúng mật khẩu để vào thi. Hệ thống hỗ trợ nhiều loại đề thi như TOEIC, JLPT, IELTS, v.v.</p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-emerald-500" />
+                  2. Quản lý câu hỏi & Phân Part (Phần thi)
+                </h4>
+                <p>Sử dụng trường <strong>Phần thi / Part</strong> ở mỗi câu hỏi để chia bộ đề thành các Part khác nhau (VD: Part 1, Part 2, Reading...). Học viên sẽ thấy câu hỏi được nhóm theo các Part này khi làm bài.</p>
+                <p>Bấm vào nút <strong>+ Thêm ảnh/Âm thanh</strong> để gắn link file nghe (.mp3) hoặc hình ảnh mô tả cho các câu hỏi Listening hoặc biểu đồ.</p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-amber-500" />
+                  3. Giải thích chuyên sâu (Why Wrong?)
+                </h4>
+                <p>Bấm <strong>+ Thêm giải thích chi tiết cho từng lựa chọn</strong> để viết lời giải thích vì sao phương án đó sai hoặc đúng. Điều này giúp hệ thống AI Tutor hỗ trợ học viên tốt hơn khi họ làm sai.</p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-cyan-500" />
+                  4. Import Hàng Loạt (Excel/PPT)
+                </h4>
+                <p>Tiết kiệm thời gian bằng cách sử dụng nút <strong>Import Hàng Loạt</strong> ở trên cùng. Tải file Excel mẫu về, điền dữ liệu theo cột có sẵn, và tải lên hệ thống. Bộ đề của bạn sẽ được tự động tạo.</p>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <button onClick={() => setShowHelpModal(false)} className="btn-glass-primary !px-6 !py-2.5 font-bold">
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

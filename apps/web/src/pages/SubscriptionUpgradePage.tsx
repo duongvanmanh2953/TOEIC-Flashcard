@@ -130,6 +130,8 @@ export const SubscriptionUpgradePage: React.FC = () => {
         'Phát âm giọng đọc chuẩn bản xứ US/UK',
         '10 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
         '3 Lượt Trích Xuất Text-to-Vocab / Ngày',
+        'Lưu trữ cá nhân 50MB (Media giới hạn)',
+        'Giới hạn TTS (Chất lượng tiêu chuẩn)',
         'Duyệt bộ thẻ học cộng đồng công khai',
       ],
       limits: { aiChat: 10, voiceAiMinutes: 0 },
@@ -152,9 +154,11 @@ export const SubscriptionUpgradePage: React.FC = () => {
       unlimitedReviews: true,
       features: [
         'Tất cả tính năng trong gói Free',
-        '50 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
+        '50 Lượt Tham Vấn AI Tutor / Ngày',
         '15 Lượt Trích Xuất Văn Bản (Text-to-Vocab) / Ngày',
         '5 Lượt Dệt Câu Chuyện (AI Story) / Ngày',
+        'Lưu trữ cá nhân 500MB (Ảnh 5MB, Audio 10MB)',
+        'Tăng hạn mức sinh giọng nói TTS',
         '🚑 Memory Rescue cảnh báo từ vựng sắp quên',
         'Bảo lưu chuỗi Streak 3 ngày/tháng',
       ],
@@ -178,13 +182,14 @@ export const SubscriptionUpgradePage: React.FC = () => {
       unlimitedReviews: true,
       features: [
         'Tất cả tính năng trong gói Plus',
-        '200 Lượt Tham Vấn AI Tutor / Ngày (Reset 00:00)',
+        '200 Lượt Tham Vấn AI Tutor / Ngày',
         '50 Lượt Trích Xuất Text-to-Vocab / Ngày',
         '20 Lượt Dệt Câu Chuyện AI Story / Ngày',
-        '🚑 Memory Rescue toàn diện chuyên sâu',
+        'Lưu trữ khổng lồ 5GB (Ảnh 10MB, Audio 20MB)',
+        'Hỗ trợ Link Media External & Import hàng loạt',
+        'TTS Chất lượng Studio & Không giới hạn',
         'Phân tích chuẩn đoán CEFR & Đường cong quên lãng',
-        'Ưu tiên băng thông máy chủ mô hình AI tốc độ cao',
-        'Không giới hạn phục hồi chuỗi Streak',
+        'Ưu tiên tốc độ, Không giới hạn phục hồi Streak',
       ],
       limits: { aiChat: 200, voiceAiMinutes: 60 },
       permissions: { aiChat: true, voiceAi: true, personalMemory: true, pronunciationCoach: true, advancedAnalytics: true, englishTwin: true },
@@ -322,7 +327,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
       </div>
 
       {/* Dynamic Pricing Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch w-full max-w-6xl mx-auto">
         {displayPlans.map((plan) => {
           const isFree = plan.priceMonthly === 0;
           const isPlanPro = plan.tier === 'PRO';
@@ -442,23 +447,26 @@ export const SubscriptionUpgradePage: React.FC = () => {
 
                 {/* Bullets */}
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 leading-normal">
-                  {plan.features?.map((f, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <Check
-                        className={`w-4 h-4 shrink-0 ${
-                          isPlanPro
-                            ? 'text-purple-600 dark:text-purple-400'
-                            : isPlanPlus
-                            ? 'text-brand-600 dark:text-brand-400'
-                            : 'text-emerald-600 dark:text-emerald-400'
-                        }`}
-                      />
-                      <span>{f}</span>
-                    </li>
-                  ))}
+                  {plan.features?.map((f, i) => {
+                    const isPremiumFeature = f.includes('Lưu trữ') || f.includes('Import') || f.includes('TTS') || f.includes('CEFR');
+                    return (
+                      <li key={i} className={`flex items-start gap-2.5 ${isPremiumFeature ? 'font-medium' : ''}`}>
+                        <Check
+                          className={`w-4 h-4 shrink-0 mt-0.5 ${
+                            isPlanPro
+                              ? 'text-purple-600 dark:text-purple-400'
+                              : isPlanPlus
+                              ? 'text-brand-600 dark:text-brand-400'
+                              : 'text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        />
+                        <span>{f}</span>
+                      </li>
+                    );
+                  })}
                   {!isFree && (
-                    <li className="flex items-center gap-2 text-slate-400 text-[11px]">
-                      <Check className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <li className="flex items-center gap-2.5 text-slate-400 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>Chu kỳ {billingCycle === 'yearly' ? 'Hàng năm' : 'Hàng tháng'}</span>
                     </li>
                   )}
@@ -579,6 +587,16 @@ export const SubscriptionUpgradePage: React.FC = () => {
                   feature: 'Bảo lưu chuỗi học Streak linh hoạt',
                   getVal: (p: PlanItem) =>
                     p.tier === 'PRO' ? 'Không giới hạn phục hồi ✓' : p.tier === 'PLUS' ? '3 ngày/tháng ✓' : '1 ngày/tháng',
+                },
+                {
+                  feature: 'Dung lượng lưu trữ cá nhân (Media storage)',
+                  getVal: (p: PlanItem) =>
+                    p.tier === 'PRO' ? '5 GB (Ảnh 10MB/file)' : p.tier === 'PLUS' ? '500 MB (Ảnh 5MB/file)' : '50 MB',
+                },
+                {
+                  feature: 'Tích hợp Media External & Import',
+                  getVal: (p: PlanItem) =>
+                    p.tier === 'PRO' ? 'Import hàng loạt & Link ngoài ✓' : p.tier === 'PLUS' ? 'Giới hạn Import' : 'Không hỗ trợ',
                 },
                 {
                   feature: 'Chu kỳ gia hạn & Cam kết',

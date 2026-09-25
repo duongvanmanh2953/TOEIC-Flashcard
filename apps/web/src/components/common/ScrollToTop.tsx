@@ -30,8 +30,8 @@ export const ScrollToTop: React.FC = () => {
       'main, [data-scroll-container="true"], .overflow-y-auto'
     );
     containers.forEach((el) => {
-      // Don't reset fixed aside navigation drawers
-      if (el.tagName.toLowerCase() !== 'aside') {
+      // Don't reset fixed aside navigation drawers or their scrollable children
+      if (!el.closest('aside')) {
         el.scrollTop = 0;
       }
     });
