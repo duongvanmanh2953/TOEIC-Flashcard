@@ -1087,7 +1087,7 @@ export const ExamEditorPage: React.FC = () => {
                             className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer font-semibold"
                           >
                             <ImageIcon className="w-3 h-3" />
-                            <span>{showMediaMap[idx] || q.imageUrl || q.audioUrl ? 'Đóng Media' : '+ Thêm Ảnh/Âm thanh'}</span>
+                            <span>{showMediaMap[idx] || q.imageUrl || q.audioUrl ? 'Đóng Media' : 'Thêm Ảnh/Âm thanh'}</span>
                           </button>
                         </div>
                       </div>
@@ -1191,7 +1191,7 @@ export const ExamEditorPage: React.FC = () => {
                           onClick={() => setShowWhyWrongMap((p) => ({ ...p, [idx]: !p[idx] }))}
                           className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
                         >
-                          {showWhyWrongMap[idx] ? 'Ẩn lý do vì sao chọn/sai' : '+ Thêm giải thích chi tiết cho từng lựa chọn'}
+                          {showWhyWrongMap[idx] ? 'Ẩn lý do vì sao chọn/sai' : <span className="flex items-center gap-1"><Plus className="w-3 h-3" /> Thêm giải thích chi tiết cho từng lựa chọn</span>}
                         </button>
                       </div>
 
@@ -1304,7 +1304,8 @@ export const ExamEditorPage: React.FC = () => {
           onClick={handleAddQuestion}
           className="w-full py-4 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-500 text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center gap-2 transition cursor-pointer bg-white/40 dark:bg-slate-900/40"
         >
-          <span>+ Thêm một câu hỏi mới vào bộ đề</span>
+          <Plus className="w-5 h-5" />
+          <span>Thêm một câu hỏi mới vào bộ đề</span>
         </button>
       </div>
 
@@ -1330,9 +1331,10 @@ export const ExamEditorPage: React.FC = () => {
           <button
             type="button"
             onClick={handleAddQuestion}
-            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold transition cursor-pointer h-10"
           >
-            + Thêm câu
+            <Plus className="w-4 h-4" />
+            <span>Thêm câu</span>
           </button>
           <button
             type="button"
