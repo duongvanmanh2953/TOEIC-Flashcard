@@ -1,6 +1,23 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import * as fs from 'fs';
+
+const possibleEnvPaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), '../../.env'),
+  path.resolve(__dirname, '../../../.env'),
+  path.resolve(__dirname, '../../.env'),
+];
+for (const envFile of possibleEnvPaths) {
+  if (fs.existsSync(envFile)) {
+    dotenv.config({ path: envFile });
+    break;
+  }
+}
+dotenv.config();
 
 const prisma = new PrismaClient();
 
