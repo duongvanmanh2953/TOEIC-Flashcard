@@ -22,10 +22,12 @@ import { idbSetCache, idbGetCache, idbSaveWords } from '../lib/idb';
 import { audioEngine } from '../lib/audioEngine';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import { CountryFlag } from '../components/language/CountryFlag';
+import { useLearningContext } from '../contexts/LearningContext';
 
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
   const { isGuest } = useAuth();
+  const { activeLanguage } = useLearningContext();
   const [words, setWords] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [search, setSearch] = useState('');

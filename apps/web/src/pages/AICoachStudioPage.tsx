@@ -475,6 +475,30 @@ export const AICoachStudioPage: React.FC = () => {
     }
   };
 
+  const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
+  const [translatingMsgId, setTranslatingMsgId] = useState<string | null>(null);
+
+  const handleTranslateMessage = async (msgId: string, text: string) => {
+    if (translatedMessages[msgId]) {
+      const next = { ...translatedMessages };
+      delete next[msgId];
+      setTranslatedMessages(next);
+      return;
+    }
+    
+    setTranslatingMsgId(msgId);
+    try {
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=vi&dt=t&q=${encodeURIComponent(text)}`);
+      const data = await res.json();
+      const translation = data[0].map((item: any) => item[0]).join('');
+      setTranslatedMessages(prev => ({ ...prev, [msgId]: translation }));
+    } catch (err) {
+      console.error('Translation failed', err);
+    } finally {
+      setTranslatingMsgId(null);
+    }
+  };
+
   const handleSendMessage = async (textToSend?: string) => {
     const msg = (textToSend || transcript).trim();
     if (!msg) return;
@@ -1397,6 +1421,11 @@ export const AICoachStudioPage: React.FC = () => {
                         provider={(msg as any).provider}
                         onSelectQuizOption={(opt) => handleSend(opt)}
                       />
+                      {translatedMessages[msg.id] && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
+                          💡 {translatedMessages[msg.id]}
+                        </div>
+                      )}
                       <div className="flex items-center gap-1.5 mt-1.5 ml-1">
                         <button
                           onClick={() => audioEngine.playWord(msg.content, { lang: activeLanguage.id })}
@@ -1406,11 +1435,12 @@ export const AICoachStudioPage: React.FC = () => {
                           <Volume2 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => window.open(`https://translate.google.com/?sl=auto&tl=vi&text=${encodeURIComponent(msg.content)}`, '_blank')}
+                          onClick={() => handleTranslateMessage(msg.id, msg.content)}
+                          disabled={translatingMsgId === msg.id}
                           className="p-1.5 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors"
                           title="Dịch sang tiếng Việt"
                         >
-                          <Globe className="w-3.5 h-3.5" />
+                          {translatingMsgId === msg.id ? <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-indigo-500 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
