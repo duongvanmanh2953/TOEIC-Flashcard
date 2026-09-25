@@ -111,9 +111,6 @@ export const ExamEditorPage: React.FC = () => {
   // Guidance / Help Modal State
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  // Guidance / Help Modal State
-  const [showHelpModal, setShowHelpModal] = useState(false);
-
   // Distinct parts / categories extracted from questions
   const availableParts = useMemo(() => {
     const parts = new Set<string>();
