@@ -2791,7 +2791,7 @@ export const MyWordBankPage: React.FC = () => {
                           )}
                         </div>
 
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap pt-0.5">
                           {deck.computedWordCount} từ vựng
                         </span>
                       </div>

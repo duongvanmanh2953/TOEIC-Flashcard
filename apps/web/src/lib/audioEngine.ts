@@ -422,6 +422,14 @@ class AudioEngine {
           return;
         }
 
+        const hasNonViBlock = blocks.some((b) => !b.isVi);
+        if (hasNonViBlock && !targetVoice) {
+          // Fallback to Google Translate TTS for target language
+          const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(clean)}&tl=${effectiveLocale}&client=tw-ob`;
+          this.playFromUrl(url, 1.0, sessionId, callbacks);
+          return;
+        }
+
         let completedBlocks = 0;
         blocks.forEach((block) => {
           const utterance = new SpeechSynthesisUtterance(block.text);
@@ -651,8 +659,9 @@ class AudioEngine {
       // Select optimal OS voice matching language and gender preference
       const voices = window.speechSynthesis.getVoices();
 
+      let chosenVoice: SpeechSynthesisVoice | undefined;
+
       if (voices && voices.length > 0) {
-        let chosenVoice: SpeechSynthesisVoice | undefined;
         const matchingVoices = voices.filter((v) => v.lang.toLowerCase().replace('_', '-').startsWith(langPrefix));
         const genderPref = this.getPreferredVoiceGender(); // 'male' | 'female'
 
@@ -693,16 +702,16 @@ class AudioEngine {
             chosenVoice = matchingVoices[0];
           }
         }
+      }
 
-        if (chosenVoice) {
-          utterance.voice = chosenVoice;
-        } else {
-          // If browser has no local voice for this language (e.g. Thai, German, Russian), stream from fallback TTS
-          const cleanText = text.replace(/[*#_`]/g, '').trim();
-          const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${langPrefix}&client=tw-ob`;
-          this.playFromUrl(fallbackUrl, rate, sessionId, callbacks);
-          return;
-        }
+      if (chosenVoice) {
+        utterance.voice = chosenVoice;
+      } else {
+        // If browser has no local voice for this language (or voices aren't loaded yet), stream from fallback TTS
+        const cleanText = text.replace(/[*#_`]/g, '').trim();
+        const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLocale}&client=tw-ob`;
+        this.playFromUrl(fallbackUrl, rate, sessionId, callbacks);
+        return;
       }
 
       // Retain utterance to prevent GC bug on Chrome & iOS

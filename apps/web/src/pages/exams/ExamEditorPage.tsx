@@ -28,6 +28,7 @@ import {
   EyeOff,
   Filter,
   Plus,
+  X,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
