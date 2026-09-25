@@ -24,9 +24,46 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('@postgres:543
   process.env.DATABASE_URL = process.env.DATABASE_URL.replace('@postgres:5432', '@localhost:5432');
 }
 
+import * as readline from 'readline';
+
 const prisma = new PrismaClient();
 
+function promptPassword(query: string): Promise<string> {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    
+    // Hide password typing
+    let isPasswordHidden = false;
+    rl.question(query, (answer) => {
+      rl.close();
+      console.log('\n');
+      resolve(answer);
+    });
+    
+    (rl as any)._writeToOutput = function _writeToOutput(stringToWrite: string) {
+      if (['\r', '\n', '\r\n'].includes(stringToWrite)) {
+        (process.stdout as any).write(stringToWrite);
+      } else if (rl.line.length > 0) {
+        (process.stdout as any).write('*');
+      } else {
+        (process.stdout as any).write(stringToWrite);
+      }
+    };
+  });
+}
+
 async function main() {
+  const masterPass = process.env.SERVER_MASTER_PASSWORD || 'vocalflow2026';
+  const inputPass = await promptPassword('🔑 Nhập mật khẩu máy chủ (Master Password) để tiếp tục: ');
+
+  if (inputPass !== masterPass) {
+    console.error('❌ Mật khẩu không chính xác! Hủy thao tác bảo mật.');
+    process.exit(1);
+  }
+
   const adminEmail = 'admin@vocabflow.ai';
   // Generate a highly secure 24-character password with symbols
   const rawBytes = crypto.randomBytes(18).toString('base64');
