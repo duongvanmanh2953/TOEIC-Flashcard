@@ -189,7 +189,7 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
             <div
               key={card.uniqueId}
               onClick={() => handleCardClick(card)}
-              className="w-28 sm:w-36 h-36 sm:h-44 cursor-pointer relative group"
+              className="w-28 sm:w-36 h-36 sm:h-44 cursor-pointer relative group perspective-1000"
             >
               <div
                 className={`w-full h-full rounded-2xl sm:rounded-3xl transition-transform duration-500 transform-style-3d ${

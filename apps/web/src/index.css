@@ -1250,22 +1250,76 @@ a.card-brand-effect {
   background-color: rgba(129, 140, 248, 0.75) !important;
 }
 
-/* 3D Flip Flashcard Engine */
-.perspective-1000 {
-  perspective: 1000px;
+/* Universal 3D Flashcard Flip Engine */
+.perspective-1000,
+.flashcard-container {
+  perspective: 1200px;
+  -webkit-perspective: 1200px;
+  perspective-origin: 50% 50%;
+  -webkit-perspective-origin: 50% 50%;
+  position: relative;
+  width: 100%;
 }
 
-.transform-style-3d {
+.transform-style-3d,
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  -webkit-transform-origin: 50% 50%;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.backface-hidden {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.rotate-y-180 {
+.rotate-y-180,
+.flashcard-inner.is-flipped {
   transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+.backface-hidden,
+.flashcard-face {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  transform-origin: 50% 50% !important;
+  -webkit-transform-origin: 50% 50% !important;
+  border-radius: 1.5rem;
+}
+
+.flashcard-front {
+  transform: rotateY(0deg) translateZ(1px);
+  -webkit-transform: rotateY(0deg) translateZ(1px);
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.flashcard-back {
+  transform: rotateY(180deg) translateZ(1px);
+  -webkit-transform: rotateY(180deg) translateZ(1px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.flashcard-inner.is-flipped .flashcard-front {
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+.flashcard-inner.is-flipped .flashcard-back {
+  z-index: 3 !important;
+  pointer-events: auto !important;
 }
 
 /* ==========================================================================

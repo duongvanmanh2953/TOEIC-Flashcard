@@ -110,6 +110,14 @@ export class CreateQuestionDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOptionDto)
   options?: CreateOptionDto[];
+
+  @IsOptional()
+  @IsNumber()
+  rowNumber?: number;
+
+  @IsOptional()
+  @IsArray()
+  warnings?: string[];
 }
 
 export class CreateExamDto {

@@ -96,20 +96,18 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
   return (
     <div
       onClick={onFlip}
-      className={`relative w-full cursor-pointer perspective-1000 select-none group ${className}`}
+      className={`flashcard-container cursor-pointer select-none group ${className}`}
       title="Bấm để lật thẻ (hoặc nhấn phím Space)"
     >
       <div
-        className={`relative w-full rounded-3xl transition-transform duration-500 transform-style-3d shadow-xl border ${
-          isFlipped ? 'rotate-y-180' : ''
-        } border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl`}
+        className={`flashcard-inner ${isFlipped ? 'is-flipped' : ''}`}
         style={{ minHeight: '340px' }}
       >
         {/* ========================================================================= */}
         {/* FRONT SIDE (Word, Pronunciation, Script Helpers, Audio)                  */}
         {/* ========================================================================= */}
         <div
-          className={`absolute inset-0 p-6 sm:p-8 flex flex-col justify-between backface-hidden rounded-3xl ${
+          className={`flashcard-face flashcard-front p-6 sm:p-8 flex flex-col justify-between rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 ${
             isFlipped ? 'pointer-events-none' : ''
           }`}
         >
@@ -297,7 +295,7 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
         {/* BACK SIDE (Meaning, Examples, Explanations, Extra Grammar)              */}
         {/* ========================================================================= */}
         <div
-          className={`absolute inset-0 p-6 sm:p-8 flex flex-col justify-between backface-hidden rotate-y-180 rounded-3xl ${
+          className={`flashcard-face flashcard-back p-6 sm:p-8 flex flex-col justify-between rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 ${
             !isFlipped ? 'pointer-events-none' : ''
           }`}
         >

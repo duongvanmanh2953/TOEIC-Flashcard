@@ -56,10 +56,21 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
   const [draftExplanation, setDraftExplanation] = useState('');
   const [draftGrammar, setDraftGrammar] = useState('');
 
+  const [selectedPartFilter, setSelectedPartFilter] = useState<string>('ALL');
+
+  // Extract distinct parts / categories
+  const availableParts = React.useMemo(() => {
+    const parts = new Set<string>();
+    validQuestions.forEach((q) => {
+      const p = q.skill || q.category || 'Chung';
+      parts.add(p);
+    });
+    return Array.from(parts);
+  }, [validQuestions]);
+
   // Calculate warning count
   const warningQuestions = validQuestions.filter((q) => q.warnings && q.warnings.length > 0);
   const totalCount = validQuestions.length + invalidQuestions.length;
-
 
   const handleStartEdit = (inv: InvalidExamQuestionRow) => {
     setEditingRow(inv.rowNumber);
@@ -71,6 +82,19 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
     setDraftAnswer(inv.rawRow?.dap_an_dung || inv.rawRow?.correct_answer || '');
     setDraftExplanation(inv.rawRow?.giai_thich_chi_tiet || inv.rawRow?.explanation || '');
     setDraftGrammar(inv.rawRow?.chu_diem_ngu_phap || inv.rawRow?.grammar_type || '');
+  };
+
+  const handleStartEditValid = (val: ParsedExamQuestion, idx: number) => {
+    const rowId = val.rowNumber || val.questionNumber || idx + 1;
+    setEditingRow(rowId);
+    setDraftPrompt(val.questionText || '');
+    setDraftOptA(val.options.find((o) => o.key === 'A')?.text || '');
+    setDraftOptB(val.options.find((o) => o.key === 'B')?.text || '');
+    setDraftOptC(val.options.find((o) => o.key === 'C')?.text || '');
+    setDraftOptD(val.options.find((o) => o.key === 'D')?.text || '');
+    setDraftAnswer(Array.isArray(val.correctAnswer) ? val.correctAnswer[0] : (val.correctAnswer || 'A'));
+    setDraftExplanation(val.explanation || '');
+    setDraftGrammar(val.grammarType || '');
   };
 
   const handleSaveFixedQuestion = (rowNumber: number) => {
@@ -92,25 +116,50 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
       return;
     }
 
-    const newValidQuestion: ParsedExamQuestion = {
-      rowNumber,
-      questionNumber: rowNumber,
-      questionText: draftPrompt.trim(),
-      questionType: 'MULTIPLE_CHOICE',
-      options,
-      correctAnswer: draftAnswer.trim().toUpperCase(),
-      acceptedAnswers: [],
-      explanation: draftExplanation.trim() || undefined,
-      grammarType: draftGrammar.trim() || undefined,
-      category: 'Grammar',
-      skill: 'Reading',
-      difficulty: 'MEDIUM',
-      points: 1.0,
-      tags: ['fixed-in-preview'],
-    };
+    const isExistingValid = validQuestions.some(
+      (q) => q.rowNumber === rowNumber || q.questionNumber === rowNumber
+    );
 
-    setValidQuestions((prev) => [...prev, newValidQuestion].sort((a, b) => (a.questionNumber || 0) - (b.questionNumber || 0)));
-    setInvalidQuestions((prev) => prev.filter((item) => item.rowNumber !== rowNumber));
+    if (isExistingValid) {
+      setValidQuestions((prev) =>
+        prev.map((q) => {
+          if (q.rowNumber === rowNumber || q.questionNumber === rowNumber) {
+            return {
+              ...q,
+              questionText: draftPrompt.trim(),
+              options,
+              correctAnswer: draftAnswer.trim().toUpperCase(),
+              explanation: draftExplanation.trim() || undefined,
+              grammarType: draftGrammar.trim() || undefined,
+              warnings: [],
+            };
+          }
+          return q;
+        })
+      );
+    } else {
+      const newValidQuestion: ParsedExamQuestion = {
+        rowNumber,
+        questionNumber: rowNumber,
+        questionText: draftPrompt.trim(),
+        questionType: 'MULTIPLE_CHOICE',
+        options,
+        correctAnswer: draftAnswer.trim().toUpperCase(),
+        acceptedAnswers: [],
+        explanation: draftExplanation.trim() || undefined,
+        grammarType: draftGrammar.trim() || undefined,
+        category: 'Grammar',
+        skill: 'Reading',
+        difficulty: 'MEDIUM',
+        points: 1.0,
+        tags: ['fixed-in-preview'],
+      };
+
+      setValidQuestions((prev) =>
+        [...prev, newValidQuestion].sort((a, b) => (a.questionNumber || 0) - (b.questionNumber || 0))
+      );
+      setInvalidQuestions((prev) => prev.filter((item) => item.rowNumber !== rowNumber));
+    }
     setEditingRow(null);
   };
 
@@ -563,79 +612,260 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
 
                 {/* TABLE OF VALID / WARNING QUESTIONS */}
                 {(activeTab === 'all' || activeTab === 'valid' || activeTab === 'warning') && (
-                  <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider text-[11px]">
-                          <tr>
-                            <th className="py-2.5 px-3 w-12 text-center">#</th>
-                            <th className="py-2.5 px-3 min-w-[240px]">Nội dung câu hỏi</th>
-                            <th className="py-2.5 px-3 w-16 text-center">Đáp án</th>
-                            <th className="py-2.5 px-3 w-28">Loại</th>
-                            <th className="py-2.5 px-3 w-24">Độ khó</th>
-                            <th className="py-2.5 px-3 w-28 text-center">Trạng thái</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/40">
-                          {validQuestions
-                            .filter((q) => {
-                              if (activeTab === 'warning') return q.warnings && q.warnings.length > 0;
-                              return true;
-                            })
-                            .map((val, idx) => {
-                              const hasWarning = val.warnings && val.warnings.length > 0;
-                              return (
-                                <tr
-                                  key={`tbl-${val.questionNumber || idx}`}
-                                  className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition ${
-                                    hasWarning ? 'bg-amber-50/20 dark:bg-amber-950/10' : ''
-                                  }`}
-                                >
-                                  <td className="py-2.5 px-3 font-black text-center text-slate-500">
-                                    {val.questionNumber || idx + 1}
-                                  </td>
-                                  <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">
-                                    <div className="line-clamp-2">{val.questionText}</div>
-                                    {val.explanation && (
-                                      <div className="text-[10px] text-slate-500 italic line-clamp-1 mt-0.5">
-                                        {val.explanation}
-                                      </div>
+                  <div className="space-y-3">
+                    {/* Part / Section Filter */}
+                    {availableParts.length > 1 && (
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                        <span className="text-[11px] font-bold text-slate-500 shrink-0">Lọc theo phần:</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPartFilter('ALL')}
+                          className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition ${
+                            selectedPartFilter === 'ALL'
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                          }`}
+                        >
+                          Tất cả ({validQuestions.length})
+                        </button>
+                        {availableParts.map((part) => {
+                          const count = validQuestions.filter((q) => (q.skill || q.category || 'Chung') === part).length;
+                          return (
+                            <button
+                              key={part}
+                              type="button"
+                              onClick={() => setSelectedPartFilter(part)}
+                              className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition ${
+                                selectedPartFilter === part
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                              }`}
+                            >
+                              {part} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-extrabold uppercase tracking-wider text-[11px]">
+                            <tr>
+                              <th className="py-2.5 px-3 w-12 text-center">#</th>
+                              <th className="py-2.5 px-3 min-w-[240px]">Nội dung câu hỏi</th>
+                              <th className="py-2.5 px-3 w-16 text-center">Đáp án</th>
+                              <th className="py-2.5 px-3 w-28">Loại</th>
+                              <th className="py-2.5 px-3 w-24">Độ khó</th>
+                              <th className="py-2.5 px-3 w-28 text-center">Trạng thái</th>
+                              <th className="py-2.5 px-3 w-20 text-center">Thao tác</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/40">
+                            {validQuestions
+                              .filter((q) => {
+                                if (activeTab === 'warning' && (!q.warnings || q.warnings.length === 0)) return false;
+                                if (selectedPartFilter !== 'ALL') {
+                                  const p = q.skill || q.category || 'Chung';
+                                  if (p !== selectedPartFilter) return false;
+                                }
+                                return true;
+                              })
+                              .map((val, idx) => {
+                                const rowId = val.rowNumber || val.questionNumber || idx + 1;
+                                const isEditing = editingRow === rowId;
+                                const hasWarning = val.warnings && val.warnings.length > 0;
+
+                                return (
+                                  <React.Fragment key={`tbl-${val.questionNumber || idx}`}>
+                                    <tr
+                                      className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition ${
+                                        hasWarning ? 'bg-amber-50/20 dark:bg-amber-950/10' : ''
+                                      } ${isEditing ? 'bg-indigo-50/30 dark:bg-indigo-950/20' : ''}`}
+                                    >
+                                      <td className="py-2.5 px-3 font-black text-center text-slate-500">
+                                        {val.questionNumber || idx + 1}
+                                      </td>
+                                      <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">
+                                        <div className="line-clamp-2">{val.questionText}</div>
+                                        {val.explanation && (
+                                          <div className="text-[10px] text-slate-500 italic line-clamp-1 mt-0.5">
+                                            {val.explanation}
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center">
+                                        <span className="px-2 py-0.5 rounded-md font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
+                                          {Array.isArray(val.correctAnswer) ? val.correctAnswer.join(', ') : val.correctAnswer}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
+                                        {val.questionType}
+                                      </td>
+                                      <td className="py-2.5 px-3">
+                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                          {val.difficulty}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center">
+                                        {hasWarning ? (
+                                          <span
+                                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                                            title={val.warnings?.join('; ')}
+                                          >
+                                            <AlertTriangle className="w-3 h-3" />
+                                            Cảnh báo
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                                            <CheckCircle2 className="w-3 h-3" />
+                                            Hợp lệ
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => isEditing ? setEditingRow(null) : handleStartEditValid(val, idx)}
+                                          className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition ${
+                                            isEditing
+                                              ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
+                                              : 'bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
+                                          }`}
+                                          title="Chỉnh sửa câu hỏi này"
+                                        >
+                                          <Edit2 className="w-3 h-3" />
+                                          <span>{isEditing ? 'Đóng' : 'Sửa'}</span>
+                                        </button>
+                                      </td>
+                                    </tr>
+
+                                    {/* Inline Edit Row for Valid Question */}
+                                    {isEditing && (
+                                      <tr>
+                                        <td colSpan={7} className="p-4 bg-indigo-50/40 dark:bg-slate-800/60 border-y border-indigo-200 dark:border-indigo-900/60">
+                                          <div className="space-y-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm animate-fade-in">
+                                            <div className="font-extrabold text-xs text-indigo-600 dark:text-indigo-400 flex items-center justify-between">
+                                              <span className="flex items-center gap-1.5">
+                                                <Edit2 className="w-3.5 h-3.5" />
+                                                <span>Chỉnh sửa nội dung Câu #{val.questionNumber || idx + 1}:</span>
+                                              </span>
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingRow(null)}
+                                                className="text-slate-400 hover:text-slate-600 text-xs font-semibold"
+                                              >
+                                                ✕ Hủy
+                                              </button>
+                                            </div>
+
+                                            <div>
+                                              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Nội dung đề bài:</label>
+                                              <textarea
+                                                value={draftPrompt}
+                                                onChange={(e) => setDraftPrompt(e.target.value)}
+                                                rows={2}
+                                                className="w-full text-xs p-2.5 rounded-xl border mt-0.5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                                              />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                              <div>
+                                                <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Lựa chọn A:</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftOptA}
+                                                  onChange={(e) => setDraftOptA(e.target.value)}
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Lựa chọn B:</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftOptB}
+                                                  onChange={(e) => setDraftOptB(e.target.value)}
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Lựa chọn C:</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftOptC}
+                                                  onChange={(e) => setDraftOptC(e.target.value)}
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Lựa chọn D:</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftOptD}
+                                                  onChange={(e) => setDraftOptD(e.target.value)}
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                              <div>
+                                                <label className="text-[10px] font-black text-emerald-600">Đáp án đúng (A / B / C / D):</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftAnswer}
+                                                  onChange={(e) => setDraftAnswer(e.target.value.toUpperCase())}
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border-2 border-emerald-500 font-black uppercase bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="text-[10px] font-semibold text-slate-500">Chủ điểm ngữ pháp:</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftGrammar}
+                                                  onChange={(e) => setDraftGrammar(e.target.value)}
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="text-[10px] font-semibold text-slate-500">Lời giải thích chi tiết:</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftExplanation}
+                                                  onChange={(e) => setDraftExplanation(e.target.value)}
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-end gap-2 pt-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingRow(null)}
+                                                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                              >
+                                                Hủy
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => handleSaveFixedQuestion(rowId)}
+                                                className="btn-glass-primary text-xs !py-1.5 !px-4 flex items-center gap-1.5 font-bold shadow-xs"
+                                              >
+                                                <Save className="w-3.5 h-3.5" />
+                                                <span>Lưu cập nhật</span>
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </td>
+                                      </tr>
                                     )}
-                                  </td>
-                                  <td className="py-2.5 px-3 text-center">
-                                    <span className="px-2 py-0.5 rounded-md font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
-                                      {Array.isArray(val.correctAnswer) ? val.correctAnswer.join(', ') : val.correctAnswer}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">
-                                    {val.questionType}
-                                  </td>
-                                  <td className="py-2.5 px-3">
-                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                      {val.difficulty}
-                                    </span>
-                                  </td>
-                                  <td className="py-2.5 px-3 text-center">
-                                    {hasWarning ? (
-                                      <span
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
-                                        title={val.warnings?.join('; ')}
-                                      >
-                                        <AlertTriangle className="w-3 h-3" />
-                                        Cảnh báo
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        Hợp lệ
-                                      </span>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                        </tbody>
-                      </table>
+                                  </React.Fragment>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -657,7 +887,25 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
               <button
                 type="button"
                 disabled={validQuestions.length === 0}
-                onClick={() => onConfirmImport(validQuestions)}
+                onClick={() => {
+                  const sanitized = validQuestions.map((q, idx) => ({
+                    questionNumber: q.questionNumber || idx + 1,
+                    questionText: q.questionText?.trim() || '',
+                    questionType: q.questionType || 'MULTIPLE_CHOICE',
+                    options: (q.options || []).map((o) => ({ key: o.key, text: o.text?.trim() || '' })),
+                    correctAnswer: q.correctAnswer,
+                    explanation: q.explanation?.trim() || undefined,
+                    sourceExplanation: q.sourceExplanation?.trim() || undefined,
+                    optionExplanations: q.optionExplanations || undefined,
+                    grammarType: q.grammarType?.trim() || undefined,
+                    category: q.category || 'Grammar',
+                    skill: q.skill || 'Reading',
+                    difficulty: q.difficulty || 'MEDIUM',
+                    points: q.points || 1.0,
+                    tags: Array.isArray(q.tags) ? q.tags : [],
+                  }));
+                  onConfirmImport(sanitized as any);
+                }}
                 className="btn-glass-primary text-xs !py-2.5 !px-5 flex items-center gap-1.5 font-bold shadow-lg disabled:opacity-50"
               >
                 <span>Nhập {validQuestions.length} câu hợp lệ</span>

@@ -497,13 +497,33 @@ export const ExamBankPage: React.FC = () => {
 
     try {
       const defaultTitle = importFileName.replace(/\.[^/.]+$/, '').replace(/[_.-]+/g, ' ');
+      const cleanQuestions = finalQuestions.map((q, idx) => ({
+        questionNumber: q.questionNumber || idx + 1,
+        questionText: q.questionText?.trim() || '',
+        questionType: q.questionType || 'MULTIPLE_CHOICE',
+        options: (q.options || []).map((opt) => ({
+          key: opt.key,
+          text: opt.text?.trim() || '',
+        })),
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation?.trim() || undefined,
+        sourceExplanation: q.sourceExplanation?.trim() || undefined,
+        optionExplanations: q.optionExplanations || undefined,
+        grammarType: q.grammarType?.trim() || undefined,
+        category: q.category || 'Grammar',
+        skill: q.skill || 'Reading',
+        difficulty: q.difficulty || 'MEDIUM',
+        points: q.points || 1.0,
+        tags: Array.isArray(q.tags) ? q.tags : [],
+      }));
+
       await api.post('/exams', {
         title: defaultTitle,
         description: `Bộ đề được tạo tự động từ file ${importFileName}`,
         examType: 'TOEIC',
         durationMinutes: 60,
         status: 'DRAFT',
-        questions: finalQuestions,
+        questions: cleanQuestions,
       });
 
       setImportModalOpen(false);
