@@ -73,6 +73,24 @@ export function CustomSelect<T extends string | number>({
   const selectedOption = options.find((opt) => opt.value === value);
   const SelectedIcon = selectedOption?.icon;
 
+  const renderIcon = (
+    iconNode: React.ComponentType<{ className?: string }> | React.ReactNode,
+    iconClass: string
+  ) => {
+    if (!iconNode) return null;
+    if (React.isValidElement(iconNode)) {
+      return <div className="shrink-0 flex items-center">{iconNode}</div>;
+    }
+    if (
+      typeof iconNode === 'function' ||
+      (typeof iconNode === 'object' && iconNode !== null && ('$$typeof' in iconNode || 'render' in iconNode))
+    ) {
+      const IconComponent = iconNode as React.ComponentType<{ className?: string }>;
+      return <IconComponent className={iconClass} />;
+    }
+    return <div className="shrink-0 flex items-center">{iconNode}</div>;
+  };
+
   // Collision detection: Check if dropdown needs to flip upwards
   const updatePosition = () => {
     if (!containerRef.current) return;
@@ -205,20 +223,8 @@ export function CustomSelect<T extends string | number>({
           } backdrop-blur-xl transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {LeftIcon && (
-              typeof LeftIcon === 'function' ? (
-                <LeftIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0" />
-              ) : (
-                <div className="shrink-0 flex items-center">{LeftIcon}</div>
-              )
-            )}
-            {SelectedIcon && (
-              typeof SelectedIcon === 'function' ? (
-                <SelectedIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-              ) : (
-                <div className="shrink-0 flex items-center">{SelectedIcon}</div>
-              )
-            )}
+            {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0')}
+            {renderIcon(SelectedIcon, 'w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0')}
             <span
               className={`truncate font-medium ${
                 selectedOption ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-400'
@@ -327,16 +333,11 @@ export function CustomSelect<T extends string | number>({
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        {OptionIcon && (
-                          typeof OptionIcon === 'function' ? (
-                            <OptionIcon
-                              className={`w-4 h-4 shrink-0 ${
-                                isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'
-                              }`}
-                            />
-                          ) : (
-                            <div className="shrink-0 flex items-center">{OptionIcon}</div>
-                          )
+                        {renderIcon(
+                          OptionIcon,
+                          `w-4 h-4 shrink-0 ${
+                            isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'
+                          }`
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
                           <span className="whitespace-normal break-words leading-snug">{opt.label}</span>

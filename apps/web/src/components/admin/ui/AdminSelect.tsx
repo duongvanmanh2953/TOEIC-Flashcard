@@ -67,11 +67,25 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
     }
   }, [isOpen, searchable]);
 
-  // Sizing definitions
   const sizeClasses = {
     sm: 'min-h-[38px] py-1.5 px-3 text-xs rounded-xl',
     md: 'min-h-[44px] py-2 px-3.5 text-sm rounded-xl',
     lg: 'min-h-[50px] py-2.5 px-4 text-base rounded-xl',
+  };
+
+  const renderOptionIcon = (iconItem: any, iconClass: string = 'w-4 h-4 shrink-0') => {
+    if (!iconItem) return null;
+    if (React.isValidElement(iconItem)) {
+      return <span className="shrink-0 flex items-center">{iconItem}</span>;
+    }
+    if (
+      typeof iconItem === 'function' ||
+      (typeof iconItem === 'object' && iconItem !== null && ('$$typeof' in iconItem || 'render' in iconItem))
+    ) {
+      const IconComp = iconItem;
+      return <IconComp className={iconClass} />;
+    }
+    return <span className="shrink-0 flex items-center">{iconItem}</span>;
   };
 
   const filteredOptions = options.filter((opt) =>
@@ -158,7 +172,7 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2.5 truncate" title={selectedOptions[0].label}>
-              {selectedOptions[0].icon && <span className="shrink-0">{selectedOptions[0].icon}</span>}
+              {selectedOptions[0].icon && renderOptionIcon(selectedOptions[0].icon, 'w-4 h-4 shrink-0')}
               <span className="truncate font-medium">{selectedOptions[0].label}</span>
               {selectedOptions[0].badge && (
                 <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-semibold">
@@ -230,7 +244,7 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
                     `}
                   >
                     <div className="flex items-center gap-2.5 truncate" title={opt.label}>
-                      {opt.icon && <span className="shrink-0">{opt.icon}</span>}
+                      {opt.icon && renderOptionIcon(opt.icon, 'w-4 h-4 shrink-0')}
                       <span className="truncate">{opt.label}</span>
                       {opt.badge && (
                         <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 font-medium">

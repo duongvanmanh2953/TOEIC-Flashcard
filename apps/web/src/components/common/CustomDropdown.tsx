@@ -277,11 +277,14 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     if (React.isValidElement(iconItem)) {
       return <span className="shrink-0 flex items-center">{iconItem}</span>;
     }
-    if (typeof iconItem === 'function') {
+    if (
+      typeof iconItem === 'function' ||
+      (typeof iconItem === 'object' && iconItem !== null && ('$$typeof' in iconItem || 'render' in iconItem))
+    ) {
       const IconComp = iconItem;
       return <IconComp className={defaultClass} />;
     }
-    return null;
+    return <span className="shrink-0 flex items-center">{iconItem}</span>;
   };
 
   const sizeClasses = {

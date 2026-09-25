@@ -49,6 +49,24 @@ export function FilterSelect<T extends string | number>({
     sm: 'py-1.5 px-2.5 text-xs rounded-lg',
   }[size];
 
+  const renderIcon = (
+    iconNode: React.ComponentType<{ className?: string }> | React.ReactNode,
+    iconClass: string
+  ) => {
+    if (!iconNode) return null;
+    if (React.isValidElement(iconNode)) {
+      return <div className="shrink-0 flex items-center">{iconNode}</div>;
+    }
+    if (
+      typeof iconNode === 'function' ||
+      (typeof iconNode === 'object' && iconNode !== null && ('$$typeof' in iconNode || 'render' in iconNode))
+    ) {
+      const IconComponent = iconNode as React.ComponentType<{ className?: string }>;
+      return <IconComponent className={iconClass} />;
+    }
+    return <div className="shrink-0 flex items-center">{iconNode}</div>;
+  };
+
   return (
     <div className={`relative inline-block ${className}`} ref={containerRef}>
       <button
@@ -56,20 +74,8 @@ export function FilterSelect<T extends string | number>({
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition rounded-lg font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 ${sizeClasses}`}
       >
-        {LeftIcon && (
-          typeof LeftIcon === 'function' ? (
-            <LeftIcon className="w-3 h-3 text-slate-400 shrink-0" />
-          ) : (
-            <div className="shrink-0 flex items-center">{LeftIcon}</div>
-          )
-        )}
-        {selectedOption?.icon && !LeftIcon && (
-          typeof selectedOption.icon === 'function' ? (
-            <selectedOption.icon className="w-3 h-3 text-slate-400 shrink-0" />
-          ) : (
-            <div className="shrink-0 flex items-center">{selectedOption.icon}</div>
-          )
-        )}
+        {renderIcon(LeftIcon, 'w-3 h-3 text-slate-400 shrink-0')}
+        {!LeftIcon && renderIcon(selectedOption?.icon, 'w-3 h-3 text-slate-400 shrink-0')}
         {label && <span className="text-slate-500 font-normal">{label}:</span>}
         <span className="font-semibold text-slate-200 truncate max-w-[130px]">
           {selectedOption ? selectedOption.label : String(value)}
@@ -108,13 +114,7 @@ export function FilterSelect<T extends string | number>({
                   }`}
                 >
                   <div className="flex items-center gap-1.5 truncate">
-                    {OptIcon && (
-                      typeof OptIcon === 'function' ? (
-                        <OptIcon className="w-3 h-3 text-slate-400 shrink-0" />
-                      ) : (
-                        <div className="shrink-0 flex items-center">{OptIcon}</div>
-                      )
-                    )}
+                    {renderIcon(OptIcon, 'w-3 h-3 text-slate-400 shrink-0')}
                     <span className="truncate">{opt.label}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">

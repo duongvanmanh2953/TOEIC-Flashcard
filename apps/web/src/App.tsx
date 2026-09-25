@@ -212,6 +212,7 @@ export const App: React.FC = () => {
               <Route path="/custom-quiz" element={<CustomQuizPage />} />
               <Route path="/placement-test" element={<PlacementTestPage />} />
               <Route path="/ai-tutor" element={<AICoachStudioPage />} />
+              <Route path="/ai-turbo" element={<Navigate to="/ai-tutor" replace />} />
               <Route path="/coach" element={<AICoachStudioPage />} />
               <Route path="/games" element={<GameLobbyPage />} />
               <Route path="/games/word-match" element={<WordMatchGame />} />
