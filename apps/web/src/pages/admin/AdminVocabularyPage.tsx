@@ -25,6 +25,7 @@ import { FilterSelect } from '../../components/ui/FilterSelect';
 import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { confirmModal } from '../../components/common/ConfirmDialog';
+import { SpeechButton } from '../../components/common/SpeechButton';
 
 interface VocabularyItem {
   id: string;
@@ -548,9 +549,12 @@ export const AdminVocabularyPage: React.FC = () => {
                       <td className="py-3.5 px-4">
                         <div className="font-extrabold text-white text-sm flex items-center gap-1.5">
                           <span>{item.word}</span>
-                          {item.audioUrl && (
-                            <Volume2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                          )}
+                          <SpeechButton
+                            text={item.word}
+                            audioUrl={item.audioUrl}
+                            size="sm"
+                            showSlowOption={false}
+                          />
                         </div>
                         {item.phonetic && (
                           <span className="text-[11px] text-slate-500 tabular-nums">

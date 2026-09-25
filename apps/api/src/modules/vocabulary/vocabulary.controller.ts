@@ -29,7 +29,10 @@ export class VocabularyController {
 
     try {
       const cleanText = text.trim().slice(0, 300);
-      const targetLang = lang === 'en' ? 'en' : 'vi';
+      let targetLang = 'en';
+      if (lang && /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4})?$/i.test(lang.trim())) {
+        targetLang = lang.trim();
+      }
       const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLang}&client=gtx`;
 
       const upstream = await fetch(url, {

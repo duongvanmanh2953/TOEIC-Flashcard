@@ -5,13 +5,14 @@ export const useAudioPronunciation = (defaultLang?: string) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentText, setCurrentText] = useState('');
 
-  const speak = useCallback((text: string, rate: number = 1.0, lang?: string) => {
-    if (!text) return;
-    setCurrentText(text);
+  const speak = useCallback((text: string, rate: number = 1.0, lang?: string, audioUrl?: string) => {
+    if (!text && !audioUrl) return;
+    setCurrentText(text || '');
 
     const effectiveLang = lang || defaultLang || audioEngine.getPreferredTargetLocale() || 'en-US';
 
     audioEngine.playWord(text, {
+      audioUrl,
       rate,
       lang: effectiveLang,
       onStart: () => setIsPlaying(true),

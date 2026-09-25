@@ -5,6 +5,7 @@ import { getSpeechLocale } from '../../config/languages';
 
 interface SpeechButtonProps {
   text: string;
+  audioUrl?: string;
   lang?: string; // BCP-47 locale (e.g. 'en-US', 'de-DE', 'ja-JP') or language ID ('de', 'es', 'ja')
   className?: string;
   showSlowOption?: boolean;
@@ -13,6 +14,7 @@ interface SpeechButtonProps {
 
 export const SpeechButton: React.FC<SpeechButtonProps> = ({
   text,
+  audioUrl,
   lang = 'en-US',
   className = '',
   showSlowOption = true,
@@ -22,7 +24,7 @@ export const SpeechButton: React.FC<SpeechButtonProps> = ({
   const isThisPlaying = isPlaying && currentText === text;
   const resolvedLocale = getSpeechLocale(lang);
 
-  const handleSpeak = (rate: number = 1.0, e?: React.MouseEvent | React.TouchEvent) => {
+  const handleSpeak = (rate: number = 1.0, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
@@ -30,7 +32,7 @@ export const SpeechButton: React.FC<SpeechButtonProps> = ({
     if (isThisPlaying && rate === 1.0) {
       stop();
     } else {
-      speak(text, rate, resolvedLocale);
+      speak(text, rate, resolvedLocale, audioUrl);
     }
   };
 
@@ -51,7 +53,6 @@ export const SpeechButton: React.FC<SpeechButtonProps> = ({
       <button
         type="button"
         onClick={(e) => handleSpeak(1.0, e)}
-        onTouchEnd={(e) => handleSpeak(1.0, e)}
         className={`${padSizes[size]} bg-slate-100/80 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition active:scale-95 flex items-center justify-center cursor-pointer ${
           isThisPlaying
             ? 'ring-2 ring-indigo-500 scale-105 bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/40 shadow-xs'
@@ -67,7 +68,6 @@ export const SpeechButton: React.FC<SpeechButtonProps> = ({
         <button
           type="button"
           onClick={(e) => handleSpeak(0.75, e)}
-          onTouchEnd={(e) => handleSpeak(0.75, e)}
           className="px-2 py-1 rounded-xl bg-slate-100/60 dark:bg-slate-800/60 hover:bg-amber-500/10 text-slate-500 hover:text-amber-600 text-xs transition border border-slate-200/40 dark:border-slate-800 active:scale-95 flex items-center gap-1 font-bold text-[10px] cursor-pointer"
           title="Đọc chậm 0.75x"
           aria-label={`Đọc chậm từ ${text}`}

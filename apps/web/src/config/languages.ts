@@ -518,7 +518,15 @@ export const DEFAULT_LEARNING_LANGUAGE = 'en';
 
 export function getLanguage(id: string): LanguageDefinition {
   const clean = (id || '').toLowerCase().trim();
-  const found = SUPPORTED_LANGUAGES.find((lang) => lang.id === clean || lang.code === clean);
+  const langPrefix = clean.split(/[-_]/)[0];
+  const found = SUPPORTED_LANGUAGES.find(
+    (lang) =>
+      lang.id === clean ||
+      lang.code === clean ||
+      lang.speechLocale.toLowerCase() === clean ||
+      lang.id === langPrefix ||
+      lang.code === langPrefix
+  );
   return found || SUPPORTED_LANGUAGES[0];
 }
 
@@ -545,6 +553,10 @@ export function getLanguageFlag(idOrCode?: string): string {
 
 export function getSpeechLocale(idOrCode?: string): string {
   if (!idOrCode) return 'en-US';
-  const lang = getLanguage(idOrCode);
+  const clean = idOrCode.trim();
+  if (/^[a-zA-Z]{2,3}[-_][a-zA-Z0-9]{2,4}$/.test(clean)) {
+    return clean.replace('_', '-');
+  }
+  const lang = getLanguage(clean);
   return lang?.speechLocale || 'en-US';
 }

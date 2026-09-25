@@ -165,7 +165,7 @@ export const VocabularyExplorerPage: React.FC = () => {
 
   const playAudio = (url?: string, text?: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    audioEngine.playWord(text || '', { audioUrl: url, lang: activeLanguage.id });
+    audioEngine.playWord(text || '', { audioUrl: url, lang: activeLanguage?.speechLocale || activeLanguage?.id });
   };
 
   const handleToggleFavorite = async (wordId: string, e: React.MouseEvent) => {
@@ -405,7 +405,12 @@ export const VocabularyExplorerPage: React.FC = () => {
                   <span className="truncate max-w-[160px]">
                     {item.topicItems?.[0]?.topic?.name || item.topic || 'General Business'}
                   </span>
-                  <SpeechButton text={item.word} showSlowOption={false} />
+                  <SpeechButton
+                    text={item.word}
+                    audioUrl={item.audioUrl}
+                    lang={activeLanguage?.speechLocale || activeLanguage?.id}
+                    showSlowOption={false}
+                  />
                 </div>
               </div>
             );
@@ -496,7 +501,12 @@ export const VocabularyExplorerPage: React.FC = () => {
                   <p className="text-sm tabular-nums text-slate-400 mt-0.5">{selectedWord.pronunciation}</p>
                 )}
               </div>
-              <SpeechButton text={selectedWord.word} showSlowOption={true} />
+              <SpeechButton
+                text={selectedWord.word}
+                audioUrl={selectedWord.audioUrl}
+                lang={activeLanguage?.speechLocale || activeLanguage?.id}
+                showSlowOption={true}
+              />
             </div>
 
             <div className="space-y-3 pt-2">

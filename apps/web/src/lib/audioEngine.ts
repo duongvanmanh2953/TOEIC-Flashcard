@@ -76,6 +76,47 @@ class AudioEngine {
   }
 
   /**
+   * Automatically detects the script / language family of a given text to ensure
+   * the correct SpeechSynthesis voice or TTS engine is used even if the default
+   * or passed locale does not match the actual text script (e.g. Chinese Hanzi, Japanese Kana, Korean Hangul).
+   */
+  public detectScriptLocale(text: string, defaultLocale: string = 'en-US'): string {
+    const clean = (text || '').trim();
+    if (!clean) return defaultLocale;
+
+    // Detect CJK Chinese Hanzi characters (Unified Ideographs & Extensions)
+    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(clean)) {
+      return 'zh-CN';
+    }
+    // Detect Japanese Hiragana / Katakana
+    if (/[\u3040-\u309f\u30a0-\u30ff]/.test(clean)) {
+      return 'ja-JP';
+    }
+    // Detect Korean Hangul
+    if (/[\uac00-\ud7af\u1100-\u11ff]/.test(clean)) {
+      return 'ko-KR';
+    }
+    // Detect Thai script
+    if (/[\u0e00-\u0e7f]/.test(clean)) {
+      return 'th-TH';
+    }
+    // Detect Cyrillic (Russian)
+    if (/[\u0400-\u04ff]/.test(clean)) {
+      return 'ru-RU';
+    }
+    // Detect Arabic script
+    if (/[\u0600-\u06ff]/.test(clean)) {
+      return 'ar-SA';
+    }
+    // Detect Vietnamese tone marks
+    if (/[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(clean)) {
+      return 'vi-VN';
+    }
+
+    return defaultLocale;
+  }
+
+  /**
    * Initializes automatic unlocking of audio primitives on the first user interaction.
    * Mobile browsers (iOS Safari, Chrome Mobile) require a user gesture to unlock Audio and AudioContext.
    */
@@ -222,16 +263,24 @@ class AudioEngine {
       }
     };
 
-    // Direct instantaneous Web Speech API playback (Zero network latency)
+    // 1. Direct audioUrl playback if provided
+    if (options.audioUrl && options.audioUrl.trim()) {
+      const success = await this.playFromUrl(options.audioUrl.trim(), rate, sessionId, options);
+      if (success) return;
+    }
+
+    // 2. Direct instantaneous Web Speech API playback (Zero network latency)
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       this.playViaSpeechSynthesis(text, rate, lang, sessionId, options);
       return;
     }
 
-    // Direct audioUrl playback if provided
-    if (options.audioUrl) {
-      const success = await this.playFromUrl(options.audioUrl, rate, sessionId, options);
-      if (success) return;
+    // 3. Direct backend proxy TTS if Web Speech API is unavailable
+    const cleanText = text.replace(/[*#_`]/g, '').trim();
+    if (cleanText) {
+      const targetLocale = this.detectScriptLocale(cleanText, lang);
+      const fallbackUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(targetLocale)}`;
+      await this.playFromUrl(fallbackUrl, rate, sessionId, options);
     }
   }
 
@@ -424,8 +473,8 @@ class AudioEngine {
 
         const hasNonViBlock = blocks.some((b) => !b.isVi);
         if (hasNonViBlock && !targetVoice) {
-          // Fallback to Google Translate TTS for target language
-          const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(clean)}&tl=${effectiveLocale}&client=tw-ob`;
+          // Fallback to server TTS for target language
+          const url = `/api/v1/vocabulary/tts?text=${encodeURIComponent(clean)}&lang=${encodeURIComponent(effectiveLocale)}`;
           this.playFromUrl(url, 1.0, sessionId, callbacks);
           return;
         }
@@ -547,7 +596,7 @@ class AudioEngine {
         onEnd: playNextChunk,
         onError: () => {
           // Fallback direct URL if proxy fails
-          const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=vi&client=tw-ob`;
+          const fallbackUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(chunk)}&lang=vi`;
           this.playFromUrl(fallbackUrl, rate, sessionId, {
             onEnd: playNextChunk,
             onError: playNextChunk,
@@ -630,10 +679,24 @@ class AudioEngine {
       return;
     }
 
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    const cleanText = text.replace(/[*#_`]/g, '').trim();
+    if (!cleanText) {
       this.isCurrentlyPlaying = false;
-      callbacks.onError?.('SpeechSynthesis not supported');
       callbacks.onEnd?.();
+      return;
+    }
+
+    // Auto-detect script or use resolved language locale
+    const targetLocale = this.detectScriptLocale(cleanText, lang || 'en-US');
+    const langPrefix = targetLocale.split(/[-_]/)[0].toLowerCase();
+
+    const fallbackToServerTTS = () => {
+      const fallbackUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(targetLocale)}`;
+      this.playFromUrl(fallbackUrl, rate, sessionId, callbacks);
+    };
+
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      fallbackToServerTTS();
       return;
     }
 
@@ -643,22 +706,8 @@ class AudioEngine {
       }
       window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = rate; // fast & crisp (1.25x)
-
-      // Determine target language
-      let targetLocale = lang || 'en-US';
-      const hasVi = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(text);
-      if (hasVi && (!lang || lang.startsWith('en'))) {
-        targetLocale = 'vi-VN';
-      }
-
-      utterance.lang = targetLocale;
-      const langPrefix = targetLocale.split(/[-_]/)[0].toLowerCase();
-
       // Select optimal OS voice matching language and gender preference
       const voices = window.speechSynthesis.getVoices();
-
       let chosenVoice: SpeechSynthesisVoice | undefined;
 
       if (voices && voices.length > 0) {
@@ -677,6 +726,7 @@ class AudioEngine {
                 n.includes('kyoko') ||
                 n.includes('yuna') ||
                 n.includes('xiaoxiao') ||
+                n.includes('huihui') ||
                 n.includes('katja') ||
                 n.includes('monica')
               );
@@ -693,6 +743,7 @@ class AudioEngine {
                 n.includes('stefan') ||
                 n.includes('nam') ||
                 n.includes('yunxi') ||
+                n.includes('kangkang') ||
                 n.includes('jorge')
               );
             });
@@ -704,17 +755,17 @@ class AudioEngine {
         }
       }
 
-      if (chosenVoice) {
-        utterance.voice = chosenVoice;
-      } else {
-        // If browser has no local voice for this language (or voices aren't loaded yet), stream from fallback TTS
-        const cleanText = text.replace(/[*#_`]/g, '').trim();
-        const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${targetLocale}&client=tw-ob`;
-        this.playFromUrl(fallbackUrl, rate, sessionId, callbacks);
+      if (!chosenVoice) {
+        // If device has no local voice for this language (e.g. Linux without Chinese/Asian voices), stream from server TTS
+        fallbackToServerTTS();
         return;
       }
 
-      // Retain utterance to prevent GC bug on Chrome & iOS
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = rate;
+      utterance.lang = targetLocale;
+      utterance.voice = chosenVoice;
+
       activeSpeechUtterances.add(utterance);
 
       utterance.onend = () => {
@@ -728,20 +779,25 @@ class AudioEngine {
       utterance.onerror = (e: any) => {
         activeSpeechUtterances.delete(utterance);
         if (this.currentSessionId === sessionId) {
-          this.isCurrentlyPlaying = false;
-          // Ignore canceled event if another word was triggered
           if (e.error !== 'canceled' && e.error !== 'interrupted') {
-            callbacks.onError?.(e);
+            console.warn('SpeechSynthesis error, falling back to server TTS:', e);
+            fallbackToServerTTS();
+          } else {
+            this.isCurrentlyPlaying = false;
+            callbacks.onEnd?.();
           }
-          callbacks.onEnd?.();
         }
       };
 
-      window.speechSynthesis.speak(utterance);
+      // Slight timeout to prevent Chromium cancel-speak collision bug
+      setTimeout(() => {
+        if (this.currentSessionId === sessionId) {
+          window.speechSynthesis.speak(utterance);
+        }
+      }, 10);
     } catch (err) {
-      this.isCurrentlyPlaying = false;
-      callbacks.onError?.(err);
-      callbacks.onEnd?.();
+      console.warn('SpeechSynthesis failed, falling back to server TTS:', err);
+      fallbackToServerTTS();
     }
   }
 
