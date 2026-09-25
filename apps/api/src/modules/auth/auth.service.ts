@@ -253,21 +253,26 @@ export class AuthService {
 
   async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
+    const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    const accessExpiresInStr = isAdmin ? '1d' : '7d';
+    const accessExpiresInSec = isAdmin ? 86400 : 604800; // 1 day or 7 days in seconds
+    const refreshExpiresInStr = isAdmin ? '2d' : '30d';
+
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_ACCESS_SECRET as string,
-        expiresIn: '15m',
+        expiresIn: accessExpiresInStr,
       }),
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_REFRESH_SECRET as string,
-        expiresIn: '7d',
+        expiresIn: refreshExpiresInStr,
       }),
     ]);
 
     return {
       accessToken,
       refreshToken,
-      expiresIn: 900, // 15 mins in seconds
+      expiresIn: accessExpiresInSec,
     };
   }
 

@@ -19,6 +19,11 @@ for (const envFile of possibleEnvPaths) {
 }
 dotenv.config();
 
+// Override postgres host if running from host machine (outside docker)
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('@postgres:5432')) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL.replace('@postgres:5432', '@localhost:5432');
+}
+
 const prisma = new PrismaClient();
 
 async function main() {
