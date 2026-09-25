@@ -10,6 +10,7 @@ import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
 import { LanguageBadge } from '../components/language/LanguageBadge';
+import { CountryFlag } from '../components/language/CountryFlag';
 import {
   idbSaveLocalDeck,
   idbGetLocalDecks,
@@ -95,7 +96,8 @@ export const CommunityDecksPage: React.FC = () => {
   const [unlockInputPassword, setUnlockInputPassword] = useState('');
   const [showUnlockPassword, setShowUnlockPassword] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'clone' | 'open-bank' | 'like' | 'dislike' | null>(null);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<'clone' | 'open-bank' | 'like' | 'dislike' | 'export' | null>(null);
 
   const isDeckLocked = (d: any) => {
     if (!d) return false;
@@ -117,7 +119,7 @@ export const CommunityDecksPage: React.FC = () => {
     }
     const targetUserId = deck.userId || deck.author?.id;
     if (targetUserId === user.id) {
-      alert('Bạn là chủ sở hữu kho từ này!');
+      alert('Bạn là chủ sở hữu kho từ này, không thể tự nhắn tin cho chính mình!');
       return;
     }
     window.dispatchEvent(
@@ -373,7 +375,7 @@ export const CommunityDecksPage: React.FC = () => {
     }
   };
 
-  const handleActionOnDeck = async (deck: any, action: 'view' | 'clone' | 'open-bank') => {
+  const handleActionOnDeck = async (deck: any, action: 'view' | 'clone' | 'open-bank' | 'export') => {
     if (action === 'view') {
       setSelectedDeck(deck);
       try {
@@ -403,7 +405,7 @@ export const CommunityDecksPage: React.FC = () => {
       return;
     }
 
-    if (action === 'clone') {
+    if (action === 'clone' || action === 'export') {
       setCloneActionDeck(deck);
     }
   };
@@ -444,7 +446,7 @@ export const CommunityDecksPage: React.FC = () => {
           const myDeckId = myDecks.find((md) => md.originDeckId === unlockedDeck.id || md.id === unlockedDeck.id || md.id === `cloned_${unlockedDeck.id}`)?.id || unlockedDeck.id;
           if (selectedDeck) setSelectedDeck(null);
           navigate(`/word-bank/${myDeckId}`);
-        } else if (action === 'clone') {
+        } else if (action === 'clone' || action === 'export') {
           setCloneActionDeck(unlockedDeck);
         } else if (action === 'like') {
           executeDeckLike(currentUnlockDeck);
@@ -738,6 +740,7 @@ export const CommunityDecksPage: React.FC = () => {
             phonetic: parts[1] || '',
             meaning: parts[2] || parts[0],
             example: parts[3] || '',
+            exampleTranslation: parts[4] || '',
           };
         })
         .filter((w) => w.word.length > 0);
@@ -1124,9 +1127,9 @@ export const CommunityDecksPage: React.FC = () => {
                             ...(!isMyDeck && !isAlreadyCloned
                               ? [{ value: 'clone', label: 'Lưu về kho của tôi', icon: Copy }]
                               : []),
-                            ...(isMyDeck
-                              ? [{ value: 'manage_access', label: 'Quản lý quyền (Access Key)', icon: Key }]
-                              : [{ value: 'contact_owner', label: 'Liên hệ chủ kho', icon: MessageSquare }]),
+                            ...(!isMyDeck
+                              ? [{ value: 'contact_owner', label: 'Liên hệ chủ kho', icon: MessageSquare }]
+                              : []),
                             ...(isProtected && !isUnlocked
                               ? [{ value: 'verify_key', label: 'Mở khóa bằng Access Key', icon: Key }]
                               : []),
@@ -1134,10 +1137,9 @@ export const CommunityDecksPage: React.FC = () => {
                           ]}
                           onSelect={(val) => {
                             if (val === 'clone') handleActionOnDeck(deck, 'clone');
-                            else if (val === 'manage_access') setAccessKeyManageDeck(deck);
                             else if (val === 'contact_owner') handleContactDeckOwner(deck);
                             else if (val === 'verify_key') setVerifyAccessKeyDeck(deck);
-                            else if (val === 'export') setCloneActionDeck(deck);
+                            else if (val === 'export') handleActionOnDeck(deck, 'export');
                           }}
                           align="right"
                         />
@@ -1602,17 +1604,7 @@ export const CommunityDecksPage: React.FC = () => {
                           <span>Xem kho từ</span>
                         </button>
 
-                        {isMyDeck ? (
-                          <button
-                            type="button"
-                            onClick={() => setAccessKeyManageDeck(selectedDeck)}
-                            className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs font-bold inline-flex items-center justify-center gap-1.5 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 cursor-pointer"
-                            title="Quản lý các mã Access Key cấp cho học viên"
-                          >
-                            <Key className="w-3.5 h-3.5 text-amber-500" />
-                            <span>Quản lý quyền</span>
-                          </button>
-                        ) : (
+                        {!isMyDeck && (
                           <button
                             type="button"
                             onClick={() => handleContactDeckOwner(selectedDeck)}
@@ -1653,7 +1645,7 @@ export const CommunityDecksPage: React.FC = () => {
                       onClick={() => {
                         if (isDeckLocked(selectedDeck)) {
                           setUnlockModalDeck(selectedDeck);
-                          setPendingAction('clone');
+                          setPendingAction('export');
                           setUnlockInputPassword('');
                           setUnlockError(null);
                           return;
@@ -1950,7 +1942,7 @@ export const CommunityDecksPage: React.FC = () => {
                   Không gian học tập (Tự động kế thừa)
                 </label>
                 <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white">
-                  <span className="text-base">{activeLanguage.flag}</span>
+                  <CountryFlag languageId={activeLanguage.id} size="sm" />
                   <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
                 </div>
               </div>
@@ -2318,7 +2310,12 @@ export const CommunityDecksPage: React.FC = () => {
             setUnlockedDeckIds((prev) => ({ ...prev, [verifyAccessKeyDeck.id]: true }));
             saveSessionUnlockedDeck(verifyAccessKeyDeck.id);
             alert(`Đã mở khóa thành công kho từ "${verifyAccessKeyDeck.title}"!`);
-            handleActionOnDeck(verifyAccessKeyDeck, 'open-bank');
+            if (pendingAction === 'clone' || pendingAction === 'export') {
+              setCloneActionDeck(verifyAccessKeyDeck);
+            } else {
+              handleActionOnDeck(verifyAccessKeyDeck, 'open-bank');
+            }
+            setPendingAction(null);
           }}
           onContactOwner={() => handleContactDeckOwner(verifyAccessKeyDeck)}
         />

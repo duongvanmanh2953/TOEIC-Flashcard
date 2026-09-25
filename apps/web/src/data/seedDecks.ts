@@ -43,7 +43,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'de_starter_a1',
       languageId: 'de',
-      title: '🇩🇪 German A1: Essential 500 Foundation',
+      title: 'German A1: Essential 500 Foundation',
       description: 'Core vocabulary every German learner must know: nouns with articles (der/die/das), essential verbs, and daily essentials.',
       category: 'Foundation',
       cefrLevel: 'A1',
@@ -253,7 +253,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'de_travel',
       languageId: 'de',
-      title: '🇩🇪 German for Travel & Daily Life',
+      title: 'German for Travel & Daily Life',
       description: 'Ordering food, booking hotels, navigating train stations and asking for directions in Germany, Austria, and Switzerland.',
       category: 'Travel',
       cefrLevel: 'A1',
@@ -313,7 +313,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'es_starter_a1',
       languageId: 'es',
-      title: '🇪🇸 Spanish A1: Essential 500 Foundation',
+      title: 'Spanish A1: Essential 500 Foundation',
       description: 'Master core Spanish words, masculine/feminine noun genders, and regular conversation starters.',
       category: 'Foundation',
       cefrLevel: 'A1',
@@ -543,7 +543,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'th_starter',
       languageId: 'th',
-      title: '🇹🇭 Thai Beginner Essentials',
+      title: 'Thai Beginner Essentials',
       description: 'Master polite Thai conversational greetings, key tones, and essential travel phrases.',
       category: 'Foundation',
       cefrLevel: 'Beginner',
@@ -681,7 +681,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'ko_starter',
       languageId: 'ko',
-      title: '🇰🇷 Korean TOPIK 1 Starter',
+      title: 'Korean TOPIK 1 Starter',
       description: 'Essential Hangul words with romanization and natural conversational examples.',
       category: 'Foundation',
       cefrLevel: 'TOPIK 1',
@@ -744,7 +744,7 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
     {
       id: 'fr_starter',
       languageId: 'fr',
-      title: '🇫🇷 French A1 Essentials',
+      title: 'French A1 Essentials',
       description: 'Core French vocabulary with noun genders (le/la), cafe culture, and daily life phrases.',
       category: 'Foundation',
       cefrLevel: 'A1',

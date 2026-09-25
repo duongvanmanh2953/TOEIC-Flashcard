@@ -23,6 +23,7 @@ import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
 import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
+import { CountryFlag } from '../../components/language/CountryFlag';
 
 interface CommunityWord {
   id: string;
@@ -264,10 +265,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             value={spaceFilter}
             onChange={(val) => setSpaceFilter(String(val))}
             options={[
-              { value: 'ALL', label: '🌐 Tất cả không gian học' },
+              { value: 'ALL', label: 'Tất cả không gian học' },
               ...SUPPORTED_LANGUAGES.map((lang) => ({
                 value: lang.id,
-                label: `${lang.flag} ${lang.nativeName} (${lang.name})`,
+                label: `${lang.nativeName} (${lang.name})`,
+                icon: <CountryFlag languageId={lang.id} size="xs" />,
               })),
             ]}
             className="w-56"

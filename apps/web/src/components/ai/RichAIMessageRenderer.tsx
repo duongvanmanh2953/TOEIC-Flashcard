@@ -195,7 +195,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
                     title={`Nghe câu ví dụ bằng ${activeLanguage?.name || 'tiếng bản xứ'}`}
                   >
                     <Volume2 className="w-3 h-3 text-amber-300" />
-                    <span>Nghe {activeLanguage?.id?.toUpperCase() || 'EN'}</span>
+                    <span className="flex items-center gap-1">Nghe <CountryFlag languageId={activeLanguage?.id || 'en'} size="xs" /></span>
                   </button>
                 </div>
                 <p className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-100 leading-relaxed italic">

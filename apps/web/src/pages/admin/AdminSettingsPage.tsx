@@ -27,6 +27,7 @@ import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { AdminToggle } from '../../components/admin/ui/AdminToggle';
+import { CountryFlag } from '../../components/language/CountryFlag';
 
 type SettingSectionKey =
   | 'general'
@@ -634,8 +635,8 @@ export const AdminSettingsPage: React.FC = () => {
                           handleUpdateField('localization', 'defaultLanguage', val);
                         }}
                         options={[
-                          { value: 'vi', label: 'Tiếng Việt (VI) - Ngôn ngữ chính' },
-                          { value: 'en', label: 'English (EN) - Global standard' },
+                          { value: 'vi', label: 'Tiếng Việt - Ngôn ngữ chính', icon: <CountryFlag languageId="vi" size="xs" /> },
+                          { value: 'en', label: 'English - Tiêu chuẩn quốc tế', icon: <CountryFlag languageId="en" size="xs" /> },
                         ]}
                         size="sm"
                       />

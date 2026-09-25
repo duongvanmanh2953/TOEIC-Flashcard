@@ -11,6 +11,7 @@ import { DAILY_PHRASES, KidPhrase } from '../data/phrases/phrasesData';
 import { evaluatePronunciation } from '../../lib/pronunciationEvaluator';
 import { useLearningContext } from '../../contexts/LearningContext';
 import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
+import { CountryFlag } from '../../components/language/CountryFlag';
 import {
   Volume2,
   RotateCcw,
@@ -919,7 +920,9 @@ export const KidsMyWorldPage: React.FC = () => {
                 className="py-3 px-3 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs flex items-center justify-center gap-2 border-b-4 border-sky-700 active:scale-95 cursor-pointer min-h-[48px]"
               >
                 <Volume2 className="w-4 h-4" />
-                <span>Nghe lại (EN)</span>
+                <span className="flex items-center gap-1.5">
+                  Nghe lại <CountryFlag languageId="en" size="xs" />
+                </span>
               </button>
 
               <button
@@ -927,7 +930,9 @@ export const KidsMyWorldPage: React.FC = () => {
                 className="py-3 px-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs flex items-center justify-center gap-2 border-b-4 border-rose-700 active:scale-95 cursor-pointer min-h-[48px]"
               >
                 <Languages className="w-4 h-4" />
-                <span>Nghĩa (VI)</span>
+                <span className="flex items-center gap-1.5">
+                  Nghĩa <CountryFlag languageId="vi" size="xs" />
+                </span>
               </button>
 
               <button

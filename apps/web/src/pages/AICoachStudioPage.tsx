@@ -51,6 +51,7 @@ import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { evaluatePronunciation } from '../lib/pronunciationEvaluator';
 import { useLearningContext } from '../contexts/LearningContext';
 import { getLanguage, SUPPORTED_LANGUAGES, getSpeechLocale } from '../config/languages';
+import { CountryFlag } from '../components/language/CountryFlag';
 
 const LANGUAGE_PRACTICE_WORDS: Record<string, Array<{ word: string; ipa: string; phoneme: string; meaning: string }>> = {
   en: [
@@ -1150,8 +1151,18 @@ export const AICoachStudioPage: React.FC = () => {
                   <Mic className="w-4 h-4 text-indigo-500" />
                   Ngôn Ngữ Nhận Diện Micro
                 </span>
-                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                  {speechInputLang === 'vi-VN' ? '🇻🇳 Đang nghe Tiếng Việt' : `${activeLanguage.flag} Đang nghe ${activeLanguage.name}`}
+                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                  {speechInputLang === 'vi-VN' ? (
+                    <>
+                      <CountryFlag languageId="vi" size="xs" />
+                      <span>Đang nghe Tiếng Việt</span>
+                    </>
+                  ) : (
+                    <>
+                      <CountryFlag languageId={activeLanguage.id} size="xs" />
+                      <span>Đang nghe {activeLanguage.name}</span>
+                    </>
+                  )}
                 </span>
               </label>
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -1167,7 +1178,8 @@ export const AICoachStudioPage: React.FC = () => {
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                 >
-                  <span>🇻🇳 Nói Tiếng Việt</span>
+                  <CountryFlag languageId="vi" size="xs" />
+                  <span>Nói Tiếng Việt</span>
                 </button>
                 <button
                   onClick={() => {
@@ -1182,7 +1194,8 @@ export const AICoachStudioPage: React.FC = () => {
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                 >
-                  <span>{activeLanguage.flag} Nói {activeLanguage.name}</span>
+                  <CountryFlag languageId={activeLanguage.id} size="xs" />
+                  <span>Nói {activeLanguage.name}</span>
                 </button>
               </div>
             </div>
@@ -1221,7 +1234,10 @@ export const AICoachStudioPage: React.FC = () => {
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     }`}
                 >
-                  50% EN
+                  <div className="flex items-center justify-center gap-1">
+                    <span>50%</span>
+                    <CountryFlag languageId={activeLanguage.id} size="xs" />
+                  </div>
                   <span className="block text-[9px] opacity-70">Beginner</span>
                 </button>
                 <button
@@ -1231,7 +1247,10 @@ export const AICoachStudioPage: React.FC = () => {
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     }`}
                 >
-                  80% EN
+                  <div className="flex items-center justify-center gap-1">
+                    <span>80%</span>
+                    <CountryFlag languageId={activeLanguage.id} size="xs" />
+                  </div>
                   <span className="block text-[9px] opacity-70">Inter</span>
                 </button>
                 <button
@@ -1241,7 +1260,10 @@ export const AICoachStudioPage: React.FC = () => {
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     }`}
                 >
-                  100% EN
+                  <div className="flex items-center justify-center gap-1">
+                    <span>100%</span>
+                    <CountryFlag languageId={activeLanguage.id} size="xs" />
+                  </div>
                   <span className="block text-[9px] opacity-70">Native</span>
                 </button>
               </div>
@@ -1281,7 +1303,10 @@ export const AICoachStudioPage: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    <span className="sm:hidden font-bold text-indigo-600 dark:text-indigo-400">{coachPersonality} • {bilingualMode === 'beginner' ? '50% EN' : bilingualMode === 'intermediate' ? '80% EN' : '100% EN'}</span>
+                    <span className="sm:hidden font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1">
+                      {coachPersonality} • {bilingualMode === 'beginner' ? '50%' : bilingualMode === 'intermediate' ? '80%' : '100%'}
+                      <CountryFlag languageId={activeLanguage.id} size="xs" />
+                    </span>
                     <span className="hidden sm:inline">Gia sư đàm thoại & sửa lỗi ngữ cảnh thời gian thực</span>
                   </p>
                 </div>
@@ -1518,12 +1543,12 @@ export const AICoachStudioPage: React.FC = () => {
                 <span className="font-extrabold flex items-center gap-1">
                   {speechInputLang === 'vi-VN' ? (
                     <>
-                      <span>🇻🇳</span>
+                      <CountryFlag languageId="vi" size="xs" />
                       <span>Tiếng Việt</span>
                     </>
                   ) : (
                     <>
-                      <span>{activeLanguage.flag}</span>
+                      <CountryFlag languageId={activeLanguage.id} size="xs" />
                       <span>{activeLanguage.name}</span>
                     </>
                   )}
@@ -1715,8 +1740,9 @@ export const AICoachStudioPage: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Từ Đang Phân Tích</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50">
-                      {activeLanguage.flag} {activeLanguage.name} ({activeLanguage.speechLocale})
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 flex items-center gap-1">
+                      <CountryFlag languageId={activeLanguage.id} size="xs" />
+                      <span>{activeLanguage.name} ({activeLanguage.speechLocale})</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-1">
@@ -1741,7 +1767,9 @@ export const AICoachStudioPage: React.FC = () => {
                     title={`Nghe lại phát âm bản xứ chuẩn (${activeLanguage.name})`}
                   >
                     <Volume2 className="w-4 h-4" />
-                    <span>Nghe chuẩn {activeLanguage.flag}</span>
+                    <span className="flex items-center gap-1">
+                      Nghe chuẩn <CountryFlag languageId={activeLanguage.id} size="xs" />
+                    </span>
                   </button>
 
                   <button
@@ -1763,7 +1791,10 @@ export const AICoachStudioPage: React.FC = () => {
                       title={`Thu âm nhận diện giọng ${activeLanguage.name} (${activeLanguage.speechLocale})`}
                     >
                       <Mic className="w-4 h-4" />
-                      <span>{pronRecordedUrl ? `Thu lại (${activeLanguage.flag})` : `Thu âm (${activeLanguage.flag})`}</span>
+                      <span className="flex items-center gap-1">
+                        <span>{pronRecordedUrl ? 'Thu lại' : 'Thu âm'}</span>
+                        <CountryFlag languageId={activeLanguage.id} size="xs" />
+                      </span>
                     </button>
                   ) : (
                     <button
@@ -1772,8 +1803,10 @@ export const AICoachStudioPage: React.FC = () => {
                       className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-lg shadow-rose-600/30 flex items-center gap-2 transition active:scale-95 animate-pulse"
                     >
                       <Square className="w-4 h-4 fill-white" />
-                      <span>
-                        Dừng mic {activeLanguage.flag} ({pronRecordingSeconds < 10 ? `0${pronRecordingSeconds}` : pronRecordingSeconds}s)
+                      <span className="flex items-center gap-1">
+                        <span>Dừng mic</span>
+                        <CountryFlag languageId={activeLanguage.id} size="xs" />
+                        <span>({pronRecordingSeconds < 10 ? `0${pronRecordingSeconds}` : pronRecordingSeconds}s)</span>
                       </span>
                     </button>
                   )}
@@ -1905,7 +1938,11 @@ export const AICoachStudioPage: React.FC = () => {
                       className="mt-2 px-3 py-1.5 rounded-xl btn-glass-primary font-bold flex items-center gap-1.5"
                     >
                       <Volume2 className="w-3.5 h-3.5" />
-                      <span>Nghe câu mẫu Shadowing ({activeLanguage.flag} {activeLanguage.name})</span>
+                      <span className="flex items-center gap-1.5">
+                        <span>Nghe câu mẫu Shadowing</span>
+                        <CountryFlag languageId={activeLanguage.id} size="xs" />
+                        <span>({activeLanguage.name})</span>
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -2366,8 +2403,18 @@ export const AICoachStudioPage: React.FC = () => {
                     <Mic className="w-3.5 h-3.5 text-indigo-500" />
                     Ngôn Ngữ Nhận Diện Micro
                   </span>
-                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                    {speechInputLang === 'vi-VN' ? 'Đang nghe Tiếng Việt' : `Đang nghe ${activeLanguage.name} (${activeLanguage.flag})`}
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                    {speechInputLang === 'vi-VN' ? (
+                      <>
+                        <CountryFlag languageId="vi" size="xs" />
+                        <span>Đang nghe Tiếng Việt</span>
+                      </>
+                    ) : (
+                      <>
+                        <CountryFlag languageId={activeLanguage.id} size="xs" />
+                        <span>Đang nghe {activeLanguage.name}</span>
+                      </>
+                    )}
                   </span>
                 </label>
                 <div className="grid grid-cols-2 gap-1.5 pt-1">
@@ -2384,7 +2431,8 @@ export const AICoachStudioPage: React.FC = () => {
                         : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}
                   >
-                    <span>🇻🇳 Nói Tiếng Việt</span>
+                    <CountryFlag languageId="vi" size="xs" />
+                    <span>Nói Tiếng Việt</span>
                   </button>
                   <button
                     type="button"
@@ -2400,7 +2448,8 @@ export const AICoachStudioPage: React.FC = () => {
                         : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}
                   >
-                    <span>{activeLanguage.flag} Nói {activeLanguage.name}</span>
+                    <CountryFlag languageId={activeLanguage.id} size="xs" />
+                    <span>Nói {activeLanguage.name}</span>
                   </button>
                 </div>
               </div>
@@ -2437,7 +2486,10 @@ export const AICoachStudioPage: React.FC = () => {
                       className={`py-1.5 rounded-lg text-[10px] font-bold transition ${bilingualMode === m ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                         }`}
                     >
-                      {m === 'beginner' ? '50% EN' : m === 'intermediate' ? '80% EN' : '100% EN'}
+                      <div className="flex items-center justify-center gap-1">
+                        <span>{m === 'beginner' ? '50%' : m === 'intermediate' ? '80%' : '100%'}</span>
+                        <CountryFlag languageId={activeLanguage.id} size="xs" />
+                      </div>
                     </button>
                   ))}
                 </div>

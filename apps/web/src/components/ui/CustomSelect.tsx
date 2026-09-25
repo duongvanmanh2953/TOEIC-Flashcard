@@ -6,7 +6,7 @@ export interface SelectOption<T = string | number> {
   label: string;
   badge?: string | number;
   badgeColor?: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
   description?: string;
   disabled?: boolean;
 }
@@ -16,7 +16,7 @@ export interface CustomSelectProps<T = string | number> {
   onChange: (value: T) => void;
   options: SelectOption<T>[];
   placeholder?: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
   label?: string;
   error?: string;
   disabled?: boolean;
@@ -205,8 +205,20 @@ export function CustomSelect<T extends string | number>({
           } backdrop-blur-xl transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {LeftIcon && <LeftIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0" />}
-            {SelectedIcon && <SelectedIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />}
+            {LeftIcon && (
+              typeof LeftIcon === 'function' ? (
+                <LeftIcon className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0" />
+              ) : (
+                <div className="shrink-0 flex items-center">{LeftIcon}</div>
+              )
+            )}
+            {SelectedIcon && (
+              typeof SelectedIcon === 'function' ? (
+                <SelectedIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+              ) : (
+                <div className="shrink-0 flex items-center">{SelectedIcon}</div>
+              )
+            )}
             <span
               className={`truncate font-medium ${
                 selectedOption ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-400'
@@ -316,11 +328,15 @@ export function CustomSelect<T extends string | number>({
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         {OptionIcon && (
-                          <OptionIcon
-                            className={`w-4 h-4 shrink-0 ${
-                              isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'
-                            }`}
-                          />
+                          typeof OptionIcon === 'function' ? (
+                            <OptionIcon
+                              className={`w-4 h-4 shrink-0 ${
+                                isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'
+                              }`}
+                            />
+                          ) : (
+                            <div className="shrink-0 flex items-center">{OptionIcon}</div>
+                          )
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
                           <span className="whitespace-normal break-words leading-snug">{opt.label}</span>

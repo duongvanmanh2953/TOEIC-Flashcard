@@ -1339,14 +1339,14 @@ export const AppShell: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Không gian hiện tại:</span>
                   <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span>{activeLanguage.flag}</span>
+                    <CountryFlag languageId={activeLanguage.id} size="xs" />
                     <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Kho thuộc không gian:</span>
                   <span className="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                    <span>{targetLang.flag}</span>
+                    <CountryFlag languageId={targetLang.id} size="xs" />
                     <span>{targetLang.nativeName} ({targetLang.name})</span>
                   </span>
                 </div>

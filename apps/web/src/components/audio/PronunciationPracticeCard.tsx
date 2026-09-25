@@ -22,6 +22,7 @@ import {
   listenSpeech,
   PronunciationEvaluationResult,
 } from '../../lib/pronunciationEvaluator';
+import { CountryFlag } from '../language/CountryFlag';
 
 interface PronunciationPracticeCardProps {
   word: string;
@@ -152,10 +153,10 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
               </span>
             )}
             <span
-              className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg inline-flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50"
+              className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg inline-flex items-center gap-1.5 border border-slate-200/50 dark:border-slate-700/50"
               title={`Ngôn ngữ kiểm tra phát âm: ${effectiveName} (${effectiveLocale})`}
             >
-              <span>{effectiveFlag}</span>
+              <CountryFlag languageId={activeLang?.id || lang} size="xs" />
               <span>{effectiveName}</span>
               <span className="text-[10px] font-mono text-slate-400">({effectiveLocale})</span>
             </span>

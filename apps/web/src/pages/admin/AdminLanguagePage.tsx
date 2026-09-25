@@ -229,8 +229,10 @@ export const AdminLanguagePage: React.FC = () => {
                           <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
                             {lang.nativeName}
                           </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-                            {lang.name} • <span className="font-mono">{lang.code.toUpperCase()}</span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                            <span>{lang.name}</span>
+                            <span>•</span>
+                            <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold">{lang.id}</span>
                           </p>
                         </div>
                       </div>
@@ -338,11 +340,11 @@ export const AdminLanguagePage: React.FC = () => {
                 value={reportSelectedLang}
                 onChange={(val) => setReportSelectedLang(String(val))}
                 options={[
-                  { value: 'ALL', label: '🌐 Tất cả ngôn ngữ' },
+                  { value: 'ALL', label: 'Tất cả ngôn ngữ' },
                   ...SUPPORTED_LANGUAGES.map((l) => ({
                     value: l.id,
                     label: `${l.nativeName} (${l.name})`,
-                    badge: l.code.toUpperCase(),
+                    icon: <CountryFlag languageId={l.id} size="xs" />,
                   })),
                 ]}
                 size="sm"

@@ -53,9 +53,7 @@ export const LanguageOption: React.FC<LanguageOptionProps> = ({
           </div>
 
           <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-            <span className="bg-slate-200/60 dark:bg-slate-700/60 px-1.5 py-0.2 rounded font-mono font-bold text-slate-700 dark:text-slate-300">
-              {language.code.toUpperCase()}
-            </span>
+            <span className="uppercase font-mono font-bold text-slate-400 dark:text-slate-500">{language.id}</span>
             <span>•</span>
             <span>{language.region}</span>
             {showLevel && (

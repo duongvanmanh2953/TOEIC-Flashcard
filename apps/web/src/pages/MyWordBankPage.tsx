@@ -4271,7 +4271,7 @@ export const MyWordBankPage: React.FC = () => {
                   Không gian học tập (Mặc định)
                 </label>
                 <div className="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-semibold text-xs text-slate-900 dark:text-white">
-                  <span className="text-base">{activeLanguage.flag}</span>
+                  <CountryFlag languageId={activeLanguage.id} size="sm" />
                   <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
                 </div>
               </div>

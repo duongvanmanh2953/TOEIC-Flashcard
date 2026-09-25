@@ -64,6 +64,8 @@ import {
 } from '../../utils/examPptxTemplate';
 
 import { useLearningContext } from '../../contexts/LearningContext';
+import { CountryFlag } from '../../components/language/CountryFlag';
+import { getLanguage } from '../../config/languages';
 
 export const ExamBankPage: React.FC = () => {
   const navigate = useNavigate();
@@ -102,7 +104,7 @@ export const ExamBankPage: React.FC = () => {
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [unlockedExamIds, setUnlockedExamIds] = useState<Record<string, boolean>>({});
-  const [pendingExamAction, setPendingExamAction] = useState<'start' | 'like' | 'dislike' | 'duplicate' | null>(null);
+  const [pendingExamAction, setPendingExamAction] = useState<'start' | 'like' | 'dislike' | 'duplicate' | 'export' | null>(null);
 
   const isExamLocked = (exam: any) => {
     if (!exam) return false;
@@ -123,19 +125,7 @@ export const ExamBankPage: React.FC = () => {
     }
     const targetUserId = exam.authorId || exam.author?.id;
     if (targetUserId === user.id) {
-      window.dispatchEvent(
-        new CustomEvent('open_vocabflow_chat', {
-          detail: {
-            context: {
-              bankType: 'EXAM',
-              bankId: exam.id,
-              bankTitle: exam.title,
-              bankOwnerId: user.id,
-              languageSpaceId: exam.languageId || activeLanguage.id,
-            },
-          },
-        }),
-      );
+      alert('Bạn là tác giả của đề thi này, không thể tự nhắn tin cho chính mình!');
       return;
     }
     window.dispatchEvent(
@@ -350,11 +340,24 @@ export const ExamBankPage: React.FC = () => {
           handleToggleDislike(currentExam.id);
         } else if (action === 'duplicate') {
           handleDuplicateExam(currentExam.id);
+        } else if (action === 'export') {
+          exportExamToExcel(currentExam);
         }
       }
     } catch (err: any) {
       setUnlockError(err?.response?.data?.message || 'Mật khẩu bảo vệ không đúng.');
     }
+  };
+
+  const handleExportExam = (exam: any) => {
+    if (isExamLocked(exam)) {
+      setUnlockExam(exam);
+      setPendingExamAction('export');
+      setUnlockPassword('');
+      setUnlockError('');
+      return;
+    }
+    exportExamToExcel(exam);
   };
 
   const handleOpenDetailModal = async (exam: any) => {
@@ -682,14 +685,14 @@ export const ExamBankPage: React.FC = () => {
               }
               options={[
                 { value: 'ALL', label: 'Tất cả kỳ thi' },
-                { value: 'TOEIC', label: 'TOEIC' },
-                { value: 'IELTS', label: 'IELTS' },
-                { value: 'HSK', label: 'HSK (Tiếng Trung)' },
-                { value: 'JLPT', label: 'JLPT (Tiếng Nhật)' },
-                { value: 'TOPIK', label: 'TOPIK (Tiếng Hàn)' },
-                { value: 'THPT', label: 'THPT Quốc Gia' },
-                { value: 'SAT', label: 'SAT' },
-                { value: 'GENERAL_QUIZ', label: 'Quiz Tiếng Anh tổng hợp' },
+                { value: 'TOEIC', label: 'TOEIC', icon: <CountryFlag languageId="en" size="xs" /> },
+                { value: 'IELTS', label: 'IELTS', icon: <CountryFlag languageId="en" size="xs" /> },
+                { value: 'HSK', label: 'HSK (Tiếng Trung)', icon: <CountryFlag languageId="zh" size="xs" /> },
+                { value: 'JLPT', label: 'JLPT (Tiếng Nhật)', icon: <CountryFlag languageId="ja" size="xs" /> },
+                { value: 'TOPIK', label: 'TOPIK (Tiếng Hàn)', icon: <CountryFlag languageId="ko" size="xs" /> },
+                { value: 'THPT', label: 'THPT Quốc Gia', icon: <CountryFlag languageId="vi" size="xs" /> },
+                { value: 'SAT', label: 'SAT', icon: <CountryFlag countryCode="us" size="xs" /> },
+                { value: 'GENERAL_QUIZ', label: 'Quiz Tiếng Anh tổng hợp', icon: <CountryFlag languageId="en" size="xs" /> },
               ]}
               onSelect={(val) => setExamType(val)}
             />
@@ -811,8 +814,9 @@ export const ExamBankPage: React.FC = () => {
                             {/* Top Badges */}
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60">
-                                  {exam.examType}
+                                <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 inline-flex items-center gap-1.5">
+                                  <CountryFlag languageId={exam.languageId || 'en'} size="xs" />
+                                  <span>{exam.examType}</span>
                                 </span>
                                 {exam.level && (
                                   <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
@@ -907,18 +911,20 @@ export const ExamBankPage: React.FC = () => {
                                   {exam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocalFlow')}
                                 </span>
                               </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleContactExamAuthor(exam);
-                                }}
-                                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
-                                title={isOwner ? 'Xem tin nhắn kho đề' : 'Nhắn tin với tác giả bộ đề'}
-                              >
-                                <MessageSquare className="w-3 h-3" />
-                                <span>{isOwner ? 'Tin nhắn' : 'Nhắn tin'}</span>
-                              </button>
+                              {!isOwner && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleContactExamAuthor(exam);
+                                  }}
+                                  className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
+                                  title="Nhắn tin với tác giả bộ đề"
+                                >
+                                  <MessageSquare className="w-3 h-3" />
+                                  <span>Nhắn tin</span>
+                                </button>
+                              )}
                             </div>
                           </div>
 
@@ -1079,7 +1085,6 @@ export const ExamBankPage: React.FC = () => {
                                   options={[
                                     ...(isOwner
                                       ? [
-                                          { value: 'manage_access', label: 'Quản lý quyền (Access Key)', icon: Key },
                                           { value: 'edit', label: 'Chỉnh sửa đề thi', icon: Edit },
                                           { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
                                           { value: 'delete', label: 'Xóa đề thi', icon: Trash2 },
@@ -1089,22 +1094,18 @@ export const ExamBankPage: React.FC = () => {
                                           ...(exam.isProtected && isExamLocked(exam)
                                             ? [{ value: 'verify_key', label: 'Mở khóa bằng Access Key', icon: Key }]
                                             : []),
-                                          {
-                                            value: isCloned ? 'already_cloned' : 'duplicate',
-                                            label: isCloned ? 'Đã có trong đề của tôi' : 'Sao chép về đề của tôi',
-                                            icon: isCloned ? CheckCircle : Copy,
-                                            disabled: isCloned,
-                                          },
+                                          ...(!isCloned
+                                            ? [{ value: 'duplicate', label: 'Sao chép về đề của tôi', icon: Copy }]
+                                            : [{ value: 'already_cloned', label: 'Đã có trong đề của tôi', icon: CheckCircle }]),
                                           { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
                                         ]),
                                   ]}
                                   onSelect={(val) => {
-                                    if (val === 'manage_access') setAccessKeyManageExam(exam);
-                                    else if (val === 'contact_author') handleContactExamAuthor(exam);
+                                    if (val === 'contact_author') handleContactExamAuthor(exam);
                                     else if (val === 'verify_key') setVerifyAccessKeyExam(exam);
                                     else if (val === 'duplicate') handleDuplicateExam(exam.id);
                                     else if (val === 'already_cloned') setActiveTab('my-exams');
-                                    else if (val === 'export_excel') exportExamToExcel(exam);
+                                    else if (val === 'export_excel') handleExportExam(exam);
                                     else if (val === 'edit') navigate(`/exams/editor/${exam.id}`);
                                     else if (val === 'delete') handleDeleteMyExam(exam.id);
                                   }}
@@ -1276,8 +1277,9 @@ export const ExamBankPage: React.FC = () => {
                       </span>
                     )}
                     {detailModalExam.languageId && (
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white/10 text-indigo-200 uppercase">
-                        {detailModalExam.languageId}
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white/10 text-indigo-200 flex items-center gap-1.5">
+                        <CountryFlag languageId={detailModalExam.languageId} size="xs" />
+                        <span>{getLanguage(detailModalExam.languageId).name}</span>
                       </span>
                     )}
                     {isOwner ? (
@@ -1517,15 +1519,6 @@ export const ExamBankPage: React.FC = () => {
                     <>
                       <button
                         type="button"
-                        onClick={() => setAccessKeyManageExam(detailModalExam)}
-                        className="h-10 px-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition shrink-0"
-                        title="Quản lý các mã Access Key cấp cho học viên"
-                      >
-                        <Key className="w-3.5 h-3.5" />
-                        <span>Quyền truy cập</span>
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => {
                           navigate(`/exams/editor/${detailModalExam.id}`);
                         }}
@@ -1593,7 +1586,7 @@ export const ExamBankPage: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => exportExamToExcel(detailModalExam)}
+                    onClick={() => handleExportExam(detailModalExam)}
                     className="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition shrink-0"
                     title="Xuất đề ra file Excel (.xlsx)"
                   >
@@ -1973,7 +1966,14 @@ export const ExamBankPage: React.FC = () => {
             setUnlockedExamIds((prev) => ({ ...prev, [verifyAccessKeyExam.id]: true }));
             sessionStorage.setItem(`vf_unlocked_EXAM_${verifyAccessKeyExam.id}`, 'true');
             alert(`Đã mở khóa thành công đề thi "${verifyAccessKeyExam.title}"!`);
-            handleStartExam(verifyAccessKeyExam);
+            if (pendingExamAction === 'duplicate') {
+              handleDuplicateExam(verifyAccessKeyExam.id);
+            } else if (pendingExamAction === 'export') {
+              exportExamToExcel(verifyAccessKeyExam);
+            } else {
+              handleStartExam(verifyAccessKeyExam);
+            }
+            setPendingExamAction(null);
           }}
           onContactOwner={() => handleContactExamAuthor(verifyAccessKeyExam)}
         />

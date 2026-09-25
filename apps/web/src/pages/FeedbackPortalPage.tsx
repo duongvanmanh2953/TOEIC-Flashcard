@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
 import { GlassCard } from '../components/common/GlassCard';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { CountryFlag } from '../components/language/CountryFlag';
 import {
   MessageSquarePlus,
   ThumbsUp,
@@ -402,7 +403,7 @@ export const FeedbackPortalPage: React.FC = () => {
                 Không gian học tập (Tự động nhận diện)
               </label>
               <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700">
-                <span className="text-base">{activeLanguage.flag}</span>
+                <CountryFlag languageId={activeLanguage.id} size="sm" />
                 <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
               </div>
             </div>

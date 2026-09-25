@@ -5,7 +5,7 @@ export interface FilterOption<T = string> {
   value: T;
   label: string;
   badge?: string | number;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
 }
 
 export interface FilterSelectProps<T = string> {
@@ -13,7 +13,7 @@ export interface FilterSelectProps<T = string> {
   onChange: (value: T) => void;
   options: FilterOption<T>[];
   label?: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
   className?: string;
   size?: 'xs' | 'sm';
 }
@@ -56,7 +56,20 @@ export function FilterSelect<T extends string | number>({
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition rounded-lg font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 ${sizeClasses}`}
       >
-        {LeftIcon && <LeftIcon className="w-3 h-3 text-slate-400 shrink-0" />}
+        {LeftIcon && (
+          typeof LeftIcon === 'function' ? (
+            <LeftIcon className="w-3 h-3 text-slate-400 shrink-0" />
+          ) : (
+            <div className="shrink-0 flex items-center">{LeftIcon}</div>
+          )
+        )}
+        {selectedOption?.icon && !LeftIcon && (
+          typeof selectedOption.icon === 'function' ? (
+            <selectedOption.icon className="w-3 h-3 text-slate-400 shrink-0" />
+          ) : (
+            <div className="shrink-0 flex items-center">{selectedOption.icon}</div>
+          )
+        )}
         {label && <span className="text-slate-500 font-normal">{label}:</span>}
         <span className="font-semibold text-slate-200 truncate max-w-[130px]">
           {selectedOption ? selectedOption.label : String(value)}
@@ -95,7 +108,13 @@ export function FilterSelect<T extends string | number>({
                   }`}
                 >
                   <div className="flex items-center gap-1.5 truncate">
-                    {OptIcon && <OptIcon className="w-3 h-3 text-slate-400 shrink-0" />}
+                    {OptIcon && (
+                      typeof OptIcon === 'function' ? (
+                        <OptIcon className="w-3 h-3 text-slate-400 shrink-0" />
+                      ) : (
+                        <div className="shrink-0 flex items-center">{OptIcon}</div>
+                      )
+                    )}
                     <span className="truncate">{opt.label}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
