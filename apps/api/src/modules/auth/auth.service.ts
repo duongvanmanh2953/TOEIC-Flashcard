@@ -162,7 +162,7 @@ export class AuthService {
   async refreshToken(token: string) {
     try {
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_REFRESH_SECRET || 'leximind_jwt_super_secure_refresh_token_secret_2026',
+        secret: process.env.JWT_REFRESH_SECRET as string,
       });
 
       const user = await this.prisma.user.findUnique({
@@ -255,11 +255,11 @@ export class AuthService {
     const payload = { sub: userId, email, role };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_ACCESS_SECRET || 'leximind_jwt_super_secure_access_token_secret_2026',
+        secret: process.env.JWT_ACCESS_SECRET as string,
         expiresIn: '15m',
       }),
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_REFRESH_SECRET || 'leximind_jwt_super_secure_refresh_token_secret_2026',
+        secret: process.env.JWT_REFRESH_SECRET as string,
         expiresIn: '7d',
       }),
     ]);

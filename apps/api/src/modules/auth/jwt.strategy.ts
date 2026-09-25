@@ -20,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_ACCESS_SECRET || 'leximind_jwt_super_secure_access_token_secret_2026',
+      secretOrKey: process.env.JWT_ACCESS_SECRET as string,
     });
   }
 

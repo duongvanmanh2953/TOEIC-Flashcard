@@ -86,9 +86,12 @@ async function main() {
   console.log('✅ Achievements seeded.');
 
   // 2. Create Default Users (Demo & Admin)
-  const learnerPassword = process.env.INITIAL_LEARNER_PASSWORD || 'password123';
+  const crypto = require('crypto');
+  const learnerPassword = process.env.INITIAL_LEARNER_PASSWORD || crypto.randomBytes(12).toString('hex');
   const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@leximind.ai';
-  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || 'admin123';
+  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
+
+  console.log(`[SECURE] Admin password generated or loaded from ENV. Check your logs or .env file.`);
 
   const passwordHash = await bcrypt.hash(learnerPassword, 10);
   const adminHash = await bcrypt.hash(adminPassword, 10);
