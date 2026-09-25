@@ -25,6 +25,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { json, urlencoded } from 'express';
 
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
@@ -38,6 +40,9 @@ async function bootstrap() {
 
   // Global prefix for API versioning
   app.setGlobalPrefix('api/v1');
+
+  // Register Global Exception Filter for standardized Vietnamese errors
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Enable CORS
   app.enableCors({
