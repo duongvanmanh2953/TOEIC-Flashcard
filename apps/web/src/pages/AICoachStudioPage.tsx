@@ -1397,6 +1397,22 @@ export const AICoachStudioPage: React.FC = () => {
                         provider={(msg as any).provider}
                         onSelectQuizOption={(opt) => handleSend(opt)}
                       />
+                      <div className="flex items-center gap-1.5 mt-1.5 ml-1">
+                        <button
+                          onClick={() => audioEngine.playWord(msg.content, { lang: activeLanguage.id })}
+                          className="p-1.5 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors"
+                          title="Phát âm (Đọc to)"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => window.open(`https://translate.google.com/?sl=auto&tl=vi&text=${encodeURIComponent(msg.content)}`, '_blank')}
+                          className="p-1.5 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors"
+                          title="Dịch sang tiếng Việt"
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

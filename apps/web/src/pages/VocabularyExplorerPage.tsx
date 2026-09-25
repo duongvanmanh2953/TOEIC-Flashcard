@@ -163,7 +163,7 @@ export const VocabularyExplorerPage: React.FC = () => {
 
   const playAudio = (url?: string, text?: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    audioEngine.playWord(text || '', { audioUrl: url });
+    audioEngine.playWord(text || '', { audioUrl: url, lang: activeLanguage.id });
   };
 
   const handleToggleFavorite = async (wordId: string, e: React.MouseEvent) => {

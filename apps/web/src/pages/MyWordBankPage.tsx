@@ -2759,21 +2759,10 @@ export const MyWordBankPage: React.FC = () => {
                               <span>Cloud</span>
                             </span>
                           ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => handleUploadDeckToCloud(deck, e)}
-                              disabled={syncingDeckId === deck.id}
-                              className="btn-glass-primary btn-glass-sm !h-6 !px-2 text-[10px]"
-                              title="Kho này đang lưu ở máy (Local). Nhấn để lưu lên Cloud an toàn"
-                              aria-label="Đẩy kho này lên Cloud"
-                            >
-                              {syncingDeckId === deck.id ? (
-                                <RefreshCw className="w-3 h-3 animate-spin text-white" />
-                              ) : (
-                                <CloudUpload className="w-3 h-3 text-white" />
-                              )}
-                              <span>{syncingDeckId === deck.id ? 'Đang đẩy...' : 'Lưu lên Cloud'}</span>
-                            </button>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-extrabold border border-slate-200 dark:border-slate-700">
+                              <HardDrive className="w-2.5 h-2.5" />
+                              <span>Local</span>
+                            </span>
                           )}
 
                           {deck.hasPassword && (
@@ -2845,7 +2834,7 @@ export const MyWordBankPage: React.FC = () => {
                             e.stopPropagation();
                             handleOpenDeckOrAction(deck);
                           }}
-                          className="h-8 px-3 rounded-lg btn-glass-primary text-xs font-semibold inline-flex items-center gap-1.5"
+                          className="h-8 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors"
                           aria-label="Xem và quản lý từ trong kho"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -2857,11 +2846,11 @@ export const MyWordBankPage: React.FC = () => {
                             e.stopPropagation();
                             handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`));
                           }}
-                          className="h-8 px-3 rounded-lg btn-glass-primary text-xs font-semibold inline-flex items-center gap-1.5"
+                          className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors"
                           title="Ôn tập riêng kho này"
                           aria-label="Ôn tập riêng kho này"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                          <Sparkles className="w-3.5 h-3.5" />
                           <span>Ôn tập</span>
                         </button>
                       </div>
@@ -2883,21 +2872,7 @@ export const MyWordBankPage: React.FC = () => {
                           <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
                         </button>
 
-                        {/* Download Deck CSV */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const deckWords = words.filter(
-                              (w) => w.deckId === deck.id || w.deckName === deck.title
-                            );
-                            exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'csv');
-                          }}
-                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition inline-flex items-center justify-center cursor-pointer"
-                          title="Tải kho này dưới dạng CSV (.csv)"
-                          aria-label="Tải CSV"
-                        >
-                          <Download className="w-3.5 h-3.5 text-indigo-500" />
-                        </button>
+
 
                         {!deck.isReadOnly && (
                           <button
@@ -2948,15 +2923,9 @@ export const MyWordBankPage: React.FC = () => {
                           {syncingDeckId === deck.id ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           ) : deck.isSyncedToCloud ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                              <span className="hidden sm:inline">Đã đồng bộ</span>
-                            </>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                           ) : (
-                            <>
-                              <CloudUpload className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                              <span className="hidden sm:inline">Đồng bộ Cloud</span>
-                            </>
+                            <CloudUpload className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                           )}
                         </button>
 
