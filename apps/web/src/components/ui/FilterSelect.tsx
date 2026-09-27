@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
 export interface FilterOption<T = string> {
@@ -16,6 +16,7 @@ export interface FilterSelectProps<T = string> {
   icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
   className?: string;
   size?: 'xs' | 'sm';
+  align?: 'auto' | 'left' | 'right';
 }
 
 export function FilterSelect<T extends string | number>({
@@ -26,11 +27,50 @@ export function FilterSelect<T extends string | number>({
   icon: LeftIcon,
   className = '',
   size = 'xs',
+  align = 'auto',
 }: FilterSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
+  const [horizontalAlign, setHorizontalAlign] = useState<'left' | 'right'>('left');
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
+
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    const spaceBelow = screenH - rect.bottom;
+    const spaceAbove = rect.top;
+    setDropUp(spaceBelow < 220 && spaceAbove > spaceBelow);
+
+    if (align === 'right') {
+      setHorizontalAlign('right');
+    } else if (align === 'left') {
+      setHorizontalAlign('left');
+    } else {
+      const estimatedWidth = Math.max(rect.width, 160);
+      const overflowsRight = rect.left + estimatedWidth > screenW - 12;
+      const isRightHalf = rect.left + rect.width / 2 > screenW / 2;
+
+      let containerOverflowsRight = false;
+      const parentContainer = containerRef.current.closest('[role="dialog"], form, table, .overflow-x-auto');
+      if (parentContainer) {
+        const parentRect = parentContainer.getBoundingClientRect();
+        if (rect.left + estimatedWidth > parentRect.right - 12) {
+          containerOverflowsRight = true;
+        }
+      }
+
+      if (overflowsRight || containerOverflowsRight || (isRightHalf && rect.left + estimatedWidth > screenW - 24)) {
+        setHorizontalAlign('right');
+      } else {
+        setHorizontalAlign('left');
+      }
+    }
+  }, [align]);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -39,10 +79,17 @@ export function FilterSelect<T extends string | number>({
       }
     };
     if (isOpen) {
+      updatePosition();
       document.addEventListener('mousedown', handleOutsideClick);
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
     }
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [isOpen]);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, updatePosition]);
 
   const sizeClasses = {
     xs: 'py-1 px-2 text-[11px] rounded-lg',
@@ -93,7 +140,14 @@ export function FilterSelect<T extends string | number>({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 z-50 mt-1 min-w-[150px] bg-slate-900/98 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+        <div
+          className={`absolute z-50 ${
+            dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          } ${
+            horizontalAlign === 'right' ? 'right-0 left-auto' : 'left-0 right-auto'
+          } min-w-[150px] max-w-[calc(100vw-24px)] bg-slate-900/98 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-1 text-xs animate-in fade-in zoom-in-95 duration-100`}
+          style={{ maxWidth: 'min(calc(100vw - 24px), 320px)' }}
+        >
           <div className="overflow-y-auto max-h-56 p-0.5 space-y-0.5 chat-scrollbar">
             {options.map((opt) => {
               const isSelected = opt.value === value;

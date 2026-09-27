@@ -95,6 +95,21 @@
     border-color: #7676766b;
   }
 
+  /* Universal select & option contrast enforcement */
+  select {
+    color: inherit;
+  }
+
+  select option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .dark select option {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+  }
+
   /* Universal Dark Mode Border Override (#e5e7eb -> #7676766b) */
   .dark .border,
   .dark .border-slate-200,
@@ -1814,4 +1829,100 @@ a.card-brand-effect {
 
 .animate-waveform-ring {
   animation: waveformRingPulse 1.2s ease-out infinite;
+}
+
+/* =======================================================================
+   STANDARDIZED ENTERPRISE REPORT PRINT STYLING
+   Khử hoàn toàn giao diện web (UI/Nav/Sidebar/Buttons) khi in và chỉ in
+   văn bản báo cáo tài chính chuẩn khổ giấy A4
+   ======================================================================= */
+@media screen {
+  #printable-financial-report {
+    display: none !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm 15mm 15mm;
+  }
+
+  /* Reset body and html backgrounds */
+  html,
+  body {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    font-size: 11pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide entire application shell and interactive UI */
+  #root,
+  .no-print,
+  .tab-pill-container,
+  .admin-filter-bar,
+  aside,
+  header,
+  nav,
+  button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Force display of the portaled printable report */
+  #printable-financial-report {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #090d16 !important;
+  }
+
+  #printable-financial-report * {
+    visibility: visible !important;
+  }
+
+  /* Prevent page breaks inside tables, cards, and signatures */
+  .print-avoid-break,
+  tr,
+  tfoot,
+  .report-print-document table {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Ensure high contrast table borders on paper */
+  .report-print-document table,
+  .report-print-document th,
+  .report-print-document td {
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+
+  /* Soft background tints for headers and summary rows */
+  .report-print-document th {
+    background-color: #f1f5f9 !important;
+    color: #090d16 !important;
+    font-weight: 700 !important;
+  }
 }

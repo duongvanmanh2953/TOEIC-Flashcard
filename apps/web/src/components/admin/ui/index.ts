@@ -6,3 +6,5 @@ export * from './AdminButton';
 export * from './AdminFilterBar';
 export * from './AdminDrawer';
 export * from './AdminTable';
+export * from '../../common/MoreActionsDropdown';
+

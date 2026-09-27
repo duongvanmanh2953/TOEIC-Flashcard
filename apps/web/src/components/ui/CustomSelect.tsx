@@ -24,6 +24,7 @@ export interface CustomSelectProps<T = string | number> {
   searchPlaceholder?: string;
   clearable?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  align?: 'auto' | 'left' | 'right';
   className?: string;
   menuClassName?: string;
 }
@@ -41,6 +42,7 @@ export function CustomSelect<T extends string | number>({
   searchPlaceholder = 'Tìm kiếm...',
   clearable = false,
   size = 'md',
+  align = 'auto',
   className = '',
   menuClassName = '',
 }: CustomSelectProps<T>) {
@@ -48,6 +50,7 @@ export function CustomSelect<T extends string | number>({
   const [searchQuery, setSearchQuery] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [dropUp, setDropUp] = useState(false);
+  const [horizontalAlign, setHorizontalAlign] = useState<'left' | 'right'>('left');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -91,14 +94,43 @@ export function CustomSelect<T extends string | number>({
     return <div className="shrink-0 flex items-center">{iconNode}</div>;
   };
 
-  // Collision detection: Check if dropdown needs to flip upwards
+  // Collision detection: Check if dropdown needs to flip upwards and/or align to edge
   const updatePosition = () => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
+    const screenW = window.innerWidth;
     const screenH = window.innerHeight;
+
+    // Vertical collision detection: flip up if not enough space below
     const spaceBelow = screenH - rect.bottom;
     const spaceAbove = rect.top;
     setDropUp(spaceBelow < 280 && spaceAbove > spaceBelow);
+
+    // Horizontal edge collision detection ("căn lề theo mép"):
+    if (align === 'right') {
+      setHorizontalAlign('right');
+    } else if (align === 'left') {
+      setHorizontalAlign('left');
+    } else {
+      const estimatedWidth = Math.max(rect.width, 220);
+      const overflowsRight = rect.left + estimatedWidth > screenW - 16;
+      const isRightHalf = rect.left + rect.width / 2 > screenW / 2;
+
+      let containerOverflowsRight = false;
+      const parentContainer = containerRef.current.closest('[role="dialog"], form, table, .overflow-x-auto');
+      if (parentContainer) {
+        const parentRect = parentContainer.getBoundingClientRect();
+        if (rect.left + estimatedWidth > parentRect.right - 12) {
+          containerOverflowsRight = true;
+        }
+      }
+
+      if (overflowsRight || containerOverflowsRight || (isRightHalf && rect.left + estimatedWidth > screenW - 32)) {
+        setHorizontalAlign('right');
+      } else {
+        setHorizontalAlign('left');
+      }
+    }
   };
 
   // Handle click outside to close
@@ -214,13 +246,13 @@ export function CustomSelect<T extends string | number>({
           onClick={() => setIsOpen(!isOpen)}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          className={`w-full flex items-center justify-between gap-2 bg-white dark:bg-[#162033] hover:bg-slate-50 dark:hover:bg-[#1a273e] text-left border ${
+          className={`w-full flex items-center justify-between gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-left border ${
             error
               ? 'border-rose-500/80 ring-1 ring-rose-500/30'
               : isOpen
               ? 'border-indigo-500 ring-2 ring-indigo-500/20'
-              : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
-          } backdrop-blur-xl transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
+              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+          } transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0')}
@@ -264,17 +296,24 @@ export function CustomSelect<T extends string | number>({
           </div>
         </button>
 
-        {/* Dropdown Menu with Collision Drop-Up Detection */}
+        {/* Dropdown Menu with Collision Drop-Up Detection and Edge Alignment */}
         {isOpen && (
           <div
             className={`absolute z-50 ${
               dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-            } w-full min-w-[220px] max-w-[min(50vw,520px)] sm:max-w-none bg-white/95 dark:bg-[#162033]/98 backdrop-blur-2xl border border-slate-200 dark:border-slate-700/80 rounded-xl p-1.5 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
-            style={{ maxHeight: '300px', display: 'flex', flexDirection: 'column' }}
+            } ${
+              horizontalAlign === 'right' ? 'right-0 left-auto' : 'left-0 right-auto'
+            } w-full min-w-[200px] max-w-[calc(100vw-24px)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
+            style={{
+              maxHeight: '300px',
+              maxWidth: 'min(calc(100vw - 24px), 480px)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
           >
             {/* Search Input */}
             {shouldSearch && (
-              <div className="p-1.5 border-b border-slate-100 dark:border-slate-700/60 shrink-0">
+              <div className="p-1.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                   <input
@@ -286,7 +325,7 @@ export function CustomSelect<T extends string | number>({
                       setFocusedIndex(0);
                     }}
                     placeholder={searchPlaceholder}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
@@ -297,11 +336,11 @@ export function CustomSelect<T extends string | number>({
             <ul
               ref={listboxRef}
               role="listbox"
-              className="overflow-y-auto p-0.5 space-y-0.5 chat-scrollbar flex-1 min-h-0"
+              className="overflow-y-auto p-0.5 space-y-0.5 chat-scrollbar flex-1 min-h-0 bg-transparent"
               style={{ maxHeight: shouldSearch ? '220px' : '260px' }}
             >
               {filteredOptions.length === 0 ? (
-                <li className="py-4 text-center text-xs text-slate-400 dark:text-slate-400 select-none">
+                <li className="py-4 text-center text-xs text-slate-400 dark:text-slate-500 select-none">
                   Không tìm thấy lựa chọn phù hợp
                 </li>
               ) : (
@@ -324,23 +363,25 @@ export function CustomSelect<T extends string | number>({
                       onMouseEnter={() => setFocusedIndex(index)}
                       className={`flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl cursor-pointer transition select-none text-xs sm:text-sm ${
                         opt.disabled
-                          ? 'opacity-40 cursor-not-allowed text-slate-400'
+                          ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-500'
                           : isSelected
-                          ? 'bg-indigo-50 dark:bg-indigo-600/25 text-indigo-700 dark:text-indigo-200 font-semibold border border-indigo-200 dark:border-indigo-500/40'
+                          ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-700 dark:text-indigo-200 font-semibold border border-indigo-200 dark:border-indigo-500/40'
                           : isFocused
-                          ? 'bg-slate-100 dark:bg-slate-700/60 text-slate-900 dark:text-white'
-                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+                          : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         {renderIcon(
                           OptionIcon,
                           `w-4 h-4 shrink-0 ${
-                            isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'
+                            isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-400'
                           }`
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className="whitespace-normal break-words leading-snug">{opt.label}</span>
+                          <span className="whitespace-normal break-words leading-snug font-medium text-slate-900 dark:text-slate-100">
+                            {opt.label}
+                          </span>
                           {opt.description && (
                             <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 whitespace-normal break-words">
                               {opt.description}

@@ -20,6 +20,7 @@ import {
   Save,
   Check,
   Lock,
+  Copy,
 } from 'lucide-react';
 import api, { extractApiList } from '../../lib/api';
 import { useTranslation } from '../../i18n';
@@ -31,6 +32,7 @@ import {
   AdminCheckbox,
   AdminSelect,
   Column,
+  MoreActionsDropdown,
 } from '../../components/admin/ui';
 
 export interface PermissionItem {
@@ -369,13 +371,40 @@ export const AdminUsersPage: React.FC = () => {
       header: 'Thao Tác',
       align: 'right',
       render: (u) => (
-        <AdminButton
-          variant="secondary"
-          size="sm"
-          onClick={() => handleOpenUserDrawer(u)}
-        >
-          Phân Quyền
-        </AdminButton>
+        <div className="flex items-center justify-end gap-1.5">
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            onClick={() => handleOpenUserDrawer(u)}
+          >
+            Phân Quyền
+          </AdminButton>
+          <MoreActionsDropdown
+            align="right"
+            size="sm"
+            tooltip="Tùy chọn thao tác tài khoản"
+            items={[
+              {
+                label: 'Cấu hình phân quyền',
+                icon: <Shield className="w-4 h-4 text-indigo-500" />,
+                onClick: () => handleOpenUserDrawer(u),
+              },
+              {
+                label: u.status === 'ACTIVE' ? 'Tạm khóa tài khoản' : 'Kích hoạt lại tài khoản',
+                icon: u.status === 'ACTIVE' ? <XCircle className="w-4 h-4 text-rose-500" /> : <CheckCircle className="w-4 h-4 text-emerald-500" />,
+                variant: u.status === 'ACTIVE' ? 'danger' : 'success',
+                onClick: () => handleToggleStatus(u),
+              },
+              {
+                label: 'Sao chép Email',
+                icon: <Copy className="w-4 h-4 text-slate-400" />,
+                onClick: () => {
+                  navigator.clipboard.writeText(u.email);
+                },
+              },
+            ]}
+          />
+        </div>
       ),
     },
   ];

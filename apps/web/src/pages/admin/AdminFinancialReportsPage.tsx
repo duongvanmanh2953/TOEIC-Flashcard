@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FileText,
   Download,
@@ -28,7 +29,10 @@ import {
   AdminFilterBar,
   AdminTable,
   Column,
+  MoreActionsDropdown,
 } from '../../components/admin/ui';
+import { FinancialReportPrintModal } from '../../components/admin/finance/FinancialReportPrintModal';
+import { FinancialReportPrintDocument } from '../../components/admin/finance/FinancialReportPrintDocument';
 
 export type ReportType =
   | 'ALL'
@@ -50,6 +54,7 @@ export const AdminFinancialReportsPage: React.FC = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [reportData, setReportData] = useState<any>(null);
+  const [printModalOpen, setPrintModalOpen] = useState<boolean>(false);
 
   const REPORT_TABS: { id: ReportType; label: string; icon: any; countBadge?: string }[] = [
     { id: 'ALL', label: 'Tất Cả Báo Cáo', icon: FileText, countBadge: 'Tổng Hợp' },
@@ -167,7 +172,7 @@ export const AdminFinancialReportsPage: React.FC = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    setPrintModalOpen(true);
   };
 
   // Filter items based on selected tab
@@ -249,27 +254,51 @@ export const AdminFinancialReportsPage: React.FC = () => {
           <AdminButton
             variant="secondary"
             size="sm"
-            icon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
-            onClick={handleExportCSV}
-          >
-            Xuất CSV
-          </AdminButton>
-          <AdminButton
-            variant="secondary"
-            size="sm"
             icon={<Printer className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
             onClick={handlePrint}
           >
             In / Lưu PDF
           </AdminButton>
-          <AdminButton
-            variant="primary"
+          <div className="hidden sm:flex items-center gap-2">
+            <AdminButton
+              variant="secondary"
+              size="sm"
+              icon={<FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+              onClick={handleExportCSV}
+            >
+              Xuất CSV
+            </AdminButton>
+            <AdminButton
+              variant="primary"
+              size="sm"
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
+              onClick={fetchReport}
+            >
+              Làm Mới
+            </AdminButton>
+          </div>
+          <MoreActionsDropdown
+            align="right"
             size="sm"
-            icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
-            onClick={fetchReport}
-          >
-            Làm Mới
-          </AdminButton>
+            tooltip="Tùy chọn thao tác báo cáo"
+            items={[
+              {
+                label: 'In Báo Cáo / Lưu PDF',
+                icon: <Printer className="w-4 h-4 text-indigo-500" />,
+                onClick: handlePrint,
+              },
+              {
+                label: 'Xuất Dữ Liệu CSV',
+                icon: <FileSpreadsheet className="w-4 h-4 text-emerald-500" />,
+                onClick: handleExportCSV,
+              },
+              {
+                label: 'Làm mới dữ liệu',
+                icon: <RefreshCw className={`w-4 h-4 text-indigo-500 ${loading ? 'animate-spin' : ''}`} />,
+                onClick: fetchReport,
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -567,6 +596,34 @@ export const AdminFinancialReportsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Dedicated Enterprise Report Print & PDF Preview Modal */}
+      <FinancialReportPrintModal
+        isOpen={printModalOpen}
+        onClose={() => setPrintModalOpen(false)}
+        reportType={reportType}
+        datePreset={datePreset}
+        startDate={startDate}
+        endDate={endDate}
+        reportData={reportData}
+        currentUser={user}
+      />
+
+      {/* Portaled Standalone Print Document (Ensures direct Ctrl+P or print triggers formal report, not UI) */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div id="printable-financial-report">
+            <FinancialReportPrintDocument
+              reportType={reportType}
+              datePreset={datePreset}
+              startDate={startDate}
+              endDate={endDate}
+              reportData={reportData}
+              preparedBy={user?.displayName || 'Quản Trị Viên VocabFlow'}
+            />
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

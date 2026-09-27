@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Check, X, Search, Loader2 } from 'lucide-react';
 
 export interface SelectOption {
@@ -23,6 +23,7 @@ export interface AdminSelectProps {
   searchable?: boolean;
   clearable?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  align?: 'auto' | 'left' | 'right';
   className?: string;
   id?: string;
 }
@@ -41,15 +42,58 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
   searchable = true,
   clearable = true,
   size = 'md',
+  align = 'auto',
   className = '',
   id,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dropUp, setDropUp] = useState(false);
+  const [horizontalAlign, setHorizontalAlign] = useState<'left' | 'right'>('left');
+
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Close dropdown on outside click
+  // Position detection and boundary clamping ("căn lề theo mép")
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    // Vertical collision: flip up if cramped below
+    const spaceBelow = screenH - rect.bottom;
+    const spaceAbove = rect.top;
+    setDropUp(spaceBelow < 280 && spaceAbove > spaceBelow);
+
+    // Horizontal collision: anchor to right if near right edge or in right side
+    if (align === 'right') {
+      setHorizontalAlign('right');
+    } else if (align === 'left') {
+      setHorizontalAlign('left');
+    } else {
+      const estimatedWidth = Math.max(rect.width, 220);
+      const overflowsRight = rect.left + estimatedWidth > screenW - 16;
+      const isRightHalf = rect.left + rect.width / 2 > screenW / 2;
+
+      let containerOverflowsRight = false;
+      const parentContainer = containerRef.current.closest('[role="dialog"], form, table, .overflow-x-auto');
+      if (parentContainer) {
+        const parentRect = parentContainer.getBoundingClientRect();
+        if (rect.left + estimatedWidth > parentRect.right - 12) {
+          containerOverflowsRight = true;
+        }
+      }
+
+      if (overflowsRight || containerOverflowsRight || (isRightHalf && rect.left + estimatedWidth > screenW - 32)) {
+        setHorizontalAlign('right');
+      } else {
+        setHorizontalAlign('left');
+      }
+    }
+  }, [align]);
+
+  // Handle open state, outside clicks, resize & scroll
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -57,9 +101,19 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
         setSearchQuery('');
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
+    if (isOpen) {
+      updatePosition();
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, updatePosition]);
 
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
@@ -199,13 +253,20 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
         </div>
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu with Edge Collision Handling */}
       {isOpen && (
-        <div className="absolute z-50 left-0 w-full min-w-[240px] top-full mt-1.5 max-h-72 overflow-hidden rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/80 p-1.5 transition-all duration-200 animate-in fade-in zoom-in-95">
+        <div
+          className={`absolute z-50 ${
+            dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          } ${
+            horizontalAlign === 'right' ? 'right-0 left-auto' : 'left-0 right-auto'
+          } w-full min-w-[200px] max-w-[calc(100vw-24px)] max-h-72 overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1.5 shadow-2xl transition-all duration-200 animate-in fade-in zoom-in-95`}
+          style={{ maxWidth: 'min(calc(100vw - 24px), 480px)' }}
+        >
           {/* Optional Search inside Select */}
           {searchable && options.length > 5 && (
-            <div className="p-1.5 pb-2 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-xs">
+            <div className="p-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs">
                 <Search className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                 <input
                   ref={searchInputRef}
@@ -213,7 +274,7 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm kiếm..."
-                  className="bg-transparent border-none outline-none text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 w-full text-xs"
+                  className="bg-transparent border-none outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 w-full text-xs"
                 />
                 {searchQuery && (
                   <X
@@ -239,8 +300,8 @@ export const AdminSelect: React.FC<AdminSelectProps> = ({
                     key={opt.value}
                     onClick={() => !opt.disabled && handleSelect(opt.value)}
                     className={`flex items-center justify-between px-3.5 py-2.5 text-xs sm:text-sm rounded-xl transition cursor-pointer select-none
-                      ${selected ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'}
-                      ${opt.disabled ? 'opacity-40 cursor-not-allowed' : ''}
+                      ${selected ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-200 font-semibold border border-indigo-200 dark:border-indigo-500/40' : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}
+                      ${opt.disabled ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-500' : ''}
                     `}
                   >
                     <div className="flex items-center gap-2.5 truncate" title={opt.label}>
