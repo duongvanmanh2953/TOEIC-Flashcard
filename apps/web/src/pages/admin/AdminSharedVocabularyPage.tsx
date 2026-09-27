@@ -414,7 +414,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-3.5 min-w-[110px]">
+                      <td className="py-3.5 min-w-[110px]">
                         {deck.status === 'PENDING' && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
                             <Clock className="w-3 h-3" />
