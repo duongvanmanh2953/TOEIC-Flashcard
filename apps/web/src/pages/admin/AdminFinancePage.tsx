@@ -618,7 +618,7 @@ export const AdminFinancePage: React.FC = () => {
       )}
 
       {/* Portaled Standalone Print Document (Ensures direct Ctrl+P or print triggers formal report, not UI) */}
-      {typeof document !== 'undefined' && formattedReportData &&
+      {typeof document !== 'undefined' && document.body && formattedReportData &&
         createPortal(
           <div id="printable-financial-report">
             <FinancialReportPrintDocument

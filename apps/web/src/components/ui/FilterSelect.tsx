@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 
 export interface FilterOption<T = string> {
@@ -15,8 +16,9 @@ export interface FilterSelectProps<T = string> {
   label?: string;
   icon?: React.ComponentType<{ className?: string }> | React.ReactNode;
   className?: string;
-  size?: 'xs' | 'sm';
+  size?: 'xs' | 'sm' | 'md';
   align?: 'auto' | 'left' | 'right';
+  fullWidth?: boolean;
 }
 
 export function FilterSelect<T extends string | number>({
@@ -28,13 +30,25 @@ export function FilterSelect<T extends string | number>({
   className = '',
   size = 'xs',
   align = 'auto',
+  fullWidth = false,
 }: FilterSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
   const [horizontalAlign, setHorizontalAlign] = useState<'left' | 'right'>('left');
+  const [menuCoords, setMenuCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+    width?: number;
+    dropUp: boolean;
+  } | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
+  const isFullWidth = fullWidth || className.includes('w-full');
 
   const updatePosition = useCallback(() => {
     if (!containerRef.current) return;
@@ -44,56 +58,60 @@ export function FilterSelect<T extends string | number>({
 
     const spaceBelow = screenH - rect.bottom;
     const spaceAbove = rect.top;
-    setDropUp(spaceBelow < 220 && spaceAbove > spaceBelow);
+    const isDropUp = spaceBelow < 220 && spaceAbove > spaceBelow;
+    setDropUp(isDropUp);
 
-    if (align === 'right') {
-      setHorizontalAlign('right');
-    } else if (align === 'left') {
-      setHorizontalAlign('left');
-    } else {
-      const estimatedWidth = Math.max(rect.width, 160);
-      const overflowsRight = rect.left + estimatedWidth > screenW - 12;
-      const isRightHalf = rect.left + rect.width / 2 > screenW / 2;
+    const minW = isFullWidth ? rect.width : Math.max(rect.width, 160);
+    const wouldOverflowRight = rect.left + minW > screenW - 12;
+    const isRight = align === 'right' || (align === 'auto' && (wouldOverflowRight || rect.right > screenW * 0.65));
+    setHorizontalAlign(isRight ? 'right' : 'left');
 
-      let containerOverflowsRight = false;
-      const parentContainer = containerRef.current.closest('[role="dialog"], form, table, .overflow-x-auto');
-      if (parentContainer) {
-        const parentRect = parentContainer.getBoundingClientRect();
-        if (rect.left + estimatedWidth > parentRect.right - 12) {
-          containerOverflowsRight = true;
-        }
-      }
+    const top = isDropUp ? undefined : rect.bottom + 6;
+    const bottom = isDropUp ? screenH - rect.top + 6 : undefined;
+    const left = isRight ? undefined : Math.max(12, rect.left);
+    const right = isRight ? Math.max(12, screenW - rect.right) : undefined;
+    const width = isFullWidth ? Math.min(rect.width, screenW - 24) : undefined;
 
-      if (overflowsRight || containerOverflowsRight || (isRightHalf && rect.left + estimatedWidth > screenW - 24)) {
-        setHorizontalAlign('right');
-      } else {
-        setHorizontalAlign('left');
-      }
-    }
-  }, [align]);
+    setMenuCoords({ top, bottom, left, right, width, dropUp: isDropUp });
+  }, [align, isFullWidth]);
 
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+    if (!isOpen) return;
+
+    updatePosition();
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
+
+    const handleScrollOrResize = (e: Event) => {
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
       updatePosition();
-      document.addEventListener('mousedown', handleOutsideClick);
-      window.addEventListener('resize', updatePosition);
-      window.addEventListener('scroll', updatePosition, true);
-    }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
     };
   }, [isOpen, updatePosition]);
 
   const sizeClasses = {
-    xs: 'py-1 px-2 text-[11px] rounded-lg',
-    sm: 'py-1.5 px-2.5 text-xs rounded-lg',
+    xs: 'py-1 px-2 text-[11px] rounded-lg min-h-[28px]',
+    sm: 'py-2 px-3 text-xs rounded-xl min-h-[38px]',
+    md: 'py-2.5 px-3.5 text-xs sm:text-sm rounded-xl min-h-[42px]',
   }[size];
 
   const renderIcon = (
@@ -115,76 +133,93 @@ export function FilterSelect<T extends string | number>({
   };
 
   return (
-    <div className={`relative inline-block ${className}`} ref={containerRef}>
+    <div className={`relative ${isFullWidth ? 'w-full block' : 'inline-block'} ${className}`} ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition rounded-lg font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 ${sizeClasses}`}
+        className={`${
+          isFullWidth ? 'w-full justify-between' : ''
+        } flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer ${sizeClasses}`}
       >
-        {renderIcon(LeftIcon, 'w-3 h-3 text-slate-400 shrink-0')}
-        {!LeftIcon && renderIcon(selectedOption?.icon, 'w-3 h-3 text-slate-400 shrink-0')}
-        {label && <span className="text-slate-500 font-normal">{label}:</span>}
-        <span className="font-semibold text-slate-200 truncate max-w-[130px]">
-          {selectedOption ? selectedOption.label : String(value)}
-        </span>
-        {selectedOption?.badge !== undefined && (
-          <span className="px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-bold">
-            {selectedOption.badge}
+        <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
+          {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 shrink-0')}
+          {!LeftIcon && renderIcon(selectedOption?.icon, 'w-3.5 h-3.5 text-slate-400 shrink-0')}
+          {label && <span className="text-slate-500 font-normal shrink-0">{label}:</span>}
+          <span className={`font-semibold text-slate-200 truncate ${isFullWidth ? 'flex-1 text-left' : 'max-w-[140px]'}`}>
+            {selectedOption ? selectedOption.label : String(value)}
           </span>
-        )}
+          {selectedOption?.badge !== undefined && (
+            <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-bold shrink-0">
+              {selectedOption.badge}
+            </span>
+          )}
+        </div>
         <ChevronDown
-          className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${
+          className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-1 ${
             isOpen ? 'rotate-180 text-indigo-400' : ''
           }`}
         />
       </button>
 
-      {isOpen && (
-        <div
-          className={`absolute z-50 ${
-            dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-          } ${
-            horizontalAlign === 'right' ? 'right-0 left-auto' : 'left-0 right-auto'
-          } min-w-[150px] max-w-[calc(100vw-24px)] bg-slate-900/98 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-1 text-xs animate-in fade-in zoom-in-95 duration-100`}
-          style={{ maxWidth: 'min(calc(100vw - 24px), 320px)' }}
-        >
-          <div className="overflow-y-auto max-h-56 p-0.5 space-y-0.5 chat-scrollbar">
-            {options.map((opt) => {
-              const isSelected = opt.value === value;
-              const OptIcon = opt.icon;
+      {/* Floating Menu via Portal - 100% independent from parent layout, never clipped by overflow */}
+      {isOpen &&
+        menuCoords &&
+        typeof document !== 'undefined' &&
+        document.body &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: 'fixed',
+              top: menuCoords.top !== undefined ? `${menuCoords.top}px` : undefined,
+              bottom: menuCoords.bottom !== undefined ? `${menuCoords.bottom}px` : undefined,
+              left: menuCoords.left !== undefined ? `${menuCoords.left}px` : undefined,
+              right: menuCoords.right !== undefined ? `${menuCoords.right}px` : undefined,
+              width: menuCoords.width !== undefined ? `${menuCoords.width}px` : undefined,
+              minWidth: isFullWidth ? undefined : '160px',
+              maxWidth: isFullWidth ? 'min(calc(100vw - 24px), 480px)' : 'min(calc(100vw - 24px), 320px)',
+              zIndex: 99999,
+            }}
+            className="bg-slate-900/98 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-1 text-xs animate-in fade-in zoom-in-95 duration-100"
+          >
+            <div className="overflow-y-auto max-h-56 p-0.5 space-y-0.5 chat-scrollbar">
+              {options.map((opt) => {
+                const isSelected = opt.value === value;
+                const OptIcon = opt.icon;
 
-              return (
-                <button
-                  key={String(opt.value)}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left transition select-none ${
-                    isSelected
-                      ? 'bg-indigo-600/25 text-indigo-200 font-bold border border-indigo-500/30'
-                      : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    {renderIcon(OptIcon, 'w-3 h-3 text-slate-400 shrink-0')}
-                    <span className="truncate">{opt.label}</span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {opt.badge !== undefined && (
-                      <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 text-[9px] font-bold">
-                        {opt.badge}
-                      </span>
-                    )}
-                    {isSelected && <Check className="w-3 h-3 text-indigo-400" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                return (
+                  <button
+                    key={String(opt.value)}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left transition select-none ${
+                      isSelected
+                        ? 'bg-indigo-600/25 text-indigo-200 font-bold border border-indigo-500/30'
+                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      {renderIcon(OptIcon, 'w-3 h-3 text-slate-400 shrink-0')}
+                      <span className="truncate">{opt.label}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {opt.badge !== undefined && (
+                        <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 text-[9px] font-bold">
+                          {opt.badge}
+                        </span>
+                      )}
+                      {isSelected && <Check className="w-3 h-3 text-indigo-400" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

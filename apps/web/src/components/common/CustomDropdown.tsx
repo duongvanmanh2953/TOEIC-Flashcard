@@ -359,6 +359,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       {/* Portal Dropdown Menu: Viewport Collision Protected & Smart Width */}
       {isOpen &&
         menuCoords &&
+        typeof document !== 'undefined' &&
+        document.body &&
         createPortal(
           <div
             ref={menuRef}

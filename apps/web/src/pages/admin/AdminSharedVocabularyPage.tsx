@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
+import { MoreActionsDropdown } from '../../components/common/MoreActionsDropdown';
 import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
@@ -162,11 +163,12 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     }
   };
 
-  const handlePublishToMaster = async () => {
-    if (!selectedDeck) return;
+  const handlePublishToMaster = async (targetDeck?: SharedDeck) => {
+    const deckToPublish = targetDeck || selectedDeck;
+    if (!deckToPublish) return;
     setActionLoading(true);
     try {
-      const res: any = await api.post(`/admin/shared-vocabulary/${selectedDeck.id}/publish-master`);
+      const res: any = await api.post(`/admin/shared-vocabulary/${deckToPublish.id}/publish-master`);
       showToast(
         'success',
         res?.data?.message || `Đã xuất bản ${res?.data?.publishedCount || 0} từ vào từ điển hệ thống!`,
@@ -248,47 +250,55 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 glass-card p-4 bg-slate-900/40 border border-slate-800/60 rounded-2xl">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tiêu đề bộ từ, người đóng góp, hoặc email..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
-          />
-        </div>
+      <div className="glass-card p-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+          <div className="sm:col-span-2 lg:col-span-5 relative">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm theo tiêu đề bộ từ, người đóng góp, hoặc email..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition min-h-[38px]"
+            />
+          </div>
 
-        <div className="flex items-center gap-3">
-          <FilterSelect
-            value={spaceFilter}
-            onChange={(val) => setSpaceFilter(String(val))}
-            options={[
-              { value: 'ALL', label: 'Tất cả không gian học' },
-              ...SUPPORTED_LANGUAGES.map((lang) => ({
-                value: lang.id,
-                label: `${lang.nativeName} (${lang.name})`,
-                icon: <CountryFlag languageId={lang.id} size="xs" />,
-              })),
-            ]}
-            className="w-56"
-          />
+          <div className="lg:col-span-3">
+            <FilterSelect
+              value={spaceFilter}
+              onChange={(val) => setSpaceFilter(String(val))}
+              options={[
+                { value: 'ALL', label: 'Tất cả không gian học' },
+                ...SUPPORTED_LANGUAGES.map((lang) => ({
+                  value: lang.id,
+                  label: `${lang.nativeName} (${lang.name})`,
+                  icon: <CountryFlag languageId={lang.id} size="xs" />,
+                })),
+              ]}
+              size="sm"
+              className="w-full"
+            />
+          </div>
 
-          <FilterSelect
-            value={statusFilter}
-            onChange={(val) => setStatusFilter(String(val))}
-            options={statusOptions}
-            className="w-48"
-          />
+          <div className="lg:col-span-3">
+            <FilterSelect
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(String(val))}
+              options={statusOptions}
+              size="sm"
+              className="w-full"
+            />
+          </div>
 
-          <button
-            onClick={fetchDecks}
-            title="Làm mới danh sách"
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition"
-          >
-            <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
-          </button>
+          <div className="lg:col-span-1 flex items-center">
+            <button
+              onClick={fetchDecks}
+              title="Làm mới danh sách"
+              className="w-full h-[38px] flex items-center justify-center rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
+            >
+              <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -433,83 +443,97 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {deck.status === 'PENDING' && (
-                            <>
-                              <button
-                                type="button"
-                                title="Phê duyệt nhanh"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTargetDeckForAction(deck);
-                                  setShowApproveConfirmModal(true);
-                                }}
-                                disabled={actionLoading}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">Duyệt</span>
-                              </button>
-                              <button
-                                type="button"
-                                title="Từ chối"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTargetDeckForAction(deck);
-                                  setShowRejectModal(true);
-                                }}
-                                disabled={actionLoading}
-                                className="px-2.5 py-1 rounded-lg bg-rose-600/20 text-rose-300 border border-rose-500/30 hover:bg-rose-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">Từ chối</span>
-                              </button>
-                            </>
-                          )}
-                          {deck.status === 'APPROVED' && (
-                            <button
-                              type="button"
-                              title="Hủy phê duyệt"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTargetDeckForAction(deck);
-                                setShowUnapproveConfirmModal(true);
-                              }}
-                              disabled={actionLoading}
-                              className="px-2.5 py-1 rounded-lg bg-amber-600/20 text-amber-300 border border-amber-500/30 hover:bg-amber-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Hủy duyệt</span>
-                            </button>
-                          )}
-                          {deck.status === 'REJECTED' && (
-                            <button
-                              type="button"
-                              title="Phê duyệt lại"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTargetDeckForAction(deck);
-                                setShowApproveConfirmModal(true);
-                              }}
-                              disabled={actionLoading}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Duyệt lại</span>
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDeck(deck);
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-[11px] transition inline-flex items-center gap-1 border border-slate-700/60 cursor-pointer"
-                          >
-                            <span>Chi tiết</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
+                        <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+                          <MoreActionsDropdown
+                            align="right"
+                            size="sm"
+                            tooltip="Thao tác bộ từ"
+                            items={[
+                              {
+                                id: 'view-deck',
+                                label: 'Xem chi tiết bộ từ',
+                                icon: <FileText className="w-3.5 h-3.5" />,
+                                onClick: () => setSelectedDeck(deck),
+                              },
+                              ...(deck.status === 'PENDING'
+                                ? [
+                                    {
+                                      id: 'approve',
+                                      label: 'Phê duyệt bộ từ',
+                                      variant: 'success' as const,
+                                      icon: <Check className="w-3.5 h-3.5" />,
+                                      disabled: actionLoading,
+                                      onClick: () => {
+                                        setTargetDeckForAction(deck);
+                                        setShowApproveConfirmModal(true);
+                                      },
+                                    },
+                                    {
+                                      id: 'reject',
+                                      label: 'Từ chối duyệt',
+                                      variant: 'danger' as const,
+                                      icon: <X className="w-3.5 h-3.5" />,
+                                      disabled: actionLoading,
+                                      onClick: () => {
+                                        setTargetDeckForAction(deck);
+                                        setShowRejectModal(true);
+                                      },
+                                    },
+                                  ]
+                                : []),
+                              ...(deck.status === 'APPROVED'
+                                ? [
+                                    {
+                                      id: 'publish-master',
+                                      label: 'Xuất bản vào Master',
+                                      variant: 'primary' as const,
+                                      icon: <UploadCloud className="w-3.5 h-3.5" />,
+                                      disabled: actionLoading,
+                                      onClick: () => {
+                                        handlePublishToMaster(deck);
+                                      },
+                                    },
+                                    {
+                                      id: 'unapprove',
+                                      label: 'Hủy duyệt (Thu hồi)',
+                                      variant: 'danger' as const,
+                                      icon: <RotateCcw className="w-3.5 h-3.5" />,
+                                      divider: true,
+                                      disabled: actionLoading,
+                                      onClick: () => {
+                                        setTargetDeckForAction(deck);
+                                        setShowUnapproveConfirmModal(true);
+                                      },
+                                    },
+                                  ]
+                                : []),
+                              ...(deck.status === 'REJECTED'
+                                ? [
+                                    {
+                                      id: 're-approve',
+                                      label: 'Phê duyệt lại',
+                                      variant: 'success' as const,
+                                      icon: <Check className="w-3.5 h-3.5" />,
+                                      disabled: actionLoading,
+                                      onClick: () => {
+                                        setTargetDeckForAction(deck);
+                                        setShowApproveConfirmModal(true);
+                                      },
+                                    },
+                                  ]
+                                : []),
+                              {
+                                id: 'copy-id',
+                                label: 'Sao chép ID bộ từ',
+                                divider: true,
+                                icon: <Sparkles className="w-3.5 h-3.5 text-slate-400" />,
+                                onClick: () => {
+                                  navigator.clipboard.writeText(deck.id);
+                                  showToast('success', 'Đã sao chép ID bộ từ');
+                                },
+                              },
+                            ]}
+                          />
                         </div>
                       </td>
                     </tr>

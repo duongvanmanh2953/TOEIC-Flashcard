@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search, X } from 'lucide-react';
 
 export interface SelectOption<T = string | number> {
@@ -51,9 +52,18 @@ export function CustomSelect<T extends string | number>({
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [dropUp, setDropUp] = useState(false);
   const [horizontalAlign, setHorizontalAlign] = useState<'left' | 'right'>('left');
+  const [menuCoords, setMenuCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+    width: number;
+    dropUp: boolean;
+  } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownMenuRef = useRef<HTMLDivElement>(null);
   const listboxRef = useRef<HTMLUListElement>(null);
   const id = useId();
 
@@ -104,53 +114,55 @@ export function CustomSelect<T extends string | number>({
     // Vertical collision detection: flip up if not enough space below
     const spaceBelow = screenH - rect.bottom;
     const spaceAbove = rect.top;
-    setDropUp(spaceBelow < 280 && spaceAbove > spaceBelow);
+    const isDropUp = spaceBelow < 280 && spaceAbove > spaceBelow;
+    setDropUp(isDropUp);
 
-    // Horizontal edge collision detection ("căn lề theo mép"):
-    if (align === 'right') {
-      setHorizontalAlign('right');
-    } else if (align === 'left') {
-      setHorizontalAlign('left');
-    } else {
-      const estimatedWidth = Math.max(rect.width, 220);
-      const overflowsRight = rect.left + estimatedWidth > screenW - 16;
-      const isRightHalf = rect.left + rect.width / 2 > screenW / 2;
+    const minW = Math.max(rect.width, 200);
+    const wouldOverflowRight = rect.left + minW > screenW - 16;
+    const isRight = align === 'right' || (align === 'auto' && (wouldOverflowRight || rect.right > screenW * 0.65));
+    setHorizontalAlign(isRight ? 'right' : 'left');
 
-      let containerOverflowsRight = false;
-      const parentContainer = containerRef.current.closest('[role="dialog"], form, table, .overflow-x-auto');
-      if (parentContainer) {
-        const parentRect = parentContainer.getBoundingClientRect();
-        if (rect.left + estimatedWidth > parentRect.right - 12) {
-          containerOverflowsRight = true;
-        }
-      }
+    const top = isDropUp ? undefined : rect.bottom + 6;
+    const bottom = isDropUp ? screenH - rect.top + 6 : undefined;
+    const left = isRight ? undefined : Math.max(12, rect.left);
+    const right = isRight ? Math.max(12, screenW - rect.right) : undefined;
+    const width = Math.min(Math.max(rect.width, 200), screenW - 24);
 
-      if (overflowsRight || containerOverflowsRight || (isRightHalf && rect.left + estimatedWidth > screenW - 32)) {
-        setHorizontalAlign('right');
-      } else {
-        setHorizontalAlign('left');
-      }
-    }
+    setMenuCoords({ top, bottom, left, right, width, dropUp: isDropUp });
   };
 
   // Handle click outside to close
   useEffect(() => {
+    if (!isOpen) return;
+
+    updatePosition();
+
     const handleOutsideClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        dropdownMenuRef.current &&
+        !dropdownMenuRef.current.contains(target)
+      ) {
         setIsOpen(false);
         setSearchQuery('');
       }
     };
-    if (isOpen) {
+
+    const handleScrollOrResize = (e: Event) => {
+      if (dropdownMenuRef.current && dropdownMenuRef.current.contains(e.target as Node)) return;
       updatePosition();
-      document.addEventListener('mousedown', handleOutsideClick);
-      window.addEventListener('resize', updatePosition);
-      window.addEventListener('scroll', updatePosition, true);
-    }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
     };
   }, [isOpen]);
 
@@ -296,121 +308,130 @@ export function CustomSelect<T extends string | number>({
           </div>
         </button>
 
-        {/* Dropdown Menu with Collision Drop-Up Detection and Edge Alignment */}
-        {isOpen && (
-          <div
-            className={`absolute z-50 ${
-              dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-            } ${
-              horizontalAlign === 'right' ? 'right-0 left-auto' : 'left-0 right-auto'
-            } w-full min-w-[200px] max-w-[calc(100vw-24px)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
-            style={{
-              maxHeight: '300px',
-              maxWidth: 'min(calc(100vw - 24px), 480px)',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            {/* Search Input */}
-            {shouldSearch && (
-              <div className="p-1.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setFocusedIndex(0);
-                    }}
-                    placeholder={searchPlaceholder}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Options List */}
-            <ul
-              ref={listboxRef}
-              role="listbox"
-              className="overflow-y-auto p-0.5 space-y-0.5 chat-scrollbar flex-1 min-h-0 bg-transparent"
-              style={{ maxHeight: shouldSearch ? '220px' : '260px' }}
+        {/* Dropdown Menu via Portal - 100% independent from parent layout, never clipped */}
+        {isOpen &&
+          menuCoords &&
+          typeof document !== 'undefined' &&
+          document.body &&
+          createPortal(
+            <div
+              ref={dropdownMenuRef}
+              style={{
+                position: 'fixed',
+                top: menuCoords.top !== undefined ? `${menuCoords.top}px` : undefined,
+                bottom: menuCoords.bottom !== undefined ? `${menuCoords.bottom}px` : undefined,
+                left: menuCoords.left !== undefined ? `${menuCoords.left}px` : undefined,
+                right: menuCoords.right !== undefined ? `${menuCoords.right}px` : undefined,
+                width: `${menuCoords.width}px`,
+                maxWidth: 'min(calc(100vw - 24px), 480px)',
+                maxHeight: '300px',
+                zIndex: 99999,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+              className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
             >
-              {filteredOptions.length === 0 ? (
-                <li className="py-4 text-center text-xs text-slate-400 dark:text-slate-500 select-none">
-                  Không tìm thấy lựa chọn phù hợp
-                </li>
-              ) : (
-                filteredOptions.map((opt, index) => {
-                  const isSelected = opt.value === value;
-                  const isFocused = index === focusedIndex;
-                  const OptionIcon = opt.icon;
-
-                  return (
-                    <li
-                      key={String(opt.value)}
-                      role="option"
-                      aria-selected={isSelected}
-                      onClick={() => {
-                        if (opt.disabled) return;
-                        onChange(opt.value);
-                        setIsOpen(false);
-                        setSearchQuery('');
+              {/* Search Input */}
+              {shouldSearch && (
+                <div className="p-1.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setFocusedIndex(0);
                       }}
-                      onMouseEnter={() => setFocusedIndex(index)}
-                      className={`flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl cursor-pointer transition select-none text-xs sm:text-sm ${
-                        opt.disabled
-                          ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-500'
-                          : isSelected
-                          ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-700 dark:text-indigo-200 font-semibold border border-indigo-200 dark:border-indigo-500/40'
-                          : isFocused
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
-                          : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        {renderIcon(
-                          OptionIcon,
-                          `w-4 h-4 shrink-0 ${
-                            isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-400'
-                          }`
-                        )}
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span className="whitespace-normal break-words leading-snug font-medium text-slate-900 dark:text-slate-100">
-                            {opt.label}
-                          </span>
-                          {opt.description && (
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 whitespace-normal break-words">
-                              {opt.description}
+                      placeholder={searchPlaceholder}
+                      className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Options List */}
+              <ul
+                ref={listboxRef}
+                role="listbox"
+                className="overflow-y-auto p-0.5 space-y-0.5 chat-scrollbar flex-1 min-h-0 bg-transparent"
+                style={{ maxHeight: shouldSearch ? '220px' : '260px' }}
+              >
+                {filteredOptions.length === 0 ? (
+                  <li className="py-4 text-center text-xs text-slate-400 dark:text-slate-500 select-none">
+                    Không tìm thấy lựa chọn phù hợp
+                  </li>
+                ) : (
+                  filteredOptions.map((opt, index) => {
+                    const isSelected = opt.value === value;
+                    const isFocused = index === focusedIndex;
+                    const OptionIcon = opt.icon;
+
+                    return (
+                      <li
+                        key={String(opt.value)}
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => {
+                          if (opt.disabled) return;
+                          onChange(opt.value);
+                          setIsOpen(false);
+                          setSearchQuery('');
+                        }}
+                        onMouseEnter={() => setFocusedIndex(index)}
+                        className={`flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl cursor-pointer transition select-none text-xs sm:text-sm ${
+                          opt.disabled
+                            ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-500'
+                            : isSelected
+                            ? 'bg-indigo-50 dark:bg-indigo-600/30 text-indigo-700 dark:text-indigo-200 font-semibold border border-indigo-200 dark:border-indigo-500/40'
+                            : isFocused
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+                            : 'text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          {renderIcon(
+                            OptionIcon,
+                            `w-4 h-4 shrink-0 ${
+                              isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-400'
+                            }`
+                          )}
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="whitespace-normal break-words leading-snug font-medium text-slate-900 dark:text-slate-100">
+                              {opt.label}
+                            </span>
+                            {opt.description && (
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 whitespace-normal break-words">
+                                {opt.description}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {opt.badge !== undefined && (
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                opt.badgeColor || 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {opt.badge}
                             </span>
                           )}
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                          )}
                         </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {opt.badge !== undefined && (
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              opt.badgeColor || 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                            }`}
-                          >
-                            {opt.badge}
-                          </span>
-                        )}
-                        {isSelected && (
-                          <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        )}
-                      </div>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          </div>
-        )}
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </div>,
+            document.body
+          )}
       </div>
 
       {error && <p className="text-[11px] text-rose-400 mt-0.5">{error}</p>}

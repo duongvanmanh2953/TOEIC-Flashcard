@@ -157,6 +157,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       {/* Dropdown Menu Portal */}
       {isOpen &&
         menuCoords &&
+        typeof document !== 'undefined' &&
+        document.body &&
         createPortal(
           <div
             ref={menuRef}

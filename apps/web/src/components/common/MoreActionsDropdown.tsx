@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreVertical, MoreHorizontal, ChevronRight } from 'lucide-react';
 
 export interface MoreActionItem {
@@ -45,12 +46,20 @@ export const MoreActionsDropdown: React.FC<MoreActionsDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
   const [effectiveAlign, setEffectiveAlign] = useState<'left' | 'right'>(align);
+  const [menuCoords, setMenuCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+    dropUp: boolean;
+  } | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const visibleItems = items.filter((item) => !item.hidden);
 
-  // Position detection (drop up vs drop down and boundary alignment)
+  // Position detection (fixed portal coords and boundary alignment)
   const checkPosition = useCallback(() => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -59,23 +68,28 @@ export const MoreActionsDropdown: React.FC<MoreActionsDropdownProps> = ({
 
     const spaceBelow = windowH - rect.bottom;
     const spaceAbove = rect.top;
-    setDropUp(spaceBelow < 220 && spaceAbove > spaceBelow);
+    const isDropUp = spaceBelow < 240 && spaceAbove > spaceBelow;
+    setDropUp(isDropUp);
 
-    const estimatedWidth = 200;
-    // Check horizontal edge collision
+    const estimatedWidth = 210;
+    let isRight = align === 'right';
     if (align === 'right') {
       if (rect.right - estimatedWidth < 12 && rect.left + estimatedWidth <= windowW - 12) {
-        setEffectiveAlign('left');
-      } else {
-        setEffectiveAlign('right');
+        isRight = false;
       }
     } else {
       if (rect.left + estimatedWidth > windowW - 12 && rect.right - estimatedWidth >= 12) {
-        setEffectiveAlign('right');
-      } else {
-        setEffectiveAlign('left');
+        isRight = true;
       }
     }
+    setEffectiveAlign(isRight ? 'right' : 'left');
+
+    const top = isDropUp ? undefined : rect.bottom + 6;
+    const bottom = isDropUp ? windowH - rect.top + 6 : undefined;
+    const left = isRight ? undefined : Math.max(12, rect.left);
+    const right = isRight ? Math.max(12, windowW - rect.right) : undefined;
+
+    setMenuCoords({ top, bottom, left, right, dropUp: isDropUp });
   }, [align]);
 
   const handleToggle = (e: React.MouseEvent) => {
@@ -85,14 +99,19 @@ export const MoreActionsDropdown: React.FC<MoreActionsDropdownProps> = ({
     setIsOpen((prev) => !prev);
   };
 
-  // Close when clicking outside
+  // Close when clicking outside and handle scroll/resize
   useEffect(() => {
     if (!isOpen) return;
 
+    checkPosition();
+
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
       ) {
         setIsOpen(false);
       }
@@ -104,20 +123,21 @@ export const MoreActionsDropdown: React.FC<MoreActionsDropdownProps> = ({
       }
     };
 
-    if (isOpen) {
+    const handleScrollOrResize = (e: Event) => {
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
       checkPosition();
-      window.addEventListener('resize', checkPosition);
-      window.addEventListener('scroll', checkPosition, true);
-    }
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('resize', checkPosition);
-      window.removeEventListener('scroll', checkPosition, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
     };
   }, [isOpen, checkPosition]);
 
@@ -168,18 +188,26 @@ export const MoreActionsDropdown: React.FC<MoreActionsDropdownProps> = ({
         </button>
       )}
 
-      {/* Floating Menu */}
-      {isOpen && (
-        <div
-          ref={menuRef}
-          role="menu"
-          className={`absolute z-50 ${
-            effectiveAlign === 'left' ? 'left-0 right-auto' : 'right-0 left-auto'
-          } ${
-            dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-          } min-w-[200px] max-w-[calc(100vw-24px)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
-          style={{ maxWidth: 'min(calc(100vw - 24px), 320px)' }}
-        >
+      {/* Floating Menu Portal - 100% independent from parent layout, never clipped by overflow */}
+      {isOpen &&
+        menuCoords &&
+        typeof document !== 'undefined' &&
+        document.body &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            style={{
+              position: 'fixed',
+              top: menuCoords.top !== undefined ? `${menuCoords.top}px` : undefined,
+              bottom: menuCoords.bottom !== undefined ? `${menuCoords.bottom}px` : undefined,
+              left: menuCoords.left !== undefined ? `${menuCoords.left}px` : undefined,
+              right: menuCoords.right !== undefined ? `${menuCoords.right}px` : undefined,
+              maxWidth: 'min(calc(100vw - 24px), 320px)',
+              zIndex: 99999,
+            }}
+            className={`min-w-[200px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
+          >
           <div className="space-y-0.5">
             {visibleItems.map((item, idx) => {
               const isDanger = item.variant === 'danger';
@@ -247,7 +275,8 @@ export const MoreActionsDropdown: React.FC<MoreActionsDropdownProps> = ({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
