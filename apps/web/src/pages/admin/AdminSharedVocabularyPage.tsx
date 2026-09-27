@@ -128,8 +128,8 @@ export const AdminSharedVocabularyPage: React.FC = () => {
         action === 'APPROVE'
           ? `Đã duyệt và công khai bộ từ "${deck.title}"!`
           : action === 'REJECT'
-          ? `Đã từ chối bộ từ "${deck.title}". Thông báo đã gửi đến học viên.`
-          : `Đã hoàn tác duyệt bộ từ "${deck.title}" về chờ duyệt.`,
+            ? `Đã từ chối bộ từ "${deck.title}". Thông báo đã gửi đến học viên.`
+            : `Đã hoàn tác duyệt bộ từ "${deck.title}" về chờ duyệt.`,
       );
 
       setShowRejectModal(false);
@@ -143,14 +143,14 @@ export const AdminSharedVocabularyPage: React.FC = () => {
         setSelectedDeck((prev) =>
           prev
             ? {
-                ...prev,
-                status:
-                  action === 'APPROVE'
-                    ? 'APPROVED'
-                    : action === 'REJECT'
+              ...prev,
+              status:
+                action === 'APPROVE'
+                  ? 'APPROVED'
+                  : action === 'REJECT'
                     ? 'REJECTED'
                     : 'PENDING',
-              }
+            }
             : null,
         );
       }
@@ -204,11 +204,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       {/* Toast Alert */}
       {messageToast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl backdrop-blur-xl border shadow-xl flex items-center gap-3 transition-all ${
-            messageToast.type === 'success'
-              ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
-              : 'bg-rose-950/90 text-rose-300 border-rose-500/40'
-          }`}
+          className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl backdrop-blur-xl border shadow-xl flex items-center gap-3 transition-all ${messageToast.type === 'success'
+            ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40'
+            : 'bg-rose-950/90 text-rose-300 border-rose-500/40'
+            }`}
         >
           {messageToast.type === 'success' ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -321,16 +320,16 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <table className="w-full min-w-[680px] text-left border-collapse text-xs">
+            <table className="w-full min-w-[800px] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-800/80 bg-slate-950/40 text-slate-400 font-bold uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Bộ Từ Vựng & Đóng Góp</th>
-                  <th className="py-3.5 px-4">Người Đóng Góp</th>
-                  <th className="py-3.5 px-4">Số Từ / CEFR</th>
-                  <th className="py-3.5 px-4">AI Quality Score</th>
-                  <th className="py-3.5 px-4">Trạng Thái</th>
-                  <th className="py-3.5 px-4">Ngày Gửi</th>
-                  <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                <tr className="border-b border-slate-800/80 bg-slate-950/50 text-slate-400 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap select-none">
+                  <th className="py-3 px-4">Bộ Từ Vựng & Đóng Góp</th>
+                  <th className="py-3 px-3.5">Người Đóng Góp</th>
+                  <th className="py-3 px-3.5">Số Từ / CEFR</th>
+                  <th className="py-3 px-3.5">AI Quality Score</th>
+                  <th className="py-3 px-3.5">Trạng Thái</th>
+                  <th className="py-3 px-3.5">Ngày Gửi</th>
+                  <th className="py-3 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50 text-slate-300">
@@ -380,7 +379,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-3.5">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-slate-200">{wordsCount} từ</span>
                           <span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
@@ -389,35 +388,33 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-3.5">
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 rounded-full bg-slate-800 overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${
-                                score >= 80
-                                  ? 'bg-emerald-500'
-                                  : score >= 50
+                              className={`h-full rounded-full ${score >= 80
+                                ? 'bg-emerald-500'
+                                : score >= 50
                                   ? 'bg-amber-500'
                                   : 'bg-rose-500'
-                              }`}
+                                }`}
                               style={{ width: `${score}%` }}
                             />
                           </div>
                           <span
-                            className={`font-black text-[11px] ${
-                              score >= 80
-                                ? 'text-emerald-400'
-                                : score >= 50
+                            className={`font-black text-[11px] ${score >= 80
+                              ? 'text-emerald-400'
+                              : score >= 50
                                 ? 'text-amber-400'
                                 : 'text-rose-400'
-                            }`}
+                              }`}
                           >
                             {score}%
                           </span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-3.5">
                         {deck.status === 'PENDING' && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
                             <Clock className="w-3 h-3" />
@@ -425,9 +422,9 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                           </span>
                         )}
                         {deck.status === 'APPROVED' && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                             <CheckCircle2 className="w-3 h-3" />
-                            Đã phê duyệt
+                            Đã duyệt
                           </span>
                         )}
                         {deck.status === 'REJECTED' && (
@@ -438,7 +435,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                      <td className="py-3.5 px-3.5 text-slate-400 text-[11px] whitespace-nowrap">
                         {new Date(deck.createdAt).toLocaleDateString('vi-VN')}
                       </td>
 
@@ -457,70 +454,70 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                               },
                               ...(deck.status === 'PENDING'
                                 ? [
-                                    {
-                                      id: 'approve',
-                                      label: 'Phê duyệt bộ từ',
-                                      variant: 'success' as const,
-                                      icon: <Check className="w-3.5 h-3.5" />,
-                                      disabled: actionLoading,
-                                      onClick: () => {
-                                        setTargetDeckForAction(deck);
-                                        setShowApproveConfirmModal(true);
-                                      },
+                                  {
+                                    id: 'approve',
+                                    label: 'Phê duyệt bộ từ',
+                                    variant: 'success' as const,
+                                    icon: <Check className="w-3.5 h-3.5" />,
+                                    disabled: actionLoading,
+                                    onClick: () => {
+                                      setTargetDeckForAction(deck);
+                                      setShowApproveConfirmModal(true);
                                     },
-                                    {
-                                      id: 'reject',
-                                      label: 'Từ chối duyệt',
-                                      variant: 'danger' as const,
-                                      icon: <X className="w-3.5 h-3.5" />,
-                                      disabled: actionLoading,
-                                      onClick: () => {
-                                        setTargetDeckForAction(deck);
-                                        setShowRejectModal(true);
-                                      },
+                                  },
+                                  {
+                                    id: 'reject',
+                                    label: 'Từ chối duyệt',
+                                    variant: 'danger' as const,
+                                    icon: <X className="w-3.5 h-3.5" />,
+                                    disabled: actionLoading,
+                                    onClick: () => {
+                                      setTargetDeckForAction(deck);
+                                      setShowRejectModal(true);
                                     },
-                                  ]
+                                  },
+                                ]
                                 : []),
                               ...(deck.status === 'APPROVED'
                                 ? [
-                                    {
-                                      id: 'publish-master',
-                                      label: 'Xuất bản vào Master',
-                                      variant: 'primary' as const,
-                                      icon: <UploadCloud className="w-3.5 h-3.5" />,
-                                      disabled: actionLoading,
-                                      onClick: () => {
-                                        handlePublishToMaster(deck);
-                                      },
+                                  {
+                                    id: 'publish-master',
+                                    label: 'Xuất bản vào Master',
+                                    variant: 'primary' as const,
+                                    icon: <UploadCloud className="w-3.5 h-3.5" />,
+                                    disabled: actionLoading,
+                                    onClick: () => {
+                                      handlePublishToMaster(deck);
                                     },
-                                    {
-                                      id: 'unapprove',
-                                      label: 'Hủy duyệt (Thu hồi)',
-                                      variant: 'danger' as const,
-                                      icon: <RotateCcw className="w-3.5 h-3.5" />,
-                                      divider: true,
-                                      disabled: actionLoading,
-                                      onClick: () => {
-                                        setTargetDeckForAction(deck);
-                                        setShowUnapproveConfirmModal(true);
-                                      },
+                                  },
+                                  {
+                                    id: 'unapprove',
+                                    label: 'Hủy duyệt (Thu hồi)',
+                                    variant: 'danger' as const,
+                                    icon: <RotateCcw className="w-3.5 h-3.5" />,
+                                    divider: true,
+                                    disabled: actionLoading,
+                                    onClick: () => {
+                                      setTargetDeckForAction(deck);
+                                      setShowUnapproveConfirmModal(true);
                                     },
-                                  ]
+                                  },
+                                ]
                                 : []),
                               ...(deck.status === 'REJECTED'
                                 ? [
-                                    {
-                                      id: 're-approve',
-                                      label: 'Phê duyệt lại',
-                                      variant: 'success' as const,
-                                      icon: <Check className="w-3.5 h-3.5" />,
-                                      disabled: actionLoading,
-                                      onClick: () => {
-                                        setTargetDeckForAction(deck);
-                                        setShowApproveConfirmModal(true);
-                                      },
+                                  {
+                                    id: 're-approve',
+                                    label: 'Phê duyệt lại',
+                                    variant: 'success' as const,
+                                    icon: <Check className="w-3.5 h-3.5" />,
+                                    disabled: actionLoading,
+                                    onClick: () => {
+                                      setTargetDeckForAction(deck);
+                                      setShowApproveConfirmModal(true);
                                     },
-                                  ]
+                                  },
+                                ]
                                 : []),
                               {
                                 id: 'copy-id',

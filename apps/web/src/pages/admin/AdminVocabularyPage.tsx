@@ -508,8 +508,8 @@ export const AdminVocabularyPage: React.FC = () => {
           <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
             <table className="w-full min-w-[700px] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-800/80 bg-slate-950/40 text-slate-400 font-bold uppercase tracking-wider">
-                  <th className="py-3.5 px-4 w-10">
+                <tr className="border-b border-slate-800/80 bg-slate-950/50 text-slate-400 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap select-none">
+                  <th className="py-3 px-4 w-10">
                     <input
                       type="checkbox"
                       checked={selectedIds.length === items.length && items.length > 0}
@@ -517,12 +517,12 @@ export const AdminVocabularyPage: React.FC = () => {
                       className="rounded-sm border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0"
                     />
                   </th>
-                  <th className="py-3.5 px-4">Từ Vựng & Phiên Âm</th>
-                  <th className="py-3.5 px-4">Định Nghĩa</th>
-                  <th className="py-3.5 px-4">CEFR / POS</th>
-                  <th className="py-3.5 px-4">Độ Khó</th>
-                  <th className="py-3.5 px-4">Chất Lượng (Quality)</th>
-                  <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                  <th className="py-3 px-4">Từ Vựng & Phiên Âm</th>
+                  <th className="py-3 px-4">Định Nghĩa</th>
+                  <th className="py-3 px-4">CEFR / POS</th>
+                  <th className="py-3 px-4">Độ Khó</th>
+                  <th className="py-3 px-4">Chất Lượng (Quality)</th>
+                  <th className="py-3 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50 text-slate-300">
