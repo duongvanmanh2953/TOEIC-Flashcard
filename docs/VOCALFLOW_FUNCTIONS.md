@@ -1,9 +1,9 @@
-# VocalFlow — System Architecture & Functions Audit Report (2026)
+# VocabFlow — System Architecture & Functions Audit Report (2026)
 
 *Trạng thái: Đã thực hiện đợt Full System Audit.*
 
 ## 1. Product Overview
-VocalFlow là nền tảng học ngoại ngữ đa ngôn ngữ tập trung vào Từ vựng (Vocabulary), Kho câu hỏi (Question Bank), Bộ đề thi (Test Sets - TOEIC, JLPT...), Review thông minh qua AI (Smart Spaced Repetition), cộng đồng học tập (Community), và không gian học trẻ em (Kids Mode).
+VocabFlow là nền tảng học ngoại ngữ đa ngôn ngữ tập trung vào Từ vựng (Vocabulary), Kho câu hỏi (Question Bank), Bộ đề thi (Test Sets - TOEIC, JLPT...), Review thông minh qua AI (Smart Spaced Repetition), cộng đồng học tập (Community), và không gian học trẻ em (Kids Mode).
 
 ## 2. User Roles & Authentication
 Hệ thống sử dụng cơ chế bảo vệ Route, API, UI với các Role:

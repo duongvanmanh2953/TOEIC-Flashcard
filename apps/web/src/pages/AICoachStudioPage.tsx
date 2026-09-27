@@ -485,7 +485,7 @@ export const AICoachStudioPage: React.FC = () => {
       setTranslatedMessages(next);
       return;
     }
-    
+
     setTranslatingMsgId(msgId);
     try {
       const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=vi&dt=t&q=${encodeURIComponent(text)}`);
@@ -1032,8 +1032,8 @@ export const AICoachStudioPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('voice')}
           className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'voice'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
         >
           <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -1044,8 +1044,8 @@ export const AICoachStudioPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('pronunciation')}
           className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'pronunciation'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
         >
           <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -1056,8 +1056,8 @@ export const AICoachStudioPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('simulator')}
           className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'simulator'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
         >
           <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -1068,8 +1068,8 @@ export const AICoachStudioPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('error-bank')}
           className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'error-bank'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
         >
           <BrainCircuit className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -1080,8 +1080,8 @@ export const AICoachStudioPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('sound-better')}
           className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'sound-better'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
             }`}
         >
           <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
@@ -1118,8 +1118,8 @@ export const AICoachStudioPage: React.FC = () => {
                 <button
                   onClick={toggleCallMode}
                   className={`w-full py-2.5 px-4 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-lg ${isCallActive
-                      ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30 animate-pulse'
-                      : 'btn-glass-primary shadow-indigo-600/30'
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30 animate-pulse'
+                    : 'btn-glass-primary shadow-indigo-600/30'
                     }`}
                 >
                   {isCallActive ? (
@@ -1198,8 +1198,8 @@ export const AICoachStudioPage: React.FC = () => {
                     }
                   }}
                   className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${speechInputLang === 'vi-VN'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                 >
                   <CountryFlag languageId="vi" size="xs" />
@@ -1214,8 +1214,8 @@ export const AICoachStudioPage: React.FC = () => {
                     }
                   }}
                   className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${speechInputLang === activeLanguage.speechLocale
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                 >
                   <CountryFlag languageId={activeLanguage.id} size="xs" />
@@ -1254,8 +1254,8 @@ export const AICoachStudioPage: React.FC = () => {
                 <button
                   onClick={() => setBilingualMode('beginner')}
                   className={`p-2 rounded-xl text-[11px] font-bold text-center transition ${bilingualMode === 'beginner'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-1">
@@ -1267,8 +1267,8 @@ export const AICoachStudioPage: React.FC = () => {
                 <button
                   onClick={() => setBilingualMode('intermediate')}
                   className={`p-2 rounded-xl text-[11px] font-bold text-center transition ${bilingualMode === 'intermediate'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-1">
@@ -1280,8 +1280,8 @@ export const AICoachStudioPage: React.FC = () => {
                 <button
                   onClick={() => setBilingualMode('advanced')}
                   className={`p-2 rounded-xl text-[11px] font-bold text-center transition ${bilingualMode === 'advanced'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-1">
@@ -1319,7 +1319,7 @@ export const AICoachStudioPage: React.FC = () => {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <h3 className="font-extrabold text-xs sm:text-base text-slate-900 dark:text-white truncate leading-tight">
-                      VocalFlow AI Coach
+                      VocabFlow AI Coach
                     </h3>
                     <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -1350,8 +1350,8 @@ export const AICoachStudioPage: React.FC = () => {
                 <button
                   onClick={toggleCallMode}
                   className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 shadow-xs ${isCallActive
-                      ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
                     }`}
                   title={isCallActive ? 'Dừng cuộc gọi thoại' : 'Bật đàm thoại giọng nói 1:1'}
                 >
@@ -1551,8 +1551,8 @@ export const AICoachStudioPage: React.FC = () => {
                       </div>
                       <span
                         className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0 ${item.hasCache
-                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
                           }`}
                       >
                         {item.hasCache ? '⚡ Có sẵn' : item.category}
@@ -1577,8 +1577,8 @@ export const AICoachStudioPage: React.FC = () => {
                   }
                 }}
                 className={`h-10 sm:h-11 px-2.5 sm:px-3 rounded-xl sm:rounded-2xl border text-xs font-black flex items-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs select-none ${speechInputLang === 'vi-VN'
-                    ? 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
-                    : 'border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
+                  ? 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                  : 'border-indigo-500/30 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100'
                   }`}
                 title={`Bấm để đổi ngôn ngữ thu âm Micro: Tiếng Việt (vi-VN) hoặc ${activeLanguage.name} (${activeLanguage.speechLocale})`}
               >
@@ -1609,8 +1609,8 @@ export const AICoachStudioPage: React.FC = () => {
                 onPointerLeave={() => { if (isHoldingToRecord) handleHoldEnd(); }}
                 onContextMenu={(e) => e.preventDefault()}
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl transition-all shadow-sm flex items-center justify-center shrink-0 select-none cursor-pointer active:scale-95 border ${isListening || isHoldingToRecord
-                    ? 'bg-rose-600 border-rose-600 text-white animate-pulse shadow-rose-500/40 ring-4 ring-rose-500/20'
-                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400'
+                  ? 'bg-rose-600 border-rose-600 text-white animate-pulse shadow-rose-500/40 ring-4 ring-rose-500/20'
+                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400'
                   }`}
                 title="Ấn và GIỮ để nói, THẢ RA để gửi tin nhắn phân tích"
               >
@@ -1746,8 +1746,8 @@ export const AICoachStudioPage: React.FC = () => {
                     evaluatePronunciationMatch(item.word, item.word);
                   }}
                   className={`p-3.5 rounded-2xl border transition cursor-pointer flex items-center justify-between ${selectedWord === item.word
-                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 shadow-sm'
-                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 shadow-sm'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400'
                     }`}
                 >
                   <div>
@@ -1863,8 +1863,8 @@ export const AICoachStudioPage: React.FC = () => {
                       type="button"
                       onClick={handleToggleReplayPronRecording}
                       className={`px-4 py-2.5 rounded-2xl font-extrabold text-xs shadow-sm flex items-center gap-2 transition active:scale-95 ${isPlayingPronRecording
-                          ? 'bg-emerald-600 text-white shadow-emerald-500/30 ring-2 ring-emerald-400'
-                          : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                        ? 'bg-emerald-600 text-white shadow-emerald-500/30 ring-2 ring-emerald-400'
+                        : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                         }`}
                     >
                       {isPlayingPronRecording ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
@@ -1894,8 +1894,8 @@ export const AICoachStudioPage: React.FC = () => {
                   {/* Pass/Fail Status Banner (Adult threshold > 90%) */}
                   <div
                     className={`p-4 rounded-2xl border text-xs flex items-center justify-between gap-3 ${pronunciationResult.isPassing
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'
                       }`}
                   >
                     <div className="flex items-start gap-2.5">
@@ -1913,8 +1913,8 @@ export const AICoachStudioPage: React.FC = () => {
                           </span>
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-black ${pronunciationResult.isPassing
-                                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                                : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
                               }`}
                           >
                             {pronunciationResult.accuracy}% / 100%
@@ -2023,8 +2023,8 @@ export const AICoachStudioPage: React.FC = () => {
                     setSimulatorHistory([{ role: 'assistant', content: greeting.simulatorOpening(sc.name) }]);
                   }}
                   className={`p-4 rounded-2xl border transition cursor-pointer ${simulatorScenario === sc.id
-                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 shadow-sm'
-                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 shadow-sm'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400'
                     }`}
                 >
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{sc.name}</h3>
@@ -2070,8 +2070,8 @@ export const AICoachStudioPage: React.FC = () => {
                 >
                   <div
                     className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed ${item.role === 'user'
-                        ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                      ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
                       }`}
                   >
                     <p>{item.content}</p>
@@ -2386,8 +2386,8 @@ export const AICoachStudioPage: React.FC = () => {
                       setMobileDrawerOpen(false);
                     }}
                     className={`w-full p-2.5 rounded-xl text-left flex items-center gap-3 transition ${isActive
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-                        : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                      : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                   >
                     <div className={`p-2 rounded-lg ${isActive ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'}`}>
@@ -2424,8 +2424,8 @@ export const AICoachStudioPage: React.FC = () => {
                   <button
                     onClick={() => handleVoiceLangChange('vi')}
                     className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${voiceLang === 'vi'
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                       }`}
                   >
                     <span>Giọng Tiếng Việt</span>
@@ -2433,8 +2433,8 @@ export const AICoachStudioPage: React.FC = () => {
                   <button
                     onClick={() => handleVoiceLangChange('en')}
                     className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${voiceLang === 'en'
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                       }`}
                   >
                     <span>Giọng Tiếng Anh</span>
@@ -2473,8 +2473,8 @@ export const AICoachStudioPage: React.FC = () => {
                       }
                     }}
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${speechInputLang === 'vi-VN'
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}
                   >
                     <CountryFlag languageId="vi" size="xs" />
@@ -2490,8 +2490,8 @@ export const AICoachStudioPage: React.FC = () => {
                       }
                     }}
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${speechInputLang !== 'vi-VN'
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
                       }`}
                   >
                     <CountryFlag languageId={activeLanguage.id} size="xs" />

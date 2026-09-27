@@ -144,7 +144,7 @@ export async function idbSetMeta(key: string, value: any): Promise<void> {
     const tx = db.transaction(STORE_META, 'readwrite');
     const store = tx.objectStore(STORE_META);
     store.put({ key, value, updatedAt: Date.now() });
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export async function idbGetMeta<T = any>(key: string): Promise<T | null> {
@@ -473,7 +473,7 @@ export async function idbResetLanguageData(userId: string | undefined, languageI
 export async function migrateUserLearningData(userId?: string): Promise<void> {
   try {
     const db = await openDB();
-    const MIGRATION_FLAG = `vocalflow:migration:v4:${userId || 'guest'}`;
+    const MIGRATION_FLAG = `vocabflow:migration:v4:${userId || 'guest'}`;
     if (typeof localStorage !== 'undefined' && localStorage.getItem(MIGRATION_FLAG) === 'completed') {
       return;
     }
@@ -610,7 +610,7 @@ export async function idbInvalidateCache(keyPrefix: string): Promise<void> {
         }
       }
     };
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export async function idbGetWordsByDeck(deckId: string): Promise<any[]> {
@@ -634,7 +634,7 @@ export function saveSessionUnlockedDeck(deckId: string): void {
     const existing = getSessionUnlockedDecks();
     existing[deckId] = true;
     sessionStorage.setItem('vocabflow_unlocked_decks', JSON.stringify(existing));
-  } catch {}
+  } catch { }
 }
 
 

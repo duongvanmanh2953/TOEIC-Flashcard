@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ModerationStatus,
@@ -935,31 +935,199 @@ export class AdminService {
   }
 
   /**
-   * Purge all mock/fake operational data, keeping only real users and vocabulary
+   * Purge all mock/fake operational data, OR perform a complete user data wipe keeping only admin accounts and system constants.
    */
-  async purgeMockData() {
-    const [msgs, convs, fbs, orders, ann, sessions, reviews] = await Promise.all([
-      this.prisma.supportMessage.deleteMany({}),
-      this.prisma.supportConversation.deleteMany({}),
-      this.prisma.feedback.deleteMany({}),
-      this.prisma.paymentOrder.deleteMany({}),
-      this.prisma.adminAnnouncement.deleteMany({}),
-      this.prisma.studySession.deleteMany({}),
-      this.prisma.reviewEvent.deleteMany({}),
-    ]);
+  async purgeMockData(wipeUsers: boolean = false, actorId?: string) {
+    if (!wipeUsers) {
+      const [msgs, convs, fbs, fbVotes, orders, ann, sessions, reviews, notifs, aiInteractions, aiEvals, gameRes] = await Promise.all([
+        this.prisma.supportMessage.deleteMany({}),
+        this.prisma.supportConversation.deleteMany({}),
+        this.prisma.feedback.deleteMany({}),
+        this.prisma.feedbackVote.deleteMany({}),
+        this.prisma.paymentOrder.deleteMany({}),
+        this.prisma.adminAnnouncement.deleteMany({}),
+        this.prisma.studySession.deleteMany({}),
+        this.prisma.reviewEvent.deleteMany({}),
+        this.prisma.notification.deleteMany({}),
+        this.prisma.aIInteraction.deleteMany({}),
+        this.prisma.aIEvaluation.deleteMany({}),
+        this.prisma.gameResult.deleteMany({}),
+      ]);
+
+      if (actorId) {
+        await this.prisma.auditLog
+          .create({
+            data: {
+              actorId,
+              action: 'PURGE_MOCK_OPERATIONAL_DATA',
+              targetType: 'SYSTEM',
+              targetId: 'OPERATIONAL_DATA',
+              metadata: {
+                timestamp: new Date().toISOString(),
+                supportMessages: msgs.count,
+                supportConversations: convs.count,
+                feedbacks: fbs.count,
+                paymentOrders: orders.count,
+              },
+            },
+          })
+          .catch((err) => this.logger.warn(`Failed to write audit log: ${err.message}`));
+      }
+
+      return {
+        success: true,
+        message: 'Toàn bộ dữ liệu mẫu đã được xóa sạch. Hệ thống chỉ giữ lại tài khoản người dùng và kho từ vựng.',
+        deleted: {
+          supportMessages: msgs.count,
+          supportConversations: convs.count,
+          feedbacks: fbs.count,
+          feedbackVotes: fbVotes.count,
+          paymentOrders: orders.count,
+          announcements: ann.count,
+          studySessions: sessions.count,
+          reviewEvents: reviews.count,
+          notifications: notifs.count,
+          aiInteractions: aiInteractions.count,
+          aiEvaluations: aiEvals.count,
+          gameResults: gameRes.count,
+        },
+      };
+    }
+
+    // WIPE ALL USER DATA - PRESERVING ONLY ADMIN ACCOUNTS AND SYSTEM CONSTANTS
+    const adminUsers = await this.prisma.user.findMany({
+      where: {
+        OR: [{ role: Role.ADMIN }, { role: Role.SUPER_ADMIN }],
+      },
+      select: { id: true, email: true, role: true, displayName: true },
+    });
+
+    if (!adminUsers.length) {
+      throw new BadRequestException('Không tìm thấy tài khoản Quản trị viên (Admin/Super Admin) để bảo lưu.');
+    }
+
+    const adminIds = adminUsers.map((u) => u.id);
+
+    // 1. Delete all operational, messaging, feedback, orders and entitlement logs
+    await this.prisma.supportMessage.deleteMany({});
+    await this.prisma.supportConversation.deleteMany({});
+    await this.prisma.feedbackVote.deleteMany({});
+    await this.prisma.feedback.deleteMany({});
+    await this.prisma.paymentOrder.deleteMany({});
+    await this.prisma.subscription.deleteMany({});
+    await this.prisma.entitlementUsage.deleteMany({});
+    await this.prisma.adminAnnouncement.deleteMany({});
+    await this.prisma.notification.deleteMany({});
+    await this.prisma.aIInteraction.deleteMany({});
+    await this.prisma.aIEvaluation.deleteMany({});
+    await this.prisma.gameResult.deleteMany({});
+    await this.prisma.bankAccessGrant.deleteMany({});
+
+    // 2. Delete realtime chat data
+    await this.prisma.chatMessage.deleteMany({});
+    await this.prisma.conversationParticipant.deleteMany({});
+    await this.prisma.conversation.deleteMany({});
+
+    // 3. Delete user exams, attempts and interactions
+    await this.prisma.examAnswer.deleteMany({});
+    await this.prisma.examAttempt.deleteMany({});
+    await this.prisma.examSaved.deleteMany({});
+    await this.prisma.examLike.deleteMany({});
+    await this.prisma.examDislike.deleteMany({});
+    await this.prisma.examComment.deleteMany({});
+    await this.prisma.examOption.deleteMany({});
+    await this.prisma.examQuestion.deleteMany({});
+    await this.prisma.exam.deleteMany({});
+
+    // 4. Delete community decks and words
+    await this.prisma.deckComment.deleteMany({});
+    await this.prisma.deckLike.deleteMany({});
+    await this.prisma.deckDislike.deleteMany({});
+    await this.prisma.deckClone.deleteMany({});
+    await this.prisma.communityWord.deleteMany({});
+    await this.prisma.communityDeck.deleteMany({});
+
+    // 5. Delete custom quizzes
+    await this.prisma.customQuizAttempt.deleteMany({});
+    await this.prisma.customQuiz.deleteMany({});
+
+    // 6. Delete learning and progress records
+    await this.prisma.reviewEvent.deleteMany({});
+    await this.prisma.studySession.deleteMany({});
+    await this.prisma.userVocabulary.deleteMany({});
+    await this.prisma.learningGoal.deleteMany({});
+    await this.prisma.userAchievement.deleteMany({});
+
+    // 7. Reset UserStreak & UserXP for clean state
+    await this.prisma.userStreak.deleteMany({});
+    await this.prisma.userXP.deleteMany({});
+    for (const admin of adminUsers) {
+      await this.prisma.userStreak
+        .create({
+          data: { userId: admin.id, currentStreak: 0, longestStreak: 0 },
+        })
+        .catch(() => {});
+      await this.prisma.userXP
+        .create({
+          data: { userId: admin.id, totalXP: 0, currentLevel: 1 },
+        })
+        .catch(() => {});
+    }
+
+    // 8. Delete encryption keys for non-admins
+    await this.prisma.userEncryptionKey.deleteMany({
+      where: { userId: { notIn: adminIds } },
+    });
+
+    // 9. Delete UserProfile for non-admins
+    await this.prisma.userProfile.deleteMany({
+      where: { userId: { notIn: adminIds } },
+    });
+
+    // 10. Delete non-admin Users
+    const deletedUsers = await this.prisma.user.deleteMany({
+      where: { id: { notIn: adminIds } },
+    });
+
+    // 11. Ensure preserved admins have an active UserProfile
+    for (const admin of adminUsers) {
+      await this.prisma.userProfile
+        .upsert({
+          where: { userId: admin.id },
+          create: {
+            userId: admin.id,
+            nativeLanguage: 'vi',
+            englishLevel: CefrLevel.B1,
+            targetLevel: CefrLevel.C1,
+          },
+          update: {},
+        })
+        .catch(() => {});
+    }
+
+    // 12. Record audit log
+    const loggerActor = actorId && adminIds.includes(actorId) ? actorId : adminIds[0];
+    await this.prisma.auditLog
+      .create({
+        data: {
+          actorId: loggerActor,
+          action: 'WIPE_ALL_USER_DATA',
+          targetType: 'SYSTEM',
+          targetId: 'DATABASE',
+          metadata: {
+            deletedUsersCount: deletedUsers.count,
+            preservedAdmins: adminUsers.map((a) => a.email),
+            timestamp: new Date().toISOString(),
+          },
+        },
+      })
+      .catch((err) => this.logger.warn(`Failed to write wipe audit log: ${err.message}`));
 
     return {
       success: true,
-      message: 'Toàn bộ dữ liệu mẫu đã được xóa sạch. Hệ thống chỉ giữ lại tài khoản người dùng và kho từ vựng.',
-      deleted: {
-        supportMessages: msgs.count,
-        supportConversations: convs.count,
-        feedbacks: fbs.count,
-        paymentOrders: orders.count,
-        announcements: ann.count,
-        studySessions: sessions.count,
-        reviewEvents: reviews.count,
-      },
+      message: `Đã dọn dẹp và xóa sạch toàn bộ data user (${deletedUsers.count} tài khoản học viên đã xóa). Hệ thống chỉ bảo lưu an toàn ${adminUsers.length} tài khoản Admin (${adminUsers.map((a) => a.email).join(', ')}) cùng toàn bộ hằng số hệ thống.`,
+      deletedUsersCount: deletedUsers.count,
+      preservedAdmins: adminUsers.map((a) => ({ id: a.id, email: a.email, role: a.role })),
     };
   }
 

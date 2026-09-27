@@ -223,12 +223,12 @@ export const ExamBankPage: React.FC = () => {
       const updateFn = (e: any) =>
         e.id === examId
           ? {
-              ...e,
-              userLiked: data.liked,
-              userDisliked: data.disliked,
-              likeCount: data.likeCount,
-              dislikeCount: data.dislikeCount,
-            }
+            ...e,
+            userLiked: data.liked,
+            userDisliked: data.disliked,
+            likeCount: data.likeCount,
+            dislikeCount: data.dislikeCount,
+          }
           : e;
 
       setExams((prev) => prev.map(updateFn));
@@ -257,12 +257,12 @@ export const ExamBankPage: React.FC = () => {
       const updateFn = (e: any) =>
         e.id === examId
           ? {
-              ...e,
-              userLiked: data.liked,
-              userDisliked: data.disliked,
-              likeCount: data.likeCount,
-              dislikeCount: data.dislikeCount,
-            }
+            ...e,
+            userLiked: data.liked,
+            userDisliked: data.disliked,
+            likeCount: data.likeCount,
+            dislikeCount: data.dislikeCount,
+          }
           : e;
 
       setExams((prev) => prev.map(updateFn));
@@ -734,9 +734,8 @@ export const ExamBankPage: React.FC = () => {
               key={tab.key}
               type="button"
               onClick={() => setMyExamStatusFilter(tab.key as any)}
-              className={`tab-pill shrink-0 ${
-                myExamStatusFilter === tab.key ? 'tab-pill-active' : ''
-              }`}
+              className={`tab-pill shrink-0 ${myExamStatusFilter === tab.key ? 'tab-pill-active' : ''
+                }`}
             >
               <span>{tab.label}</span>
             </button>
@@ -769,8 +768,8 @@ export const ExamBankPage: React.FC = () => {
                         {activeTab === 'my-exams'
                           ? 'Chưa có bộ đề nào trong danh mục này'
                           : activeTab === 'saved'
-                          ? 'Bạn chưa lưu bộ đề nào'
-                          : 'Không tìm thấy bộ đề phù hợp'}
+                            ? 'Bạn chưa lưu bộ đề nào'
+                            : 'Không tìm thấy bộ đề phù hợp'}
                       </h3>
                       <p className="text-xs text-slate-400 max-w-sm mx-auto">
                         {activeTab === 'my-exams'
@@ -908,7 +907,7 @@ export const ExamBankPage: React.FC = () => {
                                   {exam.author?.displayName?.[0]?.toUpperCase() || 'U'}
                                 </div>
                                 <span className="truncate text-slate-600 dark:text-slate-400 text-[11px] font-medium">
-                                  {exam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocalFlow')}
+                                  {exam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocabFlow')}
                                 </span>
                               </div>
                               {!isOwner && (
@@ -977,11 +976,10 @@ export const ExamBankPage: React.FC = () => {
                                     e.stopPropagation();
                                     handleToggleLike(exam.id);
                                   }}
-                                  className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1 font-bold text-xs transition cursor-pointer ${
-                                    exam.userLiked
+                                  className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1 font-bold text-xs transition cursor-pointer ${exam.userLiked
                                       ? 'bg-indigo-600 text-white shadow-xs'
                                       : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                  }`}
+                                    }`}
                                   title="Thích bộ đề"
                                 >
                                   <ThumbsUp className="w-3.5 h-3.5" />
@@ -995,11 +993,10 @@ export const ExamBankPage: React.FC = () => {
                                     e.stopPropagation();
                                     handleToggleDislike(exam.id);
                                   }}
-                                  className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1 font-bold text-xs transition cursor-pointer ${
-                                    exam.userDisliked
+                                  className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1 font-bold text-xs transition cursor-pointer ${exam.userDisliked
                                       ? 'bg-rose-600 text-white shadow-xs'
                                       : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                  }`}
+                                    }`}
                                   title="Không thích"
                                 >
                                   <ThumbsDown className="w-3.5 h-3.5" />
@@ -1028,11 +1025,10 @@ export const ExamBankPage: React.FC = () => {
                                   e.stopPropagation();
                                   handleToggleSave(exam.id);
                                 }}
-                                className={`h-7.5 w-7.5 rounded-lg flex items-center justify-center transition cursor-pointer ${
-                                  exam.userSaved
+                                className={`h-7.5 w-7.5 rounded-lg flex items-center justify-center transition cursor-pointer ${exam.userSaved
                                     ? 'text-amber-500 bg-amber-50 dark:bg-amber-950/50'
                                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-                                }`}
+                                  }`}
                                 title={exam.userSaved ? 'Đã lưu' : 'Lưu bộ đề'}
                               >
                                 <Bookmark className="w-3.5 h-3.5" />
@@ -1085,20 +1081,20 @@ export const ExamBankPage: React.FC = () => {
                                   options={[
                                     ...(isOwner
                                       ? [
-                                          { value: 'edit', label: 'Chỉnh sửa đề thi', icon: Edit },
-                                          { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
-                                          { value: 'delete', label: 'Xóa đề thi', icon: Trash2 },
-                                        ]
+                                        { value: 'edit', label: 'Chỉnh sửa đề thi', icon: Edit },
+                                        { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
+                                        { value: 'delete', label: 'Xóa đề thi', icon: Trash2 },
+                                      ]
                                       : [
-                                          { value: 'contact_author', label: 'Liên hệ tác giả đề', icon: MessageSquare },
-                                          ...(exam.isProtected && isExamLocked(exam)
-                                            ? [{ value: 'verify_key', label: 'Mở khóa bằng Access Key', icon: Key }]
-                                            : []),
-                                          ...(!isCloned
-                                            ? [{ value: 'duplicate', label: 'Sao chép về đề của tôi', icon: Copy }]
-                                            : [{ value: 'already_cloned', label: 'Đã có trong đề của tôi', icon: CheckCircle }]),
-                                          { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
-                                        ]),
+                                        { value: 'contact_author', label: 'Liên hệ tác giả đề', icon: MessageSquare },
+                                        ...(exam.isProtected && isExamLocked(exam)
+                                          ? [{ value: 'verify_key', label: 'Mở khóa bằng Access Key', icon: Key }]
+                                          : []),
+                                        ...(!isCloned
+                                          ? [{ value: 'duplicate', label: 'Sao chép về đề của tôi', icon: Copy }]
+                                          : [{ value: 'already_cloned', label: 'Đã có trong đề của tôi', icon: CheckCircle }]),
+                                        { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
+                                      ]),
                                   ]}
                                   onSelect={(val) => {
                                     if (val === 'contact_author') handleContactExamAuthor(exam);
@@ -1318,7 +1314,7 @@ export const ExamBankPage: React.FC = () => {
                         </div>
                       )}
                       <span className="font-semibold text-white truncate max-w-[140px]">
-                        {detailModalExam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocalFlow')}
+                        {detailModalExam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocabFlow')}
                       </span>
                     </div>
                     <span>•</span>
@@ -1601,11 +1597,10 @@ export const ExamBankPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleToggleLike(detailModalExam.id)}
-                      className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${
-                        detailModalExam.userLiked
+                      className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${detailModalExam.userLiked
                           ? 'bg-indigo-600 text-white shadow-xs'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
+                        }`}
                     >
                       <ThumbsUp className="w-3.5 h-3.5" />
                       <span>{detailModalExam.likeCount || 0}</span>
@@ -1614,11 +1609,10 @@ export const ExamBankPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleToggleDislike(detailModalExam.id)}
-                      className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${
-                        detailModalExam.userDisliked
+                      className={`h-7.5 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${detailModalExam.userDisliked
                           ? 'bg-rose-600 text-white shadow-xs'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
+                        }`}
                     >
                       <ThumbsDown className="w-3.5 h-3.5" />
                       <span>{detailModalExam.dislikeCount || 0}</span>
@@ -1634,11 +1628,10 @@ export const ExamBankPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleToggleSave(detailModalExam.id)}
-                      className={`h-7.5 px-2.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
-                        detailModalExam.userSaved
+                      className={`h-7.5 px-2.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${detailModalExam.userSaved
                           ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 border border-amber-300'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                      }`}
+                        }`}
                     >
                       <Bookmark className="w-3.5 h-3.5" />
                       <span>{detailModalExam.userSaved ? 'Đã lưu' : 'Lưu'}</span>
@@ -1686,181 +1679,180 @@ export const ExamBankPage: React.FC = () => {
             className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg p-6 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                      Tạo & nhập bộ đề
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Hỗ trợ Excel (.xlsx, .xls), CSV (.csv), PowerPoint (.pptx)
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+                    Tạo & nhập bộ đề
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Hỗ trợ Excel (.xlsx, .xls), CSV (.csv), PowerPoint (.pptx)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setUploadModalOpen(false);
+                  setSelectedUploadFile(null);
+                }}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Drag and Drop Zone */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) setSelectedUploadFile(file);
+              }}
+              className={`p-8 rounded-3xl border-2 border-dashed transition text-center space-y-3 cursor-pointer ${dragOver
+                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30'
+                  : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 hover:border-indigo-400'
+                }`}
+              onClick={() => document.getElementById('dropzone-file-input')?.click()}
+            >
+              <input
+                id="dropzone-file-input"
+                type="file"
+                accept=".xlsx,.xls,.csv,.pptx"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setSelectedUploadFile(file);
+                  e.target.value = '';
+                }}
+              />
+
+              <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
+                <Upload className="w-6 h-6" />
+              </div>
+
+              <div>
+                <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
+                  Upload exam file
+                </h4>
+                <p className="text-xs text-slate-500 mt-1">
+                  Excel · CSV · PowerPoint
+                </p>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  className="btn-glass-primary text-xs !py-2 !px-4 inline-flex items-center gap-1.5 font-bold pointer-events-none"
+                >
+                  <span>Chọn tệp</span>
+                </button>
+                <p className="text-[11px] text-slate-400 mt-2">hoặc kéo thả file vào đây</p>
+              </div>
+            </div>
+
+            {/* Selected File Details Box */}
+            {selectedUploadFile && (
+              <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 flex items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                      {selectedUploadFile.name}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      {(selectedUploadFile.size / (1024 * 1024)).toFixed(2)} MB
                     </p>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => {
-                    setUploadModalOpen(false);
-                    setSelectedUploadFile(null);
-                  }}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  type="button"
+                  onClick={() => document.getElementById('dropzone-file-input')?.click()}
+                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
                 >
-                  <X className="w-5 h-5" />
+                  Thay file
                 </button>
               </div>
+            )}
 
-              {/* Drag and Drop Zone */}
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setUploadModalOpen(false);
+                  setSelectedUploadFile(null);
                 }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  const file = e.dataTransfer.files?.[0];
-                  if (file) setSelectedUploadFile(file);
-                }}
-                className={`p-8 rounded-3xl border-2 border-dashed transition text-center space-y-3 cursor-pointer ${
-                  dragOver
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30'
-                    : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 hover:border-indigo-400'
-                }`}
-                onClick={() => document.getElementById('dropzone-file-input')?.click()}
+                className="btn-glass-secondary text-xs !py-2 !px-4 font-bold"
               >
-                <input
-                  id="dropzone-file-input"
-                  type="file"
-                  accept=".xlsx,.xls,.csv,.pptx"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setSelectedUploadFile(file);
-                    e.target.value = '';
-                  }}
-                />
+                Hủy
+              </button>
 
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-sm">
-                  <Upload className="w-6 h-6" />
-                </div>
+              <button
+                type="button"
+                disabled={!selectedUploadFile || parsingFile}
+                onClick={() => {
+                  if (selectedUploadFile) processUploadedFile(selectedUploadFile);
+                }}
+                className="btn-glass-primary text-xs !py-2 !px-5 font-bold flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {parsingFile ? (
+                  <>
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>Đang phân tích...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Tiếp tục kiểm tra</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </>
+                )}
+              </button>
+            </div>
 
-                <div>
-                  <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
-                    Upload exam file
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Excel · CSV · PowerPoint
-                  </p>
-                </div>
-
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    className="btn-glass-primary text-xs !py-2 !px-4 inline-flex items-center gap-1.5 font-bold pointer-events-none"
-                  >
-                    <span>Chọn tệp</span>
-                  </button>
-                  <p className="text-[11px] text-slate-400 mt-2">hoặc kéo thả file vào đây</p>
-                </div>
-              </div>
-
-              {/* Selected File Details Box */}
-              {selectedUploadFile && (
-                <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 flex items-center justify-between gap-3 animate-fade-in">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
-                        {selectedUploadFile.name}
-                      </p>
-                      <p className="text-[11px] text-slate-500">
-                        {(selectedUploadFile.size / (1024 * 1024)).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById('dropzone-file-input')?.click()}
-                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
-                  >
-                    Thay file
-                  </button>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-2">
+            {/* Quick Template Download Section */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center space-y-1.5">
+              <p className="text-[11px] font-semibold text-slate-400">Bạn chưa có file chuẩn? Tải mẫu:</p>
+              <div className="flex items-center justify-center gap-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
                 <button
                   type="button"
-                  onClick={() => {
-                    setUploadModalOpen(false);
-                    setSelectedUploadFile(null);
-                  }}
-                  className="btn-glass-secondary text-xs !py-2 !px-4 font-bold"
+                  onClick={downloadExamExcelTemplate}
+                  className="hover:underline flex items-center gap-1"
                 >
-                  Hủy
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Excel (.xlsx)
                 </button>
-
+                <span>•</span>
                 <button
                   type="button"
-                  disabled={!selectedUploadFile || parsingFile}
-                  onClick={() => {
-                    if (selectedUploadFile) processUploadedFile(selectedUploadFile);
-                  }}
-                  className="btn-glass-primary text-xs !py-2 !px-5 font-bold flex items-center gap-1.5 disabled:opacity-50"
+                  onClick={downloadExamCsvTemplate}
+                  className="hover:underline flex items-center gap-1"
                 >
-                  {parsingFile ? (
-                    <>
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      <span>Đang phân tích...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Tiếp tục kiểm tra</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
+                  <FileText className="w-3.5 h-3.5" />
+                  CSV (.csv)
                 </button>
-              </div>
-
-              {/* Quick Template Download Section */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center space-y-1.5">
-                <p className="text-[11px] font-semibold text-slate-400">Bạn chưa có file chuẩn? Tải mẫu:</p>
-                <div className="flex items-center justify-center gap-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                  <button
-                    type="button"
-                    onClick={downloadExamExcelTemplate}
-                    className="hover:underline flex items-center gap-1"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    Excel (.xlsx)
-                  </button>
-                  <span>•</span>
-                  <button
-                    type="button"
-                    onClick={downloadExamCsvTemplate}
-                    className="hover:underline flex items-center gap-1"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    CSV (.csv)
-                  </button>
-                  <span>•</span>
-                  <button
-                    type="button"
-                    onClick={downloadExamPptxTemplate}
-                    className="hover:underline flex items-center gap-1"
-                  >
-                    <Presentation className="w-3.5 h-3.5" />
-                    PowerPoint (.pptx)
-                  </button>
-                </div>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={downloadExamPptxTemplate}
+                  className="hover:underline flex items-center gap-1"
+                >
+                  <Presentation className="w-3.5 h-3.5" />
+                  PowerPoint (.pptx)
+                </button>
               </div>
             </div>
+          </div>
         </ModalPortal>
       )}
 
@@ -1871,46 +1863,46 @@ export const ExamBankPage: React.FC = () => {
             className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border w-full max-w-sm p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
-                  <Lock className="w-6 h-6" />
-                </div>
-                <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                  Mở khóa bộ đề thi
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Bộ đề "{unlockExam.title}" được tác giả bảo vệ. Vui lòng nhập mã Access Key riêng được cấp cho bạn.
-                </p>
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+                <Lock className="w-6 h-6" />
               </div>
-
-              <div>
-                <input
-                  type="text"
-                  value={unlockPassword}
-                  onChange={(e) => setUnlockPassword(e.target.value)}
-                  placeholder="VD: VF-EXM-XXXX-XXXXXXXXXXXXXXXX"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"
-                />
-                {unlockError && <p className="text-xs text-rose-500 mt-1">{unlockError}</p>}
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setUnlockExam(null)}
-                  className="btn-glass-secondary text-xs !py-2 !px-4"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUnlockAndStart}
-                  className="btn-glass-primary text-xs !py-2 !px-4 font-bold"
-                >
-                  Bắt đầu làm
-                </button>
-              </div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+                Mở khóa bộ đề thi
+              </h3>
+              <p className="text-xs text-slate-500">
+                Bộ đề "{unlockExam.title}" được tác giả bảo vệ. Vui lòng nhập mã Access Key riêng được cấp cho bạn.
+              </p>
             </div>
+
+            <div>
+              <input
+                type="text"
+                value={unlockPassword}
+                onChange={(e) => setUnlockPassword(e.target.value)}
+                placeholder="VD: VF-EXM-XXXX-XXXXXXXXXXXXXXXX"
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"
+              />
+              {unlockError && <p className="text-xs text-rose-500 mt-1">{unlockError}</p>}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setUnlockExam(null)}
+                className="btn-glass-secondary text-xs !py-2 !px-4"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleUnlockAndStart}
+                className="btn-glass-primary text-xs !py-2 !px-4 font-bold"
+              >
+                Bắt đầu làm
+              </button>
+            </div>
+          </div>
         </ModalPortal>
       )}
 

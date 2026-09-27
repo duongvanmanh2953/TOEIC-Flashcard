@@ -311,7 +311,7 @@ export const downloadExamPptxTemplate = async () => {
   const url = URL.createObjectURL(content);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'vocalflow_mau_nhap_bo_de_pptx.pptx';
+  a.download = 'vocabflow_mau_nhap_bo_de_pptx.pptx';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

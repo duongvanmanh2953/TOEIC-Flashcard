@@ -64,8 +64,8 @@ interface LearningContextType {
 
 const LearningContext = createContext<LearningContextType | undefined>(undefined);
 
-const STORAGE_ACTIVE_LANG = 'vocalflow:active_learning_language';
-const STORAGE_PROFILES_PREFIX = 'vocalflow:user_profiles:';
+const STORAGE_ACTIVE_LANG = 'vocabflow:active_learning_language';
+const STORAGE_PROFILES_PREFIX = 'vocabflow:user_profiles:';
 
 export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -86,7 +86,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           return parsed;
         }
       }
-    } catch {}
+    } catch { }
 
     // Default: English Profile initialized for every learner
     const defaultEnProfile: LearningProfile = {
@@ -128,7 +128,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
           }
         }
-      } catch {}
+      } catch { }
 
       // Default fallback
       const initial: Record<string, LearningProfile> = {
@@ -156,7 +156,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     try {
       localStorage.setItem(getStorageKey(), JSON.stringify(learningProfiles));
-    } catch {}
+    } catch { }
   }, [learningProfiles, getStorageKey]);
 
   // Pre-seed Starter Decks when a language space is empty

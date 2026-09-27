@@ -34,7 +34,7 @@ function promptPassword(query: string): Promise<string> {
       input: process.stdin,
       output: process.stdout,
     });
-    
+
     // Hide password typing
     let isPasswordHidden = false;
     rl.question(query, (answer) => {
@@ -42,7 +42,7 @@ function promptPassword(query: string): Promise<string> {
       console.log('\n');
       resolve(answer);
     });
-    
+
     (rl as any)._writeToOutput = function _writeToOutput(stringToWrite: string) {
       if (['\r', '\n', '\r\n'].includes(stringToWrite)) {
         (process.stdout as any).write(stringToWrite);
@@ -56,7 +56,7 @@ function promptPassword(query: string): Promise<string> {
 }
 
 async function main() {
-  const masterPass = process.env.SERVER_MASTER_PASSWORD || 'vocalflow2026';
+  const masterPass = process.env.SERVER_MASTER_PASSWORD || 'vocabflow2026';
   const inputPass = await promptPassword('🔑 Nhập mật khẩu máy chủ (Master Password) để tiếp tục: ');
 
   if (inputPass !== masterPass) {
@@ -67,7 +67,7 @@ async function main() {
   const adminEmail = 'admin@vocabflow.ai';
   // Generate a highly secure 24-character password with symbols
   const rawBytes = crypto.randomBytes(18).toString('base64');
-  const securePassword = `VocalFlow!${rawBytes.replace(/[^a-zA-Z0-9]/g, '')}#2026`;
+  const securePassword = `VocabFlow!${rawBytes.replace(/[^a-zA-Z0-9]/g, '')}#2026`;
 
   console.log('🔄 Đang mã hóa mật khẩu bảo mật cao...');
   const passwordHash = await bcrypt.hash(securePassword, 10);

@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ShieldCheck,
   Check,
+  UserX,
   PanelRightClose,
   PanelRightOpen,
   Info,
@@ -45,6 +46,7 @@ export const AdminSupportPage: React.FC = () => {
   const [cleaning, setCleaning] = useState(false);
   const [cleanModalOpen, setCleanModalOpen] = useState(false);
   const [purgeMockModalOpen, setPurgeMockModalOpen] = useState(false);
+  const [wipeUsersInSupportModal, setWipeUsersInSupportModal] = useState(false);
   const [cleanResult, setCleanResult] = useState<string | null>(null);
 
   // Scroll & UI refs to prevent resetting and jittering
@@ -354,19 +356,23 @@ export const AdminSupportPage: React.FC = () => {
   const handlePurgeMockData = async () => {
     setCleaning(true);
     try {
-      const res: any = await api.post('/admin/purge-mock-data');
+      const res: any = await api.post('/admin/purge-mock-data', { wipeUsers: wipeUsersInSupportModal });
       const info = res?.data?.data || res?.data || res;
       setCleanResult(
         info?.message ||
-          'Toàn bộ dữ liệu mẫu đã được xóa sạch. Hệ thống chỉ giữ lại tài khoản người dùng và kho từ vựng.'
+          (wipeUsersInSupportModal
+            ? 'Đã xóa sạch toàn bộ data user thành công. Hệ thống chỉ bảo lưu tài khoản Admin và hằng số.'
+            : 'Toàn bộ dữ liệu mẫu đã được xóa sạch. Hệ thống chỉ giữ lại tài khoản người dùng và kho từ vựng.')
       );
       setPurgeMockModalOpen(false);
+      setWipeUsersInSupportModal(false);
       setSelectedConv(null);
       selectedConvIdRef.current = null;
       await fetchConversations(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to purge mock data', err);
-      setCleanResult('Không thể xóa dữ liệu mẫu lúc này. Vui lòng kiểm tra lại quyền Admin.');
+      const errMsg = err?.response?.data?.message || err?.message || 'Không thể xóa dữ liệu mẫu lúc này. Vui lòng kiểm tra lại quyền Admin.';
+      setCleanResult(errMsg);
     } finally {
       setCleaning(false);
     }
@@ -792,26 +798,66 @@ export const AdminSupportPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-md w-full space-y-3.5 shadow-2xl animate-scale-in">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${wipeUsersInSupportModal ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                {wipeUsersInSupportModal ? <UserX className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Xác nhận xóa sạch dữ liệu mẫu</h3>
-                <p className="text-[11px] text-slate-400">Vận hành dữ liệu thực 100%</p>
+                <h3 className="text-sm font-bold text-white">
+                  {wipeUsersInSupportModal ? 'Xóa toàn bộ data user (Chỉ giữ Admin)' : 'Xác nhận xóa sạch dữ liệu mẫu'}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {wipeUsersInSupportModal ? 'Bảo lưu tài khoản Quản trị viên & hằng số' : 'Vận hành dữ liệu thực 100%'}
+                </p>
               </div>
             </div>
+
+            {/* Toggle Wipe Users */}
+            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 space-y-1">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wipeUsersInSupportModal}
+                  onChange={(e) => setWipeUsersInSupportModal(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-700 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                />
+                <div>
+                  <span className="text-xs font-bold text-white flex items-center gap-1">
+                    XÓA TOÀN BỘ DATA USER
+                    <span className="px-1 py-0.1 rounded text-[8px] font-black uppercase bg-rose-500/20 text-rose-400">
+                      Chỉ giữ Admin
+                    </span>
+                  </span>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                    Xóa sạch toàn bộ học viên và dữ liệu học tập. Chỉ giữ lại tài khoản Quản trị viên và kho từ vựng.
+                  </p>
+                </div>
+              </label>
+            </div>
+
             <div className="text-xs text-slate-300 leading-relaxed space-y-1.5">
-              <p>Thao tác này sẽ xóa vĩnh viễn toàn bộ dữ liệu mẫu (mock data):</p>
+              <p>Thao tác này sẽ xóa vĩnh viễn dữ liệu theo danh mục sau:</p>
               <ul className="list-disc list-inside space-y-0.5 text-slate-400 pl-1 text-[11px]">
                 <li>Xóa toàn bộ tin nhắn & yêu cầu hỗ trợ (tickets) mẫu</li>
                 <li>Xóa toàn bộ đóng góp ý kiến (feedbacks) mẫu</li>
-                <li>Xóa toàn bộ đơn hàng giao dịch giả lập</li>
-                <li>Xóa toàn bộ thông báo hệ thống mẫu</li>
+                <li>Xóa toàn bộ đơn hàng giao dịch giả lập & thông báo</li>
+                {wipeUsersInSupportModal && (
+                  <li className="text-rose-400 font-semibold">
+                    ⚠️ Xóa sạch 100% tài khoản học viên và toàn bộ tiến độ học trong DB
+                  </li>
+                )}
               </ul>
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px]">
-                🛡️ BẢO LƯU 100%: Tài khoản người dùng (Users) và toàn bộ Kho từ vựng (Vocabulary).
-              </div>
+
+              {wipeUsersInSupportModal ? (
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px]">
+                  🛡️ BẢO LƯU AN TOÀN: 100% Tài khoản & quyền Admin cùng toàn bộ hằng số hệ thống.
+                </div>
+              ) : (
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px]">
+                  🛡️ BẢO LƯU 100%: Tài khoản người dùng (Users) và toàn bộ Kho từ vựng (Vocabulary).
+                </div>
+              )}
             </div>
+
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 type="button"
@@ -825,10 +871,12 @@ export const AdminSupportPage: React.FC = () => {
                 type="button"
                 disabled={cleaning}
                 onClick={handlePurgeMockData}
-                className="px-3.5 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-xl transition flex items-center gap-1.5"
+                className={`px-3.5 py-1.5 text-xs font-bold text-white rounded-xl transition flex items-center gap-1.5 ${
+                  wipeUsersInSupportModal ? 'bg-rose-600 hover:bg-rose-500' : 'bg-amber-600 hover:bg-amber-500'
+                }`}
               >
                 {cleaning && <RefreshCw className="w-3 h-3 animate-spin" />}
-                <span>Xác nhận xóa sạch data mẫu</span>
+                <span>{wipeUsersInSupportModal ? 'Xác nhận xóa sạch data User' : 'Xác nhận xóa sạch data mẫu'}</span>
               </button>
             </div>
           </div>

@@ -241,9 +241,18 @@ export class AdminController {
   }
 
   @Post('purge-mock-data')
-  @ApiOperation({ summary: 'Purge all mock operational data (tickets, feedback, fake orders, fake sessions)' })
-  purgeMockData() {
-    return this.adminService.purgeMockData();
+  @ApiOperation({ summary: 'Purge mock operational data (tickets, feedback, fake orders, fake sessions) or wipe all user data keeping only admin' })
+  purgeMockData(
+    @Body() body?: { wipeUsers?: boolean },
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.purgeMockData(body?.wipeUsers ?? false, actorId);
+  }
+
+  @Post('wipe-user-data')
+  @ApiOperation({ summary: 'Wipe all user data and non-admin accounts, preserving only admin accounts and system constants' })
+  wipeUserData(@CurrentUser('id') actorId?: string) {
+    return this.adminService.purgeMockData(true, actorId);
   }
 
   @Get('settings')

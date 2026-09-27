@@ -22,6 +22,8 @@ import {
   Search,
   AlertTriangle,
   Save,
+  UserX,
+  AlertOctagon,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
@@ -173,11 +175,15 @@ export const AdminSettingsPage: React.FC = () => {
   const [purgingMessages, setPurgingMessages] = useState(false);
   const [purgeMockModalOpen, setPurgeMockModalOpen] = useState(false);
   const [purgingMock, setPurgingMock] = useState(false);
+  const [wipeUserModalOpen, setWipeUserModalOpen] = useState(false);
+  const [wipingUsers, setWipingUsers] = useState(false);
+  const [wipeConfirmInput, setWipeConfirmInput] = useState('');
+  const [wipeUsersOptionInModal, setWipeUsersOptionInModal] = useState(false);
 
   // Settings State State Record
   const [settings, setSettings] = useState<Record<string, any>>({
     general: {
-      siteName: 'VocalFlow AI - Multi-Language Platform',
+      siteName: 'VocabFlow AI - Multi-Language Platform',
       tagline: 'Làm chủ từ vựng TOEIC với Spaced Repetition & AI Tutor',
       supportEmail: 'support@vocabflow.edu.vn',
       maintenanceMode: false,
@@ -326,20 +332,41 @@ export const AdminSettingsPage: React.FC = () => {
     }
   };
 
-  const handlePurgeMockData = async () => {
+  const handlePurgeMockData = async (wipeUsers: boolean = false) => {
     setPurgingMock(true);
     try {
-      const res: any = await api.post('/admin/purge-mock-data');
+      const res: any = await api.post('/admin/purge-mock-data', { wipeUsers });
       const info = res?.data?.data || res?.data || res;
-      const msg = info?.message || (locale === 'vi' ? 'Đã dọn sạch toàn bộ dữ liệu mẫu thành công. Chỉ giữ lại tài khoản người dùng và kho từ vựng.' : 'Cleaned all mock data successfully.');
+      const msg =
+        info?.message ||
+        (wipeUsers
+          ? (locale === 'vi'
+            ? 'Đã xóa sạch toàn bộ data user thành công. Chỉ bảo lưu tài khoản Admin và các hằng số hệ thống.'
+            : 'Wiped all user data successfully. Admin accounts & constants preserved.')
+          : (locale === 'vi'
+            ? 'Đã dọn sạch toàn bộ dữ liệu mẫu thành công. Chỉ giữ lại tài khoản người dùng và kho từ vựng.'
+            : 'Cleaned all mock data successfully.'));
       setStatusMessage({ text: msg, type: 'success' });
       setPurgeMockModalOpen(false);
-    } catch (err) {
+      setWipeUserModalOpen(false);
+      setWipeConfirmInput('');
+      setWipeUsersOptionInModal(false);
+    } catch (err: any) {
       console.error('Purge mock data error:', err);
-      setStatusMessage({ text: locale === 'vi' ? 'Không thể xóa dữ liệu mẫu lúc này.' : 'Failed to purge mock data.', type: 'error' });
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.message ||
+        (locale === 'vi' ? 'Không thể xóa dữ liệu lúc này.' : 'Failed to purge data.');
+      setStatusMessage({ text: errMsg, type: 'error' });
     } finally {
       setPurgingMock(false);
+      setWipingUsers(false);
     }
+  };
+
+  const handleWipeUserData = async () => {
+    setWipingUsers(true);
+    await handlePurgeMockData(true);
   };
 
   // Filter sections by search query
@@ -392,11 +419,10 @@ export const AdminSettingsPage: React.FC = () => {
       {/* Global Status Banner */}
       {statusMessage && (
         <div
-          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-bold animate-in fade-in ${
-            statusMessage.type === 'success'
+          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-bold animate-in fade-in ${statusMessage.type === 'success'
               ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
               : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2">
             {statusMessage.type === 'success' ? (
@@ -428,11 +454,10 @@ export const AdminSettingsPage: React.FC = () => {
                 <button
                   key={sec.id}
                   onClick={() => setActiveSection(sec.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition ${
-                    isActive
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition ${isActive
                       ? 'bg-indigo-600 text-white font-bold shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                  }`}
+                    }`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   <div className="truncate">
@@ -1260,26 +1285,60 @@ export const AdminSettingsPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Purge Mock Data */}
+                    {/* Purge Mock Operational Data */}
                     <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <h4 className="font-bold text-amber-300 flex items-center gap-1.5">
                           <ShieldCheck className="w-4 h-4 text-amber-400" />
-                          {locale === 'vi' ? 'Chuyển sang Vận Hành Thực: Xóa Sạch Dữ Liệu Mẫu' : 'Zero Fake Data Purge'}
+                          {locale === 'vi' ? 'Dọn Sạch Dữ Liệu Vận Hành Mẫu' : 'Operational Mock Data Purge'}
                         </h4>
                         <p className="text-[11px] text-amber-200/80 mt-1 max-w-lg">
                           {locale === 'vi'
-                            ? 'Xóa toàn bộ tin nhắn mẫu, ticket mẫu, feedback mẫu và giao dịch giả lập. Bảo lưu an toàn tài khoản người dùng và kho từ vựng.'
-                            : 'Permanently deletes all mock operational items. User accounts and vocabulary are safely kept intact.'}
+                            ? 'Xóa toàn bộ tin nhắn mẫu, ticket hỗ trợ mẫu, feedback mẫu và giao dịch giả lập. Bảo lưu an toàn toàn bộ tài khoản người dùng và kho từ vựng.'
+                            : 'Permanently deletes mock operational tickets, feedbacks, and simulated payments. User accounts and vocabulary are safely kept intact.'}
                         </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setPurgeMockModalOpen(true)}
+                        onClick={() => {
+                          setWipeUsersOptionInModal(false);
+                          setPurgeMockModalOpen(true);
+                        }}
                         className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5 shadow-xs transition shrink-0"
                       >
                         <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>{locale === 'vi' ? 'Xóa sạch mock data' : 'Purge Mock Data'}</span>
+                        <span>{locale === 'vi' ? 'Xóa data mẫu vận hành' : 'Purge Mock Data'}</span>
+                      </button>
+                    </div>
+
+                    {/* DANGER ZONE: Wipe All User Data (Keep Admin Only) */}
+                    <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                            {locale === 'vi' ? 'VÙNG NGUY HIỂM' : 'DANGER ZONE'}
+                          </span>
+                          <h4 className="font-bold text-rose-300 flex items-center gap-1.5">
+                            <UserX className="w-4 h-4 text-rose-400" />
+                            {locale === 'vi' ? 'Xóa Toàn Bộ Data User (Chỉ Giữ Lại Tài Khoản & Quyền Admin)' : 'Wipe All User Data (Keep Admin Accounts Only)'}
+                          </h4>
+                        </div>
+                        <p className="text-[11px] text-rose-200/80 mt-1.5 max-w-xl leading-relaxed">
+                          {locale === 'vi'
+                            ? 'Xóa sạch 100% tài khoản học viên, tiến độ học, từ vựng cá nhân, bộ thẻ cộng đồng, bài thi, đơn hàng... HỆ THỐNG CHỈ GIỮ LẠI TÀI KHOẢN VÀ QUYỀN ADMIN (Admin/Super Admin) cùng các hằng số không thể xóa (Kho từ điển chuẩn, Gói cước, Cấu hình).'
+                            : 'Permanently deletes all non-admin learner accounts, study progress, decks, and orders. ONLY Administrator accounts and system constants are preserved.'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWipeConfirmInput('');
+                          setWipeUserModalOpen(true);
+                        }}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 shadow-xs transition shrink-0"
+                      >
+                        <UserX className="w-3.5 h-3.5" />
+                        <span>{locale === 'vi' ? 'Xóa toàn bộ data User (Chỉ giữ Admin)' : 'Wipe User Data (Keep Admin)'}</span>
                       </button>
                     </div>
                   </div>
@@ -1337,36 +1396,79 @@ export const AdminSettingsPage: React.FC = () => {
       {/* Purge Mock Data Modal */}
       {purgeMockModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-scale-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-scale-in">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${wipeUsersOptionInModal ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                {wipeUsersOptionInModal ? <UserX className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
               </div>
               <div>
                 <h3 className="text-sm font-bold text-white">
-                  {locale === 'vi' ? 'Xác nhận xóa sạch dữ liệu mẫu' : 'Purge All Mock Data'}
+                  {wipeUsersOptionInModal
+                    ? (locale === 'vi' ? 'Xác nhận xóa sạch data user (Chỉ giữ Admin)' : 'Purge All User Data (Keep Admin Only)')
+                    : (locale === 'vi' ? 'Xác nhận xóa dữ liệu vận hành mẫu' : 'Purge Operational Mock Data')}
                 </h3>
                 <p className="text-xs text-slate-400">
                   {locale === 'vi' ? 'Quyền thực thi dành cho Quản trị viên' : 'Administrator Authorization Required'}
                 </p>
               </div>
             </div>
+
+            {/* Wipe User Data Option Selector / Toggle */}
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wipeUsersOptionInModal}
+                  onChange={(e) => setWipeUsersOptionInModal(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-700 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                />
+                <div>
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    {locale === 'vi' ? 'XÓA LUÔN TOÀN BỘ DATA USER (Chỉ giữ lại tài khoản & quyền Admin)' : 'Wipe all user data as well (Preserve Admin only)'}
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                      {locale === 'vi' ? 'Cực mạnh' : 'Nuclear'}
+                    </span>
+                  </span>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                    {locale === 'vi'
+                      ? 'Tích chọn mục này sẽ xóa sạch 100% tài khoản học viên và tiến độ học trong DB. Chỉ bảo lưu an toàn tài khoản Quản trị viên và kho từ vựng.'
+                      : 'Checking this will wipe all non-admin user accounts and progress from DB. Only Admin accounts and Vocabulary remain.'}
+                  </p>
+                </div>
+              </label>
+            </div>
+
             <div className="text-xs text-slate-300 leading-relaxed space-y-2">
               <p>
                 {locale === 'vi'
-                  ? 'Thao tác này sẽ xóa vĩnh viễn toàn bộ dữ liệu mẫu (mock data) hiện có trong hệ thống:'
-                  : 'Permanently deletes all simulated mock items:'}
+                  ? 'Thao tác này sẽ xóa vĩnh viễn dữ liệu theo danh mục sau:'
+                  : 'Permanently deletes following data categories:'}
               </p>
-              <ul className="list-disc list-inside space-y-1 text-slate-400 pl-1">
+              <ul className="list-disc list-inside space-y-1 text-slate-400 pl-1 text-[11px]">
                 <li>{locale === 'vi' ? 'Xóa toàn bộ tin nhắn & tickets hỗ trợ mẫu' : 'Delete all mock support tickets & messages'}</li>
                 <li>{locale === 'vi' ? 'Xóa toàn bộ ý kiến đóng góp & báo lỗi mẫu' : 'Delete all mock feedback items'}</li>
-                <li>{locale === 'vi' ? 'Xóa toàn bộ giao dịch giả lập' : 'Delete mock payment orders'}</li>
-                <li>{locale === 'vi' ? 'Xóa toàn bộ thông báo hệ thống mẫu' : 'Delete mock notifications'}</li>
+                <li>{locale === 'vi' ? 'Xóa toàn bộ đơn hàng giao dịch giả lập' : 'Delete mock payment orders'}</li>
+                <li>{locale === 'vi' ? 'Xóa toàn bộ thông báo hệ thống mẫu & phiên học thử' : 'Delete mock notifications & test sessions'}</li>
+                {wipeUsersOptionInModal && (
+                  <li className="text-rose-400 font-semibold">
+                    {locale === 'vi' ? '⚠️ XÓA TOÀN BỘ tài khoản học viên (Users), tiến độ từ vựng, deck cá nhân, bài thi' : '⚠️ DELETE ALL learner accounts, vocab progress, decks, exam attempts'}
+                  </li>
+                )}
               </ul>
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold">
-                🛡️ {locale === 'vi' ? 'BẢO LƯU AN TOÀN: 100% Người dùng (Users) và Kho từ vựng (Vocabulary).' : 'SAFE: All Users and Vocabulary records are untouched.'}
-              </div>
+
+              {wipeUsersOptionInModal ? (
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px] leading-relaxed">
+                  🛡️ {locale === 'vi'
+                    ? 'BẢO LƯU AN TOÀN: 100% Tài khoản & quyền Admin (Super Admin/Admin) và toàn bộ hằng số hệ thống (Kho từ vựng chuẩn, Gói cước, Cấu hình).'
+                    : 'SAFE: 100% Admin accounts & roles, and system constants (Vocabulary, Plans, Configs) are preserved.'}
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px]">
+                  🛡️ {locale === 'vi' ? 'BẢO LƯU AN TOÀN: 100% Người dùng (Users) và Kho từ vựng (Vocabulary).' : 'SAFE: All Users and Vocabulary records are untouched.'}
+                </div>
+              )}
             </div>
+
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -1379,11 +1481,102 @@ export const AdminSettingsPage: React.FC = () => {
               <button
                 type="button"
                 disabled={purgingMock}
-                onClick={handlePurgeMockData}
-                className="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 rounded-xl transition flex items-center gap-1.5"
+                onClick={() => handlePurgeMockData(wipeUsersOptionInModal)}
+                className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition flex items-center gap-1.5 ${wipeUsersOptionInModal ? 'bg-rose-600 hover:bg-rose-500' : 'bg-amber-600 hover:bg-amber-500'
+                  }`}
               >
                 {purgingMock && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>{locale === 'vi' ? 'Xác nhận xóa sạch data mẫu' : 'Confirm Mock Purge'}</span>
+                <span>
+                  {wipeUsersOptionInModal
+                    ? (locale === 'vi' ? 'Xác nhận xóa data user (Giữ Admin)' : 'Confirm Wipe Users (Keep Admin)')
+                    : (locale === 'vi' ? 'Xác nhận xóa sạch data mẫu' : 'Confirm Mock Purge')}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DEDICATED WIPE ALL USER DATA MODAL */}
+      {wipeUserModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-rose-500/40 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <AlertOctagon className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>{locale === 'vi' ? 'Xóa Toàn Bộ Data User Trong Database' : 'Wipe All User Data in Database'}</span>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-500 text-white">
+                    {locale === 'vi' ? 'Nguy hiểm' : 'Danger'}
+                  </span>
+                </h3>
+                <p className="text-xs text-rose-300/80">
+                  {locale === 'vi' ? 'Chỉ bảo lưu tài khoản Quản trị viên (Admin) và hằng số hệ thống' : 'Preserves only Admin accounts and system constants'}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/40 text-xs text-rose-200/90 leading-relaxed space-y-2">
+              <p className="font-semibold text-rose-300">
+                ⚠️ {locale === 'vi' ? 'Hành động này KHÔNG THỂ HOÀN TÁC! Hệ thống sẽ thực hiện:' : 'This action CANNOT BE UNDONE! The system will perform:'}
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-200/80 pl-1">
+                <li>{locale === 'vi' ? 'Xóa sạch 100% tài khoản học viên (non-admin users)' : 'Permanently delete 100% learner accounts'}</li>
+                <li>{locale === 'vi' ? 'Xóa sạch toàn bộ tiến độ học từ vựng cá nhân, chuỗi học (streak), kinh nghiệm (XP)' : 'Wipe all user vocabulary progress, streaks, and XP'}</li>
+                <li>{locale === 'vi' ? 'Xóa sạch bộ thẻ cộng đồng, bình luận, bài thi thử và kết quả thi' : 'Wipe all community decks, comments, exams and attempts'}</li>
+                <li>{locale === 'vi' ? 'Xóa sạch lịch sử thanh toán, đăng ký gói cước và tin nhắn' : 'Wipe all payment orders, subscriptions, and chat messages'}</li>
+              </ul>
+            </div>
+
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-semibold space-y-1">
+              <div className="flex items-center gap-1.5 text-emerald-400">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>{locale === 'vi' ? 'DỮ LIỆU ĐƯỢC BẢO LƯU AN TOÀN TUYỆT ĐỐI:' : 'ABSOLUTELY SAFE & PRESERVED DATA:'}</span>
+              </div>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-emerald-200/90 pl-1 font-normal">
+                <li>{locale === 'vi' ? 'Tài khoản Quản trị viên (Admin & Super Admin) kèm quyền hạn và mật khẩu' : 'Administrator accounts (Admin & Super Admin) with credentials & permissions'}</li>
+                <li>{locale === 'vi' ? 'Kho từ vựng chuẩn (Dictionary & CEFR Vocab), Từ điển mẫu' : 'Core Dictionary & CEFR Vocabulary master data'}</li>
+                <li>{locale === 'vi' ? 'Gói cước (Plans), Cấu hình hệ thống (SystemConfig), Học liệu gốc' : 'Subscription Plans, SystemConfig, and Master Learning Resources'}</li>
+              </ul>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <label className="text-[11px] text-slate-300 font-medium block">
+                {locale === 'vi'
+                  ? 'Để xác nhận, vui lòng nhập chữ "CONFIRM" hoặc "XOA USER" vào ô dưới:'
+                  : 'To confirm, please type "CONFIRM" or "XOA USER" below:'}
+              </label>
+              <input
+                type="text"
+                value={wipeConfirmInput}
+                onChange={(e) => setWipeConfirmInput(e.target.value)}
+                placeholder="CONFIRM"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={wipingUsers}
+                onClick={() => setWipeUserModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
+              >
+                {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={
+                  wipingUsers ||
+                  !['CONFIRM', 'XOA USER', 'XÓA USER', 'confirm'].includes(wipeConfirmInput.trim().toUpperCase())
+                }
+                onClick={handleWipeUserData}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition flex items-center gap-1.5 shadow-md shadow-rose-900/30"
+              >
+                {wipingUsers && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{locale === 'vi' ? 'Xác nhận xóa sạch data User' : 'Confirm Wipe All User Data'}</span>
               </button>
             </div>
           </div>

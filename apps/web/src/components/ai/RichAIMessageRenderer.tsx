@@ -21,7 +21,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
   const { activeLanguage } = useLearningContext();
   const effectiveTargetLocale = activeLanguage?.speechLocale || 'en-US';
 
-  const isOfflineFallback = provider === 'vocabflow-core' || content.includes('VocalFlow AI');
+  const isOfflineFallback = provider === 'vocabflow-core' || content.includes('VocabFlow AI');
   const isGemini = provider?.includes('gemini');
   const isOpenAI = provider?.includes('openai');
 
@@ -85,14 +85,14 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-black text-xs sm:text-sm tracking-wide">VocalFlow AI Tutor</span>
+              <span className="font-black text-xs sm:text-sm tracking-wide">VocabFlow AI Tutor</span>
               {cefrLevel && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 uppercase tracking-wider shadow-xs">
                   Level {cefrLevel}
                 </span>
               )}
             </div>
-            
+
             <div className="mt-0.5 flex items-center gap-1.5">
               {provider?.includes('cache') ? (
                 <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/70 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
@@ -156,13 +156,12 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
             return (
               <div
                 key={idx}
-                className={`mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 font-black text-xs sm:text-sm ${
-                  isQuiz
+                className={`mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 font-black text-xs sm:text-sm ${isQuiz
                     ? 'text-amber-700 dark:text-amber-400'
                     : isEx
-                    ? 'text-purple-700 dark:text-purple-400'
-                    : 'text-indigo-700 dark:text-indigo-400'
-                }`}
+                      ? 'text-purple-700 dark:text-purple-400'
+                      : 'text-indigo-700 dark:text-indigo-400'
+                  }`}
               >
                 <div className="flex items-center gap-1.5">
                   {isQuiz ? <HelpCircle className="w-4 h-4 shrink-0" /> : isEx ? <span>💬</span> : <BookOpen className="w-4 h-4 shrink-0" />}
