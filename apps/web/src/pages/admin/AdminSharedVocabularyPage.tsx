@@ -320,16 +320,16 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <table className="w-full min-w-[800px] text-left border-collapse text-xs">
+            <table className="w-full min-w-[1020px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-800/80 bg-slate-950/50 text-slate-400 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap select-none">
-                  <th className="py-3 px-4">Bộ Từ Vựng & Đóng Góp</th>
-                  <th className="py-3 px-3.5">Người Đóng Góp</th>
-                  <th className="py-3 px-3.5">Số Từ / CEFR</th>
-                  <th className="py-3 px-3.5">AI Quality Score</th>
-                  <th className="py-3 px-3.5">Trạng Thái</th>
-                  <th className="py-3 px-3.5">Ngày Gửi</th>
-                  <th className="py-3 px-4 text-right">Thao Tác</th>
+                  <th className="py-3 px-4 min-w-[280px]">Bộ Từ Vựng & Đóng Góp</th>
+                  <th className="py-3 px-3.5 min-w-[170px]">Người Đóng Góp</th>
+                  <th className="py-3 px-3.5 min-w-[110px]">Số Từ / CEFR</th>
+                  <th className="py-3 px-3.5 min-w-[140px]">AI Quality Score</th>
+                  <th className="py-3 px-3.5 min-w-[110px]">Trạng Thái</th>
+                  <th className="py-3 px-3.5 min-w-[100px]">Ngày Gửi</th>
+                  <th className="py-3 px-4 min-w-[80px] text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50 text-slate-300">
@@ -343,7 +343,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                       onClick={() => setSelectedDeck(deck)}
                       className="hover:bg-slate-800/40 transition cursor-pointer group"
                     >
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 min-w-[280px]">
                         <div className="font-bold text-white group-hover:text-indigo-400 transition flex items-center gap-2 flex-wrap">
                           <span>{deck.title}</span>
                           {deck.category && (
@@ -359,27 +359,27 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                           )}
                         </div>
                         {deck.description && (
-                          <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5 max-w-xs">
+                          <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5 max-w-sm">
                             {deck.description}
                           </p>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-3.5 min-w-[170px]">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-indigo-300">
+                          <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-indigo-300 shrink-0">
                             {deck.author?.displayName?.[0] || deck.author?.email?.[0]?.toUpperCase() || 'U'}
                           </div>
-                          <div>
-                            <p className="font-medium text-slate-200">
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-200 truncate">
                               {deck.author?.displayName || 'Học viên ẩn danh'}
                             </p>
-                            <p className="text-[10px] text-slate-500">{deck.author?.email}</p>
+                            <p className="text-[10px] text-slate-500 truncate">{deck.author?.email}</p>
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-3.5">
+                      <td className="py-3.5 px-3.5 min-w-[110px]">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-slate-200">{wordsCount} từ</span>
                           <span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
@@ -388,7 +388,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-3.5">
+                      <td className="py-3.5 px-3.5 min-w-[140px]">
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 rounded-full bg-slate-800 overflow-hidden">
                             <div
@@ -414,7 +414,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-3.5">
+                      <td className="py-3.5 px-3.5 min-w-[110px]">
                         {deck.status === 'PENDING' && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
                             <Clock className="w-3 h-3" />
@@ -435,11 +435,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-3.5 text-slate-400 text-[11px] whitespace-nowrap">
+                      <td className="py-3.5 px-3.5 min-w-[100px] text-slate-400 text-[11px] whitespace-nowrap">
                         {new Date(deck.createdAt).toLocaleDateString('vi-VN')}
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 min-w-[80px] text-right">
                         <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
                           <MoreActionsDropdown
                             align="right"

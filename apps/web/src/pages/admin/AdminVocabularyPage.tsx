@@ -506,7 +506,7 @@ export const AdminVocabularyPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <table className="w-full min-w-[700px] text-left border-collapse text-xs">
+            <table className="w-full min-w-[960px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-800/80 bg-slate-950/50 text-slate-400 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap select-none">
                   <th className="py-3 px-4 w-10">
@@ -517,12 +517,12 @@ export const AdminVocabularyPage: React.FC = () => {
                       className="rounded-sm border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0"
                     />
                   </th>
-                  <th className="py-3 px-4">Từ Vựng & Phiên Âm</th>
-                  <th className="py-3 px-4">Định Nghĩa</th>
-                  <th className="py-3 px-4">CEFR / POS</th>
-                  <th className="py-3 px-4">Độ Khó</th>
-                  <th className="py-3 px-4">Chất Lượng (Quality)</th>
-                  <th className="py-3 px-4 text-right">Thao Tác</th>
+                  <th className="py-3 px-4 min-w-[180px]">Từ Vựng & Phiên Âm</th>
+                  <th className="py-3 px-4 min-w-[240px]">Định Nghĩa</th>
+                  <th className="py-3 px-4 min-w-[120px]">CEFR / POS</th>
+                  <th className="py-3 px-4 min-w-[110px]">Độ Khó</th>
+                  <th className="py-3 px-4 min-w-[140px]">Chất Lượng (Quality)</th>
+                  <th className="py-3 px-4 min-w-[80px] text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50 text-slate-300">
