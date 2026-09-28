@@ -21,8 +21,28 @@ export function getOrCreateDeviceId(): string {
   return deviceId;
 }
 
+let activeRequestsCount = 0;
+
+function notifyApiLoading(delta: number, config?: any) {
+  activeRequestsCount = Math.max(0, activeRequestsCount + delta);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('VOCABFLOW_API_LOADING', {
+        detail: {
+          isLoading: activeRequestsCount > 0,
+          activeRequests: activeRequestsCount,
+          url: config?.url,
+          method: config?.method,
+        },
+      }),
+    );
+  }
+}
+
 // Request interceptor: Attach JWT token, persistent deviceId & dev logging
 api.interceptors.request.use((config) => {
+  notifyApiLoading(1, config);
+
   const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('vocabflow_access_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -46,17 +66,72 @@ api.interceptors.request.use((config) => {
 // Response interceptor: Auto Refresh Token on 401 & dev logging
 api.interceptors.response.use(
   (response) => {
+    notifyApiLoading(-1, response.config);
+
     if (import.meta.env.DEV) {
       console.debug(`[HTTP RES] ${response.status} ${response.config.url}`, response.data);
     }
+
+    // Auto-dispatch success toast for mutation requests returning a message
+    const method = response.config?.method?.toUpperCase();
+    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method || '');
+    const serverMessage =
+      (response.data as any)?.message ||
+      (response.data as any)?.data?.message;
+
+    if (
+      isMutation &&
+      serverMessage &&
+      typeof serverMessage === 'string' &&
+      !(response.config as any)?.skipGlobalToast
+    ) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('VOCABFLOW_TOAST', {
+            detail: {
+              type: 'success',
+              title: 'Thành công',
+              message: serverMessage,
+            },
+          }),
+        );
+      }
+    }
+
     return response.data;
   },
   async (error) => {
+    notifyApiLoading(-1, error.config);
+
     if (import.meta.env.DEV) {
       console.warn(`[HTTP ERR] ${error.response?.status || 'FAIL'} ${error.config?.url}`, error.response?.data || error.message);
     }
+
+    // Auto-dispatch error toast for failed requests (except 401 which will be retried)
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest?._retry) {
+    const is401 = error.response?.status === 401;
+
+    if (!is401 && !(error.config as any)?.skipGlobalToast) {
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Yêu cầu xử lý thất bại.';
+
+      if (typeof errMsg === 'string' && typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('VOCABFLOW_TOAST', {
+            detail: {
+              type: 'error',
+              title: 'Lỗi thực thi',
+              message: errMsg,
+            },
+          }),
+        );
+      }
+    }
+
+    if (is401 && !originalRequest?._retry) {
       originalRequest._retry = true;
       const refreshToken = localStorage.getItem('vocabflow_refresh_token') || localStorage.getItem('vocabflow_refresh_token');
       if (refreshToken) {
@@ -73,12 +148,9 @@ api.interceptors.response.use(
           // Token expired or invalid
           localStorage.removeItem('vocabflow_access_token');
           localStorage.removeItem('vocabflow_refresh_token');
-          localStorage.removeItem('vocabflow_access_token');
-          localStorage.removeItem('vocabflow_refresh_token');
         }
       } else {
         // Stale or missing token
-        localStorage.removeItem('vocabflow_access_token');
         localStorage.removeItem('vocabflow_access_token');
       }
     }

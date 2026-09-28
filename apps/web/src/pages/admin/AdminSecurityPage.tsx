@@ -174,6 +174,10 @@ export const AdminSecurityPage: React.FC = () => {
     setPasswordFormError(null);
     setPasswordFormSuccess(null);
 
+    if (adminNewPassword.length < 8) {
+      setPasswordFormError('Mật khẩu mới yêu cầu độ dài tối thiểu 8 ký tự.');
+      return;
+    }
     if (adminNewPassword !== adminConfirmPassword) {
       setPasswordFormError('Mật khẩu xác nhận không khớp.');
       return;
@@ -555,6 +559,7 @@ export const AdminSecurityPage: React.FC = () => {
                 </label>
                 <input
                   type="password"
+                  disabled={changingAdminPassword}
                   value={adminCurrentPassword}
                   onChange={(e) => {
                     setAdminCurrentPassword(e.target.value);
@@ -562,7 +567,7 @@ export const AdminSecurityPage: React.FC = () => {
                   }}
                   placeholder="••••••••"
                   required
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50"
                 />
               </div>
 
@@ -572,6 +577,7 @@ export const AdminSecurityPage: React.FC = () => {
                 </label>
                 <input
                   type="password"
+                  disabled={changingAdminPassword}
                   value={adminNewPassword}
                   onChange={(e) => {
                     setAdminNewPassword(e.target.value);
@@ -580,7 +586,7 @@ export const AdminSecurityPage: React.FC = () => {
                   placeholder="••••••••"
                   required
                   minLength={8}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50"
                 />
               </div>
 
@@ -590,6 +596,7 @@ export const AdminSecurityPage: React.FC = () => {
                 </label>
                 <input
                   type="password"
+                  disabled={changingAdminPassword}
                   value={adminConfirmPassword}
                   onChange={(e) => {
                     setAdminConfirmPassword(e.target.value);
@@ -597,7 +604,7 @@ export const AdminSecurityPage: React.FC = () => {
                   }}
                   placeholder="••••••••"
                   required
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50"
                 />
               </div>
 
@@ -639,7 +646,7 @@ export const AdminSecurityPage: React.FC = () => {
 
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-700 dark:text-rose-400 leading-relaxed space-y-1">
               <p>🔐 <strong>Quyền hạn tối thượng:</strong> Keypass là lớp bảo vệ thứ 2 bắt buộc để kích hoạt chức năng <strong>Reset All Data</strong> (Xóa sạch toàn bộ data học viên, tiến độ và giữ Admin/Kho từ vựng). Không thể thực hiện nếu thiếu Keypass này.</p>
-              <p className="text-[10px] text-rose-300">💡 <strong>Mã mặc định khởi tạo:</strong> <code className="px-1 py-0.2 rounded bg-rose-950 font-mono font-bold text-white">vocabflow2026</code>. Nhập mã này vào ô "Keypass hiện tại" nếu bạn chưa từng đổi.</p>
+              <p className="text-[10px] text-rose-300">🛡️ Nhập mã Keypass hiện tại đã được cấu hình cho tài khoản Quản trị viên để tiến hành cập nhật mã mới.</p>
             </div>
 
             {keypassFormError && (
@@ -658,17 +665,18 @@ export const AdminSecurityPage: React.FC = () => {
             <form onSubmit={handleUpdateKeypass} className="space-y-3 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Keypass hiện tại (mặc định: <code className="text-rose-500">vocabflow2026</code>)
+                  Keypass hiện tại
                 </label>
                 <input
                   type="password"
+                  disabled={updatingKeypass}
                   value={currentKeypass}
                   onChange={(e) => {
                     setCurrentKeypass(e.target.value);
                     if (keypassFormError) setKeypassFormError(null);
                   }}
                   placeholder="••••••••••••"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-rose-500 font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-rose-500 font-mono disabled:opacity-50"
                 />
               </div>
 
@@ -678,6 +686,7 @@ export const AdminSecurityPage: React.FC = () => {
                 </label>
                 <input
                   type="password"
+                  disabled={updatingKeypass}
                   value={newKeypass}
                   onChange={(e) => {
                     setNewKeypass(e.target.value);
@@ -686,7 +695,7 @@ export const AdminSecurityPage: React.FC = () => {
                   placeholder="••••••••••••"
                   required
                   minLength={8}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-rose-500 font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-rose-500 font-mono disabled:opacity-50"
                 />
               </div>
 
@@ -696,6 +705,7 @@ export const AdminSecurityPage: React.FC = () => {
                 </label>
                 <input
                   type="password"
+                  disabled={updatingKeypass}
                   value={confirmKeypass}
                   onChange={(e) => {
                     setConfirmKeypass(e.target.value);
@@ -703,7 +713,7 @@ export const AdminSecurityPage: React.FC = () => {
                   }}
                   placeholder="••••••••••••"
                   required
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-rose-500 font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-rose-500 font-mono disabled:opacity-50"
                 />
               </div>
 

@@ -175,6 +175,7 @@ export const SettingsPage: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpSuccess, setOtpSuccess] = useState<string | null>(null);
   const [otpTimer, setOtpTimer] = useState(600); // 10 minutes
   const [resendCooldown, setResendCooldown] = useState(0);
 
@@ -232,6 +233,7 @@ export const SettingsPage: React.FC = () => {
     setOtpStep('REQUEST');
     setOtpCode('');
     setOtpError(null);
+    setOtpSuccess(null);
     setOtpModalOpen(true);
   };
 
@@ -239,6 +241,7 @@ export const SettingsPage: React.FC = () => {
     if (!targetDeviceToLogout) return;
     setOtpLoading(true);
     setOtpError(null);
+    setOtpSuccess(null);
     try {
       await api.post('/security/device-logout/request-otp', {
         targetDeviceId: targetDeviceToLogout.id,
@@ -254,17 +257,23 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleVerifyLogoutOtp = async () => {
-    if (!targetDeviceToLogout || !otpCode.trim()) return;
+    if (!targetDeviceToLogout) return;
+    if (otpCode.trim().length !== 6) {
+      setOtpError('Vui lòng nhập đầy đủ 6 chữ số mã xác nhận OTP.');
+      return;
+    }
     setOtpLoading(true);
     setOtpError(null);
+    setOtpSuccess(null);
     try {
-      await api.post('/security/device-logout/verify-otp', {
+      const res: any = await api.post('/security/device-logout/verify-otp', {
         targetDeviceId: targetDeviceToLogout.id,
         otp: otpCode.trim(),
       });
-      setOtpModalOpen(false);
-      setActionSuccessMsg(`Đã đăng xuất thiết bị "${targetDeviceToLogout.deviceName}" thành công mà không làm gián đoạn phiên hiện tại.`);
-      setTimeout(() => setActionSuccessMsg(null), 4000);
+      const data = res?.data?.data || res?.data || res;
+      const successMsg = data?.message || `Đã thu hồi phiên và đăng xuất thiết bị "${targetDeviceToLogout.deviceName}" thành công mà không làm gián đoạn phiên hiện tại.`;
+      setOtpSuccess(successMsg);
+      setActionSuccessMsg(successMsg);
       await fetchDevices();
     } catch (err: any) {
       setOtpError(err?.response?.data?.message || 'Mã xác nhận OTP không chính xác hoặc đã hết hạn.');
@@ -1259,12 +1268,41 @@ export const SettingsPage: React.FC = () => {
                 </div>
 
                 {otpError && (
-                  <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-                    {otpError}
+                  <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-start gap-2 animate-shake">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-bold text-rose-200">Xác thực không thành công:</p>
+                      <p className="text-[11px] text-rose-300/90 mt-0.5">{otpError}</p>
+                    </div>
                   </div>
                 )}
 
-                {otpStep === 'REQUEST' ? (
+                {otpSuccess ? (
+                  <div className="py-5 px-3 flex flex-col items-center justify-center text-center space-y-3.5 animate-scale-in">
+                    <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center border-2 border-emerald-500/40 shadow-lg shadow-emerald-950/40">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-white">Đăng xuất thiết bị thành công!</h4>
+                      <p className="text-xs text-emerald-300/90 leading-relaxed max-w-sm">
+                        {otpSuccess}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpModalOpen(false);
+                        setOtpSuccess(null);
+                        setOtpError(null);
+                        setOtpCode('');
+                      }}
+                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-md shadow-emerald-900/30 flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Đã hiểu & Đóng</span>
+                    </button>
+                  </div>
+                ) : otpStep === 'REQUEST' ? (
                   <div className="space-y-4 pt-1">
                     <p className="text-xs text-slate-300 leading-relaxed">
                       Để bảo vệ tài khoản khỏi việc chiếm quyền điều khiển trái phép, một mã xác minh OTP gồm 6 chữ số sẽ được gửi tới hòm thư cá nhân của bạn: <strong className="text-white">{user?.email}</strong>.
@@ -1272,8 +1310,9 @@ export const SettingsPage: React.FC = () => {
                     <div className="flex justify-end gap-2 pt-2">
                       <button
                         type="button"
+                        disabled={otpLoading}
                         onClick={() => setOtpModalOpen(false)}
-                        className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
+                        className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white rounded-xl bg-slate-800 transition disabled:opacity-50"
                       >
                         Hủy bỏ
                       </button>
@@ -1281,10 +1320,19 @@ export const SettingsPage: React.FC = () => {
                         type="button"
                         disabled={otpLoading}
                         onClick={handleSendLogoutOtp}
-                        className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-900/30"
+                        className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-900/30 disabled:opacity-50"
                       >
-                        {otpLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                        <span>Gửi mã OTP về Email</span>
+                        {otpLoading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Đang gửi mã...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-3.5 h-3.5" />
+                            <span>Gửi mã OTP về Email</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1301,11 +1349,15 @@ export const SettingsPage: React.FC = () => {
                       <input
                         type="text"
                         maxLength={6}
+                        disabled={otpLoading}
                         value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        onChange={(e) => {
+                          setOtpCode(e.target.value.replace(/\D/g, ''));
+                          if (otpError) setOtpError(null);
+                        }}
                         placeholder="••••••"
                         autoFocus
-                        className="w-full text-center tracking-[0.5em] text-lg font-mono py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-hidden focus:border-indigo-500"
+                        className="w-full text-center tracking-[0.5em] text-lg font-mono py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50"
                       />
                     </div>
 
@@ -1320,7 +1372,7 @@ export const SettingsPage: React.FC = () => {
                           type="button"
                           disabled={otpLoading}
                           onClick={handleSendLogoutOtp}
-                          className="text-indigo-400 hover:underline font-bold"
+                          className="text-indigo-400 hover:underline font-bold disabled:opacity-50"
                         >
                           Gửi lại mã
                         </button>
@@ -1330,8 +1382,9 @@ export const SettingsPage: React.FC = () => {
                     <div className="flex justify-end gap-2 pt-2">
                       <button
                         type="button"
+                        disabled={otpLoading}
                         onClick={() => setOtpModalOpen(false)}
-                        className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
+                        className="px-3.5 py-1.5 text-xs text-slate-400 hover:text-white rounded-xl bg-slate-800 transition disabled:opacity-50"
                       >
                         Hủy
                       </button>
@@ -1341,8 +1394,17 @@ export const SettingsPage: React.FC = () => {
                         onClick={handleVerifyLogoutOtp}
                         className="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-rose-900/30"
                       >
-                        {otpLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
-                        <span>Xác nhận đăng xuất</span>
+                        {otpLoading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Đang xác thực...</span>
+                          </>
+                        ) : (
+                          <>
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span>Xác nhận đăng xuất</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

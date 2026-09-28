@@ -66,6 +66,8 @@ import { AdminFirebasePage } from './pages/admin/AdminFirebasePage';
 import { AdminLanguagePage } from './pages/admin/AdminLanguagePage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { GlobalConfirmDialog } from './components/common/ConfirmDialog';
+import { GlobalApiLoadingBar } from './components/common/GlobalApiLoadingBar';
+import { GlobalToastContainer } from './components/common/GlobalToastContainer';
 
 // Kids English Learning System
 import { KidsLayout } from './kids/components/KidsLayout';
@@ -155,6 +157,8 @@ export const App: React.FC = () => {
             <ScrollToTop />
             <ContextualLoginModal />
             <GlobalConfirmDialog />
+            <GlobalApiLoadingBar />
+            <GlobalToastContainer />
             <Routes>
               {/* Public Entry Routes */}
               <Route path="/" element={<LandingPage />} />

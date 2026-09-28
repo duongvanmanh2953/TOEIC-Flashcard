@@ -24,6 +24,7 @@ import {
   Save,
   UserX,
   AlertOctagon,
+  ExternalLink,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
@@ -173,8 +174,14 @@ export const AdminSettingsPage: React.FC = () => {
   // Maintenance & Purge Modals
   const [purgeModalOpen, setPurgeModalOpen] = useState(false);
   const [purgingMessages, setPurgingMessages] = useState(false);
+  const [purgeMessagesError, setPurgeMessagesError] = useState<string | null>(null);
+  const [purgeMessagesSuccess, setPurgeMessagesSuccess] = useState<string | null>(null);
+
   const [purgeMockModalOpen, setPurgeMockModalOpen] = useState(false);
   const [purgingMock, setPurgingMock] = useState(false);
+  const [purgeMockError, setPurgeMockError] = useState<string | null>(null);
+  const [purgeMockSuccess, setPurgeMockSuccess] = useState<string | null>(null);
+
   const [wipeUserModalOpen, setWipeUserModalOpen] = useState(false);
   const [wipingUsers, setWipingUsers] = useState(false);
   const [wipeConfirmInput, setWipeConfirmInput] = useState('');
@@ -321,16 +328,20 @@ export const AdminSettingsPage: React.FC = () => {
 
   const handlePurgeMessages = async () => {
     setPurgingMessages(true);
+    setPurgeMessagesError(null);
+    setPurgeMessagesSuccess(null);
     try {
       const res: any = await api.post('/support/admin/cleanup-old-messages', {
         days: settings.system?.retentionDaysMessages || 3,
       });
-      const msg = res?.data?.data?.message || (locale === 'vi' ? 'Đã dọn dẹp sạch tin nhắn cũ hơn 3 ngày thành công!' : 'Cleaned messages older than 3 days successfully!');
+      const msg = res?.data?.data?.message || res?.data?.message || (locale === 'vi' ? 'Đã dọn dẹp sạch tin nhắn cũ hơn 3 ngày thành công!' : 'Cleaned messages older than 3 days successfully!');
+      setPurgeMessagesSuccess(msg);
       setStatusMessage({ text: msg, type: 'success' });
-      setPurgeModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Purge error:', err);
-      setStatusMessage({ text: locale === 'vi' ? 'Không thể dọn dẹp tin nhắn lúc này.' : 'Purge action failed.', type: 'error' });
+      const errMsg = err?.response?.data?.message || err?.message || (locale === 'vi' ? 'Không thể dọn dẹp tin nhắn lúc này.' : 'Purge action failed.');
+      setPurgeMessagesError(errMsg);
+      setStatusMessage({ text: errMsg, type: 'error' });
     } finally {
       setPurgingMessages(false);
     }
@@ -338,6 +349,8 @@ export const AdminSettingsPage: React.FC = () => {
 
   const handlePurgeMockData = async (wipeUsers: boolean = false) => {
     setPurgingMock(true);
+    setPurgeMockError(null);
+    setPurgeMockSuccess(null);
     try {
       const res: any = await api.post('/admin/purge-mock-data', { wipeUsers });
       const info = res?.data?.data || res?.data || res;
@@ -350,17 +363,15 @@ export const AdminSettingsPage: React.FC = () => {
           : (locale === 'vi'
             ? 'Đã dọn sạch toàn bộ dữ liệu mẫu thành công. Chỉ giữ lại tài khoản người dùng và kho từ vựng.'
             : 'Cleaned all mock data successfully.'));
+      setPurgeMockSuccess(msg);
       setStatusMessage({ text: msg, type: 'success' });
-      setPurgeMockModalOpen(false);
-      setWipeUserModalOpen(false);
-      setWipeConfirmInput('');
-      setWipeUsersOptionInModal(false);
     } catch (err: any) {
       console.error('Purge mock data error:', err);
       const errMsg =
         err?.response?.data?.message ||
         err?.message ||
         (locale === 'vi' ? 'Không thể xóa dữ liệu lúc này.' : 'Failed to purge data.');
+      setPurgeMockError(errMsg);
       setStatusMessage({ text: errMsg, type: 'error' });
     } finally {
       setPurgingMock(false);
@@ -372,22 +383,22 @@ export const AdminSettingsPage: React.FC = () => {
     setWipeModalError(null);
     setWipeModalSuccess(null);
 
+    // 1. Validate confirmation keyword
     if (wipeConfirmInput.trim().toUpperCase() !== 'RESET') {
-      const err = locale === 'vi' ? 'Vui lòng gõ chính xác chữ "RESET" để xác nhận.' : 'Please type "RESET" to confirm.';
+      const err = locale === 'vi' ? 'Vui lòng gõ chính xác chữ "RESET" để xác nhận thao tác tối cao.' : 'Please type exactly "RESET" to confirm.';
       setWipeModalError(err);
-      setStatusMessage({ text: err, type: 'error' });
       return;
     }
+    // 2. Validate admin password
     if (!wipeAdminPassword.trim()) {
-      const err = locale === 'vi' ? 'Vui lòng nhập mật khẩu Admin.' : 'Please enter Admin password.';
+      const err = locale === 'vi' ? 'Vui lòng nhập mật khẩu tài khoản Quản trị viên (Admin).' : 'Please enter your Admin password.';
       setWipeModalError(err);
-      setStatusMessage({ text: err, type: 'error' });
       return;
     }
+    // 3. Validate admin keypass
     if (!wipeAdminKeypass.trim()) {
-      const err = locale === 'vi' ? 'Vui lòng nhập mã Keypass bảo mật tối cao.' : 'Please enter System Keypass.';
+      const err = locale === 'vi' ? 'Vui lòng nhập mã Keypass bảo mật tối cao (Admin Security Keypass).' : 'Please enter the Admin Security Keypass.';
       setWipeModalError(err);
-      setStatusMessage({ text: err, type: 'error' });
       return;
     }
 
@@ -398,22 +409,13 @@ export const AdminSettingsPage: React.FC = () => {
         adminPassword: wipeAdminPassword.trim(),
         adminKeypass: wipeAdminKeypass.trim(),
       });
-      const data = res?.data || res;
-      const successText = locale === 'vi'
-        ? `ĐÃ RESET TOÀN BỘ HỆ THỐNG AN TOÀN! Đã xóa sạch dữ liệu người dùng, bảo lưu an toàn tài khoản Admin và kho từ điển chuẩn.`
-        : 'System Reset successful! All learner business data wiped cleanly while preserving Admin accounts & constants.';
+      const data = res?.data?.data || res?.data || res;
+      const successText = data?.message || (locale === 'vi'
+        ? 'ĐÃ RESET TOÀN BỘ HỆ THỐNG AN TOÀN! Đã xóa sạch dữ liệu người dùng, bảo lưu an toàn tài khoản Admin và kho từ điển chuẩn.'
+        : 'System Reset successful! All learner business data wiped cleanly while preserving Admin accounts & constants.');
       
       setWipeModalSuccess(successText);
       setStatusMessage({ text: successText, type: 'success' });
-
-      setTimeout(() => {
-        setWipeUserModalOpen(false);
-        setWipeConfirmInput('');
-        setWipeAdminPassword('');
-        setWipeAdminKeypass('');
-        setWipeModalError(null);
-        setWipeModalSuccess(null);
-      }, 3000);
     } catch (err: any) {
       console.error('System reset error:', err);
       const errMsg = err?.response?.data?.message || err?.message || (locale === 'vi' ? 'Reset All Data thất bại. Kiểm tra lại mật khẩu hoặc Keypass.' : 'System reset failed.');
@@ -1405,11 +1407,12 @@ export const AdminSettingsPage: React.FC = () => {
       </div>
 
       {/* Purge Messages Modal */}
+      {/* 1. Purge Messages Modal */}
       {purgeModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-scale-in">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
@@ -1421,39 +1424,85 @@ export const AdminSettingsPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {locale === 'vi'
-                ? `Thao tác này sẽ xóa vĩnh viễn nội dung tin nhắn được gửi cũ hơn ${settings.system?.retentionDaysMessages || 3} ngày. Danh sách hồ sơ ticket vẫn được bảo lưu an toàn.`
-                : `This action will permanently delete message contents older than ${settings.system?.retentionDaysMessages || 3} days. Tickets and audit records remain intact.`}
-            </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setPurgeModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
-              >
-                {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                disabled={purgingMessages}
-                onClick={handlePurgeMessages}
-                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition flex items-center gap-1.5"
-              >
-                {purgingMessages && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>{locale === 'vi' ? 'Xác nhận dọn dẹp' : 'Confirm Purge'}</span>
-              </button>
-            </div>
+
+            {/* In-Modal Feedback */}
+            {purgeMessagesError && (
+              <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-semibold flex items-start gap-2.5 animate-shake">
+                <AlertOctagon className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-rose-200">{locale === 'vi' ? 'Lỗi thao tác:' : 'Operation Error:'}</p>
+                  <p className="text-[11px] text-rose-300/90 mt-0.5">{purgeMessagesError}</p>
+                </div>
+              </div>
+            )}
+
+            {purgeMessagesSuccess ? (
+              <div className="py-4 px-2 flex flex-col items-center justify-center text-center space-y-3 animate-fade-in">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-white">
+                    {locale === 'vi' ? 'Dọn dẹp thành công!' : 'Cleaned Successfully!'}
+                  </h4>
+                  <p className="text-xs text-emerald-300/90 leading-relaxed max-w-sm">
+                    {purgeMessagesSuccess}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPurgeModalOpen(false);
+                    setPurgeMessagesError(null);
+                    setPurgeMessagesSuccess(null);
+                  }}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
+                >
+                  {locale === 'vi' ? 'Đóng thông báo' : 'Close'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {locale === 'vi'
+                    ? `Thao tác này sẽ xóa vĩnh viễn nội dung tin nhắn được gửi cũ hơn ${settings.system?.retentionDaysMessages || 3} ngày. Danh sách hồ sơ ticket vẫn được bảo lưu an toàn.`
+                    : `This action will permanently delete message contents older than ${settings.system?.retentionDaysMessages || 3} days. Tickets and audit records remain intact.`}
+                </p>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={purgingMessages}
+                    onClick={() => {
+                      setPurgeModalOpen(false);
+                      setPurgeMessagesError(null);
+                      setPurgeMessagesSuccess(null);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition disabled:opacity-50"
+                  >
+                    {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={purgingMessages}
+                    onClick={handlePurgeMessages}
+                    className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 rounded-xl transition flex items-center gap-1.5"
+                  >
+                    {purgingMessages && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{purgingMessages ? (locale === 'vi' ? 'Đang dọn dẹp...' : 'Purging...') : (locale === 'vi' ? 'Xác nhận dọn dẹp' : 'Confirm Purge')}</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* Purge Mock Data Modal */}
+      {/* 2. Purge Mock Data Modal */}
       {purgeMockModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-scale-in">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${wipeUsersOptionInModal ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${wipeUsersOptionInModal ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
                 {wipeUsersOptionInModal ? <UserX className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
               </div>
               <div>
@@ -1468,91 +1517,140 @@ export const AdminSettingsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Wipe User Data Option Selector / Toggle */}
-            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={wipeUsersOptionInModal}
-                  onChange={(e) => setWipeUsersOptionInModal(e.target.checked)}
-                  className="mt-0.5 rounded border-slate-700 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
-                />
-                <div>
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    {locale === 'vi' ? 'XÓA LUÔN TOÀN BỘ DATA USER (Chỉ giữ lại tài khoản & quyền Admin)' : 'Wipe all user data as well (Preserve Admin only)'}
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                      {locale === 'vi' ? 'Cực mạnh' : 'Nuclear'}
-                    </span>
-                  </span>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                    {locale === 'vi'
-                      ? 'Tích chọn mục này sẽ xóa sạch 100% tài khoản học viên và tiến độ học trong DB. Chỉ bảo lưu an toàn tài khoản Quản trị viên và kho từ vựng.'
-                      : 'Checking this will wipe all non-admin user accounts and progress from DB. Only Admin accounts and Vocabulary remain.'}
+            {/* In-Modal Feedback Alerts */}
+            {purgeMockError && (
+              <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-semibold flex items-start gap-2.5 animate-shake">
+                <AlertOctagon className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-rose-200">{locale === 'vi' ? 'Lỗi thao tác:' : 'Operation Error:'}</p>
+                  <p className="text-[11px] text-rose-300/90 mt-0.5">{purgeMockError}</p>
+                </div>
+              </div>
+            )}
+
+            {purgeMockSuccess ? (
+              <div className="py-4 px-2 flex flex-col items-center justify-center text-center space-y-3 animate-fade-in">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-white">
+                    {locale === 'vi' ? 'Dọn dẹp thành công!' : 'Operation Completed Successfully!'}
+                  </h4>
+                  <p className="text-xs text-emerald-300/90 leading-relaxed max-w-sm">
+                    {purgeMockSuccess}
                   </p>
                 </div>
-              </label>
-            </div>
-
-            <div className="text-xs text-slate-300 leading-relaxed space-y-2">
-              <p>
-                {locale === 'vi'
-                  ? 'Thao tác này sẽ xóa vĩnh viễn dữ liệu theo danh mục sau:'
-                  : 'Permanently deletes following data categories:'}
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-slate-400 pl-1 text-[11px]">
-                <li>{locale === 'vi' ? 'Xóa toàn bộ tin nhắn & tickets hỗ trợ mẫu' : 'Delete all mock support tickets & messages'}</li>
-                <li>{locale === 'vi' ? 'Xóa toàn bộ ý kiến đóng góp & báo lỗi mẫu' : 'Delete all mock feedback items'}</li>
-                <li>{locale === 'vi' ? 'Xóa toàn bộ đơn hàng giao dịch giả lập' : 'Delete mock payment orders'}</li>
-                <li>{locale === 'vi' ? 'Xóa toàn bộ thông báo hệ thống mẫu & phiên học thử' : 'Delete mock notifications & test sessions'}</li>
-                {wipeUsersOptionInModal && (
-                  <li className="text-rose-400 font-semibold">
-                    {locale === 'vi' ? '⚠️ XÓA TOÀN BỘ tài khoản học viên (Users), tiến độ từ vựng, deck cá nhân, bài thi' : '⚠️ DELETE ALL learner accounts, vocab progress, decks, exam attempts'}
-                  </li>
-                )}
-              </ul>
-
-              {wipeUsersOptionInModal ? (
-                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px] leading-relaxed">
-                  🛡️ {locale === 'vi'
-                    ? 'BẢO LƯU AN TOÀN: 100% Tài khoản & quyền Admin (Super Admin/Admin) và toàn bộ hằng số hệ thống (Kho từ vựng chuẩn, Gói cước, Cấu hình).'
-                    : 'SAFE: 100% Admin accounts & roles, and system constants (Vocabulary, Plans, Configs) are preserved.'}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPurgeMockModalOpen(false);
+                    setPurgeMockError(null);
+                    setPurgeMockSuccess(null);
+                    setWipeUsersOptionInModal(false);
+                  }}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition"
+                >
+                  {locale === 'vi' ? 'Đóng thông báo' : 'Close'}
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Wipe User Data Option Selector / Toggle */}
+                <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      disabled={purgingMock}
+                      checked={wipeUsersOptionInModal}
+                      onChange={(e) => setWipeUsersOptionInModal(e.target.checked)}
+                      className="mt-0.5 rounded border-slate-700 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer disabled:opacity-50"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        {locale === 'vi' ? 'XÓA LUÔN TOÀN BỘ DATA USER (Chỉ giữ lại tài khoản & quyền Admin)' : 'Wipe all user data as well (Preserve Admin only)'}
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                          {locale === 'vi' ? 'Cực mạnh' : 'Nuclear'}
+                        </span>
+                      </span>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                        {locale === 'vi'
+                          ? 'Tích chọn mục này sẽ xóa sạch 100% tài khoản học viên và tiến độ học trong DB. Chỉ bảo lưu an toàn tài khoản Quản trị viên và kho từ vựng.'
+                          : 'Checking this will wipe all non-admin user accounts and progress from DB. Only Admin accounts and Vocabulary remain.'}
+                      </p>
+                    </div>
+                  </label>
                 </div>
-              ) : (
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px]">
-                  🛡️ {locale === 'vi' ? 'BẢO LƯU AN TOÀN: 100% Người dùng (Users) và Kho từ vựng (Vocabulary).' : 'SAFE: All Users and Vocabulary records are untouched.'}
-                </div>
-              )}
-            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                disabled={purgingMock}
-                onClick={() => setPurgeMockModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
-              >
-                {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                disabled={purgingMock}
-                onClick={() => handlePurgeMockData(wipeUsersOptionInModal)}
-                className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition flex items-center gap-1.5 ${wipeUsersOptionInModal ? 'bg-rose-600 hover:bg-rose-500' : 'bg-amber-600 hover:bg-amber-500'
-                  }`}
-              >
-                {purgingMock && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>
-                  {wipeUsersOptionInModal
-                    ? (locale === 'vi' ? 'Xác nhận xóa data user (Giữ Admin)' : 'Confirm Wipe Users (Keep Admin)')
-                    : (locale === 'vi' ? 'Xác nhận xóa sạch data mẫu' : 'Confirm Mock Purge')}
-                </span>
-              </button>
-            </div>
+                <div className="text-xs text-slate-300 leading-relaxed space-y-2">
+                  <p>
+                    {locale === 'vi'
+                      ? 'Thao tác này sẽ xóa vĩnh viễn dữ liệu theo danh mục sau:'
+                      : 'Permanently deletes following data categories:'}
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-slate-400 pl-1 text-[11px]">
+                    <li>{locale === 'vi' ? 'Xóa toàn bộ tin nhắn & tickets hỗ trợ mẫu' : 'Delete all mock support tickets & messages'}</li>
+                    <li>{locale === 'vi' ? 'Xóa toàn bộ ý kiến đóng góp & báo lỗi mẫu' : 'Delete all mock feedback items'}</li>
+                    <li>{locale === 'vi' ? 'Xóa toàn bộ đơn hàng giao dịch giả lập' : 'Delete mock payment orders'}</li>
+                    <li>{locale === 'vi' ? 'Xóa toàn bộ thông báo hệ thống mẫu & phiên học thử' : 'Delete mock notifications & test sessions'}</li>
+                    {wipeUsersOptionInModal && (
+                      <li className="text-rose-400 font-semibold">
+                        {locale === 'vi' ? '⚠️ XÓA TOÀN BỘ tài khoản học viên (Users), tiến độ từ vựng, deck cá nhân, bài thi' : '⚠️ DELETE ALL learner accounts, vocab progress, decks, exam attempts'}
+                      </li>
+                    )}
+                  </ul>
+
+                  {wipeUsersOptionInModal ? (
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px] leading-relaxed">
+                      🛡️ {locale === 'vi'
+                        ? 'BẢO LƯU AN TOÀN: 100% Tài khoản & quyền Admin (Super Admin/Admin) và toàn bộ hằng số hệ thống (Kho từ vựng chuẩn, Gói cước, Cấu hình).'
+                        : 'SAFE: 100% Admin accounts & roles, and system constants (Vocabulary, Plans, Configs) are preserved.'}
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px]">
+                      🛡️ {locale === 'vi' ? 'BẢO LƯU AN TOÀN: 100% Người dùng (Users) và Kho từ vựng (Vocabulary).' : 'SAFE: All Users and Vocabulary records are untouched.'}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={purgingMock}
+                    onClick={() => {
+                      setPurgeMockModalOpen(false);
+                      setPurgeMockError(null);
+                      setPurgeMockSuccess(null);
+                      setWipeUsersOptionInModal(false);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition disabled:opacity-50"
+                  >
+                    {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={purgingMock}
+                    onClick={() => handlePurgeMockData(wipeUsersOptionInModal)}
+                    className={`px-4 py-2 text-xs font-bold text-white rounded-xl transition flex items-center gap-1.5 disabled:opacity-50 ${wipeUsersOptionInModal ? 'bg-rose-600 hover:bg-rose-500' : 'bg-amber-600 hover:bg-amber-500'
+                      }`}
+                  >
+                    {purgingMock && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>
+                      {purgingMock
+                        ? (locale === 'vi' ? 'Đang thực thi dọn dẹp...' : 'Purging...')
+                        : wipeUsersOptionInModal
+                          ? (locale === 'vi' ? 'Xác nhận xóa data user (Giữ Admin)' : 'Confirm Wipe Users (Keep Admin)')
+                          : (locale === 'vi' ? 'Xác nhận xóa sạch data mẫu' : 'Confirm Mock Purge')}
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* DEDICATED WIPE ALL USER DATA MODAL */}
+      {/* 3. DEDICATED WIPE ALL USER DATA MODAL */}
       {wipeUserModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
           <div className="bg-slate-900 border border-rose-500/40 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-scale-in">
@@ -1573,136 +1671,188 @@ export const AdminSettingsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/40 text-xs text-rose-200/90 leading-relaxed space-y-2">
-              <p className="font-semibold text-rose-300">
-                ⚠️ {locale === 'vi' ? 'Hành động này KHÔNG THỂ HOÀN TÁC! Hệ thống sẽ thực hiện:' : 'This action CANNOT BE UNDONE! The system will perform:'}
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-200/80 pl-1">
-                <li>{locale === 'vi' ? 'Xóa sạch 100% tài khoản học viên (non-admin users)' : 'Permanently delete 100% learner accounts'}</li>
-                <li>{locale === 'vi' ? 'Xóa sạch toàn bộ tiến độ học từ vựng cá nhân, chuỗi học (streak), kinh nghiệm (XP)' : 'Wipe all user vocabulary progress, streaks, and XP'}</li>
-                <li>{locale === 'vi' ? 'Xóa sạch bộ thẻ cộng đồng, bình luận, bài thi thử và kết quả thi' : 'Wipe all community decks, comments, exams and attempts'}</li>
-                <li>{locale === 'vi' ? 'Xóa sạch lịch sử thanh toán, đăng ký gói cước và tin nhắn' : 'Wipe all payment orders, subscriptions, and chat messages'}</li>
-              </ul>
-            </div>
-
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-semibold space-y-1">
-              <div className="flex items-center gap-1.5 text-emerald-400">
-                <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>{locale === 'vi' ? 'DỮ LIỆU ĐƯỢC BẢO LƯU AN TOÀN TUYỆT ĐỐI:' : 'ABSOLUTELY SAFE & PRESERVED DATA:'}</span>
-              </div>
-              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-emerald-200/90 pl-1 font-normal">
-                <li>{locale === 'vi' ? 'Tài khoản Quản trị viên (Admin & Super Admin) kèm quyền hạn và mật khẩu' : 'Administrator accounts (Admin & Super Admin) with credentials & permissions'}</li>
-                <li>{locale === 'vi' ? 'Kho từ vựng chuẩn (Dictionary & CEFR Vocab), Từ điển mẫu' : 'Core Dictionary & CEFR Vocabulary master data'}</li>
-                <li>{locale === 'vi' ? 'Gói cước (Plans), Cấu hình hệ thống (SystemConfig), Học liệu gốc' : 'Subscription Plans, SystemConfig, and Master Learning Resources'}</li>
-              </ul>
-            </div>
-
             {/* In-Modal Feedback Alerts */}
             {wipeModalError && (
-              <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-semibold flex items-center gap-2 animate-shake">
-                <AlertOctagon className="w-4 h-4 shrink-0 text-rose-400" />
-                <span>{wipeModalError}</span>
-              </div>
-            )}
-            {wipeModalSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fade-in">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span>{wipeModalSuccess}</span>
+              <div className="p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-semibold flex items-start gap-2.5 animate-shake">
+                <AlertOctagon className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-rose-200">{locale === 'vi' ? 'Không thể thực thi lệnh xóa:' : 'Execution Failed:'}</p>
+                  <p className="text-[11px] text-rose-300/90 mt-0.5">{wipeModalError}</p>
+                </div>
               </div>
             )}
 
-            <div className="space-y-3 pt-1">
-              <div>
-                <label className="text-[11px] text-slate-300 font-semibold block mb-1">
-                  1. {locale === 'vi'
-                    ? 'Để xác nhận, vui lòng nhập chính xác chữ "RESET":'
-                    : 'To confirm, please type exactly "RESET" below:'}
-                </label>
-                <input
-                  type="text"
-                  value={wipeConfirmInput}
-                  onChange={(e) => {
-                    setWipeConfirmInput(e.target.value);
-                    if (wipeModalError) setWipeModalError(null);
+            {/* In-Modal Dedicated Success Screen */}
+            {wipeModalSuccess ? (
+              <div className="py-6 px-4 flex flex-col items-center justify-center text-center space-y-4 animate-scale-in">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center border-2 border-emerald-500/40 shadow-lg shadow-emerald-950/40">
+                  <CheckCircle2 className="w-9 h-9" />
+                </div>
+                <div className="space-y-1.5">
+                  <h4 className="text-base font-bold text-white">
+                    {locale === 'vi' ? 'Thao Tác Thực Thi Thành Công!' : 'Action Executed Successfully!'}
+                  </h4>
+                  <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-medium leading-relaxed max-w-md mx-auto">
+                    {wipeModalSuccess}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWipeUserModalOpen(false);
+                    setWipeConfirmInput('');
+                    setWipeAdminPassword('');
+                    setWipeAdminKeypass('');
+                    setWipeModalError(null);
+                    setWipeModalSuccess(null);
                   }}
-                  placeholder="RESET"
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono tracking-wider"
-                />
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-md shadow-emerald-900/30 flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{locale === 'vi' ? 'Đã hiểu & Đóng bảng điều khiển' : 'Acknowledge & Close'}</span>
+                </button>
               </div>
+            ) : (
+              <>
+                <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/40 text-xs text-rose-200/90 leading-relaxed space-y-2">
+                  <p className="font-semibold text-rose-300">
+                    ⚠️ {locale === 'vi' ? 'Hành động này KHÔNG THỂ HOÀN TÁC! Hệ thống sẽ thực hiện:' : 'This action CANNOT BE UNDONE! The system will perform:'}
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-200/80 pl-1">
+                    <li>{locale === 'vi' ? 'Xóa sạch 100% tài khoản học viên (non-admin users)' : 'Permanently delete 100% learner accounts'}</li>
+                    <li>{locale === 'vi' ? 'Xóa sạch toàn bộ tiến độ học từ vựng cá nhân, chuỗi học (streak), kinh nghiệm (XP)' : 'Wipe all user vocabulary progress, streaks, and XP'}</li>
+                    <li>{locale === 'vi' ? 'Xóa sạch bộ thẻ cộng đồng, bình luận, bài thi thử và kết quả thi' : 'Wipe all community decks, comments, exams and attempts'}</li>
+                    <li>{locale === 'vi' ? 'Xóa sạch lịch sử thanh toán, đăng ký gói cước và tin nhắn' : 'Wipe all payment orders, subscriptions, and chat messages'}</li>
+                  </ul>
+                </div>
 
-              <div>
-                <label className="text-[11px] text-slate-300 font-semibold block mb-1">
-                  2. {locale === 'vi' ? 'Nhập mật khẩu Admin:' : 'Admin Password:'}
-                </label>
-                <input
-                  type="password"
-                  value={wipeAdminPassword}
-                  onChange={(e) => {
-                    setWipeAdminPassword(e.target.value);
-                    if (wipeModalError) setWipeModalError(null);
-                  }}
-                  placeholder="••••••••"
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono"
-                />
-              </div>
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-semibold space-y-1">
+                  <div className="flex items-center gap-1.5 text-emerald-400">
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    <span>{locale === 'vi' ? 'DỮ LIỆU ĐƯỢC BẢO LƯU AN TOÀN TUYỆT ĐỐI:' : 'ABSOLUTELY SAFE & PRESERVED DATA:'}</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-0.5 text-[11px] text-emerald-200/90 pl-1 font-normal">
+                    <li>{locale === 'vi' ? 'Tài khoản Quản trị viên (Admin & Super Admin) kèm quyền hạn và mật khẩu' : 'Administrator accounts (Admin & Super Admin) with credentials & permissions'}</li>
+                    <li>{locale === 'vi' ? 'Kho từ vựng chuẩn (Dictionary & CEFR Vocab), Từ điển mẫu' : 'Core Dictionary & CEFR Vocabulary master data'}</li>
+                    <li>{locale === 'vi' ? 'Gói cước (Plans), Cấu hình hệ thống (SystemConfig), Học liệu gốc' : 'Subscription Plans, SystemConfig, and Master Learning Resources'}</li>
+                  </ul>
+                </div>
 
-              <div>
-                <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center justify-between">
-                  <span>3. {locale === 'vi' ? 'Nhập mã Keypass bảo mật tối cao (Admin Security Keypass):' : 'Admin Security Keypass:'}</span>
-                </label>
-                <input
-                  type="password"
-                  value={wipeAdminKeypass}
-                  onChange={(e) => {
-                    setWipeAdminKeypass(e.target.value);
-                    if (wipeModalError) setWipeModalError(null);
-                  }}
-                  placeholder="••••••••••••"
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono"
-                />
-                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                  💡 <strong>Gợi ý:</strong> Mã Keypass khởi tạo mặc định là <code className="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono font-bold">vocabflow2026</code>. Bạn có thể đổi mã này bất kỳ lúc nào tại menu <strong>Bảo mật & Rủi ro &gt; Mật khẩu &amp; Keypass</strong>.
-                </p>
-              </div>
-            </div>
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+                      1. {locale === 'vi'
+                        ? 'Để xác nhận, vui lòng nhập chính xác chữ "RESET":'
+                        : 'To confirm, please type exactly "RESET" below:'}
+                    </label>
+                    <input
+                      type="text"
+                      disabled={wipingUsers}
+                      value={wipeConfirmInput}
+                      onChange={(e) => {
+                        setWipeConfirmInput(e.target.value);
+                        if (wipeModalError) setWipeModalError(null);
+                      }}
+                      placeholder="RESET"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono tracking-wider disabled:opacity-50"
+                    />
+                  </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                disabled={wipingUsers}
-                onClick={() => {
-                  setWipeUserModalOpen(false);
-                  setWipeConfirmInput('');
-                  setWipeAdminPassword('');
-                  setWipeAdminKeypass('');
-                  setWipeModalError(null);
-                  setWipeModalSuccess(null);
-                }}
-                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
-              >
-                {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                disabled={
-                  wipingUsers ||
-                  wipeConfirmInput.trim().toUpperCase() !== 'RESET' ||
-                  !wipeAdminPassword.trim() ||
-                  !wipeAdminKeypass.trim()
-                }
-                onClick={handleWipeUserData}
-                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition flex items-center gap-1.5 shadow-md shadow-rose-900/30"
-              >
-                {wipingUsers ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Đang kiểm tra & thực thi xóa sạch...</span>
-                  </>
-                ) : (
-                  <span>{locale === 'vi' ? 'Xác nhận xóa sạch data toàn sàn' : 'Execute Nuclear Reset All Data'}</span>
-                )}
-              </button>
-            </div>
+                  <div>
+                    <label className="text-[11px] text-slate-300 font-semibold block mb-1">
+                      2. {locale === 'vi' ? 'Nhập mật khẩu Admin của bạn:' : 'Admin Password:'}
+                    </label>
+                    <input
+                      type="password"
+                      disabled={wipingUsers}
+                      value={wipeAdminPassword}
+                      onChange={(e) => {
+                        setWipeAdminPassword(e.target.value);
+                        if (wipeModalError) setWipeModalError(null);
+                      }}
+                      placeholder="••••••••"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center justify-between">
+                      <span>3. {locale === 'vi' ? 'Nhập mã Keypass bảo mật tối cao (Admin Security Keypass):' : 'Admin Security Keypass:'}</span>
+                    </label>
+                    <input
+                      type="password"
+                      disabled={wipingUsers}
+                      value={wipeAdminKeypass}
+                      onChange={(e) => {
+                        setWipeAdminKeypass(e.target.value);
+                        if (wipeModalError) setWipeModalError(null);
+                      }}
+                      placeholder="••••••••••••"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono disabled:opacity-50"
+                    />
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 mt-2 space-y-1 leading-relaxed">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-300">
+                          🛡️ {locale === 'vi' ? 'Mã khóa ủy quyền bảo vệ cấp độ máy chủ' : 'Server-level administrative authorization'}
+                        </span>
+                        <a
+                          href="/admin/security?tab=credentials"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-indigo-400 hover:text-indigo-300 font-bold inline-flex items-center gap-1 hover:underline text-[10px]"
+                        >
+                          <span>{locale === 'vi' ? 'Đổi hoặc đặt lại Keypass' : 'Manage Keypass'}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        {locale === 'vi'
+                          ? 'Keypass được thiết lập độc lập tại menu Bảo Mật & Keypass (Rủi Ro). Đây là chốt chặn bảo vệ cuối cùng trước các hành động xóa dữ liệu toàn sàn.'
+                          : 'Keypass is configured independently at Security & Keypass console. Acts as final safeguard for destructive commands.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={wipingUsers}
+                    onClick={() => {
+                      setWipeUserModalOpen(false);
+                      setWipeConfirmInput('');
+                      setWipeAdminPassword('');
+                      setWipeAdminKeypass('');
+                      setWipeModalError(null);
+                      setWipeModalSuccess(null);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition disabled:opacity-50"
+                  >
+                    {locale === 'vi' ? 'Hủy bỏ' : 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      wipingUsers ||
+                      wipeConfirmInput.trim().toUpperCase() !== 'RESET' ||
+                      !wipeAdminPassword.trim() ||
+                      !wipeAdminKeypass.trim()
+                    }
+                    onClick={handleWipeUserData}
+                    className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition flex items-center gap-1.5 shadow-md shadow-rose-900/30"
+                  >
+                    {wipingUsers ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>{locale === 'vi' ? 'Đang kiểm tra & thực thi xóa sạch...' : 'Verifying & Executing...'}</span>
+                      </>
+                    ) : (
+                      <span>{locale === 'vi' ? 'Xác nhận xóa sạch data toàn sàn' : 'Execute Nuclear Reset All Data'}</span>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -226,7 +226,7 @@ export const AdminLayout: React.FC = () => {
       title: 'HỆ THỐNG & BẢO MẬT',
       items: [
         { to: '/admin/system', label: 'Sức Khỏe Hệ Thống', icon: Activity },
-        { to: '/admin/security', label: 'Bảo Mật & Phân Quyền', icon: ShieldCheck },
+        { to: '/admin/security', label: 'Bảo Mật & Keypass (Rủi Ro)', icon: ShieldCheck },
         { to: '/admin/firebase', label: 'Cấu hình Firebase', icon: Flame },
         { to: '/admin/settings', label: 'Cài Đặt Chung', icon: Settings },
       ],
