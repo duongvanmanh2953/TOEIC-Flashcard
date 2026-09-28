@@ -103,16 +103,17 @@ export const AdminFinancePage: React.FC = () => {
 
   const formattedReportData = React.useMemo(() => {
     if (!data) return null;
-    const grossRev = data.metrics?.grossRevenue || 128500000;
+    const grossRev = data.metrics?.grossRevenue ?? 0;
     const gatewayFee = Math.round(grossRev * 0.015);
-    const netRev = data.metrics?.netRevenue || (grossRev - gatewayFee);
-    const staffCost = 28000000;
-    const infraCost = 14500000;
-    const aiCost = 18200000;
-    const marketingCost = 12000000;
+    const netRev = data.metrics?.netRevenue ?? (grossRev - gatewayFee);
+    const hasTransactions = (data.metrics?.paidOrdersCount || 0) > 0 || grossRev > 0;
+    const staffCost = hasTransactions ? 28000000 : 0;
+    const infraCost = hasTransactions ? 14500000 : 0;
+    const aiCost = hasTransactions ? 18200000 : 0;
+    const marketingCost = hasTransactions ? 12000000 : 0;
     const totalCost = staffCost + infraCost + aiCost + gatewayFee + marketingCost;
     const netProfit = netRev - totalCost;
-    const margin = ((netProfit / (netRev || 1)) * 100).toFixed(1);
+    const margin = netRev > 0 ? ((netProfit / netRev) * 100).toFixed(1) : '0.0';
 
     return {
       generatedAt: new Date().toLocaleString('vi-VN'),
@@ -126,31 +127,37 @@ export const AdminFinancePage: React.FC = () => {
         grossProfit: grossRev - totalCost,
         netProfit,
         margin: Number(margin),
-        cashFlow: netProfit + 8500000,
+        cashFlow: netProfit,
       },
-      items: [
-        { category: 'Doanh thu Đăng ký Gói Pro (Monthly)', amount: Math.round(grossRev * 0.58), share: '58.0%', type: 'REVENUE', status: 'Tăng trưởng' },
-        { category: 'Doanh thu Gói Năm (Annual Pro)', amount: Math.round(grossRev * 0.26), share: '26.0%', type: 'REVENUE', status: 'Ổn định' },
-        { category: 'Vé Phòng Đấu Realtime (Game Tokens)', amount: Math.round(grossRev * 0.16), share: '16.0%', type: 'REVENUE', status: 'Cao' },
-        { category: 'Chi phí Nhân sự & Vận hành', amount: -staffCost, share: '36.2%', type: 'EXPENSE', status: 'Cố định' },
-        { category: 'Chi phí AI & LLM Inference', amount: -aiCost, share: '23.5%', type: 'EXPENSE', status: 'Biến đổi' },
-        { category: 'Chi phí Hạ tầng Server & Database', amount: -infraCost, share: '18.7%', type: 'EXPENSE', status: 'Cố định' },
-        { category: 'Marketing & Thu hút người dùng', amount: -marketingCost, share: '15.5%', type: 'EXPENSE', status: 'Kiểm soát' },
-        { category: 'Phí Cổng Thanh toán PayOS / Ngân hàng (1.5%)', amount: -gatewayFee, share: '6.0%', type: 'EXPENSE', status: 'Theo GD' },
-      ],
-      costBreakdown: [
-        { name: 'Nhân sự Engineering & AI Team', amount: 28000000, share: '36.2%', trend: '+0.0%' },
-        { name: 'Google Gemini & OpenAI Token Inference', amount: 18200000, share: '23.5%', trend: '+12.4%' },
-        { name: 'Cloud Server, Postgres DB & Redis Cache', amount: 14500000, share: '18.7%', trend: '+5.1%' },
-        { name: 'Kênh Quảng Cáo & Chuyển Đổi Học Viên', amount: 12000000, share: '15.5%', trend: '-4.2%' },
-        { name: 'Phí Giao Dịch Cổng Thanh Toán (PayOS, VietQR)', amount: gatewayFee, share: '6.0%', trend: '+8.3%' },
-      ],
-      cashFlowItems: [
-        { title: 'Dòng tiền từ Hoạt động Kinh doanh (CFO)', inflow: netRev, outflow: 77350000, net: netRev - 77350000 },
-        { title: 'Dòng tiền từ Hoạt động Đầu tư (CFI)', inflow: 0, outflow: 12000000, net: -12000000 },
-        { title: 'Dòng tiền từ Hoạt động Tài chính (CFF)', inflow: 0, outflow: 0, net: 0 },
-        { title: 'Dòng tiền Thuần trong Kỳ (Net Cash Flow)', inflow: netRev, outflow: 89350000, net: netRev - 89350000 },
-      ],
+      items: hasTransactions
+        ? [
+            { category: 'Doanh thu Đăng ký Gói Pro (Monthly)', amount: Math.round(grossRev * 0.58), share: '58.0%', type: 'REVENUE', status: 'Tăng trưởng' },
+            { category: 'Doanh thu Gói Năm (Annual Pro)', amount: Math.round(grossRev * 0.26), share: '26.0%', type: 'REVENUE', status: 'Ổn định' },
+            { category: 'Vé Phòng Đấu Realtime (Game Tokens)', amount: Math.round(grossRev * 0.16), share: '16.0%', type: 'REVENUE', status: 'Cao' },
+            { category: 'Chi phí Nhân sự & Vận hành', amount: -staffCost, share: '36.2%', type: 'EXPENSE', status: 'Cố định' },
+            { category: 'Chi phí AI & LLM Inference', amount: -aiCost, share: '23.5%', type: 'EXPENSE', status: 'Biến đổi' },
+            { category: 'Chi phí Hạ tầng Server & Database', amount: -infraCost, share: '18.7%', type: 'EXPENSE', status: 'Cố định' },
+            { category: 'Marketing & Thu hút người dùng', amount: -marketingCost, share: '15.5%', type: 'EXPENSE', status: 'Kiểm soát' },
+            { category: 'Phí Cổng Thanh toán PayOS / Ngân hàng (1.5%)', amount: -gatewayFee, share: '6.0%', type: 'EXPENSE', status: 'Theo GD' },
+          ]
+        : [],
+      costBreakdown: hasTransactions
+        ? [
+            { name: 'Nhân sự Engineering & AI Team', amount: 28000000, share: '36.2%', trend: '+0.0%' },
+            { name: 'Google Gemini & OpenAI Token Inference', amount: 18200000, share: '23.5%', trend: '+12.4%' },
+            { name: 'Cloud Server, Postgres DB & Redis Cache', amount: 14500000, share: '18.7%', trend: '+5.1%' },
+            { name: 'Kênh Quảng Cáo & Chuyển Đổi Học Viên', amount: 12000000, share: '15.5%', trend: '-4.2%' },
+            { name: 'Phí Giao Dịch Cổng Thanh Toán (PayOS, VietQR)', amount: gatewayFee, share: '6.0%', trend: '+8.3%' },
+          ]
+        : [],
+      cashFlowItems: hasTransactions
+        ? [
+            { title: 'Dòng tiền từ Hoạt động Kinh doanh (CFO)', inflow: netRev, outflow: 77350000, net: netRev - 77350000 },
+            { title: 'Dòng tiền từ Hoạt động Đầu tư (CFI)', inflow: 0, outflow: 12000000, net: -12000000 },
+            { title: 'Dòng tiền từ Hoạt động Tài chính (CFF)', inflow: 0, outflow: 0, net: 0 },
+            { title: 'Dòng tiền Thuần trong Kỳ (Net Cash Flow)', inflow: netRev, outflow: 89350000, net: netRev - 89350000 },
+          ]
+        : [],
     };
   }, [data, datePreset]);
 
@@ -463,7 +470,7 @@ export const AdminFinancePage: React.FC = () => {
             <span className="text-[11px] text-emerald-400 font-medium truncate block mt-0.5">QR & Ngân hàng</span>
           </div>
           <span className="text-base sm:text-lg font-bold text-emerald-400 tabular-nums shrink-0">
-            {data?.metrics.paymentSuccessRate || 96.5}%
+            {data?.metrics ? `${data.metrics.paymentSuccessRate}%` : '0%'}
           </span>
         </div>
       </div>
@@ -478,34 +485,40 @@ export const AdminFinancePage: React.FC = () => {
             Nhận Định Kinh Tế & Cảnh Báo Quản Trị (Financial Insights)
           </h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-            <span className="font-bold text-emerald-400 block mb-1">
-              • Doanh Thu Gói Năm Tăng Trưởng Vượt Bậc
-            </span>
-            <p className="text-slate-400 text-[11px]">
-              Tỷ trọng thanh toán gói năm đạt 28% tổng doanh thu trong tháng qua, giúp dòng tiền dương ngay lập tức thêm 42.5M ₫.
-            </p>
-          </div>
+        {(data?.metrics?.grossRevenue || 0) > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="font-bold text-emerald-400 block mb-1">
+                • Doanh Thu Định Kỳ MRR & Đơn Hàng Mới
+              </span>
+              <p className="text-slate-400 text-[11px]">
+                Tổng đơn hoàn thành: {data?.metrics.paidOrdersCount || 0} đơn, tỷ lệ thanh toán thành công đạt {data?.metrics.paymentSuccessRate || 0}%.
+              </p>
+            </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-            <span className="font-bold text-amber-400 block mb-1">
-              • Khung Giờ Đỉnh Cao Realtime Games (20:00 - 22:00)
-            </span>
-            <p className="text-slate-400 text-[11px]">
-              72% doanh số vé phòng thi đấu phát sinh trong khung giờ 20h - 22h. Đề xuất mở thêm 3 phòng VIP vào thời điểm này.
-            </p>
-          </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="font-bold text-amber-400 block mb-1">
+                • Tình Trạng Đơn Chờ & Thất Bại
+              </span>
+              <p className="text-slate-400 text-[11px]">
+                Ghi nhận {data?.metrics.failedOrdersCount || 0} đơn lỗi và {data?.metrics.pendingOrdersCount || 0} đơn đang chờ xử lý qua cổng thanh toán.
+              </p>
+            </div>
 
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-            <span className="font-bold text-indigo-400 block mb-1">
-              • Tỷ Lệ Chuyển Đổi Dùng Thử Sang Trả Phí (Trial-to-Paid)
-            </span>
-            <p className="text-slate-400 text-[11px]">
-              Tỷ lệ kích hoạt gói Plus/Pro từ học viên luyện đề 4-Skills Arena đạt 14.8%, cao hơn 2.4 lần so với học viên chỉ luyện từ vựng cơ bản.
-            </p>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <span className="font-bold text-indigo-400 block mb-1">
+                • Giá Trị Trung Bình ARPU
+              </span>
+              <p className="text-slate-400 text-[11px]">
+                Doanh thu bình quân mỗi học viên trả phí (ARPU) đạt {data ? formatVND(data.metrics.arpu) : '0 ₫'}.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="py-6 text-center text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-dashed border-slate-800">
+            Hệ thống chưa ghi nhận giao dịch thanh toán nào trong khoảng thời gian này.
+          </div>
+        )}
       </div>
 
       {/* =====================================================================
@@ -525,27 +538,35 @@ export const AdminFinancePage: React.FC = () => {
           </div>
 
           {/* Visual Trend Bars */}
-          <div className="h-44 flex items-end gap-1.5 pt-4">
-            {(data?.revenueTrend || []).slice(-20).map((t, idx) => {
-              const maxGross = Math.max(...(data?.revenueTrend || []).map((x) => x.gross || 1), 1);
-              const heightPercent = Math.max(12, (t.gross / maxGross) * 100);
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  <div
-                    className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-md transition-all duration-300 group-hover:from-indigo-500 group-hover:to-emerald-400"
-                    style={{ height: `${heightPercent}%` }}
-                  />
-                  <div className="opacity-0 group-hover:opacity-100 absolute -top-8 px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-[10px] text-white whitespace-nowrap z-20 pointer-events-none tabular-nums shadow-lg">
-                    {formatVND(t.gross)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/80 pt-2 tabular-nums">
-            <span>Đầu kỳ ({datePreset})</span>
-            <span>Cuối kỳ</span>
-          </div>
+          {(data?.revenueTrend && data.revenueTrend.length > 0 && (data?.metrics?.grossRevenue || 0) > 0) ? (
+            <>
+              <div className="h-44 flex items-end gap-1.5 pt-4">
+                {data.revenueTrend.slice(-20).map((t, idx) => {
+                  const maxGross = Math.max(...data.revenueTrend.map((x) => x.gross || 1), 1);
+                  const heightPercent = Math.max(12, (t.gross / maxGross) * 100);
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center gap-1 group relative">
+                      <div
+                        className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-md transition-all duration-300 group-hover:from-indigo-500 group-hover:to-emerald-400"
+                        style={{ height: `${heightPercent}%` }}
+                      />
+                      <div className="opacity-0 group-hover:opacity-100 absolute -top-8 px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-[10px] text-white whitespace-nowrap z-20 pointer-events-none tabular-nums shadow-lg">
+                        {formatVND(t.gross)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/80 pt-2 tabular-nums">
+                <span>Đầu kỳ ({datePreset})</span>
+                <span>Cuối kỳ</span>
+              </div>
+            </>
+          ) : (
+            <div className="h-44 flex items-center justify-center text-xs text-slate-500">
+              Chưa có dữ liệu xu hướng doanh thu trong kỳ
+            </div>
+          )}
         </div>
 
         {/* Plan Breakdown */}
@@ -558,22 +579,23 @@ export const AdminFinancePage: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {(data?.planBreakdown || [
-              { plan: 'Gói PRO Năm', revenue: 48000000, count: 48 },
-              { plan: 'Gói PRO Tháng', revenue: 64000000, count: 320 },
-              { plan: 'Gói PLUS Tháng', revenue: 22000000, count: 185 },
-              { plan: 'Vé Phòng Đấu Realtime', revenue: 14500000, count: 960 },
-            ]).map((p) => (
-              <div key={p.plan} className="space-y-1 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-200">{p.plan}</span>
-                  <span className="font-bold text-white tabular-nums">{formatVND(p.revenue)}</span>
+            {(data?.planBreakdown && data.planBreakdown.length > 0) ? (
+              data.planBreakdown.map((p) => (
+                <div key={p.plan} className="space-y-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200">{p.plan}</span>
+                    <span className="font-bold text-white tabular-nums">{formatVND(p.revenue)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>{p.count} lượt đăng ký</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>{p.count} lượt đăng ký</span>
-                </div>
+              ))
+            ) : (
+              <div className="py-12 text-center text-xs text-slate-500">
+                Chưa có phát sinh gói thanh toán nào
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

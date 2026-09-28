@@ -1111,6 +1111,21 @@ export class AdminService {
     await this.prisma.userVocabulary.deleteMany({});
     await this.prisma.learningGoal.deleteMany({});
     await this.prisma.userAchievement.deleteMany({});
+    await this.prisma.vocabularyCaptureItem.deleteMany({});
+    await this.prisma.vocabularyCapture.deleteMany({});
+    await this.prisma.wordJourneyEvent.deleteMany({});
+    await this.prisma.vocabularyConfusionPair.deleteMany({});
+    await this.prisma.exercise.deleteMany({});
+    await this.prisma.learningResource.deleteMany({});
+    await this.prisma.gameQuestion.deleteMany({});
+
+    // 6b. Wipe 100% Vocabulary Dictionary (topics, items, relations, examples, meanings, words)
+    await this.prisma.vocabularyTopicItem.deleteMany({});
+    await this.prisma.vocabularyTopic.deleteMany({});
+    await this.prisma.wordRelation.deleteMany({});
+    await this.prisma.exampleSentence.deleteMany({});
+    await this.prisma.vocabularyMeaning.deleteMany({});
+    await this.prisma.vocabulary.deleteMany({});
 
     // 7. Reset UserStreak & UserXP for clean state
     await this.prisma.userStreak.deleteMany({});

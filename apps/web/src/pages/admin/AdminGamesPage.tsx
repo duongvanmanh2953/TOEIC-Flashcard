@@ -163,53 +163,7 @@ export const AdminGamesPage: React.FC = () => {
   ]);
 
   // Rooms State
-  const [rooms, setRooms] = useState<RoomItem[]>([
-    {
-      id: 'r-1',
-      roomCode: 'ARENA-889',
-      gameId: 'g-1',
-      gameTitle: 'Đại Chiến 4 Kỹ Năng',
-      title: 'Phòng VIP Đấu Hạng Toàn Quốc',
-      status: 'WAITING',
-      currentPlayers: 6,
-      maxPlayers: 12,
-      entryPrice: 15000,
-      isPrivate: false,
-      scheduledAt: '20:30 Hôm nay',
-      hostName: 'Admin System',
-      isActive: true,
-    },
-    {
-      id: 'r-2',
-      roomCode: 'RUSH-102',
-      gameId: 'g-2',
-      gameTitle: 'Translation Rush',
-      title: 'Sảnh Luyện Phản Xạ Nhanh #1',
-      status: 'IN_PROGRESS',
-      currentPlayers: 4,
-      maxPlayers: 8,
-      entryPrice: 0,
-      isPrivate: false,
-      scheduledAt: 'Đang diễn ra',
-      hostName: 'Bot Trainer',
-      isActive: true,
-    },
-    {
-      id: 'r-3',
-      roomCode: 'LIST-405',
-      gameId: 'g-3',
-      gameTitle: 'Listening Reflex Blitz',
-      title: 'Phòng Thi Thử Toeic Part 1-2',
-      status: 'WAITING',
-      currentPlayers: 2,
-      maxPlayers: 10,
-      entryPrice: 5000,
-      isPrivate: false,
-      scheduledAt: '21:00 Hôm nay',
-      hostName: 'Teacher Mark',
-      isActive: true,
-    },
-  ]);
+  const [rooms, setRooms] = useState<RoomItem[]>([]);
 
   // Questions State
   const [questions, setQuestions] = useState<QuestionItem[]>([]);

@@ -990,8 +990,19 @@ export class DeviceSecurityService {
         await tx.vocabularyCapture.deleteMany({});
         await tx.wordJourneyEvent.deleteMany({});
         await tx.vocabularyConfusionPair.deleteMany({});
+        await tx.exercise.deleteMany({});
+        await tx.learningResource.deleteMany({});
+        await tx.gameQuestion.deleteMany({});
 
-        // G. Security: Devices, Sessions, Risk Events, Logout OTPs
+        // G. Complete Vocabulary & Dictionary Wipe (Topics, Items, Relations, Examples, Meanings, Words)
+        await tx.vocabularyTopicItem.deleteMany({});
+        await tx.vocabularyTopic.deleteMany({});
+        await tx.wordRelation.deleteMany({});
+        await tx.exampleSentence.deleteMany({});
+        await tx.vocabularyMeaning.deleteMany({});
+        await tx.vocabulary.deleteMany({});
+
+        // H. Security: Devices, Sessions, Risk Events, Logout OTPs
         await tx.deviceLogoutOtp.deleteMany({});
         await tx.deviceRiskEvent.deleteMany({});
         await tx.userSession.deleteMany({});

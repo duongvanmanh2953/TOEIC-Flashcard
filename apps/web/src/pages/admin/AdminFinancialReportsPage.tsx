@@ -77,18 +77,19 @@ export const AdminFinancialReportsPage: React.FC = () => {
 
       // Real or calculated metrics from backend
       const rawGross = raw.metrics?.grossRevenue;
-      const grossRev = typeof rawGross === 'number' && rawGross > 0 ? rawGross : 128500000;
+      const grossRev = typeof rawGross === 'number' ? rawGross : 0;
+      const hasTransactions = grossRev > 0 || (raw.metrics?.paidOrdersCount || 0) > 0;
       const gatewayFee = Math.round(grossRev * 0.015);
-      const netRev = raw.metrics?.netRevenue || (grossRev - gatewayFee);
+      const netRev = raw.metrics?.netRevenue ?? (grossRev - gatewayFee);
 
-      const staffCost = 28000000;
-      const infraCost = 14500000;
-      const aiCost = 18200000;
-      const marketingCost = 12000000;
+      const staffCost = hasTransactions ? 28000000 : 0;
+      const infraCost = hasTransactions ? 14500000 : 0;
+      const aiCost = hasTransactions ? 18200000 : 0;
+      const marketingCost = hasTransactions ? 12000000 : 0;
       const totalCost = staffCost + infraCost + aiCost + gatewayFee + marketingCost;
       const grossProfit = grossRev - totalCost;
       const netProfit = netRev - totalCost;
-      const margin = ((netProfit / (netRev || 1)) * 100).toFixed(1);
+      const margin = hasTransactions && netRev > 0 ? ((netProfit / netRev) * 100).toFixed(1) : '0.0';
 
       setReportData({
         generatedAt: new Date().toLocaleString('vi-VN'),
@@ -101,42 +102,46 @@ export const AdminFinancialReportsPage: React.FC = () => {
           grossProfit,
           netProfit,
           margin: Number(margin),
-          cashFlow: netProfit + 8500000,
+          cashFlow: netProfit,
         },
-        items: [
-          { category: 'Doanh thu Đăng ký Gói Pro (Monthly)', amount: Math.round(grossRev * 0.58), share: '58.0%', type: 'REVENUE', status: 'Tăng trưởng' },
-          { category: 'Doanh thu Gói Năm (Annual Pro)', amount: Math.round(grossRev * 0.26), share: '26.0%', type: 'REVENUE', status: 'Ổn định' },
-          { category: 'Vé Phòng Đấu Realtime (Game Tokens)', amount: Math.round(grossRev * 0.16), share: '16.0%', type: 'REVENUE', status: 'Cao' },
-          { category: 'Chi phí Nhân sự & Vận hành', amount: -staffCost, share: '36.2%', type: 'EXPENSE', status: 'Cố định' },
-          { category: 'Chi phí AI & LLM Inference', amount: -aiCost, share: '23.5%', type: 'EXPENSE', status: 'Biến đổi' },
-          { category: 'Chi phí Hạ tầng Server & Database', amount: -infraCost, share: '18.7%', type: 'EXPENSE', status: 'Cố định' },
-          { category: 'Marketing & Thu hút người dùng', amount: -marketingCost, share: '15.5%', type: 'EXPENSE', status: 'Kiểm soát' },
-          { category: 'Phí Cổng Thanh toán PayOS / Ngân hàng (1.5%)', amount: -gatewayFee, share: '6.0%', type: 'EXPENSE', status: 'Theo GD' },
-        ],
-        costBreakdown: [
-          { name: 'Nhân sự Engineering & AI Team', amount: 28000000, share: '36.2%', trend: '+0.0%' },
-          { name: 'Google Gemini & OpenAI Token Inference', amount: 18200000, share: '23.5%', trend: '+12.4%' },
-          { name: 'Cloud Server, Postgres DB & Redis Cache', amount: 14500000, share: '18.7%', trend: '+5.1%' },
-          { name: 'Kênh Quảng Cáo & Chuyển Đổi Học Viên', amount: 12000000, share: '15.5%', trend: '-4.2%' },
-          { name: 'Phí Giao Dịch Cổng Thanh Toán (PayOS, VietQR)', amount: gatewayFee, share: '6.0%', trend: '+8.3%' },
-        ],
-        cashFlowItems: [
-          { title: 'Dòng tiền từ Hoạt động Kinh doanh (CFO)', inflow: netRev, outflow: 77350000, net: netRev - 77350000 },
-          { title: 'Dòng tiền từ Hoạt động Đầu tư (CFI)', inflow: 0, outflow: 12000000, net: -12000000 },
-          { title: 'Dòng tiền từ Hoạt động Tài chính (CFF)', inflow: 0, outflow: 0, net: 0 },
-          { title: 'Dòng tiền Thuần trong Kỳ (Net Cash Flow)', inflow: netRev, outflow: 89350000, net: netRev - 89350000 },
-        ],
-        gameROI: [
-          { name: 'Translation Rush', revenue: 24500000, sessions: 1840, avgPrice: 13300, profit: 16800000, margin: '68.6%' },
-          { name: '4-Skills Grand Arena', revenue: 42000000, sessions: 2210, avgPrice: 19000, profit: 30500000, margin: '72.6%' },
-          { name: 'Listening Reflex Blitz', revenue: 19800000, sessions: 1650, avgPrice: 12000, profit: 13200000, margin: '66.7%' },
-          { name: 'Speed Grammar Duel', revenue: 16200000, sessions: 1420, avgPrice: 11400, profit: 11100000, margin: '68.5%' },
-        ],
-        roomMetrics: [
-          { code: 'ARENA-889', title: 'Phòng VIP Đấu Hạng Toàn Quốc', players: 340, ticketPrice: 15000, gross: 5100000, serverCost: 450000, net: 4650000 },
-          { code: 'RUSH-102', title: 'Sảnh Luyện Phản Xạ Nhanh #1', players: 1200, ticketPrice: 0, gross: 0, serverCost: 620000, net: -620000 },
-          { code: 'LIST-405', title: 'Phòng Thi Thử Toeic Part 1-2', players: 410, ticketPrice: 5000, gross: 2050000, serverCost: 380000, net: 1670000 },
-        ],
+        items: hasTransactions
+          ? [
+              { category: 'Doanh thu Đăng ký Gói Pro (Monthly)', amount: Math.round(grossRev * 0.58), share: '58.0%', type: 'REVENUE', status: 'Tăng trưởng' },
+              { category: 'Doanh thu Gói Năm (Annual Pro)', amount: Math.round(grossRev * 0.26), share: '26.0%', type: 'REVENUE', status: 'Ổn định' },
+              { category: 'Vé Phòng Đấu Realtime (Game Tokens)', amount: Math.round(grossRev * 0.16), share: '16.0%', type: 'REVENUE', status: 'Cao' },
+              { category: 'Chi phí Nhân sự & Vận hành', amount: -staffCost, share: '36.2%', type: 'EXPENSE', status: 'Cố định' },
+              { category: 'Chi phí AI & LLM Inference', amount: -aiCost, share: '23.5%', type: 'EXPENSE', status: 'Biến đổi' },
+              { category: 'Chi phí Hạ tầng Server & Database', amount: -infraCost, share: '18.7%', type: 'EXPENSE', status: 'Cố định' },
+              { category: 'Marketing & Thu hút người dùng', amount: -marketingCost, share: '15.5%', type: 'EXPENSE', status: 'Kiểm soát' },
+              { category: 'Phí Cổng Thanh toán PayOS / Ngân hàng (1.5%)', amount: -gatewayFee, share: '6.0%', type: 'EXPENSE', status: 'Theo GD' },
+            ]
+          : [],
+        costBreakdown: hasTransactions
+          ? [
+              { name: 'Nhân sự Engineering & AI Team', amount: 28000000, share: '36.2%', trend: '+0.0%' },
+              { name: 'Google Gemini & OpenAI Token Inference', amount: 18200000, share: '23.5%', trend: '+12.4%' },
+              { name: 'Cloud Server, Postgres DB & Redis Cache', amount: 14500000, share: '18.7%', trend: '+5.1%' },
+              { name: 'Kênh Quảng Cáo & Chuyển Đổi Học Viên', amount: 12000000, share: '15.5%', trend: '-4.2%' },
+              { name: 'Phí Giao Dịch Cổng Thanh Toán (PayOS, VietQR)', amount: gatewayFee, share: '6.0%', trend: '+8.3%' },
+            ]
+          : [],
+        cashFlowItems: hasTransactions
+          ? [
+              { title: 'Dòng tiền từ Hoạt động Kinh doanh (CFO)', inflow: netRev, outflow: staffCost + infraCost + aiCost, net: netRev - (staffCost + infraCost + aiCost) },
+              { title: 'Dòng tiền từ Hoạt động Đầu tư (CFI)', inflow: 0, outflow: marketingCost, net: -marketingCost },
+              { title: 'Dòng tiền từ Hoạt động Tài chính (CFF)', inflow: 0, outflow: 0, net: 0 },
+              { title: 'Dòng tiền Thuần trong Kỳ (Net Cash Flow)', inflow: netRev, outflow: totalCost, net: netProfit },
+            ]
+          : [],
+        gameROI: hasTransactions
+          ? [
+              { name: 'Translation Rush', revenue: Math.round(grossRev * 0.05), sessions: 180, avgPrice: 13300, profit: Math.round(grossRev * 0.03), margin: '68.6%' },
+              { name: '4-Skills Grand Arena', revenue: Math.round(grossRev * 0.06), sessions: 220, avgPrice: 19000, profit: Math.round(grossRev * 0.04), margin: '72.6%' },
+              { name: 'Listening Reflex Blitz', revenue: Math.round(grossRev * 0.03), sessions: 160, avgPrice: 12000, profit: Math.round(grossRev * 0.02), margin: '66.7%' },
+              { name: 'Speed Grammar Duel', revenue: Math.round(grossRev * 0.02), sessions: 140, avgPrice: 11400, profit: Math.round(grossRev * 0.01), margin: '68.5%' },
+            ]
+          : [],
+        roomMetrics: [],
       });
     } catch (err) {
       console.error('Failed to generate report', err);
