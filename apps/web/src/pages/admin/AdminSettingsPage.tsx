@@ -180,6 +180,8 @@ export const AdminSettingsPage: React.FC = () => {
   const [wipeConfirmInput, setWipeConfirmInput] = useState('');
   const [wipeAdminPassword, setWipeAdminPassword] = useState('');
   const [wipeAdminKeypass, setWipeAdminKeypass] = useState('');
+  const [wipeModalError, setWipeModalError] = useState<string | null>(null);
+  const [wipeModalSuccess, setWipeModalSuccess] = useState<string | null>(null);
   const [wipeUsersOptionInModal, setWipeUsersOptionInModal] = useState(false);
 
   // Settings State State Record
@@ -367,39 +369,55 @@ export const AdminSettingsPage: React.FC = () => {
   };
 
   const handleWipeUserData = async () => {
+    setWipeModalError(null);
+    setWipeModalSuccess(null);
+
     if (wipeConfirmInput.trim().toUpperCase() !== 'RESET') {
-      setStatusMessage({ text: locale === 'vi' ? 'Vui lòng gõ chính xác chữ "RESET" để xác nhận.' : 'Please type "RESET" to confirm.', type: 'error' });
+      const err = locale === 'vi' ? 'Vui lòng gõ chính xác chữ "RESET" để xác nhận.' : 'Please type "RESET" to confirm.';
+      setWipeModalError(err);
+      setStatusMessage({ text: err, type: 'error' });
       return;
     }
-    if (!wipeAdminPassword) {
-      setStatusMessage({ text: locale === 'vi' ? 'Vui lòng nhập mật khẩu Admin.' : 'Please enter Admin password.', type: 'error' });
+    if (!wipeAdminPassword.trim()) {
+      const err = locale === 'vi' ? 'Vui lòng nhập mật khẩu Admin.' : 'Please enter Admin password.';
+      setWipeModalError(err);
+      setStatusMessage({ text: err, type: 'error' });
       return;
     }
-    if (!wipeAdminKeypass) {
-      setStatusMessage({ text: locale === 'vi' ? 'Vui lòng nhập mã Keypass bảo mật tối cao.' : 'Please enter System Keypass.', type: 'error' });
+    if (!wipeAdminKeypass.trim()) {
+      const err = locale === 'vi' ? 'Vui lòng nhập mã Keypass bảo mật tối cao.' : 'Please enter System Keypass.';
+      setWipeModalError(err);
+      setStatusMessage({ text: err, type: 'error' });
       return;
     }
+
     setWipingUsers(true);
     try {
       const res: any = await api.post('/admin/system/reset-all-data', {
         confirmText: 'RESET',
-        adminPassword: wipeAdminPassword,
-        adminKeypass: wipeAdminKeypass,
+        adminPassword: wipeAdminPassword.trim(),
+        adminKeypass: wipeAdminKeypass.trim(),
       });
       const data = res?.data || res;
-      setStatusMessage({
-        text: locale === 'vi'
-          ? `ĐÃ RESET TOÀN BỘ HỆ THỐNG AN TOÀN! Đã xóa sạch dữ liệu người dùng, bảo lưu an toàn tài khoản Admin và kho từ điển chuẩn.`
-          : 'System Reset successful! All learner business data wiped cleanly while preserving Admin accounts & constants.',
-        type: 'success',
-      });
-      setWipeUserModalOpen(false);
-      setWipeConfirmInput('');
-      setWipeAdminPassword('');
-      setWipeAdminKeypass('');
+      const successText = locale === 'vi'
+        ? `ĐÃ RESET TOÀN BỘ HỆ THỐNG AN TOÀN! Đã xóa sạch dữ liệu người dùng, bảo lưu an toàn tài khoản Admin và kho từ điển chuẩn.`
+        : 'System Reset successful! All learner business data wiped cleanly while preserving Admin accounts & constants.';
+      
+      setWipeModalSuccess(successText);
+      setStatusMessage({ text: successText, type: 'success' });
+
+      setTimeout(() => {
+        setWipeUserModalOpen(false);
+        setWipeConfirmInput('');
+        setWipeAdminPassword('');
+        setWipeAdminKeypass('');
+        setWipeModalError(null);
+        setWipeModalSuccess(null);
+      }, 3000);
     } catch (err: any) {
       console.error('System reset error:', err);
       const errMsg = err?.response?.data?.message || err?.message || (locale === 'vi' ? 'Reset All Data thất bại. Kiểm tra lại mật khẩu hoặc Keypass.' : 'System reset failed.');
+      setWipeModalError(errMsg);
       setStatusMessage({ text: errMsg, type: 'error' });
     } finally {
       setWipingUsers(false);
@@ -1579,6 +1597,20 @@ export const AdminSettingsPage: React.FC = () => {
               </ul>
             </div>
 
+            {/* In-Modal Feedback Alerts */}
+            {wipeModalError && (
+              <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-semibold flex items-center gap-2 animate-shake">
+                <AlertOctagon className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{wipeModalError}</span>
+              </div>
+            )}
+            {wipeModalSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>{wipeModalSuccess}</span>
+              </div>
+            )}
+
             <div className="space-y-3 pt-1">
               <div>
                 <label className="text-[11px] text-slate-300 font-semibold block mb-1">
@@ -1589,7 +1621,10 @@ export const AdminSettingsPage: React.FC = () => {
                 <input
                   type="text"
                   value={wipeConfirmInput}
-                  onChange={(e) => setWipeConfirmInput(e.target.value)}
+                  onChange={(e) => {
+                    setWipeConfirmInput(e.target.value);
+                    if (wipeModalError) setWipeModalError(null);
+                  }}
                   placeholder="RESET"
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono tracking-wider"
                 />
@@ -1602,23 +1637,32 @@ export const AdminSettingsPage: React.FC = () => {
                 <input
                   type="password"
                   value={wipeAdminPassword}
-                  onChange={(e) => setWipeAdminPassword(e.target.value)}
+                  onChange={(e) => {
+                    setWipeAdminPassword(e.target.value);
+                    if (wipeModalError) setWipeModalError(null);
+                  }}
                   placeholder="••••••••"
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] text-slate-300 font-semibold block mb-1">
-                  3. {locale === 'vi' ? 'Nhập mã Keypass bảo mật tối cao (Admin Security Keypass):' : 'Admin Security Keypass:'}
+                <label className="text-[11px] text-slate-300 font-semibold block mb-1 flex items-center justify-between">
+                  <span>3. {locale === 'vi' ? 'Nhập mã Keypass bảo mật tối cao (Admin Security Keypass):' : 'Admin Security Keypass:'}</span>
                 </label>
                 <input
                   type="password"
                   value={wipeAdminKeypass}
-                  onChange={(e) => setWipeAdminKeypass(e.target.value)}
+                  onChange={(e) => {
+                    setWipeAdminKeypass(e.target.value);
+                    if (wipeModalError) setWipeModalError(null);
+                  }}
                   placeholder="••••••••••••"
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-600 focus:outline-hidden focus:border-rose-500 font-mono"
                 />
+                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                  💡 <strong>Gợi ý:</strong> Mã Keypass khởi tạo mặc định là <code className="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-mono font-bold">vocabflow2026</code>. Bạn có thể đổi mã này bất kỳ lúc nào tại menu <strong>Bảo mật & Rủi ro &gt; Mật khẩu &amp; Keypass</strong>.
+                </p>
               </div>
             </div>
 
@@ -1631,6 +1675,8 @@ export const AdminSettingsPage: React.FC = () => {
                   setWipeConfirmInput('');
                   setWipeAdminPassword('');
                   setWipeAdminKeypass('');
+                  setWipeModalError(null);
+                  setWipeModalSuccess(null);
                 }}
                 className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-xl bg-slate-800 transition"
               >
@@ -1641,14 +1687,20 @@ export const AdminSettingsPage: React.FC = () => {
                 disabled={
                   wipingUsers ||
                   wipeConfirmInput.trim().toUpperCase() !== 'RESET' ||
-                  !wipeAdminPassword ||
-                  !wipeAdminKeypass
+                  !wipeAdminPassword.trim() ||
+                  !wipeAdminKeypass.trim()
                 }
                 onClick={handleWipeUserData}
                 className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition flex items-center gap-1.5 shadow-md shadow-rose-900/30"
               >
-                {wipingUsers && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>{locale === 'vi' ? 'Xác nhận xóa sạch data toàn sàn' : 'Execute Nuclear Reset All Data'}</span>
+                {wipingUsers ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang kiểm tra & thực thi xóa sạch...</span>
+                  </>
+                ) : (
+                  <span>{locale === 'vi' ? 'Xác nhận xóa sạch data toàn sàn' : 'Execute Nuclear Reset All Data'}</span>
+                )}
               </button>
             </div>
           </div>
