@@ -434,8 +434,9 @@ export const VocabularyExplorerPage: React.FC = () => {
               Tải thêm từ vựng (Trang {page + 1}/{totalPages})
             </button>
           ) : (
-            <p className="text-slate-400">
-              ✨ Đã hiển thị toàn bộ {totalCount.toLocaleString('vi-VN')} từ vựng.
+            <p className="text-slate-400 flex items-center justify-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Đã hiển thị toàn bộ {totalCount.toLocaleString('vi-VN')} từ vựng.</span>
             </p>
           )}
         </div>

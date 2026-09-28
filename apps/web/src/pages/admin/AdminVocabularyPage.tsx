@@ -314,7 +314,7 @@ export const AdminVocabularyPage: React.FC = () => {
 
   // Filter Options
   const languageOptions = [
-    { value: 'ALL', label: '🌐 Tất cả ngôn ngữ' },
+    { value: 'ALL', label: 'Tất cả ngôn ngữ' },
     ...SUPPORTED_LANGUAGES.map((l) => ({
       value: l.id,
       label: `${l.name} (${l.nativeName})`,

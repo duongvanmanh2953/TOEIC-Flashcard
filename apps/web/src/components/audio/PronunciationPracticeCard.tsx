@@ -322,9 +322,9 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
 
           <p className="text-[11px] text-slate-400 leading-tight">
             {isRecording
-              ? '🎤 Hãy phát âm từ to rõ vào Micro điện thoại...'
+              ? 'Hãy phát âm từ to rõ vào Micro điện thoại...'
               : recordedUrl
-              ? '✨ Bấm nút trên để nghe lại và tự so sánh ngữ điệu với bản xứ.'
+              ? 'Bấm nút trên để nghe lại và tự so sánh ngữ điệu với bản xứ.'
               : 'Bấm thu âm & đọc từ để hệ thống phân tích đối sánh.'}
           </p>
         </div>

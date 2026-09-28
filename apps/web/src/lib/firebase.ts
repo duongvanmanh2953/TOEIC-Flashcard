@@ -87,6 +87,93 @@ export function isFirebaseConfigured(): boolean {
   );
 }
 
+export interface FirebaseConnectionTestResult {
+  success: boolean;
+  latencyMs?: number;
+  message: string;
+  projectId?: string;
+  authorizedDomains?: string[];
+  error?: string;
+}
+
+/**
+ * Real live connection test for Firebase credentials
+ * Queries Google Identity Toolkit endpoint to verify that the API Key is active, valid, and matches the Project ID.
+ */
+export async function testFirebaseConnection(config: {
+  apiKey: string;
+  projectId: string;
+  authDomain?: string;
+}): Promise<FirebaseConnectionTestResult> {
+  const apiKey = config.apiKey?.trim();
+  const projectId = config.projectId?.trim();
+
+  if (!apiKey || apiKey.length < 15) {
+    return {
+      success: false,
+      message: 'Khóa API Key không hợp lệ hoặc quá ngắn (Firebase API Key thường bắt đầu bằng AIzaSy...).',
+    };
+  }
+
+  if (!projectId) {
+    return {
+      success: false,
+      message: 'Vui lòng cung cấp Project ID của dự án Firebase.',
+    };
+  }
+
+  const start = Date.now();
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(
+      `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=${apiKey}`,
+      { signal: controller.signal },
+    );
+    clearTimeout(timeoutId);
+    const latency = Date.now() - start;
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (data.projectId && data.projectId.toLowerCase() !== projectId.toLowerCase()) {
+        return {
+          success: false,
+          latencyMs: latency,
+          message: `Kiểm tra thất bại: API Key hợp lệ nhưng thuộc dự án "${data.projectId}", không trùng khớp với Project ID bạn đã nhập ("${projectId}").`,
+        };
+      }
+      return {
+        success: true,
+        latencyMs: latency,
+        projectId: data.projectId || projectId,
+        authorizedDomains: data.authorizedDomains || [],
+        message: `Kiểm tra kết nối Firebase thành công (${latency}ms)! Khóa API Key và Project ID hợp lệ, sẵn sàng phục vụ OAuth.`,
+      };
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      const rawMsg = errData.error?.message || `Mã lỗi HTTP ${res.status}`;
+      let friendlyMsg = rawMsg;
+      if (rawMsg.includes('API_KEY_INVALID') || rawMsg.includes('API key not valid')) {
+        friendlyMsg = 'Khóa API Key không tồn tại hoặc đã bị vô hiệu hóa trên Google Cloud Console.';
+      } else if (rawMsg.includes('IP_REFERRER_BLOCKED') || rawMsg.includes('blocked')) {
+        friendlyMsg = 'Khóa API Key có cấu hình giới hạn IP / HTTP Referrer ngăn chặn kết nối trực tiếp.';
+      }
+      return {
+        success: false,
+        latencyMs: latency,
+        message: `Kiểm tra kết nối Firebase thất bại: ${friendlyMsg}`,
+        error: rawMsg,
+      };
+    }
+  } catch (err: any) {
+    return {
+      success: false,
+      message: `Không thể kết nối đến Firebase Gateway: ${err.message || 'Lỗi mạng hoặc kết nối timeout'}`,
+    };
+  }
+}
+
 // App and Auth instances
 let appInstance: FirebaseApp | null = null;
 let authInstance: Auth | null = null;

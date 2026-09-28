@@ -9,13 +9,19 @@ import {
   ExternalLink,
   Sparkles,
   Lightbulb,
+  Clipboard,
+  Edit3,
+  Zap,
+  Loader2,
 } from 'lucide-react';
 import {
   getActiveFirebaseConfig,
   isFirebaseConfigured,
   saveFirebaseConfig,
   clearFirebaseConfig,
+  testFirebaseConnection,
   FirebaseClientConfig,
+  FirebaseConnectionTestResult,
 } from '../../lib/firebase';
 import { confirmModal } from '../common/ConfirmDialog';
 
@@ -42,6 +48,9 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
   });
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<FirebaseConnectionTestResult | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +58,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
       setConfig(current);
       setIsReady(isFirebaseConfigured());
       setStatusMsg(null);
+      setTestResult(null);
       setPasteSnippet('');
     }
   }, [isOpen]);
@@ -59,6 +69,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
   const handleParseSnippet = (text: string) => {
     setPasteSnippet(text);
     setStatusMsg(null);
+    setTestResult(null);
 
     const extract = (key: string): string => {
       const regex = new RegExp(`['"]?${key}['"]?\\s*:\\s*['"]([^'"]+)['"]`, 'i');
@@ -85,13 +96,39 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
       }));
       setStatusMsg({
         type: 'success',
-        text: 'Đã tự động trích xuất các thông số Firebase từ đoạn mã bạn dán!',
+        text: 'Đã tự động trích xuất các thông số Firebase! Bấm "Kiểm Tra Kết Nối" để xác thực với Google.',
       });
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setStatusMsg(null);
+    setTestResult(null);
+
+    if (!config.apiKey || !config.projectId) {
+      setStatusMsg({
+        type: 'error',
+        text: 'Vui lòng cung cấp đầy đủ API Key và Project ID trước khi kiểm tra!',
+      });
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const res = await testFirebaseConnection(config);
+      setTestResult(res);
+      setStatusMsg({
+        type: res.success ? 'success' : 'error',
+        text: res.message,
+      });
+    } finally {
+      setTesting(false);
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStatusMsg(null);
     if (!config.apiKey || !config.projectId) {
       setStatusMsg({
         type: 'error',
@@ -100,12 +137,25 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
       return;
     }
 
+    setSaving(true);
     try {
+      // Real test before saving!
+      const test = await testFirebaseConnection(config);
+      setTestResult(test);
+
+      if (!test.success) {
+        setStatusMsg({
+          type: 'error',
+          text: `Kiểm tra thất bại: ${test.message}. Không thể kích hoạt cấu hình chưa được kiểm chứng.`,
+        });
+        return;
+      }
+
       await saveFirebaseConfig(config);
       setIsReady(true);
       setStatusMsg({
         type: 'success',
-        text: 'Cấu hình Firebase đã được lưu thành công! Google & Facebook OAuth sẵn sàng hoạt động.',
+        text: `Kiểm tra kết nối thành công (${test.latencyMs}ms)! Đã kích hoạt Firebase OAuth.`,
       });
       if (onSuccess) {
         setTimeout(() => {
@@ -117,6 +167,8 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
         type: 'error',
         text: err?.message || 'Không thể lưu cấu hình Firebase.',
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -162,13 +214,14 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-extrabold text-white">Cấu hình Firebase OAuth</h3>
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1.5 ${
                     isReady
                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                       : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
                   }`}
                 >
-                  {isReady ? '● Đang hoạt động' : '○ Chưa kết nối'}
+                  <span className={`w-1.5 h-1.5 rounded-full ${isReady ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                  <span>{isReady ? 'Đang hoạt động' : 'Chưa kết nối'}</span>
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -204,28 +257,30 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
         </div>
 
         {/* Tabs: Smart Paste vs Manual Fields */}
-        <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-800/80 text-xs font-bold">
+        <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-800/80 text-xs font-bold gap-1">
           <button
             type="button"
             onClick={() => setActiveTab('smart')}
-            className={`py-2 rounded-xl transition ${
+            className={`py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
               activeTab === 'smart'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-xs'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            📋 Dán nhanh đoạn mã Firebase
+            <Clipboard className="w-3.5 h-3.5" />
+            <span>Dán nhanh đoạn mã Firebase</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('manual')}
-            className={`py-2 rounded-xl transition ${
+            className={`py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
               activeTab === 'manual'
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-xs'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            ✏️ Nhập từng thông số
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Nhập từng thông số</span>
           </button>
         </div>
 
@@ -345,12 +400,12 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-2 gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 gap-3">
             {isReady ? (
               <button
                 type="button"
                 onClick={handleClear}
-                className="py-2.5 px-3.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 transition"
+                className="py-2.5 px-3.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 transition self-start sm:self-auto"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Xóa cấu hình</span>
@@ -359,21 +414,45 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
               <div></div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                type="button"
+                disabled={testing || saving || !config.apiKey}
+                onClick={handleTestConnection}
+                className="py-2.5 px-3.5 rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50"
+              >
+                {testing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                )}
+                <span>{testing ? 'Đang kiểm tra...' : 'Kiểm Tra Kết Nối'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={onClose}
-                className="py-2.5 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                className="py-2.5 px-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
               >
                 Đóng
               </button>
 
               <button
                 type="submit"
-                className="py-2.5 px-5 rounded-2xl btn-glass-primary text-white text-xs font-extrabold shadow-lg shadow-cyan-500/25 flex items-center gap-2 transition"
+                disabled={saving || testing}
+                className="py-2.5 px-4 rounded-2xl btn-glass-primary text-white text-xs font-extrabold shadow-lg shadow-cyan-500/25 flex items-center gap-1.5 transition disabled:opacity-50"
               >
-                <Save className="w-4 h-4" />
-                <span>Lưu & Kích Hoạt OAuth</span>
+                {saving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang kiểm tra & lưu...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Lưu & Kích Hoạt OAuth</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -15,15 +15,23 @@ import {
   Copy,
   Check,
   Lightbulb,
+  Clipboard,
+  Edit3,
+  Zap,
+  Loader2,
+  Activity,
 } from 'lucide-react';
 import {
   getActiveFirebaseConfig,
   isFirebaseConfigured,
   saveFirebaseConfig,
   clearFirebaseConfig,
+  testFirebaseConnection,
   FirebaseClientConfig,
+  FirebaseConnectionTestResult,
 } from '../../lib/firebase';
 import { confirmModal } from '../../components/common/ConfirmDialog';
+import api from '../../lib/api';
 
 export const AdminFirebasePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'smart' | 'manual'>('smart');
@@ -40,6 +48,8 @@ export const AdminFirebasePage: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<FirebaseConnectionTestResult | null>(null);
 
   useEffect(() => {
     const current = getActiveFirebaseConfig();
@@ -58,6 +68,7 @@ export const AdminFirebasePage: React.FC = () => {
   const handleParseSnippet = (text: string) => {
     setPasteSnippet(text);
     setStatusMsg(null);
+    setTestResult(null);
 
     const extract = (key: string): string => {
       const regex = new RegExp(`['"]?${key}['"]?\\s*:\\s*['"]([^'"]+)['"]`, 'i');
@@ -84,13 +95,65 @@ export const AdminFirebasePage: React.FC = () => {
       }));
       setStatusMsg({
         type: 'success',
-        text: 'Đã tự động trích xuất các thông số Firebase từ đoạn mã bạn vừa dán!',
+        text: 'Đã tự động trích xuất các thông số Firebase từ đoạn mã bạn vừa dán! Bấm "Kiểm Tra Kết Nối" để xác thực với Google.',
       });
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setStatusMsg(null);
+    setTestResult(null);
+
+    if (!config.apiKey || !config.projectId) {
+      setStatusMsg({
+        type: 'error',
+        text: 'Vui lòng cung cấp đầy đủ API Key và Project ID trước khi kiểm tra kết nối!',
+      });
+      return;
+    }
+
+    setTesting(true);
+    try {
+      let result: FirebaseConnectionTestResult;
+      try {
+        const res: any = await api.post('/admin/firebase/test-connection', {
+          apiKey: config.apiKey,
+          projectId: config.projectId,
+          authDomain: config.authDomain,
+        });
+        result = res?.data || res;
+      } catch {
+        // Fallback to direct client-side test
+        result = await testFirebaseConnection(config);
+      }
+
+      setTestResult(result);
+      if (result.success) {
+        setStatusMsg({
+          type: 'success',
+          text: result.message || 'Kiểm tra kết nối Firebase thành công! Dự án xác thực hợp lệ.',
+        });
+      } else {
+        setStatusMsg({
+          type: 'error',
+          text: result.message || 'Kiểm tra kết nối Firebase thất bại. Vui lòng kiểm tra lại thông số.',
+        });
+      }
+    } catch (err: any) {
+      const fallback = await testFirebaseConnection(config);
+      setTestResult(fallback);
+      setStatusMsg({
+        type: fallback.success ? 'success' : 'error',
+        text: fallback.message,
+      });
+    } finally {
+      setTesting(false);
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStatusMsg(null);
     if (!config.apiKey || !config.projectId) {
       setStatusMsg({
         type: 'error',
@@ -101,11 +164,24 @@ export const AdminFirebasePage: React.FC = () => {
 
     setSaving(true);
     try {
+      // 1. Mandatory connection test before reporting success or saving!
+      const test = await testFirebaseConnection(config);
+      setTestResult(test);
+
+      if (!test.success) {
+        setStatusMsg({
+          type: 'error',
+          text: `Kiểm tra kết nối thất bại: ${test.message}. Hệ thống chỉ lưu khi kết nối được kiểm tra thành công.`,
+        });
+        return;
+      }
+
+      // 2. Only save when verified with Google!
       await saveFirebaseConfig(config);
       setIsReady(true);
       setStatusMsg({
         type: 'success',
-        text: 'Cấu hình Firebase đã được lưu thành công! Google OAuth & Facebook OAuth sẵn sàng hoạt động.',
+        text: `Kiểm tra kết nối thành công (${test.latencyMs}ms)! Đã lưu và kích hoạt cấu hình Firebase OAuth cho toàn hệ thống.`,
       });
     } catch (err: any) {
       setStatusMsg({
@@ -157,13 +233,14 @@ export const AdminFirebasePage: React.FC = () => {
                 Cấu Hình Firebase & Social OAuth
               </h2>
               <span
-                className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
+                className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
                   isReady
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                     : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                 }`}
               >
-                {isReady ? '● Đang hoạt động' : '○ Chưa kết nối'}
+                <span className={`w-2 h-2 rounded-full ${isReady ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                <span>{isReady ? 'Đang hoạt động' : 'Chưa kết nối'}</span>
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
@@ -285,7 +362,8 @@ export const AdminFirebasePage: React.FC = () => {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <span>📋 Dán nhanh đoạn mã Firebase</span>
+            <Clipboard className="w-3.5 h-3.5" />
+            <span>Dán nhanh đoạn mã Firebase</span>
           </button>
           <button
             type="button"
@@ -296,7 +374,8 @@ export const AdminFirebasePage: React.FC = () => {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            <span>✏️ Nhập từng thông số</span>
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Nhập từng thông số</span>
           </button>
         </div>
 
@@ -429,13 +508,48 @@ export const AdminFirebasePage: React.FC = () => {
             </div>
           </div>
 
+          {/* Real-time Connection Test Status Banner */}
+          {testResult && (
+            <div
+              className={`p-4 rounded-2xl border text-xs space-y-1.5 animate-in fade-in ${
+                testResult.success
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-300'
+              }`}
+            >
+              <div className="flex items-center justify-between font-bold">
+                <div className="flex items-center gap-2">
+                  {testResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  )}
+                  <span>
+                    {testResult.success ? 'Kiểm Tra Kết Nối Thành Công' : 'Kiểm Tra Kết Nối Thất Bại'}
+                  </span>
+                </div>
+                {testResult.latencyMs !== undefined && (
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded-lg bg-black/10 dark:bg-white/10">
+                    {testResult.latencyMs}ms
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] leading-relaxed font-normal">{testResult.message}</p>
+              {testResult.authorizedDomains && testResult.authorizedDomains.length > 0 && (
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 font-mono">
+                  Miền được ủy quyền: {testResult.authorizedDomains.join(', ')}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
             {isReady ? (
               <button
                 type="button"
                 onClick={handleClear}
-                className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold flex items-center gap-1.5 transition"
+                className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-xs font-bold flex items-center gap-1.5 transition self-start sm:self-auto"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Xóa Cấu Hình</span>
@@ -444,14 +558,39 @@ export const AdminFirebasePage: React.FC = () => {
               <div />
             )}
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-2.5 rounded-xl btn-glass-primary text-white text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? 'Đang lưu...' : 'Lưu & Kích Hoạt Firebase OAuth'}</span>
-            </button>
+            <div className="flex items-center gap-2.5 self-end sm:self-auto">
+              <button
+                type="button"
+                disabled={testing || saving || !config.apiKey}
+                onClick={handleTestConnection}
+                className="px-4 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 text-xs font-bold flex items-center gap-2 transition disabled:opacity-50"
+              >
+                {testing ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                ) : (
+                  <Zap className="w-4 h-4 text-amber-500" />
+                )}
+                <span>{testing ? 'Đang kiểm tra kết nối...' : 'Kiểm Tra Kết Nối Firebase'}</span>
+              </button>
+
+              <button
+                type="submit"
+                disabled={saving || testing}
+                className="px-6 py-2.5 rounded-xl btn-glass-primary text-white text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Đang kiểm tra & lưu...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Lưu & Kích Hoạt Firebase OAuth</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

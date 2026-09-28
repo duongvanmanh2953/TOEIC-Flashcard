@@ -1144,11 +1144,26 @@ export const AICoachStudioPage: React.FC = () => {
                       <span className="w-1.5 h-3.5 bg-emerald-400 rounded-full animate-pulse" />
                       <span className="w-1.5 h-4 bg-emerald-400 rounded-full animate-pulse [animation-delay:200ms]" />
                     </span>
-                    <span className="text-[11px] font-bold">
-                      {callStatus === 'listening' && '🎤 Bạn hãy nói tự nhiên... AI đang lắng nghe'}
-                      {callStatus === 'thinking' && '⚡ AI đang phân tích và chuẩn bị câu trả lời...'}
-                      {callStatus === 'speaking' && '🔊 AI đang phản hồi giọng nói...'}
-                      {callStatus === 'idle' && 'Đang đồng bộ...'}
+                    <span className="text-[11px] font-bold flex items-center gap-1.5">
+                      {callStatus === 'listening' && (
+                        <>
+                          <Mic className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Bạn hãy nói tự nhiên... AI đang lắng nghe</span>
+                        </>
+                      )}
+                      {callStatus === 'thinking' && (
+                        <>
+                          <Zap className="w-3.5 h-3.5 text-amber-400" />
+                          <span>AI đang phân tích và chuẩn bị câu trả lời...</span>
+                        </>
+                      )}
+                      {callStatus === 'speaking' && (
+                        <>
+                          <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>AI đang phản hồi giọng nói...</span>
+                        </>
+                      )}
+                      {callStatus === 'idle' && <span>Đang đồng bộ...</span>}
                     </span>
                   </div>
                 )}

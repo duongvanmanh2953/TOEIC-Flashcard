@@ -454,7 +454,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
               setPinDigits(['', '', '', '', '', '']);
               pinInputRefs.current[0]?.focus();
               setPinError(
-                '⚠️ Bạn đã nhập sai mã PIN 5 lần! Toàn bộ lịch sử tin nhắn mã hóa cũ đã bị xóa sạch vĩnh viễn trên máy chủ để bảo mật. Vui lòng thiết lập mã PIN 6 số mới.',
+                'Bạn đã nhập sai mã PIN 5 lần! Toàn bộ lịch sử tin nhắn mã hóa cũ đã bị xóa sạch vĩnh viễn trên máy chủ để bảo mật. Vui lòng thiết lập mã PIN 6 số mới.',
               );
             } else {
               const remaining = 5 - nextAttempts;

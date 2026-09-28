@@ -3062,7 +3062,7 @@ export const MyWordBankPage: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 text-xs">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-indigo-700 dark:text-indigo-300">
-                  🏷️ Nguồn kho: {selectedDeck.sourceName || 'Cộng đồng'}
+                  Nguồn kho: {selectedDeck.sourceName || 'Cộng đồng'}
                 </span>
                 {selectedDeck.authorName && (
                   <span className="text-slate-600 dark:text-slate-400">

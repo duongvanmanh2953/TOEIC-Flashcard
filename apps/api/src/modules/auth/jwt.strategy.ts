@@ -37,11 +37,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         role: true,
         status: true,
         profile: true,
+        refreshToken: true,
       },
     });
 
     if (!user || user.status !== 'ACTIVE') {
       throw new UnauthorizedException('Tài khoản không tồn tại hoặc đã bị vô hiệu hóa.');
+    }
+
+    // Invalidate immediately if user was logged out or password changed
+    if (!user.refreshToken) {
+      throw new UnauthorizedException('Phiên đăng nhập đã hết hiệu lực do tài khoản đã đổi mật khẩu hoặc đăng xuất. Vui lòng đăng nhập lại.');
     }
 
     const deviceId = req?.headers?.['x-device-id'] || req?.body?.deviceId;

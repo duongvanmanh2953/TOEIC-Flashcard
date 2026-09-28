@@ -78,12 +78,34 @@ export const AdminSystemPage: React.FC = () => {
     setUpdatingProvider(true);
     setProviderNotice('');
     try {
+      // 1. Mandatory connection test before declaring success!
+      let testSuccess = true;
+      let latency = 0;
+      try {
+        const testRes: any = await api.post('/admin/ai/test-connection', { provider: newProvider });
+        const testData = testRes?.data || testRes;
+        testSuccess = testData?.success ?? true;
+        latency = testData?.latencyMs || 0;
+        if (!testSuccess && newProvider !== 'local') {
+          setProviderNotice(`Kiểm tra kết nối thất bại: ${testData?.message || 'Không thể xác thực API Key'}`);
+          fetchHealth();
+          return;
+        }
+      } catch (err: any) {
+        if (newProvider !== 'local') {
+          setProviderNotice(`Lỗi kiểm tra kết nối AI: ${err?.response?.data?.message || err?.message}`);
+          fetchHealth();
+          return;
+        }
+      }
+
       await api.post('/health/ai-provider', { provider: newProvider });
       setAiProvider(newProvider);
-      setProviderNotice(`Đã chuyển AI Provider sang: ${newProvider.toUpperCase()}`);
+      setProviderNotice(`Kiểm tra kết nối thành công (${latency}ms)! Đã chuyển AI Provider sang: ${newProvider.toUpperCase()}`);
       fetchHealth();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to change AI provider:', err);
+      setProviderNotice(`Lỗi khi chuyển đổi: ${err?.message || 'Không thể lưu'}`);
     } finally {
       setUpdatingProvider(false);
     }

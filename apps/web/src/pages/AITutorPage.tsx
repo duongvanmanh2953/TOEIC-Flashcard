@@ -234,7 +234,7 @@ export const AITutorPage: React.FC = () => {
           {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: '⚡ Bạn đã đạt giới hạn lượt hỏi AI Tutor hôm nay. Nâng cấp lên gói Plus hoặc Pro để trò chuyện không giới hạn và nhận phản hồi chi tiết bất cứ lúc nào!',
+            content: 'Bạn đã đạt giới hạn lượt hỏi AI Tutor hôm nay. Nâng cấp lên gói Plus hoặc Pro để trò chuyện không giới hạn và nhận phản hồi chi tiết bất cứ lúc nào!',
             createdAt: new Date(),
           },
         ]);
@@ -575,7 +575,8 @@ export const AITutorPage: React.FC = () => {
                   {msg.comparisonCard && (
                     <GlassCard className="p-4 border border-amber-500/30 shadow-md space-y-3 bg-white/95 dark:bg-slate-900/95">
                       <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wider">
-                        <span>⚖️ Phân Tích So Sánh Sắc Thái Nghĩa</span>
+                        <Scale className="w-4 h-4" />
+                        <span>Phân Tích So Sánh Sắc Thái Nghĩa</span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-xs">

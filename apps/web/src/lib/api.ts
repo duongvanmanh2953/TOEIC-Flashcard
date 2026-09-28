@@ -141,8 +141,36 @@ api.interceptors.response.use(
     }
 
     if (is401 && !originalRequest?._retry) {
+      const errMsg = error.response?.data?.message || '';
+      if (
+        typeof errMsg === 'string' &&
+        (errMsg.includes('đổi mật khẩu') ||
+          errMsg.includes('thu hồi') ||
+          errMsg.includes('đăng xuất') ||
+          errMsg.includes('hết hiệu lực'))
+      ) {
+        localStorage.removeItem('vocabflow_access_token');
+        localStorage.removeItem('vocabflow_refresh_token');
+        sessionStorage.clear();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('VOCABFLOW_TOAST', {
+              detail: {
+                type: 'warning',
+                title: 'Phiên đăng nhập kết thúc',
+                message: errMsg || 'Mật khẩu tài khoản đã thay đổi. Toàn bộ phiên làm việc đã bị hủy, vui lòng đăng nhập lại.',
+              },
+            }),
+          );
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+            window.location.href = '/login';
+          }
+        }
+        return Promise.reject(error.response?.data?.error || error);
+      }
+
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || localStorage.getItem('vocabflow_refresh_token');
+      const refreshToken = localStorage.getItem('vocabflow_refresh_token');
       if (refreshToken) {
         try {
           const res = await axios.post('/api/v1/auth/refresh', { refreshToken });

@@ -103,7 +103,7 @@ export const QuotaMeter: React.FC<QuotaMeterProps> = ({
               className="text-brand-600 dark:text-brand-400 hover:text-brand-700 font-extrabold flex items-center gap-1 transition hover:underline"
             >
               <Sparkles className="w-3 h-3 text-amber-500" />
-              <span>{isDepleted ? '✨ Mở rộng AI' : 'Nâng cấp'}</span>
+              <span>{isDepleted ? 'Mở rộng AI' : 'Nâng cấp'}</span>
             </button>
           )}
         </div>

@@ -25,6 +25,8 @@ import {
   UserX,
   AlertOctagon,
   ExternalLink,
+  Zap,
+  Loader2,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
@@ -199,6 +201,40 @@ export const AdminSettingsPage: React.FC = () => {
     wipeSupport: true,
     wipeDevices: true,
   });
+
+  // AI Connection Test State
+  const [testingAi, setTestingAi] = useState(false);
+  const [aiTestResult, setAiTestResult] = useState<{
+    success: boolean;
+    message: string;
+    latencyMs?: number;
+    provider?: string;
+  } | null>(null);
+
+  const handleTestAiConnection = async () => {
+    setTestingAi(true);
+    setAiTestResult(null);
+    try {
+      const selectedModel = settings.ai?.model || 'gpt-4o';
+      let targetProvider = 'auto';
+      if (selectedModel.includes('gemini')) targetProvider = 'gemini';
+      else if (selectedModel.includes('gpt')) targetProvider = 'openai';
+
+      const res: any = await api.post('/admin/ai/test-connection', {
+        provider: targetProvider,
+        model: selectedModel,
+      });
+      const data = res?.data || res;
+      setAiTestResult(data);
+    } catch (err: any) {
+      setAiTestResult({
+        success: false,
+        message: err?.response?.data?.message || err?.message || 'Không thể kết nối đến máy chủ AI Gateway.',
+      });
+    } finally {
+      setTestingAi(false);
+    }
+  };
 
   // Settings State State Record
   const [settings, setSettings] = useState<Record<string, any>>({
@@ -867,6 +903,64 @@ export const AdminSettingsPage: React.FC = () => {
                         size="sm"
                       />
                     </div>
+                  </div>
+
+                  {/* AI Connection Testing Card */}
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h5 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Kiểm Tra Kết Nối Mô Hình AI</span>
+                        </h5>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Gửi gói tin ping thực tế tới API nhà cung cấp ({settings.ai?.model || 'gpt-4o'}) để đo độ trễ và kiểm tra hạn ngạch.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={testingAi}
+                        onClick={handleTestAiConnection}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 transition shrink-0"
+                      >
+                        {testingAi ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Đang kiểm tra...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Kiểm Tra Ping AI Ngay</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {aiTestResult && (
+                      <div
+                        className={`p-3 rounded-xl border text-xs flex items-center justify-between font-bold animate-in fade-in ${
+                          aiTestResult.success
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {aiTestResult.success ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                          ) : (
+                            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                          )}
+                          <span>{aiTestResult.message}</span>
+                        </div>
+                        {aiTestResult.latencyMs !== undefined && (
+                          <span className="font-mono text-[11px] px-2 py-0.5 rounded-lg bg-black/10 dark:bg-white/10 shrink-0">
+                            {aiTestResult.latencyMs}ms
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>

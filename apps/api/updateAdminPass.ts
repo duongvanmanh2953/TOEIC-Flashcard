@@ -84,10 +84,25 @@ async function main() {
 
   await prisma.user.update({
     where: { email: adminEmail },
-    data: { passwordHash }
+    data: {
+      passwordHash,
+      refreshToken: null,
+      updatedAt: new Date(),
+    },
   });
 
-  console.log('✅ Đã cập nhật mật khẩu Admin thành công!');
+  // Invalidate all active sessions and devices across all platforms
+  await prisma.userSession.updateMany({
+    where: { userId: adminUser.id },
+    data: { status: 'REVOKED' },
+  });
+
+  await prisma.userDevice.updateMany({
+    where: { userId: adminUser.id },
+    data: { status: 'REVOKED', isAllowed: false },
+  });
+
+  console.log('✅ Đã cập nhật mật khẩu Admin thành công và thu hồi toàn bộ token/phiên làm việc cũ!');
   console.log('----------------------------------------------------');
   console.log('🔒 EMAIL ADMIN     : ', adminEmail);
   console.log('🔑 MẬT KHẨU MỚI    : ', securePassword);

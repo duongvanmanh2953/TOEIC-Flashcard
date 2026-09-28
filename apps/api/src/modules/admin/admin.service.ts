@@ -1008,6 +1008,246 @@ export class AdminService {
   }
 
   /**
+   * Real Test Connection for Firebase credentials with Google Identity Toolkit
+   */
+  async testFirebaseConnection(dto: { apiKey: string; projectId: string; authDomain?: string }) {
+    const apiKey = dto.apiKey?.trim();
+    const projectId = dto.projectId?.trim();
+
+    if (!apiKey || apiKey.length < 15) {
+      return {
+        success: false,
+        message: 'Khóa API Key không hợp lệ hoặc quá ngắn (Firebase API Key thường bắt đầu bằng AIzaSy...).',
+      };
+    }
+
+    if (!projectId) {
+      return {
+        success: false,
+        message: 'Vui lòng cung cấp Project ID của dự án Firebase.',
+      };
+    }
+
+    const start = Date.now();
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch(
+        `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=${apiKey}`,
+        { signal: controller.signal },
+      );
+      clearTimeout(timeoutId);
+      const latencyMs = Date.now() - start;
+
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.projectId && data.projectId.toLowerCase() !== projectId.toLowerCase()) {
+          return {
+            success: false,
+            latencyMs,
+            message: `Kiểm tra thất bại: API Key hợp lệ nhưng thuộc dự án "${data.projectId}", không khớp với Project ID bạn đã nhập ("${projectId}").`,
+          };
+        }
+        return {
+          success: true,
+          latencyMs,
+          projectId: data.projectId || projectId,
+          authorizedDomains: data.authorizedDomains || [],
+          message: `Kết nối Firebase thành công (${latencyMs}ms)! Khóa API Key và Project ID hợp lệ, sẵn sàng phục vụ OAuth.`,
+        };
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const rawMsg = errData.error?.message || `HTTP ${res.status}`;
+        let friendlyMsg = rawMsg;
+        if (rawMsg.includes('API_KEY_INVALID') || rawMsg.includes('API key not valid')) {
+          friendlyMsg = 'Khóa API Key không hợp lệ hoặc đã bị vô hiệu hóa trên Google Cloud Console.';
+        } else if (rawMsg.includes('IP_REFERRER_BLOCKED') || rawMsg.includes('blocked')) {
+          friendlyMsg = 'Khóa API Key có cấu hình giới hạn IP / HTTP Referrer ngăn chặn kết nối máy chủ.';
+        }
+        return {
+          success: false,
+          latencyMs,
+          message: `Kiểm tra kết nối Firebase thất bại: ${friendlyMsg}`,
+          error: rawMsg,
+        };
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        message: `Không thể kết nối đến Firebase Gateway: ${err.message || 'Lỗi mạng hoặc kết nối timeout'}`,
+      };
+    }
+  }
+
+  /**
+   * Real Test Connection for AI Providers (Google Gemini & OpenAI)
+   */
+  async testAiConnection(dto: { provider?: string; model?: string; apiKey?: string }) {
+    const targetProvider = (dto.provider || 'auto').toLowerCase();
+    const start = Date.now();
+
+    if (targetProvider === 'gemini') {
+      const key = dto.apiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
+      if (!key) {
+        return {
+          success: false,
+          provider: 'gemini',
+          message: 'Chưa cấu hình GEMINI_API_KEY. Vui lòng cấu hình trong file .env hoặc nhập trực tiếp.',
+        };
+      }
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const latencyMs = Date.now() - start;
+        if (res.ok) {
+          return {
+            success: true,
+            provider: 'Google Gemini AI',
+            latencyMs,
+            message: `Kết nối Google Gemini AI thành công (${latencyMs}ms)! API Key hợp lệ và sẵn sàng phục vụ AI Tutor.`,
+          };
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          return {
+            success: false,
+            provider: 'Google Gemini AI',
+            latencyMs,
+            message: `Kiểm tra Gemini thất bại: ${errData.error?.message || `Mã lỗi HTTP ${res.status}`}`,
+          };
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          provider: 'Google Gemini AI',
+          message: `Lỗi kết nối tới Google Gemini Gateway: ${err.message}`,
+        };
+      }
+    }
+
+    if (targetProvider === 'openai') {
+      const key = dto.apiKey?.trim() || process.env.OPENAI_API_KEY?.trim();
+      if (!key) {
+        return {
+          success: false,
+          provider: 'openai',
+          message: 'Chưa cấu hình OPENAI_API_KEY. Vui lòng cấu hình trong file .env hoặc nhập trực tiếp.',
+        };
+      }
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch('https://api.openai.com/v1/models', {
+          headers: { Authorization: `Bearer ${key}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const latencyMs = Date.now() - start;
+        if (res.ok) {
+          return {
+            success: true,
+            provider: 'OpenAI GPT-4o',
+            latencyMs,
+            message: `Kết nối OpenAI GPT-4o thành công (${latencyMs}ms)! API Key hoạt động bình thường.`,
+          };
+        } else if (res.status === 429) {
+          return {
+            success: false,
+            provider: 'OpenAI GPT-4o',
+            latencyMs,
+            message: 'Tài khoản OpenAI đã hết hạn ngạch (429 Quota Exceeded). Cần nạp thêm credit vào tài khoản OpenAI.',
+          };
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          return {
+            success: false,
+            provider: 'OpenAI GPT-4o',
+            latencyMs,
+            message: `Kiểm tra OpenAI thất bại: ${errData.error?.message || `Mã lỗi HTTP ${res.status}`}`,
+          };
+        }
+      } catch (err: any) {
+        return {
+          success: false,
+          provider: 'OpenAI GPT-4o',
+          message: `Lỗi kết nối tới OpenAI Gateway: ${err.message}`,
+        };
+      }
+    }
+
+    if (targetProvider === 'local') {
+      return {
+        success: true,
+        provider: 'Offline Engine (Kho từ vựng nội bộ)',
+        latencyMs: 1,
+        message: 'Kho từ điển TOEIC nội bộ (613 từ vựng) hoạt động hoàn hảo, không phụ thuộc API ngoại vi.',
+      };
+    }
+
+    // Default: Auto failover (Check both Gemini and OpenAI)
+    const geminiKey = process.env.GEMINI_API_KEY?.trim();
+    const openAiKey = process.env.OPENAI_API_KEY?.trim();
+
+    if (!geminiKey && !openAiKey) {
+      return {
+        success: false,
+        provider: 'auto',
+        message: 'Chưa cấu hình cả GEMINI_API_KEY và OPENAI_API_KEY trong file .env.',
+      };
+    }
+
+    if (geminiKey) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const latencyMs = Date.now() - start;
+        if (res.ok) {
+          return {
+            success: true,
+            provider: 'Auto Failover (Google Gemini Primary)',
+            latencyMs,
+            message: `Kết nối Google Gemini AI thành công (${latencyMs}ms)! Cơ chế Auto Failover hoạt động ổn định.`,
+          };
+        }
+      } catch {}
+    }
+
+    if (openAiKey) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch('https://api.openai.com/v1/models', {
+          headers: { Authorization: `Bearer ${openAiKey}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const latencyMs = Date.now() - start;
+        if (res.ok) {
+          return {
+            success: true,
+            provider: 'Auto Failover (OpenAI Primary)',
+            latencyMs,
+            message: `Kết nối OpenAI GPT-4o thành công (${latencyMs}ms)! Cơ chế Auto Failover hoạt động ổn định.`,
+          };
+        }
+      } catch {}
+    }
+
+    return {
+      success: false,
+      provider: 'Auto Failover',
+      message: 'Kiểm tra thất bại: Không thể kết nối tới Google Gemini hoặc OpenAI. Vui lòng kiểm tra lại API Key trong file .env.',
+    };
+  }
+
+  /**
    * Purge all mock/fake operational data, OR perform a complete user data wipe keeping only admin accounts and system constants.
    */
   async purgeMockData(wipeUsers: boolean = false, actorId?: string) {

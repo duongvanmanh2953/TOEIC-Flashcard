@@ -376,6 +376,22 @@ export class AdminController {
     );
   }
 
+  @Post('firebase/test-connection')
+  @ApiOperation({ summary: 'Real test Firebase API Key and Project ID with Google Identity Toolkit' })
+  testFirebaseConnection(
+    @Body() dto: { apiKey: string; projectId: string; authDomain?: string },
+  ) {
+    return this.adminService.testFirebaseConnection(dto);
+  }
+
+  @Post('ai/test-connection')
+  @ApiOperation({ summary: 'Real test AI provider connectivity, latency and quota' })
+  testAiConnection(
+    @Body() dto: { provider?: string; model?: string; apiKey?: string },
+  ) {
+    return this.adminService.testAiConnection(dto);
+  }
+
   @Get('settings')
   @ApiOperation({ summary: 'Get unified system settings configuration across all 13 domains' })
   getSettings() {
