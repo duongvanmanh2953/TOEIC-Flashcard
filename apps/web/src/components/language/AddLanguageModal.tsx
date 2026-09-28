@@ -17,6 +17,9 @@ import {
   Trophy,
   MessageCircle,
   CheckCircle2,
+  Sprout,
+  BookOpen,
+  TrendingUp,
 } from 'lucide-react';
 import { ModalPortal } from '../common/ModalPortal';
 import { CountryFlag } from './CountryFlag';
@@ -79,13 +82,25 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
   // Level options based on selected language
   const LEVEL_OPTIONS = targetLang.supportedLevels.map((lvl) => {
     let desc = 'Căn bản & Nhận biết';
-    if (lvl.includes('A1') || lvl.includes('Beginner') || lvl.includes('1')) desc = '🌱 Người mới bắt đầu hoàn toàn';
-    else if (lvl.includes('A2') || lvl.includes('Elementary') || lvl.includes('2')) desc = '📖 Sơ cấp & Giao tiếp cơ bản';
-    else if (lvl.includes('B1') || lvl.includes('Intermediate') || lvl.includes('3')) desc = '🚀 Trung cấp & Diễn đạt tự nhiên';
-    else if (lvl.includes('B2') || lvl.includes('Upper') || lvl.includes('4')) desc = '🎯 Trung cao cấp & Phản xạ nhanh';
-    else desc = '🏆 Cao cấp & Thành thạo chuyên sâu';
+    let Icon = BookOpen;
+    if (lvl.includes('A1') || lvl.includes('Beginner') || lvl.includes('1')) {
+      desc = 'Người mới bắt đầu hoàn toàn';
+      Icon = Sprout;
+    } else if (lvl.includes('A2') || lvl.includes('Elementary') || lvl.includes('2')) {
+      desc = 'Sơ cấp & Giao tiếp cơ bản';
+      Icon = BookOpen;
+    } else if (lvl.includes('B1') || lvl.includes('Intermediate') || lvl.includes('3')) {
+      desc = 'Trung cấp & Diễn đạt tự nhiên';
+      Icon = TrendingUp;
+    } else if (lvl.includes('B2') || lvl.includes('Upper') || lvl.includes('4')) {
+      desc = 'Trung cao cấp & Phản xạ nhanh';
+      Icon = Target;
+    } else {
+      desc = 'Cao cấp & Thành thạo chuyên sâu';
+      Icon = Trophy;
+    }
 
-    return { id: lvl, desc };
+    return { id: lvl, desc, icon: Icon };
   });
 
   const handleFinish = async () => {
@@ -207,13 +222,18 @@ export const AddLanguageModal: React.FC<AddLanguageModalProps> = ({
                         : 'border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-slate-800/40'
                     }`}
                   >
-                    <div>
-                      <p className="text-xs font-black text-indigo-600 dark:text-indigo-400">
-                        {lvl.id}
-                      </p>
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-                        {lvl.desc}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                        <lvl.icon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-indigo-600 dark:text-indigo-400">
+                          {lvl.id}
+                        </p>
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
+                          {lvl.desc}
+                        </p>
+                      </div>
                     </div>
                     {isSelected && (
                       <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0">

@@ -1160,8 +1160,9 @@ export const SettingsPage: React.FC = () => {
                     <Key className="w-3 h-3 text-indigo-500" />
                     <span>Đổi mật khẩu tài khoản</span>
                   </label>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    ⚠️ Để đảm bảo tính toàn vẹn bảo mật, đổi mật khẩu sẽ đăng xuất toàn bộ thiết bị khác trên mọi nền tảng.
+                  <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                    <span>Để đảm bảo tính toàn vẹn bảo mật, đổi mật khẩu sẽ đăng xuất toàn bộ thiết bị khác trên mọi nền tảng.</span>
                   </p>
                 </div>
 

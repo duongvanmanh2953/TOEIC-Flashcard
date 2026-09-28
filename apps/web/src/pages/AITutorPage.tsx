@@ -29,6 +29,8 @@ import {
   Crown,
   Lock,
   LockOpen,
+  Lightbulb,
+  Scale,
 } from 'lucide-react';
 
 interface VocabularyCardData {
@@ -489,15 +491,17 @@ export const AITutorPage: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleSendMessage('Cho tôi ví dụ câu dễ hơn trong môi trường làm việc')}
-                          className="px-2 py-0.8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition flex items-center gap-1"
+                          className="px-2 py-0.8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition flex items-center gap-1.5"
                         >
-                          <span>💡 Cho ví dụ dễ hơn</span>
+                          <Lightbulb className="w-3 h-3 text-amber-500" />
+                          <span>Cho ví dụ dễ hơn</span>
                         </button>
                         <button
                           onClick={() => handleSendMessage('So sánh sự khác nhau giữa các từ dễ nhầm lẫn liên quan', 'compare')}
-                          className="px-2 py-0.8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition flex items-center gap-1"
+                          className="px-2 py-0.8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition flex items-center gap-1.5"
                         >
-                          <span>⚖️ So sánh từ tương tự</span>
+                          <Scale className="w-3 h-3 text-indigo-500" />
+                          <span>So sánh từ tương tự</span>
                         </button>
                       </div>
                     </div>
@@ -776,8 +780,9 @@ export const AITutorPage: React.FC = () => {
                           })}
                         </div>
                         {chosen && (
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1">
-                            💡 {q.explanation}
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 italic pt-1 flex items-center gap-1">
+                            <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span>{q.explanation}</span>
                           </p>
                         )}
                       </div>
@@ -909,8 +914,9 @@ export const AITutorPage: React.FC = () => {
 
               {storyResult.comprehensionQuestion && (
                 <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/50 dark:border-indigo-800/40 space-y-2">
-                  <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
-                    💡 Câu hỏi kiểm tra hiểu ngữ cảnh: {storyResult.comprehensionQuestion}
+                  <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>Câu hỏi kiểm tra hiểu ngữ cảnh: {storyResult.comprehensionQuestion}</span>
                   </p>
                   {storyResult.options && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
@@ -919,7 +925,7 @@ export const AITutorPage: React.FC = () => {
                           key={optIdx}
                           onClick={() => {
                             if (opt === storyResult.correctAnswer) {
-                              alert('🎉 Chính xác! Bạn đã nắm vững ngữ cảnh bài học.');
+                              alert('Chính xác! Bạn đã nắm vững ngữ cảnh bài học.');
                             } else {
                               alert(`Chưa chính xác. Đáp án đúng là: ${storyResult.correctAnswer}`);
                             }

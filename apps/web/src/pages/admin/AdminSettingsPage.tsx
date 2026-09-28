@@ -1594,21 +1594,24 @@ export const AdminSettingsPage: React.FC = () => {
                     <li>{locale === 'vi' ? 'Xóa toàn bộ đơn hàng giao dịch giả lập' : 'Delete mock payment orders'}</li>
                     <li>{locale === 'vi' ? 'Xóa toàn bộ thông báo hệ thống mẫu & phiên học thử' : 'Delete mock notifications & test sessions'}</li>
                     {wipeUsersOptionInModal && (
-                      <li className="text-rose-400 font-semibold">
-                        {locale === 'vi' ? '⚠️ XÓA TOÀN BỘ tài khoản học viên (Users), tiến độ từ vựng, deck cá nhân, bài thi' : '⚠️ DELETE ALL learner accounts, vocab progress, decks, exam attempts'}
+                      <li className="text-rose-400 font-semibold flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                        <span>{locale === 'vi' ? 'XÓA TOÀN BỘ tài khoản học viên (Users), tiến độ từ vựng, deck cá nhân, bài thi' : 'DELETE ALL learner accounts, vocab progress, decks, exam attempts'}</span>
                       </li>
                     )}
                   </ul>
 
                   {wipeUsersOptionInModal ? (
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px] leading-relaxed">
-                      🛡️ {locale === 'vi'
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px] leading-relaxed flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>{locale === 'vi'
                         ? 'BẢO LƯU AN TOÀN: 100% Tài khoản & quyền Admin (Super Admin/Admin) và toàn bộ hằng số hệ thống (Kho từ vựng chuẩn, Gói cước, Cấu hình).'
-                        : 'SAFE: 100% Admin accounts & roles, and system constants (Vocabulary, Plans, Configs) are preserved.'}
+                        : 'SAFE: 100% Admin accounts & roles, and system constants (Vocabulary, Plans, Configs) are preserved.'}</span>
                     </div>
                   ) : (
-                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px]">
-                      🛡️ {locale === 'vi' ? 'BẢO LƯU AN TOÀN: 100% Người dùng (Users) và Kho từ vựng (Vocabulary).' : 'SAFE: All Users and Vocabulary records are untouched.'}
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px] flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{locale === 'vi' ? 'BẢO LƯU AN TOÀN: 100% Người dùng (Users) và Kho từ vựng (Vocabulary).' : 'SAFE: All Users and Vocabulary records are untouched.'}</span>
                     </div>
                   )}
                 </div>
@@ -1715,8 +1718,9 @@ export const AdminSettingsPage: React.FC = () => {
             ) : (
               <>
                 <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/40 text-xs text-rose-200/90 leading-relaxed space-y-2">
-                  <p className="font-semibold text-rose-300">
-                    ⚠️ {locale === 'vi' ? 'Hành động này KHÔNG THỂ HOÀN TÁC! Hệ thống sẽ thực hiện:' : 'This action CANNOT BE UNDONE! The system will perform:'}
+                  <p className="font-semibold text-rose-300 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>{locale === 'vi' ? 'Hành động này KHÔNG THỂ HOÀN TÁC! Hệ thống sẽ thực hiện:' : 'This action CANNOT BE UNDONE! The system will perform:'}</span>
                   </p>
                   <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-200/80 pl-1">
                     <li>{locale === 'vi' ? 'Xóa sạch 100% tài khoản học viên (non-admin users)' : 'Permanently delete 100% learner accounts'}</li>
@@ -1792,8 +1796,9 @@ export const AdminSettingsPage: React.FC = () => {
                     />
                     <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 mt-2 space-y-1 leading-relaxed">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-300">
-                          🛡️ {locale === 'vi' ? 'Mã khóa ủy quyền bảo vệ cấp độ máy chủ' : 'Server-level administrative authorization'}
+                        <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{locale === 'vi' ? 'Mã khóa ủy quyền bảo vệ cấp độ máy chủ' : 'Server-level administrative authorization'}</span>
                         </span>
                         <a
                           href="/admin/security?tab=credentials"

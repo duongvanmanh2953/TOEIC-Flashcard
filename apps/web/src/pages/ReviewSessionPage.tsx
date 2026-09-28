@@ -86,9 +86,9 @@ export interface ReviewQueueItem {
 }
 
 export const DEFAULT_TOPIC_OPTIONS = [
-  { id: 'ALL', label: '⚡ Tất cả từ cần ôn (SRS Smart)', icon: Sparkles },
-  { id: 'MEMORY_RESCUE', label: '🚑 Giải cứu trí nhớ (Slipping Words)', icon: Flame },
-  { id: 'MY_WORDS', label: '⭐ Kho từ của tôi (Tất cả)', icon: Bookmark },
+  { id: 'ALL', label: 'Tất cả từ cần ôn (SRS Smart)', icon: Sparkles },
+  { id: 'MEMORY_RESCUE', label: 'Giải cứu trí nhớ (Slipping Words)', icon: Flame },
+  { id: 'MY_WORDS', label: 'Kho từ của tôi (Tất cả)', icon: Bookmark },
 ];
 
 /**
@@ -306,9 +306,9 @@ export const ReviewSessionPage: React.FC = () => {
       setSystemTopics(sysTopics);
 
       const opts: any[] = [
-        { id: 'ALL', label: `⚡ Tất cả từ cần ôn (${activeLanguage.name} SRS)`, icon: Sparkles },
-        { id: 'MEMORY_RESCUE', label: '🚑 Giải cứu trí nhớ (Slipping Words)', icon: Flame },
-        { id: 'MY_WORDS', label: '⭐ Kho từ của tôi (Tất cả)', icon: Bookmark },
+        { id: 'ALL', label: `Tất cả từ cần ôn (${activeLanguage.name} SRS)`, icon: Sparkles },
+        { id: 'MEMORY_RESCUE', label: 'Giải cứu trí nhớ (Slipping Words)', icon: Flame },
+        { id: 'MY_WORDS', label: 'Kho từ của tôi (Tất cả)', icon: Bookmark },
       ];
 
       if (decks.length > 0) {
@@ -317,7 +317,7 @@ export const ReviewSessionPage: React.FC = () => {
             id: `deck_${d.id}`,
             deckId: d.id,
             deckTitle: d.title,
-            label: `📁 ${d.title} (${d.wordCount || d.words?.length || 0} từ)`,
+            label: `${d.title} (${d.wordCount || d.words?.length || 0} từ)`,
             icon: BookOpen,
             type: 'DECK',
           });
@@ -330,7 +330,7 @@ export const ReviewSessionPage: React.FC = () => {
             id: `topic_${st.slug}`,
             slug: st.slug,
             name: st.name,
-            label: `🏷️ ${st.name} (${st._count?.items || 0} từ)`,
+            label: `${st.name} (${st._count?.items || 0} từ)`,
             icon: Layers,
             type: 'TOPIC',
           });

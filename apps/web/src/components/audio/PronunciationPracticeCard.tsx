@@ -12,6 +12,7 @@ import {
   Headphones,
   Clock,
   XCircle,
+  Lightbulb,
 } from 'lucide-react';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
@@ -249,8 +250,9 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-400 leading-tight">
-            💡 Bấm lại bất cứ lúc nào để <strong>Nghe lại (Replay)</strong> chuẩn âm vị trước khi thu âm.
+          <p className="text-[11px] text-slate-400 leading-tight flex items-center gap-1.5">
+            <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Bấm lại bất cứ lúc nào để <strong>Nghe lại (Replay)</strong> chuẩn âm vị trước khi thu âm.</span>
           </p>
         </div>
 

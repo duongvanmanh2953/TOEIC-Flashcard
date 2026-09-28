@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, Sparkles, BookOpen, CheckCircle2, HelpCircle, Lightbulb } from 'lucide-react';
+import { Volume2, Sparkles, BookOpen, CheckCircle2, HelpCircle, Lightbulb, Zap, AlertTriangle, Bot } from 'lucide-react';
 import { audioEngine } from '../../lib/audioEngine';
 import { CountryFlag } from '../language/CountryFlag';
 import { useLearningContext } from '../../contexts/LearningContext';
@@ -80,8 +80,8 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
       {/* 1. Header Banner with CEFR Level Pill, Provider Badge & Bilingual Audio Button */}
       <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-md">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shadow-inner">
-            🤖
+          <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
+            <Bot className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -96,19 +96,23 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
             <div className="mt-0.5 flex items-center gap-1.5">
               {provider?.includes('cache') ? (
                 <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/70 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
-                  ⚡ Kho Dữ Liệu Thông Minh (Tiết Kiệm Token)
+                  <Zap className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Kho Dữ Liệu Thông Minh (Tiết Kiệm Token)</span>
                 </span>
               ) : isGemini ? (
-                <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-400/40">
-                  ✨ Gemini 1.5 Flash AI Direct
+                <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>Gemini 1.5 Flash AI Direct</span>
                 </span>
               ) : isOpenAI ? (
-                <span className="text-[10px] font-bold text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-400/40">
-                  ⚡ OpenAI GPT-4o Direct
+                <span className="text-[10px] font-bold text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-400/40 flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-sky-400 shrink-0" />
+                  <span>OpenAI GPT-4o Direct</span>
                 </span>
               ) : isOfflineFallback ? (
-                <span className="text-[10px] font-bold text-amber-200 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-400/40">
-                  ⚠️ Offline Engine (GEMINI_API_KEY không hợp lệ)
+                <span className="text-[10px] font-bold text-amber-200 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-400/40 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span>Offline Engine (GEMINI_API_KEY không hợp lệ)</span>
                 </span>
               ) : (
                 <span className="text-[10px] opacity-85 font-medium">Trợ Lý Ngôn Ngữ Thông Minh 24/7</span>

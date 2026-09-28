@@ -3,7 +3,7 @@ import {
   ShieldCheck, Lock, Key, AlertTriangle, UserCheck, 
   FileText, ShieldAlert, CheckCircle2, RefreshCw, Smartphone,
   Monitor, Ban, Check, Eye, X, Filter, Search, Loader2,
-  AlertOctagon, KeyRound, Radio
+  AlertOctagon, KeyRound, Radio, Terminal, Copy
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -52,13 +52,8 @@ export const AdminSecurityPage: React.FC = () => {
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
   const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
 
-  // Admin Change Password State
-  const [adminCurrentPassword, setAdminCurrentPassword] = useState('');
-  const [adminNewPassword, setAdminNewPassword] = useState('');
-  const [adminConfirmPassword, setAdminConfirmPassword] = useState('');
-  const [changingAdminPassword, setChangingAdminPassword] = useState(false);
-  const [passwordFormError, setPasswordFormError] = useState<string | null>(null);
-  const [passwordFormSuccess, setPasswordFormSuccess] = useState<string | null>(null);
+  // Terminal CLI Copy State
+  const [copiedCmd, setCopiedCmd] = useState(false);
 
   // Admin Keypass State
   const [currentKeypass, setCurrentKeypass] = useState('');
@@ -168,43 +163,10 @@ export const AdminSecurityPage: React.FC = () => {
     }
   };
 
-  // Handle Admin Password Change
-  const handleChangeAdminPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordFormError(null);
-    setPasswordFormSuccess(null);
-
-    if (adminNewPassword.length < 8) {
-      setPasswordFormError('Mật khẩu mới yêu cầu độ dài tối thiểu 8 ký tự.');
-      return;
-    }
-    if (adminNewPassword !== adminConfirmPassword) {
-      setPasswordFormError('Mật khẩu xác nhận không khớp.');
-      return;
-    }
-    setChangingAdminPassword(true);
-    try {
-      await api.post('/admin/security/change-password', {
-        currentPassword: adminCurrentPassword,
-        newPassword: adminNewPassword,
-      });
-      const msg = 'Đổi mật khẩu Admin thành công! Hệ thống đã thu hồi mọi phiên khác. Vui lòng đăng nhập lại...';
-      setPasswordFormSuccess(msg);
-      setActionSuccessMsg(msg);
-      setAdminCurrentPassword('');
-      setAdminNewPassword('');
-      setAdminConfirmPassword('');
-      setTimeout(() => {
-        localStorage.removeItem('vocabflow_access_token');
-        window.location.href = '/login';
-      }, 2500);
-    } catch (err: any) {
-      const errMsg = err?.response?.data?.message || 'Đổi mật khẩu Admin thất bại. Vui lòng kiểm tra mật khẩu hiện tại.';
-      setPasswordFormError(errMsg);
-      setActionErrorMsg(errMsg);
-    } finally {
-      setChangingAdminPassword(false);
-    }
+  const handleCopyTerminalCmd = (cmd: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(true);
+    setTimeout(() => setCopiedCmd(false), 2500);
   };
 
   // Handle Admin Keypass Update
@@ -519,113 +481,60 @@ export const AdminSecurityPage: React.FC = () => {
       {/* TAB 2: CREDENTIALS & KEYPASS MANAGEMENT */}
       {activeTab === 'credentials' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Admin Password Change */}
+          {/* Admin Password Policy - Terminal CLI Only */}
           <div className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/60 p-6 space-y-4 shadow-xs">
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200 dark:border-slate-700">
               <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                <Key className="w-4 h-4" />
+                <Terminal className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-                  Đổi mật khẩu Quản trị viên
+                  Mật Khẩu Quản Trị Viên (Terminal CLI Only)
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Tự động đăng xuất tất cả các thiết bị đang hoạt động.
+                  Cấu hình & khởi tạo trực tiếp tại Terminal máy chủ
                 </p>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
-              🛡️ <strong>Lưu ý bảo mật:</strong> Đổi mật khẩu tài khoản Admin sẽ thu hồi 100% token & phiên làm việc của Admin trên toàn bộ thiết bị. Mã <strong>Keypass bảo mật hệ thống</strong> vẫn được lưu giữ an toàn độc lập, không bị xóa.
+            <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-800 dark:text-indigo-300 leading-relaxed space-y-2">
+              <div className="flex items-center gap-2 font-bold text-indigo-700 dark:text-indigo-300">
+                <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-500" />
+                <span>Chính Sách Bảo Mật Cấp Thấp (Root-level CLI)</span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                Theo tiêu chuẩn an ninh hệ thống, mật khẩu Quản trị viên tối cao (Super Admin) <strong>chỉ được phép cấu hình trực tiếp từ giao diện dòng lệnh (Terminal) của máy chủ</strong>. Giao diện web bị vô hiệu hóa hoàn toàn chức năng đổi mật khẩu Admin nhằm ngăn chặn triệt để nguy cơ chiếm đoạt phiên (Session Hijacking) hoặc CSRF.
+              </p>
             </div>
 
-            {passwordFormError && (
-              <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center gap-2">
-                <AlertOctagon className="w-4 h-4 shrink-0 text-rose-400" />
-                <span>{passwordFormError}</span>
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                Lệnh Cập Nhật Mật Khẩu Admin Tại Terminal:
+              </label>
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-emerald-400 flex items-center justify-between gap-3">
+                <span className="truncate">npm run update-admin-pass</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyTerminalCmd('npm run update-admin-pass')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1.5 shrink-0 text-[11px] font-sans font-semibold cursor-pointer"
+                >
+                  {copiedCmd ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">Đã sao chép</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Sao chép</span>
+                    </>
+                  )}
+                </button>
               </div>
-            )}
-            {passwordFormSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span>{passwordFormSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleChangeAdminPassword} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Mật khẩu Admin hiện tại
-                </label>
-                <input
-                  type="password"
-                  disabled={changingAdminPassword}
-                  value={adminCurrentPassword}
-                  onChange={(e) => {
-                    setAdminCurrentPassword(e.target.value);
-                    if (passwordFormError) setPasswordFormError(null);
-                  }}
-                  placeholder="••••••••"
-                  required
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Mật khẩu Admin mới (tối thiểu 8 ký tự)
-                </label>
-                <input
-                  type="password"
-                  disabled={changingAdminPassword}
-                  value={adminNewPassword}
-                  onChange={(e) => {
-                    setAdminNewPassword(e.target.value);
-                    if (passwordFormError) setPasswordFormError(null);
-                  }}
-                  placeholder="••••••••"
-                  required
-                  minLength={8}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Xác nhận mật khẩu mới
-                </label>
-                <input
-                  type="password"
-                  disabled={changingAdminPassword}
-                  value={adminConfirmPassword}
-                  onChange={(e) => {
-                    setAdminConfirmPassword(e.target.value);
-                    if (passwordFormError) setPasswordFormError(null);
-                  }}
-                  placeholder="••••••••"
-                  required
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={changingAdminPassword || !adminCurrentPassword || !adminNewPassword}
-                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                {changingAdminPassword ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Đang cập nhật mật khẩu...</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Cập nhật mật khẩu & Đăng xuất mọi nơi</span>
-                  </>
-                )}
-              </button>
-            </form>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Hoặc chạy: <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900 font-mono text-indigo-500 dark:text-indigo-300">npx ts-node updateAdminPass.ts</code>. Terminal sẽ yêu cầu xác thực bằng <code className="font-mono text-slate-300">SERVER_MASTER_PASSWORD</code> trước khi sinh mã hash bcrypt an toàn.
+              </p>
+            </div>
           </div>
 
           {/* Admin Security Keypass Management */}
@@ -644,9 +553,16 @@ export const AdminSecurityPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-700 dark:text-rose-400 leading-relaxed space-y-1">
-              <p>🔐 <strong>Quyền hạn tối thượng:</strong> Keypass là lớp bảo vệ thứ 2 bắt buộc để kích hoạt chức năng <strong>Reset All Data</strong> (Xóa sạch toàn bộ data học viên, tiến độ và giữ Admin/Kho từ vựng). Không thể thực hiện nếu thiếu Keypass này.</p>
-              <p className="text-[10px] text-rose-300">🛡️ Nhập mã Keypass hiện tại đã được cấu hình cho tài khoản Quản trị viên để tiến hành cập nhật mã mới.</p>
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-700 dark:text-rose-400 leading-relaxed space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold">
+                <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>Quyền hạn tối thượng:</span>
+              </div>
+              <p>Keypass là lớp bảo vệ thứ 2 bắt buộc để kích hoạt chức năng <strong>Reset All Data</strong> (Xóa sạch toàn bộ data học viên, tiến độ và giữ Admin/Kho từ vựng). Không thể thực hiện nếu thiếu Keypass này.</p>
+              <div className="flex items-center gap-1.5 text-[10px] text-rose-300 pt-1">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+                <span>Nhập mã Keypass hiện tại đã được cấu hình cho tài khoản Quản trị viên để tiến hành cập nhật mã mới.</span>
+              </div>
             </div>
 
             {keypassFormError && (

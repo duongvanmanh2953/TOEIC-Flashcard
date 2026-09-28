@@ -8,6 +8,7 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
+  Lightbulb,
 } from 'lucide-react';
 import {
   getActiveFirebaseConfig,
@@ -259,8 +260,9 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({
                 placeholder={`const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "vocabflow.firebaseapp.com",\n  projectId: "vocabflow",\n  appId: "1:..."\n};`}
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-slate-700/80 tabular-nums text-xs text-cyan-300 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
               />
-              <p className="text-[11px] text-slate-400 mt-1">
-                💡 Hệ thống sẽ tự động quét và điền các trường `apiKey`, `projectId`, `authDomain`...
+              <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Hệ thống sẽ tự động quét và điền các trường `apiKey`, `projectId`, `authDomain`...</span>
               </p>
             </div>
           ) : (

@@ -29,6 +29,8 @@ import {
   Filter,
   Plus,
   X,
+  Lightbulb,
+  Globe,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -577,8 +579,18 @@ export const ExamEditorPage: React.FC = () => {
                   <span>•</span>
                   <span>Điểm đạt: {passingScore}%</span>
                   <span>•</span>
-                  <span className={isProtected ? 'text-amber-500' : 'text-emerald-500'}>
-                    {isProtected ? '🔒 Có mã bảo vệ' : '🌐 Công khai'}
+                  <span className={`inline-flex items-center gap-1 ${isProtected ? 'text-amber-500' : 'text-emerald-500'}`}>
+                    {isProtected ? (
+                      <>
+                        <Lock className="w-3 h-3 shrink-0" />
+                        <span>Có mã bảo vệ</span>
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="w-3 h-3 shrink-0" />
+                        <span>Công khai</span>
+                      </>
+                    )}
                   </span>
                 </div>
               )}
@@ -1064,8 +1076,9 @@ export const ExamEditorPage: React.FC = () => {
                     </div>
 
                     {q.explanation && (
-                      <p className="text-[11px] text-slate-500 italic line-clamp-1">
-                        💡 Giải thích: {q.explanation}
+                      <p className="text-[11px] text-slate-500 italic line-clamp-1 flex items-center gap-1">
+                        <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>Giải thích: {q.explanation}</span>
                       </p>
                     )}
                   </div>

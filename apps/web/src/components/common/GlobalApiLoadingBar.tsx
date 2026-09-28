@@ -4,12 +4,15 @@ import { Loader2 } from 'lucide-react';
 interface LoadingEventDetail {
   isLoading: boolean;
   activeRequests: number;
+  activeMutations?: number;
+  isMutationActive?: boolean;
   url?: string;
   method?: string;
 }
 
 export const GlobalApiLoadingBar: React.FC = () => {
   const [activeRequests, setActiveRequests] = useState(0);
+  const [isMutationActive, setIsMutationActive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
   const progressTimerRef = useRef<any>(null);
@@ -20,9 +23,9 @@ export const GlobalApiLoadingBar: React.FC = () => {
       const detail: LoadingEventDetail = e.detail || {};
       const count = Math.max(0, detail.activeRequests ?? 0);
       setActiveRequests(count);
+      setIsMutationActive(Boolean(detail.isMutationActive));
 
       if (count > 0) {
-        // Clear any pending hide timer
         if (hideTimerRef.current) {
           clearTimeout(hideTimerRef.current);
           hideTimerRef.current = null;
@@ -30,20 +33,18 @@ export const GlobalApiLoadingBar: React.FC = () => {
 
         setVisible(true);
 
-        // Animate progress up towards 85%
         if (!progressTimerRef.current) {
-          setProgress((prev) => (prev === 0 ? 25 : prev));
+          setProgress((prev) => (prev === 0 ? 20 : prev));
           progressTimerRef.current = setInterval(() => {
             setProgress((prev) => {
-              if (prev < 60) return prev + 15;
-              if (prev < 80) return prev + 5;
-              if (prev < 92) return prev + 2;
+              if (prev < 60) return prev + 12;
+              if (prev < 80) return prev + 4;
+              if (prev < 90) return prev + 1;
               return prev;
             });
           }, 200);
         }
       } else {
-        // Complete progress to 100% and fade out
         if (progressTimerRef.current) {
           clearInterval(progressTimerRef.current);
           progressTimerRef.current = null;
@@ -54,8 +55,9 @@ export const GlobalApiLoadingBar: React.FC = () => {
         hideTimerRef.current = setTimeout(() => {
           setVisible(false);
           setProgress(0);
+          setIsMutationActive(false);
           hideTimerRef.current = null;
-        }, 350);
+        }, 300);
       }
     };
 
@@ -67,29 +69,34 @@ export const GlobalApiLoadingBar: React.FC = () => {
     };
   }, []);
 
-  if (!visible && activeRequests === 0 && progress === 0) return null;
-
   return (
     <>
-      {/* Top Gradient Progress Bar */}
+      {/* 1. Subtle, Clean Solid Page Loading Bar (No gradient, lighter color as requested) */}
       <div
         className="fixed top-0 left-0 right-0 z-[99999] pointer-events-none transition-opacity duration-300"
         style={{ opacity: visible ? 1 : 0 }}
       >
         <div
-          className="h-1 bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 transition-all duration-200 ease-out shadow-[0_0_12px_rgba(99,102,241,0.8)]"
+          className="h-0.5 bg-indigo-400/80 dark:bg-indigo-300/80 transition-all duration-200 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Floating Pill Status Badge (Top-Right under Navbar) */}
-      {visible && activeRequests > 0 && (
-        <div className="fixed top-3 right-4 z-[99999] pointer-events-none select-none animate-fade-in">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 dark:bg-slate-900/95 text-white border border-indigo-500/30 shadow-2xl backdrop-blur-md text-[11px] font-bold">
-            <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
-            <span className="tracking-wide">
-              Đang tải dữ liệu {activeRequests > 1 ? `(${activeRequests})` : ''}...
-            </span>
+      {/* 2. Full API Mutation Loading Overlay (Requested by user: "loading api cần 1 overlay có loading") */}
+      {isMutationActive && (
+        <div className="fixed inset-0 z-[99998] bg-slate-950/40 backdrop-blur-[2px] flex items-center justify-center p-4 animate-fade-in pointer-events-auto select-none">
+          <div className="flex flex-col items-center gap-3 px-6 py-5 rounded-3xl bg-slate-900/95 border border-slate-700/80 shadow-2xl text-white max-w-xs w-full text-center">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+              <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+            </div>
+            <div className="space-y-1">
+              <h5 className="text-sm font-bold text-white tracking-wide">
+                Đang xử lý dữ liệu...
+              </h5>
+              <p className="text-[11px] text-slate-400 leading-normal">
+                Hệ thống đang thực thi và đồng bộ máy chủ, vui lòng đợi trong giây lát.
+              </p>
+            </div>
           </div>
         </div>
       )}

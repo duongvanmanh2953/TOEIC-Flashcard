@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, RotateCcw, Trophy, Timer, Zap, Volume2, 
-  Sparkles, CheckCircle2, HelpCircle, Flame, Award, ChevronRight 
+  Sparkles, CheckCircle2, HelpCircle, Flame, Award, ChevronRight, Lightbulb 
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
@@ -256,8 +256,9 @@ export const WordScrambleGame: React.FC = () => {
                 ({currentWordItem.partOfSpeech || 'n.'})
               </span>
             </div>
-            <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">
-              💡 {currentWordItem.meanings?.[0]?.meaning || currentWordItem.shortDefinition || currentWordItem.definition}
+            <p className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-1.5">
+              <Lightbulb className="w-5 h-5 text-amber-500 shrink-0" />
+              <span>{currentWordItem.meanings?.[0]?.meaning || currentWordItem.shortDefinition || currentWordItem.definition}</span>
             </p>
             {showHint && currentWordItem.pronunciation && (
               <p className="text-xs text-indigo-500 font-semibold animate-fade-in">

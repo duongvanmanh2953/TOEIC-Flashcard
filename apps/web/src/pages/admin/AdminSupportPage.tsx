@@ -22,6 +22,8 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Info,
+  AlertTriangle,
+  Flame,
 } from 'lucide-react';
 import { getSocket } from '../../lib/socket';
 import { VirtualChatPane } from '../../components/chat/VirtualChatPane';
@@ -761,8 +763,9 @@ export const AdminSupportPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[9px] text-slate-500 uppercase font-bold">Chuỗi học / XP</span>
-                  <p className="text-slate-300 font-semibold text-xs">
-                    🔥 {selectedConv.user?.streak?.currentStreak || 0} ngày • {selectedConv.user?.xp?.totalXP || 0} XP
+                  <p className="text-slate-300 font-semibold text-xs flex items-center gap-1">
+                    <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>{selectedConv.user?.streak?.currentStreak || 0} ngày • {selectedConv.user?.xp?.totalXP || 0} XP</span>
                   </p>
                 </div>
               </div>
@@ -841,19 +844,22 @@ export const AdminSupportPage: React.FC = () => {
                 <li>Xóa toàn bộ đóng góp ý kiến (feedbacks) mẫu</li>
                 <li>Xóa toàn bộ đơn hàng giao dịch giả lập & thông báo</li>
                 {wipeUsersInSupportModal && (
-                  <li className="text-rose-400 font-semibold">
-                    ⚠️ Xóa sạch 100% tài khoản học viên và toàn bộ tiến độ học trong DB
+                  <li className="text-rose-400 font-semibold flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                    <span>Xóa sạch 100% tài khoản học viên và toàn bộ tiến độ học trong DB</span>
                   </li>
                 )}
               </ul>
 
               {wipeUsersInSupportModal ? (
-                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px]">
-                  🛡️ BẢO LƯU AN TOÀN: 100% Tài khoản & quyền Admin cùng toàn bộ hằng số hệ thống.
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold text-[11px] flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>BẢO LƯU AN TOÀN: 100% Tài khoản & quyền Admin cùng toàn bộ hằng số hệ thống.</span>
                 </div>
               ) : (
-                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px]">
-                  🛡️ BẢO LƯU 100%: Tài khoản người dùng (Users) và toàn bộ Kho từ vựng (Vocabulary).
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[11px] flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>BẢO LƯU 100%: Tài khoản người dùng (Users) và toàn bộ Kho từ vựng (Vocabulary).</span>
                 </div>
               )}
             </div>

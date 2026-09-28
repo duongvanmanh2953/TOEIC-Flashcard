@@ -1212,19 +1212,19 @@ export const CommunityDecksPage: React.FC = () => {
                         {status === 'APPROVED' && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800">
                             <CheckCircle className="w-3.5 h-3.5" />
-                            <span>✅ Đã công khai (Approved)</span>
+                            <span>Đã công khai (Approved)</span>
                           </span>
                         )}
                         {status === 'PENDING' && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-800">
-                            <Clock className="w-3.5 h-3.5 animate-spin" />
-                            <span>⏳ Đang chờ Admin duyệt (Pending)</span>
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Đang chờ Admin duyệt (Pending)</span>
                           </span>
                         )}
                         {status === 'REJECTED' && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-800">
                             <XCircle className="w-3.5 h-3.5" />
-                            <span>❌ Bị từ chối (Rejected)</span>
+                            <span>Bị từ chối (Rejected)</span>
                           </span>
                         )}
 

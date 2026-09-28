@@ -22,15 +22,24 @@ export function getOrCreateDeviceId(): string {
 }
 
 let activeRequestsCount = 0;
+let activeMutationsCount = 0;
 
 function notifyApiLoading(delta: number, config?: any) {
   activeRequestsCount = Math.max(0, activeRequestsCount + delta);
+  const method = config?.method?.toUpperCase() || '';
+  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  if (isMutation) {
+    activeMutationsCount = Math.max(0, activeMutationsCount + delta);
+  }
+
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
       new CustomEvent('VOCABFLOW_API_LOADING', {
         detail: {
           isLoading: activeRequestsCount > 0,
           activeRequests: activeRequestsCount,
+          activeMutations: activeMutationsCount,
+          isMutationActive: activeMutationsCount > 0,
           url: config?.url,
           method: config?.method,
         },

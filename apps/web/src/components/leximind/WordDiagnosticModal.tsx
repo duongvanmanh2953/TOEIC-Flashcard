@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   HelpCircle, X, AlertTriangle, Brain, Sparkles, 
   Clock, ArrowRight, Zap, Target, BookOpen, PenTool, 
-  Mic, Eye, Loader2, CheckCircle2, RefreshCw
+  Mic, Eye, Loader2, CheckCircle2, RefreshCw, Lightbulb
 } from 'lucide-react';
 import api from '../../lib/api';
 
@@ -141,8 +141,9 @@ export const WordDiagnosticModal: React.FC<WordDiagnosticModalProps> = ({
                     <li key={i}>{r}</li>
                   ))}
                 </ul>
-                <div className="pt-1 text-[11px] font-semibold text-white">
-                  💡 <strong>Hành động khắc phục:</strong> {data.recommendedAction}
+                <div className="pt-1 text-[11px] font-semibold text-white flex items-center gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span><strong>Hành động khắc phục:</strong> {data.recommendedAction}</span>
                 </div>
               </div>
 

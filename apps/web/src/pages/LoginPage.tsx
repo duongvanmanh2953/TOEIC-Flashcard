@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, AlertCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { LogIn, AlertCircle, ShieldCheck, Sparkles, Lightbulb } from 'lucide-react';
 import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
 
 export const LoginPage: React.FC = () => {
@@ -74,9 +74,12 @@ export const LoginPage: React.FC = () => {
               <strong>{deviceLimitError.activeCount || 3} / {deviceLimitError.limit || 3}</strong> thiết bị cho phép.
               Thiết bị mới của bạn đã được ghi nhận và đưa vào hàng chờ xác minh bảo mật.
             </p>
-            <div className="p-2.5 rounded-xl bg-amber-500/15 text-[11px] leading-relaxed">
-              💡 <strong>Cách xử lý:</strong> Hãy đăng nhập từ một trong các thiết bị đã dùng trước đó, sau đó vào mục{' '}
-              <span className="font-semibold underline">Hồ sơ → Bảo mật → Quản lý thiết bị</span> để đăng xuất các thiết bị không còn sử dụng.
+            <div className="p-2.5 rounded-xl bg-amber-500/15 text-[11px] leading-relaxed flex items-start gap-1.5">
+              <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <span>
+                <strong>Cách xử lý:</strong> Hãy đăng nhập từ một trong các thiết bị đã dùng trước đó, sau đó vào mục{' '}
+                <span className="font-semibold underline">Hồ sơ → Bảo mật → Quản lý thiết bị</span> để đăng xuất các thiết bị không còn sử dụng.
+              </span>
             </div>
           </div>
         )}

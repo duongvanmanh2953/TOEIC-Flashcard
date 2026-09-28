@@ -18,6 +18,7 @@ import {
   Square,
   RotateCcw,
   CheckCircle2,
+  XCircle,
   AlertCircle,
   Layers,
   Award,
@@ -44,6 +45,8 @@ import {
   Trash2,
   Send,
   Clock,
+  Lightbulb,
+  Key,
 } from 'lucide-react';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { audioEngine } from '../lib/audioEngine';
@@ -1409,8 +1412,9 @@ export const AICoachStudioPage: React.FC = () => {
                     <div className="max-w-md p-3 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed bg-indigo-600 text-white rounded-br-none shadow-md">
                       <p>{msg.content}</p>
                       {msg.viTranslation && (
-                        <p className="mt-2 pt-2 border-t border-indigo-400 text-[11px] text-indigo-100 italic">
-                          💡 {msg.viTranslation}
+                        <p className="mt-2 pt-2 border-t border-indigo-400 text-[11px] text-indigo-100 italic flex items-center gap-1">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                          <span>{msg.viTranslation}</span>
                         </p>
                       )}
                     </div>
@@ -1422,8 +1426,9 @@ export const AICoachStudioPage: React.FC = () => {
                         onSelectQuizOption={(opt) => handleSend(opt)}
                       />
                       {translatedMessages[msg.id] && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg">
-                          💡 {translatedMessages[msg.id]}
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg flex items-center gap-1">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span>{translatedMessages[msg.id]}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 mt-1.5 ml-1">
@@ -1487,13 +1492,22 @@ export const AICoachStudioPage: React.FC = () => {
               <div className="px-3 sm:px-6 py-1.5 sm:py-2.5 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs border-t border-amber-500/20 flex items-center justify-between gap-2">
                 <div className="flex-1">
                   {whatShouldISayStep === 1 && (
-                    <span>💡 <strong>Gợi ý:</strong> Chia sẻ về 1 trở ngại bạn đã vượt qua trong công việc hôm nay.</span>
+                    <span className="flex items-center gap-1.5">
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span><strong>Gợi ý:</strong> Chia sẻ về 1 trở ngại bạn đã vượt qua trong công việc hôm nay.</span>
+                    </span>
                   )}
                   {whatShouldISayStep === 2 && (
-                    <span>🔑 <strong>Từ then chốt:</strong> resolved / bottleneck / coordinated / team deliverables.</span>
+                    <span className="flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      <span><strong>Từ then chốt:</strong> resolved / bottleneck / coordinated / team deliverables.</span>
+                    </span>
                   )}
                   {whatShouldISayStep === 3 && (
-                    <span>📝 <strong>Mẫu câu:</strong> "Today, my team successfully coordinated to resolve a major delivery bottleneck."</span>
+                    <span className="flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span><strong>Mẫu câu:</strong> "Today, my team successfully coordinated to resolve a major delivery bottleneck."</span>
+                    </span>
                   )}
                 </div>
                 <button
@@ -1555,7 +1569,14 @@ export const AICoachStudioPage: React.FC = () => {
                           : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
                           }`}
                       >
-                        {item.hasCache ? '⚡ Có sẵn' : item.category}
+                        {item.hasCache ? (
+                          <span className="flex items-center gap-0.5">
+                            <Zap className="w-2.5 h-2.5 shrink-0" />
+                            <span>Có sẵn</span>
+                          </span>
+                        ) : (
+                          item.category
+                        )}
                       </span>
                     </button>
                   ))}
@@ -1953,15 +1974,24 @@ export const AICoachStudioPage: React.FC = () => {
 
                   {/* Articulation Guide Box */}
                   <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs space-y-2">
-                    <span className="font-black text-sm block">👅 Hướng dẫn Khẩu Hình & Vị Trí Đặt Lưỡi ({pronunciationResult.phonemeAnalysis?.targetPhoneme}):</span>
+                    <span className="font-black text-sm flex items-center gap-1.5">
+                      <Waves className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span>Hướng dẫn Khẩu Hình & Vị Trí Đặt Lưỡi ({pronunciationResult.phonemeAnalysis?.targetPhoneme}):</span>
+                    </span>
                     <p><strong>Vị trí lưỡi:</strong> {pronunciationResult.phonemeAnalysis?.tonguePositionGuide}</p>
                     <p><strong>Kỹ thuật đẩy hơi:</strong> {pronunciationResult.phonemeAnalysis?.techniqueTips}</p>
-                    <p className="text-rose-600 dark:text-rose-400 font-bold">⚠️ Lưu ý: {pronunciationResult.phonemeAnalysis?.pitfallAlert}</p>
+                    <p className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <span>Lưu ý: {pronunciationResult.phonemeAnalysis?.pitfallAlert}</span>
+                    </p>
                   </div>
 
                   {/* Shadowing Mode Instructions */}
                   <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-xs space-y-2">
-                    <span className="font-black block">🎧 Chế Độ Shadowing (Nhại Giọng Bản Xứ):</span>
+                    <span className="font-black flex items-center gap-1.5">
+                      <Headphones className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <span>Chế Độ Shadowing (Nhại Giọng Bản Xứ):</span>
+                    </span>
                     <p className="text-slate-500 dark:text-slate-400">
                       1. Bấm loa để nghe người bản xứ đọc mẫu 2 lần. <br />
                       2. Nhại lại ngay lập tức theo ngữ điệu và ngữ âm, không ngắt quãng câu.
@@ -2187,8 +2217,14 @@ export const AICoachStudioPage: React.FC = () => {
                   </p>
 
                   <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs space-y-1">
-                    <div className="text-rose-500 font-semibold line-through">❌ {err.wrong}</div>
-                    <div className="text-emerald-600 dark:text-emerald-400 font-bold">✅ {err.correct}</div>
+                    <div className="text-rose-500 font-semibold line-through flex items-center gap-1.5">
+                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <span>{err.wrong}</span>
+                    </div>
+                    <div className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>{err.correct}</span>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -19,6 +19,10 @@ import {
   Layers,
   ArrowUpRight,
   Filter,
+  BookOpen,
+  Palette,
+  MessageSquare,
+  FileEdit,
 } from 'lucide-react';
 
 interface FeedbackItem {
@@ -215,7 +219,7 @@ export const FeedbackPortalPage: React.FC = () => {
               Ý kiến được bình chọn nhiều nhất
             </span>
             <span className="text-xs text-slate-500 font-medium">
-              Bấm nút 👍 để ưu tiên đưa vào bản cập nhật tới
+              Bình chọn tính năng để ưu tiên đưa vào bản cập nhật tới
             </span>
           </div>
 
@@ -416,12 +420,12 @@ export const FeedbackPortalPage: React.FC = () => {
                 value={type}
                 onChange={setType}
                 options={[
-                  { value: 'FEATURE_REQUEST', label: '💡 Đề xuất tính năng mới' },
-                  { value: 'BUG_REPORT', label: '🐛 Báo cáo lỗi kỹ thuật / hiển thị' },
-                  { value: 'CONTENT_CORRECTION', label: '📝 Sửa nội dung từ vựng / ví dụ TOEIC' },
-                  { value: 'VOCABULARY_SUGGESTION', label: '📚 Gợi ý thêm từ vựng mới vào kho' },
-                  { value: 'UX_FEEDBACK', label: '🎨 Góp ý giao diện & trải nghiệm học' },
-                  { value: 'GENERAL', label: '💬 Ý kiến khác' },
+                  { value: 'FEATURE_REQUEST', label: 'Đề xuất tính năng mới', icon: Lightbulb },
+                  { value: 'BUG_REPORT', label: 'Báo cáo lỗi kỹ thuật / hiển thị', icon: Bug },
+                  { value: 'CONTENT_CORRECTION', label: 'Sửa nội dung từ vựng / ví dụ TOEIC', icon: FileEdit },
+                  { value: 'VOCABULARY_SUGGESTION', label: 'Gợi ý thêm từ vựng mới vào kho', icon: BookOpen },
+                  { value: 'UX_FEEDBACK', label: 'Góp ý giao diện & trải nghiệm học', icon: Palette },
+                  { value: 'GENERAL', label: 'Ý kiến khác', icon: MessageSquare },
                 ]}
               />
             </div>

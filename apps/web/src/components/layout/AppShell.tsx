@@ -43,6 +43,7 @@ import {
   Baby,
   Globe,
   GraduationCap,
+  Zap,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
@@ -1172,22 +1173,24 @@ export const AppShell: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSupportTab('chat')}
-                  className={`py-1 rounded-lg transition ${supportTab === 'chat'
+                  className={`py-1 rounded-lg transition flex items-center justify-center gap-1.5 ${supportTab === 'chat'
                     ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
                     : 'text-slate-400 hover:text-white'
                     }`}
                 >
-                  💬 Chat trực tiếp
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Chat trực tiếp</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSupportTab('quick')}
-                  className={`py-1 rounded-lg transition ${supportTab === 'quick'
+                  className={`py-1 rounded-lg transition flex items-center justify-center gap-1.5 ${supportTab === 'quick'
                     ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
                     : 'text-slate-400 hover:text-white'
                     }`}
                 >
-                  ⚡ Kênh liên hệ
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Kênh liên hệ</span>
                 </button>
               </div>
 
@@ -1288,8 +1291,9 @@ export const AppShell: React.FC = () => {
                 </div>
               )}
 
-              <div className="pt-2 text-center text-[11px] text-slate-400 border-t border-slate-800">
-                🔒 Kết nối bảo mật • Không bao giờ yêu cầu mật khẩu hay mã OTP
+              <div className="pt-2 text-center text-[11px] text-slate-400 border-t border-slate-800 flex items-center justify-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Kết nối bảo mật • Không bao giờ yêu cầu mật khẩu hay mã OTP</span>
               </div>
             </div>
           </div>

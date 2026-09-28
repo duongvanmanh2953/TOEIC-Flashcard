@@ -150,8 +150,9 @@ export const LeaderboardPage: React.FC = () => {
                 alt={dailyChampion.displayName}
                 className="w-20 h-20 rounded-2xl border-2 border-amber-400 object-cover shadow-md shadow-amber-500/30 bg-slate-800"
               />
-              <span className="absolute -top-2.5 -right-2.5 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-xs shadow">
-                👑 #1
+              <span className="absolute -top-2.5 -right-2.5 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-xs shadow flex items-center gap-1">
+                <Crown className="w-3.5 h-3.5 fill-slate-950 shrink-0" />
+                <span>#1</span>
               </span>
             </div>
             <div className="space-y-1 text-left">

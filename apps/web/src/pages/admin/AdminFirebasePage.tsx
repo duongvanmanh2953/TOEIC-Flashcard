@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Copy,
   Check,
+  Lightbulb,
 } from 'lucide-react';
 import {
   getActiveFirebaseConfig,
@@ -312,8 +313,9 @@ export const AdminFirebasePage: React.FC = () => {
                 placeholder={`const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "vocabflow.firebaseapp.com",\n  projectId: "vocabflow-prod",\n  storageBucket: "vocabflow-prod.appspot.com",\n  messagingSenderId: "123456789",\n  appId: "1:123456789:web:abcdef"\n};`}
                 className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-xs text-indigo-600 dark:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
               />
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                💡 Hệ thống tự động phân tích và trích xuất các khóa <code>apiKey</code>, <code>projectId</code>, <code>authDomain</code>, <code>storageBucket</code>...
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>Hệ thống tự động phân tích và trích xuất các khóa <code>apiKey</code>, <code>projectId</code>, <code>authDomain</code>, <code>storageBucket</code>...</span>
               </p>
             </div>
           ) : (

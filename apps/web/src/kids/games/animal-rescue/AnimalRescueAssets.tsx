@@ -437,7 +437,7 @@ export const RescueChainsOverlay: React.FC<RescueChainsOverlayProps> = ({
             cy={270}
             lockNumber={1}
             isUnlocked={false}
-            label="✂️ MỞ XÍCH 1"
+            label="MỞ XÍCH 1"
             onClick={() => onUnlockChain(0)}
           />
         </g>
@@ -464,7 +464,7 @@ export const RescueChainsOverlay: React.FC<RescueChainsOverlayProps> = ({
             cy={270}
             lockNumber={2}
             isUnlocked={false}
-            label="✂️ MỞ XÍCH 2"
+            label="MỞ XÍCH 2"
             onClick={() => onUnlockChain(1)}
           />
         </g>
@@ -491,7 +491,7 @@ export const RescueChainsOverlay: React.FC<RescueChainsOverlayProps> = ({
             cy={310}
             lockNumber={3}
             isUnlocked={false}
-            label="🔑 MỞ XÍCH 3"
+            label="MỞ XÍCH 3"
             onClick={() => onUnlockChain(2)}
           />
         </g>

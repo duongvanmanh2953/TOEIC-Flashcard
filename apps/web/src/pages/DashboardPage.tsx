@@ -180,7 +180,8 @@ export const DashboardPage: React.FC = () => {
           {/* Quick Win Micro-Learning Selector (2, 5, 10, 15 min) */}
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <span>⚡ Quick Win:</span>
+              <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Quick Win:</span>
             </span>
             <button
               onClick={() => navigate('/review?limit=3')}
@@ -389,7 +390,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
-            {data?.streak?.currentStreak || 0} <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">ngày 🔥</span>
+            {data?.streak?.currentStreak || 0} <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">ngày</span>
           </p>
           <p className="text-xs text-amber-700 dark:text-amber-300 mt-3 font-semibold">
             Kỷ lục cao nhất: <strong className="font-black text-amber-800 dark:text-amber-200">{data?.streak?.longestStreak || 0} ngày</strong>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, BookOpen, Sparkles, Check, Bookmark, ArrowRight, HelpCircle } from 'lucide-react';
+import { Volume2, BookOpen, Sparkles, Check, Bookmark, ArrowRight, HelpCircle, CheckCircle2, XCircle, Lightbulb } from 'lucide-react';
 import { SpeechButton } from '../common/SpeechButton';
 
 export interface VocabularyCardData {
@@ -214,7 +214,7 @@ export const StructuredAICard: React.FC<StructuredAICardProps> = ({
                 >
                   <span>{opt}</span>
                   {isChosen && (
-                    <span>{isCorrect ? '✓' : '✗'}</span>
+                    isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> : <XCircle className="w-4 h-4 text-rose-500 shrink-0" />
                   )}
                 </button>
               );
@@ -222,8 +222,9 @@ export const StructuredAICard: React.FC<StructuredAICardProps> = ({
           </div>
 
           {selectedOption && quizCard.explanation && (
-            <p className="text-xs text-slate-600 dark:text-slate-300 italic pt-2 border-t border-indigo-500/20">
-              💡 {quizCard.explanation}
+            <p className="text-xs text-slate-600 dark:text-slate-300 italic pt-2 border-t border-indigo-500/20 flex items-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>{quizCard.explanation}</span>
             </p>
           )}
         </div>

@@ -18,6 +18,7 @@ import {
   X,
   FileText,
   Lock,
+  Loader2,
 } from 'lucide-react';
 import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
@@ -184,9 +185,9 @@ export const AdminSharedVocabularyPage: React.FC = () => {
 
   const statusOptions = [
     { value: 'ALL', label: 'Tất cả trạng thái' },
-    { value: 'PENDING', label: '⏳ Chờ duyệt (Pending)' },
-    { value: 'APPROVED', label: '✅ Đã duyệt (Approved)' },
-    { value: 'REJECTED', label: '❌ Bị từ chối (Rejected)' },
+    { value: 'PENDING', label: 'Chờ duyệt (Pending)' },
+    { value: 'APPROVED', label: 'Đã duyệt (Approved)' },
+    { value: 'REJECTED', label: 'Bị từ chối (Rejected)' },
   ];
 
   const [spaceFilter, setSpaceFilter] = useState('ALL');
@@ -612,9 +613,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                     {selectedDeck.flags.map((f) => (
                       <span
                         key={f}
-                        className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] font-medium"
+                        className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[10px] font-medium flex items-center gap-1"
                       >
-                        ⚠️ {f.replace(/_/g, ' ')}
+                        <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span>{f.replace(/_/g, ' ')}</span>
                       </span>
                     ))}
                   </div>
@@ -770,7 +772,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 disabled={actionLoading}
                 className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 transition shadow-lg shadow-rose-600/20 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
               >
-                {actionLoading && <span className="animate-spin">⏳</span>}
+                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>Xác Nhận Từ Chối</span>
               </button>
             </div>
@@ -816,7 +818,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 disabled={actionLoading}
                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition disabled:opacity-50 cursor-pointer"
               >
-                {actionLoading ? <span className="animate-spin">⏳</span> : <Check className="w-4 h-4" />}
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 <span>Xác Nhận Duyệt Ngay</span>
               </button>
             </div>
@@ -862,7 +864,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 disabled={actionLoading}
                 className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-600/25 transition disabled:opacity-50 cursor-pointer"
               >
-                {actionLoading ? <span className="animate-spin">⏳</span> : <RotateCcw className="w-4 h-4" />}
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
                 <span>Xác Nhận Thu Hồi</span>
               </button>
             </div>

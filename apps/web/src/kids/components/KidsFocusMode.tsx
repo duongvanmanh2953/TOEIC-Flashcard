@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { KidsParentPinModal } from './KidsParentPinModal';
 
@@ -104,7 +105,7 @@ export const KidsFocusMode: React.FC<KidsFocusModeProps> = ({
                 style={{ width: `${holdProgress}%` }}
               />
             )}
-            <span className="relative z-10">🔒</span>
+            <Lock className="w-3.5 h-3.5 relative z-10 text-amber-950 shrink-0" />
             <span className="relative z-10 font-black">
               {isHolding ? `Giữ để thoát (${Math.round(holdProgress)}%)` : 'Giữ 3s để thoát'}
             </span>

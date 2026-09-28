@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, X, Languages, Sparkles } from 'lucide-react';
+import { Volume2, X, Languages, Sparkles, Lightbulb } from 'lucide-react';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { voiceService } from '../services/voice/voiceService';
 
@@ -129,7 +129,7 @@ export const KidsCornerMascotGuide: React.FC<KidsCornerMascotGuideProps> = ({
           {/* Header row */}
           <div className="flex items-center justify-between pb-1.5 border-b border-amber-100">
             <div className="flex items-center gap-1.5 text-xs font-black text-amber-950">
-              <span className="text-base animate-bounce">💡</span>
+              <Lightbulb className="w-4 h-4 text-amber-500 animate-bounce" />
               <span>Gấu Bobby Hướng Dẫn</span>
             </div>
             <button
@@ -227,7 +227,7 @@ export const KidsCornerMascotGuide: React.FC<KidsCornerMascotGuideProps> = ({
           {isOpen ? (
             <Volume2 className="w-3 h-3 animate-pulse" />
           ) : (
-            <span className="text-[11px]">💡</span>
+            <Lightbulb className="w-3 h-3 text-white" />
           )}
         </div>
       </div>

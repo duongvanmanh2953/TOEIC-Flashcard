@@ -617,8 +617,9 @@ export const AdminVocabularyPage: React.FC = () => {
                             </div>
                           </div>
                           {item.qualityFlags && item.qualityFlags.length > 0 && (
-                            <p className="text-[9px] text-amber-400/80">
-                              ⚠️ {item.qualityFlags.join(', ')}
+                            <p className="text-[9px] text-amber-400/80 flex items-center gap-1">
+                              <AlertTriangle className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                              <span>{item.qualityFlags.join(', ')}</span>
                             </p>
                           )}
                         </div>

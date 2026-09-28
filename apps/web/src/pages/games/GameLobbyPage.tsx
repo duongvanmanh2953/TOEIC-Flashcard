@@ -206,8 +206,9 @@ export const GameLobbyPage: React.FC = () => {
 
               {/* Test mode badge */}
               {lobbyData?.hoursStatus?.testMode && (
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                  ⚡ TEST MODE ACTIVE (24/7 ACCESS)
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>TEST MODE ACTIVE (24/7 ACCESS)</span>
                 </span>
               )}
             </div>
@@ -308,7 +309,10 @@ export const GameLobbyPage: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
               <span className="text-[11px] text-slate-400 block">Chuỗi thắng liên tiếp</span>
-              <span className="text-lg font-bold text-amber-400 tabular-nums">🔥 4 Trận</span>
+              <span className="text-lg font-bold text-amber-400 tabular-nums flex items-center gap-1">
+                <Flame className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>4 Trận</span>
+              </span>
             </div>
           </div>
 

@@ -18,6 +18,8 @@ import {
   Flame,
   ArrowRight,
   CheckCircle,
+  Lightbulb,
+  Star,
 } from 'lucide-react';
 import { RewardCount } from '../../components/RewardCount';
 import { soundManager } from '../../services/sound/KidsSoundManager';
@@ -205,7 +207,7 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = ({
         {(instructionEn || instructionVi) && (
           <div className="mt-1.5 mx-auto max-w-xl flex items-center justify-between gap-2 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-amber-300 shadow-xs">
             <div className="flex items-center gap-2 overflow-hidden">
-              <span className="text-base animate-bounce shrink-0">💡</span>
+              <Lightbulb className="w-4 h-4 text-amber-500 animate-bounce shrink-0" />
               <div className="truncate">
                 {instructionEn && (
                   <span className="text-xs font-black text-amber-950 mr-2">
@@ -249,7 +251,8 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = ({
                 onClick={onContinueRound}
                 className="px-6 py-2.5 sm:px-8 sm:py-3 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs sm:text-sm border-b-4 border-emerald-800 shadow-lg active:scale-95 transition-all flex items-center gap-2 cursor-pointer animate-bounce min-h-[48px]"
               >
-                <span>⭐ BẤM ĐỂ TIẾP TỤC VÒNG {currentRound < totalRounds ? currentRound + 1 : 'KẾT THÚC'} ⭐</span>
+                <Sparkles className="w-4 h-4" />
+                <span>BẤM ĐỂ TIẾP TỤC VÒNG {currentRound < totalRounds ? currentRound + 1 : 'KẾT THÚC'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -267,18 +270,16 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = ({
 
             {/* Crown & Stars celebration */}
             <div className="relative z-10 flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 border-4 border-white shadow-lg flex items-center justify-center text-4xl animate-bounce">
-                🏆
+              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 border-4 border-white shadow-lg flex items-center justify-center text-amber-900 animate-bounce">
+                <Trophy className="w-10 h-10" />
               </div>
               <div className="flex items-center gap-1.5 mt-2.5">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <span
+                  <Star
                     key={i}
-                    className="text-2xl animate-pulse"
+                    className="w-6 h-6 text-amber-500 fill-amber-400 animate-pulse"
                     style={{ animationDelay: `${i * 0.2}s` }}
-                  >
-                    ⭐
-                  </span>
+                  />
                 ))}
               </div>
             </div>
@@ -302,7 +303,7 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = ({
                 <span className="text-[11px] font-bold text-slate-500">Sao Thưởng</span>
                 <p className="text-xl font-black text-amber-600 flex items-center justify-center gap-1">
                   <span>+{game.starsAwarded}</span>
-                  <span className="text-base">⭐</span>
+                  <Star className="w-4 h-4 text-amber-500 fill-amber-400 shrink-0" />
                 </p>
               </div>
               <div className="w-px h-8 bg-amber-200" />

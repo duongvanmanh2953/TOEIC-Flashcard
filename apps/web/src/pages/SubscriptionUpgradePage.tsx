@@ -319,10 +319,15 @@ export const SubscriptionUpgradePage: React.FC = () => {
             </span>
           </button>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-          {billingCycle === 'yearly'
-            ? '🔥 Gói theo năm tiết kiệm chi phí vượt trội so với thanh toán từng tháng'
-            : 'Linh hoạt gia hạn từng tháng, có thể hủy bất kỳ lúc nào'}
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+          {billingCycle === 'yearly' ? (
+            <>
+              <Flame className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Gói theo năm tiết kiệm chi phí vượt trội so với thanh toán từng tháng</span>
+            </>
+          ) : (
+            <span>Linh hoạt gia hạn từng tháng, có thể hủy bất kỳ lúc nào</span>
+          )}
         </p>
       </div>
 
