@@ -56,6 +56,7 @@ import { getSocket } from '../../lib/socket';
 import { VirtualChatPane } from '../chat/VirtualChatPane';
 import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
+import { QuickNoteModal } from '../notes/QuickNoteModal';
 
 export const AppShell: React.FC = () => {
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
@@ -66,7 +67,31 @@ export const AppShell: React.FC = () => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
   const location = useLocation();
-  const isFullHeightChat = location.pathname.startsWith('/coach') || location.pathname.startsWith('/ai-tutor');
+  const isFullHeightPage =
+    location.pathname.startsWith('/coach') ||
+    location.pathname.startsWith('/ai-tutor') ||
+    location.pathname.startsWith('/notes') ||
+    location.pathname.startsWith('/community') ||
+    location.pathname.startsWith('/admin/community');
+
+  // Global Quick Note Modal State
+  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenQuickNote = () => setQuickNoteOpen(true);
+    window.addEventListener('open_quick_note', handleOpenQuickNote);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        setQuickNoteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('open_quick_note', handleOpenQuickNote);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Community E2EE Chat Drawer State
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
@@ -680,6 +705,19 @@ export const AppShell: React.FC = () => {
             <button
               onClick={() => {
                 if (!user || user.isAnonymous) {
+                  promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
+                  return;
+                }
+                setQuickNoteOpen(true);
+              }}
+              title="Ghi chép nhanh (Alt+N)"
+              className="p-2 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition cursor-pointer"
+            >
+              <StickyNote className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (!user || user.isAnonymous) {
                   promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
                   return;
                 }
@@ -840,6 +878,22 @@ export const AppShell: React.FC = () => {
 
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 xl:mx-1" />
 
+            {/* Quick Note Button */}
+            <button
+              onClick={() => {
+                if (!user || user.isAnonymous) {
+                  promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
+                  return;
+                }
+                setQuickNoteOpen(true);
+              }}
+              title="Ghi chép nhanh (Alt+N)"
+              className="btn-glass-amber btn-glass-sm !px-2.5 font-bold cursor-pointer"
+            >
+              <StickyNote className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="hidden xl:inline">Ghi chú nhanh</span>
+            </button>
+
             {/* Notification Bell with Badge & Dropdown */}
             <NotificationBell />
 
@@ -861,12 +915,12 @@ export const AppShell: React.FC = () => {
           </div>
         </header>
 
-        {/* Routed Pages Container — Space-Optimized: tight padding for chat, standard for other pages */}
+        {/* Routed Pages Container — Space-Optimized: full height for rich interactive workspaces */}
         <main
           data-scroll-container="true"
           className={`flex-1 w-full min-h-0 ${
-            isFullHeightChat
-              ? 'flex flex-col overflow-hidden p-0 max-w-none pb-14 lg:p-3 lg:pb-2.5 lg:max-w-[1680px] lg:mx-auto'
+            isFullHeightPage
+              ? 'flex flex-col overflow-hidden p-0 max-w-none h-full'
               : 'max-w-[1680px] mx-auto p-3 sm:p-5 lg:p-6'
           }`}
         >
@@ -1407,6 +1461,31 @@ export const AppShell: React.FC = () => {
           );
         })()}
       </ModalPortal>
+
+      {/* Global Floating Quick Note FAB Button (Visible on every page) */}
+      <button
+        onClick={() => {
+          if (!user || user.isAnonymous) {
+            promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
+            return;
+          }
+          setQuickNoteOpen(true);
+        }}
+        aria-label="Ghi chép nhanh"
+        title="Ghi chép nhanh (Alt+N)"
+        className="fixed bottom-20 lg:bottom-6 right-5 z-40 px-3.5 py-2.5 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-xl shadow-amber-500/30 border border-white/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer"
+      >
+        <StickyNote className="w-4 h-4 group-hover:rotate-12 transition-transform shrink-0" />
+        <span className="text-xs font-bold whitespace-nowrap">
+          Ghi chép nhanh <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-[10px] font-mono">Alt+N</kbd>
+        </span>
+      </button>
+
+      {/* Global Quick Note Modal */}
+      <QuickNoteModal
+        isOpen={quickNoteOpen}
+        onClose={() => setQuickNoteOpen(false)}
+      />
     </div>
   );
 };
