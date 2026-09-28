@@ -205,10 +205,10 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       // Auto login with new JWT session
       if (res.data?.accessToken) {
         localStorage.setItem('vocabflow_access_token', res.data.accessToken);
-        localStorage.setItem('leximind_access_token', res.data.accessToken);
+        localStorage.setItem('vocabflow_access_token', res.data.accessToken);
         if (res.data.refreshToken) {
           localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
-          localStorage.setItem('leximind_refresh_token', res.data.refreshToken);
+          localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
         }
       }
 

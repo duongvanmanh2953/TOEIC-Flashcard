@@ -8,6 +8,12 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgot, setShowForgot] = useState(false);
+  const [deviceLimitError, setDeviceLimitError] = useState<{
+    code: string;
+    message: string;
+    limit?: number;
+    activeCount?: number;
+  } | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
@@ -17,12 +23,26 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setDeviceLimitError(null);
     setLoading(true);
     try {
       await login({ email, password });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err?.message || 'Email hoặc mật khẩu không chính xác.');
+      if (
+        err?.code === 'DEVICE_LIMIT_EXCEEDED' ||
+        err?.message?.includes('giới hạn') ||
+        err?.message?.includes('thiết bị')
+      ) {
+        setDeviceLimitError({
+          code: err?.code || 'DEVICE_LIMIT_EXCEEDED',
+          message: err?.message || 'Tài khoản đã đạt giới hạn thiết bị đăng nhập.',
+          limit: err?.limit || 3,
+          activeCount: err?.activeCount || 3,
+        });
+      } else {
+        setError(err?.message || 'Email hoặc mật khẩu không chính xác.');
+      }
     } finally {
       setLoading(false);
     }
@@ -39,9 +59,27 @@ export const LoginPage: React.FC = () => {
           />
           <h2 className="text-2xl font-bold tracking-tight">Chào mừng trở lại</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Đăng nhập vào <span className="font-semibold text-indigo-600 dark:text-indigo-400">VocabFlow</span> để tiếp tục phiên học
+            Đăng nhập vào <span className="font-semibold text-indigo-600 dark:text-indigo-400">VocabFlow AI</span> để tiếp tục phiên học
           </p>
         </div>
+
+        {deviceLimitError && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs space-y-2">
+            <div className="flex items-center gap-2 font-bold text-amber-700 dark:text-amber-400 text-sm">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <span>Đã Đạt Giới Hạn Thiết Bị Đăng Nhập</span>
+            </div>
+            <p className="leading-relaxed">
+              Tài khoản này hiện đã hoạt động trên{' '}
+              <strong>{deviceLimitError.activeCount || 3} / {deviceLimitError.limit || 3}</strong> thiết bị cho phép.
+              Thiết bị mới của bạn đã được ghi nhận và đưa vào hàng chờ xác minh bảo mật.
+            </p>
+            <div className="p-2.5 rounded-xl bg-amber-500/15 text-[11px] leading-relaxed">
+              💡 <strong>Cách xử lý:</strong> Hãy đăng nhập từ một trong các thiết bị đã dùng trước đó, sau đó vào mục{' '}
+              <span className="font-semibold underline">Hồ sơ → Bảo mật → Quản lý thiết bị</span> để đăng xuất các thiết bị không còn sử dụng.
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-sm flex items-center gap-2">

@@ -160,16 +160,16 @@ async function main() {
   });
   console.log('✅ Account 2 created: admin@vocabflow.ai / admin123 (Role: SUPER_ADMIN, Pro: ACTIVE Lifetime)');
 
-  // Also sync admin@leximind.ai for backward compatibility
+  // Also sync admin@vocabflow.ai for backward compatibility
   const legacyAdmin = await prisma.user.upsert({
-    where: { email: 'admin@leximind.ai' },
+    where: { email: 'admin@vocabflow.ai' },
     update: {
       role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
       passwordHash: adminHash,
     },
     create: {
-      email: 'admin@leximind.ai',
+      email: 'admin@vocabflow.ai',
       username: 'admin_legacy',
       displayName: 'System Admin (Legacy)',
       passwordHash: adminHash,

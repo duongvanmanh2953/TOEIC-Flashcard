@@ -1,4 +1,4 @@
-# LexiMind AI — Full System Audit Report (Phase 0)
+# VocabFlow AI — Full System Audit Report (Phase 0)
 
 > **Evaluation Principle**: "Good foundation, but several areas are not production-polished."  
 > **Approach**: KEEP → REFACTOR → IMPROVE → REPLACE ONLY WHEN NECESSARY.
@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary
 
-LexiMind AI has established a strong architectural baseline with a solid monorepo setup (NestJS + Prisma + PostgreSQL + Redis backend; Vite + React + TypeScript + TailwindCSS frontend; multi-container Docker Compose with Nginx reverse proxy). 
+VocabFlow AI has established a strong architectural baseline with a solid monorepo setup (NestJS + Prisma + PostgreSQL + Redis backend; Vite + React + TypeScript + TailwindCSS frontend; multi-container Docker Compose with Nginx reverse proxy). 
 
 However, deep operational analysis reveals that several core subsystems require hardening, architectural refinement, and domain uncoupling to reach production-grade maturity:
 1. **Domain Overlap**: Customer support conversations, user feedback, feature requests, and bug reports share adjacent workflows but lack distinct lifecycle states, operational queues, and administrative assignment.

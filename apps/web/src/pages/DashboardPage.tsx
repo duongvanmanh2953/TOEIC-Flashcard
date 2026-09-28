@@ -45,12 +45,12 @@ export const DashboardPage: React.FC = () => {
   const [quotas, setQuotas] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSpotlight, setShowSpotlight] = useState(() => {
-    return localStorage.getItem('leximind_hide_dash_spotlight') !== 'true';
+    return localStorage.getItem('vocabflow_hide_dash_spotlight') !== 'true';
   });
 
   const dismissSpotlight = () => {
     setShowSpotlight(false);
-    localStorage.setItem('leximind_hide_dash_spotlight', 'true');
+    localStorage.setItem('vocabflow_hide_dash_spotlight', 'true');
   };
 
   useEffect(() => {

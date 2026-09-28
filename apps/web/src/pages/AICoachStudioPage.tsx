@@ -180,12 +180,12 @@ export const AICoachStudioPage: React.FC = () => {
 
   // Hero banner dismiss state
   const [showHeroBanner, setShowHeroBanner] = useState(() => {
-    return localStorage.getItem('leximind_hide_coach_hero') !== 'true';
+    return localStorage.getItem('vocabflow_hide_coach_hero') !== 'true';
   });
 
   const dismissHeroBanner = () => {
     setShowHeroBanner(false);
-    localStorage.setItem('leximind_hide_coach_hero', 'true');
+    localStorage.setItem('vocabflow_hide_coach_hero', 'true');
   };
 
   // ==========================================
@@ -1016,7 +1016,7 @@ export const AICoachStudioPage: React.FC = () => {
           <button
             onClick={() => {
               setShowHeroBanner(true);
-              localStorage.removeItem('leximind_hide_coach_hero');
+              localStorage.removeItem('vocabflow_hide_coach_hero');
             }}
             className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 font-medium transition py-0.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
             title="Hiện lại banner giới thiệu"

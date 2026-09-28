@@ -3,9 +3,10 @@ import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { FeedbackModule } from '../feedback/feedback.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [FeedbackModule, SubscriptionsModule],
+  imports: [FeedbackModule, SubscriptionsModule, AuthModule],
   controllers: [AdminController],
   providers: [AdminService],
   exports: [AdminService],

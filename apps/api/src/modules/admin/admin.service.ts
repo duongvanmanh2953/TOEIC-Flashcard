@@ -10,12 +10,19 @@ import {
   SupportPriority,
   CefrLevel,
 } from '@prisma/client';
+import { DeviceSecurityService } from '../auth/device-security.service';
+import { AdminChangePasswordDto } from '../auth/dto/change-password.dto';
+import * as bcrypt from 'bcrypt';
+import { PASSWORD_REGEX, PASSWORD_STANDARD_MESSAGE } from '../auth/dto/password-reset.dto';
 
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private deviceSecurityService: DeviceSecurityService,
+  ) {}
 
   /**
    * 1. ULTRA OVERVIEW COMMAND CENTER
@@ -932,6 +939,53 @@ export class AdminService {
         actor: { select: { id: true, displayName: true, email: true, role: true } },
       },
     });
+  }
+
+  /**
+   * Admin Change Password:
+   * Hashes new password, logs out all active sessions, BUT preserves Keypass in DB untouched!
+   */
+  async adminChangePassword(adminId: string, dto: AdminChangePasswordDto) {
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin || (admin.role !== Role.ADMIN && admin.role !== Role.SUPER_ADMIN)) {
+      throw new BadRequestException('Tài khoản quản trị viên không hợp lệ.');
+    }
+
+    const isMatch = await bcrypt.compare(dto.currentPassword || '', admin.passwordHash);
+    if (!isMatch) {
+      throw new BadRequestException('Mật khẩu quản trị viên hiện tại không chính xác.');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+    }
+
+    if (!PASSWORD_REGEX.test(dto.newPassword)) {
+      throw new BadRequestException(PASSWORD_STANDARD_MESSAGE);
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    // Update password only - keypass in AdminSecurity is strictly preserved!
+    await this.prisma.user.update({
+      where: { id: adminId },
+      data: {
+        passwordHash: newPasswordHash,
+        refreshToken: null,
+      },
+    });
+
+    // Revoke all sessions and devices
+    await this.deviceSecurityService.revokeAllUserSessionsAndDevices(adminId);
+
+    return {
+      success: true,
+      message: 'Đổi mật khẩu Quản trị viên thành công! Toàn bộ phiên đăng nhập đã được đăng xuất an toàn. Khóa bảo mật (Keypass) được bảo lưu nguyên vẹn.',
+      requireReLogin: true,
+    };
   }
 
   /**

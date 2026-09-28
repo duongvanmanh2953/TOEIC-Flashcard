@@ -147,7 +147,7 @@ export const AppShell: React.FC = () => {
   const [showSupportBtn, setShowSupportBtn] = useState(() => {
     return (
       localStorage.getItem('vocabflow_show_support_btn') !== 'false' &&
-      localStorage.getItem('leximind_show_support_btn') !== 'false'
+      localStorage.getItem('vocabflow_show_support_btn') !== 'false'
     );
   });
   const navigate = useNavigate();
@@ -156,7 +156,7 @@ export const AppShell: React.FC = () => {
     const handleStorage = () => {
       setShowSupportBtn(
         localStorage.getItem('vocabflow_show_support_btn') !== 'false' &&
-        localStorage.getItem('leximind_show_support_btn') !== 'false'
+        localStorage.getItem('vocabflow_show_support_btn') !== 'false'
       );
     };
     window.addEventListener('storage', handleStorage);

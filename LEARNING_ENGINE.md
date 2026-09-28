@@ -1,6 +1,6 @@
 # Spaced Repetition & Learning Science Engine
 
-LexiMind AI replaces static intervals (Day 1 $\rightarrow$ Day 2 $\rightarrow$ Day 4) with an **Adaptive Spaced Repetition Engine** inspired by FSRS (Free Spaced Repetition Scheduler) and SuperMemo SM-2+ principles.
+VocabFlow AI replaces static intervals (Day 1 $\rightarrow$ Day 2 $\rightarrow$ Day 4) with an **Adaptive Spaced Repetition Engine** inspired by FSRS (Free Spaced Repetition Scheduler) and SuperMemo SM-2+ principles.
 
 ---
 

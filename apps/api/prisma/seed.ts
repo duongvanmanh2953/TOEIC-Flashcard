@@ -64,7 +64,7 @@ function slugify(text: string): string {
 }
 
 async function main() {
-  console.log('🌱 Starting LexiMind AI database seeding...');
+  console.log('🌱 Starting VocabFlow AI database seeding...');
 
   // 1. Create Achievements
   const achievements = [
@@ -88,7 +88,7 @@ async function main() {
   // 2. Create Default Users (Demo & Admin)
   const crypto = require('crypto');
   const learnerPassword = process.env.INITIAL_LEARNER_PASSWORD || crypto.randomBytes(12).toString('hex');
-  const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@leximind.ai';
+  const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@vocabflow.ai';
   const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
 
   console.log(`[SECURE] Admin password generated or loaded from ENV. Check your logs or .env file.`);

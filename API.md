@@ -1,4 +1,4 @@
-# API Specification — LexiMind AI
+# API Specification — VocabFlow AI
 
 Base URL: `/api/v1`
 

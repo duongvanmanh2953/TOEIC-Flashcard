@@ -1,4 +1,4 @@
-# LexiMind AI — Security, RBAC & Secret Hygiene
+# VocabFlow AI — Security, RBAC & Secret Hygiene
 
 ## 1. Role-Based Access Control (RBAC)
 - Supported Roles: `USER`, `PREMIUM_USER`, `ADMIN`, `SUPER_ADMIN`.

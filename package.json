@@ -1,7 +1,7 @@
 {
-  "name": "leximind-ai",
+  "name": "vocabflow-ai",
   "version": "1.0.0",
-  "description": "LexiMind AI — Advanced English Vocabulary Learning Platform with Spaced Repetition & AI Tutor",
+  "description": "VocabFlow AI — Advanced English Vocabulary Learning Platform with Spaced Repetition & AI Tutor",
   "private": true,
   "workspaces": [
     "apps/*"
@@ -17,7 +17,7 @@
     "admin:reset": "npx ts-node apps/api/updateAdminPass.ts"
   },
   "keywords": [
-    "leximind",
+    "vocabflow",
     "vocabulary",
     "spaced-repetition",
     "nestjs",
@@ -25,6 +25,6 @@
     "toeic",
     "english-learning"
   ],
-  "author": "LexiMind Team",
+  "author": "VocabFlow Team",
   "license": "MIT"
 }

@@ -1,4 +1,4 @@
-# LexiMind AI — Feedback & Public Roadmap Architecture
+# VocabFlow AI — Feedback & Public Roadmap Architecture
 
 ## 1. Domain Separation
 Feedback and Bug Reports represent asynchronous user-driven suggestions, distinct from real-time customer support conversations (`/admin/conversations`).

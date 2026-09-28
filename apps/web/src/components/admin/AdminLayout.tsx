@@ -49,7 +49,7 @@ export const AdminLayout: React.FC = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('leximind_admin_sidebar_collapsed') === 'true';
+    return localStorage.getItem('vocabflow_admin_sidebar_collapsed') === 'true';
   });
 
   // Auto-close mobile sidebar whenever route changes (Requirement 3)
@@ -73,7 +73,7 @@ export const AdminLayout: React.FC = () => {
   const toggleSidebarCollapse = () => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem('leximind_admin_sidebar_collapsed', String(next));
+      localStorage.setItem('vocabflow_admin_sidebar_collapsed', String(next));
       return next;
     });
   };

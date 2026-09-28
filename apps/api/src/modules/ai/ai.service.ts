@@ -688,7 +688,116 @@ Reply with your answer A, B, or C to test your recall!`;
   }
 
   async tutorChat(message: string, userId: string, contextWord?: string, language: string = 'en') {
-    return this.pipelineQuery(userId, message, contextWord, language);
+    // 1. Fetch user memory profile & weak words
+    const userProfile = await this.prisma.userProfile.findUnique({
+      where: { userId },
+      select: { primaryGoal: true, secondaryGoal: true, englishLevel: true },
+    });
+
+    const weakVocabs = await this.prisma.userVocabulary.findMany({
+      where: {
+        userId,
+        OR: [{ slipRisk: { gt: 0.4 } }, { productionScore: { lt: 0.45 } }],
+      },
+      take: 5,
+      include: { vocabulary: { select: { word: true } } },
+    });
+
+    const goal = userProfile?.primaryGoal || 'TOEIC & Business Communication';
+    const weakWordList = weakVocabs.map((v) => v.vocabulary.word);
+
+    let enrichedQuery = message;
+    if (weakWordList.length > 0) {
+      enrichedQuery += `\n[Tutor Context: Learner goal is "${goal}". Current weak words needing active practice: ${weakWordList.join(', ')}. Naturally encourage using these words.]`;
+    }
+
+    return this.pipelineQuery(userId, enrichedQuery, contextWord, language);
+  }
+
+  /**
+   * Analyze AI Tutor Conversation to update Personal Vocabulary Brain & Closed Learning Loop
+   */
+  async analyzeTutorConversation(
+    userId: string,
+    messages: Array<{ role: string; content: string }>,
+  ) {
+    if (!messages || messages.length === 0) {
+      return {
+        usedNaturally: [],
+        needsReinforcement: [],
+        newVocabulary: [],
+        summary: 'Chưa có đủ tin nhắn hội thoại để phân tích.',
+      };
+    }
+
+    const userText = messages
+      .filter((m) => m.role === 'user')
+      .map((m) => m.content)
+      .join(' ')
+      .toLowerCase();
+
+    const userTokens = Array.from(
+      new Set(userText.replace(/[^a-zA-Z\s-]/g, ' ').split(/\s+/).filter((w) => w.length >= 3)),
+    );
+
+    // Check against user's vocabulary list
+    const trackedVocabs = await this.prisma.userVocabulary.findMany({
+      where: {
+        userId,
+        vocabulary: { word: { in: userTokens } },
+      },
+      include: { vocabulary: { select: { id: true, word: true } } },
+    });
+
+    const usedNaturally: string[] = [];
+    const needsReinforcement: string[] = [];
+
+    for (const uv of trackedVocabs) {
+      usedNaturally.push(uv.vocabulary.word);
+
+      // Boost production score in closed learning loop
+      const updatedProd = Math.min(1.0, (uv.productionScore || 0.2) + 0.15);
+      await this.prisma.userVocabulary.update({
+        where: { id: uv.id },
+        data: {
+          productionScore: updatedProd,
+          lastReviewMode: 'CONVERSATION',
+        },
+      });
+
+      // Log journey event
+      await this.prisma.wordJourneyEvent.create({
+        data: {
+          userId,
+          vocabularyId: uv.vocabulary.id,
+          eventType: 'AI_CONVERSATION_USED',
+          details: `Học viên chủ động sử dụng từ "${uv.vocabulary.word}" trong phiên hội thoại cùng AI Tutor`,
+          metadata: { newProductionScore: updatedProd },
+        },
+      }).catch(() => {});
+    }
+
+    // Find weak words that user didn't use in this session
+    const otherWeak = await this.prisma.userVocabulary.findMany({
+      where: {
+        userId,
+        productionScore: { lt: 0.4 },
+        vocabulary: { word: { notIn: userTokens } },
+      },
+      take: 3,
+      include: { vocabulary: { select: { word: true } } },
+    });
+
+    for (const w of otherWeak) {
+      needsReinforcement.push(w.vocabulary.word);
+    }
+
+    return {
+      usedNaturally,
+      needsReinforcement,
+      newVocabulary: userTokens.slice(0, 3).filter((w) => !trackedVocabs.some((t) => t.vocabulary.word === w)),
+      summary: `Phân tích hoàn tất: Bạn đã sử dụng tự nhiên ${usedNaturally.length} từ vựng trong buổi trò chuyện hôm nay!`,
+    };
   }
 
   /**

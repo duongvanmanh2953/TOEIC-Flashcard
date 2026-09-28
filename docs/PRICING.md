@@ -1,4 +1,4 @@
-# LexiMind AI — Smart Pricing & Cost Model Engine (`/admin/pricing`)
+# VocabFlow AI — Smart Pricing & Cost Model Engine (`/admin/pricing`)
 
 ## 1. Overview
 The Pricing Engine models unit economics, dynamically calculates sustainable subscription prices, and configures tier usage quotas without hard-coding business logic.

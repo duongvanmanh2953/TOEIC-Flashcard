@@ -165,6 +165,17 @@ export class AIController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('tutor/analyze')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Analyze AI tutor conversation and reinforce Personal Vocabulary Brain' })
+  analyzeConversation(
+    @CurrentUser('id') userId: string,
+    @Body('messages') messages: Array<{ role: string; content: string }>,
+  ) {
+    return this.aiService.analyzeTutorConversation(userId, messages);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('story')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Generate a short context story containing target vocabulary words' })

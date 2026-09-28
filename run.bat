@@ -1,7 +1,7 @@
 @echo off
-title LexiMind AI - Starting System
+title VocabFlow AI - Starting System
 echo ===================================================
-echo     LEXIMIND AI - ADVANCED VOCABULARY PLATFORM
+echo     VOCABFLOW AI - ADVANCED VOCABULARY PLATFORM
 echo ===================================================
 echo.
 echo [1/2] Checking Docker...
@@ -25,7 +25,7 @@ echo  * Backend API:     http://localhost:4000/api/v1
 echo  * Swagger API Doc: http://localhost:4000/api/docs
 echo.
 echo  Tai khoan thu nghiem:
-echo    - Email: learner@leximind.ai
+echo    - Email: learner@vocabflow.ai
 echo    - Pass:  password123
 echo ===================================================
 echo.

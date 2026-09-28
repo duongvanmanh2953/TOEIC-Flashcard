@@ -160,9 +160,9 @@ async function main() {
   });
   console.log('✅ Account 2 created: admin@vocabflow.ai / admin123 (Role: SUPER_ADMIN, Pro: ACTIVE Lifetime)');
 
-  // Also update admin@leximind.ai so both email logins work seamlessly
+  // Also update admin@vocabflow.ai so both email logins work seamlessly
   const existingLegacyAdmin = await prisma.user.findUnique({
-    where: { email: 'admin@leximind.ai' },
+    where: { email: 'admin@vocabflow.ai' },
   });
   if (existingLegacyAdmin) {
     await prisma.user.update({
@@ -184,7 +184,7 @@ async function main() {
         currentPeriodEnd: lifetimeEnd,
       },
     });
-    console.log('✅ Legacy Admin synced: admin@leximind.ai / admin123 (Role: SUPER_ADMIN, Pro: ACTIVE Lifetime)');
+    console.log('✅ Legacy Admin synced: admin@vocabflow.ai / admin123 (Role: SUPER_ADMIN, Pro: ACTIVE Lifetime)');
   }
 
   // Also upgrade learner@vocabflow.ai to Pro

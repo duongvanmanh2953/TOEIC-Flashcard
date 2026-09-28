@@ -1,4 +1,4 @@
-# LexiMind AI — Admin Operations & Architecture Audit (Phase 0)
+# VocabFlow AI — Admin Operations & Architecture Audit (Phase 0)
 
 > **Core Standard**: The Admin Dashboard must feel like a high-velocity **Product Operations Center**, not a generic CRUD admin portal.
 

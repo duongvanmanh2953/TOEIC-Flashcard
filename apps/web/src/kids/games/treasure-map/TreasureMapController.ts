@@ -16,7 +16,7 @@ import {
 import { treasureAudio } from './TreasureMapAudio';
 import { generateBurstParticles, SparkleParticle } from './TreasureMapAnimation';
 
-const STORAGE_KEY = 'leximind_treasure_map_v1';
+const STORAGE_KEY = 'vocabflow_treasure_map_v1';
 
 export function useTreasureMapController(onStarsAwarded?: (stars: number) => void) {
   // 1. Persistent State

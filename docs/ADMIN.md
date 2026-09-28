@@ -1,7 +1,7 @@
-# LexiMind AI — Admin Operations & Architecture (Master Prompt V10)
+# VocabFlow AI — Admin Operations & Architecture (Master Prompt V10)
 
 ## 1. Executive Summary
-The LexiMind AI Admin Center is the operating system and command center of the platform. It provides strict domain separation, real-time telemetry, vocabulary lifecycle management, learner community moderation, pricing intelligence, financial accounting, and platform security.
+The VocabFlow AI Admin Center is the operating system and command center of the platform. It provides strict domain separation, real-time telemetry, vocabulary lifecycle management, learner community moderation, pricing intelligence, financial accounting, and platform security.
 
 ## 2. Admin Router & Navigation Policy
 - **Root Admin Route**: `/admin` is the direct Admin Dashboard / Overview.

@@ -7,14 +7,17 @@ import {
   HttpCode,
   HttpStatus,
   Res,
+  Req,
+  Headers,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh.dto';
 import { ForgotPasswordDto, VerifyResetOtpDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -86,9 +89,49 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Headers('x-device-id') deviceIdHeader: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.login(dto);
+    const rawUa = req.headers['user-agent'] || '';
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.ip ||
+      req.socket?.remoteAddress ||
+      '127.0.0.1';
+
+    let os = dto.os;
+    if (!os) {
+      if (/windows/i.test(rawUa)) os = 'Windows';
+      else if (/macintosh|mac os x/i.test(rawUa)) os = 'macOS';
+      else if (/iphone|ipad|ipod/i.test(rawUa)) os = 'iOS';
+      else if (/android/i.test(rawUa)) os = 'Android';
+      else if (/linux/i.test(rawUa)) os = 'Linux';
+      else os = 'Web Client';
+    }
+
+    let browser = dto.browser;
+    if (!browser) {
+      if (/edg/i.test(rawUa)) browser = 'Microsoft Edge';
+      else if (/chrome|crios/i.test(rawUa)) browser = 'Chrome';
+      else if (/firefox|fxios/i.test(rawUa)) browser = 'Firefox';
+      else if (/safari/i.test(rawUa)) browser = 'Safari';
+      else browser = 'Web Browser';
+    }
+
+    const deviceId = dto.deviceId || deviceIdHeader || undefined;
+    const deviceName = dto.deviceName || `${browser} trên ${os}`;
+
+    const enrichedDto: LoginDto = {
+      ...dto,
+      deviceId,
+      deviceName,
+      os,
+      browser,
+      deviceType: dto.deviceType || (/(mobile|android|iphone|ipad)/i.test(rawUa) ? 'MOBILE' : 'DESKTOP'),
+    };
+
+    const result = await this.authService.login(enrichedDto);
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
     return result;
   }
@@ -194,4 +237,19 @@ export class AuthController {
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
     return result;
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change user password and revoke all active sessions across all devices' })
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    this.clearAuthCookies(res);
+    return this.authService.changePassword(userId, dto);
+  }
 }
+

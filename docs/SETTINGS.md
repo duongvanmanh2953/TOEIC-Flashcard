@@ -1,4 +1,4 @@
-# LexiMind AI — System Settings & Configuration Plane
+# VocabFlow AI — System Settings & Configuration Plane
 
 ## 1. 13-Section Configuration Model
 1. `general`: Site name, tagline, official support email, maintenance mode, user registration.

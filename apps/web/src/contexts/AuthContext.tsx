@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const savedTheme =
       (localStorage.getItem('vocabflow_theme') as 'light' | 'dark') ||
-      (localStorage.getItem('leximind_theme') as 'light' | 'dark') ||
+      (localStorage.getItem('vocabflow_theme') as 'light' | 'dark') ||
       'dark';
     setTheme(savedTheme);
     document.documentElement.classList.toggle('dark', savedTheme === 'dark');
@@ -226,7 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Restore session on app load
   useEffect(() => {
-    const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('leximind_access_token');
+    const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('vocabflow_access_token');
     if (token) {
       refreshProfile().finally(() => {
         // Handled in refreshProfile
@@ -358,8 +358,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       localStorage.removeItem('vocabflow_access_token');
       localStorage.removeItem('vocabflow_refresh_token');
-      localStorage.removeItem('leximind_access_token');
-      localStorage.removeItem('leximind_refresh_token');
+      localStorage.removeItem('vocabflow_access_token');
+      localStorage.removeItem('vocabflow_refresh_token');
 
       // Purge IndexedDB offline cache so switching accounts never leaks previous user's data
       await idbClearAllUserData().catch(() => {});

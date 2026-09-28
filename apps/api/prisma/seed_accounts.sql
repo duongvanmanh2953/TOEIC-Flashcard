@@ -178,7 +178,7 @@ VALUES (
   NOW()
 );
 
--- 4. Đồng bộ quyền Pro cho tài khoản demo 'learner@vocabflow.ai' & legacy admin 'admin@leximind.ai'
+-- 4. Đồng bộ quyền Pro cho tài khoản demo 'learner@vocabflow.ai' & legacy admin 'admin@vocabflow.ai'
 UPDATE "User"
 SET "role" = 'PREMIUM_USER', "status" = 'ACTIVE'
 WHERE "email" = 'learner@vocabflow.ai';
@@ -197,9 +197,9 @@ FROM "User" WHERE "email" = 'learner@vocabflow.ai';
 
 UPDATE "User"
 SET "role" = 'SUPER_ADMIN', "status" = 'ACTIVE'
-WHERE "email" = 'admin@leximind.ai';
+WHERE "email" = 'admin@vocabflow.ai';
 
-DELETE FROM "Subscription" WHERE "userId" = (SELECT "id" FROM "User" WHERE "email" = 'admin@leximind.ai');
+DELETE FROM "Subscription" WHERE "userId" = (SELECT "id" FROM "User" WHERE "email" = 'admin@vocabflow.ai');
 INSERT INTO "Subscription" ("id", "userId", "planId", "status", "currentPeriodEnd", "createdAt", "updatedAt")
 SELECT 
   'sub-admin-legacy',
@@ -209,4 +209,4 @@ SELECT
   '2099-12-31 23:59:59+00'::timestamptz,
   NOW(),
   NOW()
-FROM "User" WHERE "email" = 'admin@leximind.ai';
+FROM "User" WHERE "email" = 'admin@vocabflow.ai';

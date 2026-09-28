@@ -1,7 +1,7 @@
 {
-  "name": "@leximind/api",
+  "name": "@vocabflow/api",
   "version": "1.0.0",
-  "description": "LexiMind AI Backend API (NestJS + Prisma + PostgreSQL)",
+  "description": "VocabFlow AI Backend API (NestJS + Prisma + PostgreSQL)",
   "private": true,
   "scripts": {
     "build": "nest build",

@@ -68,12 +68,12 @@ export const GameLobbyPage: React.FC = () => {
   const [selectedGameMode, setSelectedGameMode] = useState<string>('TRANSLATION_RUSH');
   const [joining, setJoining] = useState(false);
   const [showHeroBanner, setShowHeroBanner] = useState(() => {
-    return localStorage.getItem('leximind_hide_games_hero') !== 'true';
+    return localStorage.getItem('vocabflow_hide_games_hero') !== 'true';
   });
 
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('leximind_fav_games') || '["FOUR_SKILLS_ARENA"]');
+      return JSON.parse(localStorage.getItem('vocabflow_fav_games') || '["FOUR_SKILLS_ARENA"]');
     } catch {
       return ['FOUR_SKILLS_ARENA'];
     }
@@ -83,14 +83,14 @@ export const GameLobbyPage: React.FC = () => {
     e.stopPropagation();
     setFavorites((prev) => {
       const next = prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode];
-      localStorage.setItem('leximind_fav_games', JSON.stringify(next));
+      localStorage.setItem('vocabflow_fav_games', JSON.stringify(next));
       return next;
     });
   };
 
   const dismissHeroBanner = () => {
     setShowHeroBanner(false);
-    localStorage.setItem('leximind_hide_games_hero', 'true');
+    localStorage.setItem('vocabflow_hide_games_hero', 'true');
   };
 
   useEffect(() => {
@@ -221,7 +221,7 @@ export const GameLobbyPage: React.FC = () => {
           <button
             onClick={() => {
               setShowHeroBanner(true);
-              localStorage.removeItem('leximind_hide_games_hero');
+              localStorage.removeItem('vocabflow_hide_games_hero');
             }}
             className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 font-medium transition py-0.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
             title="Hiện lại banner giới thiệu"

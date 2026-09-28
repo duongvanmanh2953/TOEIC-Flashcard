@@ -145,23 +145,23 @@ export const MyWordBankPage: React.FC = () => {
 
   // View Modes: 'grid' (dưới ô) vs 'list' (danh sách)
   const [deckViewMode, setDeckViewMode] = useState<'grid' | 'list'>(() => {
-    return (localStorage.getItem('leximind_deck_view_mode') as 'grid' | 'list') || 'grid';
+    return (localStorage.getItem('vocabflow_deck_view_mode') as 'grid' | 'list') || 'grid';
   });
   const [wordViewMode, setWordViewMode] = useState<'grid' | 'list'>(() => {
-    return (localStorage.getItem('leximind_word_view_mode') as 'grid' | 'list') || 'grid';
+    return (localStorage.getItem('vocabflow_word_view_mode') as 'grid' | 'list') || 'grid';
   });
 
   const toggleDeckViewMode = (mode: 'grid' | 'list') => {
     setDeckViewMode(mode);
     try {
-      localStorage.setItem('leximind_deck_view_mode', mode);
+      localStorage.setItem('vocabflow_deck_view_mode', mode);
     } catch {}
   };
 
   const toggleWordViewMode = (mode: 'grid' | 'list') => {
     setWordViewMode(mode);
     try {
-      localStorage.setItem('leximind_word_view_mode', mode);
+      localStorage.setItem('vocabflow_word_view_mode', mode);
     } catch {}
   };
 

@@ -1,4 +1,4 @@
-# LexiMind AI — Financial Intelligence & Accounting Ledger
+# VocabFlow AI — Financial Intelligence & Accounting Ledger
 
 ## 1. Zero Fake Data Commitment
 Financial intelligence displays authentic ledger calculations computed from real `PaymentOrder` and `Subscription` records. When no payment transactions exist, honest empty states are presented.

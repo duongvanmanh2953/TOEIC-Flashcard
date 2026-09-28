@@ -393,4 +393,110 @@ export class MailService {
       );
     }
   }
+
+  /**
+   * Send Device Logout Confirmation OTP to account owner
+   */
+  async sendDeviceLogoutOtp(
+    email: string,
+    otp: string,
+    targetDeviceName: string,
+    displayName?: string,
+  ): Promise<{ delivered: boolean; message: string }> {
+    const transporter = this.getTransporter();
+    if (!transporter) {
+      this.logger.warn(`[DEV SIMULATION] Device Logout OTP for ${email} (Target: ${targetDeviceName}): ${otp}`);
+      return {
+        delivered: false,
+        message: `[MÔ PHỎNG DEV] Mã OTP xác nhận đăng xuất thiết bị của bạn là: ${otp}`,
+      };
+    }
+
+    const fromAddress = process.env.SMTP_FROM || 'VocabFlow Security <onboarding@resend.dev>';
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
+      <h2 style="color: #4338ca;">Xác nhận đăng xuất thiết bị - VocabFlow AI</h2>
+      <p>Xin chào <strong>${displayName || 'Học viên'}</strong>,</p>
+      <p>Hệ thống nhận được yêu cầu đăng xuất thiết bị <strong>"${targetDeviceName}"</strong> khỏi tài khoản VocabFlow của bạn.</p>
+      <p>Để hoàn tất xác minh chủ sở hữu tài khoản, vui lòng nhập mã OTP sau:</p>
+      <div style="background-color: #f1f5f9; padding: 16px; text-align: center; border-radius: 12px; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #4338ca; margin: 20px 0;">
+        ${otp}
+      </div>
+      <p style="color: #64748b; font-size: 13px;">Mã xác thực có hiệu lực trong <strong>10 phút</strong> và chỉ sử dụng một lần.</p>
+      <p style="color: #dc2626; font-size: 13px;">⚠️ Nếu bạn không thực hiện hành động này, vui lòng bỏ qua email và đổi mật khẩu ngay lập tức để bảo vệ tài khoản.</p>
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+      <p style="font-size: 11px; color: #94a3b8; text-align: center;">© 2026 VocabFlow AI Security. All rights reserved.</p>
+    </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: fromAddress,
+        to: email,
+        subject: `[VocabFlow Security] Mã xác thực đăng xuất thiết bị: ${otp}`,
+        html: htmlContent,
+      });
+      return {
+        delivered: true,
+        message: 'Mã OTP xác thực đã được gửi đến email của bạn.',
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to send logout OTP email: ${err.message}`);
+      throw new BadRequestException(`Không thể gửi email OTP: ${err.message}`);
+    }
+  }
+
+  /**
+   * Send New Device / Risk Event Notification to account owner
+   */
+  async sendNewDeviceRiskAlert(
+    email: string,
+    deviceMeta: {
+      deviceName: string;
+      os?: string;
+      browser?: string;
+      ip?: string;
+      time?: string;
+    },
+    displayName?: string,
+  ): Promise<void> {
+    const transporter = this.getTransporter();
+    const timeStr = deviceMeta.time || new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+    if (!transporter) {
+      this.logger.warn(`[DEV SIMULATION] New device risk alert sent to ${email} for device ${deviceMeta.deviceName}`);
+      return;
+    }
+
+    const fromAddress = process.env.SMTP_FROM || 'VocabFlow Security <onboarding@resend.dev>';
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #fee2e2; border-radius: 16px; background-color: #fffafb;">
+      <h2 style="color: #b91c1c;">Cảnh báo bảo mật: Thiết bị mới đăng nhập</h2>
+      <p>Xin chào <strong>${displayName || 'Học viên'}</strong>,</p>
+      <p>Hệ thống VocabFlow AI phát hiện một lần đăng nhập từ thiết bị mới hoặc tài khoản của bạn đã đạt giới hạn thiết bị cho phép:</p>
+      <div style="background-color: #ffffff; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 16px 0; font-size: 13px; line-height: 1.8;">
+        <div>📱 <strong>Thiết bị:</strong> ${deviceMeta.deviceName}</div>
+        <div>💻 <strong>Hệ điều hành / Trình duyệt:</strong> ${deviceMeta.os || 'Unknown'} / ${deviceMeta.browser || 'Unknown'}</div>
+        <div>🌐 <strong>Địa chỉ IP:</strong> ${deviceMeta.ip || 'Unknown'}</div>
+        <div>⏰ <strong>Thời gian:</strong> ${timeStr}</div>
+      </div>
+      <p style="color: #b91c1c; font-size: 13px; font-weight: bold;">
+        Nếu đây không phải là bạn, vui lòng đăng nhập ngay và vào mục Cài đặt &gt; Bảo mật &gt; Thiết bị để kiểm tra và đăng xuất thiết bị lạ, đồng thời đổi mật khẩu tài khoản ngay lập tức.
+      </p>
+      <hr style="border: none; border-top: 1px solid #fee2e2; margin: 20px 0;" />
+      <p style="font-size: 11px; color: #94a3b8; text-align: center;">© 2026 VocabFlow AI Security Defense System.</p>
+    </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: fromAddress,
+        to: email,
+        subject: `[VocabFlow Security] Cảnh báo đăng nhập từ thiết bị mới: ${deviceMeta.deviceName}`,
+        html: htmlContent,
+      });
+    } catch (err: any) {
+      this.logger.warn(`Failed to send risk alert email: ${err.message}`);
+    }
+  }
 }
+

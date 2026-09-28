@@ -345,7 +345,7 @@ export class SubscriptionsService implements OnModuleInit {
     // Thông tin tài khoản ngân hàng nhận VietQR
     const bankId = process.env.VIETQR_BANK_ID || 'MB';
     const accountNo = process.env.VIETQR_ACCOUNT_NO || '0388888888';
-    const accountName = process.env.VIETQR_ACCOUNT_NAME || 'LEXIMIND VOCABFLOW';
+    const accountName = process.env.VIETQR_ACCOUNT_NAME || 'VOCABFLOW VOCABFLOW';
     const template = process.env.VIETQR_TEMPLATE || 'compact2';
 
     // Tạo link ảnh mã VietQR chuẩn NAPAS EMVCo từ VietQR Quick Link Service

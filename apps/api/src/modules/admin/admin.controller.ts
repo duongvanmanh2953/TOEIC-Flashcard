@@ -7,7 +7,13 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Role, FeedbackStatus, FeedbackType, SupportPriority, CefrLevel } from '@prisma/client';
+import { Role, FeedbackStatus, FeedbackType, SupportPriority, CefrLevel, RiskEventStatus } from '@prisma/client';
+import { DeviceSecurityService } from '../auth/device-security.service';
+import {
+  AdminChangePasswordDto,
+  AdminUpdateKeypassDto,
+  AdminResetAllDataDto,
+} from '../auth/dto/change-password.dto';
 
 @ApiTags('Admin Command Center')
 @Controller('admin')
@@ -19,6 +25,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly feedbackService: FeedbackService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly deviceSecurityService: DeviceSecurityService,
   ) {}
 
   @Get('feedback')
@@ -253,6 +260,118 @@ export class AdminController {
   @ApiOperation({ summary: 'Wipe all user data and non-admin accounts, preserving only admin accounts and system constants' })
   wipeUserData(@CurrentUser('id') actorId?: string) {
     return this.adminService.purgeMockData(true, actorId);
+  }
+
+  // =========================================================================
+  // ADMIN SECURITY: RISKY ACCOUNTS, KEYPASS & SYSTEM RESET
+  // =========================================================================
+
+  @Get('security/risky-accounts')
+  @ApiOperation({ summary: 'List accounts with security device risks' })
+  getRiskyAccounts(
+    @Query('status') status?: RiskEventStatus,
+    @Query('search') search?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.deviceSecurityService.getRiskyAccounts({
+      status,
+      search,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+    });
+  }
+
+  @Get('security/risky-accounts/:id')
+  @ApiOperation({ summary: 'Get risk history and device audit details for a specific user' })
+  getRiskAccountDetails(@Param('id') userId: string) {
+    return this.deviceSecurityService.getRiskAccountDetails(userId);
+  }
+
+  @Post('security/risky-accounts/:id/approve')
+  @ApiOperation({ summary: 'Approve a risk device event' })
+  approveRiskDevice(
+    @Param('id') eventId: string,
+    @CurrentUser('id') adminId: string,
+    @Body('note') note?: string,
+  ) {
+    return this.deviceSecurityService.approveRiskEvent(eventId, adminId, note);
+  }
+
+  @Post('security/risky-accounts/:id/block')
+  @ApiOperation({ summary: 'Block a risk device' })
+  blockRiskDevice(
+    @Param('id') eventId: string,
+    @CurrentUser('id') adminId: string,
+    @Body('note') note?: string,
+  ) {
+    return this.deviceSecurityService.blockRiskDevice(eventId, adminId, note);
+  }
+
+  @Post('security/risky-accounts/:id/exempt')
+  @ApiOperation({ summary: 'Exempt a risk event' })
+  exemptRiskEvent(
+    @Param('id') eventId: string,
+    @CurrentUser('id') adminId: string,
+    @Body('note') note?: string,
+  ) {
+    return this.deviceSecurityService.exemptRiskEvent(eventId, adminId, note);
+  }
+
+  @Post('security/risky-accounts/:id/block-account')
+  @ApiOperation({ summary: 'Block an entire user account and revoke all sessions' })
+  blockAccount(
+    @Param('id') userId: string,
+    @CurrentUser('id') adminId: string,
+    @Body('reason') reason?: string,
+  ) {
+    return this.deviceSecurityService.blockAccount(userId, adminId, reason);
+  }
+
+  @Post('security/change-password')
+  @ApiOperation({ summary: 'Admin change password (logs out all devices, preserves keypass)' })
+  adminChangePassword(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: AdminChangePasswordDto,
+  ) {
+    return this.adminService.adminChangePassword(adminId, dto);
+  }
+
+  @Post('security/keypass')
+  @ApiOperation({ summary: 'Update admin system security keypass' })
+  updateAdminKeypass(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: AdminUpdateKeypassDto,
+  ) {
+    return this.deviceSecurityService.updateAdminKeypass(adminId, dto.currentKeypass, dto.newKeypass);
+  }
+
+  @Post('system/reset-all-data')
+  @ApiOperation({ summary: 'Complete safe reset of all application business data (keeps admin and dictionary)' })
+  resetAllData(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: AdminResetAllDataDto,
+  ) {
+    return this.deviceSecurityService.resetAllData(
+      adminId,
+      dto.confirmText,
+      dto.adminPassword,
+      dto.adminKeypass,
+    );
+  }
+
+  @Post('reset-all-data')
+  @ApiOperation({ summary: 'Alias for reset-all-data' })
+  resetAllDataAlias(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: AdminResetAllDataDto,
+  ) {
+    return this.deviceSecurityService.resetAllData(
+      adminId,
+      dto.confirmText,
+      dto.adminPassword,
+      dto.adminKeypass,
+    );
   }
 
   @Get('settings')

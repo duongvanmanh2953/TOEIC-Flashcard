@@ -1,4 +1,4 @@
-# Architecture Audit Report — LexiMind AI (V3)
+# Architecture Audit Report — VocabFlow AI (V3)
 
 ## 1. System Overview
 The application consists of a monorepo containing:

@@ -42,6 +42,7 @@ import {
   CachedWordItem,
   LocalDeck,
 } from '../lib/idb';
+import { WordDiagnosticModal } from '../components/vocabflow/WordDiagnosticModal';
 
 export interface ReviewQueueItem {
   vocabularyId: string;
@@ -228,6 +229,7 @@ function mapToReviewItem(raw: any, defaultTopic = 'General', origin = 'DECK'): R
 }
 
 export const ReviewSessionPage: React.FC = () => {
+  const [diagnosticWordId, setDiagnosticWordId] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
@@ -1096,8 +1098,17 @@ export const ReviewSessionPage: React.FC = () => {
             onFlip={() => setIsFlipped(!isFlipped)}
           />
 
-          {/* Quick Voice Practice Modal Trigger */}
-          <div className="flex justify-end">
+          {/* Quick Voice Practice Modal Trigger & VocabFlow Diagnostic */}
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setDiagnosticWordId(currentItem.vocabularyId)}
+              className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 transition active:scale-95 flex items-center gap-1.5 text-xs font-semibold"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
+              <span>Chẩn đoán vì sao hay quên</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setShowVoicePractice(true)}
@@ -1317,6 +1328,11 @@ export const ReviewSessionPage: React.FC = () => {
           )}
         </div>
       )}
+      {/* VocabFlow Word Diagnostic Modal */}
+      <WordDiagnosticModal
+        vocabularyId={diagnosticWordId}
+        onClose={() => setDiagnosticWordId(null)}
+      />
     </div>
   );
 };

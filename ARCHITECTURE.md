@@ -1,8 +1,8 @@
-# Architecture Specification — LexiMind AI
+# Architecture Specification — VocabFlow AI
 
 ## 1. Architectural Overview
 
-LexiMind AI uses a modern Clean Monorepo Architecture separating backend API services, data persistence, and front-end user experience.
+VocabFlow AI uses a modern Clean Monorepo Architecture separating backend API services, data persistence, and front-end user experience.
 
 ```
                   ┌───────────────────────────────┐

@@ -1,12 +1,12 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: leximind-postgres
+    container_name: vocabflow-postgres
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
-      POSTGRES_DB: ${POSTGRES_DB:-leximind_db}
+      POSTGRES_DB: ${POSTGRES_DB:-vocabflow_db}
     ports:
       - '5432:5432'
     volumes:
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: leximind-redis
+    container_name: vocabflow-redis
     restart: always
     ports:
       - '6379:6379'
@@ -33,7 +33,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: leximind-api
+    container_name: vocabflow-api
     restart: always
     env_file:
       - .env
@@ -41,11 +41,11 @@ services:
       PORT: ${PORT:-4000}
       APP_URL: ${APP_URL:-http://localhost:4000}
       CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/vocabflow_db?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-leximind_jwt_super_secure_access_token_secret_2026}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-leximind_jwt_super_secure_refresh_token_secret_2026}
-      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@leximind.ai}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-vocabflow_jwt_super_secure_access_token_secret_2026}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-vocabflow_jwt_super_secure_refresh_token_secret_2026}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@vocabflow.ai}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-admin123}
       VIETQR_BANK_ID: ${VIETQR_BANK_ID:-VCB}
       VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-9353421340}
@@ -85,7 +85,7 @@ services:
         - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
         - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID:-}
         - VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID:-}
-    container_name: leximind-web
+    container_name: vocabflow-web
     restart: always
     ports:
       - '3000:80'

@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import api from '../lib/api';
-import { Award, Flame, TrendingUp, CheckCircle, Brain, Target, LineChart } from 'lucide-react';
+import { Award, Flame, TrendingUp, CheckCircle, Brain, Target, LineChart, Sparkles } from 'lucide-react';
 import { FeatureLock } from '../components/common/FeatureLock';
 import { useAuth } from '../contexts/AuthContext';
+import { VocabularyXRay } from '../components/vocabflow/VocabularyXRay';
+import { SmartQueueBar } from '../components/vocabflow/SmartQueueBar';
+import { ConfusionPairsCard } from '../components/vocabflow/ConfusionPairsCard';
+import { VocabularyCaptureModal } from '../components/vocabflow/VocabularyCaptureModal';
+import { WordDiagnosticModal } from '../components/vocabflow/WordDiagnosticModal';
 
 export const ProgressAnalyticsPage: React.FC = () => {
   const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // VocabFlow Modals
+  const [captureModalOpen, setCaptureModalOpen] = useState(false);
+  const [inspectedWordId, setInspectedWordId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get('/dashboard').then((res: any) => {
@@ -34,12 +43,25 @@ export const ProgressAnalyticsPage: React.FC = () => {
 
   return (
     <div className="w-full space-y-8 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-extrabold tracking-tight">Tiến Độ & Phân Tích Khoa Học Trí Nhớ</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Theo dõi độ bền ghi nhớ, tốc độ mở rộng vốn từ và thành tựu đã đạt được
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-extrabold tracking-tight">Tiến Độ & Phân Tích Khoa Học Trí Nhớ</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            VocabFlow™ AI: Phân tách Biết từ (Passive) vs Dùng từ (Active), biểu đồ 5D và gợi ý ôn tập
+          </p>
+        </div>
+
+        <button
+          onClick={() => setCaptureModalOpen(true)}
+          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs transition shadow-md shadow-indigo-600/20 flex items-center gap-2 self-start sm:self-auto"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Quét văn bản tiếng Anh thực tế</span>
+        </button>
       </div>
+
+      {/* Smart Review Queue Micro-learning Bar */}
+      <SmartQueueBar />
 
       {/* Progress Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -76,6 +98,15 @@ export const ProgressAnalyticsPage: React.FC = () => {
           <div className="text-xs text-slate-400">Chuỗi hiện tại: {data?.streak || 0} ngày</div>
         </div>
       </div>
+
+      {/* Vocabulary X-Ray Cognitive 5D Engine */}
+      <VocabularyXRay
+        onInspectWord={(wordId) => setInspectedWordId(wordId)}
+        onOpenCapture={() => setCaptureModalOpen(true)}
+      />
+
+      {/* Confusion Engine: Frequently Confused Pairs */}
+      <ConfusionPairsCard />
 
       {/* Pro Feature: Deep CEFR Analytics & Ebbinghaus Retention Curve */}
       <FeatureLock
@@ -116,7 +147,7 @@ export const ProgressAnalyticsPage: React.FC = () => {
         }
       />
 
-      {/* Achievements Section (Section 29) */}
+      {/* Achievements Section */}
       <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -132,16 +163,18 @@ export const ProgressAnalyticsPage: React.FC = () => {
           {achievements.map((ach) => (
             <div
               key={ach.code}
-              className={`p-4 rounded-2xl border transition flex items-center gap-3 ${ach.unlocked
+              className={`p-4 rounded-2xl border transition flex items-center gap-3 ${
+                ach.unlocked
                   ? 'card-brand-effect bg-brand-500/[0.06] dark:bg-brand-500/[0.12] border border-brand-400/40 backdrop-blur-md'
                   : 'bg-transparent border border-slate-200/50 dark:border-slate-800/50 opacity-40'
-                }`}
+              }`}
             >
               <div
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold shrink-0 ${ach.unlocked
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold shrink-0 ${
+                  ach.unlocked
                     ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20'
                     : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-                  }`}
+                }`}
               >
                 <Award className="w-6 h-6" />
               </div>
@@ -153,6 +186,19 @@ export const ProgressAnalyticsPage: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* VocabFlow Modals */}
+      <VocabularyCaptureModal
+        isOpen={captureModalOpen}
+        onClose={() => setCaptureModalOpen(false)}
+      />
+
+      <WordDiagnosticModal
+        vocabularyId={inspectedWordId}
+        onClose={() => setInspectedWordId(null)}
+      />
     </div>
   );
 };
+
+export default ProgressAnalyticsPage;

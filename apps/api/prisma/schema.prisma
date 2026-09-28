@@ -22,6 +22,40 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum DeviceStatus {
+  ACTIVE
+  PENDING_REVIEW
+  BLOCKED
+  REVOKED
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum RiskEventType {
+  NEW_DEVICE
+  DEVICE_LIMIT_EXCEEDED
+  SUSPICIOUS_LOGIN
+}
+
+enum RiskEventStatus {
+  PENDING
+  APPROVED
+  BLOCKED
+  EXEMPTED
+  RESOLVED
+}
+
+enum AccountRiskStatus {
+  NORMAL
+  UNDER_REVIEW
+  RESTRICTED
+  BLOCKED
+}
+
 enum CefrLevel {
   A1
   A2
@@ -125,6 +159,16 @@ model User {
   chatMessages        ChatMessage[]
   encryptionKey       UserEncryptionKey?
 
+  accountRiskStatus   AccountRiskStatus         @default(NORMAL)
+  devices             UserDevice[]
+  sessions            UserSession[]
+  riskEvents          DeviceRiskEvent[]
+  logoutOtps          DeviceLogoutOtp[]
+  adminSecurity       AdminSecurity?
+  captures            VocabularyCapture[]
+  journeyEvents       WordJourneyEvent[]
+  confusedPairs       VocabularyConfusionPair[]
+
   @@index([email])
   @@index([role])
 }
@@ -137,6 +181,8 @@ model UserProfile {
   englishLevel             CefrLevel @default(B1)
   targetLevel              CefrLevel @default(C1)
   learningGoal             String?   @default("TOEIC 850+ & Business Communication")
+  primaryGoal              String?   @default("TOEIC")
+  secondaryGoal            String?   @default("Workplace Communication")
   dailyGoal                Int       @default(20) // Words per day
   weeklyGoal               Int       @default(100)
   preferredStudyTime       String    @default("20:00")
@@ -171,6 +217,9 @@ model Vocabulary {
   userVocabularies UserVocabulary[]
   reviewEvents     ReviewEvent[]
   exercises        Exercise[]
+  journeyEvents    WordJourneyEvent[]
+  confusedAs1      VocabularyConfusionPair[] @relation("ConfusionWord1")
+  confusedAs2      VocabularyConfusionPair[] @relation("ConfusionWord2")
 
   @@index([normalizedWord])
   @@index([cefrLevel])
@@ -259,10 +308,16 @@ model UserVocabulary {
   isHard             Boolean     @default(false)
 
   // Learning Brain: Active vs Passive & Memory Rescue
+  recognitionScore   Float       @default(0.0) // 0 to 1.0 (Khả năng nhận diện)
+  recallScore        Float       @default(0.0) // 0 to 1.0 (Khả năng hồi tưởng nghĩa)
+  contextScore       Float       @default(0.0) // 0 to 1.0 (Khả năng hiểu trong ngữ cảnh)
   activeRecallScore  Float       @default(0.0) // 0 to 1.0 (Khả năng nhớ lại nghĩa)
   productionScore    Float       @default(0.0) // 0 to 1.0 (Khả năng tự gõ/nói từ trong ngữ cảnh)
+  speakingScore      Float       @default(0.0) // 0 to 1.0 (Khả năng phát âm/nói)
   contextMastery     Json?                     // Điểm theo ngữ cảnh: { business: 0.8, academic: 0.6 }
   slipRisk           Float       @default(0.0) // 0 to 1.0 (Nguy cơ quên phục vụ Memory Rescue)
+  lastReviewMode     String?     @default("RECOGNITION")
+  recommendedReviewMode String?  @default("RECOGNITION")
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
@@ -1293,5 +1348,172 @@ model UserEncryptionKey {
   updatedAt           DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// DEVICE SECURITY, SESSION MANAGEMENT & ADMIN SYSTEM ACCESS
+// =============================================================================
+
+model UserDevice {
+  id           String       @id @default(uuid())
+  userId       String
+  deviceId     String
+  deviceName   String
+  deviceType   String       @default("DESKTOP") // DESKTOP, MOBILE, TABLET
+  os           String?
+  browser      String?
+  userAgent    String?
+  ipLastSeen   String?
+  firstSeenAt  DateTime     @default(now())
+  lastSeenAt   DateTime     @default(now())
+  status       DeviceStatus @default(ACTIVE)
+  isAllowed    Boolean      @default(true)
+  isPrimary    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions     UserSession[]
+  riskEvents   DeviceRiskEvent[]
+
+  @@unique([userId, deviceId])
+  @@index([userId, status])
+  @@index([deviceId])
+}
+
+model UserSession {
+  id                 String        @id @default(uuid())
+  userId             String
+  deviceId           String
+  sessionTokenHash   String?
+  refreshTokenHash   String?
+  ip                 String?
+  userAgent          String?
+  status             SessionStatus @default(ACTIVE)
+  expiresAt          DateTime?
+  revokedAt          DateTime?
+  createdAt          DateTime      @default(now())
+  lastSeenAt         DateTime      @default(now())
+
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device             UserDevice    @relation(fields: [userId, deviceId], references: [userId, deviceId], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([deviceId])
+}
+
+model DeviceRiskEvent {
+  id           String          @id @default(uuid())
+  userId       String
+  deviceId     String
+  eventType    RiskEventType   @default(NEW_DEVICE)
+  status       RiskEventStatus @default(PENDING)
+  ip           String?
+  userAgent    String?
+  reviewNote   String?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime        @default(now())
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device       UserDevice?     @relation(fields: [userId, deviceId], references: [userId, deviceId], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DeviceLogoutOtp {
+  id             String    @id @default(uuid())
+  userId         String
+  targetDeviceId String
+  otpHash        String
+  attempts       Int       @default(0)
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, targetDeviceId])
+  @@index([expiresAt])
+}
+
+model AdminSecurity {
+  id          String   @id @default(uuid())
+  adminUserId String   @unique
+  keypassHash String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  adminUser   User     @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// PERSONAL VOCABULARY BRAIN, CAPTURE, JOURNEY & CONFUSION ENGINE
+// =============================================================================
+
+model VocabularyCapture {
+  id             String                  @id @default(uuid())
+  userId         String
+  sourceTitle    String?
+  rawText        String
+  extractedCount Int                     @default(0)
+  selectedCount  Int                     @default(0)
+  createdAt      DateTime                @default(now())
+
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          VocabularyCaptureItem[]
+
+  @@index([userId, createdAt])
+}
+
+model VocabularyCaptureItem {
+  id              String            @id @default(uuid())
+  captureId       String
+  word            String
+  contextSentence String?
+  contextMeaning  String?
+  cefrLevel       CefrLevel         @default(B1)
+  collocations    String[]          @default([])
+  importanceScore Float             @default(0.8)
+  isSelected      Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+
+  capture         VocabularyCapture @relation(fields: [captureId], references: [id], onDelete: Cascade)
+
+  @@index([captureId])
+  @@index([word])
+}
+
+model WordJourneyEvent {
+  id           String     @id @default(uuid())
+  userId       String
+  vocabularyId String
+  eventType    String     // ENCOUNTERED, FIRST_LEARNED, DEFINITION_RECALL, CONTEXT_PRACTICE, SENTENCE_PRODUCTION, AI_CONVERSATION, FORGOTTEN, RECOVERED, MASTERED
+  details      String?
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@index([userId, vocabularyId, createdAt])
+}
+
+model VocabularyConfusionPair {
+  id             String     @id @default(uuid())
+  userId         String
+  word1Id        String
+  word2Id        String
+  confusionCount Int        @default(1)
+  lastConfusedAt DateTime   @default(now())
+
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word1          Vocabulary @relation("ConfusionWord1", fields: [word1Id], references: [id], onDelete: Cascade)
+  word2          Vocabulary @relation("ConfusionWord2", fields: [word2Id], references: [id], onDelete: Cascade)
+
+  @@unique([userId, word1Id, word2Id])
+  @@index([userId])
 }
 

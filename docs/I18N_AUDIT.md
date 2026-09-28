@@ -1,4 +1,4 @@
-# LexiMind AI — Internationalization (i18n) Audit (Phase 0)
+# VocabFlow AI — Internationalization (i18n) Audit (Phase 0)
 
 > **Mandatory Rule**: All UI text must stem from the internationalization engine (`t("...")`).  
 > Zero hardcoded English or Vietnamese in UI components, tables, buttons, toasts, tooltips, or empty states.  

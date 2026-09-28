@@ -176,16 +176,16 @@ async function main() {
   });
   console.log('✅ Tài khoản 2: admin@vocabflow.ai | Mật khẩu: admin123 (Super Admin)');
 
-  // Sync legacy admin@leximind.ai for compatibility
+  // Sync legacy admin@vocabflow.ai for compatibility
   await prisma.user.upsert({
-    where: { email: 'admin@leximind.ai' },
+    where: { email: 'admin@vocabflow.ai' },
     update: {
       role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
       passwordHash: adminHash,
     },
     create: {
-      email: 'admin@leximind.ai',
+      email: 'admin@vocabflow.ai',
       username: 'admin_legacy',
       displayName: 'System Admin',
       passwordHash: adminHash,
@@ -195,7 +195,7 @@ async function main() {
   });
 
   // Delete all other mock users
-  const allowedEmails = ['admin@vocabflow.ai', 'pro@vocabflow.ai', 'admin@leximind.ai'];
+  const allowedEmails = ['admin@vocabflow.ai', 'pro@vocabflow.ai', 'admin@vocabflow.ai'];
   const deletedUsers = await prisma.user.deleteMany({
     where: {
       email: { notIn: allowedEmails },

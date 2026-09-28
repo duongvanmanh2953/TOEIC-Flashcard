@@ -8,11 +8,29 @@ const api = axios.create({
   },
 });
 
-// Request interceptor: Attach JWT token & dev logging
+export function getOrCreateDeviceId(): string {
+  let deviceId = localStorage.getItem('vocabflow_device_id') || localStorage.getItem('vocabflow_device_id');
+  if (!deviceId) {
+    deviceId =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    localStorage.setItem('vocabflow_device_id', deviceId);
+    localStorage.setItem('vocabflow_device_id', deviceId);
+  }
+  return deviceId;
+}
+
+// Request interceptor: Attach JWT token, persistent deviceId & dev logging
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('leximind_access_token');
+  const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('vocabflow_access_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  const deviceId = getOrCreateDeviceId();
+  if (config.headers) {
+    config.headers['x-device-id'] = deviceId;
   }
 
   if (import.meta.env.DEV) {
@@ -40,7 +58,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest?._retry) {
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || localStorage.getItem('leximind_refresh_token');
+      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || localStorage.getItem('vocabflow_refresh_token');
       if (refreshToken) {
         try {
           const res = await axios.post('/api/v1/auth/refresh', { refreshToken });
@@ -55,13 +73,13 @@ api.interceptors.response.use(
           // Token expired or invalid
           localStorage.removeItem('vocabflow_access_token');
           localStorage.removeItem('vocabflow_refresh_token');
-          localStorage.removeItem('leximind_access_token');
-          localStorage.removeItem('leximind_refresh_token');
+          localStorage.removeItem('vocabflow_access_token');
+          localStorage.removeItem('vocabflow_refresh_token');
         }
       } else {
         // Stale or missing token
         localStorage.removeItem('vocabflow_access_token');
-        localStorage.removeItem('leximind_access_token');
+        localStorage.removeItem('vocabflow_access_token');
       }
     }
     return Promise.reject(error.response?.data?.error || error);

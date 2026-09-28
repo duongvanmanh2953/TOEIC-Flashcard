@@ -24,13 +24,13 @@ class AudioEngine {
   public setPreferredVoiceGender(gender: 'male' | 'female') {
     this.preferredVoiceGender = gender;
     try {
-      localStorage.setItem('leximind_voice_gender', gender);
+      localStorage.setItem('vocabflow_voice_gender', gender);
     } catch (_) {}
   }
 
   public getPreferredVoiceGender(): 'male' | 'female' {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('leximind_voice_gender');
+      const saved = localStorage.getItem('vocabflow_voice_gender');
       if (saved === 'male' || saved === 'female') {
         this.preferredVoiceGender = saved;
       }
@@ -41,13 +41,13 @@ class AudioEngine {
   public setPreferredVoiceLang(mode: 'vi' | 'en' | 'auto') {
     this.preferredVoiceLang = mode;
     try {
-      localStorage.setItem('leximind_voice_lang', mode);
+      localStorage.setItem('vocabflow_voice_lang', mode);
     } catch (_) {}
   }
 
   public getPreferredVoiceLang(): 'vi' | 'en' | 'auto' {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('leximind_voice_lang');
+      const saved = localStorage.getItem('vocabflow_voice_lang');
       if (saved === 'vi' || saved === 'en' || saved === 'auto') {
         this.preferredVoiceLang = saved;
       }
@@ -61,13 +61,13 @@ class AudioEngine {
     if (!locale) return;
     this.preferredTargetLocale = locale;
     try {
-      localStorage.setItem('leximind_target_locale', locale);
+      localStorage.setItem('vocabflow_target_locale', locale);
     } catch (_) {}
   }
 
   public getPreferredTargetLocale(): string {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('leximind_target_locale');
+      const saved = localStorage.getItem('vocabflow_target_locale');
       if (saved) {
         this.preferredTargetLocale = saved;
       }

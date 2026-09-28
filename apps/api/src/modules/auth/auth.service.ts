@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -19,6 +20,8 @@ import {
 import { MailService } from './mail.service';
 import * as bcrypt from 'bcrypt';
 import { CefrLevel, Role, SubscriptionTier } from '@prisma/client';
+import { DeviceSecurityService, DeviceMetadata } from './device-security.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +29,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private mailService: MailService,
+    private deviceSecurityService: DeviceSecurityService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -109,6 +113,31 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+    // Enforce Device Limit & Risk Engine
+    const meta: DeviceMetadata = {
+      deviceId: dto.deviceId,
+      deviceName: dto.deviceName,
+      os: dto.os,
+      browser: dto.browser,
+      deviceType: dto.deviceType,
+    };
+    const deviceCheck = await this.deviceSecurityService.registerOrValidateDevice(
+      user.id,
+      user.role,
+      meta,
+      tokens.refreshToken,
+    );
+
+    if (!deviceCheck.allowed) {
+      throw new ForbiddenException({
+        code: deviceCheck.code || 'DEVICE_LIMIT_EXCEEDED',
+        message: deviceCheck.message,
+        limit: deviceCheck.limit,
+        activeCount: deviceCheck.activeCount,
+        device: deviceCheck.device,
+      });
+    }
 
     // Update lastActiveAt
     await this.prisma.user.update({
@@ -488,6 +517,55 @@ export class AuthService {
         avatar: updatedUser.avatar,
       },
       ...tokens,
+    };
+  }
+
+  /**
+   * Change Password with Immediate Revocation of ALL Active Sessions & Other Devices
+   */
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại.');
+    }
+
+    const isCurrentValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không chính xác.');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+    }
+
+    if (!PASSWORD_REGEX.test(dto.newPassword)) {
+      throw new BadRequestException(PASSWORD_STANDARD_MESSAGE);
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: newPasswordHash,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    // Revoke all sessions and devices immediately across all platforms
+    await this.deviceSecurityService.revokeAllUserSessionsAndDevices(userId);
+
+    return {
+      success: true,
+      message:
+        'Đổi mật khẩu thành công! Vì lý do bảo mật, tất cả các thiết bị và phiên đăng nhập đã được đăng xuất. Vui lòng đăng nhập lại.',
+      requireReLogin: true,
     };
   }
 }

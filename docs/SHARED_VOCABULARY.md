@@ -1,4 +1,4 @@
-# LexiMind AI — Learner Shared Vocabulary Vault (`/admin/shared-vocabulary`)
+# VocabFlow AI — Learner Shared Vocabulary Vault (`/admin/shared-vocabulary`)
 
 ## 1. Purpose
 The Learner Shared Vocabulary Vault manages community-contributed vocabulary decks submitted by learners.
