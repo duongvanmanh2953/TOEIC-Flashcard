@@ -302,15 +302,40 @@ export const SettingsPage: React.FC = () => {
         currentPassword,
         newPassword,
       });
-      setPasswordMsg('Đổi mật khẩu thành công! Toàn bộ các phiên đăng nhập khác đã bị thu hồi. Đang đăng nhập lại...');
+
+      // 1. Immediately wipe all tokens from localStorage & sessionStorage
+      localStorage.removeItem('vocabflow_access_token');
+      localStorage.removeItem('vocabflow_refresh_token');
+      sessionStorage.clear();
+
+      // 2. Clear IndexedDB offline cache
+      await idbClearAllUserData().catch(() => {});
+
+      // 3. Clear auth context state
+      setUser(null);
+
+      // 4. Notify user via global toast & local message
+      setPasswordMsg('Đổi mật khẩu thành công! Toàn bộ token và phiên đăng nhập đã được xóa sạch. Đang chuyển hướng về trang đăng nhập...');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('VOCABFLOW_TOAST', {
+            detail: {
+              type: 'success',
+              title: 'Đổi mật khẩu thành công',
+              message: 'Mật khẩu đã được cập nhật và toàn bộ phiên làm việc cũ đã bị thu hồi. Vui lòng đăng nhập lại.',
+            },
+          }),
+        );
+      }
+
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+
+      // 5. Immediate redirect
       setTimeout(() => {
-        localStorage.removeItem('vocabflow_access_token');
-        localStorage.removeItem('vocabflow_access_token');
         window.location.href = '/login';
-      }, 2500);
+      }, 800);
     } catch (err: any) {
       setPasswordError(err?.response?.data?.message || 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.');
     } finally {

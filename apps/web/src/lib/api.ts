@@ -154,13 +154,35 @@ api.interceptors.response.use(
             return axios(originalRequest);
           }
         } catch {
-          // Token expired or invalid
+          // Token expired, revoked, or device logged in elsewhere
           localStorage.removeItem('vocabflow_access_token');
           localStorage.removeItem('vocabflow_refresh_token');
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('VOCABFLOW_TOAST', {
+                detail: {
+                  type: 'warning',
+                  title: 'Phiên đăng nhập kết thúc',
+                  message: 'Phiên làm việc của bạn đã hết hạn hoặc bị thu hồi từ thiết bị khác. Vui lòng đăng nhập lại.',
+                },
+              }),
+            );
+            if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+              setTimeout(() => {
+                window.location.href = '/login';
+              }, 400);
+            }
+          }
         }
       } else {
         // Stale or missing token
         localStorage.removeItem('vocabflow_access_token');
+        localStorage.removeItem('vocabflow_refresh_token');
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 400);
+        }
       }
     }
     return Promise.reject(error.response?.data?.error || error);

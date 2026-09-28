@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsString, Matches } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, Matches, IsOptional, IsBoolean } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PASSWORD_REGEX, PASSWORD_STANDARD_MESSAGE } from './password-reset.dto';
 
 export class ChangePasswordDto {
@@ -40,6 +40,48 @@ export class AdminUpdateKeypassDto {
   newKeypass: string;
 }
 
+export class ResetOptionsDto {
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  wipeUsers?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  wipeRevenue?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  wipeVocabulary?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  wipeGames?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  preserveKidsGames?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  wipeExams?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  wipeSupport?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @IsBoolean()
+  wipeDevices?: boolean;
+}
+
 export class AdminResetAllDataDto {
   @ApiProperty({ description: 'Phải nhập chính xác chữ "RESET"' })
   @IsString()
@@ -55,4 +97,8 @@ export class AdminResetAllDataDto {
   @IsString()
   @IsNotEmpty({ message: 'Vui lòng nhập mã bảo mật hệ thống' })
   adminKeypass: string;
+
+  @ApiPropertyOptional({ description: 'Tùy chọn danh mục cần xóa sạch' })
+  @IsOptional()
+  options?: ResetOptionsDto;
 }

@@ -358,22 +358,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       localStorage.removeItem('vocabflow_access_token');
       localStorage.removeItem('vocabflow_refresh_token');
-      localStorage.removeItem('vocabflow_access_token');
-      localStorage.removeItem('vocabflow_refresh_token');
+      sessionStorage.clear();
 
       // Purge IndexedDB offline cache so switching accounts never leaks previous user's data
       await idbClearAllUserData().catch(() => {});
 
-      // Revert to Anonymous Guest session without reload
-      const anonUid = getOrCreateAnonymousUid();
-      setUser({
-        id: anonUid,
-        email: null,
-        displayName: 'Khách Học Thử',
-        role: 'GUEST',
-        isAnonymous: true,
-      });
+      setUser(null);
       setAuthState('GUEST');
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('VOCABFLOW_TOAST', {
+            detail: {
+              type: 'info',
+              title: 'Đã đăng xuất',
+              message: 'Bạn đã đăng xuất an toàn. Toàn bộ phiên và token đã được xóa sạch.',
+            },
+          }),
+        );
+        window.location.href = '/login';
+      }
     }
   };
 

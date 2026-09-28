@@ -189,7 +189,16 @@ export const AdminSettingsPage: React.FC = () => {
   const [wipeAdminKeypass, setWipeAdminKeypass] = useState('');
   const [wipeModalError, setWipeModalError] = useState<string | null>(null);
   const [wipeModalSuccess, setWipeModalSuccess] = useState<string | null>(null);
-  const [wipeUsersOptionInModal, setWipeUsersOptionInModal] = useState(false);
+  const [wipeOptions, setWipeOptions] = useState({
+    wipeUsers: true,
+    wipeRevenue: true,
+    wipeVocabulary: true,
+    wipeGames: true,
+    preserveKidsGames: true,
+    wipeExams: true,
+    wipeSupport: true,
+    wipeDevices: true,
+  });
 
   // Settings State State Record
   const [settings, setSettings] = useState<Record<string, any>>({
@@ -408,11 +417,12 @@ export const AdminSettingsPage: React.FC = () => {
         confirmText: 'RESET',
         adminPassword: wipeAdminPassword.trim(),
         adminKeypass: wipeAdminKeypass.trim(),
+        options: wipeOptions,
       });
       const data = res?.data?.data || res?.data || res;
       const successText = data?.message || (locale === 'vi'
-        ? 'ĐÃ RESET TOÀN BỘ HỆ THỐNG AN TOÀN! Đã xóa sạch dữ liệu người dùng, bảo lưu an toàn tài khoản Admin và kho từ điển chuẩn.'
-        : 'System Reset successful! All learner business data wiped cleanly while preserving Admin accounts & constants.');
+        ? 'ĐÃ RESET DỮ LIỆU ĐƯỢC CHỌN THÀNH CÔNG! Tài khoản Admin và mã Keypass được bảo lưu an toàn.'
+        : 'Selected system reset executed successfully! Admin accounts and keypass preserved.');
       
       setWipeModalSuccess(successText);
       setStatusMessage({ text: successText, type: 'success' });
@@ -1717,28 +1727,124 @@ export const AdminSettingsPage: React.FC = () => {
               </div>
             ) : (
               <>
-                <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/40 text-xs text-rose-200/90 leading-relaxed space-y-2">
-                  <p className="font-semibold text-rose-300 flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                    <span>{locale === 'vi' ? 'Hành động này KHÔNG THỂ HOÀN TÁC! Hệ thống sẽ thực hiện:' : 'This action CANNOT BE UNDONE! The system will perform:'}</span>
-                  </p>
-                  <ul className="list-disc list-inside space-y-1 text-[11px] text-rose-200/80 pl-1">
-                    <li>{locale === 'vi' ? 'Xóa sạch 100% tài khoản học viên (non-admin users)' : 'Permanently delete 100% learner accounts'}</li>
-                    <li>{locale === 'vi' ? 'Xóa sạch toàn bộ tiến độ học từ vựng cá nhân, chuỗi học (streak), kinh nghiệm (XP)' : 'Wipe all user vocabulary progress, streaks, and XP'}</li>
-                    <li>{locale === 'vi' ? 'Xóa sạch bộ thẻ cộng đồng, bình luận, bài thi thử và kết quả thi' : 'Wipe all community decks, comments, exams and attempts'}</li>
-                    <li>{locale === 'vi' ? 'Xóa sạch lịch sử thanh toán, đăng ký gói cước và tin nhắn' : 'Wipe all payment orders, subscriptions, and chat messages'}</li>
-                  </ul>
+                {/* Granular Selection Checkboxes */}
+                <div className="space-y-2 p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span className="text-xs font-bold text-slate-200">
+                      {locale === 'vi' ? 'Chọn các danh mục dữ liệu cần xóa sạch:' : 'Select data domains to wipe:'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWipeOptions({
+                          wipeUsers: true,
+                          wipeRevenue: true,
+                          wipeVocabulary: true,
+                          wipeGames: true,
+                          preserveKidsGames: true,
+                          wipeExams: true,
+                          wipeSupport: true,
+                          wipeDevices: true,
+                        })
+                      }
+                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
+                    >
+                      {locale === 'vi' ? 'Chọn tất cả' : 'Select all'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.wipeUsers}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, wipeUsers: e.target.checked })}
+                        className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-slate-300 font-medium">Học viên & Tiến độ học tập</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.wipeRevenue}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, wipeRevenue: e.target.checked })}
+                        className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-slate-300 font-medium">Doanh thu & Đơn hàng (về 0 ₫)</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.wipeVocabulary}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, wipeVocabulary: e.target.checked })}
+                        className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-slate-300 font-medium">Kho từ vựng & Bài tập</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.wipeExams}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, wipeExams: e.target.checked })}
+                        className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-slate-300 font-medium">Đề thi & Quizzes</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.wipeGames}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, wipeGames: e.target.checked })}
+                        className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-slate-300 font-medium">Phòng game & Lịch sử đấu</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.wipeSupport}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, wipeSupport: e.target.checked })}
+                        className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-slate-300 font-medium">Tin nhắn & Phản hồi CSKH</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.wipeDevices}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, wipeDevices: e.target.checked })}
+                        className="rounded border-slate-700 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-slate-300 font-medium">Phiên & Thiết bị đăng nhập</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40 transition">
+                      <input
+                        type="checkbox"
+                        checked={wipeOptions.preserveKidsGames}
+                        onChange={(e) => setWipeOptions({ ...wipeOptions, preserveKidsGames: e.target.checked })}
+                        className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500"
+                      />
+                      <span className="text-emerald-300 font-semibold text-[11px]">GIỮ LẠI Game/Học liệu Trẻ Em</span>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 font-semibold space-y-1">
                   <div className="flex items-center gap-1.5 text-emerald-400">
                     <ShieldCheck className="w-4 h-4 shrink-0" />
-                    <span>{locale === 'vi' ? 'DỮ LIỆU ĐƯỢC BẢO LƯU AN TOÀN TUYỆT ĐỐI:' : 'ABSOLUTELY SAFE & PRESERVED DATA:'}</span>
+                    <span>{locale === 'vi' ? 'DỮ LIỆU ĐƯỢC BẢO LƯU TUYỆT ĐỐI THEO CHÍNH SÁCH:' : 'ABSOLUTELY SAFE & PRESERVED DATA:'}</span>
                   </div>
                   <ul className="list-disc list-inside space-y-0.5 text-[11px] text-emerald-200/90 pl-1 font-normal">
-                    <li>{locale === 'vi' ? 'Tài khoản Quản trị viên (Admin & Super Admin) kèm quyền hạn và mật khẩu' : 'Administrator accounts (Admin & Super Admin) with credentials & permissions'}</li>
-                    <li>{locale === 'vi' ? 'Kho từ vựng chuẩn (Dictionary & CEFR Vocab), Từ điển mẫu' : 'Core Dictionary & CEFR Vocabulary master data'}</li>
-                    <li>{locale === 'vi' ? 'Gói cước (Plans), Cấu hình hệ thống (SystemConfig), Học liệu gốc' : 'Subscription Plans, SystemConfig, and Master Learning Resources'}</li>
+                    <li>{locale === 'vi' ? 'Tài khoản Quản trị viên (Admin & Super Admin) kèm mật khẩu đăng nhập' : 'Administrator accounts (Admin & Super Admin) with credentials & permissions'}</li>
+                    <li>{locale === 'vi' ? 'Mã khóa bảo mật hệ thống độc lập (Admin Security Keypass)' : 'Independent Admin Security Keypass'}</li>
+                    {wipeOptions.preserveKidsGames && <li>{locale === 'vi' ? 'Nội dung Game Trẻ Em & Học liệu Kids' : 'Kids Game content & learning resources'}</li>}
                   </ul>
                 </div>
 

@@ -18,6 +18,7 @@ import {
   RiskEventStatus,
   AccountRiskStatus,
 } from '@prisma/client';
+import { ResetOptionsDto } from './dto/change-password.dto';
 
 export const DEVICE_LIMITS = {
   USER: 3,
@@ -103,6 +104,19 @@ export class DeviceSecurityService {
         throw new ForbiddenException('Thiết bị này đã bị chặn truy cập vào hệ thống. Vui lòng liên hệ quản trị viên.');
       }
 
+      const isAdmin = role === Role.ADMIN || role === Role.SUPER_ADMIN;
+      if (isAdmin) {
+        // Enforce 1 device strictly for admin: revoke all other devices & sessions
+        await tx.userDevice.updateMany({
+          where: { userId, deviceId: { not: deviceId } },
+          data: { status: DeviceStatus.REVOKED, isAllowed: false },
+        });
+        await tx.userSession.updateMany({
+          where: { userId, deviceId: { not: deviceId } },
+          data: { status: SessionStatus.REVOKED },
+        });
+      }
+
       // 3. Count currently allowed & active devices
       const activeDevices = await tx.userDevice.findMany({
         where: {
@@ -136,12 +150,12 @@ export class DeviceSecurityService {
           allowed: true,
           device: updated,
           limit,
-          activeCount,
+          activeCount: 1,
         };
       }
 
       // Case B: NEW device, but user has capacity (e.g. activeCount < limit)
-      if (activeCount < limit) {
+      if (activeCount < limit || isAdmin) {
         const newDevice = await tx.userDevice.upsert({
           where: { userId_deviceId: { userId, deviceId } },
           create: {
@@ -884,6 +898,7 @@ export class DeviceSecurityService {
     confirmText: string,
     adminPasswordInput: string,
     adminKeypassInput: string,
+    options?: ResetOptionsDto,
   ) {
     // 1. Strict preflight validation
     if ((confirmText || '').trim() !== 'RESET') {
@@ -911,7 +926,18 @@ export class DeviceSecurityService {
       throw new UnauthorizedException('Mã khóa bảo mật hệ thống (Admin Security Key / Keypass) không chính xác.');
     }
 
-    this.logger.warn(`[SYSTEM RESET INITIATED] Admin: ${admin.email} is executing a complete application data reset.`);
+    const opt = {
+      wipeUsers: options?.wipeUsers ?? true,
+      wipeRevenue: options?.wipeRevenue ?? true,
+      wipeVocabulary: options?.wipeVocabulary ?? true,
+      wipeGames: options?.wipeGames ?? true,
+      preserveKidsGames: options?.preserveKidsGames ?? true,
+      wipeExams: options?.wipeExams ?? true,
+      wipeSupport: options?.wipeSupport ?? true,
+      wipeDevices: options?.wipeDevices ?? true,
+    };
+
+    this.logger.warn(`[SYSTEM RESET INITIATED] Admin: ${admin.email} is executing reset with options: ${JSON.stringify(opt)}`);
 
     // 4. Retrieve all preserved admin IDs
     const adminUsers = await this.prisma.user.findMany({
@@ -932,125 +958,167 @@ export class DeviceSecurityService {
             actorId: adminUserId,
             action: 'SYSTEM_RESET_STARTED',
             targetType: 'DATABASE',
-            targetId: 'FULL_WIPE',
-            metadata: { adminEmail: admin.email, timestamp: new Date().toISOString() },
+            targetId: 'GRANULAR_WIPE',
+            metadata: { adminEmail: admin.email, options: opt, timestamp: new Date().toISOString() },
           },
         }).catch(() => {});
 
         // A. Operational, Support, Messaging & Feedback
-        await tx.supportMessage.deleteMany({});
-        await tx.supportConversation.deleteMany({});
-        await tx.feedbackVote.deleteMany({});
-        await tx.feedback.deleteMany({});
-        await tx.paymentOrder.deleteMany({});
-        await tx.subscription.deleteMany({});
-        await tx.entitlementUsage.deleteMany({});
-        await tx.adminAnnouncement.deleteMany({});
-        await tx.notification.deleteMany({});
-        await tx.aIInteraction.deleteMany({});
-        await tx.aIEvaluation.deleteMany({});
-        await tx.gameResult.deleteMany({});
-        await tx.bankAccessGrant.deleteMany({});
+        if (opt.wipeSupport) {
+          await tx.supportMessage.deleteMany({});
+          await tx.supportConversation.deleteMany({});
+          await tx.feedbackVote.deleteMany({});
+          await tx.feedback.deleteMany({});
+          await tx.adminAnnouncement.deleteMany({});
+          await tx.notification.deleteMany({});
+          await tx.aIInteraction.deleteMany({});
+          await tx.aIEvaluation.deleteMany({});
+          await tx.bankAccessGrant.deleteMany({});
+          await tx.chatMessage.deleteMany({});
+          await tx.conversationParticipant.deleteMany({});
+          await tx.conversation.deleteMany({});
+        }
 
-        // B. Realtime Chat
-        await tx.chatMessage.deleteMany({});
-        await tx.conversationParticipant.deleteMany({});
-        await tx.conversation.deleteMany({});
+        // B. Revenue & Orders
+        if (opt.wipeRevenue) {
+          await tx.paymentOrder.deleteMany({});
+          await tx.subscription.deleteMany({});
+          await tx.entitlementUsage.deleteMany({});
+        }
 
         // C. Exams, Attempts, Questions
-        await tx.examAnswer.deleteMany({});
-        await tx.examAttempt.deleteMany({});
-        await tx.examSaved.deleteMany({});
-        await tx.examLike.deleteMany({});
-        await tx.examDislike.deleteMany({});
-        await tx.examComment.deleteMany({});
-        await tx.examOption.deleteMany({});
-        await tx.examQuestion.deleteMany({});
-        await tx.exam.deleteMany({});
+        if (opt.wipeExams) {
+          await tx.examAnswer.deleteMany({});
+          await tx.examAttempt.deleteMany({});
+          await tx.examSaved.deleteMany({});
+          await tx.examLike.deleteMany({});
+          await tx.examDislike.deleteMany({});
+          await tx.examComment.deleteMany({});
+          await tx.examOption.deleteMany({});
+          await tx.examQuestion.deleteMany({});
+          await tx.exam.deleteMany({});
+          await tx.customQuizAttempt.deleteMany({});
+          await tx.customQuiz.deleteMany({});
+          await tx.deckComment.deleteMany({});
+          await tx.deckLike.deleteMany({});
+          await tx.deckDislike.deleteMany({});
+          await tx.deckClone.deleteMany({});
+          await tx.communityWord.deleteMany({});
+          await tx.communityDeck.deleteMany({});
+        }
 
-        // D. Community Decks & Words
-        await tx.deckComment.deleteMany({});
-        await tx.deckLike.deleteMany({});
-        await tx.deckDislike.deleteMany({});
-        await tx.deckClone.deleteMany({});
-        await tx.communityWord.deleteMany({});
-        await tx.communityDeck.deleteMany({});
+        // D. Games & Rooms
+        if (opt.wipeGames) {
+          await tx.gameResult.deleteMany({});
+          if (opt.preserveKidsGames) {
+            // Keep questions and resources for kids, delete adult / general content
+            await tx.gameQuestion.deleteMany({
+              where: {
+                NOT: {
+                  OR: [
+                    { category: { contains: 'kid', mode: 'insensitive' } },
+                    { tags: { has: 'kids' } },
+                  ],
+                },
+              },
+            });
+            await tx.learningResource.deleteMany({
+              where: {
+                NOT: {
+                  OR: [
+                    { category: { contains: 'kid', mode: 'insensitive' } },
+                    { tags: { has: 'kids' } },
+                  ],
+                },
+              },
+            });
+          } else {
+            await tx.gameQuestion.deleteMany({});
+            await tx.learningResource.deleteMany({});
+          }
+        }
 
-        // E. Custom Quizzes & Attempts
-        await tx.customQuizAttempt.deleteMany({});
-        await tx.customQuiz.deleteMany({});
+        // E. Learning & Memory Brain (Progress, Sessions, Reviews, Captures, Journeys, Confusion)
+        if (opt.wipeUsers) {
+          await tx.reviewEvent.deleteMany({});
+          await tx.studySession.deleteMany({});
+          await tx.userVocabulary.deleteMany({});
+          await tx.learningGoal.deleteMany({});
+          await tx.userAchievement.deleteMany({});
+          await tx.vocabularyCaptureItem.deleteMany({});
+          await tx.vocabularyCapture.deleteMany({});
+          await tx.wordJourneyEvent.deleteMany({});
+          await tx.vocabularyConfusionPair.deleteMany({});
+        }
 
-        // F. Learning & Memory Brain (Progress, Sessions, Reviews, Captures, Journeys, Confusion)
-        await tx.reviewEvent.deleteMany({});
-        await tx.studySession.deleteMany({});
-        await tx.userVocabulary.deleteMany({});
-        await tx.learningGoal.deleteMany({});
-        await tx.userAchievement.deleteMany({});
-        await tx.vocabularyCaptureItem.deleteMany({});
-        await tx.vocabularyCapture.deleteMany({});
-        await tx.wordJourneyEvent.deleteMany({});
-        await tx.vocabularyConfusionPair.deleteMany({});
-        await tx.exercise.deleteMany({});
-        await tx.learningResource.deleteMany({});
-        await tx.gameQuestion.deleteMany({});
+        // F. Complete Vocabulary & Dictionary Wipe (Topics, Items, Relations, Examples, Meanings, Words)
+        if (opt.wipeVocabulary) {
+          await tx.vocabularyConfusionPair.deleteMany({});
+          await tx.wordJourneyEvent.deleteMany({});
+          await tx.vocabularyCaptureItem.deleteMany({});
+          await tx.vocabularyCapture.deleteMany({});
+          await tx.userVocabulary.deleteMany({});
+          await tx.reviewEvent.deleteMany({});
+          await tx.exercise.deleteMany({});
+          await tx.vocabularyTopicItem.deleteMany({});
+          await tx.vocabularyTopic.deleteMany({});
+          await tx.wordRelation.deleteMany({});
+          await tx.exampleSentence.deleteMany({});
+          await tx.vocabularyMeaning.deleteMany({});
+          await tx.vocabulary.deleteMany({});
+        }
 
-        // G. Complete Vocabulary & Dictionary Wipe (Topics, Items, Relations, Examples, Meanings, Words)
-        await tx.vocabularyTopicItem.deleteMany({});
-        await tx.vocabularyTopic.deleteMany({});
-        await tx.wordRelation.deleteMany({});
-        await tx.exampleSentence.deleteMany({});
-        await tx.vocabularyMeaning.deleteMany({});
-        await tx.vocabulary.deleteMany({});
+        // G. Security: Devices, Sessions, Risk Events, Logout OTPs
+        if (opt.wipeDevices) {
+          await tx.deviceLogoutOtp.deleteMany({});
+          await tx.deviceRiskEvent.deleteMany({});
+          await tx.userSession.deleteMany({});
+          await tx.userDevice.deleteMany({});
+        }
 
-        // H. Security: Devices, Sessions, Risk Events, Logout OTPs
-        await tx.deviceLogoutOtp.deleteMany({});
-        await tx.deviceRiskEvent.deleteMany({});
-        await tx.userSession.deleteMany({});
-        await tx.userDevice.deleteMany({});
+        // H. Delete all non-admin Users
+        if (opt.wipeUsers) {
+          await tx.userStreak.deleteMany({});
+          await tx.userXP.deleteMany({});
+          await tx.userEncryptionKey.deleteMany({
+            where: { userId: { notIn: adminIds } },
+          });
+          await tx.userProfile.deleteMany({
+            where: { userId: { notIn: adminIds } },
+          });
+          await tx.user.deleteMany({
+            where: { id: { notIn: adminIds } },
+          });
 
-        // H. Clear UserStreak, UserXP, non-admin EncryptionKeys & UserProfiles
-        await tx.userStreak.deleteMany({});
-        await tx.userXP.deleteMany({});
-        await tx.userEncryptionKey.deleteMany({
-          where: { userId: { notIn: adminIds } },
-        });
-        await tx.userProfile.deleteMany({
-          where: { userId: { notIn: adminIds } },
-        });
+          // Restore clean Profile, Streak, and XP for preserved Admins
+          for (const adm of adminUsers) {
+            await tx.userStreak.upsert({
+              where: { userId: adm.id },
+              create: { userId: adm.id, currentStreak: 0, longestStreak: 0 },
+              update: { currentStreak: 0, longestStreak: 0 },
+            }).catch(() => {});
 
-        // I. Delete all non-admin Users
-        await tx.user.deleteMany({
-          where: { id: { notIn: adminIds } },
-        });
+            await tx.userXP.upsert({
+              where: { userId: adm.id },
+              create: { userId: adm.id, totalXP: 0, currentLevel: 1 },
+              update: { totalXP: 0, currentLevel: 1 },
+            }).catch(() => {});
 
-        // J. Restore clean Profile, Streak, and XP for preserved Admins
-        for (const adm of adminUsers) {
-          await tx.userStreak.upsert({
-            where: { userId: adm.id },
-            create: { userId: adm.id, currentStreak: 0, longestStreak: 0 },
-            update: { currentStreak: 0, longestStreak: 0 },
-          }).catch(() => {});
+            await tx.userProfile.upsert({
+              where: { userId: adm.id },
+              create: {
+                userId: adm.id,
+                nativeLanguage: 'vi',
+                englishLevel: 'B1',
+                targetLevel: 'C1',
+                learningGoal: 'System Administrator',
+              },
+              update: {},
+            }).catch(() => {});
 
-          await tx.userXP.upsert({
-            where: { userId: adm.id },
-            create: { userId: adm.id, totalXP: 0, currentLevel: 1 },
-            update: { totalXP: 0, currentLevel: 1 },
-          }).catch(() => {});
-
-          await tx.userProfile.upsert({
-            where: { userId: adm.id },
-            create: {
-              userId: adm.id,
-              nativeLanguage: 'vi',
-              englishLevel: 'B1',
-              targetLevel: 'C1',
-              learningGoal: 'System Administrator',
-            },
-            update: {},
-          }).catch(() => {});
-
-          // Ensure Admin Keypass is strictly preserved
-          await this.getOrCreateAdminKeypass(adm.id);
+            // Ensure Admin Keypass is strictly preserved
+            await this.getOrCreateAdminKeypass(adm.id);
+          }
         }
 
         // Record audit completion
@@ -1059,9 +1127,10 @@ export class DeviceSecurityService {
             actorId: adminUserId,
             action: 'SYSTEM_RESET_COMPLETED',
             targetType: 'DATABASE',
-            targetId: 'FULL_WIPE',
+            targetId: 'GRANULAR_WIPE',
             metadata: {
               preservedAdmins: adminUsers.map((a) => a.email),
+              options: opt,
               timestamp: new Date().toISOString(),
             },
           },
@@ -1090,24 +1159,22 @@ export class DeviceSecurityService {
     ]);
 
     if (
-      remainingNonAdminUsers > 0 ||
-      remainingSessions > 0 ||
-      remainingDevices > 0 ||
-      remainingExams > 0 ||
-      remainingDecks > 0 ||
-      remainingOrders > 0 ||
-      remainingUserVocabs > 0
+      (opt.wipeUsers && remainingNonAdminUsers > 0) ||
+      (opt.wipeDevices && remainingSessions > 0) ||
+      (opt.wipeExams && remainingExams > 0) ||
+      (opt.wipeRevenue && remainingOrders > 0) ||
+      (opt.wipeVocabulary && remainingUserVocabs > 0)
     ) {
       throw new Error(
-        `RESET_VERIFICATION_FAILED: Dữ liệu nghiệp vụ chưa được dọn sạch hoàn toàn! Còn lại: ${remainingNonAdminUsers} users, ${remainingSessions} sessions, ${remainingDevices} devices.`,
+        `RESET_VERIFICATION_FAILED: Dữ liệu nghiệp vụ được chọn chưa được dọn sạch hoàn toàn!`,
       );
     }
 
-    this.logger.log('✅ SYSTEM RESET SUCCESSFULLY VERIFIED: 100% of application business data wiped.');
+    this.logger.log('✅ SYSTEM RESET SUCCESSFULLY VERIFIED: Selected data domains wiped cleanly.');
 
     return {
       success: true,
-      message: 'Hệ thống đã được thiết lập lại thành công 100%! Toàn bộ dữ liệu nghiệp vụ đã được xóa sạch an toàn, chỉ giữ lại tài khoản Quản trị viên, mã bảo mật Keypass và hằng số từ điển gốc.',
+      message: 'Hệ thống đã được thiết lập lại thành công! Dữ liệu được chọn đã được xóa sạch an toàn, chỉ giữ lại tài khoản Quản trị viên và mã bảo mật Keypass.',
       verification: {
         nonAdminUsers: remainingNonAdminUsers,
         activeSessions: remainingSessions,

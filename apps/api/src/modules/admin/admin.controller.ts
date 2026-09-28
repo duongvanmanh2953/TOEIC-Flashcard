@@ -357,6 +357,7 @@ export class AdminController {
       dto.confirmText,
       dto.adminPassword,
       dto.adminKeypass,
+      dto.options,
     );
   }
 
@@ -371,6 +372,7 @@ export class AdminController {
       dto.confirmText,
       dto.adminPassword,
       dto.adminKeypass,
+      dto.options,
     );
   }
 

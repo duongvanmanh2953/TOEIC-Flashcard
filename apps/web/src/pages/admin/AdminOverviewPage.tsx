@@ -163,12 +163,12 @@ export const AdminOverviewPage: React.FC = () => {
           <div className="min-w-0">
             <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Doanh Thu (MRR) <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tổng doanh thu định kỳ hàng tháng từ các gói đăng ký VIP" /></span>
             <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5 mt-0.5 truncate">
-              <ArrowUpRight className="w-3 h-3" /> +14.2% MoM
+              <ArrowUpRight className="w-3 h-3" /> {kpis.mrr?.change ?? '+0.0% MoM'}
             </span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
             <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tabular-nums">
-              {kpis.mrr?.value ?? '128.5M ₫'}
+              {kpis.mrr?.value ?? '0 ₫'}
             </span>
             <DollarSign className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-emerald-500 dark:text-emerald-400" />
           </div>
@@ -180,11 +180,11 @@ export const AdminOverviewPage: React.FC = () => {
         >
           <div className="min-w-0">
             <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Lợi Nhuận Ròng <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Doanh thu trừ đi các chi phí vận hành, server, và nhân sự" /></span>
-            <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium block mt-0.5 truncate">Margin: 45.4%</span>
+            <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium block mt-0.5 truncate">Margin: {kpis.netProfit?.margin ?? '0.0%'}</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
             <span className="text-base sm:text-lg font-bold text-indigo-600 dark:text-indigo-300 tabular-nums">
-              58.4M ₫
+              {kpis.netProfit?.value ?? '0 ₫'}
             </span>
             <TrendingUp className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-indigo-500 dark:text-indigo-400" />
           </div>
@@ -200,7 +200,7 @@ export const AdminOverviewPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
             <span className="text-base sm:text-lg font-bold text-rose-600 dark:text-rose-300 tabular-nums">
-              70.1M ₫
+              {kpis.operatingCost?.value ?? '0 ₫'}
             </span>
             <Activity className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-rose-500 dark:text-rose-400" />
           </div>
@@ -216,7 +216,7 @@ export const AdminOverviewPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
             <span className="text-base sm:text-lg font-bold text-cyan-600 dark:text-cyan-300 tabular-nums">
-              66.9M ₫
+              {kpis.cashFlow?.value ?? '0 ₫'}
             </span>
             <Layers className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-cyan-500 dark:text-cyan-400" />
           </div>
@@ -229,12 +229,12 @@ export const AdminOverviewPage: React.FC = () => {
           <div className="min-w-0">
             <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Tổng Học Viên <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tổng số học viên đã đăng ký tài khoản trên hệ thống" /></span>
             <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5 mt-0.5 truncate">
-              <ArrowUpRight className="w-3 h-3" /> +120 tuần này
+              <ArrowUpRight className="w-3 h-3" /> {kpis.totalUsers?.change ?? '+0 tuần này'}
             </span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
             <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tabular-nums">
-              {kpis.totalUsers?.value ?? '1,540'}
+              {kpis.totalUsers?.value ?? 0}
             </span>
             <Users className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-indigo-500 dark:text-indigo-400" />
           </div>
@@ -250,7 +250,7 @@ export const AdminOverviewPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
             <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-300 tabular-nums">
-              78.5%
+              {kpis.occupancyRate?.value ?? '0.0%'}
             </span>
             <Gamepad2 className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-amber-500 dark:text-amber-400" />
           </div>
