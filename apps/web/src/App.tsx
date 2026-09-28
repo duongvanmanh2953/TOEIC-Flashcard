@@ -35,6 +35,13 @@ import { WrongAnswerReviewPage } from './pages/exams/WrongAnswerReviewPage';
 import { SupportCenterPage } from './pages/SupportCenterPage';
 import { FeedbackPortalPage } from './pages/FeedbackPortalPage';
 import { NotificationCenterPage } from './pages/NotificationCenterPage';
+import { NotesPage } from './pages/notes/NotesPage';
+import { CommunityKnowledgeFeedPage } from './pages/community/CommunityKnowledgeFeedPage';
+import { CommunityPostDetailPage } from './pages/community/CommunityPostDetailPage';
+import { CreateEditPostPage } from './pages/community/CreateEditPostPage';
+import { MyPostsPage } from './pages/community/MyPostsPage';
+import { SavedPostsPage } from './pages/community/SavedPostsPage';
+import { AdminCommunityModerationPage } from './pages/admin/AdminCommunityModerationPage';
 
 // Admin Command Center Layout & Pages
 import { AdminLayout } from './components/admin/AdminLayout';
@@ -204,6 +211,52 @@ export const App: React.FC = () => {
                 }
               />
               <Route path="/community" element={<CommunityDecksPage />} />
+
+              {/* Module A: Notes / Ghi chép cá nhân */}
+              <Route
+                path="/notes"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <NotesPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Module B: Community Knowledge / Bài viết cộng đồng */}
+              <Route path="/community-knowledge" element={<CommunityKnowledgeFeedPage />} />
+              <Route path="/community-knowledge/:id" element={<CommunityPostDetailPage />} />
+              <Route
+                path="/community-knowledge/new"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <CreateEditPostPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/community-knowledge/edit/:id"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <CreateEditPostPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/community-knowledge/my-posts"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <MyPostsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/community-knowledge/saved"
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <SavedPostsPage />
+                  </ProtectedRoute>
+                }
+              />
               
               {/* Exam Bank & Adaptive Test Engine */}
               <Route path="/exams" element={<ExamBankPage />} />
@@ -253,6 +306,7 @@ export const App: React.FC = () => {
               <Route path="feedback" element={<AdminFeedbackPage />} />
               <Route path="vocabulary" element={<AdminVocabularyPage />} />
               <Route path="shared-vocabulary" element={<AdminSharedVocabularyPage />} />
+              <Route path="community-moderation" element={<AdminCommunityModerationPage />} />
               <Route path="languages" element={<AdminLanguagePage />} />
               <Route path="learning" element={<AdminLearningPage />} />
               <Route path="resources" element={<AdminResourcesPage />} />

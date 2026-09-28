@@ -86,6 +86,7 @@ export const AdminLayout: React.FC = () => {
     bugReports: 0,
     payments: 0,
     notifications: 0,
+    pendingPosts: 0,
   });
   const [liveToast, setLiveToast] = useState<{
     id: string;
@@ -98,11 +99,18 @@ export const AdminLayout: React.FC = () => {
 
   const fetchBadgeCounts = async () => {
     try {
-      const res: any = await api.get('/admin/badge-counts');
-      const data = res.data?.data || res.data || res;
-      if (data) {
-        setBadgeCounts(data);
-      }
+      const [res, pendingRes]: any = await Promise.allSettled([
+        api.get('/admin/badge-counts'),
+        api.get('/community/admin/pending-count'),
+      ]);
+      const data = res.status === 'fulfilled' ? (res.value.data?.data || res.value.data || res.value) : {};
+      const pendingData = pendingRes.status === 'fulfilled' ? (pendingRes.value.data?.data || pendingRes.value.data || pendingRes.value) : {};
+
+      setBadgeCounts((prev) => ({
+        ...prev,
+        ...data,
+        pendingPosts: pendingData.pendingCount || 0,
+      }));
     } catch {
       // silent
     }
@@ -176,6 +184,13 @@ export const AdminLayout: React.FC = () => {
         { to: '/admin/games', label: 'Quản Trị Games & Đề', icon: Gamepad2 },
         { to: '/admin/vocabulary', label: 'Từ Vựng (Vocab)', icon: BookOpen },
         { to: '/admin/shared-vocabulary', label: 'Kho Dùng Chung', icon: Layers },
+        {
+          to: '/admin/community-moderation',
+          label: 'Duyệt Bài Cộng Đồng & AI',
+          icon: Sparkles,
+          count: badgeCounts.pendingPosts > 0 ? badgeCounts.pendingPosts : undefined,
+          badgeColor: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+        },
         { to: '/admin/resources', label: 'Tài Nguyên Học Liệu', icon: FileText },
       ],
     },
@@ -442,7 +457,7 @@ export const AdminLayout: React.FC = () => {
       <div
         className={`flex-1 flex flex-col min-w-0 ${isLockedHeightRoute
           ? 'h-dvh max-h-dvh overflow-hidden overscroll-none'
-          : 'overflow-x-hidden'
+          : 'overflow-x-clip'
           }`}
       >
         {/* Real-time Operational Toast Banner */}

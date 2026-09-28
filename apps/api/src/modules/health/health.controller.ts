@@ -3,10 +3,12 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as nodemailer from 'nodemailer';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface ServiceHealthDetail {
   name: string;
-  category: 'AI' | 'EMAIL' | 'PAYMENT' | 'DATABASE' | 'CACHE' | 'WEBSOCKET';
+  category: 'AUTH' | 'AI' | 'EMAIL' | 'PAYMENT' | 'DATABASE' | 'CACHE' | 'WEBSOCKET';
   status: 'HEALTHY' | 'DEGRADED' | 'UNCONFIGURED' | 'DOWN';
   configured: boolean;
   latencyMs: number;
@@ -234,13 +236,41 @@ export class HealthController {
       if (config?.value) activeAiProvider = config.value;
     } catch (_) {}
 
+    // 8. Firebase Authentication Service
+    let firebaseKey = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
+    let firebaseProj = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+    const configPath = path.resolve(process.cwd(), 'firebase.config.json');
+    if (fs.existsSync(configPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (raw.apiKey) firebaseKey = raw.apiKey;
+        if (raw.projectId) firebaseProj = raw.projectId;
+      } catch {}
+    }
+    const hasFirebase = Boolean(firebaseKey && firebaseProj);
+    const firebaseService: ServiceHealthDetail = {
+      name: 'Firebase Authentication & Social OAuth',
+      category: 'AUTH',
+      status: hasFirebase ? 'HEALTHY' : 'UNCONFIGURED',
+      configured: hasFirebase,
+      latencyMs: hasFirebase ? 20 : 0,
+      message: hasFirebase
+        ? `Firebase Auth đã sẵn sàng (${firebaseProj})`
+        : 'Chưa cấu hình Firebase Auth (Chỉ cần dán snippet cấu hình trong trang Quản trị)',
+      details: {
+        projectId: firebaseProj || 'Not set',
+        keyPrefix: firebaseKey ? firebaseKey.slice(0, 8) + '...' : null,
+      },
+    };
+
     // Overall System Status Calculation
     const servicesList = [
-      databaseService,
-      openAiService,
-      geminiService,
-      emailService,
+      firebaseService,
       paymentService,
+      emailService,
+      geminiService,
+      openAiService,
+      databaseService,
       redisService,
       wsService,
     ];

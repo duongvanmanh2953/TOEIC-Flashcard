@@ -37,7 +37,7 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen text-slate-900 dark:text-slate-100 flex flex-col overflow-x-hidden selection:bg-brand-500 selection:text-white">
+    <div className="relative min-h-screen text-slate-900 dark:text-slate-100 flex flex-col overflow-x-clip selection:bg-brand-500 selection:text-white">
       {/* 1. Ambient Dynamic Liquid Canvas Background */}
       <LiquidBackground />
 

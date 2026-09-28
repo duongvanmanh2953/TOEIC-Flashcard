@@ -392,6 +392,14 @@ export class AdminController {
     return this.adminService.testAiConnection(dto);
   }
 
+  @Post('system/test-service')
+  @ApiOperation({ summary: 'Real test individual 3rd-party integration or service connectivity' })
+  testSystemService(
+    @Body('service') service: string,
+  ) {
+    return this.adminService.testSystemIntegrationService(service);
+  }
+
   @Get('settings')
   @ApiOperation({ summary: 'Get unified system settings configuration across all 13 domains' })
   getSettings() {

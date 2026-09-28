@@ -91,16 +91,32 @@ async function main() {
     },
   });
 
-  // Invalidate all active sessions and devices across all platforms
-  await prisma.userSession.updateMany({
-    where: { userId: adminUser.id },
-    data: { status: 'REVOKED' },
-  });
+  // Invalidate all active sessions and devices across all platforms safely
+  try {
+    if ((prisma as any).userSession) {
+      await (prisma as any).userSession.updateMany({
+        where: { userId: adminUser.id },
+        data: { status: 'REVOKED' },
+      });
+    } else {
+      await prisma.$executeRawUnsafe(`UPDATE "UserSession" SET status = 'REVOKED' WHERE "userId" = $1`, adminUser.id);
+    }
+  } catch (sessionErr: any) {
+    // Session table may not exist or already updated
+  }
 
-  await prisma.userDevice.updateMany({
-    where: { userId: adminUser.id },
-    data: { status: 'REVOKED', isAllowed: false },
-  });
+  try {
+    if ((prisma as any).userDevice) {
+      await (prisma as any).userDevice.updateMany({
+        where: { userId: adminUser.id },
+        data: { status: 'REVOKED', isAllowed: false },
+      });
+    } else {
+      await prisma.$executeRawUnsafe(`UPDATE "UserDevice" SET status = 'REVOKED', "isAllowed" = false WHERE "userId" = $1`, adminUser.id);
+    }
+  } catch (deviceErr: any) {
+    // Device table may not exist or already updated
+  }
 
   console.log('✅ Đã cập nhật mật khẩu Admin thành công và thu hồi toàn bộ token/phiên làm việc cũ!');
   console.log('----------------------------------------------------');

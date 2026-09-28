@@ -83,24 +83,25 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
 
   const code = reportCode || `BC-TC/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${Math.floor(1000 + Math.random() * 9000)}`;
 
+  // Pure clean fallback without fake numbers
   const kpi = reportData?.kpi || {
-    revenue: 128500000,
-    grossRevenue: 128500000,
-    netRevenue: 126572500,
-    gatewayFee: 1927500,
-    cost: 74627500,
-    grossProfit: 53872500,
-    netProfit: 51945000,
-    margin: 41.0,
-    cashFlow: 60445000,
+    revenue: 0,
+    grossRevenue: 0,
+    netRevenue: 0,
+    gatewayFee: 0,
+    cost: 0,
+    grossProfit: 0,
+    netProfit: 0,
+    margin: 0,
+    cashFlow: 0,
   };
 
-  const grossRev = kpi.grossRevenue ?? kpi.revenue ?? 128500000;
+  const grossRev = kpi.grossRevenue ?? kpi.revenue ?? 0;
   const netRev = kpi.netRevenue ?? (grossRev - (kpi.gatewayFee || Math.round(grossRev * 0.015)));
   const gatewayFee = kpi.gatewayFee ?? (grossRev - netRev);
-  const cost = kpi.cost ?? 74627500;
+  const cost = kpi.cost ?? 0;
   const netProfit = kpi.netProfit ?? (netRev - cost);
-  const margin = kpi.margin ?? ((netProfit / (netRev || 1)) * 100).toFixed(1);
+  const margin = kpi.margin ?? (netRev > 0 ? ((netProfit / netRev) * 100).toFixed(1) : '0.0');
 
   const formatVND = (val: number) => {
     return (val || 0).toLocaleString('vi-VN') + ' ₫';
@@ -110,39 +111,38 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
   const costBreakdown = reportData?.costBreakdown || [];
   const cashFlowItems = reportData?.cashFlowItems || [];
   const gameROI = reportData?.gameROI || [];
-  const roomMetrics = reportData?.roomMetrics || [];
 
   return (
-    <div className="report-print-document bg-white text-slate-900 font-sans leading-normal selection:bg-none">
-      {/* 1. Header Information Block */}
-      <div className="border-b-2 border-slate-900 pb-4 mb-6">
-        <div className="flex justify-between items-start text-xs text-slate-700">
+    <div className="report-print-document bg-white text-black font-sans leading-normal selection:bg-none print:text-black">
+      {/* 1. Header Information Block - Monochrome Executive Standard */}
+      <div className="border-b-2 border-black pb-4 mb-5">
+        <div className="flex justify-between items-start text-xs text-black">
           <div>
-            <p className="font-extrabold uppercase text-slate-950 text-sm tracking-wide">
+            <p className="font-extrabold uppercase text-black text-sm tracking-wide">
               CÔNG TY CỔ PHẦN CÔNG NGHỆ GIÁO DỤC VOCABFLOW VIỆT NAM
             </p>
-            <p className="font-semibold text-slate-800">
+            <p className="font-bold text-black text-xs mt-0.5">
               TRUNG TÂM QUẢN TRỊ TÀI CHÍNH & ĐỐI SOÁT DOANH THU
             </p>
-            <p className="text-[11px] text-slate-600 mt-0.5">
+            <p className="text-[11px] text-neutral-800 mt-0.5">
               Hệ thống Học máy & Luyện thi Ngoại ngữ Thông minh VocabFlow
             </p>
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-neutral-600">
               Mã số thuế: 0108998877 | Địa chỉ: Tòa nhà Công nghệ số, TP. Hà Nội | Hotline: 1900-6868
             </p>
           </div>
 
           <div className="text-right text-[11px] space-y-0.5 min-w-[210px]">
-            <p className="font-bold text-slate-900 text-xs">
+            <p className="font-bold text-black text-xs">
               Mẫu số: 02 - BCTC/DN
             </p>
-            <p className="italic text-slate-500 text-[10px]">
+            <p className="italic text-neutral-600 text-[10px]">
               (Theo TT 200/2014/TT-BTC & Chuẩn mực Kế toán Quản trị)
             </p>
-            <div className="pt-1 text-slate-800">
+            <div className="pt-1 text-black">
               <p>
                 <span className="font-medium">Số hiệu BC:</span>{' '}
-                <span className="font-bold font-mono text-slate-900">{code}</span>
+                <span className="font-bold font-mono text-black">{code}</span>
               </p>
               <p>
                 <span className="font-medium">Ngày trích xuất:</span>{' '}
@@ -152,240 +152,250 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
               </p>
               <p>
                 <span className="font-medium">Đơn vị tiền tệ:</span>{' '}
-                <span className="font-semibold text-slate-900">Việt Nam Đồng (VND)</span>
+                <span className="font-semibold text-black">Việt Nam Đồng (VND)</span>
               </p>
             </div>
           </div>
         </div>
 
         {/* 2. Main Title */}
-        <div className="text-center mt-6 mb-2">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-tight">
+        <div className="text-center mt-5 mb-2">
+          <h1 className="text-lg sm:text-xl font-black text-black uppercase tracking-tight">
             {getReportTitle()}
           </h1>
-          <p className="text-sm font-bold text-indigo-900 mt-1 uppercase tracking-wide">
+          <p className="text-xs sm:text-sm font-bold text-black mt-1 uppercase tracking-wide">
             {getPeriodLabel()}
           </p>
-          <p className="text-[11px] text-slate-500 italic mt-0.5">
-            Dữ liệu đối soát tự động từ Cổng thanh toán PayOS / VietQR & Cơ sở dữ liệu giao dịch hệ thống
+          <p className="text-[10px] text-neutral-600 italic mt-0.5">
+            Dữ liệu đối soát thực tế từ Cổng thanh toán & Cơ sở dữ liệu giao dịch hệ thống
           </p>
         </div>
       </div>
 
       {/* 3. Section I: Bảng Chỉ Tiêu Tài Chính Cốt Lõi */}
-      <div className="mb-6 print-avoid-break">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-l-4 border-indigo-700 pl-2">
+      <div className="mb-5 print-avoid-break">
+        <div className="flex items-center justify-between mb-1.5">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-black border-l-4 border-black pl-2">
             I. Bảng Tổng Hợp Chỉ Tiêu Tài Chính Then Chốt (Key Financial Indicators)
           </h2>
-          <span className="text-[11px] text-slate-500 italic">Đơn vị tính: VNĐ</span>
+          <span className="text-[10px] text-neutral-600 italic">Đơn vị tính: VNĐ</span>
         </div>
 
-        <table className="w-full text-xs text-left border-collapse border border-slate-300">
+        <table className="w-full text-xs text-left border-collapse border border-black">
           <thead>
-            <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
-              <th className="p-2 border-r border-slate-300 text-center w-12">STT</th>
-              <th className="p-2 border-r border-slate-300">Chỉ Tiêu Tài Chính</th>
-              <th className="p-2 border-r border-slate-300 text-center w-20">Mã Số</th>
-              <th className="p-2 border-r border-slate-300 text-right w-44">Kỳ Này (VNĐ)</th>
+            <tr className="bg-neutral-100 text-black font-bold border-b border-black">
+              <th className="p-2 border-r border-black text-center w-12">STT</th>
+              <th className="p-2 border-r border-black">Chỉ Tiêu Tài Chính</th>
+              <th className="p-2 border-r border-black text-center w-20">Mã Số</th>
+              <th className="p-2 border-r border-black text-right w-44">Kỳ Này (VNĐ)</th>
               <th className="p-2 text-right w-36">Tỷ Trọng / Đánh Giá</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-black/30">
             <tr>
-              <td className="p-2 border-r border-slate-300 text-center font-medium">01</td>
-              <td className="p-2 border-r border-slate-300 font-bold text-slate-900">
+              <td className="p-2 border-r border-black text-center font-medium">01</td>
+              <td className="p-2 border-r border-black font-bold text-black">
                 1. Tổng doanh thu bán hàng & cung cấp dịch vụ (Gross Revenue)
               </td>
-              <td className="p-2 border-r border-slate-300 text-center font-mono text-[11px]">MS-01</td>
-              <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-slate-900">
+              <td className="p-2 border-r border-black text-center font-mono text-[11px]">MS-01</td>
+              <td className="p-2 border-r border-black text-right font-bold tabular-nums text-black">
                 {formatVND(grossRev)}
               </td>
-              <td className="p-2 text-right font-medium text-slate-600">100.0% (Cơ sở)</td>
+              <td className="p-2 text-right font-medium text-black">100.0% (Cơ sở)</td>
             </tr>
             <tr>
-              <td className="p-2 border-r border-slate-300 text-center font-medium">02</td>
-              <td className="p-2 border-r border-slate-300 text-slate-700 pl-6">
+              <td className="p-2 border-r border-black text-center font-medium">02</td>
+              <td className="p-2 border-r border-black text-neutral-800 pl-6">
                 - Chiết khấu & Phí cổng thanh toán PayOS / VietQR (1.5%)
               </td>
-              <td className="p-2 border-r border-slate-300 text-center font-mono text-[11px]">MS-02</td>
-              <td className="p-2 border-r border-slate-300 text-right font-medium tabular-nums text-rose-700">
+              <td className="p-2 border-r border-black text-center font-mono text-[11px]">MS-02</td>
+              <td className="p-2 border-r border-black text-right font-medium tabular-nums text-black">
                 -{formatVND(gatewayFee)}
               </td>
-              <td className="p-2 text-right text-slate-600">-1.5% GD</td>
+              <td className="p-2 text-right text-neutral-700">-1.5% GD</td>
             </tr>
-            <tr className="bg-indigo-50/50">
-              <td className="p-2 border-r border-slate-300 text-center font-bold">03</td>
-              <td className="p-2 border-r border-slate-300 font-extrabold text-indigo-950">
+            <tr className="bg-neutral-50 font-bold border-t border-black">
+              <td className="p-2 border-r border-black text-center font-bold">03</td>
+              <td className="p-2 border-r border-black font-extrabold text-black">
                 2. Doanh thu thuần về bán hàng & dịch vụ (Net Revenue = MS 01 - MS 02)
               </td>
-              <td className="p-2 border-r border-slate-300 text-center font-mono font-bold text-[11px]">MS-03</td>
-              <td className="p-2 border-r border-slate-300 text-right font-black tabular-nums text-indigo-900">
+              <td className="p-2 border-r border-black text-center font-mono font-bold text-[11px]">MS-03</td>
+              <td className="p-2 border-r border-black text-right font-black tabular-nums text-black">
                 {formatVND(netRev)}
               </td>
-              <td className="p-2 text-right font-bold text-indigo-900">
-                {((netRev / (grossRev || 1)) * 100).toFixed(1)}% Thực nhận
+              <td className="p-2 text-right font-bold text-black">
+                {grossRev > 0 ? ((netRev / grossRev) * 100).toFixed(1) : '0.0'}% Thực nhận
               </td>
             </tr>
             <tr>
-              <td className="p-2 border-r border-slate-300 text-center font-medium">04</td>
-              <td className="p-2 border-r border-slate-300 font-bold text-slate-900">
+              <td className="p-2 border-r border-black text-center font-medium">04</td>
+              <td className="p-2 border-r border-black font-bold text-black">
                 3. Tổng chi phí hoạt động sản xuất kinh doanh (Operating Costs - OPEX)
               </td>
-              <td className="p-2 border-r border-slate-300 text-center font-mono text-[11px]">MS-04</td>
-              <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-rose-700">
+              <td className="p-2 border-r border-black text-center font-mono text-[11px]">MS-04</td>
+              <td className="p-2 border-r border-black text-right font-bold tabular-nums text-black">
                 -{formatVND(cost)}
               </td>
-              <td className="p-2 text-right text-slate-600">
-                {((cost / (netRev || 1)) * 100).toFixed(1)}% Doanh thu
+              <td className="p-2 text-right text-neutral-700">
+                {netRev > 0 ? ((cost / netRev) * 100).toFixed(1) : '0.0'}% Doanh thu
               </td>
             </tr>
             <tr>
-              <td className="p-2 border-r border-slate-300 text-center font-medium">05</td>
-              <td className="p-2 border-r border-slate-300 text-slate-700 pl-6">
+              <td className="p-2 border-r border-black text-center font-medium">05</td>
+              <td className="p-2 border-r border-black text-neutral-800 pl-6">
                 4. Lợi nhuận gộp từ hoạt động kinh doanh (Gross Profit)
               </td>
-              <td className="p-2 border-r border-slate-300 text-center font-mono text-[11px]">MS-05</td>
-              <td className="p-2 border-r border-slate-300 text-right font-semibold tabular-nums text-slate-900">
+              <td className="p-2 border-r border-black text-center font-mono text-[11px]">MS-05</td>
+              <td className="p-2 border-r border-black text-right font-semibold tabular-nums text-black">
                 {formatVND(kpi.grossProfit || (grossRev - cost))}
               </td>
-              <td className="p-2 text-right text-slate-600">
-                {(((kpi.grossProfit || (grossRev - cost)) / (grossRev || 1)) * 100).toFixed(1)}% Gross
+              <td className="p-2 text-right text-neutral-700">
+                {grossRev > 0 ? (((kpi.grossProfit || (grossRev - cost)) / grossRev) * 100).toFixed(1) : '0.0'}% Gross
               </td>
             </tr>
-            <tr className="bg-emerald-50/70 border-t-2 border-slate-400">
-              <td className="p-2 border-r border-slate-300 text-center font-black">06</td>
-              <td className="p-2 border-r border-slate-300 font-black text-emerald-950 uppercase tracking-tight">
+            <tr className="bg-neutral-100 border-t-2 border-b-2 border-black font-black">
+              <td className="p-2 border-r border-black text-center font-black">06</td>
+              <td className="p-2 border-r border-black font-black text-black uppercase tracking-tight">
                 5. Lợi nhuận thuần trước thuế trong kỳ (Net Profit)
               </td>
-              <td className="p-2 border-r border-slate-300 text-center font-mono font-bold text-[11px]">MS-06</td>
-              <td className="p-2 border-r border-slate-300 text-right font-black tabular-nums text-emerald-900 text-sm">
+              <td className="p-2 border-r border-black text-center font-mono font-bold text-[11px]">MS-06</td>
+              <td className="p-2 border-r border-black text-right font-black tabular-nums text-black text-sm">
                 {formatVND(netProfit)}
               </td>
-              <td className="p-2 text-right font-extrabold text-emerald-900">
+              <td className="p-2 text-right font-extrabold text-black">
                 Biên LN: {margin}%
               </td>
             </tr>
             <tr>
-              <td className="p-2 border-r border-slate-300 text-center font-medium">07</td>
-              <td className="p-2 border-r border-slate-300 font-bold text-slate-900">
+              <td className="p-2 border-r border-black text-center font-medium">07</td>
+              <td className="p-2 border-r border-black font-bold text-black">
                 6. Lưu chuyển tiền thuần trong kỳ (Net Cash Flow)
               </td>
-              <td className="p-2 border-r border-slate-300 text-center font-mono text-[11px]">MS-07</td>
-              <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-slate-900">
-                {formatVND(kpi.cashFlow || (netProfit + 8500000))}
+              <td className="p-2 border-r border-black text-center font-mono text-[11px]">MS-07</td>
+              <td className="p-2 border-r border-black text-right font-bold tabular-nums text-black">
+                {formatVND(kpi.cashFlow ?? netProfit)}
               </td>
-              <td className="p-2 text-right font-semibold text-emerald-700">Dòng tiền dương</td>
+              <td className="p-2 text-right font-semibold text-black">
+                {netProfit >= 0 ? 'Dòng tiền dương' : 'Dòng tiền âm'}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
       {/* 4. Section II: Sổ Cái Chi Tiết Doanh Thu & Khoản Mục Thu Chi (P&L Ledger) */}
-      {(reportType === 'ALL' || reportType === 'PNL' || reportType === 'REVENUE' || reportType === 'EXPENSE') && items.length > 0 && (
-        <div className="mb-6 print-avoid-break">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-l-4 border-indigo-700 pl-2">
+      {(reportType === 'ALL' || reportType === 'PNL' || reportType === 'REVENUE' || reportType === 'EXPENSE') && (
+        <div className="mb-5 print-avoid-break">
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-black border-l-4 border-black pl-2">
               II. Sổ Cái Chi Tiết Phân Bổ Các Khoản Mục Thu & Chi (P&L Ledger Items)
             </h2>
-            <span className="text-[11px] text-slate-500 italic">Tổng {items.length} hạng mục</span>
+            <span className="text-[10px] text-neutral-600 italic">Tổng {items.length} hạng mục</span>
           </div>
 
-          <table className="w-full text-xs text-left border-collapse border border-slate-300">
+          <table className="w-full text-xs text-left border-collapse border border-black">
             <thead>
-              <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
-                <th className="p-2 border-r border-slate-300 text-center w-12">STT</th>
-                <th className="p-2 border-r border-slate-300">Hạng Mục Doanh Thu / Chi Phí</th>
-                <th className="p-2 border-r border-slate-300 text-center w-24">Phân Loại</th>
-                <th className="p-2 border-r border-slate-300 text-right w-36">Số Tiền (VNĐ)</th>
-                <th className="p-2 border-r border-slate-300 text-center w-24">Tỷ Trọng (%)</th>
+              <tr className="bg-neutral-100 text-black font-bold border-b border-black">
+                <th className="p-2 border-r border-black text-center w-12">STT</th>
+                <th className="p-2 border-r border-black">Hạng Mục Doanh Thu / Chi Phí</th>
+                <th className="p-2 border-r border-black text-center w-24">Phân Loại</th>
+                <th className="p-2 border-r border-black text-right w-36">Số Tiền (VNĐ)</th>
+                <th className="p-2 border-r border-black text-center w-24">Tỷ Trọng (%)</th>
                 <th className="p-2 text-right w-32">Đánh Giá</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
-              {items.map((it: any, idx: number) => {
-                const isRev = it.type === 'REVENUE' || it.amount >= 0;
-                return (
-                  <tr key={idx} className={idx % 2 === 1 ? 'bg-slate-50/50' : ''}>
-                    <td className="p-2 border-r border-slate-300 text-center font-medium">{idx + 1}</td>
-                    <td className="p-2 border-r border-slate-300 font-semibold text-slate-900">{it.category}</td>
-                    <td className="p-2 border-r border-slate-300 text-center">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isRev ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
-                        {isRev ? 'THU' : 'CHI'}
-                      </span>
-                    </td>
-                    <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums">
-                      <span className={isRev ? 'text-emerald-800' : 'text-rose-800'}>
+            <tbody className="divide-y divide-black/30">
+              {items.length > 0 ? (
+                items.map((it: any, idx: number) => {
+                  const isRev = it.type === 'REVENUE' || it.amount >= 0;
+                  return (
+                    <tr key={idx} className={idx % 2 === 1 ? 'bg-neutral-50' : ''}>
+                      <td className="p-2 border-r border-black text-center font-medium">{idx + 1}</td>
+                      <td className="p-2 border-r border-black font-semibold text-black">{it.category}</td>
+                      <td className="p-2 border-r border-black text-center">
+                        <span className="px-1.5 py-0.5 border border-black text-[10px] font-bold">
+                          {isRev ? 'THU' : 'CHI'}
+                        </span>
+                      </td>
+                      <td className="p-2 border-r border-black text-right font-bold tabular-nums text-black">
                         {isRev ? '+' : ''}{it.amount.toLocaleString('vi-VN')} ₫
-                      </span>
-                    </td>
-                    <td className="p-2 border-r border-slate-300 text-center font-medium text-slate-700">
-                      {it.share}
-                    </td>
-                    <td className="p-2 text-right font-medium text-slate-600 text-[11px]">{it.status}</td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td className="p-2 border-r border-black text-center font-medium text-black">
+                        {it.share}
+                      </td>
+                      <td className="p-2 text-right font-medium text-neutral-800 text-[11px]">{it.status}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-neutral-500 italic">
+                    Không có giao dịch phát sinh trong kỳ báo cáo đã chọn.
+                  </td>
+                </tr>
+              )}
             </tbody>
-            <tfoot>
-              <tr className="bg-slate-100 font-black border-t-2 border-slate-400 text-slate-900">
-                <td colSpan={3} className="p-2 border-r border-slate-300 text-right uppercase">
-                  Chênh Lệch Lợi Nhuận Ròng Trước Thuế:
-                </td>
-                <td className="p-2 border-r border-slate-300 text-right font-black tabular-nums text-emerald-900 text-sm">
-                  {formatVND(netProfit)}
-                </td>
-                <td className="p-2 border-r border-slate-300 text-center font-bold text-slate-800">{margin}%</td>
-                <td className="p-2 text-right text-[11px] font-bold text-emerald-800">Cân đối kế toán</td>
-              </tr>
-            </tfoot>
+            {items.length > 0 && (
+              <tfoot>
+                <tr className="bg-neutral-100 font-black border-t-2 border-b-4 border-double border-black text-black">
+                  <td colSpan={3} className="p-2 border-r border-black text-right uppercase">
+                    Chênh Lệch Lợi Nhuận Ròng Trước Thuế:
+                  </td>
+                  <td className="p-2 border-r border-black text-right font-black tabular-nums text-black text-sm">
+                    {formatVND(netProfit)}
+                  </td>
+                  <td className="p-2 border-r border-black text-center font-bold text-black">{margin}%</td>
+                  <td className="p-2 text-right text-[11px] font-bold text-black">Cân đối kế toán</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}
 
       {/* 5. Section III: Bóc Tách Chi Phí Vận Hành */}
       {(reportType === 'ALL' || reportType === 'EXPENSE' || reportType === 'COST_BREAKDOWN') && costBreakdown.length > 0 && (
-        <div className="mb-6 print-avoid-break">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-l-4 border-rose-600 pl-2">
+        <div className="mb-5 print-avoid-break">
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-black border-l-4 border-black pl-2">
               III. Báo Cáo Bóc Tách Cơ Cấu Chi Phí Vận Hành (Cost Structure Breakdown)
             </h2>
-            <span className="text-[11px] text-slate-500 italic">Tổng chi phí: {formatVND(cost)}</span>
+            <span className="text-[10px] text-neutral-600 italic">Tổng chi phí: {formatVND(cost)}</span>
           </div>
 
-          <table className="w-full text-xs text-left border-collapse border border-slate-300">
+          <table className="w-full text-xs text-left border-collapse border border-black">
             <thead>
-              <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
-                <th className="p-2 border-r border-slate-300 text-center w-12">STT</th>
-                <th className="p-2 border-r border-slate-300">Hạng Mục Chi Phí Kỹ Thuật & Nhân Sự</th>
-                <th className="p-2 border-r border-slate-300 text-right w-40">Chi Phí (VNĐ)</th>
-                <th className="p-2 border-r border-slate-300 text-center w-28">Tỷ Trọng (%)</th>
+              <tr className="bg-neutral-100 text-black font-bold border-b border-black">
+                <th className="p-2 border-r border-black text-center w-12">STT</th>
+                <th className="p-2 border-r border-black">Hạng Mục Chi Phí Kỹ Thuật & Nhân Sự</th>
+                <th className="p-2 border-r border-black text-right w-40">Chi Phí (VNĐ)</th>
+                <th className="p-2 border-r border-black text-center w-28">Tỷ Trọng (%)</th>
                 <th className="p-2 text-right w-36">Xu Hướng So Với Kỳ Trước</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-black/30">
               {costBreakdown.map((c: any, idx: number) => (
                 <tr key={idx}>
-                  <td className="p-2 border-r border-slate-300 text-center font-medium">{idx + 1}</td>
-                  <td className="p-2 border-r border-slate-300 font-semibold text-slate-900">{c.name}</td>
-                  <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-rose-800">
+                  <td className="p-2 border-r border-black text-center font-medium">{idx + 1}</td>
+                  <td className="p-2 border-r border-black font-semibold text-black">{c.name}</td>
+                  <td className="p-2 border-r border-black text-right font-bold tabular-nums text-black">
                     {formatVND(c.amount)}
                   </td>
-                  <td className="p-2 border-r border-slate-300 text-center font-semibold text-slate-700">{c.share}</td>
-                  <td className="p-2 text-right font-mono font-semibold text-slate-800 text-[11px]">{c.trend}</td>
+                  <td className="p-2 border-r border-black text-center font-semibold text-black">{c.share}</td>
+                  <td className="p-2 text-right font-mono font-semibold text-black text-[11px]">{c.trend}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-rose-50/60 font-black border-t-2 border-slate-400 text-slate-900">
-                <td colSpan={2} className="p-2 border-r border-slate-300 text-right uppercase">
+              <tr className="bg-neutral-100 font-black border-t-2 border-b-4 border-double border-black text-black">
+                <td colSpan={2} className="p-2 border-r border-black text-right uppercase">
                   Tổng Cộng Chi Phí Vận Hành (OPEX):
                 </td>
-                <td className="p-2 border-r border-slate-300 text-right font-black tabular-nums text-rose-900 text-sm">
+                <td className="p-2 border-r border-black text-right font-black tabular-nums text-black text-sm">
                   {formatVND(cost)}
                 </td>
-                <td className="p-2 border-r border-slate-300 text-center font-bold">100.0%</td>
-                <td className="p-2 text-right text-[11px] text-slate-600">Đã kiểm toán</td>
+                <td className="p-2 border-r border-black text-center font-bold">100.0%</td>
+                <td className="p-2 text-right text-[11px] text-neutral-600">Đã kiểm toán</td>
               </tr>
             </tfoot>
           </table>
@@ -394,36 +404,36 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
 
       {/* 6. Section IV: Báo Cáo Lưu Chuyển Tiền Tệ (Cash Flow Statement) */}
       {(reportType === 'ALL' || reportType === 'CASH_FLOW') && cashFlowItems.length > 0 && (
-        <div className="mb-6 print-avoid-break">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-l-4 border-cyan-600 pl-2">
+        <div className="mb-5 print-avoid-break">
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-black border-l-4 border-black pl-2">
               IV. Báo Cáo Lưu Chuyển Tiền Tệ (Cash Flow Statement - Trực Tiếp)
             </h2>
-            <span className="text-[11px] text-slate-500 italic">Dòng tiền thực thu - thực chi</span>
+            <span className="text-[10px] text-neutral-600 italic">Dòng tiền thực thu - thực chi</span>
           </div>
 
-          <table className="w-full text-xs text-left border-collapse border border-slate-300">
+          <table className="w-full text-xs text-left border-collapse border border-black">
             <thead>
-              <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
-                <th className="p-2 border-r border-slate-300 text-center w-12">STT</th>
-                <th className="p-2 border-r border-slate-300">Khoản Mục Lưu Chuyển Tiền Tệ</th>
-                <th className="p-2 border-r border-slate-300 text-right w-36">Dòng Vào (+)</th>
-                <th className="p-2 border-r border-slate-300 text-right w-36">Dòng Ra (-)</th>
+              <tr className="bg-neutral-100 text-black font-bold border-b border-black">
+                <th className="p-2 border-r border-black text-center w-12">STT</th>
+                <th className="p-2 border-r border-black">Khoản Mục Lưu Chuyển Tiền Tệ</th>
+                <th className="p-2 border-r border-black text-right w-36">Dòng Vào (+)</th>
+                <th className="p-2 border-r border-black text-right w-36">Dòng Ra (-)</th>
                 <th className="p-2 text-right w-40">Lưu Chuyển Thuần (+/-)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-black/30">
               {cashFlowItems.map((cf: any, idx: number) => (
                 <tr key={idx}>
-                  <td className="p-2 border-r border-slate-300 text-center font-medium">{idx + 1}</td>
-                  <td className="p-2 border-r border-slate-300 font-semibold text-slate-900">{cf.title}</td>
-                  <td className="p-2 border-r border-slate-300 text-right font-medium tabular-nums text-emerald-800">
+                  <td className="p-2 border-r border-black text-center font-medium">{idx + 1}</td>
+                  <td className="p-2 border-r border-black font-semibold text-black">{cf.title}</td>
+                  <td className="p-2 border-r border-black text-right font-medium tabular-nums text-black">
                     +{formatVND(cf.inflow)}
                   </td>
-                  <td className="p-2 border-r border-slate-300 text-right font-medium tabular-nums text-rose-800">
+                  <td className="p-2 border-r border-black text-right font-medium tabular-nums text-black">
                     -{formatVND(cf.outflow)}
                   </td>
-                  <td className={`p-2 text-right font-bold tabular-nums ${cf.net >= 0 ? 'text-cyan-800' : 'text-rose-800'}`}>
+                  <td className="p-2 text-right font-bold tabular-nums text-black">
                     {cf.net >= 0 ? '+' : ''}{formatVND(cf.net)}
                   </td>
                 </tr>
@@ -433,113 +443,45 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
         </div>
       )}
 
-      {/* 7. Section V: Hiệu Quả Game & Phòng Đấu ROI */}
-      {(reportType === 'ALL' || reportType === 'GAME_PERFORMANCE' || reportType === 'ROOM_PERFORMANCE') && (
-        <div className="mb-6 print-avoid-break">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-l-4 border-emerald-600 pl-2">
-              V. Hiệu Suất Sản Phẩm, Games & Phòng Đấu Realtime (Product ROI Matrix)
+      {/* 7. Section V: Giao Dịch Gần Nhất (Audit Ledger) */}
+      {(reportType === 'ALL' || reportType === 'TRANSACTIONS') && transactions && transactions.length > 0 && (
+        <div className="mb-5 print-avoid-break">
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-black border-l-4 border-black pl-2">
+              V. Sổ Nhật Ký Giao Dịch Đã Quyết Toán (Transaction Audit Records)
             </h2>
-            <span className="text-[11px] text-slate-500 italic">Doanh thu vé phòng & token học viên</span>
+            <span className="text-[10px] text-neutral-600 italic">Trích xuất tối đa 20 giao dịch gần nhất</span>
           </div>
 
-          {gameROI.length > 0 && (
-            <table className="w-full text-xs text-left border-collapse border border-slate-300 mb-4">
-              <thead>
-                <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
-                  <th className="p-2 border-r border-slate-300">Tựa Game Đấu Trí & Luyện Tập</th>
-                  <th className="p-2 border-r border-slate-300 text-right w-24">Lượt Chơi</th>
-                  <th className="p-2 border-r border-slate-300 text-right w-28">Giá TB/Vé</th>
-                  <th className="p-2 border-r border-slate-300 text-right w-36">Doanh Thu</th>
-                  <th className="p-2 border-r border-slate-300 text-right w-36">Lợi Nhuận Thuần</th>
-                  <th className="p-2 text-right w-24">Biên LN (%)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {gameROI.map((g: any, idx: number) => (
-                  <tr key={idx}>
-                    <td className="p-2 border-r border-slate-300 font-semibold text-slate-900">{g.name}</td>
-                    <td className="p-2 border-r border-slate-300 text-right font-medium tabular-nums">{g.sessions.toLocaleString()}</td>
-                    <td className="p-2 border-r border-slate-300 text-right font-medium tabular-nums">{formatVND(g.avgPrice)}</td>
-                    <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-slate-900">{formatVND(g.revenue)}</td>
-                    <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-emerald-800">{formatVND(g.profit)}</td>
-                    <td className="p-2 text-right font-bold text-emerald-800">{g.margin}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          {roomMetrics.length > 0 && (
-            <table className="w-full text-xs text-left border-collapse border border-slate-300">
-              <thead>
-                <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
-                  <th className="p-2 border-r border-slate-300 text-center w-24">Mã Phòng</th>
-                  <th className="p-2 border-r border-slate-300">Tên Sảnh Đấu Realtime</th>
-                  <th className="p-2 border-r border-slate-300 text-right w-24">Học Viên</th>
-                  <th className="p-2 border-r border-slate-300 text-right w-24">Vé Phòng</th>
-                  <th className="p-2 border-r border-slate-300 text-right w-32">Doanh Thu</th>
-                  <th className="p-2 text-right w-32">Lợi Nhuận Thuần</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {roomMetrics.map((r: any, idx: number) => (
-                  <tr key={idx}>
-                    <td className="p-2 border-r border-slate-300 text-center font-mono font-bold">{r.code}</td>
-                    <td className="p-2 border-r border-slate-300 font-semibold text-slate-900">{r.title}</td>
-                    <td className="p-2 border-r border-slate-300 text-right font-medium tabular-nums">{r.players.toLocaleString()}</td>
-                    <td className="p-2 border-r border-slate-300 text-right font-medium tabular-nums">{r.ticketPrice > 0 ? formatVND(r.ticketPrice) : 'Miễn phí'}</td>
-                    <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-slate-900">{formatVND(r.gross)}</td>
-                    <td className={`p-2 text-right font-bold tabular-nums ${r.net >= 0 ? 'text-emerald-800' : 'text-rose-700'}`}>
-                      {formatVND(r.net)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {/* 8. Section VI: Sổ Cái Giao Dịch Gần Đây (Nếu có) */}
-      {(reportType === 'TRANSACTIONS' || (transactions && transactions.length > 0)) && (
-        <div className="mb-6 print-avoid-break">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-l-4 border-indigo-700 pl-2">
-              VI. Bảng Kê Chi Tiết Giao Dịch Thanh Toán (Recent Transaction Ledger)
-            </h2>
-            <span className="text-[11px] text-slate-500 italic">Trích xuất tối đa 20 giao dịch mẫu</span>
-          </div>
-
-          <table className="w-full text-xs text-left border-collapse border border-slate-300">
+          <table className="w-full text-xs text-left border-collapse border border-black">
             <thead>
-              <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
-                <th className="p-2 border-r border-slate-300 text-center w-24">Mã Đơn</th>
-                <th className="p-2 border-r border-slate-300">Học Viên / Email</th>
-                <th className="p-2 border-r border-slate-300 text-center w-28">Gói Dịch Vụ</th>
-                <th className="p-2 border-r border-slate-300 text-right w-28">Số Tiền</th>
-                <th className="p-2 border-r border-slate-300 text-center w-20">Trạng Thái</th>
+              <tr className="bg-neutral-100 text-black font-bold border-b border-black">
+                <th className="p-2 border-r border-black text-center w-24">Mã Đơn</th>
+                <th className="p-2 border-r border-black">Khách Hàng / Email</th>
+                <th className="p-2 border-r border-black text-center w-28">Gói Dịch Vụ</th>
+                <th className="p-2 border-r border-black text-right w-28">Số Tiền</th>
+                <th className="p-2 border-r border-black text-center w-20">Trạng Thái</th>
                 <th className="p-2 text-right w-36">Thời Gian GD</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
-              {(transactions || []).slice(0, 20).map((tx: any, idx: number) => (
+            <tbody className="divide-y divide-black/30">
+              {transactions.slice(0, 20).map((tx: any, idx: number) => (
                 <tr key={idx}>
-                  <td className="p-2 border-r border-slate-300 text-center font-mono font-bold">#{tx.orderCode}</td>
-                  <td className="p-2 border-r border-slate-300">
-                    <span className="font-semibold text-slate-900 block">{tx.userName || 'Học viên'}</span>
-                    <span className="text-[10px] text-slate-500 block truncate">{tx.userEmail}</span>
+                  <td className="p-2 border-r border-black text-center font-mono font-bold">#{tx.orderCode}</td>
+                  <td className="p-2 border-r border-black">
+                    <span className="font-semibold text-black block">{tx.userName || 'Học viên'}</span>
+                    <span className="text-[10px] text-neutral-600 block truncate">{tx.userEmail}</span>
                   </td>
-                  <td className="p-2 border-r border-slate-300 text-center font-medium">{tx.planName || tx.tier}</td>
-                  <td className="p-2 border-r border-slate-300 text-right font-bold tabular-nums text-slate-900">
+                  <td className="p-2 border-r border-black text-center font-medium">{tx.planName || tx.tier}</td>
+                  <td className="p-2 border-r border-black text-right font-bold tabular-nums text-black">
                     {formatVND(tx.amount)}
                   </td>
-                  <td className="p-2 border-r border-slate-300 text-center">
-                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${tx.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                  <td className="p-2 border-r border-black text-center">
+                    <span className="px-1.5 py-0.5 border border-black text-[10px] font-bold">
                       {tx.status}
                     </span>
                   </td>
-                  <td className="p-2 text-right font-mono text-[11px] text-slate-600">
+                  <td className="p-2 text-right font-mono text-[11px] text-neutral-700">
                     {new Date(tx.createdAt).toLocaleString('vi-VN')}
                   </td>
                 </tr>
@@ -549,63 +491,63 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
         </div>
       )}
 
-      {/* 9. Thuyết Minh Báo Cáo Tài Chính & Ghi Chú Kiểm Toán */}
-      <div className="mb-8 p-3 rounded-lg border border-slate-300 bg-slate-50/70 text-xs text-slate-700 print-avoid-break">
-        <h3 className="font-bold text-slate-900 uppercase text-[11px] mb-1">
-          VII. Thuyết Minh & Ghi Chú Kiểm Toán Tài Chính (Audit Disclosure)
+      {/* 8. Thuyết Minh Báo Cáo Tài Chính & Ghi Chú Kiểm Toán */}
+      <div className="mb-6 p-3 border border-black bg-neutral-50 text-xs text-black print-avoid-break">
+        <h3 className="font-bold text-black uppercase text-[11px] mb-1">
+          VI. Thuyết Minh & Ghi Chú Kiểm Toán Tài Chính (Audit Disclosure)
         </h3>
-        <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-600">
+        <ul className="list-disc list-inside space-y-1 text-[11px] text-neutral-800">
           <li>
-            <strong className="text-slate-800">Cơ sở ghi nhận:</strong> Toàn bộ doanh thu được ghi nhận tự động theo nguyên tắc dồn tích (Accrual Basis) và đối soát trực tiếp với tài khoản nhận thanh toán PayOS / VietQR.
+            <strong className="text-black">Cơ sở ghi nhận:</strong> Toàn bộ doanh thu được ghi nhận tự động theo nguyên tắc dồn tích (Accrual Basis) và đối soát trực tiếp với tài khoản nhận thanh toán PayOS / VietQR.
           </li>
           <li>
-            <strong className="text-slate-800">Chi phí AI & Hạ tầng:</strong> Chi phí AI Model (Gemini/OpenAI) được tính dựa trên số lượng token và số lượng truy vấn thực tế. Chi phí máy chủ Postgres & Redis phân bổ theo kỳ kế toán.
+            <strong className="text-black">Chi phí AI & Hạ tầng:</strong> Chi phí AI Model (Gemini/OpenAI) được tính dựa trên số lượng token và số lượng truy vấn thực tế. Chi phí máy chủ Postgres & Redis phân bổ theo kỳ kế toán.
           </li>
           <li>
-            <strong className="text-slate-800">Thanh khoản & Rủi ro:</strong> Không ghi nhận công nợ khó đòi. Biên lợi nhuận hoạt động ổn định trên 40%, đáp ứng tiêu chuẩn an toàn vốn lưu động.
+            <strong className="text-black">Thanh khoản & Rủi ro:</strong> Không ghi nhận công nợ khó đòi. Đáp ứng đầy đủ tiêu chuẩn an toàn vốn lưu động.
           </li>
           {notes && (
-            <li className="text-indigo-900 font-medium">
-              <strong className="text-indigo-950">Ghi chú bổ sung:</strong> {notes}
+            <li className="font-medium text-black">
+              <strong>Ghi chú bổ sung:</strong> {notes}
             </li>
           )}
         </ul>
       </div>
 
-      {/* 10. Chữ Ký & Phê Duyệt Tiêu Chuẩn Doanh Nghiệp */}
-      <div className="pt-4 border-t-2 border-slate-900 print-avoid-break">
-        <div className="text-right text-xs italic text-slate-700 mb-4">
+      {/* 9. Chữ Ký & Phê Duyệt Tiêu Chuẩn Doanh Nghiệp */}
+      <div className="pt-4 border-t-2 border-black print-avoid-break">
+        <div className="text-right text-xs italic text-black mb-4">
           Lập tại Hà Nội, ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}
         </div>
 
         <div className="grid grid-cols-3 gap-6 text-center text-xs">
           {/* Người lập biểu */}
           <div className="flex flex-col items-center">
-            <p className="font-extrabold text-slate-900 uppercase tracking-tight">NGƯỜI LẬP BIỂU</p>
-            <p className="italic text-[10px] text-slate-500 mb-14">(Ký, ghi rõ họ tên)</p>
-            <p className="font-bold text-slate-900">{preparedBy}</p>
-            <p className="text-[10px] text-slate-500 font-medium">Chuyên viên Dữ liệu & Kế toán</p>
+            <p className="font-extrabold text-black uppercase tracking-tight">NGƯỜI LẬP BIỂU</p>
+            <p className="italic text-[10px] text-neutral-600 mb-14">(Ký, ghi rõ họ tên)</p>
+            <p className="font-bold text-black">{preparedBy}</p>
+            <p className="text-[10px] text-neutral-600 font-medium">Chuyên viên Dữ liệu & Kế toán</p>
           </div>
 
           {/* Kế toán trưởng */}
           <div className="flex flex-col items-center">
-            <p className="font-extrabold text-slate-900 uppercase tracking-tight">KẾ TOÁN TRƯỞNG</p>
-            <p className="italic text-[10px] text-slate-500 mb-14">(Ký, ghi rõ họ tên)</p>
-            <p className="font-bold text-slate-900">{chiefAccountant}</p>
-            <p className="text-[10px] text-slate-500 font-medium">Trưởng phòng Tài chính - Kế toán</p>
+            <p className="font-extrabold text-black uppercase tracking-tight">KẾ TOÁN TRƯỞNG</p>
+            <p className="italic text-[10px] text-neutral-600 mb-14">(Ký, ghi rõ họ tên)</p>
+            <p className="font-bold text-black">{chiefAccountant}</p>
+            <p className="text-[10px] text-neutral-600 font-medium">Trưởng phòng Tài chính - Kế toán</p>
           </div>
 
           {/* Giám đốc / Đại diện pháp luật */}
           <div className="flex flex-col items-center">
-            <p className="font-extrabold text-slate-900 uppercase tracking-tight">GIÁM ĐỐC ĐIỀU HÀNH</p>
-            <p className="italic text-[10px] text-slate-500 mb-14">(Ký, đóng dấu, ghi rõ họ tên)</p>
-            <p className="font-bold text-slate-900">{director}</p>
-            <p className="text-[10px] text-slate-500 font-medium">Đại diện Ban Điều Hành VocabFlow</p>
+            <p className="font-extrabold text-black uppercase tracking-tight">GIÁM ĐỐC ĐIỀU HÀNH</p>
+            <p className="italic text-[10px] text-neutral-600 mb-14">(Ký, đóng dấu, ghi rõ họ tên)</p>
+            <p className="font-bold text-black">{director}</p>
+            <p className="text-[10px] text-neutral-600 font-medium">Đại diện Ban Điều Hành VocabFlow</p>
           </div>
         </div>
 
-        {/* Footer Warning / Verification Note */}
-        <div className="mt-12 pt-3 border-t border-slate-300 flex justify-between items-center text-[10px] text-slate-500">
+        {/* Footer Verification Note */}
+        <div className="mt-10 pt-2 border-t border-black flex justify-between items-center text-[10px] text-neutral-600">
           <span>
             Hệ thống Quản trị Tài chính VocabFlow BI • Tài liệu lưu hành nội bộ • Mã xác thực: {code}
           </span>

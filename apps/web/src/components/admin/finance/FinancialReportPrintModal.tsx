@@ -2,15 +2,9 @@ import React, { useState } from 'react';
 import {
   Printer,
   X,
-  FileText,
   Sliders,
-  Check,
   ChevronDown,
   ChevronUp,
-  Download,
-  Eye,
-  Building,
-  UserCheck,
 } from 'lucide-react';
 import { FinancialReportPrintDocument } from './FinancialReportPrintDocument';
 import { ReportType } from '../../../pages/admin/AdminFinancialReportsPage';
@@ -50,64 +44,61 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
   if (!isOpen) return null;
 
   const handleExecutePrint = () => {
-    // Small timeout to ensure any state updates are rendered
     setTimeout(() => {
       window.print();
     }, 150);
   };
 
   const REPORT_SCOPE_OPTIONS: { id: string; label: string; desc: string }[] = [
-    { id: 'ALL', label: 'Báo Cáo Tổng Hợp Toàn Diện', desc: 'Đầy đủ P&L, Chi phí, Dòng tiền, Game & Phòng đấu' },
+    { id: 'ALL', label: 'Báo Cáo Tổng Hợp Toàn Diện', desc: 'Đầy đủ P&L, Chi phí, Dòng tiền và Giao dịch' },
     { id: 'PNL', label: 'Báo Cáo Lãi & Lỗ (P&L)', desc: 'Chỉ tiêu Doanh thu thuần, Chi phí và Lợi nhuận ròng' },
     { id: 'REVENUE', label: 'Báo Cáo Doanh Thu', desc: 'Bóc tách doanh thu các gói Pro tháng, năm và token' },
-    { id: 'EXPENSE', label: 'Báo Cáo Chi Phí Vận Hành', desc: 'Chi tiết bóc tách chi phí nhân sự, cloud, AI và marketing' },
+    { id: 'EXPENSE', label: 'Báo Cáo Chi Phí Vận Hành', desc: 'Chi tiết bóc tách chi phí kỹ thuật, cloud và AI' },
     { id: 'CASH_FLOW', label: 'Báo Cáo Dòng Tiền (Cash Flow)', desc: 'Lưu chuyển tiền tệ trực tiếp CFO, CFI, CFF' },
-    { id: 'COST_BREAKDOWN', label: 'Bóc Tách Chi Phí Kỹ Thuật', desc: 'Tỷ trọng chi phí LLM inference, cloud server, DB' },
-    { id: 'GAME_PERFORMANCE', label: 'Hiệu Quả Kinh Tế Sản Phẩm', desc: 'Ma trận doanh thu và ROI từng tựa game' },
-    { id: 'ROOM_PERFORMANCE', label: 'Hiệu Suất Phòng Đấu', desc: 'Doanh thu vé phòng và chi phí máy chủ phòng đấu' },
+    { id: 'TRANSACTIONS', label: 'Sổ Cái Giao Dịch', desc: 'Báo cáo kê khai sổ nhật ký thanh toán thực tế' },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex flex-col justify-between print:hidden">
-      {/* 1. Modal Top Bar (Sticky for easy access) */}
-      <div className="sticky top-0 z-20 bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex flex-col h-screen max-h-screen overflow-hidden print:hidden animate-fade-in">
+      {/* 1. Rigid Top Header (Never scrolls away) */}
+      <header className="h-14 shrink-0 bg-slate-900 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between gap-3 shadow-md z-20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
             <Printer className="w-5 h-5 text-indigo-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-bold text-white">
-                Trung Tâm Xuất Bản & In Báo Cáo Tài Chính
+              <h3 className="text-sm font-bold text-white tracking-tight">
+                Xem Trước & In Báo Cáo Tài Chính
               </h3>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold uppercase border border-emerald-500/30">
-                Chuẩn Mực A4
+              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-black uppercase border border-slate-700">
+                Khổ A4 Đen Trắng
               </span>
             </div>
-            <p className="text-xs text-slate-400 hidden sm:block">
-              Xem trước văn bản báo cáo theo tiêu chuẩn kế toán doanh nghiệp trước khi in hoặc lưu PDF
+            <p className="text-[11px] text-slate-400 hidden sm:block">
+              Định dạng chuẩn đen trắng (Black & White), độ tương phản cao, tối ưu máy in văn phòng
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowConfig(!showConfig)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border ${
               showConfig
                 ? 'bg-indigo-600 text-white border-indigo-500'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-750 border-slate-700'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-slate-700'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Tùy Chọn Chữ Ký & Nội Dung</span>
+            <span className="hidden sm:inline">Tùy Chọn Chữ Ký & Phạm Vi</span>
             {showConfig ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
 
           <button
             onClick={handleExecutePrint}
-            className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md hover:shadow-indigo-500/20 transition flex items-center gap-2"
+            className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md hover:shadow-indigo-500/20 transition flex items-center gap-2 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>In Báo Cáo / Lưu PDF</span>
@@ -121,37 +112,37 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
             <X className="w-5 h-5" />
           </button>
         </div>
-      </div>
+      </header>
 
       {/* 2. Optional Configuration Drawer */}
       {showConfig && (
-        <div className="bg-slate-900/95 border-b border-slate-800 px-4 sm:px-6 py-4 animate-in slide-in-from-top-2 duration-200">
-          <div className="max-w-5xl mx-auto space-y-4">
+        <div className="shrink-0 bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-4 z-20 animate-in slide-in-from-top-2 duration-150">
+          <div className="max-w-5xl mx-auto space-y-3.5">
             <div>
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
-                1. Chọn Phạm Vi Văn Bản Cần In:
+              <label className="text-[11px] font-black text-slate-300 uppercase tracking-wider block mb-1.5">
+                Phạm Vi Văn Bản Cần In:
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                 {REPORT_SCOPE_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
                     onClick={() => setSelectedType(opt.id)}
-                    className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                    className={`p-2 rounded-xl border text-left transition flex flex-col justify-between ${
                       selectedType === opt.id
-                        ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                        : 'bg-slate-800/60 border-slate-700/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                        ? 'bg-indigo-600/30 border-indigo-500 text-white'
+                        : 'bg-slate-800/80 border-slate-700/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                     }`}
                   >
                     <span className="text-xs font-bold truncate block">{opt.label}</span>
-                    <span className="text-[10px] text-slate-400 mt-1 line-clamp-1">{opt.desc}</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{opt.desc}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-slate-800">
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                   Người Lập Biểu:
                 </label>
                 <input
@@ -163,7 +154,7 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                   Kế Toán Trưởng:
                 </label>
                 <input
@@ -175,7 +166,7 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-300 block mb-1">
                   Giám Đốc / Đại Diện Phê Duyệt:
                 </label>
                 <input
@@ -188,8 +179,8 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
-                Ghi Chú & Thuyết Minh Thêm (Audit Notes):
+              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
+                Ghi Chú Thuyết Minh Bổ Sung (Audit Notes):
               </label>
               <input
                 type="text"
@@ -203,9 +194,9 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
         </div>
       )}
 
-      {/* 3. Paper Document Simulation Viewport */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center bg-slate-950/70">
-        <div className="w-full max-w-[210mm] bg-white rounded-lg shadow-2xl p-8 sm:p-12 text-slate-900 border border-slate-200">
+      {/* 3. Paper Document Simulation Viewport — Strictly Contained, Scrolls Comfortably */}
+      <main className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-8 flex justify-center items-start bg-slate-950/70">
+        <div className="w-full max-w-[210mm] bg-white rounded-sm shadow-2xl p-8 sm:p-12 text-black border border-slate-300 my-2 print:my-0 print:p-0 print:border-none print:shadow-none">
           <FinancialReportPrintDocument
             reportType={selectedType}
             datePreset={datePreset}
@@ -219,24 +210,25 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
             notes={customNotes}
           />
         </div>
-      </div>
+      </main>
 
-      {/* 4. Bottom Sticky Helper Bar */}
-      <div className="sticky bottom-0 z-20 bg-slate-900/90 border-t border-slate-800 px-6 py-2.5 flex items-center justify-between text-xs text-slate-400">
+      {/* 4. Rigid Bottom Helper Bar (Never overlapped by preview paper) */}
+      <footer className="h-12 shrink-0 bg-slate-900 border-t border-slate-800 px-6 flex items-center justify-between text-xs text-slate-400 z-20">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Văn bản sẵn sàng in: Khổ A4 Portrait (210mm x 297mm) • Bố cục tự động khử UI</span>
+          <span>Văn bản sẵn sàng in: Khổ A4 Portrait (210mm x 297mm) • Bố cục đơn sắc tương phản cao</span>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleExecutePrint}
-            className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1.5 transition"
+            className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1.5 transition cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>In Ngay (Ctrl + P)</span>
           </button>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };
+export default FinancialReportPrintModal;

@@ -169,6 +169,18 @@ model User {
   journeyEvents       WordJourneyEvent[]
   confusedPairs       VocabularyConfusionPair[]
 
+  // Module A: Personal Notes & Categories
+  noteCategories      NoteCategory[]
+  notes               Note[]
+
+  // Module B: Community Knowledge Posts, Saves, Shares, Reactions, Comments
+  communityPosts      CommunityPost[]
+  postReactions       CommunityPostReaction[]
+  savedPosts          CommunityPostSave[]
+  postShares          CommunityPostShare[]
+  communityComments   CommunityComment[]
+  commentReactions    CommunityCommentReaction[]
+
   @@index([email])
   @@index([role])
 }
@@ -1515,5 +1527,222 @@ model VocabularyConfusionPair {
 
   @@unique([userId, word1Id, word2Id])
   @@index([userId])
+}
+
+// =============================================================================
+// MODULE A: PERSONAL NOTES & KNOWLEDGE WORKSPACE
+// =============================================================================
+
+model NoteCategory {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  color       String?  @default("#6366f1")
+  icon        String?  @default("Folder")
+  position    Int      @default(0)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes       Note[]
+
+  @@index([userId, position])
+  @@index([userId, isArchived])
+}
+
+model Note {
+  id               String        @id @default(uuid())
+  userId           String
+  categoryId       String?
+  title            String
+  content          String        // Sanitized Rich text / Markdown
+  plainTextPreview String?       // Plaintext excerpt for search & virtual list
+  tags             String[]      @default([])
+  isPinned         Boolean       @default(false)
+  isArchived       Boolean       @default(false)
+  isDeleted        Boolean       @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isPinned, createdAt])
+  @@index([userId, categoryId])
+  @@index([userId, isArchived, isDeleted])
+  @@index([userId, updatedAt])
+}
+
+// =============================================================================
+// MODULE B: COMMUNITY KNOWLEDGE & SOCIAL MEDIA SHARING
+// =============================================================================
+
+enum CommunityPostStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+  DELETED
+}
+
+enum CommunityReactionType {
+  LIKE
+  DISLIKE
+}
+
+enum CommunityCommentStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+  PENDING_REVIEW
+}
+
+model CommunityTopic {
+  id          String          @id @default(uuid())
+  name        String
+  slug        String          @unique
+  description String?
+  icon        String?         @default("BookOpen")
+  color       String?         @default("#4f46e5")
+  position    Int             @default(0)
+  postCount   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  posts       CommunityPost[]
+
+  @@index([position])
+  @@index([isActive])
+}
+
+model CommunityPost {
+  id                 String                    @id @default(uuid())
+  authorId           String
+  topicId            String?
+  title              String
+  summary            String?                   // Plain-text preview for high-speed feed cards
+  content            String                    // Full markdown / rich text content
+  tags               String[]                  @default([])
+  language           String                    @default("en")
+  status             CommunityPostStatus       @default(PENDING_REVIEW)
+  rejectionReason    String?
+  moderatedById      String?
+  moderatedAt        DateTime?
+
+  // High-performance atomic counters
+  likeCount          Int                       @default(0)
+  dislikeCount       Int                       @default(0)
+  commentCount       Int                       @default(0)
+  shareCount         Int                       @default(0)
+  saveCount          Int                       @default(0)
+  viewCount          Int                       @default(0)
+
+  // AI Training & Fine-Tuning Pipeline Foundation
+  isTrainingEligible Boolean                   @default(true)
+  trainingStatus     String                    @default("READY") // "READY", "PROCESSED", "EXCLUDED"
+  qualityScore       Float                     @default(1.0)
+  aiModerationScore  Float?
+
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  deletedAt          DateTime?
+
+  author             User                      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  topic              CommunityTopic?           @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  reactions          CommunityPostReaction[]
+  saves              CommunityPostSave[]
+  shares             CommunityPostShare[]
+  comments           CommunityComment[]
+
+  @@index([status, createdAt])
+  @@index([authorId, status])
+  @@index([topicId, status, createdAt])
+  @@index([status, likeCount])
+  @@index([status, commentCount])
+  @@index([isTrainingEligible, status])
+}
+
+model CommunityPostReaction {
+  id        String                @id @default(uuid())
+  postId    String
+  userId    String
+  type      CommunityReactionType
+  createdAt DateTime              @default(now())
+
+  post      CommunityPost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId, type])
+}
+
+model CommunityPostSave {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime      @default(now())
+
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, createdAt])
+}
+
+model CommunityPostShare {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String?
+  platform  String?       @default("LINK")
+  ipHash    String?
+  createdAt DateTime      @default(now())
+
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId, createdAt])
+}
+
+model CommunityComment {
+  id                 String                     @id @default(uuid())
+  postId             String
+  userId             String
+  parentId           String?
+  content            String
+  status             CommunityCommentStatus     @default(ACTIVE)
+  likeCount          Int                        @default(0)
+  replyCount         Int                        @default(0)
+  isTrainingEligible Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  deletedAt          DateTime?
+
+  post               CommunityPost              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user               User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent             CommunityComment?          @relation("CommunityCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies            CommunityComment[]         @relation("CommunityCommentReplies")
+  reactions          CommunityCommentReaction[]
+
+  @@index([postId, parentId, createdAt])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model CommunityCommentReaction {
+  id        String                @id @default(uuid())
+  commentId String
+  userId    String
+  type      CommunityReactionType @default(LIKE)
+  createdAt DateTime              @default(now())
+
+  comment   CommunityComment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
 }
 

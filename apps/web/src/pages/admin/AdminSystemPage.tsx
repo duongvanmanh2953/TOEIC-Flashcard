@@ -15,9 +15,12 @@ import {
   Mail,
   Sparkles,
   Bot,
+  ClipboardPaste,
+  Shield,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useTranslation } from '../../i18n';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ServiceItem {
   name: string;
@@ -50,12 +53,42 @@ interface SystemHealthResponse {
 
 export const AdminSystemPage: React.FC = () => {
   const { t } = useTranslation();
+  const { openFirebaseConfigModal } = useAuth();
   const [data, setData] = useState<SystemHealthResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastCheck, setLastCheck] = useState<Date>(new Date());
   const [aiProvider, setAiProvider] = useState<string>('auto');
   const [updatingProvider, setUpdatingProvider] = useState(false);
   const [providerNotice, setProviderNotice] = useState('');
+  const [testingService, setTestingService] = useState<Record<string, boolean>>({});
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; latencyMs?: number; message?: string }>>({});
+
+  const handleTestIndividualService = async (serviceKey: string) => {
+    setTestingService((prev) => ({ ...prev, [serviceKey]: true }));
+    try {
+      const res: any = await api.post('/admin/system/test-service', { service: serviceKey });
+      const payload = res?.data?.data || res?.data || res;
+      setTestResults((prev) => ({
+        ...prev,
+        [serviceKey]: {
+          success: payload?.success ?? true,
+          latencyMs: payload?.latencyMs,
+          message: payload?.message || 'Kết nối thành công!',
+        },
+      }));
+      fetchHealth();
+    } catch (err: any) {
+      setTestResults((prev) => ({
+        ...prev,
+        [serviceKey]: {
+          success: false,
+          message: err?.response?.data?.message || err?.message || 'Kiểm tra kết nối thất bại.',
+        },
+      }));
+    } finally {
+      setTestingService((prev) => ({ ...prev, [serviceKey]: false }));
+    }
+  };
 
   const fetchHealth = async () => {
     setLoading(true);
@@ -330,39 +363,121 @@ export const AdminSystemPage: React.FC = () => {
 
         <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
           {data?.servicesList && data.servicesList.length > 0 ? (
-            data.servicesList.map((svc, i) => (
-              <div
-                key={i}
-                className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition"
-              >
-                <div className="space-y-1 max-w-xl">
-                  <div className="flex items-center gap-2.5">
-                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                      {svc.name}
-                    </h4>
-                    {getStatusBadge(svc.status)}
-                  </div>
-                  {svc.message && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                      {svc.message}
-                    </p>
-                  )}
-                  {svc.details?.keyPrefix && (
-                    <span className="text-[11px] font-mono text-slate-400 block">
-                      Key hiện tại: {svc.details.keyPrefix}
-                    </span>
-                  )}
-                </div>
+            data.servicesList.map((svc, i) => {
+              let serviceKey = 'DATABASE';
+              const nameLower = svc.name.toLowerCase();
+              if (svc.category === 'AUTH' || nameLower.includes('firebase')) serviceKey = 'FIREBASE';
+              else if (svc.category === 'PAYMENT' || nameLower.includes('payos') || nameLower.includes('vietqr')) serviceKey = 'PAYOS';
+              else if (svc.category === 'EMAIL' || nameLower.includes('email') || nameLower.includes('smtp')) serviceKey = 'MAIL';
+              else if (nameLower.includes('gemini')) serviceKey = 'GEMINI';
+              else if (nameLower.includes('openai')) serviceKey = 'OPENAI';
+              else if (svc.category === 'DATABASE' || nameLower.includes('postgres')) serviceKey = 'DATABASE';
+              else if (svc.category === 'CACHE' || nameLower.includes('redis')) serviceKey = 'REDIS';
+              else if (svc.category === 'WEBSOCKET' || nameLower.includes('websocket')) serviceKey = 'WEBSOCKET';
 
-                <div className="flex items-center gap-3 text-xs self-start sm:self-auto tabular-nums">
-                  {svc.latencyMs > 0 && (
-                    <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
-                      {svc.latencyMs}ms
-                    </span>
+              const isFirebase = serviceKey === 'FIREBASE';
+              const isTesting = Boolean(testingService[serviceKey]);
+              const result = testResults[serviceKey];
+
+              return (
+                <div
+                  key={i}
+                  className="p-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1.5 max-w-xl">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                          {svc.name}
+                        </h4>
+                        {getStatusBadge(svc.status)}
+                        {isFirebase ? (
+                          <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-black border border-blue-500/25 uppercase tracking-wide">
+                            Hỗ trợ dán qua giao diện
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[10px] font-black border border-slate-500/20 uppercase tracking-wide">
+                            Cấu hình bảo mật qua file .env
+                          </span>
+                        )}
+                      </div>
+
+                      {svc.message && (
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                          {svc.message}
+                        </p>
+                      )}
+                      {svc.details?.keyPrefix && (
+                        <span className="text-[11px] font-mono text-slate-400 block">
+                          Khóa API: {svc.details.keyPrefix}
+                        </span>
+                      )}
+                      {svc.details?.host && (
+                        <span className="text-[11px] font-mono text-slate-400 block">
+                          Máy chủ: {svc.details.host}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5 text-xs self-start sm:self-auto shrink-0">
+                      {svc.latencyMs > 0 && (
+                        <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold tabular-nums">
+                          {svc.latencyMs}ms
+                        </span>
+                      )}
+
+                      {/* Connection Test Button */}
+                      <button
+                        onClick={() => handleTestIndividualService(serviceKey)}
+                        disabled={isTesting}
+                        className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        title="Kiểm tra kết nối thời gian thực"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
+                        <span>{isTesting ? 'Đang ping...' : 'Kiểm Tra Kết Nối'}</span>
+                      </button>
+
+                      {/* Firebase UI Paste Button ONLY */}
+                      {isFirebase && (
+                        <button
+                          onClick={openFirebaseConfigModal}
+                          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                          title="Mở bảng dán nhanh đoạn mã Firebase SDK"
+                        >
+                          <ClipboardPaste className="w-3.5 h-3.5" />
+                          <span>Dán Cấu Hình Firebase</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Real-time Ping Result Alert */}
+                  {result && (
+                    <div
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-3 animate-fade-in ${
+                        result.success
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {result.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                        )}
+                        <span className="font-semibold">{result.message}</span>
+                      </div>
+                      {typeof result.latencyMs === 'number' && (
+                        <span className="font-mono font-black text-[11px] tabular-nums shrink-0">
+                          {result.latencyMs}ms
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="p-8 text-center text-sm text-slate-500">
               <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-500" />

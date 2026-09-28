@@ -19,6 +19,8 @@ import { LeaderboardModule } from './modules/leaderboard/leaderboard.module';
 import { GamesModule } from './modules/games/games.module';
 import { ExamsModule } from './modules/exams/exams.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { NotesModule } from './modules/notes/notes.module';
+import { CommunityKnowledgeModule } from './modules/community-knowledge/community-knowledge.module';
 import { RedisCacheModule } from './common/cache/redis-cache.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -37,6 +39,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     PlacementTestModule,
     AIModule,
     CommunityModule,
+    CommunityKnowledgeModule,
+    NotesModule,
     ExamsModule,
     QuizzesModule,
     SubscriptionsModule,
