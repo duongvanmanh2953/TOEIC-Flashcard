@@ -34,6 +34,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { parseDocumentFile } from '../../utils/documentParser';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
 export const POST_LANGUAGES = [
   { code: 'en', name: 'Tiếng Anh (English)', country: 'gb' },
@@ -339,17 +340,25 @@ export const CreateEditPostPage: React.FC = () => {
                 <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
                 <span>Chủ đề kiến thức</span>
               </label>
-              <select
+              <CustomSelect
                 value={topicId}
-                onChange={(e) => setTopicId(e.target.value)}
-                className="select-glass w-full !text-xs font-semibold"
-              >
-                {topics.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setTopicId(String(val))}
+                options={topics.map((t) => ({
+                  value: t.id,
+                  label: t.name,
+                  icon: (
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: t.color || '#6366f1' }}
+                    />
+                  ),
+                  description: t.description || undefined,
+                }))}
+                placeholder="Chọn chủ đề kiến thức..."
+                icon={BookOpen}
+                size="sm"
+                className="w-full font-semibold"
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -363,17 +372,20 @@ export const CreateEditPostPage: React.FC = () => {
                   <span className="uppercase">{language}</span>
                 </span>
               </label>
-              <select
+              <CustomSelect
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="select-glass w-full !text-xs font-bold"
-              >
-                {POST_LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setLanguage(String(val))}
+                options={POST_LANGUAGES.map((lang) => ({
+                  value: lang.code,
+                  label: lang.name,
+                  icon: <CountryFlag languageId={lang.code} size="xs" />,
+                  badge: lang.code.toUpperCase(),
+                }))}
+                placeholder="Chọn ngôn ngữ..."
+                icon={Globe}
+                size="sm"
+                className="w-full font-bold"
+              />
             </div>
           </div>
 

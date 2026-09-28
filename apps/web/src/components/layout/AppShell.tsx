@@ -73,6 +73,7 @@ export const AppShell: React.FC = () => {
     location.pathname.startsWith('/notes') ||
     location.pathname.startsWith('/community') ||
     location.pathname.startsWith('/admin/community');
+  const isFullHeightChat = isFullHeightPage;
 
   // Global Quick Note Modal State
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
@@ -679,7 +680,7 @@ export const AppShell: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightChat ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightPage ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
         {/* Mobile Header — Sticky fixed at top */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
           <div className="flex items-center gap-2">

@@ -665,7 +665,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 type="button"
                 onClick={handlePublishToMaster}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                className="btn-glass-primary btn-glass-sm font-semibold"
               >
                 <UploadCloud className="w-4 h-4" />
                 <span>Xuất Bản Vào Từ Điển Hệ Thống (Master)</span>
@@ -685,7 +685,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         setShowUnapproveConfirmModal(true);
                       }}
                       disabled={actionLoading}
-                      className="px-4 py-2 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                      className="btn-glass-amber btn-glass-sm font-bold"
                     >
                       <RotateCcw className="w-4 h-4" />
                       <span>Hủy Duyệt (Thu Hồi)</span>
@@ -700,7 +700,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         setShowRejectModal(true);
                       }}
                       disabled={actionLoading}
-                      className="px-4 py-2 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
+                      className="btn-glass-danger btn-glass-sm font-bold"
                     >
                       <X className="w-4 h-4" />
                       <span>Từ Chối</span>
@@ -713,7 +713,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                         setShowApproveConfirmModal(true);
                       }}
                       disabled={actionLoading}
-                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition disabled:opacity-50 cursor-pointer"
+                      className="btn-glass-emerald btn-glass-sm font-bold"
                     >
                       <Check className="w-4 h-4" />
                       <span>{selectedDeck.status === 'REJECTED' ? 'Phê Duyệt Lại' : 'Phê Duyệt Bộ Từ'}</span>
@@ -762,7 +762,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                   setTargetDeckForAction(null);
                 }}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
+                className="btn-glass-secondary btn-glass-sm font-semibold"
               >
                 Hủy bỏ
               </button>
@@ -770,7 +770,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 type="button"
                 onClick={() => handleModerate('REJECT')}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 transition shadow-lg shadow-rose-600/20 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                className="btn-glass-danger btn-glass-sm font-bold"
               >
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>Xác Nhận Từ Chối</span>
@@ -808,7 +808,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                   setTargetDeckForAction(null);
                 }}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
+                className="btn-glass-secondary btn-glass-sm font-semibold"
               >
                 Hủy bỏ
               </button>
@@ -816,7 +816,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 type="button"
                 onClick={() => handleModerate('APPROVE')}
                 disabled={actionLoading}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition disabled:opacity-50 cursor-pointer"
+                className="btn-glass-emerald btn-glass-sm font-bold"
               >
                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 <span>Xác Nhận Duyệt Ngay</span>
@@ -854,7 +854,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                   setTargetDeckForAction(null);
                 }}
                 disabled={actionLoading}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition cursor-pointer"
+                className="btn-glass-secondary btn-glass-sm font-semibold"
               >
                 Hủy bỏ
               </button>
@@ -862,7 +862,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 type="button"
                 onClick={() => handleModerate('PENDING')}
                 disabled={actionLoading}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-600/25 transition disabled:opacity-50 cursor-pointer"
+                className="btn-glass-amber btn-glass-sm font-bold"
               >
                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
                 <span>Xác Nhận Thu Hồi</span>
