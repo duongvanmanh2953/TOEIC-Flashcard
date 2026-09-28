@@ -2,29 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Sparkles,
   Save,
   Send,
-  Eye,
-  Edit3,
   Tag,
   BookOpen,
   Globe,
   AlertTriangle,
   Loader2,
-  Bold,
-  Italic,
-  Underline,
-  Heading1,
-  Heading2,
-  Heading3,
-  Quote,
-  Code,
-  List,
-  ListOrdered,
-  Link as LinkIcon,
-  UploadCloud,
-  FileText,
   CheckCircle2,
 } from 'lucide-react';
 import {
@@ -35,6 +19,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { parseDocumentFile } from '../../utils/documentParser';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { RichPostEditor } from '../../components/community/RichPostEditor';
 
 export const POST_LANGUAGES = [
   { code: 'en', name: 'Tiếng Anh (English)', country: 'gb' },
@@ -59,7 +44,6 @@ export const CreateEditPostPage: React.FC = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [language, setLanguage] = useState('en');
-  const [previewMode, setPreviewMode] = useState(false);
   const [initialStatus, setInitialStatus] = useState<string | null>(null);
 
   const [topics, setTopics] = useState<CommunityTopic[]>([]);
@@ -69,9 +53,6 @@ export const CreateEditPostPage: React.FC = () => {
   // Document Upload States
   const [isParsingDoc, setIsParsingDoc] = useState(false);
   const [docImportSuccess, setDocImportSuccess] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     communityKnowledgeService.getTopics().then((res) => {
@@ -98,25 +79,6 @@ export const CreateEditPostPage: React.FC = () => {
     }
   }, [id, isEditMode]);
 
-  const insertFormat = (before: string, after: string = '') => {
-    const el = textareaRef.current;
-    if (!el) return;
-
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const previous = content.substring(0, start);
-    const selected = content.substring(start, end);
-    const following = content.substring(end);
-
-    const replacement = `${before}${selected || 'văn bản'}${after}`;
-    setContent(`${previous}${replacement}${following}`);
-
-    setTimeout(() => {
-      el.focus();
-      el.setSelectionRange(start + before.length, start + before.length + (selected.length || 'văn bản'.length));
-    }, 10);
-  };
-
   const handleAddTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
@@ -132,10 +94,7 @@ export const CreateEditPostPage: React.FC = () => {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleImportDocument = async (file: File) => {
     setIsParsingDoc(true);
     setDocImportSuccess(null);
     try {
@@ -144,20 +103,17 @@ export const CreateEditPostPage: React.FC = () => {
         setTitle(parsed.title);
       }
       if (content.trim()) {
-        setContent((prev) => `${prev}\n\n${parsed.content}`);
+        setContent((prev) => `${prev}\n<hr class="my-6 border-slate-200 dark:border-slate-800"/>\n${parsed.content}`);
       } else {
         setContent(parsed.content);
       }
       setDocImportSuccess(
-        `Đã trích xuất nội dung từ file "${file.name}". Lưu ý: Toàn bộ ảnh đã được tự động bỏ qua theo tiêu chuẩn bài viết!`,
+        `Đã trích xuất bài viết từ file "${file.name}" sang HTML chuẩn. Toàn bộ hình ảnh đã được tự động loại bỏ theo tiêu chuẩn chất lượng bài viết!`,
       );
     } catch (err: any) {
       alert(err.message || 'Lỗi khi trích xuất tài liệu Word/PDF.');
     } finally {
       setIsParsingDoc(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -221,6 +177,8 @@ export const CreateEditPostPage: React.FC = () => {
     }
   };
 
+  const selectedTopic = topics.find((t) => t.id === topicId);
+
   if (isLoading) {
     return (
       <div className="h-full flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -231,57 +189,24 @@ export const CreateEditPostPage: React.FC = () => {
 
   return (
     <div className="h-full flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-y-auto pb-16">
-      {/* Hidden File Input for Word/PDF */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".docx,.pdf,.txt,.md"
-        className="hidden"
-        onChange={handleFileUpload}
-      />
-
       {/* Header */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-20 px-4 py-3 shrink-0">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Quay lại</span>
           </button>
 
           <div className="flex items-center gap-2">
-            {/* Word / PDF Import Button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isParsingDoc}
-              title="Nhập bài viết từ file Word (.docx) hoặc PDF (chỉ lấy văn bản, vứt bỏ ảnh)"
-              className="btn-glass-secondary btn-glass-sm !px-3 font-bold"
-            >
-              {isParsingDoc ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
-              ) : (
-                <UploadCloud className="w-3.5 h-3.5 text-indigo-500" />
-              )}
-              <span className="hidden sm:inline">{isParsingDoc ? 'Đang đọc...' : 'Tải lên Word/PDF'}</span>
-            </button>
-
-            <button
-              onClick={() => setPreviewMode(!previewMode)}
-              className={previewMode ? 'btn-glass-primary btn-glass-sm !px-3 font-bold' : 'btn-glass-secondary btn-glass-sm !px-3 font-semibold'}
-            >
-              {previewMode ? <Edit3 className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              <span>{previewMode ? 'Soạn thảo' : 'Xem trước'}</span>
-            </button>
-
             {!isEditMode && (
               <button
                 type="button"
                 onClick={() => handleSubmit(true)}
                 disabled={isSubmitting || !title.trim()}
-                className="btn-glass-secondary btn-glass-sm !px-3.5 font-bold"
+                className="btn-glass-secondary btn-glass-sm !px-3.5 font-bold cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Lưu nháp</span>
@@ -292,7 +217,7 @@ export const CreateEditPostPage: React.FC = () => {
               type="button"
               onClick={() => handleSubmit(false)}
               disabled={isSubmitting || !title.trim() || !content.trim()}
-              className="btn-glass-primary btn-glass-sm !px-4 font-bold"
+              className="btn-glass-primary btn-glass-sm !px-4 font-bold cursor-pointer"
             >
               {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               <span>{isEditMode ? 'Lưu cập nhật' : 'Gửi duyệt bài'}</span>
@@ -312,7 +237,7 @@ export const CreateEditPostPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setDocImportSuccess(null)}
-              className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline shrink-0"
+              className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline shrink-0 cursor-pointer"
             >
               Đóng
             </button>
@@ -332,6 +257,7 @@ export const CreateEditPostPage: React.FC = () => {
           </div>
         )}
 
+        {/* Post Form Fields Card */}
         <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 shadow-sm space-y-6">
           {/* Metadata Row: Topic & Language with Flag */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -420,7 +346,7 @@ export const CreateEditPostPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(t)}
-                    className="hover:text-rose-500 font-bold ml-0.5"
+                    className="hover:text-rose-500 font-bold ml-0.5 cursor-pointer"
                   >
                     ×
                   </button>
@@ -437,122 +363,26 @@ export const CreateEditPostPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Markdown Toolbar */}
-          {!previewMode && (
-            <div className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-1 overflow-x-auto bg-slate-50/70 dark:bg-slate-800/50 scrollbar-none">
-              <button
-                type="button"
-                onClick={() => insertFormat('**', '**')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Đậm"
-              >
-                <Bold className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('*', '*')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Nghiêng"
-              >
-                <Italic className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('<u>', '</u>')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Gạch chân"
-              >
-                <Underline className="w-3.5 h-3.5" />
-              </button>
-              <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1" />
-              <button
-                type="button"
-                onClick={() => insertFormat('# ')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Tiêu đề 1"
-              >
-                <Heading1 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('## ')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Tiêu đề 2"
-              >
-                <Heading2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('### ')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Tiêu đề 3"
-              >
-                <Heading3 className="w-3.5 h-3.5" />
-              </button>
-              <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1" />
-              <button
-                type="button"
-                onClick={() => insertFormat('> ')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Trích dẫn"
-              >
-                <Quote className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('`', '`')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Mã nguồn (Code inline)"
-              >
-                <Code className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('- ')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Danh sách dấu chấm"
-              >
-                <List className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('1. ')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Danh sách số"
-              >
-                <ListOrdered className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => insertFormat('[tên liên kết](', ')')}
-                className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                title="Chèn liên kết"
-              >
-                <LinkIcon className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {/* Content Textarea or Preview */}
+          {/* Professional Rich Text Editor */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Nội dung bài viết (Hỗ trợ Markdown) <span className="text-rose-500">*</span>
+              Nội dung bài viết <span className="text-rose-500">*</span>
             </label>
-            {previewMode ? (
-              <div className="min-h-[350px] p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 prose dark:prose-invert max-w-none text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
-                {content || <span className="text-slate-400 italic">Chưa có nội dung để xem trước...</span>}
-              </div>
-            ) : (
-              <textarea
-                ref={textareaRef}
-                rows={14}
-                required
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Trình bày giải thích chi tiết, ví dụ câu, phân tích lỗi sai và lời khuyên học tập..."
-                className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-indigo-500 transition leading-relaxed resize-y font-sans"
-              />
-            )}
+            <RichPostEditor
+              value={content}
+              onChange={setContent}
+              onImportDocument={handleImportDocument}
+              isParsingDoc={isParsingDoc}
+              previewMetadata={{
+                title: title.trim(),
+                topicName: selectedTopic?.name,
+                topicColor: selectedTopic?.color,
+                language,
+                tags,
+                authorName: user?.displayName || user?.email || 'Bạn',
+                authorAvatar: user?.photoURL,
+              }}
+            />
           </div>
         </div>
       </div>
