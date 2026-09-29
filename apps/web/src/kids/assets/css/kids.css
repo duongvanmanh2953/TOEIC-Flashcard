@@ -3,24 +3,24 @@
    ========================================================================== */
 
 :root {
-  --kids-primary: #f59e0b;
-  /* Sunny Amber */
-  --kids-primary-hover: #d97706;
-  --kids-secondary: #0ea5e9;
-  /* Sky Blue */
-  --kids-accent: #ec4899;
-  /* Bubblegum Pink */
-  --kids-background: #f0fdf4;
-  /* Fresh Meadow Soft Green */
+  --kids-primary: #0284c7;
+  /* Soft Sky Blue - Clean, friendly, eye-soothing */
+  --kids-primary-hover: #0369a1;
+  --kids-secondary: #10b981;
+  /* Fresh Emerald Mint */
+  --kids-accent: #f43f5e;
+  /* Playful Coral Rose */
+  --kids-background: #f8fafc;
+  /* Crystal Clear Soft Ice White */
   --kids-surface: #ffffff;
-  --kids-text: #020617;
-  /* Slate 950 - High Contrast Theme Safe */
+  --kids-text: #0f172a;
+  /* Deep Slate 900 - Crisp readability */
   --kids-text-muted: #475569;
-  /* Slate 600 */
+  /* Slate 600 - Soft contrast */
   --kids-success: #10b981;
   /* Emerald */
   --kids-warning: #f59e0b;
-  /* Amber */
+  /* Warm Honey Sun */
   --kids-error: #ef4444;
   /* Rose Red */
 
@@ -188,73 +188,78 @@
   border-color: rgba(51, 65, 85, 0.8);
 }
 
-/* Liquid Color Variants (Contrast-guaranteed text-slate-950) */
+/* Liquid Color Variants (Eye-friendly, soothing candy pastel palette) */
 .kids-liquid-amber {
-  background-color: rgba(254, 243, 199, 0.9);
+  background-color: rgba(254, 252, 232, 0.92);
   backdrop-filter: blur(12px);
-  border: 2px solid #fcd34d;
-  color: #020617;
+  border: 1.5px solid #fef08a;
+  color: #0f172a;
   transition: all 0.2s ease;
 }
 
 .kids-liquid-amber:hover {
-  background-color: #fef08a;
+  background-color: #fef9c3;
+  border-color: #fde047;
 }
 
 .kids-liquid-sky {
-  background-color: rgba(224, 242, 254, 0.9);
+  background-color: rgba(240, 249, 255, 0.92);
   backdrop-filter: blur(12px);
-  border: 2px solid #7dd3fc;
-  color: #020617;
+  border: 1.5px solid #bae6fd;
+  color: #0f172a;
   transition: all 0.2s ease;
 }
 
 .kids-liquid-sky:hover {
-  background-color: #0099e9;
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
 }
 
 .kids-liquid-rose {
-  background-color: rgba(255, 228, 230, 0.9);
+  background-color: rgba(255, 241, 242, 0.92);
   backdrop-filter: blur(12px);
-  border: 2px solid #fda4af;
-  color: #020617;
+  border: 1.5px solid #fecdd3;
+  color: #0f172a;
   transition: all 0.2s ease;
 }
 
 .kids-liquid-rose:hover {
-  background-color: #fecdd3;
+  background-color: #ffe4e6;
+  border-color: #fda4af;
 }
 
 .kids-liquid-purple {
-  background-color: rgba(243, 232, 255, 0.9);
+  background-color: rgba(245, 243, 255, 0.92);
   backdrop-filter: blur(12px);
-  border: 2px solid #d8b4fe;
-  color: #020617;
+  border: 1.5px solid #ddd6fe;
+  color: #0f172a;
   transition: all 0.2s ease;
 }
 
 .kids-liquid-purple:hover {
-  background-color: #e9d5ff;
+  background-color: #ede9fe;
+  border-color: #c4b5fd;
 }
 
 .kids-liquid-emerald {
-  background-color: rgba(209, 250, 229, 0.9);
+  background-color: rgba(236, 253, 245, 0.92);
   backdrop-filter: blur(12px);
-  border: 2px solid #6ee7b7;
-  color: #020617;
+  border: 1.5px solid #a7f3d0;
+  color: #0f172a;
   transition: all 0.2s ease;
 }
 
 .kids-liquid-emerald:hover {
-  background-color: #a7f3d0;
+  background-color: #d1fae5;
+  border-color: #6ee7b7;
 }
 
 .kids-liquid-card {
-  background-color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
-  border: 2px solid #fde68a;
-  color: #020617;
-  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.04);
+  border: 1.5px solid #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04);
 }
 
 /* 3D Button Press Effect with Minimum Accessible Touch Target */

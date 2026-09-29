@@ -358,43 +358,43 @@ export const KidsFlashcardsPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       {/* Top Header Banner (Roomy on tablet and mobile, lg:flex-row on desktop) */}
-      <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 rounded-3xl p-4 sm:p-6 lg:p-7 text-slate-950 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-2 border-amber-300 shadow-sm">
+      <div className="bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 rounded-3xl p-4 sm:p-6 lg:p-7 text-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border border-sky-300/40 shadow-sm">
         <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0 flex-1">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center shadow-xs border-2 border-amber-200 shrink-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xs border border-white/30 shrink-0">
             <KidsIllustration name="book" className="w-10 h-10 sm:w-12 sm:h-12" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/90 text-[11px] sm:text-xs font-black text-amber-950 border border-amber-300 mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[11px] sm:text-xs font-black text-white border border-white/30 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
               <span>Học Từ Vựng 3D Tương Tác</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
               Thẻ Ghi Nhớ Flashcard Cho Bé
             </h1>
-            <p className="text-xs sm:text-sm font-extrabold text-amber-950/80 mt-0.5 leading-snug">
+            <p className="text-xs sm:text-sm font-semibold text-sky-100 mt-0.5 leading-snug">
               Chạm vào thẻ để lật xem nghĩa và nghe phát âm tiếng Việt
             </p>
           </div>
         </div>
 
         {/* View Switcher */}
-        <div className="flex items-center gap-2 bg-white/90 p-1.5 rounded-2xl border-2 border-amber-300 shrink-0 self-stretch sm:self-auto justify-center">
+        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md p-1.5 rounded-2xl border border-white/30 shrink-0 self-stretch sm:self-auto justify-center">
           <button
             onClick={() => setViewMode('carousel')}
-            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all ${
+            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
               viewMode === 'carousel'
-                ? 'bg-amber-400 text-slate-950 shadow-xs'
-                : 'text-slate-700 hover:bg-amber-100'
+                ? 'bg-white text-sky-700 shadow-xs'
+                : 'text-white/90 hover:bg-white/10'
             }`}
           >
             Thẻ Lật Đơn
           </button>
           <button
             onClick={() => setViewMode('grid')}
-            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all ${
+            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
               viewMode === 'grid'
-                ? 'bg-amber-400 text-slate-950 shadow-xs'
-                : 'text-slate-700 hover:bg-amber-100'
+                ? 'bg-white text-sky-700 shadow-xs'
+                : 'text-white/90 hover:bg-white/10'
             }`}
           >
             Lưới Toàn Bộ
@@ -423,8 +423,8 @@ export const KidsFlashcardsPage: React.FC = () => {
               }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition-all whitespace-nowrap border-2 cursor-pointer ${
                 isSelected
-                  ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm scale-105'
-                  : 'bg-white text-slate-800 border-slate-200 hover:border-amber-300 hover:bg-amber-50'
+                  ? 'bg-sky-500 text-white border-sky-600 shadow-sm scale-105'
+                  : 'bg-white text-slate-800 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50'
               }`}
             >
               <KidsIllustration name={cat.illustration} className="w-5 h-5" />
@@ -498,9 +498,9 @@ export const KidsFlashcardsPage: React.FC = () => {
                 <div className="w-full pt-2 flex items-center justify-center">
                   <button
                     onClick={handleSpeakEnglish}
-                    className="px-4 py-2 rounded-2xl bg-white hover:bg-amber-100 border border-amber-300 text-amber-950 text-xs font-black flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    className="px-4 py-2 rounded-2xl bg-white hover:bg-sky-50 border border-sky-200 text-sky-900 text-xs font-black flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
                   >
-                    <Volume2 className="w-4 h-4 text-amber-600" />
+                    <Volume2 className="w-4 h-4 text-sky-500" />
                     <span>Nghe từ tiếng Anh</span>
                   </button>
                 </div>
@@ -537,9 +537,9 @@ export const KidsFlashcardsPage: React.FC = () => {
                 </div>
 
                 {/* Example phrase box */}
-                <div className="w-full p-3 rounded-2xl bg-amber-50/80 border border-amber-200 text-left space-y-1">
-                  <p className="text-xs font-black text-amber-950">"{currentCard.phraseEn}"</p>
-                  <p className="text-[11px] font-bold text-amber-800">👉 {currentCard.phraseVi}</p>
+                <div className="w-full p-3 rounded-2xl bg-sky-50/80 border border-sky-200/80 text-left space-y-1">
+                  <p className="text-xs font-black text-slate-800">"{currentCard.phraseEn}"</p>
+                  <p className="text-[11px] font-bold text-sky-700">👉 {currentCard.phraseVi}</p>
                 </div>
 
                 {/* Audio Action Buttons */}
@@ -568,26 +568,26 @@ export const KidsFlashcardsPage: React.FC = () => {
           <div className="flex items-center justify-between gap-3 pt-2">
             <button
               onClick={handlePrev}
-              className="flex-1 py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm border-2 border-slate-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
+              className="flex-1 py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-black text-sm border-2 border-slate-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 text-slate-600" />
               <span>Thẻ trước</span>
             </button>
 
             <button
               onClick={handleFlip}
-              className="py-3.5 px-5 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-950 font-black text-sm border-2 border-amber-300 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              className="py-3.5 px-5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-black text-sm border-2 border-sky-200 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
-              <RotateCw className="w-4 h-4" />
+              <RotateCw className="w-4 h-4 text-sky-600" />
               <span>Lật thẻ</span>
             </button>
 
             <button
               onClick={handleNext}
-              className="flex-1 py-3.5 px-4 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-sm border-2 border-amber-500 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
+              className="flex-1 py-3.5 px-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-sm border-2 border-sky-600 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
             >
               <span>Thẻ tiếp</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>

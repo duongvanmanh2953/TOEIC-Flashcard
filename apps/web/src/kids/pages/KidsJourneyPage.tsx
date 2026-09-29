@@ -182,10 +182,10 @@ export const KidsJourneyPage: React.FC = () => {
                 soundManager.playPop();
                 setSelectedWorldId(world.id);
               }}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer border-2 ${
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer border ${
                 active
-                  ? 'bg-amber-400 text-amber-950 border-amber-500 shadow-sm scale-102'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-amber-300 hover:bg-amber-50/50'
+                  ? 'bg-sky-500 text-white border-sky-500 shadow-xs scale-102'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50'
               }`}
             >
               <div className="shrink-0">{biome.icon}</div>
@@ -240,7 +240,7 @@ export const KidsJourneyPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 3. BOBBY EXPEDITION COMPANION BAR (NEXT STATION JUMP)            */}
       {/* ================================================================ */}
-      <div className="bg-amber-50/90 p-4 sm:p-5 rounded-3xl border-2 border-amber-300 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-4 text-center sm:text-left">
           <div
             onClick={() => {
@@ -251,14 +251,14 @@ export const KidsJourneyPage: React.FC = () => {
             <KidsMascot mood="excited" size={52} />
           </div>
           <div>
-            <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-300 inline-flex items-center gap-1">
-              <Compass className="w-3.5 h-3.5 text-amber-800" />
+            <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-150 inline-flex items-center gap-1">
+              <Compass className="w-3.5 h-3.5 text-sky-600" />
               Bạn Đồng Hành Bobby
             </span>
             <h3 className="font-black text-slate-900 text-base sm:text-lg mt-0.5">
               Trạm kế tiếp: {activeLesson ? activeLesson.title : 'Đỉnh Vinh Quang'}
             </h3>
-            <p className="text-xs font-semibold text-amber-900/80">
+            <p className="text-xs font-semibold text-slate-500">
               Vượt qua từng trạm để thu thập ngôi sao và cắm cờ tại đỉnh núi!
             </p>
           </div>
@@ -267,7 +267,7 @@ export const KidsJourneyPage: React.FC = () => {
         {activeLesson && (
           <button
             onClick={() => handleSelectLesson(activeLesson, true)}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 border-b-4 border-emerald-700 cursor-pointer active:scale-95 shrink-0 shadow-sm"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0 shadow-sm"
           >
             <KidsPlayIcon size={18} />
             <span>VÀO TRẠM NÀY NGAY</span>
