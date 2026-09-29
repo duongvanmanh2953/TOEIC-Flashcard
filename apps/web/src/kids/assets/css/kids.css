@@ -3,26 +3,28 @@
    ========================================================================== */
 
 :root {
-  --kids-primary: #0284c7;
-  /* Soft Sky Blue - Clean, friendly, eye-soothing */
-  --kids-primary-hover: #0369a1;
-  --kids-secondary: #10b981;
-  /* Fresh Emerald Mint */
-  --kids-accent: #f43f5e;
-  /* Playful Coral Rose */
-  --kids-background: #f8fafc;
-  /* Crystal Clear Soft Ice White */
+  --kids-primary: #3C9FE8;
+  --kids-primary-hover: #258cd6;
+  --kids-sky: #78CFF5;
+  --kids-deep-sky: #3C9FE8;
+  --kids-soft-mint: #8BE3C1;
+  --kids-mint: #52C7A0;
+  --kids-warm-yellow: #FFD866;
+  --kids-peach: #FFB58F;
+  --kids-coral: #FF7F73;
+  --kids-lavender: #B8A4F5;
+  --kids-purple: #8C72D9;
+  --kids-cream: #FFF9EC;
+  --kids-cloud: #F7FBFF;
+  --kids-secondary: #52C7A0;
+  --kids-accent: #FF7F73;
+  --kids-background: #F7FBFF;
   --kids-surface: #ffffff;
-  --kids-text: #0f172a;
-  /* Deep Slate 900 - Crisp readability */
-  --kids-text-muted: #475569;
-  /* Slate 600 - Soft contrast */
-  --kids-success: #10b981;
-  /* Emerald */
-  --kids-warning: #f59e0b;
-  /* Warm Honey Sun */
-  --kids-error: #ef4444;
-  /* Rose Red */
+  --kids-text: #17345B;
+  --kids-text-muted: #64748B;
+  --kids-success: #55C98A;
+  --kids-warning: #FFD866;
+  --kids-error: #FF6F7D;
 
   /* Radius tokens */
   --kids-radius-sm: 8px;
