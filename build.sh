@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # Script: build.sh
-# Mo ta: Tu dong git pull tu branch 'main', build va chay ngam he thong Docker
+# Mo ta: Tu dong git pull tu branch hien tai, build va chay ngam he thong Docker
 # ==============================================================================
 
 # Tu dong chuyen sang bash neu nguoi dung chay bang 'sh build.sh' (dash tren Ubuntu/Debian)
@@ -76,23 +76,21 @@ for arg in "$@"; do
     esac
 done
 
-# 3. Git Pull tu branch main
+# 3. Git Pull tu branch hien tai
 if [ "$SKIP_PULL" = true ]; then
     printf "${YELLOW}[2/5] Bo qua git pull theo yeu cau (--skip-pull)...${NC}\n"
 else
-    printf "${BLUE}[2/5] Dong bo code moi nhat tu branch 'main'...${NC}\n"
-    
     # Kiem tra branch hien tai
-    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-    
-    if [ "$CURRENT_BRANCH" != "main" ] && [ -n "$CURRENT_BRANCH" ]; then
-        printf "${YELLOW}[CANH BAO] Ban dang o branch '%s'. Dang chuyen ve 'main'...${NC}\n" "$CURRENT_BRANCH"
-        git checkout main
-    fi
+    CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
 
-    printf "Dang chay: ${BOLD}git pull origin main${NC}...\n"
-    git pull origin main
-    printf "${GREEN}✓ Dong bo code tu origin/main thanh cong!${NC}\n"
+    if [ -z "$CURRENT_BRANCH" ] || [ "$CURRENT_BRANCH" = "HEAD" ]; then
+        printf "${YELLOW}[CANH BAO] Khong xac dinh duoc branch (detached HEAD). Bo qua buoc git pull...${NC}\n"
+    else
+        printf "${BLUE}[2/5] Dong bo code moi nhat tu branch '%s'...${NC}\n" "$CURRENT_BRANCH"
+        printf "Dang chay: ${BOLD}git pull origin %s${NC}...\n" "$CURRENT_BRANCH"
+        git pull origin "$CURRENT_BRANCH"
+        printf "${GREEN}✓ Dong bo code tu origin/%s thanh cong!${NC}\n" "$CURRENT_BRANCH"
+    fi
 fi
 
 # 4. Kiem tra file cau hinh .env
