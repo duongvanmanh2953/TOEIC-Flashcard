@@ -25,6 +25,9 @@ import {
   Mic,
   Sparkles,
 } from 'lucide-react';
+import { kidAsset } from '../utils/kidAsset';
+import { BrightFoxActivityCards } from '../components/BrightFoxActivityCards';
+import { BrightFoxHeroHeader } from '../components/BrightFoxHeroHeader';
 
 export const KidsHomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -95,7 +98,7 @@ export const KidsHomePage: React.FC = () => {
       {/* ===================================================================== */}
       {/* LEFT & CENTER MAIN LEARNING STREAM (Flex-1)                           */}
       {/* ===================================================================== */}
-      <div className="flex-1 min-w-0 w-full space-y-6">
+      <div className="flex-1 min-w-0 w-full space-y-5">
         {/* 1. LARGE HERO BANNER: "Cùng khám phá thế giới từ vựng!" */}
         <div className="rounded-[32px] p-6 sm:p-8 bg-gradient-to-r from-sky-200/50 via-sky-100/60 to-emerald-100/40 border border-sky-200/80 shadow-xs relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Subtle clouds background */}
@@ -124,16 +127,46 @@ export const KidsHomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Vector Illustration (Vivi Fox with Backpack & Wooden Signpost) */}
-          <div className="w-full md:w-[320px] lg:w-[360px] h-[220px] sm:h-[240px] relative shrink-0">
-            <ViviHeroAdventureScene
-              onSignClick={handleSignClick}
-              className="w-full h-full"
+          {/* Right Cropped Asset (Vivi Fox with Backpack & Wooden Signpost) */}
+          <div className="w-full md:w-[320px] lg:w-[360px] h-[220px] sm:h-[240px] relative shrink-0 flex items-center justify-center">
+            <img
+              src={kidAsset('/kid/ui/hero-mascot-signpost.png')}
+              alt="Vivi and wooden signpost"
+              className="w-full h-full object-contain drop-shadow-md rounded-2xl cursor-pointer hover:scale-102 transition-transform"
+              onClick={handleStartLearn}
             />
+            {/* Interactive signpost click areas */}
+            <div className="absolute right-0 top-6 w-28 h-48 flex flex-col justify-between py-1 z-20">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSignClick('words'); }}
+                title="Học từ vựng"
+                className="w-full h-9 opacity-0 cursor-pointer"
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSignClick('listening'); }}
+                title="Luyện nghe nói"
+                className="w-full h-9 opacity-0 cursor-pointer"
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSignClick('speaking'); }}
+                title="Luyện nói"
+                className="w-full h-9 opacity-0 cursor-pointer"
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSignClick('test'); }}
+                title="Trò chơi vui nhộn"
+                className="w-full h-9 opacity-0 cursor-pointer"
+              />
+            </div>
           </div>
         </div>
 
-        {/* 2. 4 CORE DESTINATION FEATURE CARDS */}
+        {/* ===================================================================== */}
+        {/* BRIGHTFOX 4 CORE ACTIVITY CARDS (NUMBERS • READING • PUZZLES • DRAWING) */}
+        {/* ===================================================================== */}
+        <BrightFoxActivityCards />
+
+        {/* 2. QUICK ACCESS DESTINATION TILES */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: Học từ vựng */}
           <div
@@ -183,7 +216,7 @@ export const KidsHomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Card 3: Luyện đề */}
+          {/* Card 3: Trò chơi vui nhộn */}
           <div
             onClick={() => {
               soundManager.playPop();
@@ -196,7 +229,7 @@ export const KidsHomePage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-black text-[#17345B]">
-                Luyện đề
+                Trò chơi vui nhộn
               </h2>
               <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
                 Làm quen dạng bài TOEIC, thật tự tin
@@ -233,7 +266,7 @@ export const KidsHomePage: React.FC = () => {
         </div>
 
         {/* 3. SECTION "BÀI HỌC GỢI Ý CHO BẠN" */}
-        <div className="space-y-3.5">
+        <div className="space-y-5 bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
           <div className="flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-black text-[#17345B] flex items-center gap-2">
               <span className="text-emerald-500">🌱</span>
@@ -260,8 +293,12 @@ export const KidsHomePage: React.FC = () => {
               }}
               className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
             >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative">
-                <IllustrationBeachCrab className="w-full h-full object-cover" />
+              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
+                <img
+                  src={kidAsset('/kid/lessons/lesson-beach-crab.png')}
+                  alt="At the Beach"
+                  className="w-full h-full object-cover rounded-xl"
+                />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   12 từ
                 </span>
@@ -283,8 +320,12 @@ export const KidsHomePage: React.FC = () => {
               }}
               className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
             >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative">
-                <IllustrationRestaurantPlate className="w-full h-full object-cover" />
+              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
+                <img
+                  src={kidAsset('/kid/lessons/lesson-restaurant-food.png')}
+                  alt="At the Restaurant"
+                  className="w-full h-full object-cover rounded-xl"
+                />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   8 bài
                 </span>
@@ -306,8 +347,12 @@ export const KidsHomePage: React.FC = () => {
               }}
               className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
             >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative">
-                <IllustrationGrammarBus className="w-full h-full object-cover" />
+              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
+                <img
+                  src={kidAsset('/kid/lessons/lesson-grammar-bus.png')}
+                  alt="Present Simple"
+                  className="w-full h-full object-cover rounded-xl"
+                />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   10 bài
                 </span>
@@ -329,8 +374,12 @@ export const KidsHomePage: React.FC = () => {
               }}
               className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
             >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative">
-                <IllustrationPandaBamboo className="w-full h-full object-cover" />
+              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
+                <img
+                  src={kidAsset('/kid/lessons/lesson-animals-panda.png')}
+                  alt="Animals"
+                  className="w-full h-full object-cover rounded-xl"
+                />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   6 bài
                 </span>
@@ -349,7 +398,11 @@ export const KidsHomePage: React.FC = () => {
         {/* 4. BOTTOM MOTIVATION CALLOUT BANNER WITH BALLOON */}
         <div className="p-4 sm:p-5 rounded-[28px] bg-gradient-to-r from-sky-100/90 via-sky-50 to-emerald-50/80 border border-sky-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <IllustrationHotAirBalloon className="w-12 h-14 shrink-0 animate-bounce-subtle" />
+            <img
+              src={kidAsset('/kid/ui/hot-air-balloon.png')}
+              alt="Hot Air Balloon"
+              className="w-12 h-14 object-contain shrink-0 animate-bounce-subtle drop-shadow-xs"
+            />
             <div className="text-left">
               <h3 className="text-sm sm:text-base font-black text-[#17345B]">
                 Bạn đã sẵn sàng cho thử thách tiếp theo chưa?
@@ -376,24 +429,28 @@ export const KidsHomePage: React.FC = () => {
       {/* ===================================================================== */}
       {/* RIGHT COMPANION / PROGRESS PANEL (w-full lg:w-72 xl:w-80 shrink-0)    */}
       {/* ===================================================================== */}
-      <div className="w-full lg:w-72 xl:w-80 shrink-0 space-y-4">
+      <div className="w-full lg:w-72 xl:w-80 shrink-0 space-y-5">
         {/* Top Companion Cloud Card */}
-        <div className="p-4 rounded-3xl bg-gradient-to-b from-sky-100/50 to-white border border-sky-200/70 shadow-xs flex flex-col items-center text-center space-y-2">
+        <div className="p-5 rounded-3xl bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex flex-col items-center text-center space-y-2">
           <p className="text-xs font-bold text-slate-700 leading-snug px-2">
             Học mỗi ngày để trở thành phiên bản tốt hơn của chính mình! <span className="text-rose-500">❤️</span>
           </p>
-          <div className="w-full h-24 flex items-center justify-center">
-            <ViviSleepingCloudScene className="w-full h-full" />
+          <div className="w-full h-24 flex items-center justify-center overflow-hidden rounded-2xl">
+            <img
+              src={kidAsset('/kid/ui/cloud-sleeping-fox.png')}
+              alt="Sleeping Vivi"
+              className="w-full h-full object-contain drop-shadow-xs"
+            />
           </div>
         </div>
 
         {/* Card: Thành tích hôm nay */}
-        <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4 text-left">
+        <div className="p-5 sm:p-6 rounded-[32px] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] space-y-4 text-left">
           <h3 className="text-sm font-black text-[#17345B]">
             Thành tích hôm nay
           </h3>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Task 1: Hoàn thành bài học */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-black">
@@ -445,7 +502,7 @@ export const KidsHomePage: React.FC = () => {
         </div>
 
         {/* Card: Top từ vựng hôm nay */}
-        <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-3.5 text-left">
+        <div className="p-5 sm:p-6 rounded-[32px] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] space-y-3.5 text-left">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-black text-[#17345B]">
               Top từ vựng hôm nay

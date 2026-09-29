@@ -53,6 +53,7 @@ interface PlacedItem {
   itemId: string;
   name: string;
   icon: string;
+  image?: string;
   x: number;
   y: number;
 }
@@ -298,12 +299,12 @@ export const KidsMyWorldPage: React.FC = () => {
   const currentZoneObj = ISLAND_ZONES.find((z) => z.id === activeZone) || ISLAND_ZONES[0];
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6 md:space-y-8 animate-fadeIn pb-24 select-none">
+    <div className="w-full h-full flex flex-col space-y-4 md:space-y-5 animate-fadeIn pb-24 select-none px-2 sm:px-6">
       {/* ================================================================ */}
       {/* 1. CONCEPT BANNER: HÀNH TINH KỲ THÚ - ĐẢO CỦA BÉ                */}
       {/* ================================================================ */}
-      <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 border-2 border-emerald-400 shadow-sm relative overflow-hidden">
-        <div className="relative z-10 flex items-center gap-4 text-center md:text-left">
+      <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 rounded-3xl p-6 sm:p-8 text-white flex flex-col items-stretch gap-6 border-2 border-emerald-400 shadow-sm relative overflow-hidden">
+        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
           <KidsMascot mood="happy" size={90} speechText="Chào mừng bé đến Hành Tinh Kỳ Thú!" />
           <div>
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 text-xs font-black uppercase mb-1.5 border border-white/30 text-white">
@@ -318,56 +319,56 @@ export const KidsMyWorldPage: React.FC = () => {
         </div>
 
         {/* 4 Mode Tabs with Equal Touch Targets */}
-        <div className="relative z-10 grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 bg-white/20 backdrop-blur-md p-2 rounded-2xl border border-white/30 w-full md:w-auto">
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 items-center gap-3 bg-white/20 backdrop-blur-lg p-2.5 rounded-3xl border border-white/40 w-full shadow-inner">
           <button
             onClick={() => setActiveTab('zones')}
-            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
               activeTab === 'zones'
-                ? 'bg-white text-slate-950 shadow-sm'
-                : 'text-white hover:bg-white/20'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
-            <Compass className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="truncate">Phân Khu Kỳ Thú</span>
+            <Compass className={`w-4 h-4 shrink-0 ${activeTab === 'zones' ? 'text-emerald-600' : 'text-emerald-200'}`} />
+            <span className="truncate">Phân Khu</span>
           </button>
           <button
             onClick={() => setActiveTab('phrases')}
-            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
               activeTab === 'phrases'
-                ? 'bg-white text-slate-950 shadow-sm'
-                : 'text-white hover:bg-white/20'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
-            <MessageSquare className="w-4 h-4 text-sky-600 shrink-0" />
-            <span className="truncate">Câu Giao Tiếp</span>
+            <MessageSquare className={`w-4 h-4 shrink-0 ${activeTab === 'phrases' ? 'text-sky-600' : 'text-sky-200'}`} />
+            <span className="truncate">Giao Tiếp</span>
           </button>
           <button
             onClick={() => setActiveTab('island')}
-            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
               activeTab === 'island'
-                ? 'bg-white text-slate-950 shadow-sm'
-                : 'text-white hover:bg-white/20'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
-            <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="truncate">Đảo Hình Dán</span>
+            <MapPin className={`w-4 h-4 shrink-0 ${activeTab === 'island' ? 'text-amber-600' : 'text-amber-200'}`} />
+            <span className="truncate">Đảo Dán</span>
           </button>
           <button
             onClick={() => setActiveTab('badges')}
-            className={`px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
+            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
               activeTab === 'badges'
-                ? 'bg-white text-slate-950 shadow-sm'
-                : 'text-white hover:bg-white/20'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
-            <Award className="w-4 h-4 text-yellow-400 shrink-0" />
+            <Award className={`w-4 h-4 shrink-0 ${activeTab === 'badges' ? 'text-rose-600' : 'text-rose-200'}`} />
             <span className="truncate">Huy Hiệu</span>
           </button>
         </div>
       </div>
 
-      {/* 6 Interactive Learning Zones (Section 15: Big Icons, 44px+ touch) */}
-      <div className="space-y-3">
+      {/* 6 Interactive Learning Zones */}
+      <div className="space-y-4 bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
         <div className="flex items-center justify-between">
           <h2 className="text-base sm:text-lg font-black text-slate-950 flex items-center gap-2">
             <Compass className="w-5 h-5 text-emerald-600" />
@@ -386,22 +387,21 @@ export const KidsMyWorldPage: React.FC = () => {
               <button
                 key={zone.id}
                 onClick={() => handleSelectZone(zone)}
-                className={`p-3.5 rounded-2xl border-2 flex flex-col items-center text-center gap-2 transition-all cursor-pointer min-h-[90px] justify-center ${
+                className={`p-4 rounded-3xl border-2 flex flex-col items-center text-center gap-3 transition-all duration-300 cursor-pointer min-h-[110px] justify-center ${
                   isCurrent
-                    ? 'bg-sky-500 border-sky-600 text-white shadow-md scale-102 ring-2 ring-sky-300'
-                    : 'bg-white hover:bg-sky-50/70 border-slate-200'
+                    ? 'bg-white/80 backdrop-blur-xl border-sky-400 shadow-[0_8px_24px_rgba(14,165,233,0.2)] scale-105'
+                    : 'bg-white/40 backdrop-blur-md hover:bg-white/60 border-white/50 hover:border-sky-300 shadow-sm hover:-translate-y-1'
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                    isCurrent ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-700'
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${
+                    isCurrent ? 'bg-gradient-to-br from-sky-400 to-blue-600 text-white' : 'bg-white/80 text-slate-700'
                   }`}
                 >
-                  <ZoneIcon className="w-5 h-5" />
+                  <ZoneIcon className="w-6 h-6" />
                 </div>
                 <div className="leading-tight">
-                  <p className={`text-xs font-black ${isCurrent ? 'text-white' : 'text-slate-950'}`}>{zone.nameVi}</p>
-                  <p className={`text-[10px] font-bold ${isCurrent ? 'text-sky-100' : 'text-slate-600'}`}>{zone.nameEn}</p>
+                  <p className={`text-sm font-black ${isCurrent ? 'text-sky-700' : 'text-slate-800'}`}>{zone.nameVi}</p>
                 </div>
               </button>
             );
@@ -413,7 +413,7 @@ export const KidsMyWorldPage: React.FC = () => {
       {/* TAB 1: ZONES & VOCABULARY EXPLORATION                            */}
       {/* ================================================================ */}
       {activeTab === 'zones' && (
-        <div className="space-y-6">
+        <div className="space-y-6 bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
           {/* Active Zone Spotlight Card */}
           <div className="p-5 rounded-3xl bg-sky-50/70 border border-sky-200 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
@@ -451,14 +451,14 @@ export const KidsMyWorldPage: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`p-2.5 sm:p-3 rounded-2xl font-black text-xs transition cursor-pointer border-2 flex flex-col items-center justify-center text-center gap-1 min-h-[64px] ${
+                className={`p-2.5 sm:p-3 rounded-3xl font-black transition-all duration-300 cursor-pointer border flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px] ${
                   selectedCategory === 'all'
-                    ? 'bg-sky-500 text-white border-sky-600 shadow-sm scale-102'
-                    : 'bg-slate-50 hover:bg-sky-50/60 text-slate-700 border-slate-200'
+                    ? 'bg-white/80 backdrop-blur-xl border-sky-400 text-sky-800 shadow-[0_8px_24px_rgba(14,165,233,0.2)] scale-105'
+                    : 'bg-white/40 backdrop-blur-md hover:bg-white/60 text-slate-700 border-white/50 shadow-sm hover:-translate-y-1'
                 }`}
               >
-                <Sparkles className={`w-5 h-5 ${selectedCategory === 'all' ? 'text-white' : 'text-sky-600'}`} />
-                <span className="leading-tight">Tất Cả</span>
+                <Sparkles className={`w-6 h-6 ${selectedCategory === 'all' ? 'text-sky-500' : 'text-sky-600'}`} />
+                <span className="leading-tight text-[11px] sm:text-xs">Tất Cả</span>
               </button>
 
               {KIDS_CATEGORIES.map((cat) => {
@@ -467,16 +467,15 @@ export const KidsMyWorldPage: React.FC = () => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`p-2.5 sm:p-3 rounded-2xl font-black text-xs transition cursor-pointer border-2 flex flex-col items-center justify-center text-center gap-1 min-h-[64px] ${
+                    className={`p-2 sm:p-3 rounded-3xl font-black transition-all duration-300 cursor-pointer border flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px] overflow-hidden ${
                       isSelected
-                        ? 'bg-sky-500 text-white border-sky-600 shadow-sm scale-102'
-                        : 'bg-slate-50 hover:bg-sky-50/60 text-slate-700 border-slate-200'
+                        ? 'bg-white/80 backdrop-blur-xl border-sky-400 text-sky-800 shadow-[0_8px_24px_rgba(14,165,233,0.2)] scale-105'
+                        : 'bg-white/40 backdrop-blur-md hover:bg-white/60 text-slate-700 border-white/50 shadow-sm hover:-translate-y-1'
                     }`}
                   >
-                    <span className="text-lg leading-none">{cat.icon || '📖'}</span>
-                    <div className="leading-tight">
-                      <p className="truncate">{cat.nameVi}</p>
-                      <p className={`text-[10px] font-bold truncate ${isSelected ? 'text-sky-100' : 'text-slate-600'}`}>({cat.nameEn})</p>
+                    <span className="text-2xl leading-none drop-shadow-sm">{cat.icon || '📖'}</span>
+                    <div className="leading-tight mt-0.5 w-full px-0.5">
+                      <p className="line-clamp-2 text-[10px] sm:text-[11px] leading-tight break-words text-wrap">{cat.nameVi}</p>
                     </div>
                   </button>
                 );
@@ -623,7 +622,7 @@ export const KidsMyWorldPage: React.FC = () => {
       {/* TAB 2: DAILY COMMON COMMUNICATION PHRASES                        */}
       {/* ================================================================ */}
       {activeTab === 'phrases' && (
-        <div className="space-y-6">
+        <div className="space-y-6 bg-white/95 backdrop-blur-sm p-5 sm:p-7 rounded-[32px] shadow-sm border border-white/80">
           <div className="bg-sky-50/70 p-5 rounded-3xl border border-sky-200 flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
               <MessageSquare className="w-6 h-6" />
@@ -704,7 +703,7 @@ export const KidsMyWorldPage: React.FC = () => {
       {/* TAB 3: MY ISLAND (INTERACTIVE STICKER MAP)                       */}
       {/* ================================================================ */}
       {activeTab === 'island' && (
-        <div className="space-y-6">
+        <div className="space-y-6 bg-white/95 backdrop-blur-sm p-5 sm:p-7 rounded-[32px] shadow-sm border border-white/80">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black text-slate-950">Vương Quốc Đảo Của Bé</h2>
             <button
@@ -732,6 +731,7 @@ export const KidsMyWorldPage: React.FC = () => {
                 itemId: sticker.id,
                 name: sticker.name,
                 icon: sticker.icon,
+                image: sticker.image,
                 x: Math.max(10, Math.min(90, x)),
                 y: Math.max(15, Math.min(85, y)),
               };
@@ -763,9 +763,17 @@ export const KidsMyWorldPage: React.FC = () => {
                 className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group select-none hover:scale-125 transition-transform"
               >
                 <div className="relative">
-                  <span className="text-4xl sm:text-5xl drop-shadow-md animate-bounce-subtle">
-                    {item.icon}
-                  </span>
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-md animate-bounce-subtle pointer-events-none"
+                    />
+                  ) : (
+                    <span className="text-4xl sm:text-5xl drop-shadow-md animate-bounce-subtle">
+                      {item.icon}
+                    </span>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -803,14 +811,24 @@ export const KidsMyWorldPage: React.FC = () => {
                       soundManager.playPop();
                       setSelectedSticker(isSelected ? null : sticker.id);
                     }}
-                    className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1 shrink-0 transition cursor-pointer min-w-[70px] min-h-[70px] ${
+                    className={`p-2.5 rounded-2xl border-2 flex flex-col items-center gap-1.5 shrink-0 transition cursor-pointer min-w-[76px] min-h-[76px] ${
                       isSelected
                         ? 'bg-sky-500 border-sky-600 text-white scale-105 shadow-sm'
                         : 'bg-slate-50 border-slate-200 hover:bg-sky-50/60'
                     }`}
                   >
-                    <span className="text-3xl">{sticker.icon}</span>
-                    <span className={`text-[10px] font-black ${isSelected ? 'text-white' : 'text-slate-800'}`}>{sticker.name}</span>
+                    {sticker.image ? (
+                      <img
+                        src={sticker.image}
+                        alt={sticker.name}
+                        className="w-10 h-10 object-contain drop-shadow-2xs pointer-events-none"
+                      />
+                    ) : (
+                      <span className="text-3xl">{sticker.icon}</span>
+                    )}
+                    <span className={`text-[10px] font-black truncate max-w-[70px] ${isSelected ? 'text-white' : 'text-slate-800'}`}>
+                      {sticker.name}
+                    </span>
                   </button>
                 );
               })}
@@ -831,18 +849,30 @@ export const KidsMyWorldPage: React.FC = () => {
                 key={badge.id}
                 className={`p-6 rounded-3xl border-2 flex flex-col items-center text-center space-y-3 transition-all ${
                   isUnlocked
-                    ? 'bg-white border-amber-400 shadow-sm'
-                    : 'bg-slate-100 border-slate-300 opacity-60'
+                    ? 'bg-white border-amber-300 shadow-sm'
+                    : 'bg-slate-50 border-slate-200 opacity-60'
                 }`}
               >
                 <div
-                  className={`w-16 h-16 rounded-3xl flex items-center justify-center text-3xl border-2 ${
+                  className={`w-20 h-20 rounded-3xl flex items-center justify-center p-2 border-2 ${
                     isUnlocked
-                      ? 'bg-amber-400 text-amber-950 border-amber-500'
-                      : 'bg-slate-200 text-slate-500 border-slate-300'
+                      ? 'bg-amber-50 text-amber-950 border-amber-200'
+                      : 'bg-slate-100 text-slate-400 border-slate-200'
                   }`}
                 >
-                  {isUnlocked ? <Award className="w-8 h-8 text-amber-900" /> : <Lock className="w-8 h-8 text-slate-500" />}
+                  {badge.image ? (
+                    <img
+                      src={badge.image}
+                      alt={badge.title}
+                      className={`w-full h-full object-contain ${
+                        isUnlocked ? 'drop-shadow-sm' : 'grayscale opacity-40'
+                      }`}
+                    />
+                  ) : isUnlocked ? (
+                    <Award className="w-8 h-8 text-amber-900" />
+                  ) : (
+                    <Lock className="w-8 h-8 text-slate-500" />
+                  )}
                 </div>
 
                 <div>
@@ -898,12 +928,10 @@ export const KidsMyWorldPage: React.FC = () => {
               <div>
                 <span className="text-[10px] font-black uppercase text-sky-900">Cụm từ mẫu:</span>
                 <p className="text-xs font-black text-slate-900 italic">"{activeWordModal.phrase}"</p>
-                <p className="text-[11px] font-bold text-slate-600">({activeWordModal.phraseVi})</p>
               </div>
               <div className="pt-2 border-t border-sky-200/70">
                 <span className="text-[10px] font-black uppercase text-sky-900">Câu hoàn chỉnh:</span>
                 <p className="text-xs font-black text-slate-900 italic">"{activeWordModal.sentence}"</p>
-                <p className="text-[11px] font-bold text-slate-600">({activeWordModal.sentenceVi})</p>
               </div>
             </div>
 

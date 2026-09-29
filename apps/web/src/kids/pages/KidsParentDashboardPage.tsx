@@ -6,7 +6,7 @@ import { getKidsProgress, resetKidsProgress } from '../curriculum/curriculumProg
 import { WORLDS_DATA } from '../curriculum/kidsCurriculum';
 import { speechManager } from '../services/speech/KidsSpeechManager';
 import { soundManager } from '../services/sound/KidsSoundManager';
-import { Star, Flame, Target, Volume2, Clock, Sparkles } from 'lucide-react';
+import { Star, Flame, Target, Volume2, Clock, Sparkles, ShieldCheck } from 'lucide-react';
 
 export const KidsParentDashboardPage: React.FC = () => {
   const { t } = useTranslation();
@@ -48,7 +48,7 @@ export const KidsParentDashboardPage: React.FC = () => {
       <div className="bg-white rounded-3xl p-6 md:p-8 border-2 border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
-            <KidsIcon name="shield" size={32} />
+            <ShieldCheck className="w-8 h-8 text-purple-600" />
           </div>
           <div>
             <div className="inline-flex items-center gap-1 text-xs font-black text-purple-700 uppercase tracking-wider mb-0.5">

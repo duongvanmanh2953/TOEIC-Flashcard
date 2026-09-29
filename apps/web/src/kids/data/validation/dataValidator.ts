@@ -99,7 +99,6 @@ export function validateVocabularyItem(item: VocabularyItem): ValidationResult {
   if (!item.word || !item.word.trim()) errors.push(`Vocab [${item.id}] missing word`);
   if (!item.viMeaning || !item.viMeaning.trim()) errors.push(`Vocab [${item.id}] missing Vietnamese meaning`);
   if (!item.sentence || !item.sentence.trim()) errors.push(`Vocab [${item.id}] missing example sentence`);
-  if (!item.sentenceVi || !item.sentenceVi.trim()) errors.push(`Vocab [${item.id}] missing Vietnamese translation for sentence`);
 
   return {
     isValid: errors.length === 0,

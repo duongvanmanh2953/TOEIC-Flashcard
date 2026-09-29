@@ -35,6 +35,7 @@ interface WorldBiomeConfig {
   id: string;
   name: string;
   subtitle: string;
+  image: string;
   icon: React.ReactNode;
   gradient: string;
   border: string;
@@ -42,11 +43,14 @@ interface WorldBiomeConfig {
   badgeBg: string;
 }
 
+import { kidAsset } from '../utils/kidAsset';
+
 const WORLD_BIOMES: WorldBiomeConfig[] = [
   {
     id: 'world-1-jungle',
-    name: 'Rừng Rậm Diệu Kỳ',
+    name: 'Khu Rừng Từ Vựng (Word Forest)',
     subtitle: 'Khám phá muông thú, màu sắc & lời chào đầu đời',
+    image: kidAsset('/kid/worlds/world-word-forest.png'),
     icon: <Trees className="w-4 h-4 text-emerald-600" />,
     gradient: 'from-emerald-500 via-teal-600 to-emerald-700',
     border: 'border-emerald-400',
@@ -55,8 +59,9 @@ const WORLD_BIOMES: WorldBiomeConfig[] = [
   },
   {
     id: 'world-2-city',
-    name: 'Thành Phố Tương Lai',
-    subtitle: 'Chế tạo robot, phương tiện & công trình hiện đại',
+    name: 'Hồ Luyện Nghe (Listening Lake)',
+    subtitle: 'Lắng nghe phản xạ, giai điệu & phát âm bản xứ',
+    image: kidAsset('/kid/worlds/world-listening-lake.png'),
     icon: <Mountain className="w-4 h-4 text-sky-600" />,
     gradient: 'from-sky-500 via-indigo-600 to-blue-700',
     border: 'border-sky-400',
@@ -65,8 +70,9 @@ const WORLD_BIOMES: WorldBiomeConfig[] = [
   },
   {
     id: 'world-3-ocean',
-    name: 'Đại Dương Huyền Bí',
-    subtitle: 'Lặn xuống biển sâu, khám phá rạn san hô & sinh vật biển',
+    name: 'Núi Luyện Nói (Speaking Mountain)',
+    subtitle: 'Nói chuẩn tự tin cùng Vivi qua micro tương tác',
+    image: kidAsset('/kid/worlds/world-speaking-mountain.png'),
     icon: <Waves className="w-4 h-4 text-cyan-600" />,
     gradient: 'from-cyan-500 via-teal-600 to-blue-700',
     border: 'border-cyan-400',
@@ -75,8 +81,9 @@ const WORLD_BIOMES: WorldBiomeConfig[] = [
   },
   {
     id: 'world-4-castle',
-    name: 'Lâu Đài Cổ Tích',
+    name: 'Lâu Đài Ngữ Pháp (Grammar Castle)',
     subtitle: 'Giải cứu vương quốc từ vựng & mở khóa kho báu hoàng gia',
+    image: kidAsset('/kid/worlds/world-grammar-castle.png'),
     icon: <Castle className="w-4 h-4 text-amber-600" />,
     gradient: 'from-amber-500 via-orange-500 to-rose-600',
     border: 'border-amber-400',
@@ -85,8 +92,9 @@ const WORLD_BIOMES: WorldBiomeConfig[] = [
   },
   {
     id: 'world-5-space',
-    name: 'Trạm Vũ Trụ Không Gian',
-    subtitle: 'Du hành giữa các vì sao & chinh phục đỉnh cao tiếng Anh',
+    name: 'Đấu Trường Thử Thách (Challenge Arena)',
+    subtitle: 'Chinh phục đỉnh cao & chứng minh phản xạ siêu tốc',
+    image: kidAsset('/kid/worlds/world-challenge-arena.png'),
     icon: <Rocket className="w-4 h-4 text-indigo-600" />,
     gradient: 'from-indigo-600 via-purple-600 to-slate-900',
     border: 'border-indigo-400',
@@ -204,26 +212,35 @@ export const KidsJourneyPage: React.FC = () => {
       {/* 2. ADVENTURE WORLD HEADER (ATMOSPHERIC CINEMATIC BANNER)         */}
       {/* ================================================================ */}
       <div
-        className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${currentBiome.gradient} text-white p-5 sm:p-7 lg:p-8 border-2 ${currentBiome.border} shadow-sm`}
+        className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${currentBiome.gradient} text-white p-5 sm:p-7 lg:p-8 border-2 ${currentBiome.border} shadow-sm min-h-[170px] flex flex-col justify-between`}
       >
+        {/* Real 3D World Art Background */}
+        {currentBiome.image && (
+          <img
+            src={currentBiome.image}
+            alt={currentBiome.name}
+            className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-luminosity pointer-events-none"
+          />
+        )}
+
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
           <div className="space-y-2 max-w-xl min-w-0 flex-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] sm:text-xs font-black uppercase tracking-wider border border-white/30">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/25 backdrop-blur-md text-[11px] sm:text-xs font-black uppercase tracking-wider border border-white/20">
               <KidsMapIcon size={16} />
               <span>Cung Đường Thám Hiểm</span>
               <span>•</span>
               <span>Cấp độ {currentWorld.level}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white drop-shadow-md">
               {currentWorld.title}
             </h1>
-            <p className="text-white/90 font-medium text-xs sm:text-sm leading-relaxed">
+            <p className="text-white/95 font-medium text-xs sm:text-sm leading-relaxed drop-shadow-sm">
               {currentBiome.subtitle}
             </p>
           </div>
 
           {/* Expedition Quick Milestone Box */}
-          <div className="bg-white/15 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/30 flex items-center gap-3 sm:gap-4 shrink-0 shadow-xs self-stretch sm:self-auto">
+          <div className="bg-black/20 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/25 flex items-center gap-3 sm:gap-4 shrink-0 shadow-xs self-stretch sm:self-auto">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-xs shrink-0">
               <Flag className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
@@ -238,7 +255,7 @@ export const KidsJourneyPage: React.FC = () => {
       </div>
 
       {/* ================================================================ */}
-      {/* 3. BOBBY EXPEDITION COMPANION BAR (NEXT STATION JUMP)            */}
+      {/* 3. VIVI EXPEDITION COMPANION BAR (NEXT STATION JUMP)             */}
       {/* ================================================================ */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-4 text-center sm:text-left">
@@ -248,12 +265,12 @@ export const KidsJourneyPage: React.FC = () => {
             }}
             className="shrink-0"
           >
-            <KidsMascot mood="excited" size={52} />
+            <KidsMascot mood="excited" size={60} />
           </div>
           <div>
             <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-150 inline-flex items-center gap-1">
               <Compass className="w-3.5 h-3.5 text-sky-600" />
-              Bạn Đồng Hành Bobby
+              Bạn Đồng Hành Vivi
             </span>
             <h3 className="font-black text-slate-900 text-base sm:text-lg mt-0.5">
               Trạm kế tiếp: {activeLesson ? activeLesson.title : 'Đỉnh Vinh Quang'}

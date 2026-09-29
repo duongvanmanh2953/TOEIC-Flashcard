@@ -99,11 +99,19 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
                 key={starIndex}
                 className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-500 ${
                   hasStar
-                    ? 'bg-amber-400 border-amber-500 text-white scale-110 animate-bounce'
+                    ? 'bg-amber-100 border-amber-300 scale-110 shadow-sm'
                     : 'bg-slate-100 border-slate-300 text-slate-400'
                 }`}
               >
-                <KidsStarIcon size={32} filled={hasStar} />
+                {hasStar ? (
+                  <img
+                    src="/kid/rewards/star.png"
+                    alt="Star"
+                    className="w-10 h-10 object-contain drop-shadow-md animate-bounce"
+                  />
+                ) : (
+                  <KidsStarIcon size={28} filled={false} />
+                )}
               </div>
             );
           })}

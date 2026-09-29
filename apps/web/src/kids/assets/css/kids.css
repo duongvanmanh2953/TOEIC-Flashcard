@@ -46,6 +46,25 @@
 }
 
 /* ==========================================================================
+   KIDS MODULE - CUSTOM SCROLLBAR (THIN, DARK ORANGE)
+   ========================================================================== */
+.kids-layout ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.kids-layout ::-webkit-scrollbar-track {
+  background: rgba(255, 237, 213, 0.5); /* Light orange track */
+  border-radius: 8px;
+}
+.kids-layout ::-webkit-scrollbar-thumb {
+  background: #ea580c; /* Dark orange (orange-600) */
+  border-radius: 8px;
+}
+.kids-layout ::-webkit-scrollbar-thumb:hover {
+  background: #c2410c; /* Darker orange (orange-700) */
+}
+
+/* ==========================================================================
    KIDS MODULE - HIGH CONTRAST DARK & LIGHT MODE TEXT ENFORCEMENT
    Trang Kid luôn có nền sáng/trắng (#FFFDF7, panels trắng, thẻ pastel).
    Vì vậy dù ở chế độ thường hay Dark Mode (.dark), toàn bộ text phụ và text màu

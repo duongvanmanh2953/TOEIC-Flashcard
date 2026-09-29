@@ -6,6 +6,7 @@ interface RewardCountProps {
   xp?: number;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  showStarLabel?: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ export const RewardCount: React.FC<RewardCountProps> = ({
   xp,
   className = '',
   size = 'md',
+  showStarLabel = true,
 }) => {
   const sizeClasses = {
     sm: 'text-xs px-2.5 py-0.5 gap-1',
@@ -34,7 +36,7 @@ export const RewardCount: React.FC<RewardCountProps> = ({
   return (
     <div className={`inline-flex items-center rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-black shadow-xs select-none ${sizeClasses} ${className}`}>
       <Star className={`${starSize} fill-amber-400 text-amber-500 shrink-0 filter drop-shadow-xs`} />
-      <span className="tracking-tight">{stars} Sao Vàng</span>
+      <span className="tracking-tight">{stars}{showStarLabel ? ' Sao Vàng' : ''}</span>
       {typeof xp === 'number' && (
         <>
           <span className="text-amber-300 font-bold">•</span>

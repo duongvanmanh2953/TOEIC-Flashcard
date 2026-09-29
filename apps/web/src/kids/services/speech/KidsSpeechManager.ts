@@ -13,6 +13,7 @@ class KidsSpeechManager {
   private voices: SpeechSynthesisVoice[] = [];
   private isReady: boolean = false;
   private activeUtterance: SpeechSynthesisUtterance | null = null;
+  private activeAudio: HTMLAudioElement | null = null;
   private isCurrentlySpeaking: boolean = false;
   private onStateChangeListeners: Set<(speaking: boolean) => void> = new Set();
 

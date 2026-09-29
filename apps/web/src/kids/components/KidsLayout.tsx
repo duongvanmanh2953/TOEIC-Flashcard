@@ -17,6 +17,7 @@ import { KidsSoundToggle } from './KidsSoundToggle';
 import { useLearningContext } from '../../contexts/LearningContext';
 import { isKidSupportedLanguage } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
+import { kidAsset } from '../utils/kidAsset';
 import {
   Flame,
   Sparkles,
@@ -108,7 +109,7 @@ export const KidsLayout: React.FC = () => {
   };
 
   const handleParentVerified = () => {
-    kidsSound.play('fanfare');
+    kidsSound.play('celebration');
     setParentModalOpen(false);
     navigate(pendingParentRoute);
   };
@@ -132,7 +133,7 @@ export const KidsLayout: React.FC = () => {
     },
     {
       to: '/kids/games',
-      label: 'Luyện đề',
+      label: 'Trò chơi vui nhộn',
       icon: ClipboardList,
     },
     {
@@ -142,7 +143,7 @@ export const KidsLayout: React.FC = () => {
     },
     {
       to: '/kids/parent',
-      label: 'Cộng đồng',
+      label: 'Kết quả học tập',
       icon: Users,
     },
   ];
@@ -163,8 +164,12 @@ export const KidsLayout: React.FC = () => {
           }}
           className="flex items-center gap-3 cursor-pointer group select-none"
         >
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-1 border border-amber-300 shadow-xs shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <span className="text-2xl drop-shadow-xs">🦊</span>
+          <div className="w-11 h-11 rounded-2xl bg-amber-50 p-1 border border-amber-200 shadow-2xs shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform overflow-hidden">
+            <img
+              src={kidAsset('/kid/ui/vocalflow-fox-logo.png')}
+              alt="VocalFlow Kid"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <h2 className="font-black text-xl leading-tight text-[#ea580c] tracking-tight">
@@ -206,10 +211,10 @@ export const KidsLayout: React.FC = () => {
                 kidsSound.play('pop');
                 if (isDrawer) setMobileMenuOpen(false);
               }}
-              className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl font-black text-sm transition-all cursor-pointer select-none min-h-[48px] ${
+              className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl font-black text-sm transition-all duration-300 cursor-pointer select-none min-h-[48px] border-b-4 ${
                 isActive
-                  ? 'bg-[#3C9FE8] text-white shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                  ? 'bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-md transform scale-[1.02] border-orange-600'
+                  : 'bg-transparent text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 border-transparent hover:scale-[1.01]'
               }`}
             >
               <ItemIcon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
@@ -223,12 +228,17 @@ export const KidsLayout: React.FC = () => {
       <div className="p-4 border-t border-sky-100/70 bg-[#F7FBFF]/60 flex flex-col items-center justify-center space-y-2 shrink-0 select-none">
         <div className="relative flex flex-col items-center">
           {/* Speech Tag */}
-          <div className="mb-1.5 px-3 py-1 rounded-2xl bg-white border border-rose-200 shadow-2xs text-[11px] font-black text-slate-800 text-center flex items-center gap-1">
+          <div className="mb-1.5 px-3 py-1 rounded-2xl bg-white border border-rose-200 shadow-2xs text-[11px] font-black text-slate-800 text-center flex items-center gap-1 animate-pulse">
             <span>Cố lên nhé, con làm được!</span>
             <span className="text-rose-500">❤️</span>
           </div>
-          {/* Vector Reading Fox */}
-          <ViviReadingCompanion className="w-32 h-32" />
+          {/* Real 3D Reading Fox */}
+          <img
+            src={kidAsset('/kid/mascot/vivi-reading-headphones.png')}
+            alt="Vivi bạn đồng hành"
+            className="w-32 h-36 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-md cursor-pointer"
+            onClick={() => kidsSound.play('celebration')}
+          />
         </div>
 
         <button
@@ -248,11 +258,9 @@ export const KidsLayout: React.FC = () => {
 
   return (
     <div className={`kids-layout min-h-screen min-h-[100dvh] bg-[#F7FBFF] text-slate-800 font-sans select-none flex flex-col relative overflow-x-hidden ${isFocusMode ? 'pb-4' : 'pb-24 lg:pb-6'}`}>
-      {/* Subtle Background Layering & Playful Shapes */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-sky-100/40 blur-3xl" />
-        <div className="absolute top-1/4 -right-24 w-80 h-80 rounded-full bg-indigo-50/50 blur-3xl" />
-        <div className="absolute bottom-10 -left-20 w-88 h-88 rounded-full bg-emerald-50/50 blur-3xl" />
+      {/* Global World Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-sky-50">
+        <img src={kidAsset('/kid/backgrounds/overall-bg.png')} className="absolute inset-0 w-full h-full object-cover" alt="World Background" />
       </div>
 
       {/* ========================================================================= */}
@@ -338,7 +346,7 @@ export const KidsLayout: React.FC = () => {
                 {/* Streak Pill */}
                 <button
                   onClick={() => {
-                    kidsSound.play('ding');
+                    kidsSound.play('sparkle');
                     handleOpenParentGate('/kids/parent');
                   }}
                   className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white hover:bg-amber-50/70 border border-slate-200/90 text-xs font-black text-slate-800 shadow-2xs cursor-pointer transition-all active:scale-95"
@@ -373,7 +381,7 @@ export const KidsLayout: React.FC = () => {
         )}
 
         {/* Main Content Body */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8 relative z-10">
+        <main className="flex-1 w-full h-full flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8 relative z-10">
           <Outlet />
         </main>
       </div>
@@ -394,9 +402,9 @@ export const KidsLayout: React.FC = () => {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all min-h-[48px] min-w-[56px] ${isActive
-                    ? 'bg-sky-500 text-white font-black scale-105 shadow-xs'
-                    : 'text-slate-600 font-bold hover:text-slate-900'
+                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-300 min-h-[48px] min-w-[56px] border-b-4 ${isActive
+                    ? 'bg-gradient-to-t from-orange-400 to-amber-400 text-white font-black scale-[1.08] shadow-md border-orange-600 -translate-y-1'
+                    : 'bg-transparent text-slate-600 font-bold hover:text-slate-900 border-transparent'
                     }`}
                 >
                   <item.icon size={20} />

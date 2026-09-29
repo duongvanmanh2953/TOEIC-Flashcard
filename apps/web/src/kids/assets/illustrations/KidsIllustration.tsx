@@ -54,6 +54,41 @@ interface KidsIllustrationProps {
   alt?: string;
 }
 
+const KID_PHOTO_ASSETS: Record<string, string> = {
+  // 20 Animals
+  rabbit: '/kid/animals/rabbit.png',
+  panda: '/kid/animals/panda.png',
+  lion: '/kid/animals/lion.png',
+  tiger: '/kid/animals/tiger.png',
+  elephant: '/kid/animals/elephant.png',
+  monkey: '/kid/animals/monkey.png',
+  penguin: '/kid/animals/penguin.png',
+  bear: '/kid/animals/bear.png',
+  cat: '/kid/animals/cat.png',
+  dog: '/kid/animals/dog.png',
+  bird: '/kid/animals/bird.png',
+  giraffe: '/kid/animals/giraffe.png',
+  zebra: '/kid/animals/zebra.png',
+  frog: '/kid/animals/frog.png',
+  turtle: '/kid/animals/turtle.png',
+  dolphin: '/kid/animals/dolphin.png',
+  whale: '/kid/animals/whale.png',
+  butterfly: '/kid/animals/butterfly.png',
+  bee: '/kid/animals/bee.png',
+  fox: '/kid/animals/fox.png',
+  // Rewards & Items
+  'treasure-chest': '/kid/rewards/chest.png',
+  chest: '/kid/rewards/chest.png',
+  star: '/kid/rewards/star.png',
+  trophy: '/kid/rewards/trophy.png',
+  crown: '/kid/rewards/crown.png',
+  xp: '/kid/rewards/xp.png',
+  gem: '/kid/rewards/gem.png',
+  ticket: '/kid/rewards/ticket.png',
+};
+
+import { kidAsset } from '../../utils/kidAsset';
+
 export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
   name,
   className = 'w-16 h-16',
@@ -62,6 +97,18 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
 }) => {
   const normalized = (name || '').toLowerCase().trim().replace(/\s+/g, '-');
   const style = size ? { width: size, height: size } : undefined;
+
+  if (KID_PHOTO_ASSETS[normalized]) {
+    return (
+      <img
+        src={kidAsset(KID_PHOTO_ASSETS[normalized])}
+        alt={alt || normalized}
+        className={`${className} object-contain select-none drop-shadow-sm transition-transform duration-200 hover:scale-105`}
+        style={style}
+        loading="lazy"
+      />
+    );
+  }
 
   switch (normalized) {
     /* ----------------------------------------------------

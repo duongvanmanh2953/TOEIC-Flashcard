@@ -10,7 +10,7 @@ import {
   GameWorldId,
   GameDefinition,
 } from '../data/games/gamesRegistry';
-import { GameRecommendationEngine, RecommendedGame } from '../services/recommendation/GameRecommendationEngine';
+import { GameRecommendationEngine, GameRecommendation } from '../services/recommendation/GameRecommendationEngine';
 import {
   ListenFindGame,
   MemoryFlipGame,
@@ -31,6 +31,8 @@ import {
   BossChallengeGame,
   AnimalRescueGame,
 } from '../games';
+import { BrightFoxSpellingGame } from '../games/spelling/BrightFoxSpellingGame';
+import { kidAsset } from '../utils/kidAsset';
 import {
   Star,
   Sparkles,
@@ -73,9 +75,9 @@ export const KidsGamesPage: React.FC = () => {
   }, [activeGameId]);
 
   // Recommendations for the child
-  const recommendations: RecommendedGame[] = useMemo(() => {
-    return GameRecommendationEngine.getRecommendations(progress, 3);
-  }, [progress]);
+  const recommendations: GameRecommendation[] = useMemo(() => {
+    return GameRecommendationEngine.getRecommendations(3);
+  }, []);
 
   const handleSelectGame = (gameId: GameId) => {
     soundManager.playPop();
@@ -185,7 +187,13 @@ export const KidsGamesPage: React.FC = () => {
       case 'cooking_time':
         return <CookingTimeGame {...commonProps} />;
       case 'word_builder':
-        return <WordBuilderGame {...commonProps} />;
+        return (
+          <BrightFoxSpellingGame
+            onExit={handleBackToCatalog}
+            onStarsAwarded={handleAwardStars}
+            onNextGame={() => handleSelectGame(getNextGameId(activeGameId))}
+          />
+        );
       case 'word_catcher':
       case 'listen_catch':
       case 'feed_animal':
@@ -211,31 +219,38 @@ export const KidsGamesPage: React.FC = () => {
 
   // Otherwise: Render the ADVENTURE JOURNEY MAP Catalog
   return (
-    <div className="w-full space-y-6 sm:space-y-8 select-none pb-6">
+    <div className="w-full h-full flex flex-col space-y-4 sm:space-y-5 select-none pb-6 px-2 sm:px-6">
       {/* ================================================================ */}
       {/* 1. HERO BANNER: ADVENTURE STATS & WELCOME                        */}
       {/* ================================================================ */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-500 p-5 sm:p-7 lg:p-8 text-white shadow-sm border border-sky-300/40">
-        <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute top-3 right-10 text-5xl opacity-20 select-none pointer-events-none animate-pulse">
-          ✨
-        </div>
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-600 p-5 sm:p-7 lg:p-8 text-white shadow-sm border border-sky-300/40">
+        {/* Real 3D Challenge Arena Backdrop */}
+        <img
+          src="/kid/worlds/world-challenge-arena.png"
+          alt="Challenge Arena"
+          className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-luminosity pointer-events-none"
+        />
 
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-3xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-3xl sm:text-4xl lg:text-5xl shadow-inner shrink-0 animate-bounce">
-              🐻
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-white border border-white/30 flex items-center justify-center p-2 shadow-inner shrink-0 hover:scale-105 transition-transform cursor-pointer">
+              <img
+                src="/kid/mascot/vivi-trophy.png"
+                alt="Vivi the Fox"
+                className="w-full h-full object-contain drop-shadow-md animate-bounce-subtle"
+                onClick={() => soundManager.playPop()}
+              />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] sm:text-xs font-black uppercase tracking-wider text-white">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/20 backdrop-blur-md text-[11px] sm:text-xs font-black uppercase tracking-wider text-white">
                 <Compass className="w-3.5 h-3.5 text-white shrink-0" />
-                <span>Hành Trình Thám Hiểm Tiếng Anh</span>
+                <span>Đấu Trường Thử Thách Cùng Vivi</span>
               </div>
               <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-white mt-1 drop-shadow-xs">
                 👋 Chào bé! Cùng phiêu lưu nhé!
               </h1>
-              <p className="text-xs sm:text-sm lg:text-base font-semibold text-sky-100 max-w-xl leading-snug mt-0.5">
-                Khám phá 6 Thế giới kỳ diệu qua 17 trò chơi độc bản: Nghe, Chạm, Nói, Đánh vần và Ghép câu!
+              <p className="text-xs sm:text-sm lg:text-base font-semibold text-sky-100 max-w-xl leading-snug mt-0.5 drop-shadow-xs">
+                Khám phá các vùng đất kỳ thú qua 17 trò chơi độc bản: Nghe, Chạm, Nói, Đánh vần và Ghép câu!
               </p>
             </div>
           </div>
@@ -248,7 +263,7 @@ export const KidsGamesPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-500 rounded-xl text-white font-black text-xs sm:text-sm shadow-2xs">
               <Flame className="w-4 h-4 fill-rose-200 text-rose-200" />
-              <span>{progress?.streak || 1} Ngày</span>
+              <span>{progress?.streakDays || 1} Ngày</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500 rounded-xl text-white font-black text-xs sm:text-sm shadow-2xs">
               <Trophy className="w-4 h-4 text-indigo-200" />
@@ -259,9 +274,44 @@ export const KidsGamesPage: React.FC = () => {
       </div>
 
       {/* ================================================================ */}
+      {/* FEATURED SPOTLIGHT: BRIGHTFOX ANIMAL SPELLING & QUIZ            */}
+      {/* ================================================================ */}
+      <div
+        onClick={() => handleSelectGame('word_builder')}
+        className="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 p-6 sm:p-7 text-white shadow-lg border-4 border-white/90 cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all flex flex-col md:flex-row items-center justify-between gap-6"
+      >
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="w-20 h-20 rounded-3xl bg-white border-2 border-white/60 p-2 flex items-center justify-center shrink-0 shadow-md">
+            <img
+              src={kidAsset('/kid/animals/fox.png')}
+              alt="Fox Quiz"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-black uppercase tracking-wider text-white mb-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Chơi Ngay • Game Mới</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-white drop-shadow-sm">
+              🦊 What do we call this Animal?
+            </h3>
+            <p className="text-xs sm:text-sm font-semibold text-orange-50 max-w-md mt-0.5">
+              Ghép vần tên 20 loài động vật ngộ nghĩnh cùng bàn phím 3D thông minh!
+            </p>
+          </div>
+        </div>
+
+        <button className="px-6 py-3 rounded-full bg-white text-orange-600 font-black text-sm sm:text-base shadow-md hover:bg-orange-50 active:scale-95 transition-all flex items-center gap-2 shrink-0">
+          <Play className="w-4 h-4 fill-current" />
+          <span>BẮT ĐẦU CHƠI</span>
+        </button>
+      </div>
+
+      {/* ================================================================ */}
       {/* 2. RECOMMENDED SPOTLIGHT FOR THE DAY                             */}
       {/* ================================================================ */}
-      <div className="space-y-3">
+      <div className="space-y-5 bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎯</span>
@@ -279,8 +329,8 @@ export const KidsGamesPage: React.FC = () => {
             const game = rec.game;
             return (
               <div
-                key={rec.gameId}
-                onClick={() => handleSelectGame(rec.gameId)}
+                key={game.id}
+                onClick={() => handleSelectGame(game.id)}
                 className="group relative overflow-hidden rounded-3xl bg-white p-5 border border-slate-200/90 hover:border-sky-300 shadow-xs hover:shadow-md transition-all duration-300 cursor-pointer flex items-center justify-between hover:-translate-y-1 select-none"
               >
                 <div className="flex items-center gap-3.5">
@@ -289,7 +339,7 @@ export const KidsGamesPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-150 text-[10px] font-black uppercase">
-                      {rec.reason}
+                      {rec.badgeLabel || rec.reasonVi}
                     </span>
                     <h3 className="text-base font-black text-slate-900 group-hover:text-sky-600 transition-colors mt-0.5">
                       {game.titleVi}
@@ -312,16 +362,16 @@ export const KidsGamesPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 3. WORLD NAVIGATION QUICK ANCHORS                                */}
       {/* ================================================================ */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+      <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-4 pt-1 scrollbar-none px-1">
         <button
           onClick={() => setSelectedWorldTab('all')}
-          className={`h-11 px-4 rounded-2xl font-black text-xs sm:text-sm shrink-0 flex items-center gap-2 border transition-all cursor-pointer ${
+          className={`h-11 sm:h-12 px-4 sm:px-5 rounded-2xl font-black text-xs sm:text-sm shrink-0 flex items-center gap-2 border-2 transition-all duration-300 cursor-pointer ${
             selectedWorldTab === 'all'
-              ? 'bg-sky-500 text-white border-sky-500 shadow-xs scale-102'
-              : 'bg-white text-slate-700 border-slate-200 hover:border-sky-300'
+              ? 'bg-gradient-to-r from-orange-400 to-amber-500 text-white border-orange-500 shadow-[0_8px_16px_rgba(249,115,22,0.3)] scale-[1.05] -translate-y-1'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 hover:scale-[1.02]'
           }`}
         >
-          <span>🌟</span>
+          <span className="text-lg">🌟</span>
           <span>Toàn Bộ Bản Đồ (17 Game)</span>
         </button>
 
@@ -329,15 +379,17 @@ export const KidsGamesPage: React.FC = () => {
           <button
             key={world.id}
             onClick={() => setSelectedWorldTab(world.id)}
-            className={`h-11 px-4 rounded-2xl font-black text-xs sm:text-sm shrink-0 flex items-center gap-2 border transition-all cursor-pointer ${
+            className={`h-11 sm:h-12 px-4 sm:px-5 rounded-2xl font-black text-xs sm:text-sm shrink-0 flex items-center gap-2 border-2 transition-all duration-300 cursor-pointer ${
               selectedWorldTab === world.id
-                ? `bg-gradient-to-r ${world.gradient} text-white border-transparent shadow-xs scale-102`
-                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                ? `bg-gradient-to-r ${world.gradient} text-white border-transparent shadow-[0_8px_16px_rgba(0,0,0,0.15)] scale-[1.05] -translate-y-1`
+                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:scale-[1.02]'
             }`}
           >
-            <span>{world.icon}</span>
+            <span className="text-lg">{world.icon}</span>
             <span>{world.nameVi}</span>
-            <span className="text-[10px] opacity-80 px-1.5 py-0.5 rounded-full bg-black/10">
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+              selectedWorldTab === world.id ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-500'
+            }`}>
               {world.gameIds.length}
             </span>
           </button>
@@ -347,7 +399,7 @@ export const KidsGamesPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 4. THE ADVENTURE JOURNEY MAP (WINDING TRAIL ACROSS 6 WORLDS)     */}
       {/* ================================================================ */}
-      <div className="space-y-12 relative">
+      <div className="space-y-12 relative bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
         {KIDS_GAME_WORLDS.filter(
           (w) => selectedWorldTab === 'all' || w.id === selectedWorldTab
         ).map((world, worldIdx) => {
