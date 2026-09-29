@@ -25,6 +25,7 @@ import {
   CommunityCommentItem,
 } from '../../services/communityKnowledge.service';
 import { useAuth } from '../../contexts/AuthContext';
+import { RichContentRenderer } from '../../components/community/RichContentRenderer';
 
 export const CommunityPostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -453,10 +454,8 @@ export const CommunityPostDetailPage: React.FC = () => {
             {post.title}
           </h1>
 
-          {/* Full Markdown Content */}
-          <div className="prose dark:prose-invert max-w-none text-sm sm:text-base leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
-            {post.content}
-          </div>
+          {/* Full Academic Rich Content */}
+          <RichContentRenderer content={post.content} />
 
           {/* Tags */}
           {post.tags.length > 0 && (

@@ -2015,3 +2015,263 @@ a.card-brand-effect {
     font-weight: 700 !important;
   }
 }
+
+/* ==========================================================================
+   Academic TOEIC Rich Post Content & Callouts
+   ========================================================================== */
+.rich-post-content {
+  line-height: 1.75;
+  color: var(--color-text-secondary);
+}
+
+.rich-post-content h2 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 0.5rem;
+}
+
+.rich-post-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.rich-post-content h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.rich-post-content p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.rich-post-content strong,
+.rich-post-content b {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.rich-post-content em,
+.rich-post-content i {
+  font-style: italic;
+}
+
+.rich-post-content u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rich-post-content s,
+.rich-post-content strike {
+  text-decoration: line-through;
+}
+
+.rich-post-content mark {
+  background-color: rgba(253, 230, 138, 0.5);
+  color: #92400e;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+}
+
+.dark .rich-post-content mark {
+  background-color: rgba(217, 119, 6, 0.3);
+  color: #fde68a;
+}
+
+.rich-post-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.rich-post-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.rich-post-content li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.rich-post-content blockquote {
+  border-left: 4px solid var(--primary);
+  padding: 0.6rem 1rem;
+  margin: 1rem 0;
+  background: var(--color-primary-soft);
+  border-radius: 0 0.75rem 0.75rem 0;
+  font-style: italic;
+}
+
+.rich-post-content hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.rich-post-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  padding: 0.2em 0.4em;
+  border-radius: 0.375rem;
+  background-color: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+}
+
+.dark .rich-post-content code {
+  background-color: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.rich-post-content pre {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background-color: #0f172a;
+  color: #f8fafc;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.rich-post-content pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.rich-post-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+.rich-post-content a:hover {
+  color: var(--primary-hover);
+}
+
+/* Tables in rich post */
+.rich-post-content table,
+.rich-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  font-size: 0.875rem;
+}
+
+.rich-post-content th,
+.rich-table th {
+  background-color: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.rich-post-content td,
+.rich-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+.rich-post-content tr:last-child td,
+.rich-table tr:last-child td {
+  border-bottom: none;
+}
+
+.rich-post-content tr:nth-child(even) td,
+.rich-table tr:nth-child(even) td {
+  background-color: rgba(241, 245, 249, 0.4);
+}
+
+.dark .rich-post-content tr:nth-child(even) td,
+.dark .rich-table tr:nth-child(even) td {
+  background-color: rgba(30, 41, 59, 0.35);
+}
+
+/* TOEIC Callout Blocks */
+.toeic-callout {
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid;
+}
+
+.toeic-callout .callout-header {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toeic-callout .callout-body {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.toeic-callout.tip {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08), rgba(99, 102, 241, 0.08));
+  border-color: rgba(6, 182, 212, 0.3);
+  color: #0e7490;
+}
+
+.dark .toeic-callout.tip {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(99, 102, 241, 0.15));
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #67e8f9;
+}
+
+.toeic-callout.note {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(234, 179, 8, 0.08));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #b45309;
+}
+
+.dark .toeic-callout.note {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 179, 8, 0.15));
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fde68a;
+}
+
+.toeic-callout.trap {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(244, 63, 94, 0.08));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}
+
+.dark .toeic-callout.trap {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(244, 63, 94, 0.15));
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.toeic-callout.vocab {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(20, 184, 166, 0.08));
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #047857;
+}
+
+.dark .toeic-callout.vocab {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(20, 184, 166, 0.15));
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}

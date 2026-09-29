@@ -73,6 +73,7 @@ export const AppShell: React.FC = () => {
     location.pathname.startsWith('/notes') ||
     location.pathname.startsWith('/community') ||
     location.pathname.startsWith('/admin/community');
+  const isFullHeightChat = isFullHeightPage;
 
   // Global Quick Note Modal State
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
@@ -679,7 +680,7 @@ export const AppShell: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightChat ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightPage ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
         {/* Mobile Header — Sticky fixed at top */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
           <div className="flex items-center gap-2">
@@ -711,9 +712,9 @@ export const AppShell: React.FC = () => {
                 setQuickNoteOpen(true);
               }}
               title="Ghi chép nhanh (Alt+N)"
-              className="p-2 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition cursor-pointer"
+              className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
             >
-              <StickyNote className="w-4 h-4" />
+              <BookOpen className="w-4 h-4" />
             </button>
             <button
               onClick={() => {
@@ -878,7 +879,7 @@ export const AppShell: React.FC = () => {
 
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 xl:mx-1" />
 
-            {/* Quick Note Button */}
+            {/* Quick Note Button - Translucent Book Icon */}
             <button
               onClick={() => {
                 if (!user || user.isAnonymous) {
@@ -888,10 +889,9 @@ export const AppShell: React.FC = () => {
                 setQuickNoteOpen(true);
               }}
               title="Ghi chép nhanh (Alt+N)"
-              className="btn-glass-amber btn-glass-sm !px-2.5 font-bold cursor-pointer"
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-indigo-300 dark:hover:border-indigo-500/50 shadow-xs transition-all cursor-pointer group"
             >
-              <StickyNote className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="hidden xl:inline">Ghi chú nhanh</span>
+              <BookOpen className="w-4 h-4 group-hover:scale-105 transition-transform" />
             </button>
 
             {/* Notification Bell with Badge & Dropdown */}
@@ -1473,12 +1473,9 @@ export const AppShell: React.FC = () => {
         }}
         aria-label="Ghi chép nhanh"
         title="Ghi chép nhanh (Alt+N)"
-        className="fixed bottom-20 lg:bottom-6 right-5 z-40 px-3.5 py-2.5 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-xl shadow-amber-500/30 border border-white/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer"
+        className="fixed bottom-20 lg:bottom-6 right-5 z-40 w-11 h-11 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/60 dark:border-slate-700/60 shadow-lg shadow-slate-900/10 dark:shadow-black/30 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group cursor-pointer"
       >
-        <StickyNote className="w-4 h-4 group-hover:rotate-12 transition-transform shrink-0" />
-        <span className="text-xs font-bold whitespace-nowrap">
-          Ghi chép nhanh <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-[10px] font-mono">Alt+N</kbd>
-        </span>
+        <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
       </button>
 
       {/* Global Quick Note Modal */}
