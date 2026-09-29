@@ -34,8 +34,8 @@
   /* Touch target standard for young children */
   --kids-min-touch: 48px;
 
-  /* Dark Mode Semantic Text Token - Soft clear blue readable on dark backgrounds */
-  --kids-dark-muted-text: #93c5fd;
+  /* Kids Dark Mode Semantic Text Token - Dark high-contrast slate readable on white/light surfaces */
+  --kids-dark-muted-text: #334155;
 }
 
 /* Fallback definition for border-3 */
@@ -43,41 +43,133 @@
   border-width: 3px;
 }
 
-/* Light Mode Kids High Contrast Rules (Ensure secondary text is crisp and legible on light/white surfaces) */
-:not(.dark) .kids-layout .text-slate-500,
-:not(.dark) .kids-layout .text-gray-500,
-:not(.dark) .kids-layout .text-neutral-500 {
-  color: #334155; /* Slate 700: High contrast (> 5.5:1 on white), readable without being harsh */
+/* ==========================================================================
+   KIDS MODULE - HIGH CONTRAST DARK & LIGHT MODE TEXT ENFORCEMENT
+   Trang Kid luôn có nền sáng/trắng (#FFFDF7, panels trắng, thẻ pastel).
+   Vì vậy dù ở chế độ thường hay Dark Mode (.dark), toàn bộ text phụ và text màu
+   phải luôn là màu TỐI rõ nét, tương phản cao, tuyệt đối không bị mờ nhạt hay sáng màu.
+   ========================================================================== */
+
+/* 1. Muted / Secondary text (slate-500, gray-500, zinc-500, neutral-500) -> Màu tối Slate 700 (#334155) */
+.kids-layout .text-slate-500,
+.kids-layout .text-gray-500,
+.kids-layout .text-zinc-500,
+.kids-layout .text-neutral-500,
+.kids-modal .text-slate-500,
+.kids-modal .text-gray-500,
+.kids-modal .text-zinc-500,
+.kids-modal .text-neutral-500,
+.dark .kids-layout .text-slate-500,
+.dark .kids-layout .text-gray-500,
+.dark .kids-layout .text-zinc-500,
+.dark .kids-layout .text-neutral-500,
+.dark .kids-modal .text-slate-500,
+.dark .kids-modal .text-gray-500,
+.dark .kids-modal .text-zinc-500,
+.dark .kids-modal .text-neutral-500 {
+  color: #334155 !important; /* Slate 700: Tối rõ nét, độ tương phản cao (> 5.5:1 trên nền trắng) */
 }
 
-:not(.dark) .kids-layout .text-slate-400:not(.cursor-not-allowed),
-:not(.dark) .kids-layout .text-gray-400:not(.cursor-not-allowed) {
-  color: #475569; /* Slate 600: High contrast, readable metadata */
+/* 2. Body / Content text (slate-600, gray-600, zinc-600, neutral-600) -> Màu tối đậm Slate 800 (#1e293b) */
+.kids-layout .text-slate-600,
+.kids-layout .text-gray-600,
+.kids-layout .text-zinc-600,
+.kids-layout .text-neutral-600,
+.kids-modal .text-slate-600,
+.kids-modal .text-gray-600,
+.kids-modal .text-zinc-600,
+.kids-modal .text-neutral-600,
+.dark .kids-layout .text-slate-600,
+.dark .kids-layout .text-gray-600,
+.dark .kids-layout .text-zinc-600,
+.dark .kids-layout .text-neutral-600,
+.dark .kids-modal .text-slate-600,
+.dark .kids-modal .text-gray-600,
+.dark .kids-modal .text-zinc-600,
+.dark .kids-modal .text-neutral-600 {
+  color: #1e293b !important; /* Slate 800: Tối đậm, cực kỳ dễ đọc trên nền sáng */
 }
 
-/* Dark Mode Semantic Text System (Guarantees readable, eye-friendly soft blue instead of dark gray) */
-.dark .text-slate-500,
-.dark .text-gray-500,
-.dark .text-zinc-500,
-.dark .text-neutral-500 {
-  color: var(--kids-dark-muted-text) !important;
+/* 3. Subtle / Metadata text (slate-400, gray-400, zinc-400, neutral-400) -> Màu tối Slate 600 (#475569) */
+.kids-layout .text-slate-400:not(.cursor-not-allowed),
+.kids-layout .text-gray-400:not(.cursor-not-allowed),
+.kids-layout .text-zinc-400:not(.cursor-not-allowed),
+.kids-layout .text-neutral-400:not(.cursor-not-allowed),
+.kids-modal .text-slate-400:not(.cursor-not-allowed),
+.kids-modal .text-gray-400:not(.cursor-not-allowed),
+.kids-modal .text-zinc-400:not(.cursor-not-allowed),
+.kids-modal .text-neutral-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-slate-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-gray-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-zinc-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-neutral-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-slate-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-gray-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-zinc-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-neutral-400:not(.cursor-not-allowed) {
+  color: #475569 !important; /* Slate 600: Tối rõ, không bị mờ nhạt */
 }
 
-.dark .text-slate-600,
-.dark .text-gray-600,
-.dark .text-zinc-600,
-.dark .text-neutral-600 {
-  color: #0099e9 !important;
+/* 4. Strong text (slate-700, gray-700, zinc-700) -> Màu tối Slate 900 (#0f172a) */
+.kids-layout .text-slate-700,
+.kids-layout .text-gray-700,
+.kids-layout .text-zinc-700,
+.kids-modal .text-slate-700,
+.kids-modal .text-gray-700,
+.kids-modal .text-zinc-700,
+.dark .kids-layout .text-slate-700,
+.dark .kids-layout .text-gray-700,
+.dark .kids-layout .text-zinc-700,
+.dark .kids-modal .text-slate-700,
+.dark .kids-modal .text-gray-700,
+.dark .kids-modal .text-zinc-700 {
+  color: #0f172a !important; /* Slate 900 */
 }
 
+/* 5. Headings / Boldest text (slate-800, slate-900, slate-950) -> Màu đen Slate 950 (#020617) */
+.kids-layout .text-slate-800,
+.kids-layout .text-slate-900,
+.kids-layout .text-slate-950,
+.kids-modal .text-slate-800,
+.kids-modal .text-slate-900,
+.kids-modal .text-slate-950,
+.dark .kids-layout .text-slate-800,
+.dark .kids-layout .text-slate-900,
+.dark .kids-layout .text-slate-950,
+.dark .kids-modal .text-slate-800,
+.dark .kids-modal .text-slate-900,
+.dark .kids-modal .text-slate-950 {
+  color: #020617 !important; /* Slate 950 */
+}
 
+/* 6. Text sáng màu vô tình áp dụng khi có .dark -> ép sang màu tối sắc nét */
+.dark .kids-layout .dark\:text-white,
+.dark .kids-modal .dark\:text-white,
+.dark .kids-layout .dark\:text-slate-100,
+.dark .kids-modal .dark\:text-slate-100,
+.dark .kids-layout .dark\:text-slate-200,
+.dark .kids-modal .dark\:text-slate-200,
+.dark .kids-layout .dark\:text-slate-300,
+.dark .kids-modal .dark\:text-slate-300 {
+  color: #0f172a !important;
+}
 
+.dark .kids-layout .dark\:text-amber-100,
+.dark .kids-modal .dark\:text-amber-100,
+.dark .kids-layout .dark\:text-amber-200,
+.dark .kids-modal .dark\:text-amber-200,
+.dark .kids-layout .dark\:text-amber-300,
+.dark .kids-modal .dark\:text-amber-300 {
+  color: #78350f !important; /* Amber 900 */
+}
 
-
-.dark .text-gray-400,
-.dark .text-zinc-400,
-.dark .text-neutral-400 {
-  color: #7dd3fc !important;
+.dark .kids-layout .dark\:text-sky-100,
+.dark .kids-modal .dark\:text-sky-100,
+.dark .kids-layout .dark\:text-sky-200,
+.dark .kids-modal .dark\:text-sky-200,
+.dark .kids-layout .dark\:text-sky-300,
+.dark .kids-modal .dark\:text-sky-300 {
+  color: #0369a1 !important;
 }
 
 /* Base Liquid Glass Foundation with Guaranteed Contrast */

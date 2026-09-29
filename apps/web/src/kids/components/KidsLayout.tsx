@@ -376,7 +376,7 @@ export const KidsLayout: React.FC = () => {
   );
 
   return (
-    <div className={`min-h-screen min-h-[100dvh] bg-[#FFFDF7] text-slate-800 font-sans select-none flex flex-col relative overflow-x-hidden ${isFocusMode ? 'pb-4' : 'pb-24 lg:pb-6'}`}>
+    <div className={`kids-layout min-h-screen min-h-[100dvh] bg-[#FFFDF7] text-slate-800 font-sans select-none flex flex-col relative overflow-x-hidden ${isFocusMode ? 'pb-4' : 'pb-24 lg:pb-6'}`}>
       {/* Subtle Background Layering & Playful Shapes */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-sky-200/35 blur-3xl" />
@@ -542,14 +542,14 @@ export const KidsLayout: React.FC = () => {
       {/* Unsupported Language Switch Prompt Overlay */}
       {!isSupported && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border-2 border-amber-400 shadow-2xl text-center space-y-4 animate-scale-up">
-            <div className="w-16 h-16 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-2xl font-black shadow-inner">
+          <div className="kids-modal bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border-2 border-amber-400 shadow-2xl text-center space-y-4 animate-scale-up">
+            <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl font-black shadow-inner">
               👶 🌟
             </div>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+            <h3 className="text-xl font-black text-slate-950">
               Chương trình Kid Mode hiện tối ưu cho Tiếng Anh
             </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed flex items-center justify-center flex-wrap gap-1">
+            <p className="text-xs text-slate-700 leading-relaxed flex items-center justify-center flex-wrap gap-1">
               <span>Bạn đang chọn không gian ngôn ngữ</span>
               <strong className="flex items-center gap-1">
                 {activeLanguage.name} <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
@@ -572,7 +572,7 @@ export const KidsLayout: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold text-xs transition cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition cursor-pointer"
               >
                 Quay lại Dashboard
               </button>

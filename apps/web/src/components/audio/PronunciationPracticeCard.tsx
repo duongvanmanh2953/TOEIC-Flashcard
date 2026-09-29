@@ -236,7 +236,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
               }`}
             >
               <Volume2 className={`w-4 h-4 ${isPlayingNative ? 'animate-pulse' : 'text-indigo-500'}`} />
-              <span>{isPlayingNative ? 'Đang phát âm...' : 'Nghe phát âm chuẩn'}</span>
+              <span>{isPlayingNative ? 'Đang phát âm...' : 'Nghe phát âm'}</span>
             </button>
 
             <button

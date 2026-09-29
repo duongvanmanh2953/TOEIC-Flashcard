@@ -64,7 +64,7 @@ export const KidsParentPinModal: React.FC<KidsParentPinModalProps> = ({
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
       <div
-        className="m-auto relative w-full max-w-sm rounded-3xl bg-white p-6 sm:p-7 space-y-4 animate-scale-up text-center select-none border-2 border-slate-200 shadow-2xl"
+        className="kids-layout kids-modal m-auto relative w-full max-w-sm rounded-3xl bg-white p-6 sm:p-7 space-y-4 animate-scale-up text-center select-none border-2 border-slate-200 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 mx-auto flex items-center justify-center border-2 border-amber-300">
@@ -106,7 +106,7 @@ export const KidsParentPinModal: React.FC<KidsParentPinModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition cursor-pointer"
+          className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs transition cursor-pointer"
         >
           Hủy bỏ
         </button>

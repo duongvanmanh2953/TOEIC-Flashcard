@@ -957,14 +957,14 @@ const StoryActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
   return (
     <div className="flex flex-col items-center space-y-5 animate-fadeIn text-center">
       <KidsMascot mood="happy" size="md" />
-      <h3 className="text-2xl font-black text-slate-900 dark:text-white">{activity.title}</h3>
-      <p className="text-sm font-bold text-slate-600 dark:text-slate-300 max-w-md">
+      <h3 className="text-2xl font-black text-slate-950">{activity.title}</h3>
+      <p className="text-sm font-bold text-slate-700 max-w-md">
         {activity.instruction}
       </p>
 
       {activity.storyScene && (
-        <div className="p-6 rounded-3xl bg-amber-50 dark:bg-slate-800 border-2 border-amber-300 max-w-md space-y-3">
-          <p className="text-base font-bold text-amber-900 dark:text-amber-100">
+        <div className="p-6 rounded-3xl bg-amber-50 border-2 border-amber-300 max-w-md space-y-3">
+          <p className="text-base font-bold text-amber-950">
             "{activity.storyScene.narratorSpeech}"
           </p>
           <button

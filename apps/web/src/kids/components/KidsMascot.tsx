@@ -77,12 +77,12 @@ export const KidsMascot: React.FC<KidsMascotProps> = ({
       {speechText && (
         <div
           onClick={handleMascotTap}
-          className="mb-2.5 max-w-xs px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/80 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-bold text-xs sm:text-sm text-center relative cursor-pointer hover:scale-102 transition-transform"
+          className="mb-2.5 max-w-xs px-4 py-2.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-black text-xs sm:text-sm text-center relative cursor-pointer hover:scale-102 transition-transform shadow-xs"
         >
           <span>{speechText}</span>
           <span className="text-xs ml-1.5 opacity-60">🔊</span>
           {/* Bubble Tail */}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-amber-300 dark:border-t-amber-700" />
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-amber-300" />
         </div>
       )}
 
