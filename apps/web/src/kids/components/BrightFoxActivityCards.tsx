@@ -13,9 +13,9 @@ export const BrightFoxActivityCards: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center select-none py-2">
+    <div className="w-full flex flex-col select-none py-1">
       {/* Container simulating the playful clean card frame */}
-      <div className="w-full max-w-xl bg-gradient-to-b from-sky-400 via-sky-200 to-sky-100 rounded-[40px] p-6 sm:p-8 shadow-xl border-4 border-white/90 relative overflow-hidden">
+      <div className="w-full bg-gradient-to-b from-sky-400 via-sky-200 to-sky-100 rounded-[36px] p-5 sm:p-7 lg:p-8 shadow-md border-4 border-white/90 relative overflow-hidden">
         {/* Soft Background Clouds */}
         <div className="absolute top-8 left-4 w-28 h-12 bg-white/60 rounded-full blur-[1px] pointer-events-none" />
         <div className="absolute top-12 right-6 w-36 h-14 bg-white/60 rounded-full blur-[1px] pointer-events-none" />

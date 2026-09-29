@@ -94,13 +94,13 @@ export const KidsHomePage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full flex flex-col lg:flex-row items-start gap-6 select-none animate-fadeIn pb-8">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-5 lg:p-6 flex flex-col lg:flex-row items-stretch gap-4 sm:gap-5 select-none animate-fadeIn">
       {/* ===================================================================== */}
       {/* LEFT & CENTER MAIN LEARNING STREAM (Flex-1)                           */}
       {/* ===================================================================== */}
-      <div className="flex-1 min-w-0 w-full space-y-5">
+      <div className="flex-1 min-w-0 w-full flex flex-col space-y-4 sm:space-y-5">
         {/* 1. LARGE HERO BANNER: "Cùng khám phá thế giới từ vựng!" */}
-        <div className="rounded-[32px] p-6 sm:p-8 bg-gradient-to-r from-sky-200/50 via-sky-100/60 to-emerald-100/40 border border-sky-200/80 shadow-xs relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-sky-200/80 via-sky-100/90 to-emerald-100/70 backdrop-blur-xl border border-white/90 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-5">
           {/* Subtle clouds background */}
           <div className="absolute top-3 left-10 w-24 h-12 bg-white/60 rounded-full blur-xs pointer-events-none" />
           <div className="absolute bottom-4 left-1/3 w-36 h-14 bg-white/40 rounded-full blur-xs pointer-events-none" />
@@ -114,10 +114,10 @@ export const KidsHomePage: React.FC = () => {
               Mỗi ngày một từ mới, tiến bộ từng chút một!
             </p>
 
-            <div className="pt-4">
+            <div className="pt-3">
               <button
                 onClick={handleStartLearn}
-                className="px-7 py-3.5 rounded-full bg-gradient-to-r from-[#FFD866] to-[#F59E0B] hover:brightness-105 text-[#431407] font-black text-sm sm:text-base shadow-md active:scale-95 flex items-center gap-2.5 cursor-pointer transition-all"
+                className="px-7 py-3 rounded-full bg-gradient-to-r from-[#FFD866] to-[#F59E0B] hover:brightness-105 text-[#431407] font-black text-sm sm:text-base shadow-md active:scale-95 flex items-center gap-2.5 cursor-pointer transition-all"
               >
                 <div className="w-6 h-6 rounded-full bg-white/40 flex items-center justify-center">
                   <Play className="w-3.5 h-3.5 fill-[#431407] text-[#431407] ml-0.5" />
@@ -128,7 +128,7 @@ export const KidsHomePage: React.FC = () => {
           </div>
 
           {/* Right Cropped Asset (Vivi Fox with Backpack & Wooden Signpost) */}
-          <div className="w-full md:w-[320px] lg:w-[360px] h-[220px] sm:h-[240px] relative shrink-0 flex items-center justify-center">
+          <div className="w-full md:w-[300px] lg:w-[340px] h-[200px] sm:h-[220px] relative shrink-0 flex items-center justify-center">
             <img
               src={kidAsset('/kid/ui/hero-mascot-signpost.png')}
               alt="Vivi and wooden signpost"
@@ -136,26 +136,26 @@ export const KidsHomePage: React.FC = () => {
               onClick={handleStartLearn}
             />
             {/* Interactive signpost click areas */}
-            <div className="absolute right-0 top-6 w-28 h-48 flex flex-col justify-between py-1 z-20">
+            <div className="absolute right-0 top-4 w-28 h-44 flex flex-col justify-between py-1 z-20">
               <button
                 onClick={(e) => { e.stopPropagation(); handleSignClick('words'); }}
                 title="Học từ vựng"
-                className="w-full h-9 opacity-0 cursor-pointer"
+                className="w-full h-8 opacity-0 cursor-pointer"
               />
               <button
                 onClick={(e) => { e.stopPropagation(); handleSignClick('listening'); }}
                 title="Luyện nghe nói"
-                className="w-full h-9 opacity-0 cursor-pointer"
+                className="w-full h-8 opacity-0 cursor-pointer"
               />
               <button
                 onClick={(e) => { e.stopPropagation(); handleSignClick('speaking'); }}
                 title="Luyện nói"
-                className="w-full h-9 opacity-0 cursor-pointer"
+                className="w-full h-8 opacity-0 cursor-pointer"
               />
               <button
                 onClick={(e) => { e.stopPropagation(); handleSignClick('test'); }}
                 title="Trò chơi vui nhộn"
-                className="w-full h-9 opacity-0 cursor-pointer"
+                className="w-full h-8 opacity-0 cursor-pointer"
               />
             </div>
           </div>
@@ -167,14 +167,14 @@ export const KidsHomePage: React.FC = () => {
         <BrightFoxActivityCards />
 
         {/* 2. QUICK ACCESS DESTINATION TILES */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
           {/* Card 1: Học từ vựng */}
           <div
             onClick={() => {
               soundManager.playPop();
               navigate('/kids/flashcards');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-[#F0F9FF] border border-[#BAE6FD] hover:border-sky-300 hover:-translate-y-1 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-4 sm:p-5 rounded-3xl bg-sky-50/85 backdrop-blur-xl border border-sky-200/90 hover:border-sky-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
           >
             <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center">
               <BookOpen className="w-5 h-5" />
@@ -198,7 +198,7 @@ export const KidsHomePage: React.FC = () => {
               soundManager.playPop();
               navigate('/kids/world');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-[#FAF5FF] border border-[#E9D5FF] hover:border-purple-300 hover:-translate-y-1 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-4 sm:p-5 rounded-3xl bg-purple-50/85 backdrop-blur-xl border border-purple-200/90 hover:border-purple-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
           >
             <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
               <Headphones className="w-5 h-5" />
@@ -222,7 +222,7 @@ export const KidsHomePage: React.FC = () => {
               soundManager.playPop();
               navigate('/kids/games');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-[#F0FDF4] border border-[#BBF7D0] hover:border-emerald-300 hover:-translate-y-1 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-4 sm:p-5 rounded-3xl bg-emerald-50/85 backdrop-blur-xl border border-emerald-200/90 hover:border-emerald-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
           >
             <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
               <ClipboardList className="w-5 h-5" />
@@ -246,7 +246,7 @@ export const KidsHomePage: React.FC = () => {
               soundManager.playPop();
               navigate('/kids/journey');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-[#FEFCE8] border border-[#FEF08A] hover:border-amber-300 hover:-translate-y-1 hover:shadow-sm transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-4 sm:p-5 rounded-3xl bg-amber-50/85 backdrop-blur-xl border border-amber-200/90 hover:border-amber-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
           >
             <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
               <Star className="w-5 h-5 fill-current" />
@@ -266,7 +266,7 @@ export const KidsHomePage: React.FC = () => {
         </div>
 
         {/* 3. SECTION "BÀI HỌC GỢI Ý CHO BẠN" */}
-        <div className="space-y-5 bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
+        <div className="space-y-4 bg-white/80 backdrop-blur-xl p-4 sm:p-5 rounded-3xl shadow-xs border border-white/90">
           <div className="flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-black text-[#17345B] flex items-center gap-2">
               <span className="text-emerald-500">🌱</span>
@@ -358,7 +358,7 @@ export const KidsHomePage: React.FC = () => {
                 </span>
               </div>
               <div>
-                <p className="text-xs font-black text-[#17345B]">Ngữ pháp cơ bản</p>
+                <p className="text-xs font-black text-[#17345B]">Ngữ pháp vui</p>
                 <p className="text-[11px] font-bold text-slate-500">Present Simple</p>
                 <div className="flex items-center gap-1 pt-1 text-amber-400 text-xs">
                   ★ ★ ★
@@ -366,17 +366,17 @@ export const KidsHomePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Lesson 4: Animals Panda */}
+            {/* Lesson 4: Animals */}
             <div
               onClick={() => {
                 soundManager.playPop();
-                navigate('/kids/world');
+                navigate('/kids/journey');
               }}
               className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
             >
               <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
                 <img
-                  src={kidAsset('/kid/lessons/lesson-animals-panda.png')}
+                  src={kidAsset('/kid/lessons/lesson-animals-safari.png')}
                   alt="Animals"
                   className="w-full h-full object-cover rounded-xl"
                 />
@@ -396,7 +396,7 @@ export const KidsHomePage: React.FC = () => {
         </div>
 
         {/* 4. BOTTOM MOTIVATION CALLOUT BANNER WITH BALLOON */}
-        <div className="p-4 sm:p-5 rounded-[28px] bg-gradient-to-r from-sky-100/90 via-sky-50 to-emerald-50/80 border border-sky-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-4 sm:p-4.5 rounded-2xl bg-gradient-to-r from-sky-100/95 via-white/85 to-emerald-50/95 backdrop-blur-xl border border-white/90 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <img
               src={kidAsset('/kid/ui/hot-air-balloon.png')}
@@ -429,83 +429,13 @@ export const KidsHomePage: React.FC = () => {
       {/* ===================================================================== */}
       {/* RIGHT COMPANION / PROGRESS PANEL (w-full lg:w-72 xl:w-80 shrink-0)    */}
       {/* ===================================================================== */}
-      <div className="w-full lg:w-72 xl:w-80 shrink-0 space-y-5">
-        {/* Top Companion Cloud Card */}
-        <div className="p-5 rounded-3xl bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex flex-col items-center text-center space-y-2">
-          <p className="text-xs font-bold text-slate-700 leading-snug px-2">
-            Học mỗi ngày để trở thành phiên bản tốt hơn của chính mình! <span className="text-rose-500">❤️</span>
-          </p>
-          <div className="w-full h-24 flex items-center justify-center overflow-hidden rounded-2xl">
-            <img
-              src={kidAsset('/kid/ui/cloud-sleeping-fox.png')}
-              alt="Sleeping Vivi"
-              className="w-full h-full object-contain drop-shadow-xs"
-            />
-          </div>
-        </div>
-
-        {/* Card: Thành tích hôm nay */}
-        <div className="p-5 sm:p-6 rounded-[32px] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] space-y-4 text-left">
-          <h3 className="text-sm font-black text-[#17345B]">
-            Thành tích hôm nay
-          </h3>
-
-          <div className="space-y-4">
-            {/* Task 1: Hoàn thành bài học */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="flex items-center gap-2 text-slate-800">
-                  <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                  </div>
-                  <span>Hoàn thành bài học</span>
-                </span>
-                <span className="text-sky-700">3 / 5</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#3C9FE8] h-full rounded-full w-[60%]" />
-              </div>
-            </div>
-
-            {/* Task 2: Từ vựng mới */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="flex items-center gap-2 text-slate-800">
-                  <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  </div>
-                  <span>Từ vựng mới</span>
-                </span>
-                <span className="text-emerald-700">12 từ</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#52C7A0] h-full rounded-full w-[80%]" />
-              </div>
-            </div>
-
-            {/* Task 3: Luyện nói */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="flex items-center gap-2 text-slate-800">
-                  <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
-                    <Mic className="w-3.5 h-3.5" />
-                  </div>
-                  <span>Luyện nói</span>
-                </span>
-                <span className="text-purple-700">1 / 3</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#B8A4F5] h-full rounded-full w-[33%]" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Card: Top từ vựng hôm nay */}
-        <div className="p-5 sm:p-6 rounded-[32px] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] space-y-3.5 text-left">
+      <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col space-y-4">
+        {/* CARD 1 (PRIORITY #1 AT TOP): TOP TỪ VỰNG HÔM NAY */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-xs space-y-3 text-left">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-[#17345B]">
-              Top từ vựng hôm nay
+            <h3 className="text-sm font-black text-[#17345B] flex items-center gap-1.5">
+              <span>⭐</span>
+              <span>Top từ vựng hôm nay</span>
             </h3>
             <button
               onClick={() => {
@@ -519,23 +449,23 @@ export const KidsHomePage: React.FC = () => {
             </button>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {topDailyWords.map((item) => (
               <div
                 key={item.word}
                 onClick={(e) => handleSpeakTopWord(item.word, item.meaning, e)}
-                className="flex items-center justify-between p-2 rounded-2xl hover:bg-sky-50/60 transition-colors cursor-pointer group"
+                className="flex items-center justify-between p-2 rounded-2xl bg-white/60 hover:bg-sky-50/80 border border-slate-100 hover:border-sky-200 transition-all cursor-pointer group shadow-2xs"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-6 h-6 rounded-full ${item.color} text-white font-black text-xs flex items-center justify-center shrink-0`}>
+                  <div className={`w-6 h-6 rounded-full ${item.color} text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs`}>
                     {item.rank}
                   </div>
                   <div>
                     <p className="text-xs font-black text-slate-900 leading-tight">
                       {item.word}
                     </p>
-                    <p className="text-[10px] font-bold text-slate-400">
-                      {item.phonetic}
+                    <p className="text-[10px] font-bold text-slate-500">
+                      {item.phonetic} • {item.meaning}
                     </p>
                   </div>
                 </div>
@@ -545,7 +475,7 @@ export const KidsHomePage: React.FC = () => {
                   title="Nghe phát âm"
                   className={`p-1.5 rounded-full ${
                     playingWord === item.word
-                      ? 'bg-sky-500 text-white scale-110'
+                      ? 'bg-sky-500 text-white scale-110 shadow-xs'
                       : 'text-sky-500 hover:bg-sky-100'
                   } transition-all`}
                 >
@@ -553,6 +483,77 @@ export const KidsHomePage: React.FC = () => {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* CARD 2: THÀNH TÍCH HÔM NAY */}
+        <div className="p-4 sm:p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-xs space-y-3.5 text-left">
+          <h3 className="text-sm font-black text-[#17345B]">
+            Thành tích hôm nay
+          </h3>
+
+          <div className="space-y-3">
+            {/* Task 1: Hoàn thành bài học */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-black">
+                <span className="flex items-center gap-2 text-slate-800">
+                  <div className="w-5 h-5 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center">
+                    <Star className="w-3 h-3 fill-current" />
+                  </div>
+                  <span>Hoàn thành bài học</span>
+                </span>
+                <span className="text-sky-700">3 / 5</span>
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div className="bg-[#3C9FE8] h-full rounded-full w-[60%]" />
+              </div>
+            </div>
+
+            {/* Task 2: Từ vựng mới */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-black">
+                <span className="flex items-center gap-2 text-slate-800">
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <CheckCircle2 className="w-3 h-3" />
+                  </div>
+                  <span>Từ vựng mới</span>
+                </span>
+                <span className="text-emerald-700">12 từ</span>
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div className="bg-[#52C7A0] h-full rounded-full w-[80%]" />
+              </div>
+            </div>
+
+            {/* Task 3: Luyện nói */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-black">
+                <span className="flex items-center gap-2 text-slate-800">
+                  <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                    <Mic className="w-3 h-3" />
+                  </div>
+                  <span>Luyện nói</span>
+                </span>
+                <span className="text-purple-700">1 / 3</span>
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div className="bg-[#B8A4F5] h-full rounded-full w-[33%]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CARD 3: COMPANION CLOUD CARD (SLEEPING MASCOT) */}
+        <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-xs flex flex-col items-center text-center space-y-2">
+          <p className="text-xs font-bold text-slate-700 leading-snug px-2">
+            Học mỗi ngày để trở thành phiên bản tốt hơn của chính mình! <span className="text-rose-500">❤️</span>
+          </p>
+          <div className="w-full h-24 flex items-center justify-center overflow-hidden rounded-2xl">
+            <img
+              src={kidAsset('/kid/ui/cloud-sleeping-fox.png')}
+              alt="Sleeping Vivi"
+              className="w-full h-full object-contain drop-shadow-xs"
+            />
           </div>
         </div>
       </div>

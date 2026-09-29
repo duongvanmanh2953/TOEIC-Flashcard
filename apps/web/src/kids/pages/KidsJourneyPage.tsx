@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   KidsMapIcon,
@@ -26,6 +26,7 @@ import {
   Waves,
   Castle,
   Rocket,
+  ChevronLeft,
   ChevronRight,
   Star,
   CheckCircle2,
@@ -111,6 +112,17 @@ export const KidsJourneyPage: React.FC = () => {
   // Current selected world
   const initialWorldId = searchParams.get('world') || WORLDS_DATA[0].id;
   const [selectedWorldId, setSelectedWorldId] = useState(initialWorldId);
+  const biomesScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollBiomes = (direction: 'left' | 'right') => {
+    soundManager.playPop();
+    if (biomesScrollRef.current) {
+      biomesScrollRef.current.scrollBy({
+        left: direction === 'left' ? -220 : 220,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   useEffect(() => {
     setProgress(getKidsProgress());
@@ -173,39 +185,60 @@ export const KidsJourneyPage: React.FC = () => {
   ).length;
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fadeIn max-w-4xl mx-auto pb-6 select-none">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 space-y-4 sm:space-y-5 animate-fadeIn select-none">
       {/* ================================================================ */}
-      {/* 1. REALM BIOMES SELECTOR (CLEAN TACTILE PILL TABS)               */}
+      {/* 1. REALM BIOMES SELECTOR (WITH NEXT / PREV BUTTONS)              */}
       {/* ================================================================ */}
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
-        {WORLDS_DATA.map((world, wIdx) => {
-          const biome = WORLD_BIOMES[wIdx] || WORLD_BIOMES[0];
-          const unlocked = wIdx === 0 || (progress.unlockedWorlds || []).includes(world.id);
-          const active = world.id === selectedWorldId;
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={() => scrollBiomes('left')}
+          title="Xem thế giới trước"
+          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-sky-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
 
-          return (
-            <button
-              key={world.id}
-              onClick={() => {
-                soundManager.playPop();
-                setSelectedWorldId(world.id);
-              }}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer border ${
-                active
-                  ? 'bg-sky-500 text-white border-sky-500 shadow-xs scale-102'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50'
-              }`}
-            >
-              <div className="shrink-0">{biome.icon}</div>
-              <span>{world.title}</span>
-              {!unlocked && (
-                <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-bold inline-flex items-center gap-0.5">
-                  <Lock className="w-2.5 h-2.5" />
-                </span>
-              )}
-            </button>
-          );
-        })}
+        <div
+          ref={biomesScrollRef}
+          className="flex-1 flex items-center gap-2.5 overflow-x-auto py-1 scrollbar-none scroll-smooth"
+        >
+          {WORLDS_DATA.map((world, wIdx) => {
+            const biome = WORLD_BIOMES[wIdx] || WORLD_BIOMES[0];
+            const unlocked = wIdx === 0 || (progress.unlockedWorlds || []).includes(world.id);
+            const active = world.id === selectedWorldId;
+
+            return (
+              <button
+                key={world.id}
+                onClick={() => {
+                  soundManager.playPop();
+                  setSelectedWorldId(world.id);
+                }}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm whitespace-nowrap transition-all cursor-pointer border ${
+                  active
+                    ? 'bg-sky-500 text-white border-sky-400 shadow-xs scale-102'
+                    : 'bg-white/80 backdrop-blur-xl text-slate-700 border-white/90 hover:border-sky-300 hover:bg-white shadow-2xs'
+                }`}
+              >
+                <div className="shrink-0">{biome.icon}</div>
+                <span>{world.title}</span>
+                {!unlocked && (
+                  <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-bold inline-flex items-center gap-0.5">
+                    <Lock className="w-2.5 h-2.5" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => scrollBiomes('right')}
+          title="Xem thế giới tiếp"
+          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-sky-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
 
       {/* ================================================================ */}

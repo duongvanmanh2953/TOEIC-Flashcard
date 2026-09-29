@@ -299,7 +299,7 @@ export const KidsMyWorldPage: React.FC = () => {
   const currentZoneObj = ISLAND_ZONES.find((z) => z.id === activeZone) || ISLAND_ZONES[0];
 
   return (
-    <div className="w-full h-full flex flex-col space-y-4 md:space-y-5 animate-fadeIn pb-24 select-none px-2 sm:px-6">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 flex flex-col space-y-4 sm:space-y-5 animate-fadeIn select-none">
       {/* ================================================================ */}
       {/* 1. CONCEPT BANNER: HÀNH TINH KỲ THÚ - ĐẢO CỦA BÉ                */}
       {/* ================================================================ */}

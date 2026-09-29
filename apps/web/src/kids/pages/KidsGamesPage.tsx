@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { kidsAudioManager } from '../services/audio/KidsAudioManager';
@@ -46,6 +46,8 @@ import {
   CheckCircle,
   MapPin,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const KidsGamesPage: React.FC = () => {
@@ -56,6 +58,17 @@ export const KidsGamesPage: React.FC = () => {
   // Active game state
   const [activeGameId, setActiveGameId] = useState<GameId | null>(initialGameParam || null);
   const [selectedWorldTab, setSelectedWorldTab] = useState<'all' | GameWorldId>('all');
+  const worldsScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollWorlds = (direction: 'left' | 'right') => {
+    soundManager.playPop();
+    if (worldsScrollRef.current) {
+      worldsScrollRef.current.scrollBy({
+        left: direction === 'left' ? -220 : 220,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   // Kids progress
   const [progress, setProgress] = useState(() => getKidsProgress());
@@ -219,7 +232,7 @@ export const KidsGamesPage: React.FC = () => {
 
   // Otherwise: Render the ADVENTURE JOURNEY MAP Catalog
   return (
-    <div className="w-full h-full flex flex-col space-y-4 sm:space-y-5 select-none pb-6 px-2 sm:px-6">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 flex flex-col space-y-4 sm:space-y-5 select-none animate-fadeIn">
       {/* ================================================================ */}
       {/* 1. HERO BANNER: ADVENTURE STATS & WELCOME                        */}
       {/* ================================================================ */}
@@ -360,40 +373,61 @@ export const KidsGamesPage: React.FC = () => {
       </div>
 
       {/* ================================================================ */}
-      {/* 3. WORLD NAVIGATION QUICK ANCHORS                                */}
+      {/* 3. WORLD NAVIGATION QUICK ANCHORS (WITH NEXT / PREV BUTTONS)     */}
       {/* ================================================================ */}
-      <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-4 pt-1 scrollbar-none px-1">
+      <div className="flex items-center gap-2 shrink-0">
         <button
-          onClick={() => setSelectedWorldTab('all')}
-          className={`h-11 sm:h-12 px-4 sm:px-5 rounded-2xl font-black text-xs sm:text-sm shrink-0 flex items-center gap-2 border-2 transition-all duration-300 cursor-pointer ${
-            selectedWorldTab === 'all'
-              ? 'bg-gradient-to-r from-orange-400 to-amber-500 text-white border-orange-500 shadow-[0_8px_16px_rgba(249,115,22,0.3)] scale-[1.05] -translate-y-1'
-              : 'bg-white text-slate-700 border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 hover:scale-[1.02]'
-          }`}
+          onClick={() => scrollWorlds('left')}
+          title="Xem thế giới trước"
+          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-orange-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
         >
-          <span className="text-lg">🌟</span>
-          <span>Toàn Bộ Bản Đồ (17 Game)</span>
+          <ChevronLeft className="w-5 h-5" />
         </button>
 
-        {KIDS_GAME_WORLDS.map((world) => (
+        <div
+          ref={worldsScrollRef}
+          className="flex-1 flex items-center gap-2 sm:gap-3 overflow-x-auto py-1 scrollbar-none scroll-smooth px-1"
+        >
           <button
-            key={world.id}
-            onClick={() => setSelectedWorldTab(world.id)}
+            onClick={() => setSelectedWorldTab('all')}
             className={`h-11 sm:h-12 px-4 sm:px-5 rounded-2xl font-black text-xs sm:text-sm shrink-0 flex items-center gap-2 border-2 transition-all duration-300 cursor-pointer ${
-              selectedWorldTab === world.id
-                ? `bg-gradient-to-r ${world.gradient} text-white border-transparent shadow-[0_8px_16px_rgba(0,0,0,0.15)] scale-[1.05] -translate-y-1`
-                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 hover:scale-[1.02]'
+              selectedWorldTab === 'all'
+                ? 'bg-gradient-to-r from-orange-400 to-amber-500 text-white border-orange-500 shadow-[0_8px_16px_rgba(249,115,22,0.3)] scale-[1.05] -translate-y-1'
+                : 'bg-white/85 text-slate-700 border-white/90 hover:border-orange-300 hover:bg-orange-50/50 hover:scale-[1.02]'
             }`}
           >
-            <span className="text-lg">{world.icon}</span>
-            <span>{world.nameVi}</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-              selectedWorldTab === world.id ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-500'
-            }`}>
-              {world.gameIds.length}
-            </span>
+            <span className="text-lg">🌟</span>
+            <span>Toàn Bộ Bản Đồ (17 Game)</span>
           </button>
-        ))}
+
+          {KIDS_GAME_WORLDS.map((world) => (
+            <button
+              key={world.id}
+              onClick={() => setSelectedWorldTab(world.id)}
+              className={`h-11 sm:h-12 px-4 sm:px-5 rounded-2xl font-black text-xs sm:text-sm shrink-0 flex items-center gap-2 border-2 transition-all duration-300 cursor-pointer ${
+                selectedWorldTab === world.id
+                  ? `bg-gradient-to-r ${world.gradient} text-white border-transparent shadow-[0_8px_16px_rgba(0,0,0,0.15)] scale-[1.05] -translate-y-1`
+                  : 'bg-white/85 text-slate-700 border-white/90 hover:border-slate-300 hover:bg-slate-50 hover:scale-[1.02]'
+              }`}
+            >
+              <span className="text-lg">{world.icon}</span>
+              <span>{world.nameVi}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                selectedWorldTab === world.id ? 'bg-black/20 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {world.gameIds.length}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => scrollWorlds('right')}
+          title="Xem thế giới tiếp"
+          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-orange-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
 
       {/* ================================================================ */}

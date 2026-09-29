@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 import { voiceService } from '../services/voice/voiceService';
@@ -8,6 +8,8 @@ import {
   RotateCw,
   ArrowLeft,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
   Heart,
   BookOpen,
@@ -292,6 +294,18 @@ export const KidsFlashcardsPage: React.FC = () => {
 
   const currentCard = filteredDeck[currentIndex] || filteredDeck[0];
 
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategory = (direction: 'left' | 'right') => {
+    soundManager.playPop();
+    if (categoryScrollRef.current) {
+      categoryScrollRef.current.scrollBy({
+        left: direction === 'left' ? -200 : 200,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   const handleFlip = () => {
     soundManager.playClick();
     setIsFlipped((prev) => !prev);
@@ -356,9 +370,9 @@ export const KidsFlashcardsPage: React.FC = () => {
   }, [filteredDeck.length, currentCard]);
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 flex flex-col space-y-4 sm:space-y-5 select-none animate-fadeIn">
       {/* Top Header Banner (Roomy on tablet and mobile, lg:flex-row on desktop) */}
-      <div className="bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 rounded-3xl p-4 sm:p-6 lg:p-7 text-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border border-sky-300/40 shadow-sm">
+      <div className="bg-gradient-to-r from-sky-500/95 via-blue-500/95 to-indigo-600/95 backdrop-blur-xl rounded-3xl p-4 sm:p-5 lg:p-6 text-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border border-white/30 shadow-md shrink-0">
         <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0 flex-1">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xs border border-white/30 shrink-0">
             <KidsIllustration name="book" className="w-10 h-10 sm:w-12 sm:h-12" />
@@ -402,41 +416,63 @@ export const KidsFlashcardsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Pills Bar (Horizontal scrollable with roomy padding) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {[
-          { id: 'all', label: 'Tất Cả Thẻ', illustration: 'sun' },
-          { id: 'animals', label: 'Động Vật', illustration: 'dog' },
-          { id: 'food', label: 'Đồ Ăn', illustration: 'apple' },
-          { id: 'transport', label: 'Phương Tiện', illustration: 'car' },
-          { id: 'objects', label: 'Đồ Dùng', illustration: 'pencil' },
-        ].map((cat) => {
-          const isSelected = selectedCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => {
-                soundManager.playClick();
-                setSelectedCategory(cat.id);
-                setCurrentIndex(0);
-                setIsFlipped(false);
-              }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition-all whitespace-nowrap border-2 cursor-pointer ${
-                isSelected
-                  ? 'bg-sky-500 text-white border-sky-600 shadow-sm scale-105'
-                  : 'bg-white text-slate-800 border-slate-200 hover:border-sky-300 hover:bg-sky-50/50'
-              }`}
-            >
-              <KidsIllustration name={cat.illustration} className="w-5 h-5" />
-              <span>{cat.label}</span>
-            </button>
-          );
-        })}
+      {/* Category Pills Bar with Prev / Next Navigation Buttons */}
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={() => scrollCategory('left')}
+          title="Xem danh mục trước"
+          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-sky-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <div
+          ref={categoryScrollRef}
+          className="flex-1 flex items-center gap-2 overflow-x-auto py-1 scrollbar-none scroll-smooth"
+        >
+          {[
+            { id: 'all', label: 'Tất Cả Thẻ', illustration: 'sun' },
+            { id: 'animals', label: 'Động Vật', illustration: 'dog' },
+            { id: 'food', label: 'Đồ Ăn', illustration: 'apple' },
+            { id: 'transport', label: 'Phương Tiện', illustration: 'car' },
+            { id: 'objects', label: 'Đồ Dùng', illustration: 'pencil' },
+          ].map((cat) => {
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  soundManager.playClick();
+                  setSelectedCategory(cat.id);
+                  setCurrentIndex(0);
+                  setIsFlipped(false);
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition-all whitespace-nowrap border cursor-pointer ${
+                  isSelected
+                    ? 'bg-sky-500 text-white border-sky-400 shadow-sm scale-105'
+                    : 'bg-white/80 backdrop-blur-xl text-slate-800 border-white/90 hover:border-sky-300 hover:bg-white shadow-2xs'
+                }`}
+              >
+                <KidsIllustration name={cat.illustration} className="w-5 h-5" />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => scrollCategory('right')}
+          title="Xem danh mục tiếp"
+          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-sky-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
 
       {/* CAROUSEL FOCUS VIEW */}
       {viewMode === 'carousel' && currentCard && (
-        <div className="max-w-md mx-auto space-y-6">
+        <div className="flex-1 w-full flex flex-col items-center justify-center py-2 sm:py-4">
+          <div className="max-w-lg w-full space-y-5">
           {/* Card Counter & Favorite Indicator */}
           <div className="flex items-center justify-between px-2">
             <span className="text-xs font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
@@ -565,10 +601,10 @@ export const KidsFlashcardsPage: React.FC = () => {
           </div>
 
           {/* Navigation Controls Bar */}
-          <div className="flex items-center justify-between gap-3 pt-2">
+          <div className="flex items-center justify-between gap-3 pt-1.5">
             <button
               onClick={handlePrev}
-              className="flex-1 py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-black text-sm border-2 border-slate-200 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
+              className="flex-1 py-3 px-4 rounded-2xl bg-white/70 backdrop-blur-xl hover:bg-white/90 text-slate-800 font-black text-sm border border-white/80 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
             >
               <ArrowLeft className="w-4 h-4 text-slate-600" />
               <span>Thẻ trước</span>
@@ -576,7 +612,7 @@ export const KidsFlashcardsPage: React.FC = () => {
 
             <button
               onClick={handleFlip}
-              className="py-3.5 px-5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-black text-sm border-2 border-sky-200 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              className="py-3 px-5 rounded-2xl bg-sky-50/80 backdrop-blur-xl hover:bg-sky-100 text-sky-800 font-black text-sm border border-sky-200/80 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
             >
               <RotateCw className="w-4 h-4 text-sky-600" />
               <span>Lật thẻ</span>
@@ -584,18 +620,35 @@ export const KidsFlashcardsPage: React.FC = () => {
 
             <button
               onClick={handleNext}
-              className="flex-1 py-3.5 px-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-sm border-2 border-sky-600 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
+              className="flex-1 py-3 px-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-sm border border-sky-600 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
             >
               <span>Thẻ tiếp</span>
               <ArrowRight className="w-4 h-4 text-white" />
             </button>
           </div>
+
+          {/* Quick Interactive Hints / Keyboard Legend */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold text-slate-600 text-center">
+            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
+              ⌨️ Phím tắt: ⬅️ / ➡️ Đổi thẻ
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
+              Space / Click: Lật thẻ
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
+              Phím E: Nghe Tiếng Anh
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
+              Phím V: Nghe Tiếng Việt
+            </span>
+          </div>
         </div>
+      </div>
       )}
 
       {/* GRID VIEW (ALL CARDS AT ONCE) */}
       {viewMode === 'grid' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
+        <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
           {filteredDeck.map((card) => (
             <div
               key={card.id}

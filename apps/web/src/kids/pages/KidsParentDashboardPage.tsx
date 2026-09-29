@@ -43,7 +43,7 @@ export const KidsParentDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto space-y-6 md:space-y-8 animate-fadeIn pb-16">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 space-y-4 sm:space-y-5 animate-fadeIn select-none">
       {/* Top Header */}
       <div className="bg-white rounded-3xl p-6 md:p-8 border-2 border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
