@@ -109,17 +109,25 @@ fi
 
 # 5. Build va khoi chay Docker Containers o che do chay ngam (-d)
 printf "${BLUE}[4/5] Build va khoi chay Docker o che do chay ngam (background/daemon)...${NC}\n"
+printf "${YELLOW}Luu y: Qua trinh build Docker lan dau co the mat 1-4 phut (tai image, npm install, compile)...${NC}\n"
 if [ -n "$NO_CACHE" ]; then
     printf "${YELLOW}Dang build voi tuy chon --no-cache...${NC}\n"
     $DOCKER_COMPOSE build --no-cache
 fi
 
 printf "Dang chay: ${BOLD}%s up -d --build --remove-orphans${NC}\n" "$DOCKER_COMPOSE"
-$DOCKER_COMPOSE up -d --build --remove-orphans
+if ! $DOCKER_COMPOSE up -d --build --remove-orphans; then
+    printf "\n${RED}[ERROR] Qua trinh build hoac khoi dong container that bai!${NC}\n"
+    printf "${YELLOW}Cac nguyen nhan pho bien va cach khac phuc:${NC}\n"
+    printf "  1. Xung dot cong (Port conflict): Cong 3000, 4000, 5432, 6379 co the dang bi tien trinh khac dung.\n"
+    printf "  2. Docker Engine bi day dung luong hoac loi mang khi tai base image.\n"
+    printf "  3. Chay truc tiep '${BOLD}%s up --build${NC}' (khong co -d) de xem chi tiet loi tung buoc.\n\n" "$DOCKER_COMPOSE"
+    exit 1
+fi
 
 # 6. Kiem tra trang thai sau khi chay
 printf "${BLUE}[5/5] Kiem tra trang thai cac container...${NC}\n"
-sleep 2
+sleep 3
 $DOCKER_COMPOSE ps
 
 printf "\n${GREEN}${BOLD}=====================================================${NC}\n"
