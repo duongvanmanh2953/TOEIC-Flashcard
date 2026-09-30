@@ -1,23 +1,15 @@
 // ============================================================================
-// GAME 02: MEMORY FLIP (LẬT THẺ TRÍ NHỚ 3D SIÊU TỐI ƯU)
-// FLIP -> REMEMBER -> MATCH • 0ms Click Latency • Preloaded Audio • Fluid 60fps
+// GAME 02: MEMORY FLIP (REVAMPED GAME TABLE & DECK STACK EXPERIENCE)
+// Tactile Table Surface • Multi-Layer Deck Stack • Instant 0ms Flip • Preloaded Audio & Assets
 // ============================================================================
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { KidsGameWrapper } from '../core/KidsGameWrapper';
-import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { ArrowLeft, Sparkles, Star, Flame, Volume2, RotateCw, Check, X, Trophy } from 'lucide-react';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
-import { Sparkles, Star } from 'lucide-react';
-
-interface MemoryCard {
-  uniqueId: string;
-  item: VocabularyItem;
-  isFlipped: boolean;
-  isMatched: boolean;
-}
+import { kidAsset } from '../../utils/kidAsset';
 
 interface MemoryFlipGameProps {
   onExit: () => void;
@@ -25,296 +17,393 @@ interface MemoryFlipGameProps {
   onNextGame?: () => void;
 }
 
+const TOTAL_CARDS_PER_SESSION = 15;
+const CARD_BACK_IMAGE = kidAsset('/kid/games/flip-card/card-back.webp');
+
 export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
   onExit,
   onStarsAwarded,
   onNextGame,
 }) => {
-  const gameDef = KIDS_GAMES_REGISTRY.find((g) => g.id === 'memory_flip') || KIDS_GAMES_REGISTRY[1];
-
-  const TOTAL_ROUNDS = 3;
-  const [currentRound, setCurrentRound] = useState(1);
+  // 1. Session deck state
+  const [deck, setDeck] = useState<VocabularyItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isDealingNext, setIsDealingNext] = useState(false);
+  const [streak, setStreak] = useState(0);
   const [starsEarned, setStarsEarned] = useState(0);
-  const [cards, setCards] = useState<MemoryCard[]>([]);
-  const [flippedIds, setFlippedIds] = useState<string[]>([]);
-  const [isGameComplete, setIsGameComplete] = useState(false);
-  const [isReadyToContinue, setIsReadyToContinue] = useState(false);
-  const [praiseVi, setPraiseVi] = useState('');
+  const [masteredCount, setMasteredCount] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
 
-  // Ref to pending mismatch timer for ZERO-DROPPED-CLICKS
-  const mismatchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Sound & Speech mute safety
+  useEffect(() => {
+    return () => {
+      voiceService.stop();
+    };
+  }, []);
 
-  // Initialize board for round with PRELOADED VOICES
-  const initRound = useCallback((roundNum: number) => {
-    if (mismatchTimeoutRef.current) {
-      clearTimeout(mismatchTimeoutRef.current);
-      mismatchTimeoutRef.current = null;
-    }
-    setFlippedIds([]);
-    setIsReadyToContinue(false);
+  // 2. Preload all session assets immediately upon mount
+  const initGameSession = useCallback(() => {
+    // Pick random items for this session
+    const shuffled = [...COMPREHENSIVE_VOCABULARY]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, TOTAL_CARDS_PER_SESSION);
 
-    const numPairs = roundNum === 1 ? 2 : roundNum === 2 ? 3 : 4;
-    const shuffledVocab = [...COMPREHENSIVE_VOCABULARY].sort(() => Math.random() - 0.5).slice(0, numPairs);
+    setDeck(shuffled);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setIsDealingNext(false);
+    setStreak(0);
+    setStarsEarned(0);
+    setMasteredCount(0);
+    setIsComplete(false);
 
-    // PRELOAD VOICES IMMEDIATELY (0ms click delay)
-    voiceService.preloadWords(shuffledVocab.map((v) => v.word));
+    // PRELOAD CARD BACK ASSET
+    const cardBackImg = new Image();
+    cardBackImg.src = CARD_BACK_IMAGE;
 
-    const deck: MemoryCard[] = [];
-    shuffledVocab.forEach((item, idx) => {
-      deck.push({
-        uniqueId: `${item.id}_a_${idx}`,
-        item,
-        isFlipped: false,
-        isMatched: false,
-      });
-      deck.push({
-        uniqueId: `${item.id}_b_${idx}`,
-        item,
-        isFlipped: false,
-        isMatched: false,
-      });
-    });
-
-    setCards(deck.sort(() => Math.random() - 0.5));
+    // PRELOAD ALL VOCABULARY AUDIO & IMAGES IN ADVANCE (0ms lag guarantee)
+    voiceService.preloadWords(shuffled.map((v) => v.word));
   }, []);
 
   useEffect(() => {
-    initRound(1);
-    return () => {
-      if (mismatchTimeoutRef.current) {
-        clearTimeout(mismatchTimeoutRef.current);
-      }
-    };
-  }, [initRound]);
+    initGameSession();
+  }, [initGameSession]);
 
-  const handleCardClick = (clickedCard: MemoryCard) => {
-    // Look up freshest state to prevent stale closure or rapid tap double-triggers
-    const targetCard = cards.find((c) => c.uniqueId === clickedCard.uniqueId);
-    if (
-      !targetCard ||
-      targetCard.isFlipped ||
-      targetCard.isMatched ||
-      isReadyToContinue ||
-      flippedIds.includes(targetCard.uniqueId)
-    ) {
-      return;
+  const currentCard = deck[currentIndex];
+  const nextCard = deck[currentIndex + 1];
+
+  // Preload next card voice right away
+  useEffect(() => {
+    if (nextCard) {
+      voiceService.preloadWords([nextCard.word]);
     }
+  }, [nextCard]);
 
-    // Fluid Handling: If user clicks while 2 mismatched cards are showing,
-    // immediately clear them and flip the new card without dropping the tap!
-    let activeCards = cards;
-    let currentFlipped = flippedIds;
+  // 3. FLIP INTERACTION (0ms lag, pure GPU transform)
+  const handleFlipCard = useCallback(() => {
+    if (isDealingNext) return;
 
-    if (mismatchTimeoutRef.current && currentFlipped.length === 2) {
-      clearTimeout(mismatchTimeoutRef.current);
-      mismatchTimeoutRef.current = null;
-      activeCards = cards.map((c) =>
-        currentFlipped.includes(c.uniqueId) ? { ...c, isFlipped: false } : c
-      );
-      currentFlipped = [];
-    }
-
-    // Play instant flip audio & brisk voice
+    // Trigger instant flip audio
     soundManager.play('pop');
-    voiceService.speakWord(targetCard.item.word);
 
-    // Flip card immediately
-    const updatedCards = activeCards.map((c) =>
-      c.uniqueId === targetCard.uniqueId ? { ...c, isFlipped: true } : c
-    );
-    setCards(updatedCards);
-
-    const newFlipped = [...currentFlipped, targetCard.uniqueId];
-    setFlippedIds(newFlipped);
-
-    if (newFlipped.length === 2) {
-      const [firstId, secondId] = newFlipped;
-      const firstCard = updatedCards.find((c) => c.uniqueId === firstId)!;
-      const secondCard = clickedCard;
-
-      if (firstCard.item.id === secondCard.item.id) {
-        // MATCH! Instant feedback
-        setTimeout(() => {
-          soundManager.play('correct');
-          soundManager.play('star_burst');
-
-          const matchedCards = updatedCards.map((c) =>
-            c.uniqueId === firstId || c.uniqueId === secondId ? { ...c, isMatched: true } : c
-          );
-          setCards(matchedCards);
-          setFlippedIds([]);
-
-          // Check if board completed
-          if (matchedCards.every((c) => c.isMatched)) {
-            const stars = 3;
-            setStarsEarned((prev) => prev + stars);
-            if (onStarsAwarded) onStarsAwarded(stars);
-
-            const praise = 'Bé nhớ siêu đỉnh! Tìm thấy hết các cặp rồi!';
-            setPraiseVi(praise);
-            voiceService.speakVietnamese(praise);
-
-            // Responsive continue: enable within 600ms so child never waits!
-            setTimeout(() => {
-              setIsReadyToContinue(true);
-            }, 600);
-          }
-        }, 220);
-      } else {
-        // MISMATCH! Short auto-unflip timer (480ms)
-        mismatchTimeoutRef.current = setTimeout(() => {
-          setCards((prev) =>
-            prev.map((c) =>
-              c.uniqueId === firstId || c.uniqueId === secondId ? { ...c, isFlipped: false } : c
-            )
-          );
-          setFlippedIds([]);
-          mismatchTimeoutRef.current = null;
-        }, 480);
+    // Toggle flip
+    setIsFlipped((prev) => {
+      const nextState = !prev;
+      // If flipping to front side, speak immediately without blocking animation
+      if (nextState && currentCard) {
+        voiceService.speakWord(currentCard.word);
       }
+      return nextState;
+    });
+  }, [isDealingNext, currentCard]);
+
+  // Pronunciation speaker
+  const handleReplayVoice = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentCard) {
+      soundManager.play('pop');
+      voiceService.speakWord(currentCard.word);
     }
   };
 
-  const handleAdvanceRound = () => {
-    setIsReadyToContinue(false);
-    if (currentRound < TOTAL_ROUNDS) {
-      const next = currentRound + 1;
-      setCurrentRound(next);
-      initRound(next);
+  // 4. ACTION: NEXT CARD FROM DECK
+  const handleAnswer = (remembered: boolean) => {
+    if (isDealingNext) return;
+
+    if (remembered) {
+      soundManager.play('correct');
+      soundManager.play('star_burst');
+      setStarsEarned((prev) => prev + 1);
+      setStreak((prev) => prev + 1);
+      setMasteredCount((prev) => prev + 1);
+      if (onStarsAwarded) onStarsAwarded(1);
     } else {
-      setIsGameComplete(true);
-      soundManager.play('celebration');
+      soundManager.play('pop');
+      setStreak(0);
     }
+
+    // Trigger smooth card slide-off deal animation
+    setIsDealingNext(true);
+
+    setTimeout(() => {
+      if (currentIndex + 1 < deck.length) {
+        setCurrentIndex((prev) => prev + 1);
+        setIsFlipped(false);
+        setIsDealingNext(false);
+      } else {
+        // Session Complete!
+        setIsComplete(true);
+        soundManager.play('celebration');
+      }
+    }, 280);
   };
+
+  const progressPercent = Math.round(((currentIndex + (isComplete ? 1 : 0)) / deck.length) * 100);
 
   return (
-    <KidsGameWrapper
-      game={gameDef}
-      currentRound={currentRound}
-      totalRounds={TOTAL_ROUNDS}
-      starsEarned={starsEarned}
-      worldTheme="starter"
-      instructionEn="Find matching pairs!"
-      instructionVi="Bé hãy lật thẻ tìm cặp hình giống nhau nhé!"
-      isReadyToContinue={isReadyToContinue}
-      onContinueRound={handleAdvanceRound}
-      praiseVi={praiseVi}
-      onReplayAudio={() => voiceService.speakEnglish('Find matching pairs')}
-      onExit={onExit}
-      onNextGame={onNextGame}
-      onPlayAgain={() => {
-        setCurrentRound(1);
-        setStarsEarned(0);
-        setIsGameComplete(false);
-        initRound(1);
-      }}
-      isGameComplete={isGameComplete}
-    >
-      {/* MAGICAL CELESTIAL AURORA CARD ARENA (SUPER-SPACIOUS & ULTRA-PREMIUM) */}
-      <div className="relative w-full h-full p-4 sm:p-8 lg:p-10 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-[#0B0F2A] via-[#151B42] to-[#0A122E] select-none min-h-[540px] sm:min-h-[600px]">
-        {/* Luminous Nebula Glows & Stardust Background */}
-        <div className="absolute -top-24 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#a5b4fc_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+    <div className="w-full max-w-5xl mx-auto flex flex-col space-y-3 sm:space-y-4 select-none px-2 sm:px-4 py-2 animate-fadeIn">
+      {/* ========================================================================= */}
+      {/* 1. MINIMAL FOCUSED GAME HUD                                               */}
+      {/* ========================================================================= */}
+      <header className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-full bg-white/90 backdrop-blur-xl border border-white/80 shadow-md">
+        {/* Left: Exit button */}
+        <button
+          onClick={onExit}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs active:scale-95 transition-all cursor-pointer min-h-[40px]"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Thoát</span>
+        </button>
 
-        {/* Top Hint Banner with Frosted Glass */}
-        <div className="relative z-10 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sky-200 text-xs sm:text-sm font-bold text-center flex items-center gap-2 shadow-lg">
-          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
-          <span>Chạm vào thẻ bài để lật tìm cặp từ vựng giống nhau!</span>
+        {/* Center: Clean Title */}
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🃏</span>
+          <span className="font-black text-sm sm:text-base text-slate-800">
+            Lật Thẻ Từ Vựng • Memory Match
+          </span>
         </div>
 
-        {/* SPACIOUS 3D CARD GRID (Generous spacing, relaxed breathing room) */}
-        <div className="relative z-10 w-full max-w-4xl my-auto py-6 sm:py-8 grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-7 lg:gap-8 items-center justify-items-center [perspective:1200px]">
-          {cards.map((card) => {
-            const isCardActive = card.isFlipped || card.isMatched;
+        {/* Right: Round & Card Counter */}
+        <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-900 font-black text-xs">
+          <span>Thẻ</span>
+          <span className="text-indigo-600">{Math.min(currentIndex + 1, deck.length)}</span>
+          <span className="text-indigo-300">/</span>
+          <span>{deck.length}</span>
+        </div>
+      </header>
 
-            return (
+      {/* ========================================================================= */}
+      {/* 2. THE GAME TABLE (DEDICATED TACTILE PLAYING SURFACE)                     */}
+      {/* ========================================================================= */}
+      <main className="relative w-full rounded-[36px] sm:rounded-[44px] bg-[#12182D] border-4 border-slate-700/50 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.5),inset_0_2px_12px_rgba(255,255,255,0.06)] overflow-hidden flex flex-col justify-between items-center p-4 sm:p-8 min-h-[580px] sm:min-h-[640px]">
+        {/* Soft Radial Ambient Spotlight on Table Center */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.15),_transparent_70%)] pointer-events-none" />
+
+        {/* Subtle Decorative Felt Edge Line */}
+        <div className="absolute inset-2 sm:inset-3 rounded-[30px] sm:rounded-[38px] border border-white/5 pointer-events-none" />
+
+        {/* Top Hint Pill */}
+        <div className="relative z-10 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-sky-200 text-xs font-bold flex items-center gap-2 shadow-sm">
+          <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse shrink-0" />
+          <span>
+            {isFlipped
+              ? 'Bé hãy đọc to từ và chọn kết quả bên dưới nhé!'
+              : 'Chạm vào lá bài trên đầu chồng bài để lật mở!'}
+          </span>
+        </div>
+
+        {/* ======================================================================= */}
+        {/* 3. CENTER: THE DECK STACK (CHỒNG BÀI THẬT CÓ ĐỘ SÂU)                    */}
+        {/* ======================================================================= */}
+        <div className="relative z-20 my-auto py-4 flex items-center justify-center [perspective:1400px]">
+          {currentCard && !isComplete ? (
+            <div className="relative w-72 sm:w-80 h-[380px] sm:h-[430px] flex items-center justify-center">
+              {/* DECK LAYER 3 (Bottom Stack Illusion) */}
               <div
-                key={card.uniqueId}
-                onClick={() => handleCardClick(card)}
-                className="w-32 sm:w-40 lg:w-44 h-44 sm:h-52 lg:h-56 cursor-pointer relative group [perspective:1200px] select-none touch-manipulation"
+                className="absolute inset-0 rounded-[28px] sm:rounded-[32px] overflow-hidden border-2 border-indigo-900/60 shadow-xl pointer-events-none transform translate-y-3.5 translate-x-2 -rotate-2 scale-[0.98] transition-transform duration-300"
+                style={{
+                  backgroundImage: `url(${CARD_BACK_IMAGE})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
               >
-                <div
-                  className={`w-full h-full rounded-[26px] sm:rounded-[32px] transition-transform duration-160 ease-[cubic-bezier(0.2,0.9,0.3,1.2)] [transform-style:preserve-3d] [will-change:transform] ${
-                    isCardActive ? '[transform:rotateY(180deg)]' : ''
-                  } ${
-                    card.isMatched
-                      ? 'ring-4 ring-emerald-400 ring-offset-2 ring-offset-[#0B0F2A] shadow-[0_0_35px_rgba(52,211,153,0.85)] scale-102'
-                      : 'hover:scale-105 active:scale-95 shadow-[0_16px_32px_rgba(0,0,0,0.5)]'
-                  }`}
-                >
-                  {/* ========================================================= */}
-                  {/* CARD BACK FACE: Ultra-Luxury Royal Celestial Emblem       */}
-                  {/* ========================================================= */}
-                  <div className="absolute inset-0 rounded-[26px] sm:rounded-[32px] bg-gradient-to-br from-indigo-600 via-purple-700 to-indigo-900 border-3 border-amber-300/90 shadow-[inset_0_0_18px_rgba(251,191,36,0.35),0_12px_28px_rgba(0,0,0,0.5)] flex flex-col items-center justify-between p-4 [backface-visibility:hidden] overflow-hidden">
-                    {/* Golden Holographic Inner Border */}
-                    <div className="absolute inset-1.5 rounded-[20px] sm:rounded-[26px] border border-amber-300/40 pointer-events-none" />
+                <div className="absolute inset-0 bg-slate-950/40" />
+              </div>
 
-                    {/* Specular Diagonal Light Sheen */}
-                    <div className="absolute -top-12 -left-12 w-32 h-32 bg-white/15 rounded-full blur-xl pointer-events-none group-hover:translate-x-20 group-hover:translate-y-20 transition-transform duration-700" />
+              {/* DECK LAYER 2 (Middle Stack Illusion) */}
+              <div
+                className="absolute inset-0 rounded-[28px] sm:rounded-[32px] overflow-hidden border-2 border-indigo-800/70 shadow-2xl pointer-events-none transform translate-y-2 -translate-x-1.5 rotate-1 scale-[0.99] transition-transform duration-300"
+                style={{
+                  backgroundImage: `url(${CARD_BACK_IMAGE})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
+                <div className="absolute inset-0 bg-slate-950/20" />
+              </div>
 
-                    {/* Top Star Accent */}
-                    <div className="flex items-center gap-1.5 text-amber-300/80 text-[10px] font-black uppercase tracking-widest">
-                      <Star className="w-3 h-3 fill-amber-300" />
-                      <span>VOCALFLOW</span>
-                      <Star className="w-3 h-3 fill-amber-300" />
+              {/* TOP ACTIVE CARD (Interactive 3D Flip with 0ms Latency) */}
+              <div
+                onClick={handleFlipCard}
+                className={`kids-flip-card w-full h-full cursor-pointer relative group transition-all duration-280 ease-out select-none ${
+                  isDealingNext
+                    ? 'opacity-0 translate-x-32 -rotate-6 scale-95 pointer-events-none'
+                    : 'opacity-100 hover:scale-[1.015] active:scale-[0.985]'
+                }`}
+              >
+                <div className={`kids-flip-inner ${isFlipped ? 'is-flipped' : ''}`}>
+                  {/* ======================================================= */}
+                  {/* CARD BACK: Premium Velvet Gold Crest Graphic Asset      */}
+                  {/* ======================================================= */}
+                  <div
+                    className="kids-flip-front border-3 border-amber-300/80 rounded-[28px] sm:rounded-[32px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.6)] flex flex-col items-center justify-between p-4"
+                    style={{
+                      backgroundImage: `url(${CARD_BACK_IMAGE})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  >
+                    {/* Inner Gold Foil Border */}
+                    <div className="absolute inset-2 rounded-[22px] sm:rounded-[26px] border border-amber-300/40 pointer-events-none" />
+
+                    {/* Top Branding Pill */}
+                    <div className="relative z-10 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-amber-300 border border-amber-300/30">
+                      VOCALFLOW KIDS
                     </div>
 
-                    {/* Center Celestial Star Compass Emblem */}
-                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 p-0.5 shadow-[0_8px_20px_rgba(245,158,11,0.4)] flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                      <div className="w-full h-full rounded-[14px] bg-indigo-950 flex items-center justify-center relative overflow-hidden">
-                        {/* Radial Ray Accents */}
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-400/30 via-transparent to-transparent" />
-                        <Sparkles className="w-9 h-9 sm:w-11 sm:h-11 text-amber-300 filter drop-shadow-[0_2px_8px_rgba(251,191,36,0.8)] animate-pulse" />
-                      </div>
-                    </div>
-
-                    {/* Bottom Tactile Label */}
-                    <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-amber-200 text-[11px] font-black tracking-wide shadow-xs">
-                      <span>CHẠM ĐỂ LẬT</span>
+                    {/* Bottom Prompt Pill */}
+                    <div className="relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-400 text-amber-950 font-black text-xs shadow-md group-hover:scale-105 active:scale-95 transition-transform">
+                      <RotateCw className="w-3.5 h-3.5" />
+                      <span>CHẠM ĐỂ LẬT BÀI</span>
                     </div>
                   </div>
 
-                  {/* ========================================================= */}
-                  {/* CARD FRONT FACE: Radiant Pearl Porcelain Surface          */}
-                  {/* ========================================================= */}
-                  <div className="absolute inset-0 rounded-[26px] sm:rounded-[32px] bg-gradient-to-b from-white via-slate-50 to-indigo-50/50 border-3 border-indigo-200/90 [transform:rotateY(180deg)] [backface-visibility:hidden] flex flex-col items-center justify-between p-3.5 sm:p-4 text-center shadow-[0_16px_36px_rgba(0,0,0,0.35)] overflow-hidden">
-                    {/* Subtle Top Indicator Tag */}
-                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
-                      Từ vựng
-                    </span>
+                  {/* ======================================================= */}
+                  {/* CARD FRONT: Pearl Porcelain Face with Artwork           */}
+                  {/* ======================================================= */}
+                  <div className="kids-flip-back bg-gradient-to-b from-white via-slate-50 to-indigo-50/60 border-3 border-indigo-200 rounded-[28px] sm:rounded-[32px] p-4 sm:p-5 flex flex-col items-center justify-between text-center shadow-[0_22px_45px_rgba(0,0,0,0.4)] overflow-hidden">
+                    {/* Top Indicator */}
+                    <div className="w-full flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 font-black text-[10px] uppercase tracking-wider">
+                        Từ vựng
+                      </span>
+                      <button
+                        onClick={handleReplayVoice}
+                        className="p-2 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 active:scale-90 transition-all cursor-pointer shadow-2xs"
+                        title="Phát lại phát âm"
+                      >
+                        <Volume2 className="w-4 h-4 text-indigo-600" />
+                      </button>
+                    </div>
 
-                    {/* Elevated Soft Illustration Pedestal */}
-                    <div className="w-20 h-20 sm:w-26 sm:h-26 rounded-2xl bg-indigo-50/60 border border-indigo-100/60 p-2 flex items-center justify-center shadow-inner filter drop-shadow-xs">
+                    {/* Big Artwork Pedestal */}
+                    <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-indigo-50/80 border border-indigo-100/80 p-3 flex items-center justify-center shadow-inner filter drop-shadow-sm group-hover:scale-105 transition-transform">
                       <KidsIllustration
-                        name={card.item.word.toLowerCase()}
+                        name={currentCard.word.toLowerCase()}
                         className="w-full h-full object-contain filter drop-shadow-sm"
-                        alt={card.item.word}
+                        alt={currentCard.word}
                       />
                     </div>
 
-                    {/* Bilingual Typography */}
-                    <div className="space-y-0.5 w-full">
-                      <h4 className="text-base sm:text-lg font-black text-indigo-950 capitalize leading-tight tracking-tight">
-                        {card.item.word}
-                      </h4>
-                      <span className="inline-block text-xs font-black text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200/70 truncate max-w-[90%]">
-                        {card.item.viMeaning}
-                      </span>
+                    {/* Vocabulary English + Meaning */}
+                    <div className="space-y-1 w-full">
+                      <h3 className="text-2xl sm:text-3xl font-black text-slate-900 capitalize tracking-tight">
+                        {currentCard.word}
+                      </h3>
+                      <p className="text-xs font-bold text-slate-500">
+                        {currentCard.phonetic || '/.../'}
+                      </p>
+                      <div className="pt-1">
+                        <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-950 font-black text-sm border border-emerald-200">
+                          {currentCard.viMeaning}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Tiny Flip Hint */}
+                    <div className="text-[11px] font-bold text-slate-400">
+                      Chạm lại để úp thẻ
                     </div>
                   </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            /* VICTORY / COMPLETE CELEBRATION */
+            <div className="flex flex-col items-center justify-center p-6 text-center space-y-4 max-w-md animate-scaleUp">
+              <div className="w-20 h-20 rounded-3xl bg-amber-400 text-amber-950 flex items-center justify-center shadow-xl animate-bounce">
+                <Trophy className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-white">
+                Bé Xuất Sắc Hoàn Thành!
+              </h2>
+              <p className="text-xs sm:text-sm font-semibold text-sky-200">
+                Bé đã ôn luyện thành công {deck.length} thẻ từ vựng với {masteredCount} thẻ nhớ siêu chuẩn!
+              </p>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={initGameSession}
+                  className="px-6 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-black text-xs sm:text-sm border border-white/40 active:scale-95 transition-all cursor-pointer"
+                >
+                  Chơi Lại Vòng Này
+                </button>
+                {onNextGame && (
+                  <button
+                    onClick={onNextGame}
+                    className="px-7 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs sm:text-sm shadow-lg active:scale-95 transition-all cursor-pointer"
+                  >
+                    Trò Chơi Tiếp Theo →
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Footer Level Info */}
-        <div className="relative z-10 px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-xs font-bold text-sky-200 text-center shadow-sm">
-          Vòng {currentRound}/{TOTAL_ROUNDS} • Ghép đủ các cặp thẻ bài để qua màn!
+        {/* ======================================================================= */}
+        {/* 4. POST-FLIP ANSWER ACTION BUTTONS (APPEARS WHEN CARD IS FLIPPED)       */}
+        {/* ======================================================================= */}
+        <div className="relative z-20 w-full max-w-sm flex items-center justify-center gap-3 py-2 min-h-[52px]">
+          {isFlipped && !isComplete && (
+            <div className="flex items-center gap-3 w-full animate-scaleUp">
+              {/* Button: Chưa Nhớ */}
+              <button
+                type="button"
+                onClick={() => handleAnswer(false)}
+                className="flex-1 py-3 px-4 rounded-2xl bg-white/10 hover:bg-white/20 text-slate-200 font-black text-xs sm:text-sm border border-white/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+              >
+                <X className="w-4 h-4 text-rose-400" />
+                <span>Chưa Nhớ</span>
+              </button>
+
+              {/* Button: Đã Nhớ */}
+              <button
+                type="button"
+                onClick={() => handleAnswer(true)}
+                className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+              >
+                <Check className="w-4 h-4" />
+                <span>Đã Nhớ! +1 ⭐</span>
+              </button>
+            </div>
+          )}
         </div>
-      </div>
-    </KidsGameWrapper>
+
+        {/* ======================================================================= */}
+        {/* 5. TABLE FOOTER HUD (SCORE • STREAK • PROGRESS BAR)                     */}
+        {/* ======================================================================= */}
+        <div className="relative z-10 w-full max-w-xl flex flex-col space-y-2 pt-2 border-t border-white/10">
+          <div className="flex items-center justify-between text-xs font-black text-slate-300">
+            {/* Score */}
+            <div className="flex items-center gap-1.5 text-amber-300">
+              <Star className="w-4 h-4 fill-amber-300" />
+              <span>{starsEarned} Sao Vàng</span>
+            </div>
+
+            {/* Streak */}
+            <div className="flex items-center gap-1.5 text-rose-400">
+              <Flame className="w-4 h-4 fill-rose-400" />
+              <span>{streak} Chuỗi Chuẩn</span>
+            </div>
+
+            {/* Progress Label */}
+            <span className="text-slate-400 font-bold">
+              Tiến độ {progressPercent}%
+            </span>
+          </div>
+
+          {/* Minimalist Progress Track */}
+          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
   );
 };
 

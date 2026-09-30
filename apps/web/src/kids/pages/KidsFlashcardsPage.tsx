@@ -494,12 +494,18 @@ export const KidsFlashcardsPage: React.FC = () => {
             </button>
           </div>
 
-          {/* 3D FLIP CONTAINER */}
-          <div
-            onClick={handleFlip}
-            className="kids-flip-card w-full h-[380px] sm:h-[420px] cursor-pointer group select-none"
-          >
-            <div className={`kids-flip-inner ${isFlipped ? 'is-flipped' : ''}`}>
+          {/* 3D FLIP CONTAINER WITH DECK STACK ILLUSION */}
+          <div className="relative w-full h-[380px] sm:h-[420px]">
+            {/* Deck stack layer 2 (bottom) */}
+            <div className="absolute inset-0 rounded-3xl bg-indigo-900/15 border border-indigo-200/40 shadow-sm transform translate-y-3.5 -translate-x-1 -rotate-1.5 pointer-events-none" />
+            {/* Deck stack layer 1 (middle) */}
+            <div className="absolute inset-0 rounded-3xl bg-indigo-950/20 border border-indigo-200/50 shadow-md transform translate-y-2 translate-x-1.5 rotate-1 pointer-events-none" />
+
+            <div
+              onClick={handleFlip}
+              className="kids-flip-card w-full h-full cursor-pointer group select-none relative z-10"
+            >
+              <div className={`kids-flip-inner ${isFlipped ? 'is-flipped' : ''}`}>
               {/* ================= FRONT SIDE ================= */}
               <div
                 className={`kids-flip-front ${currentCard.bgColor} border-2 ${currentCard.borderColor} rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between text-center`}
@@ -598,6 +604,7 @@ export const KidsFlashcardsPage: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
           </div>
 
           {/* Navigation Controls Bar */}
