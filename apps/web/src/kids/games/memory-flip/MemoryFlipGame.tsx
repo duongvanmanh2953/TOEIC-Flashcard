@@ -386,87 +386,90 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
 
   const matchedPairsCount = cards.filter((c) => c.isMatched).length / 2;
   const totalPairsCount = cards.length / 2;
-  const progressPercent = totalPairsCount > 0 ? Math.round((matchedPairsCount / totalPairsCount) * 100) : 0;
+
+  const [isGameComplete, setIsGameComplete] = useState(false);
+
+  const handleNextOrFinish = () => {
+    if (round < MAX_ROUNDS) {
+      const next = round + 1;
+      setRound(next);
+      setupRound(next);
+    } else {
+      setIsGameComplete(true);
+    }
+  };
 
   return (
-    <div className="w-full h-full max-h-[100dvh] overflow-hidden flex flex-col justify-between kids-bright-page-bg text-slate-800 select-none">
-      {/* ========================================================================= */}
-      {/* 1. ZONE B — GAME HEADER (CLEAN, BRIGHT, PURE SVG ICONS)                  */}
-      {/* ========================================================================= */}
-      <header className="flex-shrink-0 w-full max-w-5xl mx-auto px-4 pt-3 pb-1 flex items-center justify-between gap-3">
-        {/* Left: Exit button & Title */}
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={onExit}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95"
-          >
-            <ArrowLeft className="w-4 h-4 text-slate-600" />
-            <span>Thoát</span>
-          </button>
-
+    <GameShell
+      title="Lật Thẻ Trí Nhớ"
+      icon={<Trophy className="w-5 h-5 text-amber-500" />}
+      backgroundTheme="bright"
+      requiresLandscape={true}
+      currentRound={round}
+      totalRounds={MAX_ROUNDS}
+      score={score}
+      streak={streak}
+      isGameComplete={isGameComplete}
+      starsEarned={Math.min(3, Math.max(1, Math.round(score / 50)))}
+      onExit={onExit}
+      onPlayAgain={() => {
+        setRound(1);
+        setScore(0);
+        setMoves(0);
+        setStreak(0);
+        setIsGameComplete(false);
+        setupRound(1);
+      }}
+      onNextGame={onNextGame}
+    >
+      {/* THE GAME TABLE CONTAINER */}
+      <div className="w-full h-full flex flex-col items-center justify-between p-2 sm:p-4">
+        {/* Sub-bar: Matched pairs info & quick restart */}
+        <div className="w-full max-w-4xl flex items-center justify-between px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 mb-2 shrink-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-xs sm:text-sm lg:text-base font-black text-slate-900 tracking-tight">
-              Lật Thẻ Trí Nhớ
-            </h1>
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 text-[10px] font-black">
-              Vòng {round} / {MAX_ROUNDS}
+            <span className="text-xs font-black text-slate-800 dark:text-white">
+              Đã ghép: {matchedPairsCount} / {totalPairsCount} cặp
+            </span>
+            <span className="text-xs font-bold text-slate-500">
+              ({moves} lượt lật)
             </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setupRound(round)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+            title="Xáo bài lại"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Xáo lại</span>
+          </button>
         </div>
 
-        {/* Right: Metrics (Moves, Score, Streak) */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 text-xs font-bold text-slate-700 shadow-2xs">
-            <Layers className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-            <span>{moves} Lượt</span>
+        {/* Board Arena (Centered responsive grid, zero scroll) */}
+        <div className="flex-1 w-full max-w-4xl flex items-center justify-center min-h-0 relative">
+          <div
+            className={`grid ${
+              round === 1
+                ? 'grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5'
+                : 'grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-3 lg:gap-4'
+            } items-center justify-items-center w-full max-h-full`}
+          >
+            {cards.map((card) => (
+              <GameCardItem
+                key={card.uniqueId}
+                card={card}
+                onCardClick={handleCardClick}
+                onVoiceClick={handleVoiceReplay}
+                isMuted={isMuted}
+              />
+            ))}
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-amber-200/80 text-xs font-bold text-amber-800 shadow-2xs">
-            <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span>{score} Điểm</span>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-rose-200/80 text-xs font-bold text-rose-700 shadow-2xs">
-            <Flame className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-            <span>{streak} Chuỗi</span>
-          </div>
-        </div>
-      </header>
-
-      {/* ========================================================================= */}
-      {/* 2. ZONE C — THE GAME TABLE (WARM CREAM #F7F3EA)                           */}
-      {/* ========================================================================= */}
-      <div className="flex-1 min-h-0 w-full px-2 sm:px-4 py-1 flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-[1040px] h-full max-h-[calc(100dvh-130px)] rounded-[28px] sm:rounded-[36px] kids-bright-game-table flex flex-col items-center justify-center p-3 sm:p-5 lg:p-7 relative overflow-hidden">
-          {/* Subtle Organic Inner Ring */}
-          <div className="absolute inset-2.5 sm:inset-3.5 rounded-[22px] sm:rounded-[30px] border border-amber-400/20 pointer-events-none" />
-
-          {/* INNER BOARD / SAFE AREA (Cards fit perfectly without clipping) */}
-          <div className="relative z-10 w-full h-full flex items-center justify-center p-1 sm:p-2 overflow-hidden">
-            <div
-              className={`grid ${
-                round === 1
-                  ? 'grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5'
-                  : 'grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-3.5 lg:gap-4'
-              } items-center justify-items-center w-full max-w-4xl`}
-            >
-              {cards.map((card) => (
-                <GameCardItem
-                  key={card.uniqueId}
-                  card={card}
-                  onCardClick={handleCardClick}
-                  onVoiceClick={handleVoiceReplay}
-                  isMuted={isMuted}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* VICTORY OVERLAY WHEN ROUND IS COMPLETE */}
+          {/* Victory Modal between rounds */}
           {isRoundComplete && (
             <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center animate-fadeIn">
-              <div className="p-6 sm:p-8 rounded-[24px] bg-white border border-slate-200/90 shadow-2xl max-w-sm w-full flex flex-col items-center space-y-3.5 animate-scaleUp">
+              <div className="p-6 sm:p-8 rounded-[28px] bg-white border-2 border-amber-300 shadow-2xl max-w-sm w-full flex flex-col items-center space-y-3.5 animate-scaleUp">
                 <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
                   <Trophy className="w-8 h-8 text-amber-500" />
                 </div>
@@ -493,8 +496,8 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
 
                 <button
                   type="button"
-                  onClick={handleAdvanceRound}
-                  className="w-full py-3 px-5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                  onClick={handleNextOrFinish}
+                  className="w-full py-3 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                 >
                   <span>{round < MAX_ROUNDS ? 'Sang Vòng Tiếp Theo' : 'Hoàn Thành Trò Chơi'}</span>
                   <Check className="w-4 h-4" />
@@ -504,48 +507,7 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
           )}
         </div>
       </div>
-
-      {/* ========================================================================= */}
-      {/* 3. ZONE D — BOTTOM CONTROLS & STATUS BAR                                  */}
-      {/* ========================================================================= */}
-      <footer className="flex-shrink-0 w-full max-w-5xl mx-auto px-4 pb-3 pt-1 flex items-center justify-between gap-3">
-        {/* Progress Tracker */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-            Đã ghép: {matchedPairsCount} / {totalPairsCount} cặp
-          </span>
-
-          <div className="w-36 sm:w-52 h-2 rounded-full bg-slate-200/80 overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsMuted(!isMuted)}
-            className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/80 transition-colors cursor-pointer active:scale-95 shadow-2xs"
-            title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-slate-700" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setupRound(round)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-2xs"
-            title="Chơi lại vòng này"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">Chơi lại</span>
-          </button>
-        </div>
-      </footer>
-    </div>
+    </GameShell>
   );
 };
 

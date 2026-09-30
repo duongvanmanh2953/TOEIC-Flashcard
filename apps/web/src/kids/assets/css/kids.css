@@ -1120,4 +1120,42 @@
   border: 1px solid rgba(226, 232, 240, 0.85);
   pointer-events: none;
   transition: all 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
+}
+
+/* ==========================================================================
+   GPU-ACCELERATED KID GAME SYSTEM ANIMATIONS
+   Pure transform: translate3d & scale • Zero layout shift • 60 FPS
+   ========================================================================== */
+@keyframes shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  20%, 60% { transform: translate3d(-6px, 0, 0); }
+  40%, 80% { transform: translate3d(6px, 0, 0); }
+}
+
+@keyframes scaleUp {
+  0% { transform: scale(0.88); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes gentleFloat {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+}
+
+.animate-shake {
+  animation: shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.animate-scaleUp {
+  animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.18s ease-out both;
+}
+

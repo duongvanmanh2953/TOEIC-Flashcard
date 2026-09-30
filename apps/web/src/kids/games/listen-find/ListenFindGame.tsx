@@ -13,6 +13,7 @@ import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 import { celebrationManager } from '../../services/celebration/CelebrationManager';
+import { preloadUpcomingImages } from '../../services/assets/kidGameAsset';
 
 interface ListenFindGameProps {
   onExit: () => void;
@@ -52,6 +53,9 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
 
     setTargetItem(target);
     setOptions(choices);
+
+    // Preload image assets into browser cache ahead of rendering
+    preloadUpcomingImages(choices.map((c) => `/assets/kid/animals/${c.word.toLowerCase()}.png`));
 
     // Super-optimization: Preload target and choices voices in browser cache immediately
     voiceService.preloadWords([target.word, ...choices.map((c) => c.word)]);
