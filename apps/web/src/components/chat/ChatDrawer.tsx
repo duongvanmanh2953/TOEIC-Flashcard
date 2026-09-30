@@ -952,11 +952,11 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                               })}
                             </span>
                             {isMe && (
-                              <span>
+                              <span title={m.status === 'READ' ? 'Đã xem' : 'Đã gửi'}>
                                 {m.status === 'READ' ? (
-                                  <CheckCheck className="w-3.5 h-3.5 text-emerald-300" title="Đã xem" />
+                                  <CheckCheck className="w-3.5 h-3.5 text-emerald-300" />
                                 ) : (
-                                  <Check className="w-3.5 h-3.5" title="Đã gửi" />
+                                  <Check className="w-3.5 h-3.5" />
                                 )}
                               </span>
                             )}
@@ -1093,7 +1093,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                     style={{
                       WebkitTextSecurity: 'disc',
                       MozAppearance: 'textfield',
-                    }}
+                    } as React.CSSProperties}
                     className="w-11 h-14 sm:w-12 sm:h-14 shrink-0 rounded-2xl text-center text-2xl font-mono font-bold bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition shadow-inner select-none"
                     autoComplete="off"
                   />

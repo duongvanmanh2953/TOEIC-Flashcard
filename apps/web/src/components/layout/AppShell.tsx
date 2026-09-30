@@ -15,6 +15,7 @@ import {
   Moon,
   Sun,
   Flame,
+  AlertCircle,
   Menu,
   X,
   Compass,
@@ -1400,6 +1401,7 @@ export const AppShell: React.FC = () => {
       <ModalPortal isOpen={Boolean(crossSpaceWarning)} onClose={() => setCrossSpaceWarning(null)}>
         {crossSpaceWarning && (() => {
           const targetLang = getLanguage(crossSpaceWarning.targetLanguageId) || {
+            id: crossSpaceWarning.targetLanguageId,
             name: crossSpaceWarning.targetLanguageId,
             nativeName: crossSpaceWarning.targetLanguageId,
             flag: '🌐',

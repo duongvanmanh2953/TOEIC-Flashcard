@@ -7,6 +7,7 @@ import api, { extractApiData } from '../../lib/api';
 
 interface BillingOverview {
   mrrVnd: number;
+  mrr?: number;
   activeSubscriptions: number;
   churnRate: number;
   conversionRate: number;

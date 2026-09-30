@@ -225,6 +225,7 @@ export function evaluatePronunciation(
       mode,
       stars,
       status: isPassing ? 'passed' : 'failed',
+      feedback,
     };
   }
 
@@ -291,6 +292,7 @@ export function evaluatePronunciation(
     mode,
     stars,
     status: isPassing ? 'passed' : 'failed',
+    feedback,
   };
 }
 

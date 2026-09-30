@@ -216,7 +216,7 @@ export const BrightFoxSpellingGame: React.FC<BrightFoxSpellingGameProps> = ({
   };
 
   const handleHearPrompt = () => {
-    soundManager.play('ding');
+    soundManager.play('pop');
     voiceService.speakWord(current.word, {
       onEnd: () => {
         voiceService.speakVietnamese(`What do we call this Animal? Con vật này tên là gì nhỉ?`);
