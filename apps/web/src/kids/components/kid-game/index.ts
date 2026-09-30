@@ -15,3 +15,4 @@ export * from './GameModal';
 export * from './GameResult';
 export * from './GameRotateScreen';
 export * from './GameLoading';
+export * from './GameErrorBoundary';

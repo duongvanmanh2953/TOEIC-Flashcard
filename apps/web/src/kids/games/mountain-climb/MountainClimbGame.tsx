@@ -8,6 +8,7 @@ import { Volume2, Sparkles, Flag, Trophy, ArrowUp } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
+import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 
@@ -199,9 +200,13 @@ export const MountainClimbGame: React.FC<MountainClimbGameProps> = ({
                 disabled={isClimbing}
                 className="p-3 sm:p-4 rounded-2xl bg-white hover:bg-amber-50 border-2 border-indigo-200 hover:border-indigo-400 shadow-md flex flex-col items-center justify-center gap-1 cursor-pointer transition-all hover:scale-105 active:scale-95"
               >
-                <span className="text-3xl sm:text-4xl">
-                  {opt.word === 'apple' ? '🍎' : opt.word === 'dog' ? '🐶' : opt.word === 'cat' ? '🐱' : opt.word === 'lion' ? '🦁' : '⭐'}
-                </span>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+                  <KidsIllustration
+                    name={opt.word.toLowerCase()}
+                    className="w-full h-full object-contain filter drop-shadow-sm"
+                    alt={opt.word}
+                  />
+                </div>
                 <span className="text-xs sm:text-sm font-black text-slate-900">
                   {opt.word}
                 </span>

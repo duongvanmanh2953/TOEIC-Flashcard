@@ -21,6 +21,7 @@ import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 import { kidAsset } from '../../utils/kidAsset';
+import { GameShell } from '../../components/kid-game/GameShell';
 
 interface MemoryFlipGameProps {
   onExit: () => void;

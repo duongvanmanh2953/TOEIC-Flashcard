@@ -8,6 +8,7 @@ import { Volume2, Sparkles, ArrowLeft, ArrowRight } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
+import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 
@@ -178,7 +179,9 @@ export const WordCatcherGame: React.FC<WordCatcherGameProps> = ({
                       : 'border-sky-300'
                   }`}
                 >
-                  <span className="text-5xl sm:text-6xl">{item.icon}</span>
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                    <KidsIllustration name={item.word.toLowerCase()} className="w-full h-full object-contain drop-shadow-md" />
+                  </div>
                   <span className="text-sm sm:text-base font-black text-slate-800">
                     {item.word}
                   </span>

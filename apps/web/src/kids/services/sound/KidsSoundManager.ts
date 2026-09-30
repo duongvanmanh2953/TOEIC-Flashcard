@@ -143,6 +143,10 @@ class KidsSoundManager {
     }
   }
 
+  public setMuted(muted: boolean) {
+    this.setSoundMode(muted ? 'muted' : 'all');
+  }
+
   public cycleSoundMode(): KidsSoundMode {
     const nextMode: KidsSoundMode =
       this.soundMode === 'all'

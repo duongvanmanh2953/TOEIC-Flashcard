@@ -15,6 +15,7 @@ import {
   GameDefinition,
 } from '../data/games/gamesRegistry';
 import { GameCard } from '../components/GameCard';
+import { GameErrorBoundary } from '../components/kid-game';
 import {
   ListenFindGame,
   MemoryFlipGame,
@@ -222,12 +223,14 @@ export const KidsGamesPage: React.FC = () => {
     }
   };
 
-  // If a game is active: Render the FULL-BLEED GAME WORLD
+  // If a game is active: Render the FULL-BLEED GAME WORLD with Error Boundary protection
   if (activeGameId) {
     return (
-      <div className="w-full select-none flex flex-col items-center justify-center">
-        {renderActiveGame()}
-      </div>
+      <GameErrorBoundary onExit={handleBackToCatalog}>
+        <div className="w-full select-none flex flex-col items-center justify-center">
+          {renderActiveGame()}
+        </div>
+      </GameErrorBoundary>
     );
   }
 

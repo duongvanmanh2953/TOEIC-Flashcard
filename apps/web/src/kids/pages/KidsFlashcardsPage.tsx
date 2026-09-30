@@ -17,6 +17,7 @@ import { MAGIC_CARDS_DATASET, MagicCardItem } from '../data/cards/magicDeckData'
 import { MagicFlashcard } from '../components/MagicFlashcard';
 import { voiceService } from '../services/voice/voiceService';
 import { soundManager } from '../services/sound/KidsSoundManager';
+import { gameAssetService } from '../services/assets/gameAssetService';
 import {
   Volume2,
   VolumeX,
@@ -53,6 +54,7 @@ export const KidsFlashcardsPage: React.FC = () => {
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const swiperRef = useRef<SwiperInstance | null>(null);
+  const prevIndexRef = useRef<number>(0);
 
   // Filter deck based on selected category
   const filteredDeck = useMemo(() => {
@@ -81,18 +83,36 @@ export const KidsFlashcardsPage: React.FC = () => {
     setIsFlipped(false);
   }, [currentIndex, currentCard, isMuted]);
 
-  // Clean voice on unmount
+  // Clean voice and abort pending requests on unmount
   useEffect(() => {
     return () => {
       voiceService.stop();
+      gameAssetService.abortPendingRequests();
     };
   }, []);
 
-  // Handle slide change directly from Swiper engine (buttery-smooth, zero jump-back!)
+  // Handle slide change directly from Swiper engine with Directional Prefetch
   const handleSlideChange = (swiper: SwiperInstance) => {
-    setCurrentIndex(swiper.realIndex);
+    const newIdx = swiper.realIndex;
+    const direction = newIdx >= prevIndexRef.current ? 'forward' : 'backward';
+    prevIndexRef.current = newIdx;
+
+    setCurrentIndex(newIdx);
     setIsFlipped(false);
     soundManager.playPop();
+
+    // Directional prefetch: only prefetch 3 cards in user swiping direction
+    if (direction === 'forward') {
+      const nextItems = filteredDeck.slice(newIdx + 6, newIdx + 9);
+      nextItems.forEach((it) => {
+        gameAssetService.preloadImage(`/game-assets/animals/${it.illustration}.webp`);
+      });
+    } else {
+      const prevItems = filteredDeck.slice(Math.max(0, newIdx - 8), Math.max(0, newIdx - 5));
+      prevItems.forEach((it) => {
+        gameAssetService.preloadImage(`/game-assets/animals/${it.illustration}.webp`);
+      });
+    }
   };
 
   // Flip active card
@@ -306,34 +326,39 @@ export const KidsFlashcardsPage: React.FC = () => {
               >
                 {filteredDeck.map((item, idx) => {
                   const isActive = idx === currentIndex;
+                  const isWithinWindow = Math.abs(idx - currentIndex) <= 5;
 
                   return (
                     <SwiperSlide key={item.id}>
-                      <div className="w-full h-full relative">
-                        {/* Favorite Button on Top-Right */}
-                        <button
-                          type="button"
-                          onClick={(e) => toggleFavorite(item.id, e)}
-                          className="absolute top-4 right-16 z-30 p-1.5 sm:p-2 rounded-full bg-white/25 hover:bg-white/40 text-white backdrop-blur-xs transition-transform active:scale-90 cursor-pointer border border-white/30"
-                          title="Yêu thích thẻ này"
-                        >
-                          <Heart
-                            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
-                              favorites.includes(item.id)
-                                ? 'fill-rose-400 text-rose-400'
-                                : 'text-white/80'
-                            }`}
-                          />
-                        </button>
+                      {isWithinWindow ? (
+                        <div className="w-full h-full relative">
+                          {/* Favorite Button on Top-Right */}
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(item.id, e)}
+                            className="absolute top-4 right-16 z-30 p-1.5 sm:p-2 rounded-full bg-white/25 hover:bg-white/40 text-white backdrop-blur-xs transition-transform active:scale-90 cursor-pointer border border-white/30"
+                            title="Yêu thích thẻ này"
+                          >
+                            <Heart
+                              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
+                                favorites.includes(item.id)
+                                  ? 'fill-rose-400 text-rose-400'
+                                  : 'text-white/80'
+                              }`}
+                            />
+                          </button>
 
-                        <MagicFlashcard
-                          card={item}
-                          isFlipped={isActive && isFlipped}
-                          onFlip={handleFlip}
-                          onSpeakEnglish={(e) => handleSpeakEnglish(item, e)}
-                          onSpeakVietnamese={(e) => handleSpeakVietnamese(item, e)}
-                        />
-                      </div>
+                          <MagicFlashcard
+                            card={item}
+                            isFlipped={isActive && isFlipped}
+                            onFlip={handleFlip}
+                            onSpeakEnglish={(e) => handleSpeakEnglish(item, e)}
+                            onSpeakVietnamese={(e) => handleSpeakVietnamese(item, e)}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full rounded-[20px] bg-slate-100/30 border border-slate-200/20" />
+                      )}
                     </SwiperSlide>
                   );
                 })}

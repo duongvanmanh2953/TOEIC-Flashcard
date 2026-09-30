@@ -38,6 +38,16 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 
+  // Serve game assets statically with 1-year immutable cache
+  const express = require('express');
+  const gameAssetsPath = path.resolve(__dirname, '../public/game-assets');
+  if (fs.existsSync(gameAssetsPath)) {
+    app.use('/game-assets', express.static(gameAssetsPath, {
+      maxAge: '1y',
+      immutable: true,
+    }));
+  }
+
   // Global prefix for API versioning
   app.setGlobalPrefix('api/v1');
 

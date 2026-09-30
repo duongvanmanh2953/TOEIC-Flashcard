@@ -120,4 +120,25 @@ export class GamesController {
   updateAdminConfig(@Param('id') id: string, @Body() body: any) {
     return this.gamesService.updateGameConfig(id, body);
   }
+
+  @Public()
+  @Get('game-assets')
+  @ApiOperation({ summary: 'Get game asset manifest with thumbnails and metadata' })
+  getGameAssets(@Query('category') category?: string) {
+    const fs = require('fs');
+    const path = require('path');
+    const manifestPath = path.resolve(__dirname, '../../../public/game-assets/manifest.json');
+    if (!fs.existsSync(manifestPath)) {
+      return { version: 1, items: [] };
+    }
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    if (category) {
+      return {
+        ...manifest,
+        items: manifest.items.filter((item: any) => item.category === category),
+      };
+    }
+    return manifest;
+  }
 }
+
