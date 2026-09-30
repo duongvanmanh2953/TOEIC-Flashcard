@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Volume2, Sparkles, Target } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
-import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
+import { VERIFIED_GAME_VOCABULARY, GameVocabularyItem } from '../../data/vocabulary/verifiedGameVocabulary';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
@@ -17,6 +17,7 @@ interface BubbleItem {
   id: string;
   word: string;
   viMeaning: string;
+  imageKey: string;
   colorClass: string;
   leftPercent: number;
   isPopped: boolean;
@@ -46,7 +47,7 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
   const TOTAL_ROUNDS = 5;
   const [currentRound, setCurrentRound] = useState(1);
   const [starsEarned, setStarsEarned] = useState(0);
-  const [targetWord, setTargetWord] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[0]);
+  const [targetWord, setTargetWord] = useState<GameVocabularyItem>(VERIFIED_GAME_VOCABULARY[0]);
   const [bubbles, setBubbles] = useState<BubbleItem[]>([]);
   const [poppedId, setPoppedId] = useState<string | null>(null);
   const [isGameComplete, setIsGameComplete] = useState(false);
@@ -58,9 +59,9 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
     setPoppedId(null);
     setIsReadyToContinue(false);
 
-    const shuffled = [...COMPREHENSIVE_VOCABULARY].sort(() => Math.random() - 0.5);
+    const shuffled = [...VERIFIED_GAME_VOCABULARY].sort(() => Math.random() - 0.5);
     const target = shuffled[0];
-    const choices = shuffled.slice(0, 4);
+    const choices = [target, ...shuffled.slice(1, 4)].sort(() => Math.random() - 0.5);
 
     setTargetWord(target);
 
@@ -71,6 +72,7 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
       id: `${item.id}_${idx}_${Date.now()}`,
       word: item.word,
       viMeaning: item.viMeaning,
+      imageKey: item.imageKey,
       colorClass: BUBBLE_THEMES[idx % BUBBLE_THEMES.length].colorClass,
       leftPercent: 10 + idx * 22,
       isPopped: false,
@@ -216,7 +218,7 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
 
                   <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
                     <KidsIllustration
-                      name={bubble.word.toLowerCase()}
+                      name={bubble.imageKey || bubble.word.toLowerCase()}
                       className="w-full h-full object-contain filter drop-shadow-md"
                       alt={bubble.word}
                     />

@@ -165,8 +165,8 @@ export const TreasureMapGame: React.FC<TreasureMapGameProps> = ({
 
       {/* 6. VICTORY CELEBRATION MODAL */}
       {showWinModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="relative w-full max-w-md rounded-3xl bg-white border-4 border-amber-400 p-6 text-center shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-300 select-none">
+          <div className="relative w-full max-w-md my-auto rounded-3xl bg-white border-4 border-amber-400 p-6 text-center shadow-2xl space-y-4">
             {/* Golden Ribbon Badge */}
             <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-950 text-xs font-black uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-amber-600" />

@@ -992,8 +992,8 @@ export const KidsMyWorldPage: React.FC = () => {
       {/* WORD DETAIL MODAL WITH AUTOMATIC PRONUNCIATION (Requirement #4)  */}
       {/* ================================================================ */}
       {activeWordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="max-w-md w-full bg-white rounded-3xl border-2 border-sky-300 p-6 sm:p-8 space-y-6 animate-scale-up shadow-2xl relative">
+        <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn select-none">
+          <div className="max-w-md w-full my-auto bg-white rounded-3xl border-2 border-sky-300 p-6 sm:p-8 space-y-6 animate-scale-up shadow-2xl relative">
             <button
               onClick={handleCloseWord}
               className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer min-h-[36px]"
@@ -1002,8 +1002,12 @@ export const KidsMyWorldPage: React.FC = () => {
             </button>
 
             <div className="text-center space-y-2">
-              <div className="w-20 h-20 mx-auto rounded-3xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 animate-gentle-float">
-                <Sparkles className="w-10 h-10" />
+              <div className="w-24 h-24 mx-auto rounded-3xl bg-sky-50 border border-sky-200 flex items-center justify-center p-2.5 animate-gentle-float shadow-inner">
+                <KidsIllustration
+                  name={activeWordModal.word.toLowerCase()}
+                  className="w-full h-full object-contain filter drop-shadow-sm"
+                  alt={activeWordModal.word}
+                />
               </div>
 
               <div>

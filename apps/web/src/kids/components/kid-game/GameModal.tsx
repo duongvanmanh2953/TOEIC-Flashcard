@@ -22,7 +22,7 @@ export const GameModal: React.FC<GameModalProps> = memo(({
   isOpen,
   title,
   description,
-  mascotImage = '/assets/kid/mascot/vivi-wave.png',
+  mascotImage = '/kid/mascot/vivi-wave.png',
   confirmLabel = 'Đồng ý',
   cancelLabel = 'Chơi tiếp',
   onConfirm,
@@ -31,13 +31,13 @@ export const GameModal: React.FC<GameModalProps> = memo(({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn select-none">
-      <div className="relative w-full max-w-sm rounded-[28px] bg-white p-6 text-center shadow-2xl border-4 border-amber-200 animate-scaleUp">
+    <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn select-none">
+      <div className="relative w-full max-w-sm my-auto rounded-[28px] bg-white p-6 text-center shadow-2xl border-4 border-amber-200 animate-scaleUp">
         {/* Close Button */}
         <button
           type="button"
           onClick={onCancel}
-          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 active:scale-95 transition-all"
+          className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -48,6 +48,7 @@ export const GameModal: React.FC<GameModalProps> = memo(({
             src={mascotImage}
             alt="Vivi mascot"
             className="w-full h-full object-contain pointer-events-none"
+            onError={(e) => { (e.target as HTMLImageElement).src = '/assets/kid/mascot/vivi-wave.png'; }}
           />
         </div>
 

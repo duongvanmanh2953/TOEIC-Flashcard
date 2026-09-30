@@ -66,7 +66,7 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
   return (
     <ModalPortal isOpen={isOpen} onClose={() => {}}>
       <div
-        className="kids-layout kids-modal m-auto relative w-full max-w-md rounded-3xl bg-gradient-to-b from-amber-50 via-white to-amber-100 border-4 border-amber-400 p-6 sm:p-8 space-y-4 animate-scale-up text-center select-none overflow-hidden"
+        className="kids-layout kids-modal relative w-full max-w-md my-auto rounded-3xl bg-gradient-to-b from-amber-50 via-white to-amber-100 border-4 border-amber-400 p-6 sm:p-8 space-y-4 animate-scale-up text-center select-none overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Confetti / Sparkles Header */}

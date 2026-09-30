@@ -41,14 +41,18 @@ export const ModalPortal: React.FC<ModalPortalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className={`fixed inset-0 z-[100] bg-slate-950/80 dark:bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in ${backdropClassName} ${className}`}
+      className={`fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in ${backdropClassName} ${className}`}
       onClick={(e) => {
         if (e.target === e.currentTarget && onClose) {
           onClose();
         }
       }}
     >
-      {children}
+      <div className="w-full flex items-center justify-center my-auto pointer-events-none">
+        <div className="pointer-events-auto max-w-full">
+          {children}
+        </div>
+      </div>
     </div>,
     document.body
   );

@@ -90,6 +90,13 @@ const KID_PHOTO_ASSETS: Record<string, string> = {
   bee: '/kid/animals/bee.png',
   fox: '/kid/animals/fox.png',
   owl: '/kid/animals/owl.png',
+  // 6 3D Fruits & Garden
+  apple: '/kid/fruits/apple.png',
+  banana: '/kid/fruits/banana.png',
+  orange: '/kid/fruits/orange.png',
+  strawberry: '/kid/fruits/strawberry.png',
+  carrot: '/kid/fruits/carrot.png',
+  watermelon: '/kid/fruits/watermelon.png',
   // Rewards & Items
   'treasure-chest': '/kid/rewards/chest.png',
   chest: '/kid/rewards/chest.png',
@@ -148,7 +155,11 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
         style={style}
         loading="lazy"
         onError={(e) => {
-          (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png';
+          const target = e.target as HTMLImageElement;
+          const original = KID_PHOTO_ASSETS[normalized];
+          if (original && !target.src.includes('/assets' + original)) {
+            target.src = '/assets' + original;
+          }
         }}
       />
     );

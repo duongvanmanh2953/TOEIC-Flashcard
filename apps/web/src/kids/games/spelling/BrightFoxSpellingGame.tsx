@@ -353,8 +353,8 @@ export const BrightFoxSpellingGame: React.FC<BrightFoxSpellingGameProps> = ({
 
       {/* CELEBRATION MODAL ON WORD COMPLETION */}
       {isSuccess && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center z-50 p-6 animate-fadeIn">
-          <div className="bg-white rounded-3xl p-6 shadow-2xl border-4 border-amber-300 flex flex-col items-center text-center max-w-xs w-full animate-bounce-subtle">
+        <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn select-none">
+          <div className="bg-white rounded-3xl p-6 shadow-2xl border-4 border-amber-300 flex flex-col items-center text-center max-w-xs w-full animate-bounce-subtle my-auto">
             <div className="w-36 h-20 relative flex items-center justify-center">
               <img
                 src={kidAsset('/kid/stickers/sticker-great-job.png')}

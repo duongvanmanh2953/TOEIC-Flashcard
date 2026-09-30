@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Volume2, Sparkles, Check } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
-import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
+import { VERIFIED_GAME_VOCABULARY, GameVocabularyItem } from '../../data/vocabulary/verifiedGameVocabulary';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
@@ -36,8 +36,8 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
   const [isReadyToContinue, setIsReadyToContinue] = useState(false);
   const [praiseVi, setPraiseVi] = useState('');
 
-  const [targetItem, setTargetItem] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[0]);
-  const [options, setOptions] = useState<VocabularyItem[]>([]);
+  const [targetItem, setTargetItem] = useState<GameVocabularyItem>(VERIFIED_GAME_VOCABULARY[0]);
+  const [options, setOptions] = useState<GameVocabularyItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [resultState, setResultState] = useState<'correct' | 'wrong' | null>(null);
 
@@ -47,20 +47,26 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
     setResultState(null);
     setIsReadyToContinue(false);
 
-    const shuffled = [...COMPREHENSIVE_VOCABULARY].sort(() => Math.random() - 0.5);
+    const shuffled = [...VERIFIED_GAME_VOCABULARY].sort(() => Math.random() - 0.5);
     const target = shuffled[0];
-    const choices = shuffled.slice(0, 4).sort(() => Math.random() - 0.5);
+    const choices = [target, ...shuffled.slice(1, 4)].sort(() => Math.random() - 0.5);
 
     setTargetItem(target);
     setOptions(choices);
 
-    // Preload image assets into browser cache ahead of rendering
-    preloadUpcomingImages(choices.map((c) => `/assets/kid/animals/${c.word.toLowerCase()}.png`));
+    // Preload verified image assets into browser cache ahead of rendering
+    preloadUpcomingImages(
+      choices.map((c) =>
+        c.category === 'fruits'
+          ? `/kid/fruits/${c.imageKey}.png`
+          : `/kid/animals/${c.imageKey}.png`
+      )
+    );
 
-    // Super-optimization: Preload target and choices voices in browser cache immediately
+    // Preload target and choices voices in browser cache immediately
     voiceService.preloadWords([target.word, ...choices.map((c) => c.word)]);
 
-    // Audio-first: Pronounce target word briskly (80ms instead of 300ms)
+    // Audio-first: Pronounce target word briskly (80ms)
     const promptTimer = setTimeout(() => {
       voiceService.speakWord(target.word);
     }, 80);
@@ -77,7 +83,7 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
     voiceService.speakWord(targetItem.word);
   };
 
-  const handleSelectOption = (item: VocabularyItem) => {
+  const handleSelectOption = (item: GameVocabularyItem) => {
     if (resultState === 'correct' || isReadyToContinue) return;
 
     setSelectedId(item.id);

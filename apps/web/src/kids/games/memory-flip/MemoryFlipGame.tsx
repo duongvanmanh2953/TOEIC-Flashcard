@@ -469,8 +469,8 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
 
           {/* Victory Modal between rounds */}
           {isRoundComplete && (
-            <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center animate-fadeIn">
-              <div className="p-6 sm:p-8 rounded-[28px] bg-white border-2 border-amber-300 shadow-2xl max-w-sm w-full flex flex-col items-center space-y-3.5 animate-scaleUp">
+            <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 text-center animate-fadeIn select-none">
+              <div className="p-6 sm:p-8 rounded-[28px] bg-white border-2 border-amber-300 shadow-2xl max-w-sm w-full my-auto flex flex-col items-center space-y-3.5 animate-scaleUp">
                 <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
                   <Trophy className="w-8 h-8 text-amber-500" />
                 </div>

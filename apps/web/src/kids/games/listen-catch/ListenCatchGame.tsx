@@ -24,7 +24,7 @@ const FRUITS_COLLECTION: CatchableFruit[] = [
   { id: 'orange', nameEn: 'Orange', nameVi: 'Quả cam', icon: '🍊' },
   { id: 'strawberry', nameEn: 'Strawberry', nameVi: 'Dâu tây', icon: '🍓' },
   { id: 'watermelon', nameEn: 'Watermelon', nameVi: 'Dưa hấu', icon: '🍉' },
-  { id: 'grapes', nameEn: 'Grapes', nameVi: 'Chùm nho', icon: '🍇' },
+  { id: 'carrot', nameEn: 'Carrot', nameVi: 'Củ cà rốt', icon: '🥕' },
 ];
 
 interface ListenCatchGameProps {
