@@ -25,6 +25,7 @@ export type KidsIllustrationName =
   | 'whale'
   | 'butterfly'
   | 'bee'
+  | 'owl'
   // Food
   | 'apple'
   | 'banana'
@@ -67,7 +68,7 @@ interface KidsIllustrationProps {
 }
 
 const KID_PHOTO_ASSETS: Record<string, string> = {
-  // 20 Animals
+  // 21 High-Res 3D Animals (512x512 Transparent PNG)
   rabbit: '/kid/animals/rabbit.png',
   panda: '/kid/animals/panda.png',
   lion: '/kid/animals/lion.png',
@@ -88,6 +89,7 @@ const KID_PHOTO_ASSETS: Record<string, string> = {
   butterfly: '/kid/animals/butterfly.png',
   bee: '/kid/animals/bee.png',
   fox: '/kid/animals/fox.png',
+  owl: '/kid/animals/owl.png',
   // Rewards & Items
   'treasure-chest': '/kid/rewards/chest.png',
   chest: '/kid/rewards/chest.png',
