@@ -1032,3 +1032,92 @@
 .animate-robot-eye-glow {
   animation: eye-glow 1s ease-in-out infinite;
 }
+
+/* ==========================================================================
+   VOCALFLOW KIDS — PHYSICAL CARD DECK & BRIGHT GAME TABLE
+   Tactile deck stack, realistic physical resistance, warm cream felt surface
+   ========================================================================== */
+
+/* Game Table Mat (Warm Cream #F7F3EA with tactile depth & paper grain) */
+.kids-bright-game-table {
+  background-color: #F7F3EA;
+  background-image: 
+    radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.85) 0%, rgba(247, 243, 234, 0.4) 60%, rgba(235, 228, 214, 0.6) 100%),
+    radial-gradient(circle at 10% 90%, rgba(255, 226, 180, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(200, 230, 255, 0.15) 0%, transparent 40%);
+  border: 1px solid rgba(220, 210, 195, 0.6);
+  box-shadow: 
+    0 24px 60px -12px rgba(130, 110, 80, 0.08),
+    0 4px 16px rgba(130, 110, 80, 0.04),
+    inset 0 1px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 6px rgba(180, 165, 140, 0.1);
+}
+
+/* Page Background Warm White */
+.kids-bright-page-bg {
+  background-color: #FFFDF7;
+  background-image: radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.9) 0%, #FFFDF7 100%);
+}
+
+/* Physical Card Visual: 18px radius, crisp border, soft elevated shadow */
+.kids-physical-card {
+  border-radius: 18px;
+  background-color: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 
+    0 12px 30px -4px rgba(45, 55, 72, 0.08),
+    0 4px 10px -2px rgba(45, 55, 72, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Swiper Effect Cards Customization for VocalFlow Deck */
+.kids-card-swiper {
+  width: 100%;
+  max-width: 340px;
+  height: 460px;
+  padding: 24px 0 36px 0;
+  overflow: visible !important;
+}
+
+@media (min-width: 640px) {
+  .kids-card-swiper {
+    max-width: 380px;
+    height: 500px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .kids-card-swiper {
+    max-width: 400px;
+    height: 520px;
+  }
+}
+
+.kids-card-swiper .swiper-slide {
+  border-radius: 18px !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 
+    0 16px 36px -6px rgba(45, 55, 72, 0.12),
+    0 4px 12px -2px rgba(45, 55, 72, 0.06),
+    0 0 0 1px rgba(226, 232, 240, 0.9) !important;
+  overflow: hidden;
+  will-change: transform;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.kids-card-swiper .swiper-slide-shadow {
+  background: rgba(180, 160, 135, 0.15) !important;
+  border-radius: 18px !important;
+}
+
+/* Tactile Stack Shadow Layers behind deck */
+.kids-deck-base-layer {
+  position: absolute;
+  border-radius: 18px;
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  pointer-events: none;
+  transition: all 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}

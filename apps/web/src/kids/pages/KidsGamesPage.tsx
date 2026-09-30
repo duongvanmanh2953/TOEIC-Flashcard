@@ -1,10 +1,11 @@
 // ============================================================================
-// VOCALFLOW KIDS — REVAMPED GAME LIST & ADVENTURE CATALOG
-// Clean Hierarchy: Page Header -> Featured Game -> Continue Playing -> Categories -> Game Tiles
+// VOCALFLOW KIDS — BRIGHT GAME LIBRARY
+// Warm Bright Palette: #FFFDF7 • Single Featured Game Anchor • Clean Categories
+// Refined Tiles with Crisp Silhouettes • Responsive Desktop/Tablet/Mobile Grid
 // ============================================================================
 
-import React, { useState, useEffect, useMemo, memo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { kidsAudioManager } from '../services/audio/KidsAudioManager';
 import { getKidsProgress, updateKidsProgress } from '../curriculum/curriculumProgress';
@@ -12,10 +13,8 @@ import {
   KIDS_GAMES_REGISTRY,
   GameId,
   GameDefinition,
-  GameSkillType,
 } from '../data/games/gamesRegistry';
 import { GameCard } from '../components/GameCard';
-import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 import {
   ListenFindGame,
   MemoryFlipGame,
@@ -36,27 +35,25 @@ import {
   BossChallengeGame,
   AnimalRescueGame,
 } from '../games';
-import { Star, Flame, Trophy, Play, ArrowRight, Sparkles } from 'lucide-react';
+import { Star, Flame, Play, Sparkles } from 'lucide-react';
 
 type GameCategoryFilter = 'all' | 'vocabulary' | 'memory' | 'listening' | 'reflex' | 'challenge';
 
 interface CategoryTab {
   id: GameCategoryFilter;
   label: string;
-  icon: string;
 }
 
 const CATEGORIES: CategoryTab[] = [
-  { id: 'all', label: 'Tất Cả', icon: '🧭' },
-  { id: 'vocabulary', label: 'Từ Vựng', icon: '📚' },
-  { id: 'memory', label: 'Trí Nhớ', icon: '🧠' },
-  { id: 'listening', label: 'Luyện Nghe', icon: '🎧' },
-  { id: 'reflex', label: 'Phản Xạ', icon: '⚡' },
-  { id: 'challenge', label: 'Thử Thách', icon: '🏆' },
+  { id: 'all', label: 'Tất Cả' },
+  { id: 'vocabulary', label: 'Từ Vựng' },
+  { id: 'memory', label: 'Trí Nhớ' },
+  { id: 'listening', label: 'Luyện Nghe' },
+  { id: 'reflex', label: 'Phản Xạ' },
+  { id: 'challenge', label: 'Thử Thách' },
 ];
 
 export const KidsGamesPage: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialGameParam = searchParams.get('game') as GameId | null;
 
@@ -135,21 +132,12 @@ export const KidsGamesPage: React.FC = () => {
     return 'memory_flip';
   };
 
-  // Featured Game (1 game duy nhất ở đầu trang: Memory Flip / Memory Match)
+  // Featured Game: Memory Match (Card Stack & Swipe Game)
   const featuredGame: GameDefinition = useMemo(() => {
     return (
       KIDS_GAMES_REGISTRY.find((g) => g.id === 'memory_flip') ||
       KIDS_GAMES_REGISTRY[0]
     );
-  }, []);
-
-  // Continue Playing (1-3 game đang học hoặc gần nhất)
-  const continueGames: GameDefinition[] = useMemo(() => {
-    return [
-      KIDS_GAMES_REGISTRY.find((g) => g.id === 'memory_flip'),
-      KIDS_GAMES_REGISTRY.find((g) => g.id === 'listen_find'),
-      KIDS_GAMES_REGISTRY.find((g) => g.id === 'word_pop'),
-    ].filter(Boolean) as GameDefinition[];
   }, []);
 
   // Filtered Games by Category
@@ -243,83 +231,80 @@ export const KidsGamesPage: React.FC = () => {
     );
   }
 
-  // Otherwise: Render the REVAMPED GAME CATALOG
+  // Otherwise: Render the BRIGHT GAME LIBRARY
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col space-y-8 select-none animate-fadeIn pb-16 px-3 sm:px-6">
+    <div className="w-full max-w-[1240px] mx-auto flex flex-col space-y-7 select-none animate-fadeIn pb-16 px-4 sm:px-6">
       {/* ================================================================ */}
-      {/* 1. PAGE HEADER                                                   */}
+      {/* 1. HEADER (CLEAN, COMPACT, NOT OVERSIZED)                        */}
       {/* ================================================================ */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-b border-slate-200/60 pb-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-black uppercase tracking-wider text-indigo-700">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Khu Vườn Trò Chơi VocalFlow</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
-            Chào bé! Cùng học qua trò chơi nhé!
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Thư Viện Trò Chơi
           </h1>
           <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-0.5">
-            Lựa chọn trò chơi yêu thích để rèn luyện từ vựng và phản xạ
+            Chọn trò chơi yêu thích và bắt đầu rèn luyện từ vựng mỗi ngày
           </p>
         </div>
 
         {/* Player Stats Pills */}
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
-          <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-amber-400 text-amber-950 font-black text-xs shadow-xs">
-            <Star className="w-4 h-4 fill-amber-300 text-amber-800" />
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 font-black text-xs shadow-2xs">
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
             <span>{progress?.totalStars || 0} Sao</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-rose-500 text-white font-black text-xs shadow-xs">
-            <Flame className="w-4 h-4 fill-rose-200" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-800 font-black text-xs shadow-2xs">
+            <Flame className="w-3.5 h-3.5 fill-rose-500 text-rose-600" />
             <span>{progress?.streakDays || 1} Ngày</span>
           </div>
         </div>
       </header>
 
       {/* ================================================================ */}
-      {/* 2. FEATURED GAME (1 GAME DUY NHẤT RỘNG THOÁNG, ARTWORK ĐẸP)      */}
+      {/* 2. FEATURED GAME (SINGLE VISUAL ANCHOR WITH BIG ARTWORK)         */}
       {/* ================================================================ */}
-      <section className="relative overflow-hidden rounded-[32px] sm:rounded-[36px] bg-gradient-to-r from-indigo-600 via-sky-600 to-indigo-700 text-white p-6 sm:p-8 lg:p-10 shadow-[0_16px_36px_-8px_rgba(79,70,229,0.28)]">
-        {/* Soft Ambient Glows */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden rounded-[24px] sm:rounded-[28px] bg-gradient-to-br from-[#FFF8EE] via-[#FFF3DF] to-[#FFEBD0] border border-amber-200/80 p-6 sm:p-8 lg:p-10 shadow-[0_12px_32px_-6px_rgba(230,160,80,0.14)]">
+        {/* Soft Ambient Radiance */}
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-white/60 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="max-w-xl space-y-3 text-center md:text-left">
-            <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-black uppercase tracking-wider text-sky-100">
-              Khám Phá Hôm Nay
-            </span>
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
+          <div className="max-w-xl space-y-3.5 text-center md:text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 border border-amber-300/80 text-[11px] font-black uppercase tracking-wider text-amber-800 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>⭐ Trò Chơi Nổi Bật</span>
+            </div>
 
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-              {featuredGame.titleVi}
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug">
+              Memory Match — Rút Thẻ Trí Nhớ
             </h2>
 
-            <p className="text-xs sm:text-base font-semibold text-sky-100 max-w-md leading-relaxed">
-              {featuredGame.descriptionVi || 'Lật thẻ tìm từ vựng và hình ảnh tương ứng trên bàn chơi ma thuật!'}
+            <p className="text-xs sm:text-base font-semibold text-slate-600 max-w-lg leading-relaxed">
+              Trải nghiệm bộ bài thật nằm trên bàn học! Kéo lá bài trên cùng xuống để khám phá từ vựng, hình minh hoạ sinh động và ghi nhớ tự nhiên.
             </p>
 
             <div className="pt-2 flex items-center justify-center md:justify-start gap-4">
               <button
                 type="button"
-                onClick={() => handleSelectGame(featuredGame.id)}
-                className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-full bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-sm sm:text-base shadow-lg shadow-amber-400/25 flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
+                onClick={() => handleSelectGame('memory_flip')}
+                className="px-6 sm:px-8 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-sm sm:text-base shadow-sm hover:shadow-md flex items-center gap-2 cursor-pointer active:scale-95 transition-all"
               >
                 <Play className="w-4 h-4 fill-current" />
-                <span>Chơi Ngay</span>
+                <span>Chơi Ngay →</span>
               </button>
 
-              <span className="text-xs font-bold text-sky-200">
+              <span className="text-xs font-bold text-amber-900 bg-white/70 px-3 py-1.5 rounded-lg border border-amber-200">
                 ⭐ +{featuredGame.starsAwarded} Sao Vàng
               </span>
             </div>
           </div>
 
-          {/* Hero Artwork */}
-          <div className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center shrink-0">
-            <div className="w-full h-full rounded-3xl bg-white/15 backdrop-blur-md border border-white/20 p-4 flex items-center justify-center shadow-inner filter drop-shadow-xl animate-gentle-float">
-              <KidsIllustration
-                name="memory_flip"
-                className="w-full h-full object-contain filter drop-shadow-md"
-                alt="Featured Game"
+          {/* BIG ARTWORK (HERO ANCHOR) */}
+          <div className="relative w-52 h-44 sm:w-64 sm:h-52 md:w-80 md:h-60 flex items-center justify-center shrink-0">
+            <div className="w-full h-full rounded-[20px] overflow-hidden border border-amber-200/90 shadow-[0_12px_28px_rgba(150,110,60,0.15)] bg-white p-2">
+              <img
+                src="/assets/games/memory-match/cover.webp"
+                alt="Memory Match Deck Cover"
+                className="w-full h-full object-cover rounded-[14px]"
               />
             </div>
           </div>
@@ -327,74 +312,10 @@ export const KidsGamesPage: React.FC = () => {
       </section>
 
       {/* ================================================================ */}
-      {/* 3. CONTINUE PLAYING (1-3 GAME GẦN NHẤT CÓ TIẾN ĐỘ)              */}
-      {/* ================================================================ */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Tiếp Tục Chơi</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          </h3>
-          <span className="text-xs font-bold text-slate-400">
-            Lưu tiến độ của bé
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          {continueGames.map((game, idx) => {
-            const fakeProgress = idx === 0 ? 80 : idx === 1 ? 50 : 25;
-
-            return (
-              <div
-                key={game.id}
-                onClick={() => handleSelectGame(game.id)}
-                className="group p-3.5 sm:p-4 rounded-2xl bg-white/90 backdrop-blur-md border border-slate-100 hover:border-indigo-200 shadow-[0_4px_16px_-4px_rgba(20,40,70,0.06)] hover:shadow-[0_12px_24px_-6px_rgba(20,40,70,0.12)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-3.5"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50/80 border border-indigo-100/60 p-2 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  <KidsIllustration
-                    name={game.id}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-
-                <div className="flex-1 min-w-0 space-y-1">
-                  <h4 className="text-sm font-black text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
-                    {game.titleVi}
-                  </h4>
-
-                  {/* Progress bar */}
-                  <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full"
-                      style={{ width: `${fakeProgress}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 pt-0.5">
-                    <span>{fakeProgress}% Hoàn thành</span>
-                    <span className="text-indigo-600 font-black group-hover:translate-x-0.5 transition-transform">
-                      Tiếp tục →
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* 4. COMPACT CATEGORY NAVIGATION (SEGMENTED CONTROL)               */}
+      {/* 3. CATEGORY PILLS (COMPACT, CLEAR NAVIGATION)                    */}
       {/* ================================================================ */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-            Kho Trò Chơi ({filteredGames.length})
-          </h3>
-        </div>
-
-        {/* Compact Segmented Control (Single wrap line, no multi-row mess) */}
-        <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-100/80 backdrop-blur-md border border-slate-200/60 w-fit">
+        <div className="flex flex-wrap items-center gap-2">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
 
@@ -406,13 +327,12 @@ export const KidsGamesPage: React.FC = () => {
                   soundManager.playPop();
                   setSelectedCategory(cat.id);
                 }}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl font-black text-xs sm:text-sm cursor-pointer select-none transition-all duration-200 active:scale-95 ${
+                className={`px-4 py-2 rounded-xl font-black text-xs sm:text-sm cursor-pointer select-none transition-all duration-180 active:scale-95 border ${
                   isSelected
-                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-2xs'
                 }`}
               >
-                <span className="text-sm leading-none">{cat.icon}</span>
                 <span>{cat.label}</span>
               </button>
             );
@@ -420,9 +340,9 @@ export const KidsGamesPage: React.FC = () => {
         </div>
 
         {/* ============================================================== */}
-        {/* 5. GAME TILES GRID (2 COLS MOBILE, 3-4 COLS DESKTOP)          */}
+        {/* 4. GAME TILES GRID (2 COLS MOBILE, 3-4 COLS DESKTOP, GAP 18-24)*/}
         {/* ============================================================== */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 items-stretch pt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 items-stretch pt-1">
           {filteredGames.map((game) => (
             <GameCard
               key={game.id}

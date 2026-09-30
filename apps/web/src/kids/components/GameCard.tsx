@@ -1,3 +1,9 @@
+// ============================================================================
+// VOCALFLOW KIDS — REFINED GAME LIBRARY TILE
+// Clear Silhouette • Radius: 18px • Crisp Border • Distinct Hover Elevation
+// Artwork is HERO • Concise Legible Metadata • Clean 'Play →' Action
+// ============================================================================
+
 import React, { memo } from 'react';
 import { GameDefinition } from '../data/games/gamesRegistry';
 import { GameVisualTheme, getGameTheme } from '../data/games/gameThemes';
@@ -12,13 +18,6 @@ interface GameCardProps {
   chapterNumber?: number;
 }
 
-/**
- * Premium Game Tile Component
- * - Artwork is HERO (floats with depth on soft organic canvas)
- * - Concise, legible metadata (title, concept subtitle, difficulty)
- * - Tactile hover: translateY(-4px), scale(1.01), subtle shadow elevation
- * - Zero visual noise (no nested card-in-card or cluttered badges)
- */
 export const GameCard: React.FC<GameCardProps> = memo(({
   game,
   theme: customTheme,
@@ -27,7 +26,6 @@ export const GameCard: React.FC<GameCardProps> = memo(({
   chapterNumber,
 }) => {
   const theme = customTheme || getGameTheme(game.id);
-  const chapter = chapterNumber ?? game.gameNumber;
 
   return (
     <div
@@ -40,34 +38,25 @@ export const GameCard: React.FC<GameCardProps> = memo(({
           onSelect(game.id);
         }
       }}
-      className={`group relative h-full min-h-[300px] sm:min-h-[330px] flex flex-col rounded-3xl bg-white/95 backdrop-blur-md transition-all duration-200 ease-out cursor-pointer select-none overflow-hidden border ${
+      className={`group relative h-full flex flex-col rounded-[18px] bg-white transition-all duration-200 ease-out cursor-pointer select-none overflow-hidden border ${
         isSelected
-          ? 'border-indigo-400 ring-4 ring-indigo-300/40 shadow-xl -translate-y-1.5'
-          : 'border-slate-100 hover:border-indigo-200 shadow-[0_4px_16px_-4px_rgba(20,40,70,0.06)] hover:shadow-[0_16px_32px_-6px_rgba(20,40,70,0.12)] hover:-translate-y-1 hover:scale-[1.01]'
+          ? 'border-indigo-400 ring-2 ring-indigo-300/40 shadow-lg -translate-y-1'
+          : 'border-slate-200/90 hover:border-indigo-300 shadow-[0_4px_16px_-2px_rgba(45,55,72,0.06)] hover:shadow-[0_14px_28px_-4px_rgba(45,55,72,0.12)] hover:-translate-y-1 hover:bg-[#FDFCF9]'
       }`}
     >
       {/* ========================================================= */}
-      {/* 1. TOP 65%: HERO ARTWORK CANVAS                           */}
+      {/* 1. ARTWORK CANVAS (HERO VISUAL ANCHOR)                    */}
       {/* ========================================================= */}
       <div
-        className={`relative h-[180px] sm:h-[200px] w-full ${theme.heroCanvasBg} flex items-center justify-center p-4 overflow-hidden transition-colors`}
+        className={`relative h-[160px] sm:h-[180px] w-full ${theme.heroCanvasBg} flex items-center justify-center p-3 overflow-hidden border-b border-slate-100`}
       >
         {/* Soft Organic Backdrop Blob */}
         <div
-          className={`absolute w-36 h-36 rounded-full ${theme.heroBlobBg} blur-2xl opacity-60 group-hover:scale-110 group-hover:opacity-80 transition-all duration-500`}
+          className={`absolute w-32 h-32 rounded-full ${theme.heroBlobBg} blur-xl opacity-50 group-hover:scale-105 group-hover:opacity-70 transition-all duration-300`}
         />
 
-        {/* Milestone Tag */}
-        <div className="absolute top-3 left-3.5 z-20 pointer-events-none">
-          <span
-            className={`text-[10px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border backdrop-blur-md shadow-2xs ${theme.tagStyle}`}
-          >
-            Chặng {String(chapter).padStart(2, '0')}
-          </span>
-        </div>
-
-        {/* FLOATING HERO ILLUSTRATION */}
-        <div className="relative z-10 w-28 h-28 sm:w-34 sm:h-34 flex items-center justify-center transform transition-transform duration-200 ease-out group-hover:scale-105 group-hover:-translate-y-1 filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.1)]">
+        {/* Floating Illustration */}
+        <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center transform transition-transform duration-200 ease-out group-hover:scale-[1.03] filter drop-shadow-[0_6px_12px_rgba(0,0,0,0.08)]">
           <KidsIllustration
             name={theme.illustration}
             className="w-full h-full object-contain"
@@ -76,28 +65,29 @@ export const GameCard: React.FC<GameCardProps> = memo(({
       </div>
 
       {/* ========================================================= */}
-      {/* 2. BOTTOM 35%: CLEAN METADATA & ARROW ACTION              */}
+      {/* 2. CONCISE METADATA & PLAY ACTION                         */}
       {/* ========================================================= */}
-      <div className="flex-1 flex flex-col justify-between p-4 sm:p-5 bg-white space-y-2.5">
-        {/* Title & Subtitle */}
-        <div className="space-y-0.5">
+      <div className="flex-1 flex flex-col justify-between p-3.5 sm:p-4 bg-white group-hover:bg-[#FDFCF9] transition-colors space-y-3">
+        {/* Game Title */}
+        <div>
           <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight leading-snug truncate group-hover:text-indigo-600 transition-colors">
             {game.titleVi}
           </h3>
-          <p className="text-xs font-semibold text-slate-400 truncate">
+          <p className="text-[11px] sm:text-xs font-semibold text-slate-400 truncate mt-0.5">
             {game.titleEn}
           </p>
         </div>
 
-        {/* Footer: Difficulty + Arrow CTA */}
-        <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-100/80">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <span>{game.difficultyVi || 'Phù hợp cho bé'}</span>
+        {/* Footer: Small Metadata + Play CTA */}
+        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+            <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+            <span className="truncate">{game.difficultyVi || 'Phù hợp cho bé'}</span>
           </div>
 
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 group-hover:bg-indigo-600 text-slate-500 group-hover:text-white flex items-center justify-center transition-all duration-200 shadow-2xs group-hover:translate-x-0.5">
-            <ArrowRight className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-1 text-xs font-black text-indigo-600 group-hover:text-indigo-700 transition-colors">
+            <span>Chơi</span>
+            <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
       </div>
