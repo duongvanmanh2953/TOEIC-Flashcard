@@ -4,6 +4,7 @@ import { KidsStarIcon, KidsSparklesIcon } from '../assets/icons/KidsIcons';
 import { KidsMascot } from './KidsMascot';
 import { kidsSound } from '../services/sound/KidsSoundManager';
 import { Play, RotateCcw, Unlock, Gift, ArrowLeft, Sparkles } from 'lucide-react';
+import { kidAsset } from '../utils/kidAsset';
 
 interface KidsRewardModalProps {
   isOpen: boolean;
@@ -105,9 +106,10 @@ export const KidsRewardModal: React.FC<KidsRewardModalProps> = ({
               >
                 {hasStar ? (
                   <img
-                    src="/kid/rewards/star.png"
+                    src={kidAsset('/kid/rewards/star.png')}
                     alt="Star"
                     className="w-10 h-10 object-contain drop-shadow-md animate-bounce"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-trophy.png'; }}
                   />
                 ) : (
                   <KidsStarIcon size={28} filled={false} />

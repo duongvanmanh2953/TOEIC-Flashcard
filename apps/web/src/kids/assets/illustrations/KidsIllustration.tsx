@@ -1,4 +1,5 @@
 import React from 'react';
+import { kidAsset } from '../../utils/kidAsset';
 
 export type KidsIllustrationName =
   // Animals
@@ -87,8 +88,6 @@ const KID_PHOTO_ASSETS: Record<string, string> = {
   ticket: '/kid/rewards/ticket.png',
 };
 
-import { kidAsset } from '../../utils/kidAsset';
-
 export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
   name,
   className = 'w-16 h-16',
@@ -106,6 +105,9 @@ export const KidsIllustration: React.FC<KidsIllustrationProps> = ({
         className={`${className} object-contain select-none drop-shadow-sm transition-transform duration-200 hover:scale-105`}
         style={style}
         loading="lazy"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png';
+        }}
       />
     );
   }

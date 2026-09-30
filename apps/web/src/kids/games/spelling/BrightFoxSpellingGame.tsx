@@ -262,6 +262,7 @@ export const BrightFoxSpellingGame: React.FC<BrightFoxSpellingGameProps> = ({
             src={kidAsset('/kid/mascot/vivi-study.png')}
             alt="Vivi Fox"
             className="w-full h-full object-contain"
+            onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png'; }}
           />
         </div>
 
@@ -288,6 +289,7 @@ export const BrightFoxSpellingGame: React.FC<BrightFoxSpellingGameProps> = ({
             src={kidAsset(current.image)}
             alt={current.name}
             className="w-full h-full object-contain drop-shadow-sm select-none pointer-events-none"
+            onError={(e) => { (e.target as HTMLImageElement).src = '/kid/animals/fox.png'; }}
           />
         </div>
         <span className="text-xs font-bold text-slate-600 mt-1">
@@ -358,6 +360,7 @@ export const BrightFoxSpellingGame: React.FC<BrightFoxSpellingGameProps> = ({
                 src={kidAsset('/kid/stickers/sticker-great-job.png')}
                 alt="Great Job Sticker"
                 className="w-full h-full object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png'; }}
               />
             </div>
 

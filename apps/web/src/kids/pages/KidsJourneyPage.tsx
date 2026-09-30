@@ -31,6 +31,7 @@ import {
   Star,
   CheckCircle2,
 } from 'lucide-react';
+import { kidAsset } from '../utils/kidAsset';
 
 interface WorldBiomeConfig {
   id: string;
@@ -43,8 +44,6 @@ interface WorldBiomeConfig {
   trailColor: string;
   badgeBg: string;
 }
-
-import { kidAsset } from '../utils/kidAsset';
 
 const WORLD_BIOMES: WorldBiomeConfig[] = [
   {
@@ -253,6 +252,7 @@ export const KidsJourneyPage: React.FC = () => {
             src={currentBiome.image}
             alt={currentBiome.name}
             className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-luminosity pointer-events-none"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         )}
 

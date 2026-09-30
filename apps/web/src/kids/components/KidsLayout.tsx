@@ -40,6 +40,8 @@ import {
   Layers,
   Users,
   Settings,
+  GraduationCap,
+  LogOut,
 } from 'lucide-react';
 import { ViviReadingCompanion } from '../assets/illustrations/KidsViviUniverse';
 
@@ -55,6 +57,8 @@ export const KidsLayout: React.FC = () => {
   const [soundOn, setSoundOn] = useState(() => kidsSound.isEnabled() || kidsAudioManager.isMusicEnabled());
   const [parentModalOpen, setParentModalOpen] = useState(false);
   const [pendingParentRoute, setPendingParentRoute] = useState<string>('/kids/parent');
+  const [parentModalTitle, setParentModalTitle] = useState<string>('Khu Vực Phụ Huynh');
+  const [parentModalDesc, setParentModalDesc] = useState<string>('Nhấn và giữ nút tròn bên dưới để mở khóa.');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Immediately cancel any previous page voice narration whenever route changes
@@ -102,9 +106,11 @@ export const KidsLayout: React.FC = () => {
     setSoundOn(nextSound || nextMusic);
   };
 
-  const handleOpenParentGate = (targetRoute: string) => {
+  const handleOpenParentGate = (targetRoute: string, customTitle?: string, customDesc?: string) => {
     kidsSound.play('pop');
     setPendingParentRoute(targetRoute);
+    setParentModalTitle(customTitle || (targetRoute === '/dashboard' ? 'Trở Về Màn Học Viên' : 'Khu Vực Phụ Huynh'));
+    setParentModalDesc(customDesc || (targetRoute === '/dashboard' ? 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.' : 'Nhấn và giữ nút tròn bên dưới để mở khóa.'));
     setParentModalOpen(true);
   };
 
@@ -169,6 +175,7 @@ export const KidsLayout: React.FC = () => {
               src={kidAsset('/kid/ui/vocalflow-fox-logo.png')}
               alt="VocalFlow Kid"
               className="w-full h-full object-contain"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png'; }}
             />
           </div>
           <div>
@@ -238,6 +245,7 @@ export const KidsLayout: React.FC = () => {
             alt="Vivi bạn đồng hành"
             className="w-32 h-36 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-md cursor-pointer"
             onClick={() => kidsSound.play('celebration')}
+            onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png'; }}
           />
         </div>
 
@@ -252,6 +260,19 @@ export const KidsLayout: React.FC = () => {
           <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
           <span>Khu vực phụ huynh</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (isDrawer) setMobileMenuOpen(false);
+            handleOpenParentGate('/dashboard', 'Trở Về Màn Học Viên', 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.');
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-200/80 bg-rose-50/70 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
+          title="Thoát chế độ bé & trở về màn học viên"
+        >
+          <GraduationCap className="w-3.5 h-3.5 text-rose-600" />
+          <span>Về màn học viên</span>
+        </button>
       </div>
     </div>
   );
@@ -260,7 +281,12 @@ export const KidsLayout: React.FC = () => {
     <div className={`kids-layout min-h-screen min-h-[100dvh] bg-[#F7FBFF] text-slate-800 font-sans select-none flex flex-col relative overflow-x-hidden ${isFocusMode ? 'pb-4' : 'pb-24 lg:pb-6'}`}>
       {/* Global World Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-sky-50">
-        <img src={kidAsset('/kid/backgrounds/overall-bg.png')} className="absolute inset-0 w-full h-full object-cover" alt="World Background" />
+        <img
+          src={kidAsset('/kid/backgrounds/overall-bg.png')}
+          className="absolute inset-0 w-full h-full object-cover"
+          alt="World Background"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
       </div>
 
       {/* ========================================================================= */}
@@ -341,8 +367,20 @@ export const KidsLayout: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right: Streak HUD + Settings Gear + Profile Circle */}
+              {/* Right: Return to Learner + Streak HUD + Settings Gear + Profile Circle */}
               <div className="flex items-center gap-2 sm:gap-3">
+                {/* Return to Learner Dashboard Button */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenParentGate('/dashboard', 'Trở Về Màn Học Viên', 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white hover:bg-rose-50 border border-slate-200/90 hover:border-rose-300 text-xs font-black text-slate-700 hover:text-rose-600 shadow-2xs cursor-pointer transition-all active:scale-95 group"
+                  title="Thoát chế độ bé & trở về màn học viên"
+                >
+                  <GraduationCap className="w-4 h-4 text-indigo-600 group-hover:text-rose-600 transition-colors" />
+                  <span className="hidden sm:inline">Về màn học viên</span>
+                  <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500 transition-colors" />
+                </button>
+
                 {/* Streak Pill */}
                 <button
                   onClick={() => {
@@ -421,6 +459,8 @@ export const KidsLayout: React.FC = () => {
         isOpen={parentModalOpen}
         onClose={() => setParentModalOpen(false)}
         onSuccess={handleParentVerified}
+        title={parentModalTitle}
+        description={parentModalDesc}
       />
 
       {/* Unsupported Language Switch Prompt Overlay */}

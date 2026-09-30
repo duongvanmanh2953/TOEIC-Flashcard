@@ -47,6 +47,7 @@ import {
   Sparkle,
   Lightbulb,
 } from 'lucide-react';
+import { kidAsset } from '../utils/kidAsset';
 
 interface PlacedItem {
   id: string;
@@ -765,9 +766,10 @@ export const KidsMyWorldPage: React.FC = () => {
                 <div className="relative">
                   {item.image ? (
                     <img
-                      src={item.image}
+                      src={kidAsset(item.image)}
                       alt={item.name}
                       className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-md animate-bounce-subtle pointer-events-none"
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png'; }}
                     />
                   ) : (
                     <span className="text-4xl sm:text-5xl drop-shadow-md animate-bounce-subtle">
@@ -819,9 +821,10 @@ export const KidsMyWorldPage: React.FC = () => {
                   >
                     {sticker.image ? (
                       <img
-                        src={sticker.image}
+                        src={kidAsset(sticker.image)}
                         alt={sticker.name}
                         className="w-10 h-10 object-contain drop-shadow-2xs pointer-events-none"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png'; }}
                       />
                     ) : (
                       <span className="text-3xl">{sticker.icon}</span>
@@ -862,11 +865,12 @@ export const KidsMyWorldPage: React.FC = () => {
                 >
                   {badge.image ? (
                     <img
-                      src={badge.image}
+                      src={kidAsset(badge.image)}
                       alt={badge.title}
                       className={`w-full h-full object-contain ${
                         isUnlocked ? 'drop-shadow-sm' : 'grayscale opacity-40'
                       }`}
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/kid/rewards/badge-first-word.png'; }}
                     />
                   ) : isUnlocked ? (
                     <Award className="w-8 h-8 text-amber-900" />

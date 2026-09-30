@@ -1,6 +1,7 @@
 import React from 'react';
 import { kidsSpeech } from '../services/speech/KidsSpeechManager';
 import { kidsSound } from '../services/sound/KidsSoundManager';
+import { kidAsset } from '../utils/kidAsset';
 
 export type MascotMood =
   | 'idle'
@@ -46,8 +47,6 @@ const moodToImageMap: Record<MascotMood, string> = {
   trophy: '/kid/mascot/vivi-trophy.png',
   study: '/kid/mascot/vivi-study.png',
 };
-
-import { kidAsset } from '../utils/kidAsset';
 
 export const KidsMascot: React.FC<KidsMascotProps> = ({
   mood = 'idle',
@@ -133,6 +132,9 @@ export const KidsMascot: React.FC<KidsMascotProps> = ({
           alt={`Vivi the Fox (${mood})`}
           className="w-full h-full object-contain drop-shadow-md select-none pointer-events-none"
           loading="eager"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png';
+          }}
         />
       </div>
     </div>

@@ -239,19 +239,21 @@ export const KidsGamesPage: React.FC = () => {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-600 p-5 sm:p-7 lg:p-8 text-white shadow-sm border border-sky-300/40">
         {/* Real 3D Challenge Arena Backdrop */}
         <img
-          src="/kid/worlds/world-challenge-arena.png"
+          src={kidAsset('/kid/worlds/world-challenge-arena.png')}
           alt="Challenge Arena"
           className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-luminosity pointer-events-none"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
 
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-white border border-white/30 flex items-center justify-center p-2 shadow-inner shrink-0 hover:scale-105 transition-transform cursor-pointer">
               <img
-                src="/kid/mascot/vivi-trophy.png"
+                src={kidAsset('/kid/mascot/vivi-trophy.png')}
                 alt="Vivi the Fox"
                 className="w-full h-full object-contain drop-shadow-md animate-bounce-subtle"
                 onClick={() => soundManager.playPop()}
+                onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png'; }}
               />
             </div>
             <div className="min-w-0 flex-1">
@@ -299,6 +301,7 @@ export const KidsGamesPage: React.FC = () => {
               src={kidAsset('/kid/animals/fox.png')}
               alt="Fox Quiz"
               className="w-full h-full object-contain"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png'; }}
             />
           </div>
           <div>

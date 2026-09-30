@@ -326,14 +326,20 @@ export const App: React.FC = () => {
             {/* Kids English Learning System (Child-Safe Dedicated Experience) */}
             <Route path="/kids" element={<KidsLayout />}>
               <Route index element={<KidsHomePage />} />
+              <Route path="home" element={<KidsHomePage />} />
+              <Route path="dashboard" element={<KidsHomePage />} />
               <Route path="journey" element={<KidsJourneyPage />} />
+              <Route path="library" element={<KidsJourneyPage />} />
               <Route path="lesson/:lessonId" element={<KidsLessonPage />} />
               <Route path="games" element={<KidsGamesPage />} />
+              <Route path="practice" element={<KidsGamesPage />} />
               <Route path="world" element={<KidsMyWorldPage />} />
               <Route path="my-world" element={<KidsMyWorldPage />} />
               <Route path="flashcards" element={<KidsFlashcardsPage />} />
               <Route path="vocabulary" element={<KidsFlashcardsPage />} />
               <Route path="parent" element={<KidsParentDashboardPage />} />
+              <Route path="parents" element={<KidsParentDashboardPage />} />
+              <Route path="progress" element={<KidsParentDashboardPage />} />
             </Route>
 
             {/* Catch-all redirect */}

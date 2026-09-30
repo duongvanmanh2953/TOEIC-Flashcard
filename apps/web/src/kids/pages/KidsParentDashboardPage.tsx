@@ -69,10 +69,10 @@ export const KidsParentDashboardPage: React.FC = () => {
             ← Về Góc Bé Học
           </button>
           <button
-            onClick={() => navigate('/')}
-            className="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs transition-all cursor-pointer"
+            onClick={() => navigate('/dashboard')}
+            className="px-4 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-black text-xs transition-all cursor-pointer flex items-center gap-1.5"
           >
-            Trang Người Lớn
+            <span>🎓 Về Màn Học Viên</span>
           </button>
         </div>
       </div>

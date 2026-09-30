@@ -39,19 +39,32 @@ export const BrightFoxActivityCards: React.FC = () => {
         <div className="relative z-10 grid grid-cols-2 gap-4 sm:gap-5 mb-8">
           {/* 1. NUMBERS (ORANGE) */}
           <div
-            onClick={() => handleCardClick('/kids/games?game=word_builder')}
+            onClick={() => handleCardClick('/kids/games?game=sort_match')}
             className="group relative h-44 sm:h-52 rounded-[32px] bg-[#FF9633] hover:bg-[#ff8a1a] border-4 border-white/90 shadow-xl cursor-pointer p-4 sm:p-5 flex flex-col justify-between items-center text-white transition-all duration-200 hover:-translate-y-1.5 hover:shadow-2xl active:scale-95 overflow-hidden"
           >
             <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/15 rounded-full pointer-events-none" />
-            <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
-              Numbers
-            </h3>
+            <div className="flex items-center justify-between w-full px-1">
+              <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
+                Numbers
+              </h3>
+              <div className="flex items-center gap-1 font-black text-amber-200 text-sm">
+                <span>1</span>
+                <span>2</span>
+                <span>3</span>
+              </div>
+            </div>
 
-            {/* 3D 1 2 3 visual */}
-            <div className="flex items-center justify-center gap-1 sm:gap-1.5 text-4xl sm:text-5xl font-black drop-shadow-md group-hover:scale-110 transition-transform">
-              <span className="text-[#FFEB3B] -rotate-6">1</span>
-              <span className="text-[#E91E63] translate-y-1">2</span>
-              <span className="text-[#00E676] rotate-6">3</span>
+            {/* Vivi Study Mascot with Number Badge */}
+            <div className="relative flex items-center justify-center group-hover:scale-110 transition-transform">
+              <img
+                src={kidAsset('/kid/mascot/vivi-study.png')}
+                alt="Numbers Vivi"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/kid/rewards/star.png'; }}
+              />
+              <span className="absolute -bottom-1 -right-2 px-2 py-0.5 rounded-full bg-amber-300 text-amber-950 font-black text-[11px] shadow-sm">
+                🔢 123
+              </span>
             </div>
 
             <span className="text-[11px] sm:text-xs font-bold text-amber-100 bg-black/15 px-3 py-1 rounded-full">
@@ -65,19 +78,21 @@ export const BrightFoxActivityCards: React.FC = () => {
             className="group relative h-44 sm:h-52 rounded-[32px] bg-[#3FA9F5] hover:bg-[#3298e2] border-4 border-white/90 shadow-xl cursor-pointer p-4 sm:p-5 flex flex-col justify-between items-center text-white transition-all duration-200 hover:-translate-y-1.5 hover:shadow-2xl active:scale-95 overflow-hidden"
           >
             <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/15 rounded-full pointer-events-none" />
-            <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
-              Reading
-            </h3>
+            <div className="flex items-center justify-between w-full px-1">
+              <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
+                Reading
+              </h3>
+              <span className="text-sky-200 text-sm font-black">📖 ABC</span>
+            </div>
 
-            {/* Cute open book face */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-rose-500 rounded-2xl border-3 border-white flex flex-col items-center justify-center shadow-lg relative group-hover:scale-110 transition-transform">
-              <div className="w-12 h-10 bg-amber-50 rounded-xl flex items-center justify-center gap-2 relative">
-                {/* Eyes */}
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-900" />
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-900" />
-                {/* Smile */}
-                <div className="absolute bottom-1.5 w-3 h-1.5 border-b-2 border-slate-900 rounded-full" />
-              </div>
+            {/* Vivi Reading with Headphones */}
+            <div className="relative flex items-center justify-center group-hover:scale-110 transition-transform">
+              <img
+                src={kidAsset('/kid/mascot/vivi-reading-headphones.png')}
+                alt="Reading Vivi"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png'; }}
+              />
             </div>
 
             <span className="text-[11px] sm:text-xs font-bold text-sky-100 bg-black/15 px-3 py-1 rounded-full">
@@ -87,20 +102,25 @@ export const BrightFoxActivityCards: React.FC = () => {
 
           {/* 3. PUZZLES (GRASS GREEN) */}
           <div
-            onClick={() => handleCardClick('/kids/games')}
+            onClick={() => handleCardClick('/kids/games?game=memory_flip')}
             className="group relative h-44 sm:h-52 rounded-[32px] bg-[#4CD964] hover:bg-[#43c45a] border-4 border-white/90 shadow-xl cursor-pointer p-4 sm:p-5 flex flex-col justify-between items-center text-white transition-all duration-200 hover:-translate-y-1.5 hover:shadow-2xl active:scale-95 overflow-hidden"
           >
             <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/15 rounded-full pointer-events-none" />
-            <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
-              Puzzles
-            </h3>
+            <div className="flex items-center justify-between w-full px-1">
+              <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
+                Puzzles
+              </h3>
+              <span className="text-emerald-200 text-sm font-black">🧩 3D</span>
+            </div>
 
-            {/* 3D Interlocking Puzzle Blocks */}
-            <div className="grid grid-cols-2 gap-1 w-16 h-16 sm:w-20 sm:h-20 p-2 bg-white/20 rounded-2xl backdrop-blur-xs group-hover:scale-110 transition-transform">
-              <div className="bg-amber-400 rounded-lg shadow-sm" />
-              <div className="bg-sky-400 rounded-lg shadow-sm" />
-              <div className="bg-rose-500 rounded-lg shadow-sm" />
-              <div className="bg-emerald-300 rounded-lg shadow-sm" />
+            {/* Treasure Chest & Puzzle Magic */}
+            <div className="relative flex items-center justify-center group-hover:scale-110 transition-transform">
+              <img
+                src={kidAsset('/kid/rewards/chest.png')}
+                alt="Puzzles Treasure"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/kid/rewards/badge-challenge.png'; }}
+              />
             </div>
 
             <span className="text-[11px] sm:text-xs font-bold text-emerald-100 bg-black/15 px-3 py-1 rounded-full">
@@ -114,23 +134,21 @@ export const BrightFoxActivityCards: React.FC = () => {
             className="group relative h-44 sm:h-52 rounded-[32px] bg-[#8054C7] hover:bg-[#7245b8] border-4 border-white/90 shadow-xl cursor-pointer p-4 sm:p-5 flex flex-col justify-between items-center text-white transition-all duration-200 hover:-translate-y-1.5 hover:shadow-2xl active:scale-95 overflow-hidden"
           >
             <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/15 rounded-full pointer-events-none" />
-            <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
-              Drawing
-            </h3>
+            <div className="flex items-center justify-between w-full px-1">
+              <h3 className="text-xl sm:text-2xl font-black tracking-wide drop-shadow-sm">
+                Drawing
+              </h3>
+              <span className="text-purple-200 text-sm font-black">🎨 Đảo</span>
+            </div>
 
-            {/* Cute Yellow Pencil Character */}
-            <div className="flex flex-col items-center group-hover:scale-110 transition-transform">
-              <div className="w-8 sm:w-10 h-16 sm:h-20 bg-amber-300 border-2 border-white rounded-t-full rounded-b-md flex flex-col items-center justify-center relative shadow-md">
-                {/* Eyes */}
-                <div className="flex gap-1.5 mb-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                </div>
-                {/* Smile */}
-                <div className="w-2.5 h-1 border-b-2 border-slate-900 rounded-full" />
-                {/* Pencil Tip */}
-                <div className="w-0 h-0 border-x-4 border-x-transparent border-t-8 border-t-amber-800 absolute -bottom-2" />
-              </div>
+            {/* Vivi Pointing Character */}
+            <div className="relative flex items-center justify-center group-hover:scale-110 transition-transform">
+              <img
+                src={kidAsset('/kid/mascot/vivi-pointing.png')}
+                alt="Drawing Vivi"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png'; }}
+              />
             </div>
 
             <span className="text-[11px] sm:text-xs font-bold text-purple-100 bg-black/15 px-3 py-1 rounded-full">
@@ -156,7 +174,7 @@ export const BrightFoxActivityCards: React.FC = () => {
             <LayoutGrid className="w-5 h-5" />
           </button>
           <button
-            onClick={() => handleCardClick('/kids/parents')}
+            onClick={() => handleCardClick('/kids/parent')}
             className="w-10 h-10 rounded-full text-white hover:bg-white/30 flex items-center justify-center transition-all cursor-pointer"
             title="Góc phụ huynh"
           >

@@ -8,6 +8,8 @@ interface KidsParentPinModalProps {
   onClose: () => void;
   onVerified?: () => void;
   onSuccess?: () => void;
+  title?: string;
+  description?: string;
 }
 
 export const KidsParentPinModal: React.FC<KidsParentPinModalProps> = ({
@@ -15,6 +17,8 @@ export const KidsParentPinModal: React.FC<KidsParentPinModalProps> = ({
   onClose,
   onVerified,
   onSuccess,
+  title,
+  description,
 }) => {
   const [holdProgress, setHoldProgress] = useState(0);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -73,10 +77,10 @@ export const KidsParentPinModal: React.FC<KidsParentPinModalProps> = ({
 
         <div>
           <h3 className="text-lg font-black text-slate-900 tracking-tight">
-            Khu Vực Phụ Huynh
+            {title || 'Khu Vực Phụ Huynh'}
           </h3>
           <p className="text-xs font-bold text-slate-700 mt-1 leading-relaxed">
-            Nhấn và giữ nút tròn bên dưới để mở khóa.
+            {description || 'Nhấn và giữ nút tròn bên dưới để mở khóa.'}
           </p>
         </div>
 

@@ -57,10 +57,10 @@ export const KidsHomePage: React.FC = () => {
         navigate('/kids/flashcards');
         break;
       case 'listening':
-        navigate('/kids/world');
+        navigate('/kids/games?game=listen_find');
         break;
       case 'speaking':
-        navigate('/kids/world');
+        navigate('/kids/games?game=speak_unlock');
         break;
       case 'test':
         navigate('/kids/games');
@@ -134,28 +134,33 @@ export const KidsHomePage: React.FC = () => {
               alt="Vivi and wooden signpost"
               className="w-full h-full object-contain drop-shadow-md rounded-2xl cursor-pointer hover:scale-102 transition-transform"
               onClick={handleStartLearn}
+              onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png'; }}
             />
-            {/* Interactive signpost click areas */}
-            <div className="absolute right-0 top-4 w-28 h-44 flex flex-col justify-between py-1 z-20">
+            {/* Interactive signpost click areas aligned directly with the 4 wooden arrows */}
+            <div className="absolute right-1 sm:right-2 top-3 bottom-4 w-28 sm:w-32 flex flex-col justify-between py-1 z-20 pointer-events-auto">
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('words'); }}
-                title="Học từ vựng"
-                className="w-full h-8 opacity-0 cursor-pointer"
+                title="Words • Học từ vựng"
+                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('listening'); }}
-                title="Luyện nghe nói"
-                className="w-full h-8 opacity-0 cursor-pointer"
+                title="Listening • Luyện nghe"
+                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('speaking'); }}
-                title="Luyện nói"
-                className="w-full h-8 opacity-0 cursor-pointer"
+                title="Speaking • Luyện nói"
+                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('test'); }}
-                title="Trò chơi vui nhộn"
-                className="w-full h-8 opacity-0 cursor-pointer"
+                title="Test • Trò chơi vui nhộn"
+                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
             </div>
           </div>
@@ -244,7 +249,7 @@ export const KidsHomePage: React.FC = () => {
           <div
             onClick={() => {
               soundManager.playPop();
-              navigate('/kids/journey');
+              navigate('/kids/parent');
             }}
             className="p-4 sm:p-5 rounded-3xl bg-amber-50/85 backdrop-blur-xl border border-amber-200/90 hover:border-amber-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
           >
@@ -298,6 +303,7 @@ export const KidsHomePage: React.FC = () => {
                   src={kidAsset('/kid/lessons/lesson-beach-crab.png')}
                   alt="At the Beach"
                   className="w-full h-full object-cover rounded-xl"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png'; }}
                 />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   12 từ
@@ -325,6 +331,7 @@ export const KidsHomePage: React.FC = () => {
                   src={kidAsset('/kid/lessons/lesson-restaurant-food.png')}
                   alt="At the Restaurant"
                   className="w-full h-full object-cover rounded-xl"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png'; }}
                 />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   8 bài
@@ -352,6 +359,7 @@ export const KidsHomePage: React.FC = () => {
                   src={kidAsset('/kid/lessons/lesson-grammar-bus.png')}
                   alt="Present Simple"
                   className="w-full h-full object-cover rounded-xl"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-running.png'; }}
                 />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   10 bài
@@ -370,15 +378,16 @@ export const KidsHomePage: React.FC = () => {
             <div
               onClick={() => {
                 soundManager.playPop();
-                navigate('/kids/journey');
+                navigate('/kids/games?game=word_builder');
               }}
               className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
             >
               <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
                 <img
-                  src={kidAsset('/kid/lessons/lesson-animals-safari.png')}
+                  src={kidAsset('/kid/lessons/lesson-animals-panda.png')}
                   alt="Animals"
                   className="w-full h-full object-cover rounded-xl"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/animals/panda.png'; }}
                 />
                 <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
                   6 bài
@@ -398,11 +407,25 @@ export const KidsHomePage: React.FC = () => {
         {/* 4. BOTTOM MOTIVATION CALLOUT BANNER WITH BALLOON */}
         <div className="p-4 sm:p-4.5 rounded-2xl bg-gradient-to-r from-sky-100/95 via-white/85 to-emerald-50/95 backdrop-blur-xl border border-white/90 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <img
-              src={kidAsset('/kid/ui/hot-air-balloon.png')}
-              alt="Hot Air Balloon"
-              className="w-12 h-14 object-contain shrink-0 animate-bounce-subtle drop-shadow-xs"
-            />
+            {/* Crisp Colorful Hot Air Balloon */}
+            <div className="w-12 h-14 shrink-0 flex items-center justify-center animate-bounce-subtle drop-shadow-sm">
+              <svg viewBox="0 0 60 74" className="w-full h-full">
+                <defs>
+                  <linearGradient id="kidBalloonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f59e0b" />
+                    <stop offset="50%" stopColor="#ef4444" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+                <path d="M 30 2 C 14 2 4 16 4 32 C 4 44 18 54 24 60 L 36 60 C 42 54 56 44 56 32 C 56 16 46 2 30 2 Z" fill="url(#kidBalloonGrad)" />
+                <path d="M 30 2 C 22 2 16 16 16 32 C 16 44 24 57 26 60 L 34 60 C 36 57 44 44 44 32 C 44 16 38 2 30 2 Z" fill="#fbbf24" opacity="0.85" />
+                <path d="M 30 2 C 26 2 24 16 24 32 C 24 44 28 58 29 60 L 31 60 C 32 58 36 44 36 32 C 36 16 34 2 30 2 Z" fill="#38bdf8" opacity="0.9" />
+                <line x1="24" y1="60" x2="26" y2="67" stroke="#b45309" strokeWidth="1.5" />
+                <line x1="36" y1="60" x2="34" y2="67" stroke="#b45309" strokeWidth="1.5" />
+                <line x1="30" y1="60" x2="30" y2="67" stroke="#b45309" strokeWidth="1" />
+                <rect x="24" y="67" width="12" height="7" rx="2" fill="#d97706" stroke="#92400e" strokeWidth="1" />
+              </svg>
+            </div>
             <div className="text-left">
               <h3 className="text-sm sm:text-base font-black text-[#17345B]">
                 Bạn đã sẵn sàng cho thử thách tiếp theo chưa?
@@ -553,6 +576,7 @@ export const KidsHomePage: React.FC = () => {
               src={kidAsset('/kid/ui/cloud-sleeping-fox.png')}
               alt="Sleeping Vivi"
               className="w-full h-full object-contain drop-shadow-xs"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-sleep.png'; }}
             />
           </div>
         </div>
