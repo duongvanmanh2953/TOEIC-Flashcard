@@ -85,6 +85,9 @@ export const AITutorPage: React.FC = () => {
   const { t } = useTranslation();
   const { isGuest, promptLogin, user } = useAuth();
   const { activeLanguage } = useLearningContext();
+  const [quotaStatus, setQuotaStatus] = useState<any>(null);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+
   const isPro = isProUser(user) || quotaStatus?.isPro || quotaStatus?.tier === 'PRO';
   const effectiveTier = isPro ? 'PRO' : (quotaStatus?.tier || 'FREE');
 
@@ -92,8 +95,6 @@ export const AITutorPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [addedWord, setAddedWord] = useState<string | null>(null);
-  const [quotaStatus, setQuotaStatus] = useState<any>(null);
-  const [quotaError, setQuotaError] = useState<string | null>(null);
 
   // Instant Test from Text state
   const [pasteText, setPasteText] = useState('');

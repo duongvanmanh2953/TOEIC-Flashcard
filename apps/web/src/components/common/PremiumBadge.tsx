@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react';
 
 interface PremiumBadgeProps {
   variant?: 'pro' | 'plus' | 'premium';
+  tier?: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   showIcon?: boolean;
@@ -10,6 +11,7 @@ interface PremiumBadgeProps {
 
 export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
   variant = 'pro',
+  tier,
   size = 'md',
   className = '',
   showIcon = true,
@@ -20,7 +22,8 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
     lg: 'text-sm px-3.5 py-1 gap-2',
   };
 
-  const label = variant === 'plus' ? 'PLUS' : variant === 'pro' ? 'PRO' : 'PREMIUM';
+  const activeVariant = tier ? (tier.toLowerCase().includes('plus') ? 'plus' : 'pro') : variant;
+  const label = activeVariant === 'plus' ? 'PLUS' : activeVariant === 'pro' ? 'PRO' : 'PREMIUM';
 
   return (
     <span

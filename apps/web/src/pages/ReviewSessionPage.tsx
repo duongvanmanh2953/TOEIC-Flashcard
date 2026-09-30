@@ -671,7 +671,7 @@ export const ReviewSessionPage: React.FC = () => {
     }
 
     // Record study activity in multi-language LearningContext
-    recordStudyActivity(1, rating === 'AGAIN' ? 0 : 1, 1);
+    recordStudyActivity(1, rating !== 'AGAIN', 1);
 
     // Post review answer if cloud session exists
     if (session?.id) {
@@ -764,7 +764,7 @@ export const ReviewSessionPage: React.FC = () => {
 
   const handleNextQuiz = async () => {
     const wasCorrect = feedback?.isCorrect;
-    recordStudyActivity(1, wasCorrect ? 1 : 0, 1);
+    recordStudyActivity(1, Boolean(wasCorrect), 1);
     setFeedback(null);
     setUserAnswer('');
     setShowHint(false);

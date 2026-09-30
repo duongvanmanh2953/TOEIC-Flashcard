@@ -12,6 +12,7 @@ export type GlassVariant =
   | 'liquid';
 
 export interface GlassCardProps {
+  id?: string;
   children: React.ReactNode;
   className?: string;
   onClick?: (e?: any) => void;
@@ -20,6 +21,7 @@ export interface GlassCardProps {
 }
 
 export const GlassCard: React.FC<GlassCardProps> = ({
+  id,
   children,
   className = '',
   onClick,
@@ -48,6 +50,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   return (
     <div
+      id={id}
       onClick={onClick}
       className={`relative rounded-3xl p-5 md:p-6 transition-all duration-300 ${variantClasses} ${className}`}
     >

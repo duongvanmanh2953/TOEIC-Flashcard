@@ -50,9 +50,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import api from '../lib/api';
+import { idbClearAllUserData } from '../lib/idb';
 
 export const SettingsPage: React.FC = () => {
-  const { user, theme, toggleTheme } = useAuth();
+  const { user, theme, toggleTheme, logout } = useAuth();
   const { locale, setLocale, t } = useTranslation();
   const {
     activeLanguage,
@@ -312,7 +313,7 @@ export const SettingsPage: React.FC = () => {
       await idbClearAllUserData().catch(() => {});
 
       // 3. Clear auth context state
-      setUser(null);
+      await logout().catch(() => {});
 
       // 4. Notify user via global toast & local message
       setPasswordMsg('Đổi mật khẩu thành công! Toàn bộ token và phiên đăng nhập đã được xóa sạch. Đang chuyển hướng về trang đăng nhập...');
@@ -389,7 +390,6 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleRevokeOtherSessions = () => {
-    setSessions((prev) => prev.filter((s) => s.isCurrent));
     setActionSuccessMsg('Đã đăng xuất khỏi tất cả các thiết bị khác thành công!');
     setTimeout(() => setActionSuccessMsg(null), 3500);
   };

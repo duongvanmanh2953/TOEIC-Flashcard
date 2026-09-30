@@ -1826,7 +1826,7 @@ export const ExamBankPage: React.FC = () => {
               <div className="flex items-center justify-center gap-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
                 <button
                   type="button"
-                  onClick={downloadExamExcelTemplate}
+                  onClick={() => downloadExamExcelTemplate()}
                   className="hover:underline flex items-center gap-1"
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5" />
@@ -1835,7 +1835,7 @@ export const ExamBankPage: React.FC = () => {
                 <span>•</span>
                 <button
                   type="button"
-                  onClick={downloadExamCsvTemplate}
+                  onClick={() => downloadExamCsvTemplate()}
                   className="hover:underline flex items-center gap-1"
                 >
                   <FileText className="w-3.5 h-3.5" />

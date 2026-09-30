@@ -195,7 +195,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Chi Phí Vận Hành <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tổng chi phí trả cho AWS, OpenAI, TTS API và CDN" /></span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Chi Phí Vận Hành <span title="Tổng chi phí trả cho AWS, OpenAI, TTS API và CDN" className="inline-flex items-center"><HelpCircle className="w-3 h-3 text-slate-400 cursor-help" /></span></span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block mt-0.5 truncate">Kiểm soát định mức</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
@@ -211,7 +211,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Dòng Tiền Thuần <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tiền mặt thực tế thu về sau khi trừ các khoản giữ chỗ hoặc pending" /></span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Dòng Tiền Thuần <span title="Tiền mặt thực tế thu về sau khi trừ các khoản giữ chỗ hoặc pending" className="inline-flex items-center"><HelpCircle className="w-3 h-3 text-slate-400 cursor-help" /></span></span>
             <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium block mt-0.5 truncate">Thực nhận ví PayOS</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">
@@ -227,7 +227,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Tổng Học Viên <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tổng số học viên đã đăng ký tài khoản trên hệ thống" /></span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Tổng Học Viên <span title="Tổng số học viên đã đăng ký tài khoản trên hệ thống" className="inline-flex items-center"><HelpCircle className="w-3 h-3 text-slate-400 cursor-help" /></span></span>
             <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5 mt-0.5 truncate">
               <ArrowUpRight className="w-3 h-3" /> {kpis.totalUsers?.change ?? '+0 tuần này'}
             </span>
@@ -245,7 +245,7 @@ export const AdminOverviewPage: React.FC = () => {
           className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 cursor-pointer transition flex items-center justify-between sm:flex-col sm:items-start gap-2 shadow-xs"
         >
           <div className="min-w-0">
-            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Lấp Đầy Phòng Đấu <HelpCircle className="w-3 h-3 text-slate-400 cursor-help" title="Tỷ lệ người chơi hoạt động trong các phòng thi đấu đối kháng" /></span>
+            <span className="text-xs sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate flex items-center gap-1">Lấp Đầy Phòng Đấu <span title="Tỷ lệ người chơi hoạt động trong các phòng thi đấu đối kháng" className="inline-flex items-center"><HelpCircle className="w-3 h-3 text-slate-400 cursor-help" /></span></span>
             <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium block mt-0.5 truncate">Khung 20:00 - 22:00</span>
           </div>
           <div className="flex items-center gap-2 sm:w-full sm:justify-between shrink-0">

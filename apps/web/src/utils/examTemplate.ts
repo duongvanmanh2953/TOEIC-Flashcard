@@ -218,6 +218,7 @@ export const parseAndValidateExamExcel = async (file: File): Promise<ExcelExamPa
             totalRows: 0,
             validCount: 0,
             invalidCount: 1,
+            warningCount: 0,
           });
           return;
         }

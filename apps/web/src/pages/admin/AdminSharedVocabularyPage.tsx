@@ -663,7 +663,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             <div className="p-6 border-t border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
-                onClick={handlePublishToMaster}
+                onClick={() => handlePublishToMaster()}
                 disabled={actionLoading}
                 className="btn-glass-primary btn-glass-sm font-semibold"
               >

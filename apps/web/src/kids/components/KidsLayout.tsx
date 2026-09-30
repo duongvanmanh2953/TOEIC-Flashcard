@@ -42,6 +42,7 @@ import {
   Settings,
   GraduationCap,
   LogOut,
+  Sun,
 } from 'lucide-react';
 import { ViviReadingCompanion } from '../assets/illustrations/KidsViviUniverse';
 

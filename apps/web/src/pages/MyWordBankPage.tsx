@@ -2478,7 +2478,7 @@ export const MyWordBankPage: React.FC = () => {
                       <th className="py-3 px-4 text-right">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody ref={virtualDecksTable.containerRef} className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
+                  <tbody ref={virtualDecksTable.containerRef as any} className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
                     {virtualDecksTable.topSpacerHeight > 0 && (
                       <tr>
                         <td colSpan={8} style={{ height: `${virtualDecksTable.topSpacerHeight}px` }} />

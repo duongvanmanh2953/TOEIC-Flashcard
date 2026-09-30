@@ -474,7 +474,9 @@ export const LeaderboardPage: React.FC = () => {
                         </span>
                       )}
                       {item.isFairPlayVerified && (
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" title="Fair-Play Verified" />
+                        <span title="Fair-Play Verified" className="inline-flex items-center">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        </span>
                       )}
                     </div>
                     <span className="text-[11px] sm:text-xs text-slate-500 font-medium truncate block">

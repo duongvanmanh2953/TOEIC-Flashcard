@@ -380,7 +380,7 @@ export const CreateEditPostPage: React.FC = () => {
                 language,
                 tags,
                 authorName: user?.displayName || user?.email || 'Bạn',
-                authorAvatar: user?.photoURL,
+                authorAvatar: user?.avatar || (user as any)?.photoURL,
               }}
             />
           </div>

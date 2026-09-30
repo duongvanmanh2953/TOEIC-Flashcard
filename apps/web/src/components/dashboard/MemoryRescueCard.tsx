@@ -15,6 +15,9 @@ interface SlippingWord {
 interface MemoryRescueCardProps {
   slippingWords?: SlippingWord[];
   slippingCount?: number;
+  rescueCount?: number;
+  averageMastery?: number;
+  onStartRescue?: () => void;
   isPremium?: boolean;
   className?: string;
 }
@@ -22,19 +25,24 @@ interface MemoryRescueCardProps {
 export const MemoryRescueCard: React.FC<MemoryRescueCardProps> = ({
   slippingWords = [],
   slippingCount = 0,
+  rescueCount,
+  averageMastery,
+  onStartRescue,
   isPremium = false,
   className = '',
 }) => {
   const navigate = useNavigate();
 
-  if (slippingCount === 0 && slippingWords.length === 0) {
+  const count = rescueCount !== undefined ? rescueCount : (slippingCount || slippingWords.length);
+
+  if (count === 0 && slippingWords.length === 0) {
     return null;
   }
 
-  const count = slippingCount || slippingWords.length;
-
   const handleAction = () => {
-    if (isPremium) {
+    if (onStartRescue) {
+      onStartRescue();
+    } else if (isPremium) {
       navigate('/review?type=MEMORY_RESCUE');
     } else {
       navigate('/upgrade?feature=MEMORY_RESCUE');

@@ -183,6 +183,7 @@ export const AdminSettingsPage: React.FC = () => {
   const [purgingMock, setPurgingMock] = useState(false);
   const [purgeMockError, setPurgeMockError] = useState<string | null>(null);
   const [purgeMockSuccess, setPurgeMockSuccess] = useState<string | null>(null);
+  const [wipeUsersOptionInModal, setWipeUsersOptionInModal] = useState(false);
 
   const [wipeUserModalOpen, setWipeUserModalOpen] = useState(false);
   const [wipingUsers, setWipingUsers] = useState(false);

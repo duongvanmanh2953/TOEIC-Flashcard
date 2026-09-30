@@ -803,7 +803,7 @@ export const AICoachStudioPage: React.FC = () => {
     } catch (_) { }
 
     // Accurate local scoring engine (Levenshtein + Dice + Token Jaccard) with Adult threshold > 90%
-    const evalResult = evaluatePronunciation(target, spoken, 'adult', activeLanguage.id);
+    const evalResult = evaluatePronunciation(target, spoken, 'adult');
     const score = evalResult.score;
     const isPassing = evalResult.isPassing; // Adult requires > 90%
     const details = phonemeDetails[target] || phonemeDetails['thoroughly'];
@@ -1438,7 +1438,7 @@ export const AICoachStudioPage: React.FC = () => {
                       <RichAIMessageRenderer
                         content={msg.content}
                         provider={(msg as any).provider}
-                        onSelectQuizOption={(opt) => handleSend(opt)}
+                        onSelectQuizOption={(opt) => handleSendMessage(opt)}
                       />
                       {translatedMessages[msg.id] && (
                         <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg flex items-center gap-1">

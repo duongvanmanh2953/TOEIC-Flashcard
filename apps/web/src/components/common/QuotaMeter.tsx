@@ -3,20 +3,26 @@ import { Sparkles, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface QuotaMeterProps {
-  label: string;
+  label?: string;
+  feature?: string;
   used: number;
   limit: number; // -1 for unlimited
   remaining?: number;
+  tier?: string;
   className?: string;
+  onUpgrade?: () => void;
   onUpgradeClick?: () => void;
 }
 
 export const QuotaMeter: React.FC<QuotaMeterProps> = ({
   label,
+  feature,
   used,
   limit,
   remaining,
+  tier,
   className = '',
+  onUpgrade,
   onUpgradeClick,
 }) => {
   const navigate = useNavigate();
@@ -32,15 +38,18 @@ export const QuotaMeter: React.FC<QuotaMeterProps> = ({
 
   const handleUpgrade = () => {
     if (onUpgradeClick) onUpgradeClick();
+    else if (onUpgrade) onUpgrade();
     else navigate('/upgrade');
   };
+
+  const displayLabel = label || feature || 'Hạn mức sử dụng';
 
   return (
     <div className={`p-4 rounded-2xl bg-white/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/70 backdrop-blur-md space-y-2.5 shadow-xs ${className}`}>
       {/* Header Info */}
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
-          <span>{label}</span>
+          <span>{displayLabel}</span>
           {isUnlimited && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1 border border-emerald-500/20">
               <CheckCircle2 className="w-2.5 h-2.5" /> Không giới hạn
