@@ -598,6 +598,22 @@
   }
 }
 
+@keyframes subtle-shake {
+  0%, 100% {
+    transform: rotateY(180deg) translateX(0);
+  }
+  25% {
+    transform: rotateY(180deg) translateX(-4px);
+  }
+  75% {
+    transform: rotateY(180deg) translateX(4px);
+  }
+}
+
+.animate-subtle-shake {
+  animation: subtle-shake 240ms ease-in-out;
+}
+
 /* ======================================================== */
 /* Kids V5 Train Builder Dynamic Animations                */
 /* ======================================================== */
