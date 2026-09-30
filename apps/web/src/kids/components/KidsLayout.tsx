@@ -201,7 +201,7 @@ export const KidsLayout: React.FC = () => {
       </div>
 
       {/* 2. Middle Scrollable: Navigation Rail */}
-      <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-2 scrollbar-none">
+      <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-1.5 scrollbar-none">
         {navItems.map((item) => {
           const isActive =
             item.exact
@@ -218,14 +218,23 @@ export const KidsLayout: React.FC = () => {
                 kidsSound.play('pop');
                 if (isDrawer) setMobileMenuOpen(false);
               }}
-              className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl font-black text-sm transition-all duration-300 cursor-pointer select-none min-h-[48px] border-b-4 ${
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl font-black text-sm transition-all duration-300 cursor-pointer select-none min-h-[46px] ${
                 isActive
-                  ? 'bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-md transform scale-[1.02] border-orange-600'
-                  : 'bg-transparent text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 border-transparent hover:scale-[1.01]'
+                  ? 'bg-amber-50 text-amber-950 shadow-xs border border-amber-200/80 transform translate-x-1'
+                  : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
               }`}
             >
-              <ItemIcon className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  isActive ? 'bg-amber-400 text-amber-950 shadow-2xs' : 'text-slate-400 group-hover:text-slate-600'
+                }`}
+              >
+                <ItemIcon className="w-4 h-4" />
+              </div>
               <span className="truncate">{item.label}</span>
+              {isActive && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              )}
             </NavLink>
           );
         })}
@@ -245,7 +254,9 @@ export const KidsLayout: React.FC = () => {
             alt="Vivi bạn đồng hành"
             className="w-32 h-36 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-md cursor-pointer"
             onClick={() => kidsSound.play('celebration')}
-            onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png'; }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png';
+            }}
           />
         </div>
 
@@ -255,7 +266,7 @@ export const KidsLayout: React.FC = () => {
             if (isDrawer) setMobileMenuOpen(false);
             handleOpenParentGate('/kids/parent');
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
         >
           <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
           <span>Khu vực phụ huynh</span>
@@ -265,9 +276,13 @@ export const KidsLayout: React.FC = () => {
           type="button"
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
-            handleOpenParentGate('/dashboard', 'Trở Về Màn Học Viên', 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.');
+            handleOpenParentGate(
+              '/dashboard',
+              'Trở Về Màn Học Viên',
+              'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
+            );
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-200/80 bg-rose-50/70 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-200/70 bg-rose-50/60 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
           title="Thoát chế độ bé & trở về màn học viên"
         >
           <GraduationCap className="w-3.5 h-3.5 text-rose-600" />
@@ -349,8 +364,8 @@ export const KidsLayout: React.FC = () => {
 
                 <div className="relative">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 p-0.5 shadow-xs shrink-0 flex items-center justify-center">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-lg sm:text-xl overflow-hidden">
-                      👦
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                      <Smile className="w-5 h-5 text-amber-700" />
                     </div>
                   </div>
                   <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white" />
@@ -362,7 +377,7 @@ export const KidsLayout: React.FC = () => {
                   </h1>
                   <p className="text-xs font-semibold text-[#64748B] flex items-center gap-1">
                     <span>Hôm nay mình học thêm một chút nữa nhé!</span>
-                    <span>🌞</span>
+                    <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-400 inline shrink-0" />
                   </p>
                 </div>
               </div>
@@ -372,7 +387,13 @@ export const KidsLayout: React.FC = () => {
                 {/* Return to Learner Dashboard Button */}
                 <button
                   type="button"
-                  onClick={() => handleOpenParentGate('/dashboard', 'Trở Về Màn Học Viên', 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.')}
+                  onClick={() =>
+                    handleOpenParentGate(
+                      '/dashboard',
+                      'Trở Về Màn Học Viên',
+                      'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
+                    )
+                  }
                   className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white hover:bg-rose-50 border border-slate-200/90 hover:border-rose-300 text-xs font-black text-slate-700 hover:text-rose-600 shadow-2xs cursor-pointer transition-all active:scale-95 group"
                   title="Thoát chế độ bé & trở về màn học viên"
                 >
@@ -440,12 +461,13 @@ export const KidsLayout: React.FC = () => {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-300 min-h-[48px] min-w-[56px] border-b-4 ${isActive
-                    ? 'bg-gradient-to-t from-orange-400 to-amber-400 text-white font-black scale-[1.08] shadow-md border-orange-600 -translate-y-1'
-                    : 'bg-transparent text-slate-600 font-bold hover:text-slate-900 border-transparent'
-                    }`}
+                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-300 min-h-[48px] min-w-[56px] ${
+                    isActive
+                      ? 'bg-amber-50 text-amber-950 font-black shadow-xs border border-amber-200/80 -translate-y-0.5'
+                      : 'bg-transparent text-slate-600 font-bold hover:text-slate-900 border-transparent'
+                  }`}
                 >
-                  <item.icon size={20} />
+                  <item.icon size={20} className={isActive ? 'text-amber-600' : 'text-slate-500'} />
                   <span className="text-[10px] mt-0.5 leading-tight">{item.label}</span>
                 </NavLink>
               );

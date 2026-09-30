@@ -5,10 +5,11 @@
 // ============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Volume2, Sparkles } from 'lucide-react';
+import { Volume2, Sparkles, Target } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
+import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 
@@ -16,7 +17,6 @@ interface BubbleItem {
   id: string;
   word: string;
   viMeaning: string;
-  icon: string;
   colorClass: string;
   leftPercent: number;
   isPopped: boolean;
@@ -64,17 +64,26 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
 
     setTargetWord(target);
 
+    // Preload audio words
+    voiceService.preloadWords(choices.map((c) => c.word));
+
     const newBubbles: BubbleItem[] = choices.map((item, idx) => ({
       id: `${item.id}_${idx}_${Date.now()}`,
       word: item.word,
       viMeaning: item.viMeaning,
-      icon: item.word === 'cat' ? '🐱' : item.word === 'dog' ? '🐶' : item.word === 'lion' ? '🦁' : item.word === 'elephant' ? '🐘' : item.word === 'apple' ? '🍎' : '🎈',
       colorClass: BUBBLE_THEMES[idx % BUBBLE_THEMES.length].colorClass,
       leftPercent: 10 + idx * 22,
       isPopped: false,
     }));
 
     setBubbles(newBubbles);
+
+    // Speak prompt promptly
+    const promptTimer = setTimeout(() => {
+      voiceService.speakWord(target.word);
+    }, 80);
+
+    return () => clearTimeout(promptTimer);
   }, []);
 
   useEffect(() => {
@@ -102,15 +111,16 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
       const praise = 'Bé ngắm bắn bóng chuẩn lắm!';
       setPraiseVi(praise);
 
-      voiceService.speakWord(bubble.word, {
-        onEnd: () => {
-          voiceService.speakVietnamese(praise, {
-            onEnd: () => {
-              setIsReadyToContinue(true);
-            },
-          });
-        },
-      });
+      // Super-fast responsive audio
+      voiceService.speakWord(bubble.word);
+      setTimeout(() => {
+        voiceService.speakVietnamese(praise);
+      }, 450);
+
+      // Fast continue unlock: 500ms
+      setTimeout(() => {
+        setIsReadyToContinue(true);
+      }, 500);
     } else {
       // WRONG BUBBLE
       soundManager.play('wrong');
@@ -154,17 +164,21 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
       {/* FULL-BLEED SKY ARCADE BUBBLE FIELD */}
       <div className="relative w-full h-full p-4 sm:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-sky-400 via-sky-200 to-indigo-100 select-none">
         {/* Arcade Background Floating Orbs */}
-        <div className="absolute top-6 left-10 text-4xl opacity-50 pointer-events-none select-none">
-          ☁️
+        <div className="absolute top-6 left-10 w-12 h-12 text-white/30 pointer-events-none select-none animate-pulse">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
+          </svg>
         </div>
-        <div className="absolute top-10 right-14 text-4xl opacity-50 pointer-events-none select-none">
-          ☁️
+        <div className="absolute top-10 right-14 w-12 h-12 text-white/30 pointer-events-none select-none animate-pulse">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
+          </svg>
         </div>
 
         {/* Target Callout Banner */}
         <div className="relative z-20 flex flex-col items-center text-center space-y-1">
           <div className="px-6 py-2.5 rounded-full bg-white/95 text-slate-950 font-black text-sm sm:text-base shadow-lg border-2 border-sky-400 flex items-center gap-2">
-            <span className="text-xl animate-bounce">🎯</span>
+            <Target className="w-5 h-5 text-sky-600 animate-spin-slow" />
             <span>BẮN NỔ BÓNG: "{targetWord.word.toUpperCase()}" ({targetWord.viMeaning})</span>
           </div>
           <span className="text-xs font-bold text-slate-700">
@@ -200,9 +214,13 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
                   {/* Glossy Reflection Highlight */}
                   <div className="absolute top-2 left-3 w-6 sm:w-8 h-3 sm:h-4 bg-white/60 rounded-full -rotate-45 pointer-events-none" />
 
-                  <span className="text-2xl sm:text-3xl filter drop-shadow-md">
-                    {bubble.icon}
-                  </span>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
+                    <KidsIllustration
+                      name={bubble.word.toLowerCase()}
+                      className="w-full h-full object-contain filter drop-shadow-md"
+                      alt={bubble.word}
+                    />
+                  </div>
                   <span className="text-sm sm:text-base font-black capitalize mt-0.5 drop-shadow-md">
                     {bubble.word}
                   </span>
@@ -216,7 +234,7 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
         </div>
 
         <div className="relative z-10 text-[11px] font-bold text-slate-700 pb-1">
-          🎈 Arcade Mini-Game — Bong bóng chuyển động mượt mà theo vật lý đàn hồi
+          Arcade Mini-Game — Bong bóng chuyển động mượt mà theo vật lý đàn hồi
         </div>
       </div>
     </KidsGameWrapper>

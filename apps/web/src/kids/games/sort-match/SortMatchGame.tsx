@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Volume2, Sparkles, Check } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
+import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 
@@ -15,16 +16,15 @@ interface SortableItem {
   nameEn: string;
   nameVi: string;
   category: 'fruit' | 'animal';
-  icon: string;
 }
 
 const ALL_SORTABLE_ITEMS: SortableItem[] = [
-  { id: 'apple', nameEn: 'Apple', nameVi: 'Quả táo', category: 'fruit', icon: '🍎' },
-  { id: 'dog', nameEn: 'Dog', nameVi: 'Con chó', category: 'animal', icon: '🐶' },
-  { id: 'banana', nameEn: 'Banana', nameVi: 'Quả chuối', category: 'fruit', icon: '🍌' },
-  { id: 'cat', nameEn: 'Cat', nameVi: 'Con mèo', category: 'animal', icon: '🐱' },
-  { id: 'strawberry', nameEn: 'Strawberry', nameVi: 'Dâu tây', category: 'fruit', icon: '🍓' },
-  { id: 'rabbit', nameEn: 'Rabbit', nameVi: 'Con thỏ', category: 'animal', icon: '🐰' },
+  { id: 'apple', nameEn: 'Apple', nameVi: 'Quả táo', category: 'fruit' },
+  { id: 'dog', nameEn: 'Dog', nameVi: 'Con chó', category: 'animal' },
+  { id: 'banana', nameEn: 'Banana', nameVi: 'Quả chuối', category: 'fruit' },
+  { id: 'cat', nameEn: 'Cat', nameVi: 'Con mèo', category: 'animal' },
+  { id: 'strawberry', nameEn: 'Strawberry', nameVi: 'Dâu tây', category: 'fruit' },
+  { id: 'rabbit', nameEn: 'Rabbit', nameVi: 'Con thỏ', category: 'animal' },
 ];
 
 interface SortMatchGameProps {
@@ -61,6 +61,9 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
 
     const shuffled = [...ALL_SORTABLE_ITEMS].sort(() => Math.random() - 0.5).slice(0, 4);
     setCurrentItems(shuffled);
+
+    // Preload speech for all items in this round
+    voiceService.preloadWords(shuffled.map((s) => s.nameEn));
   }, []);
 
   useEffect(() => {
@@ -113,18 +116,19 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
         const randomPraise = praiseOptions[Math.floor(Math.random() * praiseOptions.length)];
         setPraiseVi(randomPraise);
 
+        soundManager.play('correct');
         setTimeout(() => {
-          soundManager.play('correct');
-          voiceService.speakVietnamese(randomPraise, {
-            onEnd: () => {
-              if (currentRound < TOTAL_ROUNDS) {
-                setIsReadyToContinue(true);
-              } else {
-                setIsGameComplete(true);
-                soundManager.play('celebration');
-              }
-            },
-          });
+          voiceService.speakVietnamese(randomPraise);
+        }, 300);
+
+        // Fast continue unlock: 500ms
+        setTimeout(() => {
+          if (currentRound < TOTAL_ROUNDS) {
+            setIsReadyToContinue(true);
+          } else {
+            setIsGameComplete(true);
+            soundManager.play('celebration');
+          }
         }, 500);
       }
     } else {
@@ -169,13 +173,19 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
                   setSelectedItem(item);
                   voiceService.speakWord(item.nameEn);
                 }}
-                className={`p-3 sm:p-4 rounded-2xl border-3 flex flex-col items-center justify-center shadow-md cursor-pointer transition-all ${
+                className={`p-2.5 sm:p-3.5 rounded-2xl border-3 flex flex-col items-center justify-center shadow-md cursor-pointer transition-all ${
                   isSelected
                     ? 'border-amber-500 bg-amber-100 scale-110 animate-bounce'
                     : 'border-slate-200 bg-white hover:bg-amber-50 hover:scale-105'
                 }`}
               >
-                <span className="text-4xl sm:text-5xl">{item.icon}</span>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
+                  <KidsIllustration
+                    name={item.id}
+                    className="w-full h-full object-contain filter drop-shadow-xs"
+                    alt={item.nameEn}
+                  />
+                </div>
                 <span className="text-xs sm:text-sm font-black text-slate-800 mt-1">
                   {item.nameEn}
                 </span>
@@ -192,18 +202,21 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
             className="p-5 sm:p-6 rounded-3xl bg-rose-50/90 border-3 border-rose-300 hover:border-rose-500 shadow-lg flex flex-col items-center justify-between min-h-[180px] cursor-pointer transition-all hover:scale-105"
           >
             <div className="flex items-center gap-2">
-              <span className="text-3xl">🧺</span>
-              <h4 className="text-sm sm:text-base font-black text-rose-950">
+              <span className="text-sm sm:text-base font-black text-rose-950">
                 Giỏ Trái Cây (Fruits)
-              </h4>
+              </span>
             </div>
 
             {/* Placed Fruit Icons */}
             <div className="flex flex-wrap gap-2 justify-center my-auto">
               {fruitBasket.map((f) => (
-                <span key={f.id} className="text-3xl sm:text-4xl animate-bounce">
-                  {f.icon}
-                </span>
+                <div key={f.id} className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center animate-bounce">
+                  <KidsIllustration
+                    name={f.id}
+                    className="w-full h-full object-contain filter drop-shadow-xs"
+                    alt={f.nameEn}
+                  />
+                </div>
               ))}
             </div>
 
@@ -218,18 +231,21 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
             className="p-5 sm:p-6 rounded-3xl bg-emerald-50/90 border-3 border-emerald-300 hover:border-emerald-500 shadow-lg flex flex-col items-center justify-between min-h-[180px] cursor-pointer transition-all hover:scale-105"
           >
             <div className="flex items-center gap-2">
-              <span className="text-3xl">🐾</span>
-              <h4 className="text-sm sm:text-base font-black text-emerald-950">
+              <span className="text-sm sm:text-base font-black text-emerald-950">
                 Chuồng Thú (Animals)
-              </h4>
+              </span>
             </div>
 
             {/* Placed Animal Icons */}
             <div className="flex flex-wrap gap-2 justify-center my-auto">
               {animalBarn.map((a) => (
-                <span key={a.id} className="text-3xl sm:text-4xl animate-bounce">
-                  {a.icon}
-                </span>
+                <div key={a.id} className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center animate-bounce">
+                  <KidsIllustration
+                    name={a.id}
+                    className="w-full h-full object-contain filter drop-shadow-xs"
+                    alt={a.nameEn}
+                  />
+                </div>
               ))}
             </div>
 

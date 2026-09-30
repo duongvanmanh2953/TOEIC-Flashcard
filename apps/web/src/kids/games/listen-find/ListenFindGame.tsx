@@ -53,10 +53,15 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
     setTargetItem(target);
     setOptions(choices);
 
-    // Audio-first: Pronounce target word clearly
-    setTimeout(() => {
+    // Super-optimization: Preload target and choices voices in browser cache immediately
+    voiceService.preloadWords([target.word, ...choices.map((c) => c.word)]);
+
+    // Audio-first: Pronounce target word briskly (80ms instead of 300ms)
+    const promptTimer = setTimeout(() => {
       voiceService.speakWord(target.word);
-    }, 300);
+    }, 80);
+
+    return () => clearTimeout(promptTimer);
   }, []);
 
   useEffect(() => {
@@ -85,16 +90,17 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
       const praise = celebrationManager.getRandomPraise(false);
       setPraiseVi(praise);
 
-      // Guaranteed sequence: Speak word -> Speak praise -> Enable Continue button
-      voiceService.speakWord(item.word, {
-        onEnd: () => {
-          voiceService.speakVietnamese(praise, {
-            onEnd: () => {
-              setIsReadyToContinue(true);
-            },
-          });
-        },
-      });
+      // Super-fast responsive audio: Speak word immediately, trigger praise in parallel,
+      // and make Continue button ready within 500ms so the child is NEVER stuck waiting!
+      voiceService.speakWord(item.word);
+      setTimeout(() => {
+        voiceService.speakVietnamese(praise);
+      }, 450);
+
+      // Fast continue unlock: 500ms
+      setTimeout(() => {
+        setIsReadyToContinue(true);
+      }, 500);
     } else {
       setResultState('wrong');
       soundManager.play('wrong');
@@ -103,7 +109,7 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
       setTimeout(() => {
         setSelectedId(null);
         setResultState(null);
-      }, 800);
+      }, 450);
     }
   };
 
@@ -145,11 +151,16 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
       {/* FULL-BLEED SUNNY MEADOW SCENE */}
       <div className="relative w-full h-full p-4 sm:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-100">
         {/* Living Meadow Background Decor */}
-        <div className="absolute top-4 left-8 text-4xl opacity-70 animate-bounce pointer-events-none select-none">
-          ☁️
+        <div className="absolute top-4 left-8 w-10 h-10 text-sky-400/40 pointer-events-none select-none animate-pulse">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
+          </svg>
         </div>
-        <div className="absolute top-6 right-12 text-4xl opacity-80 animate-pulse pointer-events-none select-none">
-          ☀️
+        <div className="absolute top-6 right-12 w-10 h-10 text-amber-400/60 pointer-events-none select-none animate-spin-slow">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+            <circle cx="12" cy="12" r="5" />
+            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </div>
         <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-emerald-400 to-transparent pointer-events-none rounded-t-[50%]" />
 
@@ -226,7 +237,7 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
 
                 {/* Grassy Meadow Pedestal */}
                 <div className="w-24 sm:w-32 h-6 bg-emerald-500/80 rounded-[50%] border-t-2 border-emerald-300 shadow-inner flex items-center justify-center -mt-1.5">
-                  <span className="text-[10px] opacity-70">🌸</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-200/80" />
                 </div>
               </div>
             );

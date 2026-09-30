@@ -14,9 +14,13 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    exclude: ['mammoth', 'pdfjs-dist', 'pdfjs-dist/legacy/build/pdf.mjs'],
+  },
   build: {
     chunkSizeWarningLimit: 800,
     rollupOptions: {
+      external: ['mammoth', 'pdfjs-dist/legacy/build/pdf.mjs'],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {

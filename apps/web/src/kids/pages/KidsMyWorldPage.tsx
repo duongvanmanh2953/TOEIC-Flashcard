@@ -65,10 +65,11 @@ interface IslandZone {
   nameVi: string;
   nameEn: string;
   categoryFilter: string;
+  illustration: string;
   icon: any;
   color: string;
-  bgColor: string;
-  borderColor: string;
+  tintBg: string;
+  activeRing: string;
   descriptionVi: string;
 }
 
@@ -78,10 +79,11 @@ const ISLAND_ZONES: IslandZone[] = [
     nameVi: 'Vịnh Muông Thú',
     nameEn: 'Animal Bay',
     categoryFilter: 'animals',
+    illustration: 'lion',
     icon: Heart,
     color: '#d97706',
-    bgColor: 'bg-amber-100',
-    borderColor: 'border-amber-400',
+    tintBg: 'bg-amber-100/70',
+    activeRing: 'ring-amber-300',
     descriptionVi: 'Gặp gỡ những người bạn động vật đáng yêu trong rừng xanh và biển cả.',
   },
   {
@@ -89,10 +91,11 @@ const ISLAND_ZONES: IslandZone[] = [
     nameVi: 'Nông Trại Trái Cây',
     nameEn: 'Fruit & Food Farm',
     categoryFilter: 'fruits',
+    illustration: 'apple',
     icon: Utensils,
     color: '#e11d48',
-    bgColor: 'bg-rose-100',
-    borderColor: 'border-rose-400',
+    tintBg: 'bg-rose-100/70',
+    activeRing: 'ring-rose-300',
     descriptionVi: 'Thu hoạch hoa quả chín mọng và thưởng thức các món ăn ngon.',
   },
   {
@@ -100,10 +103,11 @@ const ISLAND_ZONES: IslandZone[] = [
     nameVi: 'Mái Ấm Gia Đình',
     nameEn: 'Family Haven',
     categoryFilter: 'family',
+    illustration: 'cat',
     icon: Home,
     color: '#059669',
-    bgColor: 'bg-emerald-100',
-    borderColor: 'border-emerald-400',
+    tintBg: 'bg-emerald-100/70',
+    activeRing: 'ring-emerald-300',
     descriptionVi: 'Học từ vựng yêu thương về bố mẹ, ông bà và những người thân yêu.',
   },
   {
@@ -111,10 +115,11 @@ const ISLAND_ZONES: IslandZone[] = [
     nameVi: 'Góc Trường Học',
     nameEn: 'School Corner',
     categoryFilter: 'school',
+    illustration: 'book',
     icon: GraduationCap,
     color: '#0284c7',
-    bgColor: 'bg-sky-100',
-    borderColor: 'border-sky-400',
+    tintBg: 'bg-sky-100/70',
+    activeRing: 'ring-sky-300',
     descriptionVi: 'Lớp học vui vẻ cùng sách vở, bảng viết và đồ dùng học tập.',
   },
   {
@@ -122,10 +127,11 @@ const ISLAND_ZONES: IslandZone[] = [
     nameVi: 'Quảng Trường Giao Tiếp',
     nameEn: 'Phrases Plaza',
     categoryFilter: 'phrases',
+    illustration: 'balloons',
     icon: MessageSquare,
     color: '#7c3aed',
-    bgColor: 'bg-purple-100',
-    borderColor: 'border-purple-400',
+    tintBg: 'bg-purple-100/70',
+    activeRing: 'ring-purple-300',
     descriptionVi: 'Luyện tập các câu chào hỏi, cảm ơn và xin lỗi lễ phép hàng ngày.',
   },
   {
@@ -133,10 +139,11 @@ const ISLAND_ZONES: IslandZone[] = [
     nameVi: 'Trạm Không Gian Kỳ Thú',
     nameEn: 'Space Station',
     categoryFilter: 'transport',
+    illustration: 'rocket',
     icon: Rocket,
     color: '#4f46e5',
-    bgColor: 'bg-indigo-100',
-    borderColor: 'border-indigo-400',
+    tintBg: 'bg-indigo-100/70',
+    activeRing: 'ring-indigo-300',
     descriptionVi: 'Khám phá tên lửa, các vì sao và các phương tiện vi vu bầu trời.',
   },
 ];
@@ -368,41 +375,75 @@ export const KidsMyWorldPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 6 Interactive Learning Zones */}
-      <div className="space-y-4 bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-black text-slate-950 flex items-center gap-2">
-            <Compass className="w-5 h-5 text-emerald-600" />
-            <span>6 Phân Khu Học Tập Theo Chủ Đề</span>
-          </h2>
-          <span className="text-xs font-bold text-slate-500 hidden sm:inline">
-            Chạm vào từng phân khu để dịch chuyển tức thì
-          </span>
+      {/* 6 Interactive Learning Zones as WORLD / HUB Cards */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-xs">
+              <Compass className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                6 Phân Khu Học Tập Theo Chủ Đề
+              </h2>
+              <p className="text-xs font-bold text-slate-400">
+                Chạm vào từng phân khu để dịch chuyển tức thì
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {ISLAND_ZONES.map((zone) => {
             const isCurrent = activeZone === zone.id;
-            const ZoneIcon = zone.icon;
+            const zoneWordsCount = COMPREHENSIVE_VOCABULARY.filter(
+              (w) => zone.categoryFilter === 'all' || w.category === zone.categoryFilter
+            ).length;
+
             return (
               <button
                 key={zone.id}
                 onClick={() => handleSelectZone(zone)}
-                className={`p-4 rounded-3xl border-2 flex flex-col items-center text-center gap-3 transition-all duration-300 cursor-pointer min-h-[110px] justify-center ${
+                className={`relative p-4 sm:p-5 rounded-[28px] flex flex-col items-center text-center gap-2.5 transition-all duration-300 cursor-pointer select-none overflow-hidden ${
                   isCurrent
-                    ? 'bg-white/80 backdrop-blur-xl border-sky-400 shadow-[0_8px_24px_rgba(14,165,233,0.2)] scale-105'
-                    : 'bg-white/40 backdrop-blur-md hover:bg-white/60 border-white/50 hover:border-sky-300 shadow-sm hover:-translate-y-1'
+                    ? `bg-white shadow-[0_16px_32px_-6px_rgba(20,40,70,0.18)] scale-[1.04] -translate-y-1.5 ring-4 ${zone.activeRing}`
+                    : 'bg-white hover:bg-slate-50/80 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:shadow-md hover:-translate-y-1 border border-slate-100'
                 }`}
               >
+                {/* Soft background aura tint */}
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${
-                    isCurrent ? 'bg-gradient-to-br from-sky-400 to-blue-600 text-white' : 'bg-white/80 text-slate-700'
+                  className={`w-16 h-16 sm:w-18 sm:h-18 rounded-2xl ${zone.tintBg} flex items-center justify-center p-2.5 transform transition-transform duration-300 ${
+                    isCurrent ? 'scale-110 filter drop-shadow-md' : 'hover:scale-105'
                   }`}
                 >
-                  <ZoneIcon className="w-6 h-6" />
+                  <KidsIllustration
+                    name={zone.illustration}
+                    className="w-full h-full object-contain filter drop-shadow-xs"
+                  />
                 </div>
-                <div className="leading-tight">
-                  <p className={`text-sm font-black ${isCurrent ? 'text-sky-700' : 'text-slate-800'}`}>{zone.nameVi}</p>
+
+                <div className="w-full">
+                  <p
+                    className={`text-xs sm:text-sm font-black leading-tight ${
+                      isCurrent ? 'text-slate-900' : 'text-slate-700'
+                    }`}
+                  >
+                    {zone.nameVi}
+                  </p>
+                  <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
+                    {zone.nameEn}
+                  </span>
+                </div>
+
+                {/* Word count pill */}
+                <div className="mt-auto">
+                  <span
+                    className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      isCurrent ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {zoneWordsCount > 0 ? `${zoneWordsCount} từ` : 'Khám phá'}
+                  </span>
                 </div>
               </button>
             );
@@ -414,78 +455,114 @@ export const KidsMyWorldPage: React.FC = () => {
       {/* TAB 1: ZONES & VOCABULARY EXPLORATION                            */}
       {/* ================================================================ */}
       {activeTab === 'zones' && (
-        <div className="space-y-6 bg-white/40 backdrop-blur-2xl p-6 sm:p-8 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-white/60">
-          {/* Active Zone Spotlight Card */}
-          <div className="p-5 rounded-3xl bg-sky-50/70 border border-sky-200 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <currentZoneObj.icon className="w-6 h-6" />
+        <div className="space-y-6">
+          {/* Active Zone Spotlight Hero Header */}
+          <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 p-6 sm:p-7 text-white shadow-[0_12px_32px_-6px_rgba(37,99,235,0.25)] flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center p-2.5 shadow-inner shrink-0">
+                <KidsIllustration
+                  name={currentZoneObj.illustration}
+                  className="w-full h-full object-contain filter drop-shadow-md animate-gentle-float"
+                />
               </div>
-              <div>
-                <h2 className="text-lg sm:text-xl font-black text-slate-950 flex items-center gap-2">
-                  <span>{currentZoneObj.nameVi}</span>
-                  <span className="text-xs font-bold text-slate-600">({currentZoneObj.nameEn})</span>
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] sm:text-xs font-black uppercase tracking-wider text-sky-100">
+                  <span>Phân Khu Hiện Tại</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-white mt-1 tracking-tight">
+                  {currentZoneObj.nameVi} —{' '}
+                  <span className="text-sky-200 text-base sm:text-lg font-bold">
+                    {currentZoneObj.nameEn}
+                  </span>
                 </h2>
-                <p className="text-xs font-bold text-slate-700 mt-0.5">
+                <p className="text-xs sm:text-sm font-semibold text-sky-100 mt-0.5 max-w-xl">
                   {currentZoneObj.descriptionVi}
                 </p>
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-sky-200 text-xs font-black text-sky-950">
-              <Sparkles className="w-4 h-4 text-sky-600" />
-              <span>{filteredWords.length} Từ Vựng</span>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 text-xs font-black shrink-0">
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>{filteredWords.length} Từ Vựng Đang Xem</span>
             </div>
           </div>
 
-          {/* Visual Category Selection Grid (Spacious, No horizontal squishing) */}
-          <div className="space-y-2.5 bg-white p-4 sm:p-5 rounded-3xl border-2 border-slate-200">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                Danh Mục Từ Vựng:
+          {/* Visual Category Selection Grid (NO EMOJIS, vector illustrations, word counts) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Danh Mục Từ Vựng</span>
               </span>
               <span className="text-xs font-bold text-slate-500">
                 {filteredWords.length} từ khả dụng
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-2.5">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`p-2.5 sm:p-3 rounded-3xl font-black transition-all duration-300 cursor-pointer border flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px] ${
+                className={`p-3 rounded-2xl font-black transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center gap-1.5 min-h-[96px] ${
                   selectedCategory === 'all'
-                    ? 'bg-white/80 backdrop-blur-xl border-sky-400 text-sky-800 shadow-[0_8px_24px_rgba(14,165,233,0.2)] scale-105'
-                    : 'bg-white/40 backdrop-blur-md hover:bg-white/60 text-slate-700 border-white/50 shadow-sm hover:-translate-y-1'
+                    ? 'bg-indigo-600 text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] scale-[1.03] -translate-y-0.5'
+                    : 'bg-white text-slate-700 shadow-xs hover:shadow-md hover:-translate-y-0.5 border border-slate-100'
                 }`}
               >
-                <Sparkles className={`w-6 h-6 ${selectedCategory === 'all' ? 'text-sky-500' : 'text-sky-600'}`} />
-                <span className="leading-tight text-[11px] sm:text-xs">Tất Cả</span>
+                <Sparkles
+                  className={`w-6 h-6 ${
+                    selectedCategory === 'all' ? 'text-amber-300' : 'text-indigo-500'
+                  }`}
+                />
+                <span className="leading-tight text-xs mt-1">Tất Cả</span>
+                <span
+                  className={`text-[10px] font-bold ${
+                    selectedCategory === 'all' ? 'text-indigo-200' : 'text-slate-400'
+                  }`}
+                >
+                  {COMPREHENSIVE_VOCABULARY.length} từ
+                </span>
               </button>
 
               {KIDS_CATEGORIES.map((cat) => {
                 const isSelected = selectedCategory === cat.id;
+                const catCount = COMPREHENSIVE_VOCABULARY.filter(
+                  (w) => w.category === cat.id
+                ).length;
+
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`p-2 sm:p-3 rounded-3xl font-black transition-all duration-300 cursor-pointer border flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px] overflow-hidden ${
+                    className={`p-3 rounded-2xl font-black transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center gap-1.5 min-h-[96px] overflow-hidden ${
                       isSelected
-                        ? 'bg-white/80 backdrop-blur-xl border-sky-400 text-sky-800 shadow-[0_8px_24px_rgba(14,165,233,0.2)] scale-105'
-                        : 'bg-white/40 backdrop-blur-md hover:bg-white/60 text-slate-700 border-white/50 shadow-sm hover:-translate-y-1'
+                        ? 'bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] scale-[1.03] -translate-y-0.5'
+                        : 'bg-white text-slate-700 shadow-xs hover:shadow-md hover:-translate-y-0.5 border border-slate-100'
                     }`}
                   >
-                    <span className="text-2xl leading-none drop-shadow-sm">{cat.icon || '📖'}</span>
-                    <div className="leading-tight mt-0.5 w-full px-0.5">
-                      <p className="line-clamp-2 text-[10px] sm:text-[11px] leading-tight break-words text-wrap">{cat.nameVi}</p>
+                    <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                      <KidsIllustration
+                        name={cat.illustration}
+                        className="w-full h-full object-contain filter drop-shadow-2xs"
+                      />
                     </div>
+                    <p className="line-clamp-1 text-xs font-black leading-tight w-full mt-1">
+                      {cat.nameVi}
+                    </p>
+                    <span
+                      className={`text-[10px] font-bold ${
+                        isSelected ? 'text-indigo-200' : 'text-slate-400'
+                      }`}
+                    >
+                      {catCount > 0 ? `${catCount} từ` : 'Đang mở'}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Search & Growth Stage Filter: Clean Responsive Stacking */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border-2 border-slate-200">
+          {/* Search & Growth Stage Filter: Clean without heavy borders */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-3xl shadow-xs border border-slate-100">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
@@ -493,12 +570,14 @@ export const KidsMyWorldPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm từ tiếng Anh hoặc nghĩa tiếng Việt..."
-                className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl bg-slate-50 border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[42px]"
+                className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 min-h-[42px]"
               />
             </div>
 
             <div className="flex items-center gap-1.5 flex-wrap justify-end">
-              <span className="text-xs font-bold text-slate-600 hidden md:inline">Giai đoạn:</span>
+              <span className="text-xs font-bold text-slate-500 hidden md:inline">
+                Giai đoạn:
+              </span>
               {[
                 { id: 'all', label: 'Tất cả' },
                 { id: 'sprout', label: 'Mầm non' },
@@ -510,8 +589,8 @@ export const KidsMyWorldPage: React.FC = () => {
                   onClick={() => setSelectedStage(st.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border min-h-[38px] ${
                     selectedStage === st.id
-                      ? 'bg-emerald-500 text-white border-emerald-600'
-                      : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-emerald-50'
+                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50'
                   }`}
                 >
                   {st.label}
@@ -520,7 +599,7 @@ export const KidsMyWorldPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Vocabulary Cards Grid (High contrast, guaranteed readable) */}
+          {/* Vocabulary Cards Grid (Floating illustration hero, zero box borders) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredWords.map((item) => {
               const stageBadge =
@@ -534,42 +613,52 @@ export const KidsMyWorldPage: React.FC = () => {
                 <div
                   key={item.id}
                   onClick={() => handleOpenWord(item)}
-                  className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 hover:border-sky-400 hover:shadow-md transition-all flex flex-col justify-between space-y-4 cursor-pointer group"
+                  className="bg-white p-5 rounded-[28px] shadow-[0_8px_24px_-6px_rgba(20,40,70,0.06)] hover:shadow-[0_16px_32px_-6px_rgba(20,40,70,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between space-y-4 cursor-pointer group border border-slate-100"
                 >
                   <div>
                     <div className="flex items-start justify-between">
+                      {/* Free-floating illustration with gentle background tint */}
                       <div
-                        className="relative z-10 shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-sky-50/70 border border-sky-200/80 flex items-center justify-center p-2 group-hover:scale-105 transition-transform"
+                        className="relative z-10 shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-b from-sky-50 to-indigo-50/50 flex items-center justify-center p-2 group-hover:scale-105 group-hover:-translate-y-0.5 transition-transform filter drop-shadow-xs"
                         style={{ WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)' }}
                       >
-                        <KidsIllustration name={item.word} className="w-full h-full object-contain" />
+                        <KidsIllustration
+                          name={item.word}
+                          className="w-full h-full object-contain"
+                        />
                       </div>
-                      <span className={`text-[11px] font-black px-3 py-1 rounded-full border ${stageBadge.color}`}>
+                      <span
+                        className={`text-[11px] font-black px-3 py-1 rounded-full border ${stageBadge.color}`}
+                      >
                         {stageBadge.label}
                       </span>
                     </div>
 
                     <div className="mt-3">
                       <div className="flex items-baseline gap-2 flex-wrap">
-                        <h3 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-wide break-words">
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-wide break-words group-hover:text-indigo-600 transition-colors">
                           {item.word}
                         </h3>
-                        <span className="text-xs font-bold text-slate-700">{item.phonetic}</span>
+                        <span className="text-xs font-bold text-slate-500">{item.phonetic}</span>
                       </div>
                       <p className="text-xs sm:text-sm font-black text-emerald-700 mt-0.5">
                         {item.viMeaning}
                       </p>
 
-                      <div className="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div className="mt-3 p-3 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-1">
                         <p className="text-xs font-bold text-slate-950 flex items-center gap-1">
                           <ChevronRight className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                           <span>Cụm từ:</span>
-                          <span className="italic font-black text-indigo-900">"{item.phrase}"</span>
+                          <span className="italic font-black text-indigo-900">
+                            "{item.phrase}"
+                          </span>
                         </p>
                         <p className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                          <MessageSquare className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                          <MessageSquare className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           <span>Câu:</span>
-                          <span className="italic font-extrabold text-slate-800">"{item.sentence}"</span>
+                          <span className="italic font-extrabold text-slate-800">
+                            "{item.sentence}"
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -577,7 +666,7 @@ export const KidsMyWorldPage: React.FC = () => {
 
                   {/* Audio Controls Bar */}
                   <div
-                    className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2"
+                    className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -585,7 +674,7 @@ export const KidsMyWorldPage: React.FC = () => {
                         soundManager.playDing();
                         voiceService.speakEnglish(item.word);
                       }}
-                      className="flex-1 py-2 px-2 rounded-xl bg-sky-100 hover:bg-sky-200 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 border border-sky-300 cursor-pointer min-h-[40px] active:scale-95"
+                      className="flex-1 py-2 px-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-950 text-xs font-black flex items-center justify-center gap-1.5 border border-sky-200 cursor-pointer min-h-[40px] active:scale-95 transition-all shadow-2xs"
                       title="Nghe tiếng Anh"
                     >
                       <Volume2 className="w-4 h-4 text-sky-700" />
@@ -597,8 +686,8 @@ export const KidsMyWorldPage: React.FC = () => {
                         soundManager.playPop();
                         voiceService.speakVietnamese(item.viMeaning);
                       }}
-                      className="flex-1 py-2 px-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 border border-rose-300 cursor-pointer min-h-[40px] active:scale-95"
-                      title="Nghe tiếng Việt (Giọng nữ miền Bắc)"
+                      className="flex-1 py-2 px-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-950 text-xs font-black flex items-center justify-center gap-1.5 border border-rose-200 cursor-pointer min-h-[40px] active:scale-95 transition-all shadow-2xs"
+                      title="Nghe tiếng Việt"
                     >
                       <Languages className="w-4 h-4 text-rose-700" />
                       <span>Nghĩa</span>
@@ -606,7 +695,7 @@ export const KidsMyWorldPage: React.FC = () => {
 
                     <button
                       onClick={() => handleOpenWord(item)}
-                      className="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1 border border-emerald-600 cursor-pointer min-h-[40px] active:scale-95"
+                      className="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1 shadow-xs cursor-pointer min-h-[40px] active:scale-95 transition-all"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Chi tiết</span>
@@ -642,19 +731,19 @@ export const KidsMyWorldPage: React.FC = () => {
             {DAILY_PHRASES.map((phr) => (
               <div
                 key={phr.id}
-                className="bg-white p-5 rounded-3xl border-2 border-slate-200 hover:border-sky-400 transition-all space-y-3"
+                className="bg-white p-5 sm:p-6 rounded-[28px] shadow-[0_8px_24px_-6px_rgba(20,40,70,0.06)] hover:shadow-[0_16px_32px_-6px_rgba(20,40,70,0.12)] hover:-translate-y-1 transition-all duration-300 space-y-3 border border-slate-100"
               >
                 <div className="flex items-start justify-between">
-                  <span className="px-3 py-1 rounded-full bg-sky-100 border border-sky-300 text-xs font-black text-sky-950">
+                  <span className="px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-xs font-black text-sky-800">
                     {phr.categoryVi}
                   </span>
-                  <span className="text-xs font-bold text-slate-700">{phr.pronunciationTip}</span>
+                  <span className="text-xs font-bold text-slate-500">{phr.pronunciationTip}</span>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-black text-slate-950">{phr.english}</h3>
+                  <h3 className="text-xl font-black text-slate-900">{phr.english}</h3>
                   <p className="text-sm font-black text-emerald-700 mt-0.5">{phr.vietnamese}</p>
-                  <p className="text-xs font-bold text-slate-700 mt-1 flex items-center gap-1">
+                  <p className="text-xs font-bold text-slate-600 mt-1 flex items-center gap-1">
                     <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span>{phr.contextVi}</span>
                   </p>
@@ -666,7 +755,7 @@ export const KidsMyWorldPage: React.FC = () => {
                       soundManager.playDing();
                       voiceService.speakEnglish(phr.english);
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-950 font-black text-xs flex items-center justify-center gap-1.5 border border-sky-300 cursor-pointer min-h-[40px] active:scale-95"
+                    className="flex-1 py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-950 font-black text-xs flex items-center justify-center gap-1.5 border border-sky-200 cursor-pointer min-h-[40px] active:scale-95 transition-all shadow-2xs"
                   >
                     <Volume2 className="w-4 h-4 text-sky-700" />
                     <span>Nghe tiếng Anh</span>
@@ -677,7 +766,7 @@ export const KidsMyWorldPage: React.FC = () => {
                       soundManager.playPop();
                       voiceService.speakVietnamese(phr.vietnamese);
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-950 font-black text-xs flex items-center justify-center gap-1.5 border border-rose-300 cursor-pointer min-h-[40px] active:scale-95"
+                    className="flex-1 py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-950 font-black text-xs flex items-center justify-center gap-1.5 border border-rose-200 cursor-pointer min-h-[40px] active:scale-95 transition-all shadow-2xs"
                   >
                     <Languages className="w-4 h-4 text-rose-700" />
                     <span>Tiếng Việt</span>

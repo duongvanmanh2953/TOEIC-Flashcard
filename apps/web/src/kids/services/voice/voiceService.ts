@@ -43,8 +43,8 @@ export interface VoiceOptions {
 export const VOICE_CONFIG = {
   english: {
     language: 'en-US',
-    rate: 0.82, // Friendly, clear pacing for young learners
-    pitch: 1.06,
+    rate: 1.0, // Crisp, natural, engaging cadence for kids
+    pitch: 1.05,
     preferredKeywords: [
       'google us english',
       'natural',
@@ -57,8 +57,8 @@ export const VOICE_CONFIG = {
   },
   vietnamese: {
     language: 'vi-VN',
-    rate: 0.88, // Natural, clear Northern female pacing
-    pitch: 1.15, // Sweet, gentle pitch
+    rate: 1.05, // Lively Northern female cadence
+    pitch: 1.1,
     northernFemaleKeywords: [
       'ngọc huyền 2.0',
       'ngọc huyền',
@@ -130,6 +130,30 @@ class VoiceService {
         const audio = new Audio(url);
         audio.preload = 'auto';
         this.audioCache.set(phrase, audio);
+        this.audioCache.set(`vi:${phrase}`, audio);
+      } catch (_) {}
+    });
+  }
+
+  /**
+   * Preload / pre-warm voice audio and speech synthesis for current game words
+   * Ensures 0ms instant playback when tapping cards or answers
+   */
+  public preloadWords(words: string[]) {
+    if (typeof window === 'undefined') return;
+    if (this.voices.length === 0 && this.isSupported()) {
+      this.voices = window.speechSynthesis.getVoices() || [];
+    }
+
+    words.forEach((word) => {
+      const clean = (word || '').trim().toLowerCase();
+      if (!clean || this.audioCache.has(`en:${clean}`)) return;
+
+      try {
+        const url = getGoogleTTSAudioUrl(clean, 'en');
+        const audio = new Audio(url);
+        audio.preload = 'auto';
+        this.audioCache.set(`en:${clean}`, audio);
       } catch (_) {}
     });
   }
@@ -350,53 +374,68 @@ class VoiceService {
 
     this.stop();
 
-    // 1. High-Quality Northern Female Voice via Backend Proxy TTS
-    // Solves Safari/iOS bug where Google TTS is blocked by CORS/Referer
-    // and prevents Safari from reading Vietnamese in an English accent!
-    try {
-      if (cleanText.length <= 300) {
-        let audio: HTMLAudioElement;
-        const cached = this.audioCache.get(`vi:${cleanText}`);
-        if (cached) {
-          audio = cached.cloneNode(true) as HTMLAudioElement;
-        } else {
-          // Direct backend proxy route that streams authentic Vietnamese TTS (Northern female voice)
-          const proxyUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=vi`;
-          audio = new Audio(proxyUrl);
-          audio.volume = 1.0;
-          this.audioCache.set(`vi:${cleanText}`, audio);
-        }
+    let hasEnded = false;
+    const safeOnEnd = () => {
+      if (!hasEnded) {
+        hasEnded = true;
+        options.onEnd?.();
+      }
+    };
 
+    // Safety timeout: Never block user game interaction for more than 1.8 seconds on praise audio
+    const safetyTimer = setTimeout(() => {
+      safeOnEnd();
+    }, 1800);
+
+    const wrappedOptions: VoiceOptions = {
+      ...options,
+      onEnd: () => {
+        clearTimeout(safetyTimer);
+        safeOnEnd();
+      },
+      onError: (err) => {
+        clearTimeout(safetyTimer);
+        options.onError?.(err);
+        safeOnEnd();
+      },
+    };
+
+    // 1. FAST PATH: If native Vietnamese voice is supported in browser, speak with 0ms latency!
+    if (this.isSupported() && this.getNorthernFemaleVietnameseVoice()) {
+      this.speakVietnameseBrowserFallback(cleanText, wrappedOptions);
+      return;
+    }
+
+    // 2. CACHED AUDIO: Instant playback for frequent cheers & phrases
+    const cached = this.audioCache.get(cleanText) || this.audioCache.get(`vi:${cleanText}`);
+    if (cached) {
+      try {
+        const audio = cached.cloneNode(true) as HTMLAudioElement;
         audio.volume = 1.0;
         this.activeAudio = audio;
         this.notify(true);
         kidsAudioManager.duckMusic();
-        options.onStart?.();
+        wrappedOptions.onStart?.();
 
         audio.onended = () => {
           this.notify(false);
           kidsAudioManager.restoreMusic();
           this.activeAudio = null;
-          options.onEnd?.();
+          wrappedOptions.onEnd?.();
         };
 
         audio.onerror = () => {
-          // If proxy fails, try direct Google TTS before falling back
-          this.fallbackToDirectGoogleTTS(cleanText, options);
+          this.speakVietnameseBrowserFallback(cleanText, wrappedOptions);
         };
 
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            this.fallbackToDirectGoogleTTS(cleanText, options);
-          });
-        }
+        const p = audio.play();
+        if (p) p.catch(() => this.speakVietnameseBrowserFallback(cleanText, wrappedOptions));
         return;
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
-    // 2. Fallback to Browser SpeechSynthesis if text is very long or offline
-    this.speakVietnameseBrowserFallback(cleanText, options);
+    // 3. Fallback to direct Google TTS with 0 network proxy hop
+    this.fallbackToDirectGoogleTTS(cleanText, wrappedOptions);
   }
 
   public speakEnglishBackendFallback(cleanText: string, options: VoiceOptions = {}) {
@@ -618,7 +657,7 @@ class VoiceService {
    */
   public speakWord(word: string, options: VoiceOptions = {}) {
     this.speakEnglish(word, {
-      rate: options.rate ?? 0.78, // Extra clear for single words
+      rate: options.rate ?? 1.0, // Crisp, natural, instant pronunciation for games
       ...options,
     });
   }
@@ -628,7 +667,7 @@ class VoiceService {
    */
   public speakSentence(sentence: string, options: VoiceOptions = {}) {
     this.speakEnglish(sentence, {
-      rate: options.rate ?? 0.85,
+      rate: options.rate ?? 1.0,
       ...options,
     });
   }

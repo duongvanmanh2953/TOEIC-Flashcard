@@ -1,6 +1,3 @@
-import mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -62,7 +59,15 @@ async function parseDocx(file: File): Promise<string> {
     ignoreEmptyParagraphs: true,
   };
 
-  const result = await mammoth.convertToHtml({ arrayBuffer }, options);
+  let mammothModule: any = null;
+  try {
+    const mod = await import(/* @vite-ignore */ 'mammoth');
+    mammothModule = mod.default || mod;
+  } catch {
+    throw new Error('Thư viện đọc Word (.docx) chưa khả dụng trên môi trường này.');
+  }
+
+  const result = await mammothModule.convertToHtml({ arrayBuffer }, options);
   let html = result.value || '';
 
   // 1. Strip all <img> tags to fulfill rule "Discard images completely"
@@ -81,7 +86,7 @@ async function parseDocx(file: File): Promise<string> {
   html = html.replace(/<p>\s*(<br\s*\/?>)?\s*<\/p>/gi, '');
 
   if (!html.trim()) {
-    const rawResult = await mammoth.extractRawText({ arrayBuffer });
+    const rawResult = await mammothModule.extractRawText({ arrayBuffer });
     if (rawResult.value.trim()) {
       return parsePlainTextToHtml(rawResult.value);
     }
@@ -98,6 +103,13 @@ async function parsePdf(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
 
   try {
+    let pdfjsLib: any = null;
+    try {
+      pdfjsLib = await import(/* @vite-ignore */ 'pdfjs-dist/legacy/build/pdf.mjs');
+    } catch {
+      throw new Error('Thư viện đọc PDF chưa khả dụng trên môi trường này.');
+    }
+
     if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
     }

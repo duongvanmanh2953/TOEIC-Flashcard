@@ -59,6 +59,9 @@ export const AnimalHuntGame: React.FC<AnimalHuntGameProps> = ({
     setIsReadyToContinue(false);
     const target = JUNGLE_SPOTS[(roundNum - 1) % JUNGLE_SPOTS.length];
     setCurrentTarget(target);
+
+    // Preload all animals audio
+    voiceService.preloadWords(JUNGLE_SPOTS.map((s) => s.animalWord));
   }, []);
 
   useEffect(() => {
@@ -94,20 +97,21 @@ export const AnimalHuntGame: React.FC<AnimalHuntGameProps> = ({
       const praise = `Giỏi quá! Bé đã tìm thấy bạn ${spot.animalVi}!`;
       setPraiseVi(praise);
 
-      voiceService.speakWord(spot.animalWord, {
-        onEnd: () => {
-          voiceService.speakVietnamese(praise, {
-            onEnd: () => {
-              if (currentRound < TOTAL_ROUNDS) {
-                setIsReadyToContinue(true);
-              } else {
-                setIsGameComplete(true);
-                soundManager.play('celebration');
-              }
-            },
-          });
-        },
-      });
+      // Super-fast responsive audio
+      voiceService.speakWord(spot.animalWord);
+      setTimeout(() => {
+        voiceService.speakVietnamese(praise);
+      }, 450);
+
+      // Fast continue unlock: 500ms
+      setTimeout(() => {
+        if (currentRound < TOTAL_ROUNDS) {
+          setIsReadyToContinue(true);
+        } else {
+          setIsGameComplete(true);
+          soundManager.play('celebration');
+        }
+      }, 500);
     } else {
       // WRONG SPOT
       soundManager.play('pop');
