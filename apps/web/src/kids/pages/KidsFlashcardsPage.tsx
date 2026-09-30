@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+// ============================================================================
+// VOCALFLOW KIDS — INTERACTIVE 3D FLASHCARD STACK
+// Full 100dvh Viewport • Swiper/Tinder Swipe Gesture • Physical 3-Card Stack
+// Zero Gray/White Borders • Organic Table Mat • Pure Lucide SVG Icons
+// ============================================================================
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 import { voiceService } from '../services/voice/voiceService';
@@ -12,11 +18,8 @@ import {
   ChevronRight,
   Sparkles,
   Heart,
-  BookOpen,
   VolumeX,
   Shuffle,
-  Smile,
-  Mic,
   Languages,
 } from 'lucide-react';
 
@@ -29,8 +32,8 @@ interface FlashcardItem {
   phonetic: string;
   illustration: string;
   accentColor: string;
-  borderColor: string;
-  bgColor: string;
+  ringColor: string;
+  badgeBg: string;
   phraseEn: string;
   phraseVi: string;
 }
@@ -45,9 +48,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Con chó',
     phonetic: '/dɒɡ/',
     illustration: 'dog',
-    accentColor: 'text-amber-700',
-    borderColor: 'border-amber-300',
-    bgColor: 'bg-amber-50',
+    accentColor: 'text-amber-800',
+    ringColor: 'ring-amber-400/40',
+    badgeBg: 'bg-amber-100/90 text-amber-900',
     phraseEn: 'A friendly playful dog',
     phraseVi: 'Một chú chó thân thiện và tinh nghịch',
   },
@@ -59,9 +62,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Con mèo',
     phonetic: '/kæt/',
     illustration: 'cat',
-    accentColor: 'text-orange-700',
-    borderColor: 'border-orange-300',
-    bgColor: 'bg-orange-50',
+    accentColor: 'text-orange-800',
+    ringColor: 'ring-orange-400/40',
+    badgeBg: 'bg-orange-100/90 text-orange-900',
     phraseEn: 'The cute little cat',
     phraseVi: 'Chú mèo nhỏ xinh xắn',
   },
@@ -73,9 +76,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Con thỏ',
     phonetic: '/ˈræb.ɪt/',
     illustration: 'rabbit',
-    accentColor: 'text-pink-700',
-    borderColor: 'border-pink-300',
-    bgColor: 'bg-pink-50',
+    accentColor: 'text-rose-800',
+    ringColor: 'ring-rose-400/40',
+    badgeBg: 'bg-rose-100/90 text-rose-900',
     phraseEn: 'The white fluffy rabbit',
     phraseVi: 'Chú thỏ trắng lông xù',
   },
@@ -87,9 +90,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Sư tử',
     phonetic: '/ˈlaɪ.ən/',
     illustration: 'lion',
-    accentColor: 'text-amber-800',
-    borderColor: 'border-amber-400',
-    bgColor: 'bg-amber-50',
+    accentColor: 'text-amber-900',
+    ringColor: 'ring-amber-500/40',
+    badgeBg: 'bg-amber-100/90 text-amber-900',
     phraseEn: 'Brave golden lion',
     phraseVi: 'Chú sư tử vàng dũng cảm',
   },
@@ -101,9 +104,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Con voi',
     phonetic: '/ˈel.ɪ.fənt/',
     illustration: 'elephant',
-    accentColor: 'text-blue-700',
-    borderColor: 'border-blue-300',
-    bgColor: 'bg-blue-50',
+    accentColor: 'text-blue-900',
+    ringColor: 'ring-blue-400/40',
+    badgeBg: 'bg-blue-100/90 text-blue-900',
     phraseEn: 'A big gentle elephant',
     phraseVi: 'Chú voi to lớn và hiền lành',
   },
@@ -116,9 +119,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Quả táo',
     phonetic: '/ˈæp.əl/',
     illustration: 'apple',
-    accentColor: 'text-rose-700',
-    borderColor: 'border-rose-300',
-    bgColor: 'bg-rose-50',
+    accentColor: 'text-rose-800',
+    ringColor: 'ring-rose-400/40',
+    badgeBg: 'bg-rose-100/90 text-rose-900',
     phraseEn: 'A sweet red apple',
     phraseVi: 'Một quả táo đỏ ngọt lịm',
   },
@@ -130,9 +133,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Quả chuối',
     phonetic: '/bəˈnɑː.nə/',
     illustration: 'banana',
-    accentColor: 'text-yellow-800',
-    borderColor: 'border-yellow-300',
-    bgColor: 'bg-yellow-50',
+    accentColor: 'text-amber-900',
+    ringColor: 'ring-yellow-400/40',
+    badgeBg: 'bg-yellow-100/90 text-yellow-900',
     phraseEn: 'A ripe yellow banana',
     phraseVi: 'Quả chuối vàng chín mọng',
   },
@@ -144,9 +147,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Bánh Pizza',
     phonetic: '/ˈpiːt.sə/',
     illustration: 'pizza',
-    accentColor: 'text-amber-800',
-    borderColor: 'border-amber-400',
-    bgColor: 'bg-amber-50',
+    accentColor: 'text-amber-900',
+    ringColor: 'ring-amber-500/40',
+    badgeBg: 'bg-amber-100/90 text-amber-900',
     phraseEn: 'Delicious cheesy pizza',
     phraseVi: 'Bánh pizza phô mai thơm ngon',
   },
@@ -158,9 +161,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Bánh mì kẹp',
     phonetic: '/ˈbɜː.ɡər/',
     illustration: 'burger',
-    accentColor: 'text-orange-800',
-    borderColor: 'border-orange-300',
-    bgColor: 'bg-orange-50',
+    accentColor: 'text-orange-900',
+    ringColor: 'ring-orange-400/40',
+    badgeBg: 'bg-orange-100/90 text-orange-900',
     phraseEn: 'Juicy tasty hamburger',
     phraseVi: 'Bánh hamburger đậm đà',
   },
@@ -172,9 +175,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Sữa tươi',
     phonetic: '/mɪlk/',
     illustration: 'milk',
-    accentColor: 'text-sky-700',
-    borderColor: 'border-sky-300',
-    bgColor: 'bg-sky-50',
+    accentColor: 'text-sky-900',
+    ringColor: 'ring-sky-400/40',
+    badgeBg: 'bg-sky-100/90 text-sky-900',
     phraseEn: 'A cup of fresh milk',
     phraseVi: 'Một ly sữa tươi bổ dưỡng',
   },
@@ -187,9 +190,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Xe ô tô',
     phonetic: '/kɑːr/',
     illustration: 'car',
-    accentColor: 'text-red-700',
-    borderColor: 'border-red-300',
-    bgColor: 'bg-red-50',
+    accentColor: 'text-red-900',
+    ringColor: 'ring-red-400/40',
+    badgeBg: 'bg-red-100/90 text-red-900',
     phraseEn: 'A red speedy car',
     phraseVi: 'Chiếc ô tô đỏ chạy nhanh',
   },
@@ -201,9 +204,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Xe buýt',
     phonetic: '/bʌs/',
     illustration: 'bus',
-    accentColor: 'text-amber-800',
-    borderColor: 'border-amber-300',
-    bgColor: 'bg-amber-50',
+    accentColor: 'text-amber-900',
+    ringColor: 'ring-amber-400/40',
+    badgeBg: 'bg-amber-100/90 text-amber-900',
     phraseEn: 'The yellow school bus',
     phraseVi: 'Chiếc xe buýt trường học màu vàng',
   },
@@ -215,9 +218,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Tàu hỏa',
     phonetic: '/treɪn/',
     illustration: 'train',
-    accentColor: 'text-purple-700',
-    borderColor: 'border-purple-300',
-    bgColor: 'bg-purple-50',
+    accentColor: 'text-purple-900',
+    ringColor: 'ring-purple-400/40',
+    badgeBg: 'bg-purple-100/90 text-purple-900',
     phraseEn: 'The magic steam train',
     phraseVi: 'Đoàn tàu hỏa kỳ diệu',
   },
@@ -229,9 +232,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Tên lửa',
     phonetic: '/ˈrɒk.ɪt/',
     illustration: 'rocket',
-    accentColor: 'text-cyan-800',
-    borderColor: 'border-cyan-300',
-    bgColor: 'bg-cyan-50',
+    accentColor: 'text-cyan-900',
+    ringColor: 'ring-cyan-400/40',
+    badgeBg: 'bg-cyan-100/90 text-cyan-900',
     phraseEn: 'Blast off to space rocket',
     phraseVi: 'Tên lửa phóng lên vũ trụ',
   },
@@ -243,9 +246,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Máy bay',
     phonetic: '/ˈeə.pleɪn/',
     illustration: 'airplane',
-    accentColor: 'text-blue-700',
-    borderColor: 'border-blue-300',
-    bgColor: 'bg-blue-50',
+    accentColor: 'text-blue-900',
+    ringColor: 'ring-blue-400/40',
+    badgeBg: 'bg-blue-100/90 text-blue-900',
     phraseEn: 'Fly high in the sky',
     phraseVi: 'Bay lượn trên bầu trời xanh',
   },
@@ -258,9 +261,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Quyển sách',
     phonetic: '/bʊk/',
     illustration: 'book',
-    accentColor: 'text-indigo-700',
-    borderColor: 'border-indigo-300',
-    bgColor: 'bg-indigo-50',
+    accentColor: 'text-indigo-900',
+    ringColor: 'ring-indigo-400/40',
+    badgeBg: 'bg-indigo-100/90 text-indigo-900',
     phraseEn: 'A magical storybook',
     phraseVi: 'Quyển truyện tranh kỳ diệu',
   },
@@ -272,9 +275,9 @@ const FLASHCARD_DECK: FlashcardItem[] = [
     viMeaning: 'Bút chì',
     phonetic: '/ˈpen.səl/',
     illustration: 'pencil',
-    accentColor: 'text-emerald-700',
-    borderColor: 'border-emerald-300',
-    bgColor: 'bg-emerald-50',
+    accentColor: 'text-emerald-900',
+    ringColor: 'ring-emerald-400/40',
+    badgeBg: 'bg-emerald-100/90 text-emerald-900',
     phraseEn: 'Draw a sunny picture',
     phraseVi: 'Vẽ một bức tranh thật đẹp',
   },
@@ -283,54 +286,106 @@ const FLASHCARD_DECK: FlashcardItem[] = [
 export const KidsFlashcardsPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [deck, setDeck] = useState<FlashcardItem[]>(FLASHCARD_DECK);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'carousel' | 'grid'>('carousel');
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
-  const filteredDeck = FLASHCARD_DECK.filter(
+  // Swipe & Drag Gesture State
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [flyOutDirection, setFlyOutDirection] = useState<'left' | 'right' | null>(null);
+
+  const dragStartRef = useRef<{ x: number; y: number; time: number }>({ x: 0, y: 0, time: 0 });
+  const isTransitioningRef = useRef(false);
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const filteredDeck = deck.filter(
     (item) => selectedCategory === 'all' || item.category === selectedCategory
   );
 
+  const totalCards = filteredDeck.length;
   const currentCard = filteredDeck[currentIndex] || filteredDeck[0];
+  const nextCard = totalCards > 1 ? filteredDeck[(currentIndex + 1) % totalCards] : null;
+  const thirdCard = totalCards > 2 ? filteredDeck[(currentIndex + 2) % totalCards] : null;
 
-  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  // Speak word when card appears if not muted
+  useEffect(() => {
+    if (currentCard && !isMuted) {
+      voiceService.speakEnglish(currentCard.word);
+    }
+  }, [currentIndex, currentCard?.id, isMuted]);
 
+  // Clean voice on unmount
+  useEffect(() => {
+    return () => {
+      voiceService.stop();
+    };
+  }, []);
+
+  // Category navigation scroll
   const scrollCategory = (direction: 'left' | 'right') => {
     soundManager.playPop();
     if (categoryScrollRef.current) {
       categoryScrollRef.current.scrollBy({
-        left: direction === 'left' ? -200 : 200,
+        left: direction === 'left' ? -180 : 180,
         behavior: 'smooth',
       });
     }
   };
 
-  const handleFlip = () => {
+  const handleFlip = useCallback(() => {
     soundManager.playClick();
     setIsFlipped((prev) => !prev);
-  };
+  }, []);
 
-  const handleNext = () => {
+  const triggerNext = useCallback(() => {
+    if (isTransitioningRef.current || totalCards <= 1) return;
+    isTransitioningRef.current = true;
     soundManager.playPop();
-    setIsFlipped(false);
-    setCurrentIndex((prev) => (prev + 1) % filteredDeck.length);
-  };
+    setFlyOutDirection('left');
 
-  const handlePrev = () => {
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev + 1) % totalCards);
+      setIsFlipped(false);
+      setFlyOutDirection(null);
+      setDragOffset({ x: 0, y: 0 });
+      isTransitioningRef.current = false;
+    }, 240);
+  }, [totalCards]);
+
+  const triggerPrev = useCallback(() => {
+    if (isTransitioningRef.current || totalCards <= 1) return;
+    isTransitioningRef.current = true;
     soundManager.playPop();
+    setFlyOutDirection('right');
+
+    setTimeout(() => {
+      setCurrentIndex((prev) => (prev - 1 + totalCards) % totalCards);
+      setIsFlipped(false);
+      setFlyOutDirection(null);
+      setDragOffset({ x: 0, y: 0 });
+      isTransitioningRef.current = false;
+    }, 240);
+  }, [totalCards]);
+
+  const handleShuffle = () => {
+    soundManager.playSparkle();
+    setDeck((prev) => [...prev].sort(() => Math.random() - 0.5));
+    setCurrentIndex(0);
     setIsFlipped(false);
-    setCurrentIndex((prev) => (prev - 1 + filteredDeck.length) % filteredDeck.length);
+    setDragOffset({ x: 0, y: 0 });
   };
 
   const handleSpeakEnglish = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    voiceService.speakEnglish(currentCard.word);
+    if (currentCard) voiceService.speakEnglish(currentCard.word);
   };
 
   const handleSpeakVietnamese = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    voiceService.speakVietnameseNorthern(currentCard.viMeaning);
+    if (currentCard) voiceService.speakVietnameseNorthern(currentCard.viMeaning);
   };
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
@@ -341,18 +396,78 @@ export const KidsFlashcardsPage: React.FC = () => {
     );
   };
 
-  // Keyboard navigation & interaction (Section 17: Support click, tap, keyboard: flip, next, prev, audio)
+  // =========================================================================
+  // SWIPE DRAG GESTURE HANDLERS (POINTER EVENTS: TOUCH + MOUSE COMPATIBLE)
+  // =========================================================================
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isTransitioningRef.current) return;
+    // Don't drag if interactive button inside card was clicked
+    if ((e.target as HTMLElement).closest('button')) return;
+
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      time: Date.now(),
+    };
+    setIsDragging(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || isTransitioningRef.current) return;
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = (e.clientY - dragStartRef.current.y) * 0.25; // dampening Y movement
+    setDragOffset({ x: deltaX, y: deltaY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || isTransitioningRef.current) return;
+    setIsDragging(false);
+
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignored if capture was lost
+    }
+
+    const deltaX = dragOffset.x;
+    const duration = Date.now() - dragStartRef.current.time;
+
+    // TAP / CLICK DETECTION: minimal movement and short duration -> Flip card!
+    if (Math.abs(deltaX) < 10 && duration < 320) {
+      handleFlip();
+      setDragOffset({ x: 0, y: 0 });
+      return;
+    }
+
+    // SWIPE THRESHOLD: 80px or fast swipe
+    const isQuickSwipe = Math.abs(deltaX) > 45 && duration < 250;
+    if (deltaX < -80 || (isQuickSwipe && deltaX < 0)) {
+      triggerNext();
+    } else if (deltaX > 80 || (isQuickSwipe && deltaX > 0)) {
+      triggerPrev();
+    } else {
+      // Spring back to center
+      setDragOffset({ x: 0, y: 0 });
+    }
+  };
+
+  const handlePointerCancel = () => {
+    setIsDragging(false);
+    setDragOffset({ x: 0, y: 0 });
+  };
+
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
 
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
-        handleNext();
+        triggerNext();
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
-        handlePrev();
+        triggerPrev();
       } else if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         handleFlip();
@@ -367,342 +482,384 @@ export const KidsFlashcardsPage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredDeck.length, currentCard]);
+  }, [triggerNext, triggerPrev, handleFlip, currentCard]);
+
+  // Stack interpolation progress based on live drag
+  const dragRatio = Math.min(Math.abs(dragOffset.x) / 120, 1);
+
+  // Active card transform
+  let activeTransform = `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) rotate(${dragOffset.x * 0.06}deg)`;
+  let activeTransition = isDragging ? 'none' : 'transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 240ms ease-out';
+  let activeOpacity = 1;
+
+  if (flyOutDirection === 'left') {
+    activeTransform = 'translate3d(-120vw, 0, 0) rotate(-16deg)';
+    activeTransition = 'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease-out';
+    activeOpacity = 0;
+  } else if (flyOutDirection === 'right') {
+    activeTransform = 'translate3d(120vw, 0, 0) rotate(16deg)';
+    activeTransition = 'transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease-out';
+    activeOpacity = 0;
+  }
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 flex flex-col space-y-4 sm:space-y-5 select-none animate-fadeIn">
-      {/* Top Header Banner (Roomy on tablet and mobile, lg:flex-row on desktop) */}
-      <div className="bg-gradient-to-r from-sky-500/95 via-blue-500/95 to-indigo-600/95 backdrop-blur-xl rounded-3xl p-4 sm:p-5 lg:p-6 text-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border border-white/30 shadow-md shrink-0">
-        <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0 flex-1">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xs border border-white/30 shrink-0">
-            <KidsIllustration name="book" className="w-10 h-10 sm:w-12 sm:h-12" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/20 backdrop-blur-md text-[11px] sm:text-xs font-black text-white border border-white/30 mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <span>Học Từ Vựng 3D Tương Tác</span>
+    <div className="w-screen h-[100dvh] max-h-[100dvh] max-w-full overflow-hidden flex flex-col justify-between bg-[#0A0D18] text-slate-100 select-none">
+      {/* ========================================================================= */}
+      {/* 1. HEADER (FLEX-SHRINK: 0, TONAL BORDER, PURE SVG ICONS)                  */}
+      {/* ========================================================================= */}
+      <header className="flex-shrink-0 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-1 flex items-center justify-between gap-3">
+        {/* Left: Back button & Title */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              soundManager.playPop();
+              navigate('/kids');
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#161F36] hover:bg-[#1E2B4B] text-slate-200 text-xs font-bold transition-colors cursor-pointer ring-1 ring-indigo-500/20 active:scale-95 shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-slate-300" />
+            <span>Thoát</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center ring-1 ring-indigo-500/30">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Thẻ Ghi Nhớ Flashcard Cho Bé
-            </h1>
-            <p className="text-xs sm:text-sm font-semibold text-sky-100 mt-0.5 leading-snug">
-              Chạm vào thẻ để lật xem nghĩa và nghe phát âm tiếng Việt
-            </p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xs sm:text-sm lg:text-base font-black text-white tracking-tight">
+                Thẻ Ghi Nhớ
+              </h1>
+              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 ring-1 ring-indigo-500/30 text-[10px] font-black">
+                {totalCards} Từ Vựng
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* View Switcher */}
-        <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md p-1.5 rounded-2xl border border-white/30 shrink-0 self-stretch sm:self-auto justify-center">
+        {/* Center/Right: Category Filter Bar */}
+        <div className="flex items-center gap-1.5">
           <button
-            onClick={() => setViewMode('carousel')}
-            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
-              viewMode === 'carousel'
-                ? 'bg-white text-sky-700 shadow-xs'
-                : 'text-white/90 hover:bg-white/10'
-            }`}
+            type="button"
+            onClick={() => scrollCategory('left')}
+            className="w-7 h-7 rounded-lg bg-[#161F36] hover:bg-[#1E2B4B] text-slate-300 flex items-center justify-center ring-1 ring-indigo-500/20 cursor-pointer active:scale-95 transition-all"
+            title="Danh mục trước"
           >
-            Thẻ Lật Đơn
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer ${
-              viewMode === 'grid'
-                ? 'bg-white text-sky-700 shadow-xs'
-                : 'text-white/90 hover:bg-white/10'
-            }`}
+
+          <div
+            ref={categoryScrollRef}
+            className="flex items-center gap-1.5 overflow-x-auto max-w-[200px] sm:max-w-[340px] md:max-w-md py-0.5 scrollbar-none scroll-smooth"
           >
-            Lưới Toàn Bộ
+            {[
+              { id: 'all', label: 'Tất cả' },
+              { id: 'animals', label: 'Động vật' },
+              { id: 'food', label: 'Đồ ăn' },
+              { id: 'transport', label: 'Xe cộ' },
+              { id: 'objects', label: 'Đồ dùng' },
+            ].map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    soundManager.playClick();
+                    setSelectedCategory(cat.id);
+                    setCurrentIndex(0);
+                    setIsFlipped(false);
+                    setDragOffset({ x: 0, y: 0 });
+                  }}
+                  className={`px-3 py-1 rounded-xl font-black text-[11px] sm:text-xs transition-all whitespace-nowrap cursor-pointer ring-1 ${
+                    isSelected
+                      ? 'bg-indigo-600 text-white ring-indigo-400 shadow-sm'
+                      : 'bg-[#161F36] text-slate-300 ring-indigo-500/20 hover:bg-[#1E2B4B]'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => scrollCategory('right')}
+            className="w-7 h-7 rounded-lg bg-[#161F36] hover:bg-[#1E2B4B] text-slate-300 flex items-center justify-center ring-1 ring-indigo-500/20 cursor-pointer active:scale-95 transition-all"
+            title="Danh mục sau"
+          >
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Category Pills Bar with Prev / Next Navigation Buttons */}
-      <div className="flex items-center gap-2 shrink-0">
-        <button
-          onClick={() => scrollCategory('left')}
-          title="Xem danh mục trước"
-          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-sky-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
+      {/* ========================================================================= */}
+      {/* 2. CARD STAGE / ORGANIC TABLE MAT WITH 3-CARD STACK                       */}
+      {/* ========================================================================= */}
+      <div className="flex-1 min-h-0 w-full px-2 sm:px-4 py-1 flex items-center justify-center overflow-hidden">
+        <div className="w-full max-w-[720px] h-full max-h-[calc(100dvh-130px)] rounded-[32px] sm:rounded-[44px] bg-[#12182B] shadow-[0_24px_60px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(129,140,248,0.18)] flex flex-col items-center justify-center p-3 sm:p-5 relative overflow-hidden ring-1 ring-indigo-500/25">
+          {/* Ambient Table Spotlight */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1C2748_0%,_#0E1424_100%)] pointer-events-none" />
 
-        <div
-          ref={categoryScrollRef}
-          className="flex-1 flex items-center gap-2 overflow-x-auto py-1 scrollbar-none scroll-smooth"
-        >
-          {[
-            { id: 'all', label: 'Tất Cả Thẻ', illustration: 'sun' },
-            { id: 'animals', label: 'Động Vật', illustration: 'dog' },
-            { id: 'food', label: 'Đồ Ăn', illustration: 'apple' },
-            { id: 'transport', label: 'Phương Tiện', illustration: 'car' },
-            { id: 'objects', label: 'Đồ Dùng', illustration: 'pencil' },
-          ].map((cat) => {
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  soundManager.playClick();
-                  setSelectedCategory(cat.id);
-                  setCurrentIndex(0);
-                  setIsFlipped(false);
+          {/* Inner Organic Felt Edge */}
+          <div className="absolute inset-2.5 sm:inset-3.5 rounded-[26px] sm:rounded-[38px] border border-indigo-400/10 pointer-events-none" />
+
+          {/* INNER SAFE CONTAINER FOR STACK */}
+          <div className="relative z-10 w-full max-w-[340px] sm:max-w-[400px] h-[370px] sm:h-[450px] max-h-[64vh] flex items-center justify-center">
+            {/* ================= STACK LAYER 3 (DEEPEST CARD) ================= */}
+            {thirdCard && (
+              <div
+                className="absolute inset-0 rounded-[28px] sm:rounded-[34px] bg-[#1A223B] ring-1 ring-indigo-500/20 shadow-md pointer-events-none transition-all duration-300"
+                style={{
+                  transform: `translate3d(0, ${22 - dragRatio * 10}px, 0) scale(${0.88 + dragRatio * 0.06})`,
+                  opacity: 0.45 + dragRatio * 0.35,
+                  zIndex: 10,
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition-all whitespace-nowrap border cursor-pointer ${
-                  isSelected
-                    ? 'bg-sky-500 text-white border-sky-400 shadow-sm scale-105'
-                    : 'bg-white/80 backdrop-blur-xl text-slate-800 border-white/90 hover:border-sky-300 hover:bg-white shadow-2xs'
-                }`}
-              >
-                <KidsIllustration name={cat.illustration} className="w-5 h-5" />
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          onClick={() => scrollCategory('right')}
-          title="Xem danh mục tiếp"
-          className="w-10 h-10 rounded-2xl bg-white/80 hover:bg-white text-slate-700 hover:text-sky-600 border border-white/90 shadow-xs flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* CAROUSEL FOCUS VIEW */}
-      {viewMode === 'carousel' && currentCard && (
-        <div className="flex-1 w-full flex flex-col items-center justify-center py-2 sm:py-4">
-          <div className="max-w-lg w-full space-y-5">
-          {/* Card Counter & Favorite Indicator */}
-          <div className="flex items-center justify-between px-2">
-            <span className="text-xs font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-              Thẻ {currentIndex + 1} / {filteredDeck.length}
-            </span>
-
-            <button
-              onClick={(e) => toggleFavorite(currentCard.id, e)}
-              className="flex items-center gap-1 text-xs font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 cursor-pointer active:scale-95"
-            >
-              <Heart
-                className={`w-3.5 h-3.5 ${
-                  favorites.includes(currentCard.id)
-                    ? 'text-rose-500 fill-rose-500'
-                    : 'text-rose-400'
-                }`}
               />
-              <span>{favorites.includes(currentCard.id) ? 'Đã yêu thích' : 'Yêu thích'}</span>
-            </button>
-          </div>
+            )}
 
-          {/* 3D FLIP CONTAINER WITH DECK STACK ILLUSION */}
-          <div className="relative w-full h-[380px] sm:h-[420px]">
-            {/* Deck stack layer 2 (bottom) */}
-            <div className="absolute inset-0 rounded-3xl bg-indigo-900/15 border border-indigo-200/40 shadow-sm transform translate-y-3.5 -translate-x-1 -rotate-1.5 pointer-events-none" />
-            {/* Deck stack layer 1 (middle) */}
-            <div className="absolute inset-0 rounded-3xl bg-indigo-950/20 border border-indigo-200/50 shadow-md transform translate-y-2 translate-x-1.5 rotate-1 pointer-events-none" />
-
-            <div
-              onClick={handleFlip}
-              className="kids-flip-card w-full h-full cursor-pointer group select-none relative z-10"
-            >
-              <div className={`kids-flip-inner ${isFlipped ? 'is-flipped' : ''}`}>
-              {/* ================= FRONT SIDE ================= */}
+            {/* ================= STACK LAYER 2 (MIDDLE CARD) ================= */}
+            {nextCard && (
               <div
-                className={`kids-flip-front ${currentCard.bgColor} border-2 ${currentCard.borderColor} rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between text-center`}
+                className="absolute inset-0 rounded-[28px] sm:rounded-[34px] bg-[#1E2847] ring-1 ring-indigo-400/25 shadow-lg pointer-events-none transition-all duration-300"
+                style={{
+                  transform: `translate3d(0, ${11 - dragRatio * 11}px, 0) scale(${0.94 + dragRatio * 0.06})`,
+                  opacity: 0.85 + dragRatio * 0.15,
+                  zIndex: 20,
+                }}
               >
-                {/* Badge Category */}
-                <div className="w-full flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full bg-white/90 border border-slate-200 text-xs font-black text-slate-800">
-                    {currentCard.categoryVi}
-                  </span>
-                  <span className="text-xs font-bold text-slate-600">Chạm để lật ⟳</span>
-                </div>
-
-                {/* Big Visual Illustration */}
-                <div
-                  className="relative z-10 shrink-0 w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/90 border-2 border-slate-200/80 flex items-center justify-center p-4 group-hover:scale-105 transition-transform duration-300"
-                >
-                  <KidsIllustration
-                    name={currentCard.illustration}
-                    className="w-full h-full object-contain animate-animal-breathe"
-                  />
-                </div>
-
-                {/* Word & Hint */}
-                <div className="space-y-1">
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-950 uppercase tracking-wider">
-                    {currentCard.word}
-                  </h2>
-                  <p className="text-xs font-bold text-slate-600">{currentCard.phonetic}</p>
-                </div>
-
-                {/* Quick Audio Hint */}
-                <div className="w-full pt-2 flex items-center justify-center">
-                  <button
-                    onClick={handleSpeakEnglish}
-                    className="px-4 py-2 rounded-2xl bg-white hover:bg-sky-50 border border-sky-200 text-sky-900 text-xs font-black flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
-                  >
-                    <Volume2 className="w-4 h-4 text-sky-500" />
-                    <span>Nghe từ tiếng Anh</span>
-                  </button>
+                {/* Visual Preview on Next Card */}
+                <div className="w-full h-full p-5 sm:p-7 flex flex-col items-center justify-between opacity-30">
+                  <div className="w-full flex items-center justify-between">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-[10px] font-bold text-slate-400">
+                      {nextCard.categoryVi}
+                    </span>
+                  </div>
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-indigo-900/40 p-2 flex items-center justify-center">
+                    <KidsIllustration name={nextCard.illustration} className="w-full h-full object-contain" />
+                  </div>
+                  <div className="h-6" />
                 </div>
               </div>
+            )}
 
-              {/* ================= BACK SIDE ================= */}
+            {/* ================= ACTIVE TOP FLASHCARD (DRAGGABLE & FLIPPABLE) ================= */}
+            {currentCard && (
               <div
-                className={`kids-flip-back bg-white border-2 ${currentCard.borderColor} rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between text-center`}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerCancel}
+                className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none select-none"
+                style={{
+                  transform: activeTransform,
+                  transition: activeTransition,
+                  opacity: activeOpacity,
+                  zIndex: 30,
+                  willChange: 'transform',
+                }}
               >
-                {/* Header of back */}
-                <div className="w-full flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-xs font-black text-emerald-950">
-                    Nghĩa & Câu Ví Dụ
-                  </span>
-                  <RotateCw className="w-4 h-4 text-slate-400 group-hover:rotate-180 transition-transform duration-500" />
-                </div>
+                <div className="kids-flip-card w-full h-full">
+                  <div className={`kids-flip-inner ${isFlipped ? 'is-flipped' : ''}`}>
+                    {/* ================= FRONT SIDE ================= */}
+                    <div
+                      className={`kids-flip-front rounded-[28px] sm:rounded-[34px] bg-gradient-to-b from-[#F8FAFC] via-white to-[#EEF2FF] p-5 sm:p-7 flex flex-col items-center justify-between text-center overflow-hidden ring-1 ${currentCard.ringColor} shadow-[0_20px_50px_rgba(0,0,0,0.55)]`}
+                    >
+                      {/* Top Bar: Category Pill & Favorite */}
+                      <div className="w-full flex items-center justify-between">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-black tracking-wide ${currentCard.badgeBg}`}
+                        >
+                          {currentCard.categoryVi}
+                        </span>
 
-                {/* Illustration Medium */}
-                <div
-                  className="relative z-10 shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center p-2"
-                >
-                  <KidsIllustration name={currentCard.illustration} className="w-full h-full object-contain" />
-                </div>
+                        <button
+                          type="button"
+                          onClick={(e) => toggleFavorite(currentCard.id, e)}
+                          className="p-1.5 rounded-full text-rose-500 hover:bg-rose-50 active:scale-90 transition-transform cursor-pointer"
+                          title="Yêu thích thẻ này"
+                        >
+                          <Heart
+                            className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                              favorites.includes(currentCard.id)
+                                ? 'fill-rose-500 text-rose-500'
+                                : 'text-slate-400'
+                            }`}
+                          />
+                        </button>
+                      </div>
 
-                {/* English + Vietnamese Meanings with high contrast */}
-                <div className="space-y-1">
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-950 uppercase">
-                    {currentCard.word}
-                  </h3>
-                  <p className="text-lg sm:text-xl font-black text-emerald-700">
-                    {currentCard.viMeaning}
-                  </p>
-                  <p className="text-xs font-bold text-slate-600">{currentCard.phonetic}</p>
-                </div>
+                      {/* Center Illustration with subtle breathe motion */}
+                      <div className="relative shrink-0 w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-indigo-50/70 p-4 sm:p-5 flex items-center justify-center shadow-inner">
+                        <KidsIllustration
+                          name={currentCard.illustration}
+                          className="w-full h-full object-contain filter drop-shadow-md animate-animal-breathe"
+                          alt={currentCard.word}
+                        />
+                      </div>
 
-                {/* Example phrase box */}
-                <div className="w-full p-3 rounded-2xl bg-sky-50/80 border border-sky-200/80 text-left space-y-1">
-                  <p className="text-xs font-black text-slate-800">"{currentCard.phraseEn}"</p>
-                  <p className="text-[11px] font-bold text-sky-700">👉 {currentCard.phraseVi}</p>
-                </div>
+                      {/* Word & Phonetic */}
+                      <div className="space-y-1">
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase tracking-wider">
+                          {currentCard.word}
+                        </h2>
+                        <p className="text-xs sm:text-sm font-bold text-slate-500">
+                          {currentCard.phonetic}
+                        </p>
+                      </div>
 
-                {/* Audio Action Buttons */}
-                <div className="w-full grid grid-cols-2 gap-2 pt-1">
-                  <button
-                    onClick={handleSpeakEnglish}
-                    className="py-2.5 px-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
-                  >
-                    <Volume2 className="w-3.5 h-3.5 text-white" />
-                    <span>Phát tiếng Anh</span>
-                  </button>
+                      {/* English Pronunciation Trigger */}
+                      <div className="w-full flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={handleSpeakEnglish}
+                          className="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-md shadow-indigo-500/25 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <Volume2 className="w-4 h-4 text-white" />
+                          <span>Nghe phát âm</span>
+                        </button>
+                      </div>
+                    </div>
 
-                  <button
-                    onClick={handleSpeakVietnamese}
-                    className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
-                  >
-                    <Languages className="w-3.5 h-3.5 text-white" />
-                    <span>Phát tiếng Việt</span>
-                  </button>
+                    {/* ================= BACK SIDE ================= */}
+                    <div
+                      className={`kids-flip-back rounded-[28px] sm:rounded-[34px] bg-gradient-to-b from-[#F8FAFC] via-white to-[#EFF6FF] p-5 sm:p-7 flex flex-col items-center justify-between text-center overflow-hidden ring-2 ring-emerald-400/50 shadow-[0_20px_50px_rgba(0,0,0,0.55)]`}
+                    >
+                      {/* Top Bar: Meaning Pill & Flip Icon */}
+                      <div className="w-full flex items-center justify-between">
+                        <span className="px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-900 text-xs font-black">
+                          Ý nghĩa & Ví dụ
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={handleFlip}
+                          className="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 active:scale-90 transition-transform cursor-pointer"
+                          title="Lật lại mặt trước"
+                        >
+                          <RotateCw className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Small Illustration Preview */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-indigo-50/70 p-2 flex items-center justify-center shadow-inner">
+                        <KidsIllustration
+                          name={currentCard.illustration}
+                          className="w-full h-full object-contain"
+                          alt={currentCard.word}
+                        />
+                      </div>
+
+                      {/* English + Vietnamese Typography */}
+                      <div className="space-y-1">
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-900 uppercase">
+                          {currentCard.word}
+                        </h3>
+                        <p className="text-xl sm:text-2xl font-black text-emerald-700">
+                          {currentCard.viMeaning}
+                        </p>
+                        <p className="text-xs font-bold text-slate-500">{currentCard.phonetic}</p>
+                      </div>
+
+                      {/* Example Phrase Box */}
+                      <div className="w-full p-3 sm:p-3.5 rounded-2xl bg-indigo-50/80 ring-1 ring-indigo-200/50 text-left space-y-1">
+                        <p className="text-xs sm:text-sm font-black text-slate-900">
+                          "{currentCard.phraseEn}"
+                        </p>
+                        <p className="text-[11px] sm:text-xs font-bold text-indigo-700">
+                          {currentCard.phraseVi}
+                        </p>
+                      </div>
+
+                      {/* Two Audio Buttons */}
+                      <div className="w-full grid grid-cols-2 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={handleSpeakEnglish}
+                          className="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/25 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <Volume2 className="w-3.5 h-3.5 text-white" />
+                          <span>Tiếng Anh</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleSpeakVietnamese}
+                          className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <Languages className="w-3.5 h-3.5 text-white" />
+                          <span>Tiếng Việt</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-          </div>
-
-          {/* Navigation Controls Bar */}
-          <div className="flex items-center justify-between gap-3 pt-1.5">
-            <button
-              onClick={handlePrev}
-              className="flex-1 py-3 px-4 rounded-2xl bg-white/70 backdrop-blur-xl hover:bg-white/90 text-slate-800 font-black text-sm border border-white/80 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
-            >
-              <ArrowLeft className="w-4 h-4 text-slate-600" />
-              <span>Thẻ trước</span>
-            </button>
-
-            <button
-              onClick={handleFlip}
-              className="py-3 px-5 rounded-2xl bg-sky-50/80 backdrop-blur-xl hover:bg-sky-100 text-sky-800 font-black text-sm border border-sky-200/80 flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
-            >
-              <RotateCw className="w-4 h-4 text-sky-600" />
-              <span>Lật thẻ</span>
-            </button>
-
-            <button
-              onClick={handleNext}
-              className="flex-1 py-3 px-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-sm border border-sky-600 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95"
-            >
-              <span>Thẻ tiếp</span>
-              <ArrowRight className="w-4 h-4 text-white" />
-            </button>
-          </div>
-
-          {/* Quick Interactive Hints / Keyboard Legend */}
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold text-slate-600 text-center">
-            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
-              ⌨️ Phím tắt: ⬅️ / ➡️ Đổi thẻ
-            </span>
-            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
-              Space / Click: Lật thẻ
-            </span>
-            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
-              Phím E: Nghe Tiếng Anh
-            </span>
-            <span className="px-3 py-1 rounded-full bg-white/50 backdrop-blur-md border border-white/60 shadow-2xs">
-              Phím V: Nghe Tiếng Việt
-            </span>
+            )}
           </div>
         </div>
       </div>
-      )}
 
-      {/* GRID VIEW (ALL CARDS AT ONCE) */}
-      {viewMode === 'grid' && (
-        <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
-          {filteredDeck.map((card) => (
-            <div
-              key={card.id}
-              onClick={() => {
-                voiceService.speakEnglish(card.word);
-              }}
-              className={`p-4 rounded-3xl ${card.bgColor} border-2 ${card.borderColor} hover:scale-105 hover:shadow-md transition-all flex flex-col items-center text-center justify-between gap-3 cursor-pointer group`}
-            >
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white/90 border border-slate-200 flex items-center justify-center p-2 shadow-xs">
-                <KidsIllustration name={card.illustration} className="w-full h-full" />
-              </div>
+      {/* ========================================================================= */}
+      {/* 3. BOTTOM CONTROLS (FLEX-SHRINK: 0, MINIMAL, NO EMOJI)                    */}
+      {/* ========================================================================= */}
+      <footer className="flex-shrink-0 w-full max-w-xl mx-auto px-4 pb-2.5 sm:pb-3 pt-1 flex items-center justify-between gap-3">
+        {/* Previous Card Button */}
+        <button
+          type="button"
+          onClick={triggerPrev}
+          className="flex-1 py-2.5 sm:py-3 px-3 rounded-xl bg-[#161F36] hover:bg-[#1E2B4B] text-slate-200 font-bold text-xs sm:text-sm ring-1 ring-indigo-500/20 flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95 shadow-sm"
+        >
+          <ArrowLeft className="w-4 h-4 text-slate-300" />
+          <span>Trước</span>
+        </button>
 
-              <div>
-                <h3 className="text-xl font-black text-slate-950 uppercase">{card.word}</h3>
-                <p className="text-xs font-black text-emerald-700 mt-0.5">{card.viMeaning}</p>
-                <p className="text-[11px] font-bold text-slate-700">{card.phonetic}</p>
-              </div>
+        {/* Flip Action Button */}
+        <button
+          type="button"
+          onClick={handleFlip}
+          className="py-2.5 sm:py-3 px-4 sm:px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs sm:text-sm ring-1 ring-indigo-400 flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/25 transition-all cursor-pointer active:scale-95"
+        >
+          <RotateCw className="w-4 h-4 text-white" />
+          <span>Lật thẻ</span>
+        </button>
 
-              <div className="w-full pt-2 border-t border-slate-200/80 flex items-center justify-between gap-1">
-                <span className="text-[10px] font-bold text-slate-700 truncate">{card.categoryVi}</span>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      voiceService.speakEnglish(card.word);
-                    }}
-                    title="Nghe tiếng Anh"
-                    className="p-1.5 rounded-full bg-white text-sky-600 hover:bg-sky-100 hover:scale-110 transition-all border border-slate-200 cursor-pointer"
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      voiceService.speakVietnameseNorthern(card.viMeaning);
-                    }}
-                    title="Phát tiếng Việt"
-                    className="p-1.5 rounded-full bg-white text-emerald-600 hover:bg-emerald-100 hover:scale-110 transition-all border border-slate-200 cursor-pointer"
-                  >
-                    <Languages className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+        {/* Next Card Button */}
+        <button
+          type="button"
+          onClick={triggerNext}
+          className="flex-1 py-2.5 sm:py-3 px-3 rounded-xl bg-[#161F36] hover:bg-[#1E2B4B] text-slate-200 font-bold text-xs sm:text-sm ring-1 ring-indigo-500/20 flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95 shadow-sm"
+        >
+          <span>Tiếp</span>
+          <ArrowRight className="w-4 h-4 text-slate-300" />
+        </button>
+
+        {/* Secondary controls: Shuffle & Mute */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleShuffle}
+            className="p-2 sm:p-2.5 rounded-xl bg-[#161F36] hover:bg-[#1E2B4B] text-slate-300 ring-1 ring-indigo-500/20 transition-colors cursor-pointer active:scale-95"
+            title="Xáo trộn danh sách thẻ"
+          >
+            <Shuffle className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMuted(!isMuted)}
+            className="p-2 sm:p-2.5 rounded-xl bg-[#161F36] hover:bg-[#1E2B4B] text-slate-300 ring-1 ring-indigo-500/20 transition-colors cursor-pointer active:scale-95"
+            title={isMuted ? 'Bật giọng đọc' : 'Tắt giọng đọc'}
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-rose-400" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-indigo-400" />
+            )}
+          </button>
         </div>
-      )}
+      </footer>
     </div>
   );
 };

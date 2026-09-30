@@ -157,7 +157,10 @@ export const KidsLayout: React.FC = () => {
 
   const isLessonMode = location.pathname.startsWith('/kids/lesson');
   const isGamePlayingMode = location.pathname === '/kids/games' && new URLSearchParams(location.search).has('game');
-  const isFocusMode = isLessonMode || isGamePlayingMode;
+  const isFlashcardsMode =
+    location.pathname.startsWith('/kids/flashcards') ||
+    location.pathname.startsWith('/kids/vocabulary');
+  const isFocusMode = isLessonMode || isGamePlayingMode || isFlashcardsMode;
 
   const renderSidebarContent = (isDrawer: boolean) => (
     <div className="h-full flex flex-col justify-between overflow-hidden bg-white">
@@ -294,7 +297,13 @@ export const KidsLayout: React.FC = () => {
   );
 
   return (
-    <div className={`kids-layout min-h-screen min-h-[100dvh] bg-[#F7FBFF] text-slate-800 font-sans select-none flex flex-col relative overflow-x-hidden ${isFocusMode ? 'pb-4' : 'pb-24 lg:pb-6'}`}>
+    <div
+      className={`kids-layout ${
+        isFocusMode
+          ? 'h-screen h-[100dvh] max-h-[100dvh] w-screen max-w-full overflow-hidden p-0 m-0'
+          : 'min-h-screen min-h-[100dvh] pb-24 lg:pb-6 overflow-x-hidden'
+      } bg-[#0A0E1A] text-slate-100 font-sans select-none flex flex-col relative`}
+    >
       {/* Global World Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-sky-50">
         <img
@@ -349,7 +358,7 @@ export const KidsLayout: React.FC = () => {
       {/* ========================================================================= */}
       {/* 3. MAIN CONTENT AREA (Offset by sidebar width on desktop)                 */}
       {/* ========================================================================= */}
-      <div className={`flex-1 flex flex-col min-w-0 ${!isFocusMode ? 'lg:pl-64 xl:pl-72' : ''}`}>
+      <div className={`flex-1 flex flex-col min-w-0 ${!isFocusMode ? 'lg:pl-64 xl:pl-72' : 'h-screen h-[100dvh] max-h-[100dvh] overflow-hidden'}`}>
         {/* Top Header HUD (Pixel-perfect matching prototype) */}
         {!isFocusMode && (
           <header className="sticky top-0 z-30 bg-[#F7FBFF]/90 backdrop-blur-xl border-b border-sky-100/70 px-4 sm:px-6 lg:px-8 py-3 shadow-2xs">
@@ -443,7 +452,13 @@ export const KidsLayout: React.FC = () => {
         )}
 
         {/* Main Content Body */}
-        <main className="flex-1 w-full h-full flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8 relative z-10">
+        <main
+          className={`flex-1 w-full flex flex-col relative z-10 ${
+            isFocusMode
+              ? 'h-full max-h-[100dvh] overflow-hidden p-0 m-0'
+              : 'h-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8'
+          }`}
+        >
           <Outlet />
         </main>
       </div>
