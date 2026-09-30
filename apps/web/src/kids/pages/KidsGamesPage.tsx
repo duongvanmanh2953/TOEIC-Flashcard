@@ -366,10 +366,10 @@ export const KidsGamesPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 2. TODAY'S ADVENTURE ("Gợi Ý Cho Bé Hôm Nay")                     */}
       {/* ================================================================ */}
-      <div className="space-y-4">
+      <div className="p-5 sm:p-7 rounded-[36px] bg-white/75 backdrop-blur-xl border-2 border-white/80 shadow-[0_12px_32px_-6px_rgba(20,40,70,0.06)] space-y-5">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shadow-xs">
               <Sparkles className="w-5 h-5 text-amber-600" />
             </div>
             <div>
@@ -386,7 +386,7 @@ export const KidsGamesPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
           {recommendations.map((rec) => {
             const game = rec.game;
             const theme = getGameTheme(game.id);
@@ -395,7 +395,7 @@ export const KidsGamesPage: React.FC = () => {
               <div
                 key={game.id}
                 onClick={() => handleSelectGame(game.id)}
-                className="group relative overflow-hidden rounded-[28px] bg-white p-4 sm:p-5 shadow-[0_8px_24px_-6px_rgba(20,40,70,0.06)] hover:shadow-[0_16px_32px_-6px_rgba(20,40,70,0.12)] hover:-translate-y-1 transition-all duration-300 cursor-pointer flex items-center justify-between gap-4 border border-slate-100"
+                className="group relative overflow-hidden rounded-[28px] bg-white/90 backdrop-blur-md p-4 sm:p-5 shadow-[0_8px_24px_-6px_rgba(20,40,70,0.06)] hover:shadow-[0_16px_32px_-6px_rgba(20,40,70,0.14)] hover:-translate-y-1 transition-all duration-300 cursor-pointer flex items-center justify-between gap-4 border border-white hover:border-sky-300"
               >
                 {/* Hero focal mini illustration in soft tinted container */}
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -441,10 +441,10 @@ export const KidsGamesPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 3. WORLD NAVIGATION / WORLD SELECTOR CARDS                       */}
       {/* ================================================================ */}
-      <div className="space-y-4">
+      <div className="p-5 sm:p-7 rounded-[36px] bg-white/75 backdrop-blur-xl border-2 border-white/80 shadow-[0_12px_32px_-6px_rgba(20,40,70,0.06)] space-y-5">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center shadow-xs">
               <Globe2 className="w-5 h-5 text-sky-600" />
             </div>
             <div>
@@ -479,7 +479,7 @@ export const KidsGamesPage: React.FC = () => {
         {/* Large Interactive World Cards Track */}
         <div
           ref={worldsScrollRef}
-          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto py-2 scrollbar-none scroll-smooth px-1"
+          className="flex items-stretch gap-4 sm:gap-5 overflow-x-auto py-3 scrollbar-none scroll-smooth px-1"
         >
           {/* "All Worlds" Card */}
           <button
@@ -487,16 +487,21 @@ export const KidsGamesPage: React.FC = () => {
               soundManager.playPop();
               setSelectedWorldTab('all');
             }}
-            className={`flex-1 min-w-[210px] max-w-[240px] p-4 rounded-3xl text-left transition-all duration-300 cursor-pointer flex flex-col justify-between shrink-0 select-none ${
+            className={`flex-1 min-w-[210px] max-w-[240px] p-4.5 rounded-3xl text-left transition-all duration-300 cursor-pointer flex flex-col justify-between shrink-0 select-none relative overflow-hidden ${
               selectedWorldTab === 'all'
-                ? 'bg-gradient-to-br from-indigo-500 to-sky-600 text-white shadow-[0_12px_28px_rgba(99,102,241,0.3)] scale-[1.03] -translate-y-1'
-                : 'bg-white text-slate-800 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:shadow-md hover:-translate-y-0.5 border border-slate-100'
+                ? 'bg-gradient-to-br from-indigo-600 via-sky-600 to-blue-700 text-white ring-4 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_16px_36px_-6px_rgba(251,191,36,0.5)] scale-[1.04] -translate-y-2 z-10'
+                : 'bg-white/80 backdrop-blur-md text-slate-800 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:bg-white hover:shadow-md hover:-translate-y-1 border-2 border-white/80'
             }`}
           >
+            {/* Shimmering Top Edge for Active Tab */}
+            {selectedWorldTab === 'all' && (
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300" />
+            )}
+
             <div className="flex items-start justify-between">
               <div
                 className={`w-12 h-12 rounded-2xl flex items-center justify-center p-2 shadow-xs ${
-                  selectedWorldTab === 'all' ? 'bg-white/20' : 'bg-indigo-50'
+                  selectedWorldTab === 'all' ? 'bg-white/20 backdrop-blur-md' : 'bg-indigo-50'
                 }`}
               >
                 <Compass
@@ -506,11 +511,11 @@ export const KidsGamesPage: React.FC = () => {
               <span
                 className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
                   selectedWorldTab === 'all'
-                    ? 'bg-white/20 text-white'
+                    ? 'bg-amber-400 text-amber-950 shadow-xs flex items-center gap-0.5'
                     : 'bg-indigo-50 text-indigo-700'
                 }`}
               >
-                17 Game
+                {selectedWorldTab === 'all' ? '⭐ ĐANG XEM' : '17 Game'}
               </span>
             </div>
 
@@ -518,7 +523,7 @@ export const KidsGamesPage: React.FC = () => {
               <h3 className="font-black text-sm sm:text-base leading-tight">Toàn Bộ Bản Đồ</h3>
               <p
                 className={`text-[11px] font-semibold mt-0.5 ${
-                  selectedWorldTab === 'all' ? 'text-sky-100' : 'text-slate-400'
+                  selectedWorldTab === 'all' ? 'text-sky-100 font-bold' : 'text-slate-400'
                 }`}
               >
                 Tất cả 6 vùng đất
@@ -538,12 +543,17 @@ export const KidsGamesPage: React.FC = () => {
                   soundManager.playPop();
                   setSelectedWorldTab(world.id);
                 }}
-                className={`flex-1 min-w-[210px] max-w-[240px] p-4 rounded-3xl text-left transition-all duration-300 cursor-pointer flex flex-col justify-between shrink-0 select-none ${
+                className={`flex-1 min-w-[210px] max-w-[240px] p-4.5 rounded-3xl text-left transition-all duration-300 cursor-pointer flex flex-col justify-between shrink-0 select-none relative overflow-hidden ${
                   isSelected
-                    ? `bg-gradient-to-br ${visual.ambientGradient} text-white shadow-[0_12px_28px_rgba(0,0,0,0.2)] scale-[1.03] -translate-y-1`
-                    : 'bg-white text-slate-800 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:shadow-md hover:-translate-y-0.5 border border-slate-100'
+                    ? `bg-gradient-to-br ${visual.ambientGradient} text-white ring-4 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_16px_36px_-6px_rgba(251,191,36,0.5)] scale-[1.04] -translate-y-2 z-10`
+                    : 'bg-white/80 backdrop-blur-md text-slate-800 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:bg-white hover:shadow-md hover:-translate-y-1 border-2 border-white/80'
                 }`}
               >
+                {/* Shimmering Top Edge for Active Tab */}
+                {isSelected && (
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300" />
+                )}
+
                 <div className="flex items-start justify-between">
                   <div
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center p-2 shadow-xs ${
@@ -558,11 +568,11 @@ export const KidsGamesPage: React.FC = () => {
                   <span
                     className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
                       isSelected
-                        ? 'bg-white/20 text-white'
+                        ? 'bg-amber-400 text-amber-950 shadow-xs flex items-center gap-0.5'
                         : 'bg-slate-100 text-slate-600'
                     }`}
                   >
-                    {world.gameIds.length} Game
+                    {isSelected ? '⭐ ĐANG XEM' : `${world.gameIds.length} Game`}
                   </span>
                 </div>
 
@@ -570,7 +580,7 @@ export const KidsGamesPage: React.FC = () => {
                   <h3 className="font-black text-sm sm:text-base leading-tight">{world.nameVi}</h3>
                   <p
                     className={`text-[11px] font-semibold mt-0.5 truncate ${
-                      isSelected ? 'text-white/80' : 'text-slate-400'
+                      isSelected ? 'text-white/90 font-bold' : 'text-slate-400'
                     }`}
                   >
                     {world.nameEn}
@@ -580,7 +590,7 @@ export const KidsGamesPage: React.FC = () => {
                   <div className="mt-2.5 w-full bg-black/10 rounded-full h-1.5 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
-                        isSelected ? 'bg-white' : 'bg-emerald-500'
+                        isSelected ? 'bg-amber-300' : 'bg-emerald-500'
                       }`}
                       style={{ width: '100%' }}
                     />
@@ -595,7 +605,7 @@ export const KidsGamesPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 4. WORLD CHAPTERS & GAME CARD GRIDS                              */}
       {/* ================================================================ */}
-      <div className="space-y-12">
+      <div className="space-y-16">
         {KIDS_GAME_WORLDS.filter(
           (w) => selectedWorldTab === 'all' || w.id === selectedWorldTab
         ).map((world, worldIdx) => {

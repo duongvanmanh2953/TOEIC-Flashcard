@@ -186,8 +186,8 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
           </span>
         </div>
 
-        {/* Floating Soap Bubbles Field */}
-        <div className="relative z-10 w-full max-w-3xl my-auto h-72 sm:h-80 flex items-center justify-around">
+        {/* Floating Soap Bubbles Field (Wider & Spaced for Comfort) */}
+        <div className="relative z-10 w-full max-w-4xl my-auto py-8 sm:py-12 flex items-center justify-around gap-4 sm:gap-8">
           {bubbles.map((bubble, idx) => {
             const isTarget = bubble.word.toLowerCase() === targetWord.word.toLowerCase();
             const isPopping = poppedId === bubble.id;

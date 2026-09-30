@@ -103,7 +103,7 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = ({
       className={`w-full mx-auto select-none transition-all duration-300 flex flex-col ${
         isFocusMode
           ? 'fixed inset-0 z-50 p-2 sm:p-4 bg-slate-950/90 overflow-y-auto'
-          : 'max-w-5xl space-y-2 sm:space-y-3'
+          : 'max-w-6xl space-y-4 sm:space-y-6 py-2'
       }`}
     >
       {/* 1. ULTRA-SLEEK FLOATING LIQUID GLASS HUD */}
@@ -233,7 +233,7 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = ({
       </header>
 
       {/* 2. FULL BLEED IMMERSIVE GAME WORLD CANVAS */}
-      <main className="relative z-10 w-full flex-1 rounded-3xl overflow-hidden shadow-lg border-2 sm:border-4 border-white/90 bg-white min-h-[460px] sm:min-h-[520px] flex flex-col justify-center">
+      <main className="relative z-10 w-full flex-1 rounded-[32px] sm:rounded-[36px] overflow-hidden shadow-2xl border-2 sm:border-4 border-white/95 bg-white min-h-[560px] sm:min-h-[640px] flex flex-col justify-center">
         {children}
 
         {/* 3. EXPLICIT NON-AUTO ADVANCING CONTINUE BAR (SECTION 8) */}

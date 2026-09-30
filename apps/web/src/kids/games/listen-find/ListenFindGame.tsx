@@ -179,7 +179,7 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
         </div>
 
         {/* 4 Interactive Standing Objects on Grassy Pedestals */}
-        <div className="relative z-10 w-full max-w-3xl grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 my-auto items-end justify-items-center">
+        <div className="relative z-10 w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 my-auto items-end justify-items-center py-6">
           {options.map((opt, idx) => {
             const isSelected = selectedId === opt.id;
             const isTarget = opt.id === targetItem.id;

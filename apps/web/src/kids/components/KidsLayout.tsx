@@ -303,6 +303,8 @@ export const KidsLayout: React.FC = () => {
           alt="World Background"
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
+        {/* Soft frosted glass veil to soften background clutter */}
+        <div className="absolute inset-0 bg-sky-50/45 backdrop-blur-[3px] pointer-events-none" />
       </div>
 
       {/* ========================================================================= */}

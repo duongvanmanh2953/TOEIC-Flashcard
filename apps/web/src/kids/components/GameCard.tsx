@@ -42,10 +42,10 @@ export const GameCard: React.FC<GameCardProps> = ({
           onSelect(game.id);
         }
       }}
-      className={`group relative h-full min-h-[420px] flex flex-col rounded-[32px] bg-white transition-all duration-300 ease-out cursor-pointer select-none overflow-hidden ${
+      className={`group relative h-full min-h-[420px] flex flex-col rounded-[32px] bg-white/85 backdrop-blur-xl transition-all duration-300 ease-out cursor-pointer select-none overflow-hidden border-2 ${
         isSelected
-          ? 'ring-4 ring-indigo-300 shadow-[0_20px_40px_-10px_rgba(99,102,241,0.25)] -translate-y-2'
-          : `shadow-[0_10px_28px_-6px_rgba(20,40,70,0.06)] hover:shadow-[0_20px_40px_-8px_rgba(20,40,70,0.14)] hover:-translate-y-1.5 border border-slate-100 ${theme.hoverBorderColor}`
+          ? 'border-indigo-400 ring-4 ring-indigo-300/60 shadow-[0_20px_40px_-10px_rgba(99,102,241,0.3)] -translate-y-2'
+          : `border-white/80 shadow-[0_10px_28px_-6px_rgba(20,40,70,0.06)] hover:shadow-[0_22px_45px_-8px_rgba(20,40,70,0.14)] hover:-translate-y-2 hover:border-sky-200 ${theme.hoverBorderColor}`
       }`}
     >
       {/* ========================================================= */}
@@ -91,7 +91,7 @@ export const GameCard: React.FC<GameCardProps> = ({
       {/* ========================================================= */}
       {/* 2. BOTTOM 45%: CONTENT & TACTILE ACTION                   */}
       {/* ========================================================= */}
-      <div className="flex-1 flex flex-col justify-between p-5 bg-white space-y-3">
+      <div className="flex-1 flex flex-col justify-between p-5 bg-white/70 backdrop-blur-md space-y-3">
         {/* Title, Bilingual Subtitle & Description */}
         <div className="space-y-1">
           <div className="flex items-start gap-2.5">

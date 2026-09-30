@@ -88,7 +88,17 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
   }, [initRound]);
 
   const handleCardClick = (clickedCard: MemoryCard) => {
-    if (clickedCard.isFlipped || clickedCard.isMatched || isReadyToContinue) return;
+    // Look up freshest state to prevent stale closure or rapid tap double-triggers
+    const targetCard = cards.find((c) => c.uniqueId === clickedCard.uniqueId);
+    if (
+      !targetCard ||
+      targetCard.isFlipped ||
+      targetCard.isMatched ||
+      isReadyToContinue ||
+      flippedIds.includes(targetCard.uniqueId)
+    ) {
+      return;
+    }
 
     // Fluid Handling: If user clicks while 2 mismatched cards are showing,
     // immediately clear them and flip the new card without dropping the tap!
@@ -106,15 +116,15 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
 
     // Play instant flip audio & brisk voice
     soundManager.play('pop');
-    voiceService.speakWord(clickedCard.item.word);
+    voiceService.speakWord(targetCard.item.word);
 
     // Flip card immediately
     const updatedCards = activeCards.map((c) =>
-      c.uniqueId === clickedCard.uniqueId ? { ...c, isFlipped: true } : c
+      c.uniqueId === targetCard.uniqueId ? { ...c, isFlipped: true } : c
     );
     setCards(updatedCards);
 
-    const newFlipped = [...currentFlipped, clickedCard.uniqueId];
+    const newFlipped = [...currentFlipped, targetCard.uniqueId];
     setFlippedIds(newFlipped);
 
     if (newFlipped.length === 2) {
@@ -200,70 +210,108 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
       }}
       isGameComplete={isGameComplete}
     >
-      {/* 3D WOODEN CARD TABLE SCENE */}
-      <div className="relative w-full h-full p-4 sm:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-br from-amber-800 via-amber-900 to-yellow-950 select-none">
-        {/* Subtle warm table backdrop texture */}
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#fbbf24_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+      {/* MAGICAL CELESTIAL AURORA CARD ARENA (SUPER-SPACIOUS & ULTRA-PREMIUM) */}
+      <div className="relative w-full h-full p-4 sm:p-8 lg:p-10 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-[#0B0F2A] via-[#151B42] to-[#0A122E] select-none min-h-[540px] sm:min-h-[600px]">
+        {/* Luminous Nebula Glows & Stardust Background */}
+        <div className="absolute -top-24 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#a5b4fc_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
-        {/* Top Hint */}
-        <div className="relative z-10 px-5 py-2 rounded-full bg-black/40 backdrop-blur-md border border-amber-400/40 text-amber-200 text-xs font-bold text-center flex items-center gap-2 shadow-sm">
-          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+        {/* Top Hint Banner with Frosted Glass */}
+        <div className="relative z-10 px-5 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sky-200 text-xs sm:text-sm font-bold text-center flex items-center gap-2 shadow-lg">
+          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
           <span>Chạm vào thẻ bài để lật tìm cặp từ vựng giống nhau!</span>
         </div>
 
-        {/* 3D Depth Card Grid Table */}
-        <div className="relative z-10 w-full max-w-2xl my-auto grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 items-center justify-items-center [perspective:1000px]">
-          {cards.map((card) => (
-            <div
-              key={card.uniqueId}
-              onClick={() => handleCardClick(card)}
-              className="w-28 sm:w-36 h-36 sm:h-44 cursor-pointer relative group [perspective:1000px]"
-            >
+        {/* SPACIOUS 3D CARD GRID (Generous spacing, relaxed breathing room) */}
+        <div className="relative z-10 w-full max-w-4xl my-auto py-6 sm:py-8 grid grid-cols-2 sm:grid-cols-4 gap-5 sm:gap-7 lg:gap-8 items-center justify-items-center [perspective:1200px]">
+          {cards.map((card) => {
+            const isCardActive = card.isFlipped || card.isMatched;
+
+            return (
               <div
-                className={`w-full h-full rounded-2xl sm:rounded-3xl transition-transform duration-250 ease-out [transform-style:preserve-3d] [will-change:transform] ${
-                  card.isFlipped || card.isMatched ? '[transform:rotateY(180deg)]' : ''
-                } ${
-                  card.isMatched
-                    ? 'ring-4 ring-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.7)] scale-95'
-                    : 'hover:scale-105 active:scale-95 shadow-[0_10px_20px_rgba(0,0,0,0.4)]'
-                }`}
+                key={card.uniqueId}
+                onClick={() => handleCardClick(card)}
+                className="w-32 sm:w-40 lg:w-44 h-44 sm:h-52 lg:h-56 cursor-pointer relative group [perspective:1200px] select-none touch-manipulation"
               >
-                {/* Card Back Face (Hidden when flipped) */}
-                <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 border-2 border-amber-200 flex flex-col items-center justify-center p-3 [backface-visibility:hidden] shadow-inner">
-                  {/* Clean SVG Vector Emblem */}
-                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/40 shadow-xs group-hover:scale-110 transition-transform">
-                    <Sparkles className="w-7 h-7 text-white filter drop-shadow-xs" />
-                  </div>
-                  <div className="flex items-center gap-1 mt-2.5 text-amber-200 text-xs font-black">
-                    <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-200" />
-                    <span>VOCALFLOW</span>
-                  </div>
-                </div>
+                <div
+                  className={`w-full h-full rounded-[26px] sm:rounded-[32px] transition-transform duration-160 ease-[cubic-bezier(0.2,0.9,0.3,1.2)] [transform-style:preserve-3d] [will-change:transform] ${
+                    isCardActive ? '[transform:rotateY(180deg)]' : ''
+                  } ${
+                    card.isMatched
+                      ? 'ring-4 ring-emerald-400 ring-offset-2 ring-offset-[#0B0F2A] shadow-[0_0_35px_rgba(52,211,153,0.85)] scale-102'
+                      : 'hover:scale-105 active:scale-95 shadow-[0_16px_32px_rgba(0,0,0,0.5)]'
+                  }`}
+                >
+                  {/* ========================================================= */}
+                  {/* CARD BACK FACE: Ultra-Luxury Royal Celestial Emblem       */}
+                  {/* ========================================================= */}
+                  <div className="absolute inset-0 rounded-[26px] sm:rounded-[32px] bg-gradient-to-br from-indigo-600 via-purple-700 to-indigo-900 border-3 border-amber-300/90 shadow-[inset_0_0_18px_rgba(251,191,36,0.35),0_12px_28px_rgba(0,0,0,0.5)] flex flex-col items-center justify-between p-4 [backface-visibility:hidden] overflow-hidden">
+                    {/* Golden Holographic Inner Border */}
+                    <div className="absolute inset-1.5 rounded-[20px] sm:rounded-[26px] border border-amber-300/40 pointer-events-none" />
 
-                {/* Card Front Face (Revealed on flip: 180 deg) */}
-                <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-white border-2 border-emerald-400 [transform:rotateY(180deg)] [backface-visibility:hidden] flex flex-col items-center justify-center p-2 text-center shadow-lg">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center filter drop-shadow-xs">
-                    <KidsIllustration
-                      name={card.item.word.toLowerCase()}
-                      className="w-full h-full object-contain"
-                      alt={card.item.word}
-                    />
+                    {/* Specular Diagonal Light Sheen */}
+                    <div className="absolute -top-12 -left-12 w-32 h-32 bg-white/15 rounded-full blur-xl pointer-events-none group-hover:translate-x-20 group-hover:translate-y-20 transition-transform duration-700" />
+
+                    {/* Top Star Accent */}
+                    <div className="flex items-center gap-1.5 text-amber-300/80 text-[10px] font-black uppercase tracking-widest">
+                      <Star className="w-3 h-3 fill-amber-300" />
+                      <span>VOCALFLOW</span>
+                      <Star className="w-3 h-3 fill-amber-300" />
+                    </div>
+
+                    {/* Center Celestial Star Compass Emblem */}
+                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 p-0.5 shadow-[0_8px_20px_rgba(245,158,11,0.4)] flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                      <div className="w-full h-full rounded-[14px] bg-indigo-950 flex items-center justify-center relative overflow-hidden">
+                        {/* Radial Ray Accents */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-400/30 via-transparent to-transparent" />
+                        <Sparkles className="w-9 h-9 sm:w-11 sm:h-11 text-amber-300 filter drop-shadow-[0_2px_8px_rgba(251,191,36,0.8)] animate-pulse" />
+                      </div>
+                    </div>
+
+                    {/* Bottom Tactile Label */}
+                    <div className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-amber-200 text-[11px] font-black tracking-wide shadow-xs">
+                      <span>CHẠM ĐỂ LẬT</span>
+                    </div>
                   </div>
 
-                  <span className="text-sm sm:text-base font-black text-slate-900 capitalize mt-1 leading-tight">
-                    {card.item.word}
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-700">
-                    {card.item.viMeaning}
-                  </span>
+                  {/* ========================================================= */}
+                  {/* CARD FRONT FACE: Radiant Pearl Porcelain Surface          */}
+                  {/* ========================================================= */}
+                  <div className="absolute inset-0 rounded-[26px] sm:rounded-[32px] bg-gradient-to-b from-white via-slate-50 to-indigo-50/50 border-3 border-indigo-200/90 [transform:rotateY(180deg)] [backface-visibility:hidden] flex flex-col items-center justify-between p-3.5 sm:p-4 text-center shadow-[0_16px_36px_rgba(0,0,0,0.35)] overflow-hidden">
+                    {/* Subtle Top Indicator Tag */}
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                      Từ vựng
+                    </span>
+
+                    {/* Elevated Soft Illustration Pedestal */}
+                    <div className="w-20 h-20 sm:w-26 sm:h-26 rounded-2xl bg-indigo-50/60 border border-indigo-100/60 p-2 flex items-center justify-center shadow-inner filter drop-shadow-xs">
+                      <KidsIllustration
+                        name={card.item.word.toLowerCase()}
+                        className="w-full h-full object-contain filter drop-shadow-sm"
+                        alt={card.item.word}
+                      />
+                    </div>
+
+                    {/* Bilingual Typography */}
+                    <div className="space-y-0.5 w-full">
+                      <h4 className="text-base sm:text-lg font-black text-indigo-950 capitalize leading-tight tracking-tight">
+                        {card.item.word}
+                      </h4>
+                      <span className="inline-block text-xs font-black text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200/70 truncate max-w-[90%]">
+                        {card.item.viMeaning}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        <div className="relative z-10 text-[11px] font-bold text-amber-200/80 text-center pb-1">
-          Vòng {currentRound}/{TOTAL_ROUNDS}: Ghép đủ các cặp thẻ bài để qua màn!
+        {/* Footer Level Info */}
+        <div className="relative z-10 px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-xs font-bold text-sky-200 text-center shadow-sm">
+          Vòng {currentRound}/{TOTAL_ROUNDS} • Ghép đủ các cặp thẻ bài để qua màn!
         </div>
       </div>
     </KidsGameWrapper>
