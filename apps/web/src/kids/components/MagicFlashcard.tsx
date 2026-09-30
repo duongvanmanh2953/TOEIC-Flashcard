@@ -83,17 +83,11 @@ export const MagicFlashcard: React.FC<MagicFlashcardProps> = memo(({
 
             {/* Animal Graphic / 3D Character Illustration */}
             <div className="relative z-10 w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.25)]">
-              {['cat', 'dog', 'rabbit', 'lion', 'elephant', 'bear', 'monkey', 'frog', 'bird', 'duck', 'fish', 'turtle', 'butterfly', 'bee', 'panda', 'tiger', 'penguin', 'giraffe', 'zebra', 'dolphin', 'whale', 'fox', 'owl'].includes(card.illustration) ? (
-                <KidsIllustration
-                  name={card.illustration}
-                  className="w-full h-full object-contain filter drop-shadow-md select-none transform hover:scale-105 transition-transform"
-                  alt={card.word}
-                />
-              ) : (
-                <span className="text-7xl sm:text-8xl select-none filter drop-shadow-md transform hover:scale-105 transition-transform">
-                  {card.emoji}
-                </span>
-              )}
+              <KidsIllustration
+                name={card.illustration || card.word.toLowerCase()}
+                className="w-full h-full object-contain filter drop-shadow-md select-none transform hover:scale-105 transition-transform"
+                alt={card.word}
+              />
             </div>
           </div>
 
@@ -134,11 +128,7 @@ export const MagicFlashcard: React.FC<MagicFlashcardProps> = memo(({
           {/* Center Mascot & Word Details */}
           <div className="my-auto space-y-2.5 w-full">
             <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-2xl bg-amber-50/80 border border-amber-200 p-2 flex items-center justify-center shadow-xs">
-              {['cat', 'dog', 'rabbit', 'lion', 'elephant', 'bear', 'monkey', 'frog', 'bird', 'duck', 'fish', 'turtle', 'butterfly', 'bee', 'panda', 'tiger', 'penguin', 'giraffe', 'zebra', 'dolphin', 'whale', 'fox', 'owl'].includes(card.illustration) ? (
-                <KidsIllustration name={card.illustration} className="w-full h-full object-contain" alt={card.word} />
-              ) : (
-                <span className="text-4xl sm:text-5xl">{card.emoji}</span>
-              )}
+              <KidsIllustration name={card.illustration || card.word.toLowerCase()} className="w-full h-full object-contain" alt={card.word} />
             </div>
 
             <div>

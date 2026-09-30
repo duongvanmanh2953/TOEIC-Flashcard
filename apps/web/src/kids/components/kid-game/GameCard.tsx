@@ -46,15 +46,15 @@ export const GameCard: React.FC<GameCardProps> = memo(({
   // State-specific styling
   const stateStyles = {
     idle:
-      'bg-white dark:bg-slate-800/95 border-2 border-white/80 dark:border-slate-700 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08),0_4px_10px_rgba(0,0,0,0.03)] hover:-translate-y-1.5 hover:shadow-[0_16px_32px_-4px_rgba(0,0,0,0.14)] active:translate-y-0 active:scale-95',
+      'bg-white border-2 border-slate-200/90 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08),0_4px_10px_rgba(0,0,0,0.03)] hover:-translate-y-1.5 hover:shadow-[0_16px_32px_-4px_rgba(0,0,0,0.14)] active:translate-y-0 active:scale-95',
     selected:
-      'bg-amber-50 dark:bg-amber-950/40 border-3 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)] -translate-y-1',
+      'bg-amber-50 border-3 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)] -translate-y-1',
     correct:
-      'bg-emerald-50 dark:bg-emerald-950/40 border-3 border-emerald-500 shadow-[0_0_24px_rgba(16,185,129,0.4)] scale-102 pointer-events-none animate-[pulse_1.5s_ease-in-out]',
+      'bg-emerald-50 border-3 border-emerald-500 shadow-[0_0_24px_rgba(16,185,129,0.4)] scale-102 pointer-events-none animate-[pulse_1.5s_ease-in-out]',
     wrong:
-      'bg-rose-50 dark:bg-rose-950/40 border-3 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.35)] animate-[shake_0.4s_ease-in-out]',
+      'bg-rose-50 border-3 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.35)] animate-[shake_0.4s_ease-in-out]',
     disabled:
-      'bg-slate-100 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 opacity-50 cursor-not-allowed pointer-events-none shadow-none',
+      'bg-slate-100 border-2 border-slate-200 opacity-50 cursor-not-allowed pointer-events-none shadow-none',
   }[state];
 
   const aspectClass = {
@@ -101,14 +101,14 @@ export const GameCard: React.FC<GameCardProps> = memo(({
 
       {/* Typography Label */}
       {(title || subtitle) && (
-        <div className="w-full text-center pt-2 border-t border-slate-100 dark:border-slate-700/60 shrink-0">
+        <div className="w-full text-center pt-2 border-t border-slate-100 shrink-0">
           {title && (
-            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white capitalize tracking-tight leading-tight truncate">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 capitalize tracking-tight leading-tight truncate">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 truncate mt-0.5">
+            <p className="text-xs sm:text-sm font-bold text-slate-500 truncate mt-0.5">
               {subtitle}
             </p>
           )}

@@ -40,12 +40,37 @@ async function bootstrap() {
 
   // Serve game assets statically with 1-year immutable cache
   const express = require('express');
-  const gameAssetsPath = path.resolve(__dirname, '../public/game-assets');
-  if (fs.existsSync(gameAssetsPath)) {
-    app.use('/game-assets', express.static(gameAssetsPath, {
-      maxAge: '1y',
-      immutable: true,
-    }));
+  const possibleGameAssetsPaths = [
+    path.resolve(__dirname, '../public/game-assets'),
+    path.resolve(__dirname, '../../public/game-assets'),
+    path.resolve(process.cwd(), 'apps/api/public/game-assets'),
+    path.resolve(process.cwd(), 'apps/web/public/game-assets'),
+  ];
+  for (const p of possibleGameAssetsPaths) {
+    if (fs.existsSync(p)) {
+      app.use('/game-assets', express.static(p, {
+        maxAge: '1y',
+        immutable: true,
+      }));
+      break;
+    }
+  }
+
+  // Also serve kid assets if requested
+  const possibleKidPaths = [
+    path.resolve(process.cwd(), 'apps/web/public/kid'),
+    path.resolve(__dirname, '../../web/public/kid'),
+    path.resolve(__dirname, '../../../apps/web/public/kid'),
+    path.resolve(process.cwd(), 'public/kid'),
+  ];
+  for (const kp of possibleKidPaths) {
+    if (fs.existsSync(kp)) {
+      app.use('/kid', express.static(kp, {
+        maxAge: '1y',
+        immutable: true,
+      }));
+      break;
+    }
   }
 
   // Global prefix for API versioning

@@ -174,12 +174,16 @@ class GameAssetService {
     this.activeControllers.add(controller);
 
     try {
-      // Try /api/game-assets first, fallback to /game-assets/manifest.json
+      // Try /api/v1/game-assets first, then /api/v1/games/game-assets, then /game-assets/manifest.json
       let res: Response | null = null;
       try {
         res = await fetch('/api/v1/game-assets', { signal: controller.signal });
-      } catch {
-        // Fallback to static manifest
+      } catch {}
+
+      if (!res || !res.ok) {
+        try {
+          res = await fetch('/api/v1/games/game-assets', { signal: controller.signal });
+        } catch {}
       }
 
       if (!res || !res.ok) {

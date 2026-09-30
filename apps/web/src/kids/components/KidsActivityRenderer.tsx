@@ -16,6 +16,7 @@ import { celebrationManager } from '../services/celebration/CelebrationManager';
 import { Play, RotateCcw, Volume2, Mic, CheckCircle2, Headphones, Sparkles, BookOpen } from 'lucide-react';
 import { evaluatePronunciation } from '../../lib/pronunciationEvaluator';
 import { useLearningContext } from '../../contexts/LearningContext';
+import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 
 export type ActivityState =
   | 'loading'
@@ -32,6 +33,38 @@ interface ActivityProps {
   onDone: (success: boolean, score?: number, weakWord?: string) => void;
   onBusyStateChange?: (isBusy: boolean) => void;
 }
+
+const renderActivityVisual = (target?: string, emoji?: string, sizeCls = 'w-32 h-32 sm:w-40 sm:h-40') => {
+  const candidate = (target || '').toLowerCase().trim();
+  const words = candidate.split(/[\s,!-]+/);
+  const matched = words.find((w) =>
+    [
+      'cat', 'dog', 'rabbit', 'lion', 'elephant', 'bear', 'monkey', 'frog', 'bird', 'duck', 'fish', 'fox', 'panda', 'tiger', 'penguin', 'giraffe', 'zebra', 'turtle', 'dolphin', 'whale', 'butterfly', 'bee', 'owl',
+      'apple', 'banana', 'pizza', 'burger', 'milk', 'bread', 'carrot', 'strawberry', 'cookie',
+      'car', 'bus', 'train', 'rocket', 'airplane', 'boat', 'bicycle',
+      'book', 'pencil', 'sun', 'star', 'cloud', 'hello', 'goodbye', 'name', 'friend', 'happy'
+    ].includes(w)
+  );
+
+  const visualName = matched || words[0] || candidate;
+  if (visualName) {
+    return (
+      <div className={`${sizeCls} flex items-center justify-center`}>
+        <KidsIllustration
+          name={visualName}
+          className="w-full h-full object-contain filter drop-shadow-md select-none transform hover:scale-105 transition-transform"
+          alt={target || 'illustration'}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <span className="text-7xl sm:text-8xl select-none filter drop-shadow-sm">
+      {emoji || '🌟'}
+    </span>
+  );
+};
 
 // =========================================================================
 // 1. FLASHCARD ACTIVITY COMPONENT
@@ -315,8 +348,8 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
               Bé đoán xem đây là gì nào?
             </div>
 
-            <div className="text-8xl sm:text-9xl my-auto group-hover:scale-110 transition-transform duration-300 select-none">
-              {activity.emoji || '🌟'}
+            <div className="my-auto flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-300">
+              {renderActivityVisual(activity.targetWord || activity.imageSvg, activity.emoji, 'w-36 h-36 sm:w-44 sm:h-44')}
             </div>
 
             <div className="px-5 py-2.5 rounded-2xl bg-white text-slate-900 font-black text-xs sm:text-sm flex items-center gap-2 border-2 border-amber-400">
@@ -333,7 +366,9 @@ const FlashcardActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusySt
             </div>
 
             <div className="my-auto flex flex-col items-center">
-              <span className="text-6xl sm:text-7xl mb-2">{activity.emoji || '🌟'}</span>
+              <div className="mb-2">
+                {renderActivityVisual(activity.targetWord || activity.imageSvg, activity.emoji, 'w-24 h-24 sm:w-28 sm:h-28')}
+              </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 uppercase">
                 {activity.targetWord}
               </h2>
@@ -644,13 +679,15 @@ const ListenChoiceActivity: React.FC<ActivityProps> = ({ activity, onDone, onBus
               key={opt.id}
               onClick={(e) => handleSelectOption(opt, e)}
               disabled={isBlocked}
-              className={`p-5 rounded-3xl border-2 flex flex-col items-center justify-center text-center gap-2 transition-all select-none ${
+              className={`p-4 sm:p-5 rounded-3xl border-2 flex flex-col items-center justify-center text-center gap-2 transition-all select-none ${
                 isBlocked
                   ? 'opacity-85 cursor-not-allowed'
                   : 'hover:scale-105 active:scale-95 cursor-pointer'
               } ${btnBg} ${btnBorder}`}
             >
-              <span className="text-5xl">{opt.emoji || '⭐'}</span>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                {renderActivityVisual(opt.text || opt.imageSvg || opt.id, opt.emoji, 'w-full h-full')}
+              </div>
               <span className="font-black text-base sm:text-lg text-slate-950">
                 {opt.text}
               </span>
@@ -828,10 +865,13 @@ const SpeakActivity: React.FC<ActivityProps> = ({ activity, onDone, onBusyStateC
         }
       />
 
-      <div className="w-full kids-liquid-card p-6 rounded-3xl text-center space-y-2 border-2 border-indigo-400">
+      <div className="w-full kids-liquid-card p-6 rounded-3xl text-center space-y-2 border-2 border-indigo-400 flex flex-col items-center">
         <p className="text-xs font-black uppercase tracking-wider text-indigo-900">
           Từ vựng bé cần phát âm
         </p>
+        <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center my-1">
+          {renderActivityVisual(activity.targetWord, activity.emoji, 'w-full h-full')}
+        </div>
         <h2 className="text-xl sm:text-2xl font-black text-slate-950 uppercase tracking-tight">
           {activity.targetWord}
         </h2>

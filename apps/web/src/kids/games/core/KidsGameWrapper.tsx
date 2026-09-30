@@ -102,13 +102,13 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = memo(({
     >
       {/* Optional Top Instructional Prompt Banner */}
       {(instructionEn || instructionVi) && (
-        <div className="w-full max-w-xl mx-auto mb-2 shrink-0 flex items-center justify-between gap-2 px-4 py-1.5 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-amber-300 shadow-sm animate-fadeIn">
+        <div className="w-full max-w-xl mx-auto mb-2 shrink-0 flex items-center justify-between gap-2 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-amber-300 shadow-sm animate-fadeIn">
           <div className="flex items-center gap-2 overflow-hidden">
             <Lightbulb className="w-4 h-4 text-amber-500 animate-bounce shrink-0" />
-            <div className="truncate text-xs sm:text-sm font-black text-slate-800 dark:text-white">
+            <div className="truncate text-xs sm:text-sm font-black text-slate-800">
               {instructionEn && <span>{instructionEn} </span>}
               {instructionVi && (
-                <span className="text-slate-500 dark:text-slate-400 font-bold hidden sm:inline">
+                <span className="text-slate-600 font-bold hidden sm:inline">
                   ({instructionVi})
                 </span>
               )}
@@ -133,10 +133,10 @@ export const KidsGameWrapper: React.FC<KidsGameWrapperProps> = memo(({
         {/* Non-Auto-Advancing Continue Prompt */}
         {isReadyToContinue && !isGameComplete && onContinueRound && (
           <div className="absolute bottom-2 inset-x-0 z-40 flex flex-col items-center justify-center p-2 animate-scaleUp pointer-events-auto">
-            <div className="p-3 sm:p-4 rounded-3xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-3 border-emerald-400 shadow-2xl flex flex-col sm:flex-row items-center gap-3">
+            <div className="p-3 sm:p-4 rounded-3xl bg-white/95 backdrop-blur-md border-3 border-emerald-400 shadow-2xl flex flex-col sm:flex-row items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-2xl animate-bounce">🎉</span>
-                <span className="text-sm sm:text-base font-black text-emerald-950 dark:text-emerald-300">
+                <span className="text-sm sm:text-base font-black text-emerald-950">
                   {praiseVi || 'Xuất sắc! Bé trả lời đúng rồi!'}
                 </span>
               </div>

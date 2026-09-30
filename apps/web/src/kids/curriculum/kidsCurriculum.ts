@@ -220,7 +220,7 @@ export const KIDS_CURRICULUM: KidWorld[] = [
             order: 3,
             title: 'My Name is...',
             description: 'Introduce your own special name!',
-            emoji: '⭐',
+            emoji: '🐻',
             bannerColor: '#ec4899',
             activities: [
               {

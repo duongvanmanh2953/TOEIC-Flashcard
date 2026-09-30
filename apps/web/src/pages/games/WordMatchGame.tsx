@@ -164,19 +164,19 @@ export const WordMatchGame: React.FC = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/games')}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs text-xs font-black transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Về Sảnh Đấu</span>
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-xs font-black">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-black shadow-2xs">
             <Timer className="w-3.5 h-3.5" />
             <span>{formatTime(time)}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-black">
-            <Trophy className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-black shadow-2xs">
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
             <span>{score} pts</span>
           </div>
           {combo > 1 && (

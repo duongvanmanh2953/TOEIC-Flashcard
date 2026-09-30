@@ -332,7 +332,7 @@ export const KidsGamesPage: React.FC = () => {
                 }}
                 className={`px-4 py-2 rounded-xl font-black text-xs sm:text-sm cursor-pointer select-none transition-all duration-180 active:scale-95 border ${
                   isSelected
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    ? 'bg-amber-400 text-amber-950 border-amber-400 shadow-sm'
                     : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-2xs'
                 }`}
               >

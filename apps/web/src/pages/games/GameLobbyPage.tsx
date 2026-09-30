@@ -175,25 +175,25 @@ export const GameLobbyPage: React.FC = () => {
     <div className="space-y-8 pb-16 animate-fade-in">
       {/* 1. Hero Title Banner with Competitive Spirit & Dismiss X */}
       {showHeroBanner ? (
-        <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-900/90 via-slate-900/95 to-purple-950/90 border border-indigo-500/30 text-white overflow-hidden animate-fade-in pr-12">
+        <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-sky-50 via-indigo-50 to-purple-50 border-2 border-indigo-200 text-slate-900 shadow-sm overflow-hidden animate-fade-in pr-12">
           <button
             onClick={dismissHeroBanner}
-            className="absolute top-4 right-4 p-1.5 rounded-xl text-indigo-300 hover:text-white hover:bg-white/10 transition z-20"
+            className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-white/80 transition z-20 cursor-pointer"
             title="Ẩn banner giới thiệu"
           >
             <X className="w-4 h-4" />
           </button>
           <div className="relative z-10 space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-black uppercase tracking-wider border border-indigo-400/30">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-indigo-200 text-indigo-700 text-xs font-black uppercase tracking-wider shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Đấu Trường Tiếng Anh Trực Tiếp • 20:00 – 22:00 Mỗi Ngày</span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
               {t('games.heroTitle', 'Đấu Trường Tiếng Anh Trực Tiếp')}
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 font-semibold leading-relaxed">
               {t(
                 'games.heroSubtitle',
                 'Trực tiếp so tài phản xạ từ vựng, dịch thuật và ngữ pháp thời gian thực với hàng ngàn học viên.',
@@ -206,8 +206,8 @@ export const GameLobbyPage: React.FC = () => {
 
               {/* Test mode badge */}
               {lobbyData?.hoursStatus?.testMode && (
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                  <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                  <Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <span>TEST MODE ACTIVE (24/7 ACCESS)</span>
                 </span>
               )}
@@ -215,7 +215,7 @@ export const GameLobbyPage: React.FC = () => {
           </div>
 
           {/* Decorative background glow */}
-          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-500/20 to-transparent pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-indigo-200/40 to-transparent pointer-events-none" />
         </div>
       ) : (
         <div className="flex justify-end">
@@ -224,17 +224,17 @@ export const GameLobbyPage: React.FC = () => {
               setShowHeroBanner(true);
               localStorage.removeItem('vocabflow_hide_games_hero');
             }}
-            className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 font-medium transition py-0.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="text-[11px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-bold transition py-1 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-2xs cursor-pointer"
             title="Hiện lại banner giới thiệu"
           >
-            <Sparkles className="w-3 h-3 text-amber-500" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span>Hiện giới thiệu Đấu Trường</span>
           </button>
         </div>
       )}
 
       {/* 2. Daily Operating Window & Countdown Card */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="p-6 rounded-3xl bg-white border-2 border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2">
             <span
@@ -246,23 +246,23 @@ export const GameLobbyPage: React.FC = () => {
               Trạng thái đấu trường
             </span>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+          <h2 className="text-2xl font-black text-slate-900">
             {isOpen ? 'ĐẤU TRƯỜNG ĐANG MỞ CỬA!' : 'ĐẤU TRƯỜNG ĐANG TẠM ĐÓNG'}
           </h2>
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-xs text-slate-500 font-semibold">
             Giờ thi đấu chuẩn: 20:00 — 22:00 (GMT+7) • Giờ máy chủ:{' '}
-            <span className="tabular-nums font-bold text-indigo-600 dark:text-indigo-400">
+            <span className="tabular-nums font-bold text-indigo-600">
               {lobbyData?.hoursStatus?.serverTime || '--:--:--'}
             </span>
           </p>
         </div>
 
         {/* Big Countdown Timer */}
-        <div className="text-center p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 min-w-[220px]">
-          <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
+        <div className="text-center p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 min-w-[220px]">
+          <span className="text-[11px] font-bold text-slate-600 uppercase block mb-1">
             {isOpen ? 'Thời gian còn lại của hôm nay' : 'Trận đấu mở tiếp theo sau'}
           </span>
-          <span className="text-3xl sm:text-4xl font-black tabular-nums tracking-wider text-indigo-600 dark:text-indigo-400">
+          <span className="text-3xl sm:text-4xl font-black tabular-nums tracking-wider text-indigo-700">
             {formatCountdown(countdown)}
           </span>
         </div>
@@ -270,64 +270,64 @@ export const GameLobbyPage: React.FC = () => {
 
       {/* USER PERSONAL GAMING DASHBOARD & RECOMMENDATION */}
       {user && !isGuest && (
-        <div className="p-5 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+        <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/70 border-2 border-indigo-100 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100 pb-3">
             <div className="flex items-center gap-2.5">
-              <Award className="w-5 h-5 text-amber-400" />
+              <Award className="w-5 h-5 text-amber-500" />
               <div>
-                <h3 className="text-sm font-bold text-white">Thành Tích & Đấu Trường Của Bạn</h3>
-                <span className="text-[11px] text-slate-400">Học viên: {user.displayName || user.email}</span>
+                <h3 className="text-sm font-black text-slate-900">Thành Tích & Đấu Trường Của Bạn</h3>
+                <span className="text-[11px] font-semibold text-slate-500">Học viên: {user.displayName || user.email}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
+              <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 text-xs font-black">
                 Cấp Độ: Đại Kiện Tướng B2
               </span>
               <button
                 onClick={() => handleJoinGame(favorites[0] || 'FOUR_SKILLS_ARENA')}
-                className="px-3 py-1 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500/25 transition flex items-center gap-1.5"
+                className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-black hover:bg-emerald-200 transition flex items-center gap-1.5 cursor-pointer"
               >
-                <Zap className="w-3.5 h-3.5" />
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Chơi Lại Nhanh (Re-play)</span>
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-              <span className="text-[11px] text-slate-400 block">Số trận đã đấu</span>
-              <span className="text-lg font-bold text-white tabular-nums">28 trận</span>
+            <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[11px] text-slate-500 font-semibold block">Số trận đã đấu</span>
+              <span className="text-lg font-black text-slate-900 tabular-nums">28 trận</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-              <span className="text-[11px] text-slate-400 block">Tỷ lệ thắng (Win Rate)</span>
-              <span className="text-lg font-bold text-emerald-400 tabular-nums">71.4%</span>
+            <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[11px] text-slate-500 font-semibold block">Tỷ lệ thắng (Win Rate)</span>
+              <span className="text-lg font-black text-emerald-600 tabular-nums">71.4%</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-              <span className="text-[11px] text-slate-400 block">Điểm Xếp Hạng ELO</span>
-              <span className="text-lg font-bold text-indigo-300 tabular-nums">1,485 ELO</span>
+            <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[11px] text-slate-500 font-semibold block">Điểm Xếp Hạng ELO</span>
+              <span className="text-lg font-black text-indigo-600 tabular-nums">1,485 ELO</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-              <span className="text-[11px] text-slate-400 block">Chuỗi thắng liên tiếp</span>
-              <span className="text-lg font-bold text-amber-400 tabular-nums flex items-center gap-1">
-                <Flame className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[11px] text-slate-500 font-semibold block">Chuỗi thắng liên tiếp</span>
+              <span className="text-lg font-black text-amber-600 tabular-nums flex items-center gap-1">
+                <Flame className="w-4 h-4 text-amber-500 shrink-0" />
                 <span>4 Trận</span>
               </span>
             </div>
           </div>
 
           {/* Smart recommendation */}
-          <div className="p-3 rounded-xl bg-indigo-950/25 border border-indigo-500/20 flex items-center justify-between text-xs">
+          <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-slate-300">
-                <strong className="text-indigo-300">Gợi ý thông minh:</strong> Đấu trường{' '}
-                <span className="font-semibold text-white">Đại Chiến 4 Kỹ Năng</span> đang mở và có các đối thủ cùng tầm điểm ELO với bạn.
+              <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-slate-700">
+                <strong className="text-indigo-800">Gợi ý thông minh:</strong> Đấu trường{' '}
+                <span className="font-bold text-slate-900">Đại Chiến 4 Kỹ Năng</span> đang mở và có các đối thủ cùng tầm điểm ELO với bạn.
               </span>
             </div>
             <button
               onClick={() => handleJoinGame('FOUR_SKILLS_ARENA')}
-              className="text-xs font-bold text-indigo-400 hover:text-indigo-200 underline shrink-0 ml-2"
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline shrink-0 ml-2"
             >
               Vào ngay &rarr;
             </button>

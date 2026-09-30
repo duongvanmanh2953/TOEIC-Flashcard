@@ -426,9 +426,9 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
       {/* THE GAME TABLE CONTAINER */}
       <div className="w-full h-full flex flex-col items-center justify-between p-2 sm:p-4">
         {/* Sub-bar: Matched pairs info & quick restart */}
-        <div className="w-full max-w-4xl flex items-center justify-between px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/80 mb-2 shrink-0">
+        <div className="w-full max-w-4xl flex items-center justify-between px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 mb-2 shrink-0 shadow-2xs">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-slate-800 dark:text-white">
+            <span className="text-xs font-black text-slate-800">
               Đã ghép: {matchedPairsCount} / {totalPairsCount} cặp
             </span>
             <span className="text-xs font-bold text-slate-500">

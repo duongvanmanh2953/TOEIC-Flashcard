@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Volume2, Sparkles, ShoppingBag } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
+import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 
@@ -164,7 +165,9 @@ export const ListenCatchGame: React.FC<ListenCatchGameProps> = ({
                     : 'border-amber-300 hover:border-emerald-400'
                 }`}
               >
-                <span className="text-5xl sm:text-6xl animate-pulse">{item.icon}</span>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                  <KidsIllustration name={item.id} className="w-full h-full object-contain filter drop-shadow-md" alt={item.nameEn} />
+                </div>
                 <span className="text-xs sm:text-sm font-black text-slate-900">
                   {item.nameEn}
                 </span>

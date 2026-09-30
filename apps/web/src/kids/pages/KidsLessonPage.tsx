@@ -5,6 +5,7 @@ import { KidsActivityRenderer } from '../components/KidsActivityRenderer';
 import { KidsRewardModal } from '../components/KidsRewardModal';
 import { KidsParentPinModal } from '../components/KidsParentPinModal';
 import { KidsIcon } from '../assets/icons/KidsIcons';
+import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 import { completeLesson, getNextLessonToLearn } from '../curriculum/curriculumProgress';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { celebrationManager } from '../services/celebration/CelebrationManager';
@@ -186,8 +187,12 @@ export const KidsLessonPage: React.FC = () => {
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-xl">
-            {targetLesson.emoji || '⭐'}
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center p-1 overflow-hidden shadow-2xs">
+            <KidsIllustration
+              name={targetLesson.id || 'star'}
+              className="w-full h-full object-contain"
+              alt={targetLesson.title}
+            />
           </div>
         </div>
       </div>

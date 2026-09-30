@@ -32,6 +32,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { kidAsset } from '../utils/kidAsset';
+import { KidsIllustration } from '../assets/illustrations/KidsIllustration';
 
 interface WorldBiomeConfig {
   id: string;
@@ -857,27 +858,36 @@ export const KidsJourneyPage: React.FC = () => {
                               : 'border-slate-200 opacity-80'
                           }`}
                         >
-                          <div>
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">
-                                {node.chapterTitle}
-                              </span>
-                              {node.stars > 0 && (
-                                <div className="flex items-center text-amber-400">
-                                  {[1, 2, 3].map((s) => (
-                                    <Star
-                                      key={s}
-                                      className={`w-3 h-3 ${
-                                        s <= node.stars ? 'fill-amber-400 text-amber-500' : 'text-slate-200'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                              )}
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/80 p-1 flex items-center justify-center shrink-0 shadow-2xs">
+                              <KidsIllustration
+                                name={node.lesson.activities?.[0]?.targetWord || node.lesson.emoji || 'bear'}
+                                className="w-full h-full object-contain filter drop-shadow-2xs"
+                                alt={node.lesson.title}
+                              />
                             </div>
-                            <h4 className="font-black text-slate-900 text-xs sm:text-sm truncate mt-0.5">
-                              {node.lesson.title}
-                            </h4>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider truncate">
+                                  {node.chapterTitle}
+                                </span>
+                                {node.stars > 0 && (
+                                  <div className="flex items-center text-amber-400 shrink-0">
+                                    {[1, 2, 3].map((s) => (
+                                      <Star
+                                        key={s}
+                                        className={`w-3 h-3 ${
+                                          s <= node.stars ? 'fill-amber-400 text-amber-500' : 'text-slate-200'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <h4 className="font-black text-slate-900 text-xs sm:text-sm truncate mt-0.5">
+                                {node.lesson.title}
+                              </h4>
+                            </div>
                           </div>
 
                           <div className="flex items-center justify-end">

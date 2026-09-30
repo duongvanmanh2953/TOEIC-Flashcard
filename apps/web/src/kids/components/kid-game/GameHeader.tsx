@@ -50,7 +50,7 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
 }) => {
   return (
     <header
-      className={`h-[52px] sm:h-[60px] px-3 sm:px-5 w-full flex items-center justify-between shrink-0 select-none bg-white/75 dark:bg-slate-900/75 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 z-30 transition-all ${className}`}
+      className={`h-[52px] sm:h-[60px] px-3 sm:px-5 w-full flex items-center justify-between shrink-0 select-none bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs z-30 transition-all ${className}`}
     >
       {/* LEFT: Exit button & Title */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -60,7 +60,7 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
             soundManager.playPop();
             onExitClick();
           }}
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer border border-slate-200/80 dark:border-slate-700 shrink-0"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer border border-slate-200/90 shrink-0"
           title="Thoát trò chơi"
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
@@ -68,7 +68,7 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
 
         <div className="flex items-center gap-2 min-w-0">
           {icon && <span className="shrink-0 text-xl hidden xs:inline-flex">{icon}</span>}
-          <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white truncate tracking-tight">
+          <h1 className="text-sm sm:text-base font-black text-slate-900 truncate tracking-tight">
             {title}
           </h1>
         </div>
@@ -85,7 +85,7 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Streak Flame */}
         {streak > 1 && (
-          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-600 border border-orange-200 text-xs font-black">
+          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-xs font-black">
             <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-500 animate-pulse" />
             <span>{streak}</span>
           </div>
@@ -93,14 +93,14 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
 
         {/* Lives (if enabled) */}
         {typeof lives === 'number' && (
-          <div className="flex items-center gap-0.5 sm:gap-1 px-2 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200">
+          <div className="flex items-center gap-0.5 sm:gap-1 px-2 py-1 rounded-full bg-rose-50 border border-rose-200">
             {Array.from({ length: maxLives }).map((_, i) => (
               <Heart
                 key={i}
                 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
                   i < lives
                     ? 'fill-rose-500 text-rose-500'
-                    : 'fill-slate-200 text-slate-300 dark:fill-slate-700'
+                    : 'fill-slate-200 text-slate-300'
                 }`}
               />
             ))}
@@ -108,7 +108,7 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
         )}
 
         {/* Star / Score Badge */}
-        <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 text-amber-900 dark:text-amber-200 font-black text-xs sm:text-sm shadow-xs">
+        <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-950 font-black text-xs sm:text-sm shadow-xs">
           <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
           <span>{score}</span>
         </div>
@@ -118,7 +118,7 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
           <button
             type="button"
             onClick={onToggleMute}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer border border-slate-200/80 dark:border-slate-700"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer border border-slate-200/90"
             title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
           >
             {isMuted ? (
@@ -134,7 +134,7 @@ export const GameHeader: React.FC<GameHeaderProps> = memo(({
           <button
             type="button"
             onClick={onPauseClick}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 active:scale-95 transition-transform cursor-pointer border border-slate-200/80 dark:border-slate-700"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition-transform cursor-pointer border border-slate-200/90"
             title="Tạm dừng"
           >
             <Pause className="w-4 h-4" />

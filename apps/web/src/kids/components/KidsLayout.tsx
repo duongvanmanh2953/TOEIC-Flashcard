@@ -302,7 +302,7 @@ export const KidsLayout: React.FC = () => {
         isFocusMode
           ? 'h-screen h-[100dvh] max-h-[100dvh] w-screen max-w-full overflow-hidden p-0 m-0'
           : 'min-h-screen min-h-[100dvh] pb-24 lg:pb-6 overflow-x-hidden'
-      } bg-[#0A0E1A] text-slate-100 font-sans select-none flex flex-col relative`}
+      } bg-[#F8FBFE] text-slate-900 font-sans select-none flex flex-col relative`}
     >
       {/* Global World Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-sky-50">

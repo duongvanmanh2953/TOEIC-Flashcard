@@ -109,7 +109,7 @@ export const GameShell: React.FC<GameShellProps> = memo(({
 
   return (
     <div
-      className="fixed inset-0 z-50 w-screen h-screen min-h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col select-none touch-manipulation bg-slate-900"
+      className="fixed inset-0 z-50 w-screen h-screen min-h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col select-none touch-manipulation bg-[#FAF8F5]"
       style={
         {
           '--game-header-height': '60px',
