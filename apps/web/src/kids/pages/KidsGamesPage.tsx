@@ -50,8 +50,6 @@ import {
   CheckCircle,
   MapPin,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   CheckCircle2,
   Globe2,
@@ -125,17 +123,6 @@ export const KidsGamesPage: React.FC = () => {
   // Active game state
   const [activeGameId, setActiveGameId] = useState<GameId | null>(initialGameParam || null);
   const [selectedWorldTab, setSelectedWorldTab] = useState<'all' | GameWorldId>('all');
-  const worldsScrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollWorlds = (direction: 'left' | 'right') => {
-    soundManager.playPop();
-    if (worldsScrollRef.current) {
-      worldsScrollRef.current.scrollBy({
-        left: direction === 'left' ? -280 : 280,
-        behavior: 'smooth',
-      });
-    }
-  };
 
   // Kids progress
   const [progress, setProgress] = useState(() => getKidsProgress());
@@ -439,10 +426,10 @@ export const KidsGamesPage: React.FC = () => {
       </div>
 
       {/* ================================================================ */}
-      {/* 3. WORLD NAVIGATION / WORLD SELECTOR CARDS                       */}
+      {/* 3. WORLD NAVIGATION / BUTTON TABS (BỎ TOÀN BỘ SCROLL NGANG)       */}
       {/* ================================================================ */}
-      <div className="p-5 sm:p-7 rounded-[36px] bg-white/75 backdrop-blur-xl border-2 border-white/80 shadow-[0_12px_32px_-6px_rgba(20,40,70,0.06)] space-y-5">
-        <div className="flex items-center justify-between px-1">
+      <div className="p-5 sm:p-6 rounded-[32px] bg-white/80 backdrop-blur-xl border-2 border-white/85 shadow-[0_10px_30px_-6px_rgba(20,40,70,0.06)] space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center shadow-xs">
               <Globe2 className="w-5 h-5 text-sky-600" />
@@ -452,150 +439,80 @@ export const KidsGamesPage: React.FC = () => {
                 Bản Đồ Thế Giới Các Vùng Đất
               </h2>
               <p className="text-xs font-bold text-slate-400">
-                Chọn một vùng đất để khám phá các chặng thử thách
+                Bấm vào một vùng đất để lọc nhanh các chặng thử thách
               </p>
             </div>
           </div>
-
-          {/* Left / Right Carousel Controls */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => scrollWorlds('left')}
-              title="Vùng đất trước"
-              className="w-9 h-9 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 shadow-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => scrollWorlds('right')}
-              title="Vùng đất tiếp theo"
-              className="w-9 h-9 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 shadow-xs flex items-center justify-center cursor-pointer active:scale-95 transition-all"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          <span className="text-xs font-bold text-slate-600 self-start sm:self-auto px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200/60 shadow-2xs">
+            {selectedWorldTab === 'all'
+              ? '⭐ Đang xem tất cả 17 trò chơi'
+              : `⭐ Vùng đất: ${KIDS_GAME_WORLDS.find((w) => w.id === selectedWorldTab)?.nameVi || ''}`}
+          </span>
         </div>
 
-        {/* Large Interactive World Cards Track */}
-        <div
-          ref={worldsScrollRef}
-          className="flex items-stretch gap-4 sm:gap-5 overflow-x-auto py-3 scrollbar-none scroll-smooth px-1"
-        >
-          {/* "All Worlds" Card */}
+        {/* Clean Wrap Button List (No Horizontal Scroll, No Ugly Scrollbar, Crisp Contrast) */}
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
+          {/* Button: "Tất Cả Vùng Đất" */}
           <button
+            type="button"
             onClick={() => {
               soundManager.playPop();
               setSelectedWorldTab('all');
             }}
-            className={`flex-1 min-w-[210px] max-w-[240px] p-4.5 rounded-3xl text-left transition-all duration-300 cursor-pointer flex flex-col justify-between shrink-0 select-none relative overflow-hidden ${
+            className={`group relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm cursor-pointer select-none transition-all duration-200 active:scale-95 ${
               selectedWorldTab === 'all'
-                ? 'bg-gradient-to-br from-indigo-600 via-sky-600 to-blue-700 text-white ring-4 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_16px_36px_-6px_rgba(251,191,36,0.5)] scale-[1.04] -translate-y-2 z-10'
-                : 'bg-white/80 backdrop-blur-md text-slate-800 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:bg-white hover:shadow-md hover:-translate-y-1 border-2 border-white/80'
+                ? 'bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400 -translate-y-0.5'
+                : 'bg-white/90 hover:bg-white text-slate-800 hover:text-indigo-600 border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:-translate-y-0.5'
             }`}
           >
-            {/* Shimmering Top Edge for Active Tab */}
-            {selectedWorldTab === 'all' && (
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300" />
-            )}
-
-            <div className="flex items-start justify-between">
-              <div
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center p-2 shadow-xs ${
-                  selectedWorldTab === 'all' ? 'bg-white/20 backdrop-blur-md' : 'bg-indigo-50'
-                }`}
-              >
-                <Compass
-                  className={`w-6 h-6 ${selectedWorldTab === 'all' ? 'text-white' : 'text-indigo-600'}`}
-                />
-              </div>
-              <span
-                className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                  selectedWorldTab === 'all'
-                    ? 'bg-amber-400 text-amber-950 shadow-xs flex items-center gap-0.5'
-                    : 'bg-indigo-50 text-indigo-700'
-                }`}
-              >
-                {selectedWorldTab === 'all' ? '⭐ ĐANG XEM' : '17 Game'}
-              </span>
-            </div>
-
-            <div className="mt-4">
-              <h3 className="font-black text-sm sm:text-base leading-tight">Toàn Bộ Bản Đồ</h3>
-              <p
-                className={`text-[11px] font-semibold mt-0.5 ${
-                  selectedWorldTab === 'all' ? 'text-sky-100 font-bold' : 'text-slate-400'
-                }`}
-              >
-                Tất cả 6 vùng đất
-              </p>
-            </div>
+            <Compass
+              className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${
+                selectedWorldTab === 'all' ? 'text-white' : 'text-indigo-600'
+              }`}
+            />
+            <span className="tracking-tight">Tất Cả Bản Đồ</span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[11px] font-black shrink-0 ${
+                selectedWorldTab === 'all'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-100 text-slate-700 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+              }`}
+            >
+              17
+            </span>
           </button>
 
-          {/* 6 World Cards */}
+          {/* Buttons for each World */}
           {KIDS_GAME_WORLDS.map((world) => {
             const isSelected = selectedWorldTab === world.id;
-            const visual = WORLD_VISUALS[world.id] || WORLD_VISUALS.starter;
 
             return (
               <button
                 key={world.id}
+                type="button"
                 onClick={() => {
                   soundManager.playPop();
                   setSelectedWorldTab(world.id);
                 }}
-                className={`flex-1 min-w-[210px] max-w-[240px] p-4.5 rounded-3xl text-left transition-all duration-300 cursor-pointer flex flex-col justify-between shrink-0 select-none relative overflow-hidden ${
+                className={`group relative flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-sm cursor-pointer select-none transition-all duration-200 active:scale-95 ${
                   isSelected
-                    ? `bg-gradient-to-br ${visual.ambientGradient} text-white ring-4 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_16px_36px_-6px_rgba(251,191,36,0.5)] scale-[1.04] -translate-y-2 z-10`
-                    : 'bg-white/80 backdrop-blur-md text-slate-800 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:bg-white hover:shadow-md hover:-translate-y-1 border-2 border-white/80'
+                    ? 'bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400 -translate-y-0.5'
+                    : 'bg-white/90 hover:bg-white text-slate-800 hover:text-indigo-600 border border-slate-200/90 hover:border-indigo-300 shadow-2xs hover:-translate-y-0.5'
                 }`}
               >
-                {/* Shimmering Top Edge for Active Tab */}
-                {isSelected && (
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300" />
-                )}
-
-                <div className="flex items-start justify-between">
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center p-2 shadow-xs ${
-                      isSelected ? 'bg-white/20 backdrop-blur-md' : 'bg-slate-50'
-                    }`}
-                  >
-                    <KidsIllustration
-                      name={visual.illustration}
-                      className="w-full h-full object-contain filter drop-shadow-xs"
-                    />
-                  </div>
-                  <span
-                    className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                      isSelected
-                        ? 'bg-amber-400 text-amber-950 shadow-xs flex items-center gap-0.5'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {isSelected ? '⭐ ĐANG XEM' : `${world.gameIds.length} Game`}
-                  </span>
-                </div>
-
-                <div className="mt-4">
-                  <h3 className="font-black text-sm sm:text-base leading-tight">{world.nameVi}</h3>
-                  <p
-                    className={`text-[11px] font-semibold mt-0.5 truncate ${
-                      isSelected ? 'text-white/90 font-bold' : 'text-slate-400'
-                    }`}
-                  >
-                    {world.nameEn}
-                  </p>
-
-                  {/* Tiny progress bar */}
-                  <div className="mt-2.5 w-full bg-black/10 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        isSelected ? 'bg-amber-300' : 'bg-emerald-500'
-                      }`}
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                </div>
+                <span className="text-base sm:text-lg leading-none shrink-0 drop-shadow-2xs">
+                  {world.icon}
+                </span>
+                <span className="tracking-tight">{world.nameVi}</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-black shrink-0 ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-100 text-slate-700 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+                  }`}
+                >
+                  {world.gameIds.length}
+                </span>
               </button>
             );
           })}
