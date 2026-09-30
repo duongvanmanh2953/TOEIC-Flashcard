@@ -4,7 +4,9 @@
   "description": "VocabFlow AI — Advanced English Vocabulary Learning Platform with Spaced Repetition & AI Tutor",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "services/*",
+    "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev --workspaces",

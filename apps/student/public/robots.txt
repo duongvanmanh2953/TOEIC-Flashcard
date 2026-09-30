@@ -1,0 +1,25 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Allow: /vocabulary
+Allow: /community
+Allow: /login
+Allow: /register
+
+# Private user data & authenticated areas - Do not index
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /word-bank
+Disallow: /word-bank/*
+Disallow: /review
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /notifications
+Disallow: /feedback
+Disallow: /custom-quiz
+Disallow: /placement-test
+Disallow: /coach
+Disallow: /ai-tutor
+Disallow: /api/
+
+Sitemap: https://toeicflashcard.com/sitemap.xml

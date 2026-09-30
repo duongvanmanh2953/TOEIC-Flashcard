@@ -1,0 +1,1748 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+enum Role {
+  USER
+  PREMIUM_USER
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum DeviceStatus {
+  ACTIVE
+  PENDING_REVIEW
+  BLOCKED
+  REVOKED
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum RiskEventType {
+  NEW_DEVICE
+  DEVICE_LIMIT_EXCEEDED
+  SUSPICIOUS_LOGIN
+}
+
+enum RiskEventStatus {
+  PENDING
+  APPROVED
+  BLOCKED
+  EXEMPTED
+  RESOLVED
+}
+
+enum AccountRiskStatus {
+  NORMAL
+  UNDER_REVIEW
+  RESTRICTED
+  BLOCKED
+}
+
+enum CefrLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+  ALL
+}
+
+enum VocabStatus {
+  NEW
+  LEARNING
+  FAMILIAR
+  REVIEW
+  STRONG
+  MASTERED
+  DORMANT
+}
+
+enum RelationType {
+  SYNONYM
+  ANTONYM
+  COLLOCATION
+  WORD_FAMILY
+  PHRASAL_VERB
+  RELATED
+}
+
+enum SessionType {
+  SMART_REVIEW
+  PLACEMENT_TEST
+  QUICK_LEARN
+  QUIZ
+  EXAM_PRACTICE
+}
+
+enum ExerciseType {
+  MULTIPLE_CHOICE
+  MEANING_SELECTION
+  FILL_IN_BLANK
+  TYPE_THE_WORD
+  LISTENING
+  CONTEXTUAL_CHOICE
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  username     String?     @unique
+  passwordHash String
+  displayName  String
+  avatar       String?
+  timezone     String      @default("Asia/Ho_Chi_Minh")
+  locale       String      @default("vi")
+  status       UserStatus  @default(ACTIVE)
+  role         Role        @default(USER)
+  refreshToken         String?
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  lastActiveAt         DateTime    @default(now())
+
+  profile          UserProfile?
+  userVocabularies UserVocabulary[]
+  reviewEvents     ReviewEvent[]
+  studySessions    StudySession[]
+  learningGoals    LearningGoal[]
+  achievements     UserAchievement[]
+  streak           UserStreak?
+  xp               UserXP?
+  notifications    Notification[]
+  aiInteractions   AIInteraction[]
+  communityDecks   CommunityDeck[]
+  clonedDecks      DeckClone[]
+  subscriptions    Subscription[]
+  paymentOrders    PaymentOrder[]
+  entitlementUsage EntitlementUsage[]
+  customQuizzes    CustomQuiz[]
+  quizAttempts     CustomQuizAttempt[]
+  auditLogs        AuditLog[]
+  supportConversations SupportConversation[] @relation("UserTickets")
+  assignedTickets  SupportConversation[]     @relation("AssignedAdminTickets")
+  supportMessages  SupportMessage[]
+  feedbacks        Feedback[]
+  feedbackVotes    FeedbackVote[]
+  gameResults      GameResult[]
+  deckLikes        DeckLike[]
+  deckDislikes     DeckDislike[]
+  deckComments     DeckComment[]
+  createdExams     Exam[]                @relation("UserExams")
+  examLikes        ExamLike[]
+  examDislikes     ExamDislike[]
+  examComments     ExamComment[]
+  savedExams       ExamSaved[]
+  examAttempts     ExamAttempt[]
+  userAccessGrants    BankAccessGrant[]         @relation("UserAccessGrants")
+  createdAccessGrants BankAccessGrant[]         @relation("CreatedAccessGrants")
+  chatParticipants    ConversationParticipant[]
+  chatMessages        ChatMessage[]
+  encryptionKey       UserEncryptionKey?
+
+  accountRiskStatus   AccountRiskStatus         @default(NORMAL)
+  devices             UserDevice[]
+  sessions            UserSession[]
+  riskEvents          DeviceRiskEvent[]
+  logoutOtps          DeviceLogoutOtp[]
+  adminSecurity       AdminSecurity?
+  captures            VocabularyCapture[]
+  journeyEvents       WordJourneyEvent[]
+  confusedPairs       VocabularyConfusionPair[]
+
+  // Module A: Personal Notes & Categories
+  noteCategories      NoteCategory[]
+  notes               Note[]
+
+  // Module B: Community Knowledge Posts, Saves, Shares, Reactions, Comments
+  communityPosts      CommunityPost[]
+  postReactions       CommunityPostReaction[]
+  savedPosts          CommunityPostSave[]
+  postShares          CommunityPostShare[]
+  communityComments   CommunityComment[]
+  commentReactions    CommunityCommentReaction[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model UserProfile {
+  id                       String    @id @default(uuid())
+  userId                   String    @unique
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nativeLanguage           String    @default("vi")
+  englishLevel             CefrLevel @default(B1)
+  targetLevel              CefrLevel @default(C1)
+  learningGoal             String?   @default("TOEIC 850+ & Business Communication")
+  primaryGoal              String?   @default("TOEIC")
+  secondaryGoal            String?   @default("Workplace Communication")
+  dailyGoal                Int       @default(20) // Words per day
+  weeklyGoal               Int       @default(100)
+  preferredStudyTime       String    @default("20:00")
+  preferredSessionDuration Int       @default(15) // Minutes
+}
+
+model Vocabulary {
+  id              String      @id @default(uuid())
+  word            String      @unique
+  normalizedWord  String
+  lemma           String?
+  pronunciation   String?     // Audio text representation e.g. /ni'gouʃieit/
+  phonetic        String?
+  partOfSpeech    String?     // n., v., adj., adv.
+  difficulty      Float       @default(3.0) // 1.0 to 5.0
+  cefrLevel       CefrLevel   @default(B1)
+  frequencyRank   Int?
+  frequencyBand   Int?        @default(1)
+  definition      String
+  shortDefinition String?
+  etymology       String?
+  imageUrl        String?
+  audioUrl        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  meanings         VocabularyMeaning[]
+  examples         ExampleSentence[]
+  sourceRelations  WordRelation[]        @relation("SourceWord")
+  targetRelations  WordRelation[]        @relation("TargetWord")
+  topicItems       VocabularyTopicItem[]
+  userVocabularies UserVocabulary[]
+  reviewEvents     ReviewEvent[]
+  exercises        Exercise[]
+  journeyEvents    WordJourneyEvent[]
+  confusedAs1      VocabularyConfusionPair[] @relation("ConfusionWord1")
+  confusedAs2      VocabularyConfusionPair[] @relation("ConfusionWord2")
+
+  @@index([normalizedWord])
+  @@index([cefrLevel])
+  @@index([difficulty])
+}
+
+model VocabularyMeaning {
+  id           String     @id @default(uuid())
+  vocabularyId String
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  meaning      String     // Nghĩa tiếng Việt
+  definition   String?    // Định nghĩa tiếng Anh
+  usage        String?
+  register     String?    // Formal, Informal, Academic
+  domain       String?    // Business, Technology, etc.
+
+  @@index([vocabularyId])
+}
+
+model ExampleSentence {
+  id           String     @id @default(uuid())
+  vocabularyId String
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  sentence     String
+  translation  String?
+  difficulty   Float      @default(3.0)
+  sourceType   String?    @default("TOEIC")
+
+  @@index([vocabularyId])
+}
+
+model WordRelation {
+  id           String       @id @default(uuid())
+  sourceWordId String
+  targetWordId String
+  relationType RelationType
+  sourceWord   Vocabulary   @relation("SourceWord", fields: [sourceWordId], references: [id], onDelete: Cascade)
+  targetWord   Vocabulary   @relation("TargetWord", fields: [targetWordId], references: [id], onDelete: Cascade)
+
+  @@index([sourceWordId])
+  @@index([targetWordId])
+}
+
+model VocabularyTopic {
+  id          String                @id @default(uuid())
+  name        String                @unique
+  slug        String                @unique
+  description String?
+  icon        String?
+  items       VocabularyTopicItem[]
+}
+
+model VocabularyTopicItem {
+  id           String          @id @default(uuid())
+  topicId      String
+  vocabularyId String
+  topic        VocabularyTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary      @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, vocabularyId])
+  @@index([topicId])
+  @@index([vocabularyId])
+}
+
+model UserVocabulary {
+  id                 String      @id @default(uuid())
+  userId             String
+  vocabularyId       String
+  status             VocabStatus @default(NEW)
+  masteryScore       Float       @default(0.0) // 0 to 100
+  familiarityScore   Float       @default(0.0)
+  recallProbability  Float       @default(0.0)
+  difficultyEstimate Float       @default(3.0)
+  stability          Float       @default(1.0) // Days
+  retrievability     Float       @default(1.0)
+  repetitionCount    Int         @default(0)
+  correctCount       Int         @default(0)
+  incorrectCount     Int         @default(0)
+  lastReviewedAt     DateTime?
+  nextReviewAt       DateTime?
+  firstLearnedAt     DateTime?
+  masteredAt         DateTime?
+  streak             Int         @default(0)
+  confidence         Int         @default(3) // 1 to 5
+  isFavorite         Boolean     @default(false)
+  isHard             Boolean     @default(false)
+
+  // Learning Brain: Active vs Passive & Memory Rescue
+  recognitionScore   Float       @default(0.0) // 0 to 1.0 (Khả năng nhận diện)
+  recallScore        Float       @default(0.0) // 0 to 1.0 (Khả năng hồi tưởng nghĩa)
+  contextScore       Float       @default(0.0) // 0 to 1.0 (Khả năng hiểu trong ngữ cảnh)
+  activeRecallScore  Float       @default(0.0) // 0 to 1.0 (Khả năng nhớ lại nghĩa)
+  productionScore    Float       @default(0.0) // 0 to 1.0 (Khả năng tự gõ/nói từ trong ngữ cảnh)
+  speakingScore      Float       @default(0.0) // 0 to 1.0 (Khả năng phát âm/nói)
+  contextMastery     Json?                     // Điểm theo ngữ cảnh: { business: 0.8, academic: 0.6 }
+  slipRisk           Float       @default(0.0) // 0 to 1.0 (Nguy cơ quên phục vụ Memory Rescue)
+  lastReviewMode     String?     @default("RECOGNITION")
+  recommendedReviewMode String?  @default("RECOGNITION")
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vocabularyId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, status])
+  @@index([vocabularyId])
+}
+
+model ReviewEvent {
+  id             String       @id @default(uuid())
+  userId         String
+  vocabularyId   String
+  sessionId      String?
+  exerciseType   ExerciseType @default(MULTIPLE_CHOICE)
+  answer         String
+  correct        Boolean
+  responseTimeMs Int          @default(2000)
+  confidence     Int          @default(3)
+  hintUsed       Boolean      @default(false)
+  skipped        Boolean      @default(false)
+  reviewedAt     DateTime     @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary    @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  studySession StudySession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, reviewedAt])
+  @@index([vocabularyId])
+}
+
+model StudySession {
+  id          String      @id @default(uuid())
+  userId      String
+  type        SessionType @default(SMART_REVIEW)
+  startedAt   DateTime    @default(now())
+  completedAt DateTime?
+  duration    Int?        // Seconds
+  score       Float?
+  xpEarned    Int         @default(0)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewEvents ReviewEvent[]
+
+  @@index([userId, startedAt])
+}
+
+model Exercise {
+  id           String       @id @default(uuid())
+  vocabularyId String
+  type         ExerciseType
+  difficulty   Float        @default(3.0)
+  payload      Json         // Question, options, sentence context
+  answer       String
+  explanation  String?
+
+  vocabulary Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@index([vocabularyId])
+}
+
+model LearningGoal {
+  id              String   @id @default(uuid())
+  userId          String
+  goalType        String   @default("DAILY_WORDS")
+  target          Int      @default(20)
+  currentProgress Int      @default(0)
+  deadline        DateTime?
+  status          String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, EXPIRED
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  code        String   @unique // FIRST_WORD, STREAK_7, MASTER_100, etc.
+  name        String
+  description String
+  icon        String
+  condition   Json?
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+model UserStreak {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastStudyDate DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserXP {
+  id           String @id @default(uuid())
+  userId       String @unique
+  totalXP      Int    @default(0)
+  currentLevel Int    @default(1)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  type        String    // REVIEW_DUE, STREAK_WARNING, ACHIEVEMENT_UNLOCKED, SUPPORT_REPLY, FEEDBACK_REPLY, ANNOUNCEMENT
+  title       String
+  body        String
+  data        Json?
+  readAt      DateTime?
+  scheduledAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model AIInteraction {
+  id         String   @id @default(uuid())
+  userId     String
+  type       String   // TUTOR_CHAT, SENTENCE_GEN, EXPLANATION
+  input      String
+  output     String
+  model      String   @default("gpt-4o-mini")
+  tokenUsage Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SubscriptionTier {
+  FREE
+  PLUS
+  PRO
+  ENTERPRISE
+  CUSTOM
+}
+
+model CommunityDeck {
+  id          String           @id @default(uuid())
+  userId      String
+  title       String
+  description String?
+  category    String           @default("General")
+  cefrLevel   CefrLevel        @default(B1)
+  isPublic     Boolean          @default(true)
+  status       ModerationStatus @default(PENDING)
+  isProtected  Boolean          @default(false)
+  passwordHash String?
+  cloneCount   Int              @default(0)
+  likeCount    Int              @default(0)
+  dislikeCount Int              @default(0)
+  commentCount Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  author   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  words    CommunityWord[]
+  clones   DeckClone[]
+  likes    DeckLike[]
+  dislikes DeckDislike[]
+  comments DeckComment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([cefrLevel])
+}
+
+model CommunityWord {
+  id                 String   @id @default(uuid())
+  deckId             String
+  word               String
+  phonetic           String?
+  partOfSpeech       String?
+  meaning            String
+  definition         String?
+  example            String?
+  exampleTranslation String?
+  createdAt          DateTime @default(now())
+
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@index([deckId])
+  @@index([word])
+}
+
+model DeckClone {
+  id       String   @id @default(uuid())
+  userId   String
+  deckId   String
+  clonedAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deckId])
+  @@index([userId])
+  @@index([deckId])
+}
+
+model DeckLike {
+  id        String   @id @default(uuid())
+  userId    String
+  deckId    String
+  createdAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deckId])
+  @@index([userId])
+  @@index([deckId])
+}
+
+model DeckDislike {
+  id        String   @id @default(uuid())
+  userId    String
+  deckId    String
+  createdAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deckId])
+  @@index([userId])
+  @@index([deckId])
+}
+
+model DeckComment {
+  id         String    @id @default(uuid())
+  deckId     String
+  userId     String
+  parentId   String?
+  content    String
+  likeCount  Int       @default(0)
+  replyCount Int       @default(0)
+  isEdited   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  deck    CommunityDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  DeckComment?  @relation("DeckCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies DeckComment[] @relation("DeckCommentReplies")
+
+  @@index([deckId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+// =============================================================================
+// EXAM BANK & SMART EVALUATION SYSTEM
+// =============================================================================
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  PRIVATE
+  ARCHIVED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  MULTIPLE_SELECT
+  TRUE_FALSE
+  FILL_IN_BLANK
+  MATCHING
+  ORDERING
+  SHORT_ANSWER
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Exam {
+  id               String           @id @default(uuid())
+  authorId         String
+  title            String
+  description      String?
+  coverImage       String?
+  languageId       String           @default("en")
+  examType         String           @default("TOEIC") // TOEIC, IELTS, HSK, JLPT, TOPIK, SAT, THPT, GENERAL_QUIZ, CUSTOM
+  section          String?          @default("Full")  // Reading, Listening, Full, Grammar, Vocabulary
+  level            String?          @default("Intermediate") // A1-C2, Band 6.0, N3, HSK4, etc.
+  durationMinutes  Int              @default(60)
+  totalQuestions   Int              @default(0)
+  totalScore       Float            @default(100.0)
+  passingScore     Float?           @default(50.0)
+  status           ExamStatus       @default(DRAFT)
+  moderationStatus ModerationStatus @default(PENDING)
+  isProtected      Boolean          @default(false)
+  passwordHash     String?
+  likeCount        Int              @default(0)
+  dislikeCount     Int              @default(0)
+  commentCount     Int              @default(0)
+  attemptCount     Int              @default(0)
+  tags             String[]         @default([])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  author    User           @relation("UserExams", fields: [authorId], references: [id], onDelete: Cascade)
+  questions ExamQuestion[]
+  likes     ExamLike[]
+  dislikes  ExamDislike[]
+  comments  ExamComment[]
+  saves     ExamSaved[]
+  attempts  ExamAttempt[]
+
+  @@index([authorId])
+  @@index([examType])
+  @@index([status])
+  @@index([moderationStatus])
+  @@index([languageId])
+}
+
+model ExamQuestion {
+  id                 String             @id @default(uuid())
+  examId             String
+  questionNumber     Int
+  questionText       String
+  questionHtml       String?
+  imageUrl           String?
+  audioUrl           String?
+  questionType       QuestionType       @default(MULTIPLE_CHOICE)
+  correctAnswer      Json               // e.g. ["B"] or ["A", "C"] or "completed"
+  acceptedAnswers    String[]           @default([])
+  explanation        String?
+  sourceExplanation  String?
+  optionExplanations Json?              // { "A": "...", "B": "...", "C": "...", "D": "..." }
+  grammarType        String?            // Past Simple, Preposition, Passive Voice...
+  partOfSpeech       String?            // Verb, Noun, Adjective...
+  difficulty         QuestionDifficulty @default(MEDIUM)
+  category           String?            @default("Grammar")
+  skill              String?            @default("Reading")
+  points             Float              @default(1.0)
+  tags               String[]           @default([])
+  vocabularyIds      String[]           @default([]) // Link to Vocabulary entity for 1-click review bank adding
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options ExamOption[]
+  answers ExamAnswer[]
+
+  @@index([examId])
+  @@index([questionNumber])
+  @@index([grammarType])
+  @@index([category])
+}
+
+model ExamOption {
+  id           String  @id @default(uuid())
+  questionId   String
+  key          String  // A, B, C, D...
+  text         String
+  imageUrl     String?
+  displayOrder Int     @default(0)
+
+  question ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model ExamLike {
+  id        String   @id @default(uuid())
+  userId    String
+  examId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([userId])
+  @@index([examId])
+}
+
+model ExamDislike {
+  id        String   @id @default(uuid())
+  userId    String
+  examId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([userId])
+  @@index([examId])
+}
+
+model ExamComment {
+  id         String    @id @default(uuid())
+  examId     String
+  userId     String
+  parentId   String?
+  content    String
+  likeCount  Int       @default(0)
+  replyCount Int       @default(0)
+  isEdited   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  exam    Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  ExamComment?  @relation("ExamCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies ExamComment[] @relation("ExamCommentReplies")
+
+  @@index([examId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model ExamSaved {
+  id        String   @id @default(uuid())
+  userId    String
+  examId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([userId])
+  @@index([examId])
+}
+
+model ExamAttempt {
+  id                 String    @id @default(uuid())
+  examId             String
+  userId             String
+  startedAt          DateTime  @default(now())
+  submittedAt        DateTime?
+  durationSeconds    Int       @default(0)
+  score              Float     @default(0.0)
+  totalPossibleScore Float     @default(0.0)
+  percentage         Float     @default(0.0)
+  correctCount       Int       @default(0)
+  wrongCount         Int       @default(0)
+  skippedCount       Int       @default(0)
+  isPassed           Boolean   @default(false)
+  analytics          Json?     // { accuracyByCategory, accuracyByGrammar, accuracyBySkill, accuracyByDifficulty, weakAreas }
+
+  exam    Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers ExamAnswer[]
+
+  @@index([userId])
+  @@index([examId])
+  @@index([startedAt])
+}
+
+model ExamAnswer {
+  id               String   @id @default(uuid())
+  attemptId        String
+  questionId       String
+  selectedAnswer   Json     // e.g. ["B"] or ["A", "C"]
+  correctAnswer    Json
+  isCorrect        Boolean  @default(false)
+  pointsAwarded    Float    @default(0.0)
+  timeSpentSeconds Int      @default(0)
+  category         String?
+  skill            String?
+  grammarType      String?
+  partOfSpeech     String?
+  difficulty       String?
+
+  attempt  ExamAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
+}
+
+
+model Plan {
+  id               String           @id @default(uuid())
+  tier             SubscriptionTier @unique
+  name             String
+  slug             String?          @unique
+  description      String?
+  priceMonthly     Float            @default(0.0)
+  priceYearly      Float            @default(0.0)
+  currency         String           @default("VND")
+  billingCycle     String           @default("MONTHLY") // MONTHLY, YEARLY
+  status           String           @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
+  displayOrder     Int              @default(0)
+  aiDailyQuota     Int              @default(10) // requests/day
+  maxCustomDecks   Int              @default(3)
+  unlimitedReviews Boolean          @default(false)
+  features         Json
+  limits           Json?            // e.g. { aiChat: 10, voiceAiMinutes: 5, pronunciation: 5, textToVocab: 3, storyGen: 1 }
+  permissions      Json?            // e.g. { aiChat: true, voiceAi: false, personalMemory: false, roleplay: false, ... }
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @default(now()) @updatedAt
+
+  subscriptions Subscription[]
+  paymentOrders PaymentOrder[]
+
+  @@index([status])
+  @@index([displayOrder])
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  VIETQR
+  PAYOS
+  WEBHOOK
+}
+
+model PaymentOrder {
+  id              String           @id @default(uuid())
+  orderCode       Int              @unique
+  userId          String
+  planId          String
+  tier            SubscriptionTier
+  amount          Float
+  status          PaymentStatus    @default(PENDING)
+  paymentMethod   PaymentMethod    @default(VIETQR)
+  description     String
+  qrUrl           String?
+  checkoutUrl     String?
+  paymentLinkId   String?
+  transactionCode String?
+  webhookPayload  Json?
+  paidAt          DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([orderCode])
+  @@index([status])
+}
+
+model Subscription {
+  id               String   @id @default(uuid())
+  userId           String
+  planId           String
+  status           String   @default("ACTIVE") // ACTIVE, CANCELED, EXPIRED
+  currentPeriodEnd DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+}
+
+model EntitlementUsage {
+  id             String   @id @default(uuid())
+  userId         String
+  date           String   // YYYY-MM-DD
+  aiUsageCount   Int      @default(0)
+  quizGenCount   Int      @default(0)
+  reviewCount    Int      @default(0)
+  storyGenCount  Int      @default(0)
+  deckCloneCount Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model CustomQuiz {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  sourceFilter  String   // FAVORITES, WEAK_WORDS, CEFR, DECK
+  questionCount Int      @default(10)
+  questions     Json
+  createdAt     DateTime @default(now())
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts CustomQuizAttempt[]
+
+  @@index([userId])
+}
+
+model CustomQuizAttempt {
+  id             String   @id @default(uuid())
+  quizId         String
+  userId         String
+  score          Float
+  accuracy       Float
+  responseTimeMs Int
+  answers        Json
+  completedAt    DateTime @default(now())
+
+  quiz CustomQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+}
+
+model AIEvaluation {
+  id              String   @id @default(uuid())
+  interactionId   String?
+  taskType        String   // EXPLANATION, SENTENCE_GEN, TUTOR
+  targetWord      String?
+  cefrAppropriate Boolean  @default(true)
+  hallucination   Boolean  @default(false)
+  confidenceScore Float    @default(0.95)
+  notes           String?
+  createdAt       DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  action     String   // e.g. MODERATE_DECK_APPROVE, USER_SUSPEND, USER_ACTIVATE
+  targetType String   // e.g. COMMUNITY_DECK, USER
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique // e.g. FREE_AI_DAILY_LIMIT, FREE_REVIEW_DAILY_LIMIT
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+enum SupportStatus {
+  OPEN
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+enum SupportPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model SupportConversation {
+  id              String          @id @default(uuid())
+  ticketId        String          @unique // e.g. SUP-20260906-89214
+  userId          String
+  subject         String
+  status          SupportStatus   @default(OPEN)
+  priority        SupportPriority @default(NORMAL)
+  tags            String[]        @default(["GENERAL"])
+  assignedAdminId String?
+  lastMessageAt   DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user          User             @relation("UserTickets", fields: [userId], references: [id], onDelete: Cascade)
+  assignedAdmin User?            @relation("AssignedAdminTickets", fields: [assignedAdminId], references: [id])
+  messages      SupportMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedAdminId])
+  @@index([lastMessageAt])
+}
+
+model SupportMessage {
+  id             String    @id @default(uuid())
+  conversationId String
+  senderId       String
+  senderRole     String    @default("USER") // USER, ADMIN, SUPER_ADMIN
+  senderName     String
+  content        String
+  isInternalNote Boolean   @default(false)
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+enum FeedbackType {
+  FEATURE_REQUEST
+  BUG_REPORT
+  CONTENT_CORRECTION
+  VOCABULARY_SUGGESTION
+  UX_FEEDBACK
+  GENERAL
+}
+
+enum FeedbackStatus {
+  NEW
+  ACKNOWLEDGED
+  UNDER_REVIEW
+  PLANNED
+  IN_PROGRESS
+  RESOLVED
+  DECLINED
+}
+
+model Feedback {
+  id          String          @id @default(uuid())
+  userId      String
+  type        FeedbackType    @default(GENERAL)
+  title       String
+  description String
+  status      FeedbackStatus  @default(NEW)
+  priority    SupportPriority @default(NORMAL)
+  adminReply  String?
+  adminNotes  String?
+  votesCount  Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  votes FeedbackVote[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+}
+
+model FeedbackVote {
+  id         String   @id @default(uuid())
+  feedbackId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([feedbackId, userId])
+}
+
+model AdminAnnouncement {
+  id          String    @id @default(uuid())
+  title       String
+  content     String
+  audience    String    @default("ALL") // ALL, FREE, PREMIUM, INACTIVE_7D
+  status      String    @default("SENT") // DRAFT, SCHEDULED, SENT
+  targetCount Int       @default(0)
+  scheduledAt DateTime?
+  sentAt      DateTime? @default(now())
+  createdAt   DateTime  @default(now())
+}
+
+model LearningResource {
+  id           String      @id @default(uuid())
+  title        String
+  description  String?
+  type         String      // VOCABULARY, GRAMMAR, PRONUNCIATION, LESSON, EXERCISE, SCENARIO, READING, LISTENING
+  level        CefrLevel   @default(B1) // A1, A2, B1, B2, C1, C2
+  category     String?     @default("General")
+  content      String      // Markdown / JSON / plain text
+  audioUrl     String?
+  imageUrl     String?
+  language     String      @default("en")
+  status       String      @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  isPremium    Boolean     @default(false)
+  requiredPlan String      @default("FREE") // FREE, PLUS, PRO, ALL
+  tags         String[]    @default([])
+  metadata     Json?
+  authorId     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([type])
+  @@index([level])
+  @@index([status])
+  @@index([requiredPlan])
+}
+
+// =============================================================================
+// REALTIME ENGLISH GAMES & COMPETITIVE LEADERBOARDS
+// =============================================================================
+
+enum GameModeType {
+  TRANSLATION_RUSH
+  WORD_BLITZ
+  SENTENCE_SPRINT
+  LISTENING_RUSH
+  SYNONYM_BATTLE
+  MISSING_WORD
+  FIX_SENTENCE
+  GUESS_WORD
+}
+
+model GameConfig {
+  id              String       @id @default(uuid())
+  gameMode        GameModeType @unique
+  title           String
+  description     String
+  scheduleTime    String       @default("20:00")
+  durationMinutes Int          @default(15)
+  questionCount   Int          @default(15)
+  difficulty      String       @default("INTERMEDIATE")
+  scoreMultiplier Float        @default(1.0)
+  isActive        Boolean      @default(true)
+  rulesJson       Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model GameQuestion {
+  id              String       @id @default(uuid())
+  gameMode        GameModeType @default(TRANSLATION_RUSH)
+  prompt          String
+  direction       String       @default("EN_VI")
+  correctAnswer   String
+  acceptedAnswers String[]     @default([])
+  explanation     String?
+  difficulty      Float        @default(3.0)
+  cefrLevel       CefrLevel    @default(B1)
+  category        String       @default("General")
+  audioUrl        String?
+  tags            String[]     @default([])
+  status          String       @default("PUBLISHED")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([gameMode])
+  @@index([status])
+  @@index([cefrLevel])
+}
+
+model GameResult {
+  id           String       @id @default(uuid())
+  gameId       String
+  gameMode     GameModeType @default(TRANSLATION_RUSH)
+  roomCode     String
+  date         String
+  userId       String
+  rank         Int
+  score        Int
+  correctCount Int          @default(0)
+  totalRounds  Int          @default(0)
+  accuracy     Float        @default(0.0)
+  bestStreak   Int          @default(0)
+  durationSec  Int          @default(0)
+  createdAt    DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+  @@index([gameMode])
+  @@index([rank])
+}
+
+// =============================================================================
+// COMMUNITY ACCESS KEYS, REALTIME MESSAGING & E2EE ENCRYPTION
+// =============================================================================
+
+enum BankType {
+  VOCABULARY
+  EXAM
+}
+
+enum GrantStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model BankAccessGrant {
+  id         String      @id @default(uuid())
+  bankType   BankType    @default(VOCABULARY)
+  bankId     String
+  userId     String
+  createdBy  String
+  tokenHash  String
+  status     GrantStatus @default(ACTIVE)
+  createdAt  DateTime    @default(now())
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+
+  user    User @relation("UserAccessGrants", fields: [userId], references: [id], onDelete: Cascade)
+  creator User @relation("CreatedAccessGrants", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@unique([bankId, userId])
+  @@index([bankId])
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([status])
+  @@index([createdBy])
+}
+
+enum MessageContextType {
+  GENERAL
+  BANK
+}
+
+model Conversation {
+  id              String              @id @default(uuid())
+  participantIds  String[]
+  contextType     MessageContextType? @default(GENERAL)
+  bankType        BankType?
+  bankId          String?
+  bankTitle       String?
+  bankOwnerId     String?
+  languageSpaceId String?
+  lastMessageText String?
+  lastMessageType String              @default("TEXT")
+  lastMessageAt   DateTime            @default(now())
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  participants ConversationParticipant[]
+  messages     ChatMessage[]
+
+  @@index([lastMessageAt])
+  @@index([contextType, bankId])
+  @@index([languageSpaceId])
+}
+
+model ConversationParticipant {
+  id                String    @id @default(uuid())
+  conversationId    String
+  userId            String
+  unreadCount       Int       @default(0)
+  lastReadMessageId String?
+  lastReadAt        DateTime?
+  clearedAt         DateTime?
+  isPinned          Boolean   @default(false)
+  isMuted           Boolean   @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, lastReadAt])
+}
+
+enum ChatMessageType {
+  TEXT
+  ACCESS_KEY
+  BANK_CONTEXT
+  SYSTEM
+}
+
+enum ChatMessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+model ChatMessage {
+  id             String            @id @default(uuid())
+  conversationId String
+  senderId       String
+  messageType    ChatMessageType   @default(TEXT)
+  ciphertext     String
+  encryptedKeys  Json?
+  iv             String?
+  status         ChatMessageStatus @default(SENT)
+  metadata       Json?
+  deletedFor     String[]          @default([])
+  isDeleted      Boolean           @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?
+  expiresAt      DateTime?
+  createdAt      DateTime          @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([expiresAt])
+}
+
+model UserEncryptionKey {
+  userId              String   @id
+  publicKey           String
+  encryptedPrivateKey String?
+  keyDerivationSalt   String?
+  keyAlgorithm        String   @default("ECDH-P256-AES-GCM")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// DEVICE SECURITY, SESSION MANAGEMENT & ADMIN SYSTEM ACCESS
+// =============================================================================
+
+model UserDevice {
+  id           String       @id @default(uuid())
+  userId       String
+  deviceId     String
+  deviceName   String
+  deviceType   String       @default("DESKTOP") // DESKTOP, MOBILE, TABLET
+  os           String?
+  browser      String?
+  userAgent    String?
+  ipLastSeen   String?
+  firstSeenAt  DateTime     @default(now())
+  lastSeenAt   DateTime     @default(now())
+  status       DeviceStatus @default(ACTIVE)
+  isAllowed    Boolean      @default(true)
+  isPrimary    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions     UserSession[]
+  riskEvents   DeviceRiskEvent[]
+
+  @@unique([userId, deviceId])
+  @@index([userId, status])
+  @@index([deviceId])
+}
+
+model UserSession {
+  id                 String        @id @default(uuid())
+  userId             String
+  deviceId           String
+  sessionTokenHash   String?
+  refreshTokenHash   String?
+  ip                 String?
+  userAgent          String?
+  status             SessionStatus @default(ACTIVE)
+  expiresAt          DateTime?
+  revokedAt          DateTime?
+  createdAt          DateTime      @default(now())
+  lastSeenAt         DateTime      @default(now())
+
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device             UserDevice    @relation(fields: [userId, deviceId], references: [userId, deviceId], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([deviceId])
+}
+
+model DeviceRiskEvent {
+  id           String          @id @default(uuid())
+  userId       String
+  deviceId     String
+  eventType    RiskEventType   @default(NEW_DEVICE)
+  status       RiskEventStatus @default(PENDING)
+  ip           String?
+  userAgent    String?
+  reviewNote   String?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime        @default(now())
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device       UserDevice?     @relation(fields: [userId, deviceId], references: [userId, deviceId], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DeviceLogoutOtp {
+  id             String    @id @default(uuid())
+  userId         String
+  targetDeviceId String
+  otpHash        String
+  attempts       Int       @default(0)
+  expiresAt      DateTime
+  usedAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, targetDeviceId])
+  @@index([expiresAt])
+}
+
+model AdminSecurity {
+  id          String   @id @default(uuid())
+  adminUserId String   @unique
+  keypassHash String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  adminUser   User     @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+}
+
+// =============================================================================
+// PERSONAL VOCABULARY BRAIN, CAPTURE, JOURNEY & CONFUSION ENGINE
+// =============================================================================
+
+model VocabularyCapture {
+  id             String                  @id @default(uuid())
+  userId         String
+  sourceTitle    String?
+  rawText        String
+  extractedCount Int                     @default(0)
+  selectedCount  Int                     @default(0)
+  createdAt      DateTime                @default(now())
+
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items          VocabularyCaptureItem[]
+
+  @@index([userId, createdAt])
+}
+
+model VocabularyCaptureItem {
+  id              String            @id @default(uuid())
+  captureId       String
+  word            String
+  contextSentence String?
+  contextMeaning  String?
+  cefrLevel       CefrLevel         @default(B1)
+  collocations    String[]          @default([])
+  importanceScore Float             @default(0.8)
+  isSelected      Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+
+  capture         VocabularyCapture @relation(fields: [captureId], references: [id], onDelete: Cascade)
+
+  @@index([captureId])
+  @@index([word])
+}
+
+model WordJourneyEvent {
+  id           String     @id @default(uuid())
+  userId       String
+  vocabularyId String
+  eventType    String     // ENCOUNTERED, FIRST_LEARNED, DEFINITION_RECALL, CONTEXT_PRACTICE, SENTENCE_PRODUCTION, AI_CONVERSATION, FORGOTTEN, RECOVERED, MASTERED
+  details      String?
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+
+  @@index([userId, vocabularyId, createdAt])
+}
+
+model VocabularyConfusionPair {
+  id             String     @id @default(uuid())
+  userId         String
+  word1Id        String
+  word2Id        String
+  confusionCount Int        @default(1)
+  lastConfusedAt DateTime   @default(now())
+
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word1          Vocabulary @relation("ConfusionWord1", fields: [word1Id], references: [id], onDelete: Cascade)
+  word2          Vocabulary @relation("ConfusionWord2", fields: [word2Id], references: [id], onDelete: Cascade)
+
+  @@unique([userId, word1Id, word2Id])
+  @@index([userId])
+}
+
+// =============================================================================
+// MODULE A: PERSONAL NOTES & KNOWLEDGE WORKSPACE
+// =============================================================================
+
+model NoteCategory {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  color       String?  @default("#6366f1")
+  icon        String?  @default("Folder")
+  position    Int      @default(0)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes       Note[]
+
+  @@index([userId, position])
+  @@index([userId, isArchived])
+}
+
+model Note {
+  id               String        @id @default(uuid())
+  userId           String
+  categoryId       String?
+  title            String
+  content          String        // Sanitized Rich text / Markdown
+  plainTextPreview String?       // Plaintext excerpt for search & virtual list
+  tags             String[]      @default([])
+  isPinned         Boolean       @default(false)
+  isArchived       Boolean       @default(false)
+  isDeleted        Boolean       @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         NoteCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isPinned, createdAt])
+  @@index([userId, categoryId])
+  @@index([userId, isArchived, isDeleted])
+  @@index([userId, updatedAt])
+}
+
+// =============================================================================
+// MODULE B: COMMUNITY KNOWLEDGE & SOCIAL MEDIA SHARING
+// =============================================================================
+
+enum CommunityPostStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+  DELETED
+}
+
+enum CommunityReactionType {
+  LIKE
+  DISLIKE
+}
+
+enum CommunityCommentStatus {
+  ACTIVE
+  HIDDEN
+  DELETED
+  PENDING_REVIEW
+}
+
+model CommunityTopic {
+  id          String          @id @default(uuid())
+  name        String
+  slug        String          @unique
+  description String?
+  icon        String?         @default("BookOpen")
+  color       String?         @default("#4f46e5")
+  position    Int             @default(0)
+  postCount   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  posts       CommunityPost[]
+
+  @@index([position])
+  @@index([isActive])
+}
+
+model CommunityPost {
+  id                 String                    @id @default(uuid())
+  authorId           String
+  topicId            String?
+  title              String
+  summary            String?                   // Plain-text preview for high-speed feed cards
+  content            String                    // Full markdown / rich text content
+  tags               String[]                  @default([])
+  language           String                    @default("en")
+  status             CommunityPostStatus       @default(PENDING_REVIEW)
+  rejectionReason    String?
+  moderatedById      String?
+  moderatedAt        DateTime?
+
+  // High-performance atomic counters
+  likeCount          Int                       @default(0)
+  dislikeCount       Int                       @default(0)
+  commentCount       Int                       @default(0)
+  shareCount         Int                       @default(0)
+  saveCount          Int                       @default(0)
+  viewCount          Int                       @default(0)
+
+  // AI Training & Fine-Tuning Pipeline Foundation
+  isTrainingEligible Boolean                   @default(true)
+  trainingStatus     String                    @default("READY") // "READY", "PROCESSED", "EXCLUDED"
+  qualityScore       Float                     @default(1.0)
+  aiModerationScore  Float?
+
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  deletedAt          DateTime?
+
+  author             User                      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  topic              CommunityTopic?           @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  reactions          CommunityPostReaction[]
+  saves              CommunityPostSave[]
+  shares             CommunityPostShare[]
+  comments           CommunityComment[]
+
+  @@index([status, createdAt])
+  @@index([authorId, status])
+  @@index([topicId, status, createdAt])
+  @@index([status, likeCount])
+  @@index([status, commentCount])
+  @@index([isTrainingEligible, status])
+}
+
+model CommunityPostReaction {
+  id        String                @id @default(uuid())
+  postId    String
+  userId    String
+  type      CommunityReactionType
+  createdAt DateTime              @default(now())
+
+  post      CommunityPost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId, type])
+}
+
+model CommunityPostSave {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime      @default(now())
+
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, createdAt])
+}
+
+model CommunityPostShare {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String?
+  platform  String?       @default("LINK")
+  ipHash    String?
+  createdAt DateTime      @default(now())
+
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId, createdAt])
+}
+
+model CommunityComment {
+  id                 String                     @id @default(uuid())
+  postId             String
+  userId             String
+  parentId           String?
+  content            String
+  status             CommunityCommentStatus     @default(ACTIVE)
+  likeCount          Int                        @default(0)
+  replyCount         Int                        @default(0)
+  isTrainingEligible Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  deletedAt          DateTime?
+
+  post               CommunityPost              @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user               User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent             CommunityComment?          @relation("CommunityCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies            CommunityComment[]         @relation("CommunityCommentReplies")
+  reactions          CommunityCommentReaction[]
+
+  @@index([postId, parentId, createdAt])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model CommunityCommentReaction {
+  id        String                @id @default(uuid())
+  commentId String
+  userId    String
+  type      CommunityReactionType @default(LIKE)
+  createdAt DateTime              @default(now())
+
+  comment   CommunityComment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+}
+

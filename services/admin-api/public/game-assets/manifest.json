@@ -1,0 +1,399 @@
+{
+  "version": 1,
+  "generatedAt": 1790757493131,
+  "totalItems": 48,
+  "categories": [
+    "animals",
+    "characters",
+    "rewards",
+    "food",
+    "objects",
+    "transportation"
+  ],
+  "items": [
+    {
+      "id": "bear",
+      "category": "animals",
+      "name": "Bear",
+      "nameVi": "Gấu nâu",
+      "thumbnail": "/game-assets/animals/bear-thumb.webp",
+      "image": "/game-assets/animals/bear.webp"
+    },
+    {
+      "id": "bee",
+      "category": "animals",
+      "name": "Bee",
+      "nameVi": "Con ong",
+      "thumbnail": "/game-assets/animals/bee-thumb.webp",
+      "image": "/game-assets/animals/bee.webp"
+    },
+    {
+      "id": "bird",
+      "category": "animals",
+      "name": "Bird",
+      "nameVi": "Chim non",
+      "thumbnail": "/game-assets/animals/bird-thumb.webp",
+      "image": "/game-assets/animals/bird.webp"
+    },
+    {
+      "id": "butterfly",
+      "category": "animals",
+      "name": "Butterfly",
+      "nameVi": "Con bướm",
+      "thumbnail": "/game-assets/animals/butterfly-thumb.webp",
+      "image": "/game-assets/animals/butterfly.webp"
+    },
+    {
+      "id": "cat",
+      "category": "animals",
+      "name": "Cat",
+      "nameVi": "Con mèo",
+      "thumbnail": "/game-assets/animals/cat-thumb.webp",
+      "image": "/game-assets/animals/cat.webp"
+    },
+    {
+      "id": "dog",
+      "category": "animals",
+      "name": "Dog",
+      "nameVi": "Con chó",
+      "thumbnail": "/game-assets/animals/dog-thumb.webp",
+      "image": "/game-assets/animals/dog.webp"
+    },
+    {
+      "id": "dolphin",
+      "category": "animals",
+      "name": "Dolphin",
+      "nameVi": "Cá heo",
+      "thumbnail": "/game-assets/animals/dolphin-thumb.webp",
+      "image": "/game-assets/animals/dolphin.webp"
+    },
+    {
+      "id": "elephant",
+      "category": "animals",
+      "name": "Elephant",
+      "nameVi": "Con voi",
+      "thumbnail": "/game-assets/animals/elephant-thumb.webp",
+      "image": "/game-assets/animals/elephant.webp"
+    },
+    {
+      "id": "fox",
+      "category": "animals",
+      "name": "Fox",
+      "nameVi": "Con cáo",
+      "thumbnail": "/game-assets/animals/fox-thumb.webp",
+      "image": "/game-assets/animals/fox.webp"
+    },
+    {
+      "id": "frog",
+      "category": "animals",
+      "name": "Frog",
+      "nameVi": "Con ếch",
+      "thumbnail": "/game-assets/animals/frog-thumb.webp",
+      "image": "/game-assets/animals/frog.webp"
+    },
+    {
+      "id": "giraffe",
+      "category": "animals",
+      "name": "Giraffe",
+      "nameVi": "Hươu cao cổ",
+      "thumbnail": "/game-assets/animals/giraffe-thumb.webp",
+      "image": "/game-assets/animals/giraffe.webp"
+    },
+    {
+      "id": "lion",
+      "category": "animals",
+      "name": "Lion",
+      "nameVi": "Sư tử",
+      "thumbnail": "/game-assets/animals/lion-thumb.webp",
+      "image": "/game-assets/animals/lion.webp"
+    },
+    {
+      "id": "monkey",
+      "category": "animals",
+      "name": "Monkey",
+      "nameVi": "Chú khỉ",
+      "thumbnail": "/game-assets/animals/monkey-thumb.webp",
+      "image": "/game-assets/animals/monkey.webp"
+    },
+    {
+      "id": "owl",
+      "category": "animals",
+      "name": "Owl",
+      "nameVi": "Cú mèo",
+      "thumbnail": "/game-assets/animals/owl-thumb.webp",
+      "image": "/game-assets/animals/owl.webp"
+    },
+    {
+      "id": "panda",
+      "category": "animals",
+      "name": "Panda",
+      "nameVi": "Gấu trúc",
+      "thumbnail": "/game-assets/animals/panda-thumb.webp",
+      "image": "/game-assets/animals/panda.webp"
+    },
+    {
+      "id": "penguin",
+      "category": "animals",
+      "name": "Penguin",
+      "nameVi": "Chim cánh cụt",
+      "thumbnail": "/game-assets/animals/penguin-thumb.webp",
+      "image": "/game-assets/animals/penguin.webp"
+    },
+    {
+      "id": "rabbit",
+      "category": "animals",
+      "name": "Rabbit",
+      "nameVi": "Con thỏ",
+      "thumbnail": "/game-assets/animals/rabbit-thumb.webp",
+      "image": "/game-assets/animals/rabbit.webp"
+    },
+    {
+      "id": "tiger",
+      "category": "animals",
+      "name": "Tiger",
+      "nameVi": "Con hổ",
+      "thumbnail": "/game-assets/animals/tiger-thumb.webp",
+      "image": "/game-assets/animals/tiger.webp"
+    },
+    {
+      "id": "turtle",
+      "category": "animals",
+      "name": "Turtle",
+      "nameVi": "Con rùa",
+      "thumbnail": "/game-assets/animals/turtle-thumb.webp",
+      "image": "/game-assets/animals/turtle.webp"
+    },
+    {
+      "id": "whale",
+      "category": "animals",
+      "name": "Whale",
+      "nameVi": "Cá voi",
+      "thumbnail": "/game-assets/animals/whale-thumb.webp",
+      "image": "/game-assets/animals/whale.webp"
+    },
+    {
+      "id": "zebra",
+      "category": "animals",
+      "name": "Zebra",
+      "nameVi": "Ngựa vằn",
+      "thumbnail": "/game-assets/animals/zebra-thumb.webp",
+      "image": "/game-assets/animals/zebra.webp"
+    },
+    {
+      "id": "vivi-celebrate",
+      "category": "characters",
+      "name": "Vivi-celebrate",
+      "nameVi": "Vivi-celebrate",
+      "thumbnail": "/game-assets/characters/vivi-celebrate-thumb.webp",
+      "image": "/game-assets/characters/vivi-celebrate.webp"
+    },
+    {
+      "id": "vivi-confused",
+      "category": "characters",
+      "name": "Vivi-confused",
+      "nameVi": "Vivi-confused",
+      "thumbnail": "/game-assets/characters/vivi-confused-thumb.webp",
+      "image": "/game-assets/characters/vivi-confused.webp"
+    },
+    {
+      "id": "vivi-encourage",
+      "category": "characters",
+      "name": "Vivi-encourage",
+      "nameVi": "Vivi-encourage",
+      "thumbnail": "/game-assets/characters/vivi-encourage-thumb.webp",
+      "image": "/game-assets/characters/vivi-encourage.webp"
+    },
+    {
+      "id": "vivi-listening",
+      "category": "characters",
+      "name": "Vivi-listening",
+      "nameVi": "Vivi-listening",
+      "thumbnail": "/game-assets/characters/vivi-listening-thumb.webp",
+      "image": "/game-assets/characters/vivi-listening.webp"
+    },
+    {
+      "id": "vivi-mascot-hd",
+      "category": "characters",
+      "name": "Vivi-mascot-hd",
+      "nameVi": "Vivi-mascot-hd",
+      "thumbnail": "/game-assets/characters/vivi-mascot-hd-thumb.webp",
+      "image": "/game-assets/characters/vivi-mascot-hd.webp"
+    },
+    {
+      "id": "vivi-pointing",
+      "category": "characters",
+      "name": "Vivi-pointing",
+      "nameVi": "Vivi-pointing",
+      "thumbnail": "/game-assets/characters/vivi-pointing-thumb.webp",
+      "image": "/game-assets/characters/vivi-pointing.webp"
+    },
+    {
+      "id": "vivi-reading-headphones",
+      "category": "characters",
+      "name": "Vivi-reading-headphones",
+      "nameVi": "Vivi-reading-headphones",
+      "thumbnail": "/game-assets/characters/vivi-reading-headphones-thumb.webp",
+      "image": "/game-assets/characters/vivi-reading-headphones.webp"
+    },
+    {
+      "id": "vivi-running",
+      "category": "characters",
+      "name": "Vivi-running",
+      "nameVi": "Vivi-running",
+      "thumbnail": "/game-assets/characters/vivi-running-thumb.webp",
+      "image": "/game-assets/characters/vivi-running.webp"
+    },
+    {
+      "id": "vivi-sleep",
+      "category": "characters",
+      "name": "Vivi-sleep",
+      "nameVi": "Vivi-sleep",
+      "thumbnail": "/game-assets/characters/vivi-sleep-thumb.webp",
+      "image": "/game-assets/characters/vivi-sleep.webp"
+    },
+    {
+      "id": "vivi-speaking",
+      "category": "characters",
+      "name": "Vivi-speaking",
+      "nameVi": "Vivi-speaking",
+      "thumbnail": "/game-assets/characters/vivi-speaking-thumb.webp",
+      "image": "/game-assets/characters/vivi-speaking.webp"
+    },
+    {
+      "id": "vivi-study",
+      "category": "characters",
+      "name": "Vivi-study",
+      "nameVi": "Vivi-study",
+      "thumbnail": "/game-assets/characters/vivi-study-thumb.webp",
+      "image": "/game-assets/characters/vivi-study.webp"
+    },
+    {
+      "id": "vivi-thinking",
+      "category": "characters",
+      "name": "Vivi-thinking",
+      "nameVi": "Vivi-thinking",
+      "thumbnail": "/game-assets/characters/vivi-thinking-thumb.webp",
+      "image": "/game-assets/characters/vivi-thinking.webp"
+    },
+    {
+      "id": "vivi-trophy",
+      "category": "characters",
+      "name": "Vivi-trophy",
+      "nameVi": "Vivi-trophy",
+      "thumbnail": "/game-assets/characters/vivi-trophy-thumb.webp",
+      "image": "/game-assets/characters/vivi-trophy.webp"
+    },
+    {
+      "id": "vivi-wave",
+      "category": "characters",
+      "name": "Vivi-wave",
+      "nameVi": "Vivi-wave",
+      "thumbnail": "/game-assets/characters/vivi-wave-thumb.webp",
+      "image": "/game-assets/characters/vivi-wave.webp"
+    },
+    {
+      "id": "badge-challenge",
+      "category": "rewards",
+      "name": "Badge-challenge",
+      "nameVi": "Badge-challenge",
+      "thumbnail": "/game-assets/rewards/badge-challenge-thumb.webp",
+      "image": "/game-assets/rewards/badge-challenge.webp"
+    },
+    {
+      "id": "badge-first-word",
+      "category": "rewards",
+      "name": "Badge-first-word",
+      "nameVi": "Badge-first-word",
+      "thumbnail": "/game-assets/rewards/badge-first-word-thumb.webp",
+      "image": "/game-assets/rewards/badge-first-word.webp"
+    },
+    {
+      "id": "badge-listening",
+      "category": "rewards",
+      "name": "Badge-listening",
+      "nameVi": "Badge-listening",
+      "thumbnail": "/game-assets/rewards/badge-listening-thumb.webp",
+      "image": "/game-assets/rewards/badge-listening.webp"
+    },
+    {
+      "id": "badge-speaking",
+      "category": "rewards",
+      "name": "Badge-speaking",
+      "nameVi": "Badge-speaking",
+      "thumbnail": "/game-assets/rewards/badge-speaking-thumb.webp",
+      "image": "/game-assets/rewards/badge-speaking.webp"
+    },
+    {
+      "id": "badge-streak",
+      "category": "rewards",
+      "name": "Badge-streak",
+      "nameVi": "Badge-streak",
+      "thumbnail": "/game-assets/rewards/badge-streak-thumb.webp",
+      "image": "/game-assets/rewards/badge-streak.webp"
+    },
+    {
+      "id": "badge-word-master",
+      "category": "rewards",
+      "name": "Badge-word-master",
+      "nameVi": "Badge-word-master",
+      "thumbnail": "/game-assets/rewards/badge-word-master-thumb.webp",
+      "image": "/game-assets/rewards/badge-word-master.webp"
+    },
+    {
+      "id": "chest",
+      "category": "rewards",
+      "name": "Chest",
+      "nameVi": "Chest",
+      "thumbnail": "/game-assets/rewards/chest-thumb.webp",
+      "image": "/game-assets/rewards/chest.webp"
+    },
+    {
+      "id": "crown",
+      "category": "rewards",
+      "name": "Crown",
+      "nameVi": "Crown",
+      "thumbnail": "/game-assets/rewards/crown-thumb.webp",
+      "image": "/game-assets/rewards/crown.webp"
+    },
+    {
+      "id": "gem",
+      "category": "rewards",
+      "name": "Gem",
+      "nameVi": "Gem",
+      "thumbnail": "/game-assets/rewards/gem-thumb.webp",
+      "image": "/game-assets/rewards/gem.webp"
+    },
+    {
+      "id": "star",
+      "category": "rewards",
+      "name": "Star",
+      "nameVi": "Star",
+      "thumbnail": "/game-assets/rewards/star-thumb.webp",
+      "image": "/game-assets/rewards/star.webp"
+    },
+    {
+      "id": "ticket",
+      "category": "rewards",
+      "name": "Ticket",
+      "nameVi": "Ticket",
+      "thumbnail": "/game-assets/rewards/ticket-thumb.webp",
+      "image": "/game-assets/rewards/ticket.webp"
+    },
+    {
+      "id": "trophy",
+      "category": "rewards",
+      "name": "Trophy",
+      "nameVi": "Trophy",
+      "thumbnail": "/game-assets/rewards/trophy-thumb.webp",
+      "image": "/game-assets/rewards/trophy.webp"
+    },
+    {
+      "id": "xp",
+      "category": "rewards",
+      "name": "Xp",
+      "nameVi": "Xp",
+      "thumbnail": "/game-assets/rewards/xp-thumb.webp",
+      "image": "/game-assets/rewards/xp.webp"
+    }
+  ]
+}

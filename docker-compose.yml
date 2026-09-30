@@ -6,9 +6,9 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
-      POSTGRES_DB: ${POSTGRES_DB:-vocabflow_db}
+      POSTGRES_DB: ${POSTGRES_DB:-leximind_db}
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,54 +16,59 @@ services:
       interval: 3s
       timeout: 3s
       retries: 5
+    networks:
+      - vocalflow-network
 
   redis:
     image: redis:7-alpine
     container_name: vocabflow-redis
     restart: always
     ports:
-      - '6379:6379'
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
       timeout: 3s
       retries: 5
+    networks:
+      - vocalflow-network
 
-  api:
+  assets:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
-    container_name: vocabflow-api
+      dockerfile: services/assets/Dockerfile
+    container_name: vocabflow-assets
+    restart: always
+    ports:
+      - '3300:80'
+    volumes:
+      - ./assets:/usr/share/nginx/html/assets:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - vocalflow-network
+
+  app-api:
+    build:
+      context: .
+      dockerfile: services/app-api/Dockerfile
+    container_name: vocabflow-app-api
     restart: always
     env_file:
       - .env
     environment:
-      PORT: ${PORT:-4000}
-      APP_URL: ${APP_URL:-http://localhost:4000}
-      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/vocabflow_db?schema=public}
+      PORT: 4000
+      APP_URL: ${STUDENT_API_URL:-https://app-api.vocalflow.site}
+      CLIENT_URL: ${STUDENT_CLIENT_URL:-https://app.vocalflow.site}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-vocabflow_jwt_super_secure_access_token_secret_2026}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-vocabflow_jwt_super_secure_refresh_token_secret_2026}
-      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@vocabflow.ai}
-      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-admin123}
-      VIETQR_BANK_ID: ${VIETQR_BANK_ID:-VCB}
-      VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-9353421340}
-      VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-DUONG VAN MANH}
-      VIETQR_TEMPLATE: ${VIETQR_TEMPLATE:-compact2}
-      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
-      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
-      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
-      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-}
-      AI_PROVIDER: ${AI_PROVIDER:-auto}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-VocabFlow AI <noreply@vocabflow.ai>}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
+      REDIS_KEY_PREFIX: "app:"
+      ASSETS_BASE_URL: ${ASSETS_URL:-https://assets.vocalflow.site}
     ports:
       - '4000:4000'
     depends_on:
@@ -71,13 +76,74 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - vocalflow-network
 
-  web:
+  kid-api:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
+      dockerfile: services/kid-api/Dockerfile
+    container_name: vocabflow-kid-api
+    restart: always
+    env_file:
+      - .env
+    environment:
+      PORT: 4100
+      APP_URL: ${KID_API_URL:-https://kid-api.vocalflow.site}
+      CLIENT_URL: ${KID_CLIENT_URL:-https://kid.vocalflow.site}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_KEY_PREFIX: "kid:"
+      ASSETS_BASE_URL: ${ASSETS_URL:-https://assets.vocalflow.site}
+    ports:
+      - '4100:4100'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app-api:
+        condition: service_started
+    networks:
+      - vocalflow-network
+
+  admin-api:
+    build:
+      context: .
+      dockerfile: services/admin-api/Dockerfile
+    container_name: vocabflow-admin-api
+    restart: always
+    env_file:
+      - .env
+    environment:
+      PORT: 4200
+      APP_URL: ${ADMIN_API_URL:-https://admin-api.vocalflow.site}
+      CLIENT_URL: ${ADMIN_CLIENT_URL:-https://admin.vocalflow.site}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_KEY_PREFIX: "admin:"
+      ASSETS_BASE_URL: ${ASSETS_URL:-https://assets.vocalflow.site}
+    ports:
+      - '4200:4200'
+    volumes:
+      - ./assets:/usr/share/nginx/html/assets
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app-api:
+        condition: service_started
+    networks:
+      - vocalflow-network
+
+  student:
+    build:
+      context: .
+      dockerfile: apps/student/Dockerfile
       args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:4000/api}
+        - VITE_API_BASE_URL=${VITE_STUDENT_API_BASE_URL:-https://app-api.vocalflow.site/api}
+        - VITE_ASSETS_BASE_URL=${VITE_ASSETS_BASE_URL:-https://assets.vocalflow.site}
         - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY:-}
         - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN:-}
         - VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:-}
@@ -85,12 +151,63 @@ services:
         - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
         - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID:-}
         - VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID:-}
-    container_name: vocabflow-web
+    container_name: vocabflow-student
     restart: always
     ports:
       - '3000:80'
     depends_on:
-      - api
+      - app-api
+    networks:
+      - vocalflow-network
+
+  kid:
+    build:
+      context: .
+      dockerfile: apps/kid/Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_KID_API_BASE_URL:-https://kid-api.vocalflow.site/api}
+        - VITE_ASSETS_BASE_URL=${VITE_ASSETS_BASE_URL:-https://assets.vocalflow.site}
+    container_name: vocabflow-kid
+    restart: always
+    ports:
+      - '3100:80'
+    depends_on:
+      - kid-api
+    networks:
+      - vocalflow-network
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_ADMIN_API_BASE_URL:-https://admin-api.vocalflow.site/api}
+        - VITE_ASSETS_BASE_URL=${VITE_ASSETS_BASE_URL:-https://assets.vocalflow.site}
+    container_name: vocabflow-admin
+    restart: always
+    ports:
+      - '3200:80'
+    depends_on:
+      - admin-api
+    networks:
+      - vocalflow-network
+
+  landing:
+    build:
+      context: .
+      dockerfile: apps/landing/Dockerfile
+    container_name: vocabflow-landing
+    restart: always
+    ports:
+      - '3080:80'
+    networks:
+      - vocalflow-network
 
 volumes:
   postgres_data:
+  redis_data:
+
+networks:
+  vocalflow-network:
+    name: vocalflow-network
+    driver: bridge

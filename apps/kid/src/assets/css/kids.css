@@ -1,0 +1,1161 @@
+/* ==========================================================================
+   KIDS MODULE - DESIGN SYSTEM TOKENS & PLAYFUL STYLES
+   ========================================================================== */
+
+:root {
+  --kids-primary: #3C9FE8;
+  --kids-primary-hover: #258cd6;
+  --kids-sky: #78CFF5;
+  --kids-deep-sky: #3C9FE8;
+  --kids-soft-mint: #8BE3C1;
+  --kids-mint: #52C7A0;
+  --kids-warm-yellow: #FFD866;
+  --kids-peach: #FFB58F;
+  --kids-coral: #FF7F73;
+  --kids-lavender: #B8A4F5;
+  --kids-purple: #8C72D9;
+  --kids-cream: #FFF9EC;
+  --kids-cloud: #F7FBFF;
+  --kids-secondary: #52C7A0;
+  --kids-accent: #FF7F73;
+  --kids-background: #F7FBFF;
+  --kids-surface: #ffffff;
+  --kids-text: #17345B;
+  --kids-text-muted: #64748B;
+  --kids-success: #55C98A;
+  --kids-warning: #FFD866;
+  --kids-error: #FF6F7D;
+
+  /* Radius tokens */
+  --kids-radius-sm: 8px;
+  --kids-radius-md: 12px;
+  --kids-radius-lg: 16px;
+  --kids-radius-xl: 24px;
+  --kids-radius-full: 9999px;
+
+  /* Touch target standard for young children */
+  --kids-min-touch: 48px;
+
+  /* Kids Dark Mode Semantic Text Token - Dark high-contrast slate readable on white/light surfaces */
+  --kids-dark-muted-text: #334155;
+}
+
+/* Fallback definition for border-3 */
+.border-3 {
+  border-width: 3px;
+}
+
+/* ==========================================================================
+   KIDS MODULE - CUSTOM SCROLLBAR (THIN, DARK ORANGE)
+   ========================================================================== */
+.kids-layout ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.kids-layout ::-webkit-scrollbar-track {
+  background: rgba(255, 237, 213, 0.5); /* Light orange track */
+  border-radius: 8px;
+}
+.kids-layout ::-webkit-scrollbar-thumb {
+  background: #ea580c; /* Dark orange (orange-600) */
+  border-radius: 8px;
+}
+.kids-layout ::-webkit-scrollbar-thumb:hover {
+  background: #c2410c; /* Darker orange (orange-700) */
+}
+
+/* ==========================================================================
+   KIDS MODULE - HIGH CONTRAST DARK & LIGHT MODE TEXT ENFORCEMENT
+   Trang Kid luôn có nền sáng/trắng (#FFFDF7, panels trắng, thẻ pastel).
+   Vì vậy dù ở chế độ thường hay Dark Mode (.dark), toàn bộ text phụ và text màu
+   phải luôn là màu TỐI rõ nét, tương phản cao, tuyệt đối không bị mờ nhạt hay sáng màu.
+   ========================================================================== */
+
+/* 1. Muted / Secondary text (slate-500, gray-500, zinc-500, neutral-500) -> Màu tối Slate 700 (#334155) */
+.kids-layout .text-slate-500,
+.kids-layout .text-gray-500,
+.kids-layout .text-zinc-500,
+.kids-layout .text-neutral-500,
+.kids-modal .text-slate-500,
+.kids-modal .text-gray-500,
+.kids-modal .text-zinc-500,
+.kids-modal .text-neutral-500,
+.dark .kids-layout .text-slate-500,
+.dark .kids-layout .text-gray-500,
+.dark .kids-layout .text-zinc-500,
+.dark .kids-layout .text-neutral-500,
+.dark .kids-modal .text-slate-500,
+.dark .kids-modal .text-gray-500,
+.dark .kids-modal .text-zinc-500,
+.dark .kids-modal .text-neutral-500 {
+  color: #334155 !important; /* Slate 700: Tối rõ nét, độ tương phản cao (> 5.5:1 trên nền trắng) */
+}
+
+/* 2. Body / Content text (slate-600, gray-600, zinc-600, neutral-600) -> Màu tối đậm Slate 800 (#1e293b) */
+.kids-layout .text-slate-600,
+.kids-layout .text-gray-600,
+.kids-layout .text-zinc-600,
+.kids-layout .text-neutral-600,
+.kids-modal .text-slate-600,
+.kids-modal .text-gray-600,
+.kids-modal .text-zinc-600,
+.kids-modal .text-neutral-600,
+.dark .kids-layout .text-slate-600,
+.dark .kids-layout .text-gray-600,
+.dark .kids-layout .text-zinc-600,
+.dark .kids-layout .text-neutral-600,
+.dark .kids-modal .text-slate-600,
+.dark .kids-modal .text-gray-600,
+.dark .kids-modal .text-zinc-600,
+.dark .kids-modal .text-neutral-600 {
+  color: #1e293b !important; /* Slate 800: Tối đậm, cực kỳ dễ đọc trên nền sáng */
+}
+
+/* 3. Subtle / Metadata text (slate-400, gray-400, zinc-400, neutral-400) -> Màu tối Slate 600 (#475569) */
+.kids-layout .text-slate-400:not(.cursor-not-allowed),
+.kids-layout .text-gray-400:not(.cursor-not-allowed),
+.kids-layout .text-zinc-400:not(.cursor-not-allowed),
+.kids-layout .text-neutral-400:not(.cursor-not-allowed),
+.kids-modal .text-slate-400:not(.cursor-not-allowed),
+.kids-modal .text-gray-400:not(.cursor-not-allowed),
+.kids-modal .text-zinc-400:not(.cursor-not-allowed),
+.kids-modal .text-neutral-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-slate-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-gray-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-zinc-400:not(.cursor-not-allowed),
+.dark .kids-layout .text-neutral-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-slate-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-gray-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-zinc-400:not(.cursor-not-allowed),
+.dark .kids-modal .text-neutral-400:not(.cursor-not-allowed) {
+  color: #475569 !important; /* Slate 600: Tối rõ, không bị mờ nhạt */
+}
+
+/* 4. Strong text (slate-700, gray-700, zinc-700) -> Màu tối Slate 900 (#0f172a) */
+.kids-layout .text-slate-700,
+.kids-layout .text-gray-700,
+.kids-layout .text-zinc-700,
+.kids-modal .text-slate-700,
+.kids-modal .text-gray-700,
+.kids-modal .text-zinc-700,
+.dark .kids-layout .text-slate-700,
+.dark .kids-layout .text-gray-700,
+.dark .kids-layout .text-zinc-700,
+.dark .kids-modal .text-slate-700,
+.dark .kids-modal .text-gray-700,
+.dark .kids-modal .text-zinc-700 {
+  color: #0f172a !important; /* Slate 900 */
+}
+
+/* 5. Headings / Boldest text (slate-800, slate-900, slate-950) -> Màu đen Slate 950 (#020617) */
+.kids-layout .text-slate-800,
+.kids-layout .text-slate-900,
+.kids-layout .text-slate-950,
+.kids-modal .text-slate-800,
+.kids-modal .text-slate-900,
+.kids-modal .text-slate-950,
+.dark .kids-layout .text-slate-800,
+.dark .kids-layout .text-slate-900,
+.dark .kids-layout .text-slate-950,
+.dark .kids-modal .text-slate-800,
+.dark .kids-modal .text-slate-900,
+.dark .kids-modal .text-slate-950 {
+  color: #020617 !important; /* Slate 950 */
+}
+
+/* 6. Text sáng màu vô tình áp dụng khi có .dark -> ép sang màu tối sắc nét */
+.dark .kids-layout .dark\:text-white,
+.dark .kids-modal .dark\:text-white,
+.dark .kids-layout .dark\:text-slate-100,
+.dark .kids-modal .dark\:text-slate-100,
+.dark .kids-layout .dark\:text-slate-200,
+.dark .kids-modal .dark\:text-slate-200,
+.dark .kids-layout .dark\:text-slate-300,
+.dark .kids-modal .dark\:text-slate-300 {
+  color: #0f172a !important;
+}
+
+.dark .kids-layout .dark\:text-amber-100,
+.dark .kids-modal .dark\:text-amber-100,
+.dark .kids-layout .dark\:text-amber-200,
+.dark .kids-modal .dark\:text-amber-200,
+.dark .kids-layout .dark\:text-amber-300,
+.dark .kids-modal .dark\:text-amber-300 {
+  color: #78350f !important; /* Amber 900 */
+}
+
+.dark .kids-layout .dark\:text-sky-100,
+.dark .kids-modal .dark\:text-sky-100,
+.dark .kids-layout .dark\:text-sky-200,
+.dark .kids-modal .dark\:text-sky-200,
+.dark .kids-layout .dark\:text-sky-300,
+.dark .kids-modal .dark\:text-sky-300 {
+  color: #0369a1 !important;
+}
+
+/* Base Liquid Glass Foundation with Guaranteed Contrast */
+.kids-glass-panel {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: var(--kids-radius-xl);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+}
+
+.dark .kids-glass-panel {
+  background-color: rgba(15, 23, 42, 0.85);
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+/* Liquid Color Variants (Eye-friendly, soothing candy pastel palette) */
+.kids-liquid-amber {
+  background-color: rgba(254, 252, 232, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #fef08a;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.kids-liquid-amber:hover {
+  background-color: #fef9c3;
+  border-color: #fde047;
+}
+
+.kids-liquid-sky {
+  background-color: rgba(240, 249, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #bae6fd;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.kids-liquid-sky:hover {
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.kids-liquid-rose {
+  background-color: rgba(255, 241, 242, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #fecdd3;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.kids-liquid-rose:hover {
+  background-color: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.kids-liquid-purple {
+  background-color: rgba(245, 243, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #ddd6fe;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.kids-liquid-purple:hover {
+  background-color: #ede9fe;
+  border-color: #c4b5fd;
+}
+
+.kids-liquid-emerald {
+  background-color: rgba(236, 253, 245, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #a7f3d0;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.kids-liquid-emerald:hover {
+  background-color: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.kids-liquid-card {
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04);
+}
+
+/* 3D Button Press Effect with Minimum Accessible Touch Target */
+.kids-btn-press {
+  min-height: var(--kids-min-touch);
+  min-width: var(--kids-min-touch);
+  transition: transform 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
+}
+
+.kids-btn-press:active {
+  transform: scale(0.96) translateY(2px);
+}
+
+/* Dedicated Game Screen Boundaries (Prevent Animation Overlapping Text) */
+.kids-game-canvas-area {
+  position: relative;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--kids-radius-xl);
+  margin-bottom: 1rem;
+}
+
+.kids-game-text-area {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+}
+
+/* Subtle, Controlled Child Animations */
+@keyframes balloon-float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+
+.animate-balloon-float {
+  animation: balloon-float 3.5s ease-in-out infinite;
+}
+
+/* Realistic Balloon String Wave */
+@keyframes string-wave {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  33% {
+    transform: rotate(4deg) scaleX(0.95);
+  }
+
+  66% {
+    transform: rotate(-3deg) scaleX(1.05);
+  }
+}
+
+.animate-string-wave {
+  transform-origin: top center;
+  animation: string-wave 3s ease-in-out infinite;
+}
+
+/* Rubber Wobble on Tap / Wrong Select */
+@keyframes rubber-wobble {
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  20% {
+    transform: scale(1.12, 0.88) rotate(-6deg);
+  }
+
+  40% {
+    transform: scale(0.9, 1.12) rotate(6deg);
+  }
+
+  60% {
+    transform: scale(1.06, 0.94) rotate(-3deg);
+  }
+
+  80% {
+    transform: scale(0.98, 1.02) rotate(2deg);
+  }
+}
+
+.animate-rubber-wobble {
+  animation: rubber-wobble 0.5s ease-in-out;
+}
+
+/* DRAMATIC BALLOON BURST & SHATTER (Shatter + Confetti Flash + Pop Shockwave) */
+@keyframes balloon-shatter-pop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+
+  25% {
+    transform: scale(1.35) rotate(-4deg);
+    filter: brightness(1.6);
+  }
+
+  45% {
+    transform: scale(1.45) rotate(6deg);
+    filter: brightness(2);
+    opacity: 0.9;
+  }
+
+  60% {
+    transform: scale(0.4) rotate(-15deg);
+    filter: blur(2px) contrast(1.8);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(0) translateY(-20px);
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+.animate-balloon-shatter {
+  animation: balloon-shatter-pop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+  pointer-events: none;
+}
+
+@keyframes pop-sparkle {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.6) rotate(180deg);
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: scale(2.2) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-pop-sparkle {
+  animation: pop-sparkle 0.6s ease-out forwards;
+}
+
+@keyframes rocket-rumble {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  25% {
+    transform: translateY(-2px) rotate(-1.5deg);
+  }
+
+  75% {
+    transform: translateY(2px) rotate(1.5deg);
+  }
+}
+
+.animate-rocket-rumble {
+  animation: rocket-rumble 0.2s ease-in-out infinite;
+}
+
+@keyframes rocket-blastoff {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  40% {
+    transform: translateY(-40px) scale(1.1);
+  }
+
+  100% {
+    transform: translateY(-380px) scale(0.7);
+    opacity: 0;
+  }
+}
+
+.animate-rocket-blastoff {
+  animation: rocket-blastoff 1.2s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
+}
+
+@keyframes gentle-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-gentle-float {
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 1.8s ease-in-out infinite;
+}
+
+/* Comprehensive 3D Flip Card System for Flashcards (Strict Single-Axis GPU Rotation) */
+.kids-flip-card {
+  perspective: 1200px;
+  -webkit-perspective: 1200px;
+  perspective-origin: 50% 50%;
+  -webkit-perspective-origin: 50% 50%;
+  position: relative;
+  width: 100%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.kids-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  -webkit-transform-origin: 50% 50%;
+  transition: transform 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.kids-flip-card:active .kids-flip-inner {
+  transform: scale(0.985);
+}
+
+.kids-flip-card:active .kids-flip-inner.is-flipped {
+  transform: scale(0.985) rotateY(180deg);
+}
+
+.kids-flip-inner.is-flipped {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+.kids-flip-front,
+.kids-flip-back {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  transform-origin: 50% 50% !important;
+  -webkit-transform-origin: 50% 50% !important;
+  border-radius: 1.75rem;
+  will-change: transform;
+}
+
+.kids-flip-front {
+  transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.kids-flip-back {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kids-flip-inner.is-flipped .kids-flip-front {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kids-flip-inner.is-flipped .kids-flip-back {
+  z-index: 3;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kids-flip-inner {
+    transition-duration: 120ms !important;
+  }
+}
+
+@keyframes subtle-shake {
+  0%, 100% {
+    transform: rotateY(180deg) translateX(0);
+  }
+  25% {
+    transform: rotateY(180deg) translateX(-4px);
+  }
+  75% {
+    transform: rotateY(180deg) translateX(4px);
+  }
+}
+
+.animate-subtle-shake {
+  animation: subtle-shake 240ms ease-in-out;
+}
+
+/* ======================================================== */
+/* Kids V5 Train Builder Dynamic Animations                */
+/* ======================================================== */
+@keyframes train-departure {
+  0% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-15px);
+  }
+
+  100% {
+    transform: translateX(115%);
+  }
+}
+
+.animate-train-depart {
+  animation: train-departure 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes carriage-wobble {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-6px) rotate(-1.5deg);
+  }
+
+  40%,
+  80% {
+    transform: translateX(6px) rotate(1.5deg);
+  }
+}
+
+.animate-carriage-wobble {
+  animation: carriage-wobble 0.45s ease-in-out;
+}
+
+@keyframes smoke-puff {
+  0% {
+    opacity: 0.9;
+    transform: translateY(0) scale(0.6);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: translateY(-18px) scale(1.1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(1.6);
+  }
+}
+
+.animate-smoke-puff {
+  animation: smoke-puff 1.2s ease-out infinite;
+}
+
+@keyframes wheel-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-wheel-spin {
+  animation: wheel-spin 0.6s linear infinite;
+}
+
+/* Object Specific Playful Animations */
+@keyframes animal-breathe {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.animate-animal-breathe {
+  animation: animal-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes animal-eat {
+
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+
+  25% {
+    transform: scale(1.08, 0.94) translateY(4px);
+  }
+
+  50% {
+    transform: scale(0.96, 1.05) translateY(-3px);
+  }
+
+  75% {
+    transform: scale(1.04, 0.97) translateY(2px);
+  }
+}
+
+.animate-animal-eat {
+  animation: animal-eat 0.5s ease-in-out 3;
+}
+
+@keyframes star-twinkle {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-star-twinkle {
+  animation: star-twinkle 2s ease-in-out infinite;
+}
+
+/* =============================================================================
+   PHYSICS-BASED PARTICLE EXPLOSIONS (Requirements 5, 6, 7, 8)
+   ============================================================================= */
+
+/* 1. Real Soap Bubble Burst */
+@keyframes bubble-squash-burst {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  20% {
+    transform: scale(1.18, 0.86);
+  }
+
+  45% {
+    transform: scale(0.9, 1.22);
+    filter: brightness(1.4);
+  }
+
+  70% {
+    transform: scale(1.35);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+}
+
+.animate-bubble-squash-burst {
+  animation: bubble-squash-burst 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 2. Star Explosion Burst */
+@keyframes star-burst-explode {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 0px #fbbf24);
+  }
+
+  25% {
+    transform: scale(1.25) rotate(-15deg);
+    filter: drop-shadow(0 0 12px #f59e0b) brightness(1.3);
+  }
+
+  50% {
+    transform: scale(1.45) rotate(25deg);
+    filter: drop-shadow(0 0 24px #e11d48) brightness(1.8);
+  }
+
+  75% {
+    transform: scale(1.6) rotate(60deg);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(0.2) rotate(90deg);
+    opacity: 0;
+  }
+}
+
+.animate-star-burst-explode {
+  animation: star-burst-explode 0.48s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* 3. Fruit Pop Splatter (Apple / Banana / Orange) */
+@keyframes fruit-splatter-burst {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+
+  25% {
+    transform: scale(1.22, 0.84) translateY(6px);
+  }
+
+  50% {
+    transform: scale(0.88, 1.26) translateY(-8px);
+    filter: brightness(1.5);
+  }
+
+  75% {
+    transform: scale(1.4) translateY(-12px);
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scale(0) translateY(-20px);
+    opacity: 0;
+  }
+}
+
+.animate-fruit-splatter-burst {
+  animation: fruit-splatter-burst 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Flying Radial Particles */
+@keyframes particle-radial-fly {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  60% {
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: translate(var(--tx, 0px), var(--ty, -30px)) scale(var(--scale-end, 0.3)) rotate(var(--rot, 0deg));
+    opacity: 0;
+  }
+}
+
+.animate-particle-fly {
+  animation: particle-radial-fly 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Multi-Piece Real Fragmentation Outward Scatter */
+@keyframes fragment-scatter-out {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+
+  30% {
+    opacity: 1;
+    transform: translate(calc(var(--tx, 0px) * 0.45), calc(var(--ty, 0px) * 0.45)) scale(1.15) rotate(calc(var(--rot, 0deg) * 0.4));
+  }
+
+  100% {
+    transform: translate(var(--tx, 0px), calc(var(--ty, 0px) + 24px)) scale(var(--scale-end, 0.4)) rotate(var(--rot, 0deg));
+    opacity: 0;
+  }
+}
+
+.animate-fragment-scatter {
+  animation: fragment-scatter-out 0.65s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
+}
+
+/* Realistic Squash & Stretch Physical Bounce */
+@keyframes squash-bounce {
+  0% {
+    transform: scale(1, 1);
+  }
+
+  25% {
+    transform: scale(1.22, 0.82) translateY(6px);
+  }
+
+  50% {
+    transform: scale(0.9, 1.15) translateY(-8px);
+  }
+
+  75% {
+    transform: scale(1.08, 0.94) translateY(2px);
+  }
+
+  100% {
+    transform: scale(1, 1) translateY(0);
+  }
+}
+
+.animate-squash-bounce {
+  animation: squash-bounce 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Magnetic Snap Glow Pulse */
+@keyframes magnetic-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0px rgba(16, 185, 129, 0.6);
+    border-color: #10b981;
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.2);
+    border-color: #059669;
+  }
+}
+
+.animate-magnetic-glow {
+  animation: magnetic-pulse 1.2s ease-in-out infinite;
+}
+
+/* Severed Vine Segment Tumbling Down */
+@keyframes vine-fall-left {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-30px, 80px) rotate(-45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes vine-fall-right {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(30px, 80px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+.animate-vine-sever-left {
+  animation: vine-fall-left 0.7s ease-in forwards;
+}
+
+.animate-vine-sever-right {
+  animation: vine-fall-right 0.7s ease-in forwards;
+}
+
+/* 3D Chest Lid Pop Open */
+@keyframes chest-lid-swing {
+  0% {
+    transform: rotateX(0deg);
+  }
+
+  40% {
+    transform: rotateX(-125deg);
+  }
+
+  70% {
+    transform: rotateX(-95deg);
+  }
+
+  100% {
+    transform: rotateX(-110deg);
+  }
+}
+
+.animate-chest-lid-open {
+  transform-origin: top center;
+  animation: chest-lid-swing 0.75s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Robot Arm Wave */
+@keyframes robot-wave {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(25deg);
+  }
+
+  75% {
+    transform: rotate(-15deg);
+  }
+}
+
+.animate-robot-wave {
+  transform-origin: top center;
+  animation: robot-wave 0.8s ease-in-out infinite;
+}
+
+/* Robot Eye Blink & Glow */
+@keyframes eye-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px #06b6d4) brightness(1);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 12px #22d3ee) brightness(1.6);
+  }
+}
+
+.animate-robot-eye-glow {
+  animation: eye-glow 1s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   VOCALFLOW KIDS — PHYSICAL CARD DECK & BRIGHT GAME TABLE
+   Tactile deck stack, realistic physical resistance, warm cream felt surface
+   ========================================================================== */
+
+/* Game Table Mat (Warm Cream #F7F3EA with tactile depth & paper grain) */
+.kids-bright-game-table {
+  background-color: #F7F3EA;
+  background-image: 
+    radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.85) 0%, rgba(247, 243, 234, 0.4) 60%, rgba(235, 228, 214, 0.6) 100%),
+    radial-gradient(circle at 10% 90%, rgba(255, 226, 180, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(200, 230, 255, 0.15) 0%, transparent 40%);
+  border: 1px solid rgba(220, 210, 195, 0.6);
+  box-shadow: 
+    0 24px 60px -12px rgba(130, 110, 80, 0.08),
+    0 4px 16px rgba(130, 110, 80, 0.04),
+    inset 0 1px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 6px rgba(180, 165, 140, 0.1);
+}
+
+/* Page Background Warm White */
+.kids-bright-page-bg {
+  background-color: #FFFDF7;
+  background-image: radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.9) 0%, #FFFDF7 100%);
+}
+
+/* Physical Card Visual: 18px radius, crisp border, soft elevated shadow */
+.kids-physical-card {
+  border-radius: 18px;
+  background-color: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 
+    0 12px 30px -4px rgba(45, 55, 72, 0.08),
+    0 4px 10px -2px rgba(45, 55, 72, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Swiper Effect Cards Customization for VocalFlow Deck */
+.kids-card-swiper {
+  width: 100%;
+  max-width: 340px;
+  height: 460px;
+  padding: 24px 0 36px 0;
+  overflow: visible !important;
+}
+
+@media (min-width: 640px) {
+  .kids-card-swiper {
+    max-width: 380px;
+    height: 500px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .kids-card-swiper {
+    max-width: 400px;
+    height: 520px;
+  }
+}
+
+.kids-card-swiper .swiper-slide {
+  border-radius: 18px !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 
+    0 16px 36px -6px rgba(45, 55, 72, 0.12),
+    0 4px 12px -2px rgba(45, 55, 72, 0.06),
+    0 0 0 1px rgba(226, 232, 240, 0.9) !important;
+  overflow: hidden;
+  will-change: transform;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.kids-card-swiper .swiper-slide-shadow {
+  background: rgba(180, 160, 135, 0.15) !important;
+  border-radius: 18px !important;
+}
+
+/* Tactile Stack Shadow Layers behind deck */
+.kids-deck-base-layer {
+  position: absolute;
+  border-radius: 18px;
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  pointer-events: none;
+  transition: all 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ==========================================================================
+   GPU-ACCELERATED KID GAME SYSTEM ANIMATIONS
+   Pure transform: translate3d & scale • Zero layout shift • 60 FPS
+   ========================================================================== */
+@keyframes shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  20%, 60% { transform: translate3d(-6px, 0, 0); }
+  40%, 80% { transform: translate3d(6px, 0, 0); }
+}
+
+@keyframes scaleUp {
+  0% { transform: scale(0.88); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes gentleFloat {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+}
+
+.animate-shake {
+  animation: shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.animate-scaleUp {
+  animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.18s ease-out both;
+}
+
