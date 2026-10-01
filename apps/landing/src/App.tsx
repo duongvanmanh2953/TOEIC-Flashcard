@@ -35,6 +35,7 @@ import {
 import { GlassSurface } from './components/GlassSurface';
 import { LiquidBackground } from './components/LiquidBackground';
 import { CountryFlag } from './components/CountryFlag';
+import { VocabFlowLogo } from './components/VocabFlowLogo';
 
 // Multi-language sample data with rich flags & certified standards
 interface LangSample {
@@ -214,11 +215,7 @@ export const App: React.FC = () => {
           <div className="px-4 sm:px-6 py-3.5 max-w-7xl mx-auto w-full flex items-center justify-between">
             {/* Brand Logo */}
             <a href="/" className="flex items-center gap-2.5 shrink-0 group">
-              <img
-                src="/vocabflow-logo-256.png"
-                alt="VocabFlow"
-                className="w-8 h-8 rounded-xl object-contain border border-white/15"
-              />
+              <VocabFlowLogo size="sm" showContainer={true} className="group-hover:scale-110 transition-transform duration-200" />
               <div className="flex flex-col text-left">
                 <span className="font-black text-lg bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent leading-snug">
                   VocabFlow
@@ -1455,11 +1452,7 @@ export const App: React.FC = () => {
         <footer className="mt-auto py-8 px-4 sm:px-6 border-t border-white/[0.08] text-xs text-slate-500">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <img
-                src="/vocabflow-logo-256.png"
-                alt="VocabFlow"
-                className="w-5 h-5 rounded-md object-contain opacity-80"
-              />
+              <VocabFlowLogo size="xs" showContainer={false} />
               <span className="font-bold text-slate-400">VocabFlow</span>
               <span>• Nền tảng học đa ngôn ngữ & flashcard thông minh</span>
             </div>

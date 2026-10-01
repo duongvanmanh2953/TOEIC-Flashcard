@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, AlertCircle, ShieldCheck, Sparkles, Lightbulb } from 'lucide-react';
 import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
+import { VocabFlowLogo } from '../components/common/VocabFlowLogo';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -52,11 +53,9 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50 dark:bg-slate-950 py-12">
       <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
         <div className="text-center mb-8">
-          <img
-            src="/vocabflow-logo-256.png"
-            alt="VocabFlow"
-            className="w-14 h-14 rounded-2xl mx-auto object-contain shadow-lg shadow-indigo-500/20 mb-3"
-          />
+          <div className="flex justify-center mb-3">
+            <VocabFlowLogo size="lg" showContainer={true} className="w-8 h-8" />
+          </div>
           <h2 className="text-2xl font-bold tracking-tight">Chào mừng trở lại</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Đăng nhập vào <span className="font-semibold text-indigo-600 dark:text-indigo-400">VocabFlow AI</span> để tiếp tục phiên học

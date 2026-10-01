@@ -18,6 +18,7 @@ import {
   Check,
 } from 'lucide-react';
 import { LiquidBackground } from '../components/common/LiquidBackground';
+import { VocabFlowLogo } from '../components/common/VocabFlowLogo';
 
 export const LandingPage: React.FC = () => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -49,11 +50,7 @@ export const LandingPage: React.FC = () => {
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/60 dark:bg-slate-950/60 border-b border-slate-200/50 dark:border-slate-800/60 transition-colors duration-300">
         <div className="px-4 sm:px-6 py-3.5 sm:py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <img
-              src="/vocabflow-logo-256.png"
-              alt="VocabFlow"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain shadow-md shadow-indigo-500/20"
-            />
+            <VocabFlowLogo size="sm" showContainer={true} className="w-5 h-5 sm:w-6 sm:h-6" />
             <div className="flex flex-col">
               <span className="font-extrabold text-lg sm:text-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 dark:from-sky-400 dark:via-blue-400 dark:to-cyan-300 bg-clip-text text-transparent leading-snug">
                 VocabFlow
@@ -411,7 +408,7 @@ export const LandingPage: React.FC = () => {
       <footer className="py-8 border-t border-slate-200/60 dark:border-slate-800/80 bg-white/40 dark:bg-slate-950/40 backdrop-blur-md text-center text-xs text-slate-500 dark:text-slate-400">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/vocabflow-logo-256.png" alt="Logo" className="w-5 h-5 rounded-md object-contain" />
+            <VocabFlowLogo size="xs" showContainer={false} />
             <span className="font-bold text-slate-700 dark:text-slate-300">VocabFlow</span>
             <span>— Advanced Spaced Repetition Platform</span>
           </div>
