@@ -75,31 +75,45 @@
       overflow-x: hidden;
     }
 
-    /* Liquid Glassmorphism Effect */
+    /* True 3D Liquid Glassmorphism Effect */
     .glass-dark-card {
       position: relative;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%);
-      backdrop-filter: blur(24px) saturate(180%);
-      -webkit-backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-top-color: rgba(255, 255, 255, 0.15);
-      border-left-color: rgba(255, 255, 255, 0.15);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 50%, rgba(0, 0, 0, 0.15) 100%);
+      backdrop-filter: blur(40px) saturate(220%) contrast(110%) brightness(110%);
+      -webkit-backdrop-filter: blur(40px) saturate(220%) contrast(110%) brightness(110%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-top: 1px solid rgba(255, 255, 255, 0.35); /* Strong highlights for 3D bevel */
+      border-left: 1px solid rgba(255, 255, 255, 0.25);
       overflow: hidden;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
-      /* Removed heavy box-shadow per request, keeping only subtle inner edge highlight */
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease, box-shadow 0.4s ease;
+      box-shadow: 
+        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
+        inset -1px -1px 4px rgba(0, 0, 0, 0.5),
+        0 20px 40px -15px rgba(0, 0, 0, 0.5); /* Ambient occlusion shadow to float */
     }
     
+    /* Subtle Frost/Noise Texture overlay for physical glass feel */
+    .glass-dark-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.05;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      z-index: 1;
+    }
+
     /* Dynamic Hover Glow Layer */
     .glass-dark-card::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.12), transparent 40%);
+      inset: 0;
+      background: radial-gradient(700px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.18), transparent 40%);
       opacity: 0;
       transition: opacity 0.5s ease;
       pointer-events: none;
-      z-index: 0;
+      z-index: 2;
     }
 
     .glass-dark-card:hover::before {
@@ -108,12 +122,17 @@
 
     .glass-dark-card:hover {
       border-color: rgba(99, 102, 241, 0.4);
-      transform: translateY(-4px) scale(1.01);
+      border-top-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 
+        inset 1px 1px 5px rgba(255, 255, 255, 0.6),
+        inset -1px -1px 5px rgba(0, 0, 0, 0.7),
+        0 30px 60px -15px rgba(0, 0, 0, 0.6);
     }
 
     .glass-dark-card > * {
       position: relative;
-      z-index: 1;
+      z-index: 3;
     }
 
     /* Primary Glass Button */
@@ -193,26 +212,26 @@
     <!-- Deep Obsidian Base Layer -->
     <div class="absolute inset-0 bg-[#060813]"></div>
 
-    <!-- Soft Luminous Radial Mesh Gradients -->
-    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[580px] rounded-full bg-gradient-to-b from-indigo-600/22 via-purple-600/12 to-transparent blur-[130px]"></div>
+    <!-- Soft Luminous Radial Mesh Gradients - INCREASED OPACITY for stronger distortion -->
+    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[580px] rounded-full bg-gradient-to-b from-indigo-600/40 via-purple-600/25 to-transparent blur-[130px]"></div>
     
     <!-- Top-Left Indigo/Violet Spreading Pool -->
-    <div class="absolute -top-24 -left-20 w-[650px] h-[650px] rounded-full bg-gradient-to-br from-indigo-500/28 via-violet-700/18 to-transparent blur-[140px] animate-float-slow"></div>
+    <div class="absolute -top-24 -left-20 w-[650px] h-[650px] rounded-full bg-gradient-to-br from-indigo-500/50 via-violet-700/35 to-transparent blur-[140px] animate-float-slow"></div>
 
     <!-- Top-Right Azure / Cyan Radiant Pool -->
-    <div class="absolute top-10 -right-24 w-[620px] h-[620px] rounded-full bg-gradient-to-bl from-cyan-500/22 via-sky-600/15 to-transparent blur-[135px]"></div>
+    <div class="absolute top-10 -right-24 w-[620px] h-[620px] rounded-full bg-gradient-to-bl from-cyan-500/45 via-sky-600/30 to-transparent blur-[135px]"></div>
 
     <!-- Center Floating Fuchsia / Rose Nebula -->
-    <div class="absolute top-[42%] -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-rose-500/18 via-fuchsia-600/14 to-transparent blur-[140px] animate-float-slow" style="animation-delay: -3s;"></div>
+    <div class="absolute top-[42%] -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-rose-500/40 via-fuchsia-600/25 to-transparent blur-[140px] animate-float-slow" style="animation-delay: -3s;"></div>
 
     <!-- Center-Left Electric Blue Depth Pool -->
-    <div class="absolute top-[55%] -left-28 w-[560px] h-[560px] rounded-full bg-gradient-to-tr from-blue-600/22 via-indigo-600/15 to-transparent blur-[130px]"></div>
+    <div class="absolute top-[55%] -left-28 w-[560px] h-[560px] rounded-full bg-gradient-to-tr from-blue-600/45 via-indigo-600/30 to-transparent blur-[130px]"></div>
 
     <!-- Bottom-Left Fresh Emerald / Mint Pool -->
-    <div class="absolute -bottom-20 -left-20 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-emerald-500/20 via-teal-600/12 to-transparent blur-[135px] animate-float-slow" style="animation-delay: -6s;"></div>
+    <div class="absolute -bottom-20 -left-20 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-emerald-500/45 via-teal-600/30 to-transparent blur-[135px] animate-float-slow" style="animation-delay: -6s;"></div>
 
     <!-- Bottom-Right Warm Amber / Gold Pool -->
-    <div class="absolute -bottom-20 -right-20 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-amber-500/18 via-orange-600/12 to-transparent blur-[130px]"></div>
+    <div class="absolute -bottom-20 -right-20 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-amber-500/40 via-orange-600/25 to-transparent blur-[130px]"></div>
   </div>
 
   <!-- ========================================================================= -->
