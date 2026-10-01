@@ -23,17 +23,21 @@ import {
   ShieldCheck,
   Clock,
   HelpCircle,
-  FolderPlus,
   Compass,
   Flame,
-  ArrowUpRight,
+  Swords,
+  UploadCloud,
+  Smile,
+  Mic,
+  WifiOff,
+  Quote,
 } from 'lucide-react';
 import { GlassSurface } from './components/GlassSurface';
 import { LiquidBackground } from './components/LiquidBackground';
 
-// Multi-language demo card data for Hero preview
+// Multi-language sample data with rich flags & certified standards
 interface LangSample {
-  id: 'en' | 'ja' | 'zh' | 'ko' | 'de';
+  id: 'en' | 'ja' | 'zh' | 'ko' | 'de' | 'fr' | 'es';
   flag: string;
   langName: string;
   badge: string;
@@ -102,7 +106,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
     example: '「새로운 언어를 배우는 것은 언제나 가치 있는 도전이다.」',
     highlight: '도전',
     speechCode: 'ko-KR',
-    statsLabel: 'Xuất hiện thường xuyên trong TOPIK Đọc',
+    statsLabel: 'Xuất hiện thường xuyên trong đề thi TOPIK Đọc',
   },
   de: {
     id: 'de',
@@ -118,12 +122,40 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
     speechCode: 'de-DE',
     statsLabel: 'Từ vựng trọng tâm trong kỳ thi viết B2',
   },
+  fr: {
+    id: 'fr',
+    flag: '🇫🇷',
+    langName: 'Tiếng Pháp',
+    badge: 'DELF B1 - B2 Chuẩn Châu Âu',
+    word: 'Persévérance',
+    pronunciation: '/pɛʁ.se.ve.ʁɑ̃s/',
+    pos: 'noun',
+    meaning: 'Sự kiên trì bền bỉ, tính kiên nhẫn vượt qua thử thách',
+    example: '"La persévérance est la clé indispensable de toute réussite linguistique."',
+    highlight: 'persévérance',
+    speechCode: 'fr-FR',
+    statsLabel: 'Xuất hiện trong bài luận văn DELF B2',
+  },
+  es: {
+    id: 'es',
+    flag: '🇪🇸',
+    langName: 'Tiếng Tây Ban Nha',
+    badge: 'DELE B1 - C1 Chuẩn Instituto Cervantes',
+    word: 'Desarrollo',
+    pronunciation: '/de.saˈro.ʎo/',
+    pos: 'noun',
+    meaning: 'Sự phát triển, tiến bộ vượt bậc, mở rộng năng lực',
+    example: '"El aprendizaje constante contribuye al desarrollo personal y profesional."',
+    highlight: 'desarrollo',
+    speechCode: 'es-ES',
+    statsLabel: 'Từ vựng kinh tế & xã hội trọng tâm DELE',
+  },
 };
 
 export const App: React.FC = () => {
-  const [selectedLang, setSelectedLang] = useState<'en' | 'ja' | 'zh' | 'ko' | 'de'>('en');
+  const [selectedLang, setSelectedLang] = useState<'en' | 'ja' | 'zh' | 'ko' | 'de' | 'fr' | 'es'>('en');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [activeLoopStep, setActiveLoopStep] = useState(3); // Interactive selection step demo
+  const [activeLoopStep, setActiveLoopStep] = useState(3);
   const [demoSelectedText, setDemoSelectedText] = useState('take immediate responsibility');
   const [demoSavedToNotes, setDemoSavedToNotes] = useState(false);
 
@@ -143,10 +175,10 @@ export const App: React.FC = () => {
     animationFrameId = requestAnimationFrame(raf);
 
     AOS.init({
-      duration: 600,
+      duration: 500,
       once: true,
       easing: 'ease-out-cubic',
-      offset: 40,
+      offset: 30,
     });
 
     return () => {
@@ -171,13 +203,13 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen text-slate-100 flex flex-col overflow-x-hidden selection:bg-indigo-600 selection:text-white bg-[#060813] font-sans">
-      {/* 1. Static GPU-friendly Ambient Gradient Background */}
+      {/* 1. Static GPU-friendly Ambient Gradient Background (Clean, NO box-shadow, NO blur cascades) */}
       <LiquidBackground />
 
       {/* 2. Main Foreground App Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Navigation Bar */}
-        <header className="sticky top-0 z-50 backdrop-blur-md bg-[#060813]/80 border-b border-white/[0.08] transition-colors">
+        <header className="sticky top-0 z-50 backdrop-blur-md bg-[#060813]/85 border-b border-white/[0.08] transition-colors">
           <div className="px-4 sm:px-6 py-3.5 max-w-7xl mx-auto w-full flex items-center justify-between">
             {/* Brand Logo */}
             <a href="/" className="flex items-center gap-2.5 shrink-0 group">
@@ -197,29 +229,42 @@ export const App: React.FC = () => {
             </a>
 
             {/* Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
+            <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-slate-300">
+              <a href="#languages" className="hover:text-cyan-400 transition py-1 flex items-center gap-1.5">
+                <span>🇬🇧 🇯🇵 🇨🇳 Đa Ngôn Ngữ</span>
+              </a>
               <a href="#quick-actions" className="hover:text-cyan-400 transition py-1">
-                Lối Tắt Học Tập
+                Lối Tắt
               </a>
               <a href="#whats-new" className="hover:text-cyan-400 transition py-1">
                 Có Gì Mới?
               </a>
               <a href="#learning-loop" className="hover:text-cyan-400 transition py-1 text-indigo-300 font-bold">
-                Luồng Học Cốt Lõi
+                Luồng Học
               </a>
               <a href="#quick-notes" className="hover:text-cyan-400 transition py-1">
                 Bôi Đen & Ghi Chú
               </a>
-              <a href="#community" className="hover:text-cyan-400 transition py-1">
-                Cộng Đồng
+              <a href="#pvp-arena" className="hover:text-cyan-400 transition py-1 flex items-center gap-1 text-violet-300">
+                <Swords className="w-3.5 h-3.5 text-violet-400" />
+                <span>Đấu Trường 1v1</span>
               </a>
-              <a href="#progress" className="hover:text-cyan-400 transition py-1">
-                Tiến Độ
+              <a href="#smart-features" className="hover:text-cyan-400 transition py-1">
+                Tính Năng AI
+              </a>
+              <a href="#reviews" className="hover:text-cyan-400 transition py-1">
+                Đánh Giá
+              </a>
+              <a
+                href="https://kid.vocalflow.site"
+                className="flex items-center gap-1 text-amber-300 hover:text-amber-200 transition py-1 px-2.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-xs font-bold"
+              >
+                <span>Thế Giới Bé</span>
               </a>
             </nav>
 
             {/* Auth Actions */}
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0">
               <a
                 href="https://app.vocalflow.site/login"
                 className="whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-cyan-400 hover:bg-white/[0.06] transition"
@@ -228,9 +273,9 @@ export const App: React.FC = () => {
               </a>
               <a
                 href="https://app.vocalflow.site/dashboard"
-                className="whitespace-nowrap btn-glass-primary !py-2 !px-4 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
+                className="whitespace-nowrap btn-glass-primary !py-2 !px-4 text-xs font-bold flex items-center gap-1.5"
               >
-                <span>Bắt đầu học ngay</span>
+                <span>Bắt đầu học</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>
@@ -238,23 +283,22 @@ export const App: React.FC = () => {
         </header>
 
         {/* =========================================================================
-            SECTION I & III: HERO SECTION (LIGHTWEIGHT, FAST, DIRECT)
+            SECTION I: HERO SECTION (LIGHTWEIGHT, FAST, CLARITY-FIRST)
             Answers:
-            1. Tôi đang học gì? (Hệ thống đa ngôn ngữ & luyện thi TOEIC/IELTS chuẩn quốc tế)
-            2. VocalFlow giúp tôi học như thế nào? (Luồng học tích hợp: Học -> Luyện -> Ghi chú -> Ôn ngắt quãng)
-            3. Tính năng nào giúp tôi học nhanh hơn? (Quick Notes 1-click, Smart Learning, Test Bank chi tiết)
+            1. Bạn học gì?
+            2. VocalFlow giúp học như thế nào?
+            3. Tính năng nào giúp học nhanh hơn?
+            Language selector replaced with clean country flags (no crowded text)!
             ========================================================================= */}
         <section className="relative pt-12 sm:pt-16 pb-14 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
-            {/* Left Column: Core Value Proposition */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
+            {/* Left Column: Value Proposition */}
             <div className="lg:col-span-7 space-y-6 text-left" data-aos="fade-up">
-              {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/25 text-indigo-300 text-xs font-bold">
                 <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span>Nền tảng học thông minh • Performance-First</span>
               </div>
 
-              {/* Main Headline */}
               <div className="space-y-2">
                 <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
                   Học ít hơn.
@@ -270,13 +314,13 @@ export const App: React.FC = () => {
               </div>
 
               {/* 3 Core Clarity Pillars */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
                   <span className="text-[10px] font-black uppercase text-indigo-400 block tracking-wider">
                     Bạn học gì?
                   </span>
                   <p className="text-xs font-bold text-white mt-0.5">
-                    TOEIC, IELTS & 5 ngôn ngữ thực chiến
+                    TOEIC, IELTS & 7 ngôn ngữ toàn cầu
                   </p>
                 </div>
                 <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
@@ -297,49 +341,62 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Primary & Secondary CTAs */}
-              <div className="pt-3 flex flex-wrap items-center gap-3.5">
+              {/* CTAs */}
+              <div className="pt-2 flex flex-wrap items-center gap-3.5">
                 <a
                   href="https://app.vocalflow.site/dashboard"
-                  className="btn-glass-primary !py-3 !px-6 text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-600/30 card-hover-smooth"
+                  className="btn-glass-primary !py-3 !px-6 text-sm font-extrabold flex items-center gap-2 card-hover-smooth"
                 >
                   <span>Bắt đầu học</span>
                   <ArrowRight className="w-4 h-4" />
                 </a>
 
                 <a
-                  href="#whats-new"
+                  href="#languages"
                   className="btn-glass-secondary !py-3 !px-5 text-sm font-bold flex items-center gap-2 card-hover-smooth"
                 >
                   <Compass className="w-4 h-4 text-slate-300" />
-                  <span>Khám phá tính năng</span>
+                  <span>Khám phá 7 ngôn ngữ</span>
                 </a>
               </div>
             </div>
 
-            {/* Right Column: Lightweight Interactive Sample Card */}
+            {/* Right Column: Country Flag Selector + Interactive Sample Card */}
             <div className="lg:col-span-5" data-aos="fade-up" data-aos-delay="100">
-              <GlassSurface className="p-6 sm:p-7 border border-white/15 space-y-5">
-                {/* Language Switcher Tabs */}
-                <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-slate-900/80 border border-white/10">
-                  {(['en', 'ja', 'zh', 'ko', 'de'] as const).map((langId) => {
-                    const sample = MULTI_LANG_SAMPLES[langId];
-                    const isActive = selectedLang === langId;
-                    return (
-                      <button
-                        key={langId}
-                        onClick={() => setSelectedLang(langId)}
-                        className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
-                          isActive
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        <span>{sample.flag}</span>
-                        <span className="hidden sm:inline">{sample.langName}</span>
-                      </button>
-                    );
-                  })}
+              <GlassSurface className="p-6 border border-white/15 space-y-4">
+                {/* Language Flag Selector (Cờ quốc gia to rõ, KHÔNG dồn ép chữ) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                      Chọn ngôn ngữ ôn luyện:
+                    </span>
+                    <span className="text-xs font-bold text-indigo-300">
+                      {currentSample.flag} {currentSample.langName}
+                    </span>
+                  </div>
+
+                  {/* Flag Buttons: Cờ quốc gia trực quan, rộng rãi, không dồn chữ */}
+                  <div className="grid grid-cols-7 gap-1.5 p-1.5 rounded-2xl bg-slate-900/90 border border-white/10">
+                    {(['en', 'ja', 'zh', 'ko', 'de', 'fr', 'es'] as const).map((langId) => {
+                      const sample = MULTI_LANG_SAMPLES[langId];
+                      const isActive = selectedLang === langId;
+                      return (
+                        <button
+                          key={langId}
+                          type="button"
+                          onClick={() => setSelectedLang(langId)}
+                          className={`py-2 rounded-xl text-lg sm:text-xl flex items-center justify-center transition-all ${
+                            isActive
+                              ? 'bg-indigo-600 border border-indigo-400/80 scale-105'
+                              : 'hover:bg-white/[0.08] opacity-75 hover:opacity-100 border border-transparent'
+                          }`}
+                          title={`${sample.flag} ${sample.langName} (${sample.badge})`}
+                        >
+                          <span>{sample.flag}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Card Word Header */}
@@ -367,7 +424,7 @@ export const App: React.FC = () => {
                 </div>
 
                 {/* Meaning & Context */}
-                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950/60 border border-white/[0.06] text-xs">
+                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950/70 border border-white/[0.06] text-xs">
                   <p className="font-semibold text-slate-200 leading-relaxed">
                     {currentSample.meaning}
                   </p>
@@ -376,11 +433,11 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Real Usage Stat Badge */}
+                {/* Usage Stat */}
                 <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
                   <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>SRS Chu kỳ nhớ 3 ngày</span>
+                    <span>SRS Chu kỳ nhớ tối ưu</span>
                   </span>
                   <span className="font-medium text-slate-400">{currentSample.statsLabel}</span>
                 </div>
@@ -390,14 +447,249 @@ export const App: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            SECTION IV: QUICK ACTIONS (5 COMPACT CARDS, TRANSLATEY -2PX)
-            1. Học từ vựng
-            2. Ôn Flashcard
-            3. Làm bài kiểm tra
-            4. Khám phá cộng đồng
-            5. Ghi chú
+            SECTION II: SECTION ĐA NGÔN NGỮ CHUYÊN SÂU (MULTI-LANGUAGE MASTERY)
+            Cờ quốc gia to rõ thay vì symbol trừu tượng!
             ========================================================================= */}
-        <section id="quick-actions" className="py-10 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+        <section id="languages" className="py-16 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-xs font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full border border-cyan-400/20 inline-block mb-3">
+              Không Giới Hạn TOEIC • Hệ Sinh Thái Đa Ngôn Ngữ
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight mb-3">
+              Làm Chủ 7+ Ngôn Ngữ Toàn Cầu <br />
+              <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
+                Với Công Nghệ Flashcard Cá Nhân Hóa
+              </span>
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Mỗi ngôn ngữ sở hữu không gian học tập riêng biệt: từ điển chuyên ngành, phát âm bản xứ chuẩn ngữ điệu,
+              toggle phiên âm Pinyin / Romaji / Furigana và phân cấp chứng chỉ quốc tế.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-aos="fade-up">
+            {/* 1. Tiếng Anh */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-blue-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-3xl">🇬🇧</span>
+                    <div>
+                      <h3 className="text-lg font-black text-white">Tiếng Anh</h3>
+                      <span className="text-[10px] text-slate-400">English Language</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                    TOEIC • IELTS • CEFR
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Ngân hàng 600+ từ vựng TOEIC ETS, bộ đề thi bấm giờ thực tế, trắc nghiệm Part 5 & 7 và giải thích chi tiết.
+                </p>
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-white/[0.06] text-xs space-y-1">
+                  <div className="font-bold text-blue-300 flex items-center justify-between">
+                    <span>Mẫu từ vựng:</span>
+                    <span className="text-[11px] text-slate-400">/əˈkɑːmədeɪt/</span>
+                  </div>
+                  <p className="text-white font-semibold">accommodate</p>
+                  <p className="text-[11px] text-slate-400">Đáp ứng, cung cấp chỗ ở cho 2,500 khách tham quan.</p>
+                </div>
+              </div>
+              <a
+                href="https://app.vocalflow.site/vocabulary"
+                className="pt-2 text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              >
+                <span>Học từ vựng Tiếng Anh</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* 2. Tiếng Nhật */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-rose-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-3xl">🇯🇵</span>
+                    <div>
+                      <h3 className="text-lg font-black text-white">Tiếng Nhật</h3>
+                      <span className="text-[10px] text-slate-400">日本語 (Nihongo)</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                    JLPT N5 → N1
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Hỗ trợ Kanji, Hiragana, Katakana cùng Furigana linh hoạt. Luyện phản xạ từ vựng kinh doanh và giao tiếp thực tế.
+                </p>
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-white/[0.06] text-xs space-y-1">
+                  <div className="font-bold text-rose-300 flex items-center justify-between">
+                    <span>Mẫu từ vựng:</span>
+                    <span className="text-[11px] text-slate-400">かいぜん • Kaizen</span>
+                  </div>
+                  <p className="text-white font-semibold">改善 (Cải tiến)</p>
+                  <p className="text-[11px] text-slate-400">Cải tiến liên tục quy trình sản xuất để nâng cao năng suất.</p>
+                </div>
+              </div>
+              <a
+                href="https://app.vocalflow.site/vocabulary"
+                className="pt-2 text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
+              >
+                <span>Học từ vựng Tiếng Nhật</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* 3. Tiếng Trung */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-amber-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-3xl">🇨🇳</span>
+                    <div>
+                      <h3 className="text-lg font-black text-white">Tiếng Trung</h3>
+                      <span className="text-[10px] text-slate-400">中文 (Zhongwen)</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    HSK 1 → HSK 6
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Hiển thị chữ Hán giản thể/phồn thể kèm Pinyin chuẩn thanh điệu và thứ tự nét viết chuẩn giáo trình HSK quốc tế.
+                </p>
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-white/[0.06] text-xs space-y-1">
+                  <div className="font-bold text-amber-300 flex items-center justify-between">
+                    <span>Mẫu từ vựng:</span>
+                    <span className="text-[11px] text-slate-400">jiān chí • Thanh 1-2</span>
+                  </div>
+                  <p className="text-white font-semibold">坚持 (Kiên trì)</p>
+                  <p className="text-[11px] text-slate-400">Chỉ cần kiên trì học mỗi ngày, vốn từ sẽ bứt phá mạnh mẽ.</p>
+                </div>
+              </div>
+              <a
+                href="https://app.vocalflow.site/vocabulary"
+                className="pt-2 text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+              >
+                <span>Học từ vựng Tiếng Trung</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* 4. Tiếng Hàn */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-sky-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-3xl">🇰🇷</span>
+                    <div>
+                      <h3 className="text-lg font-black text-white">Tiếng Hàn</h3>
+                      <span className="text-[10px] text-slate-400">한국어 (Hangugeo)</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-400 border border-sky-500/30">
+                    TOPIK I & II
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Bảng chữ cái Hangul, cách biến âm và kính ngữ tiếng Hàn trong giao tiếp thường nhật và đề thi học thuật.
+                </p>
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-white/[0.06] text-xs space-y-1">
+                  <div className="font-bold text-sky-300 flex items-center justify-between">
+                    <span>Mẫu từ vựng:</span>
+                    <span className="text-[11px] text-slate-400">do-jeon</span>
+                  </div>
+                  <p className="text-white font-semibold">도전 (Thử thách)</p>
+                  <p className="text-[11px] text-slate-400">Học ngôn ngữ mới luôn là một thử thách vô cùng xứng đáng.</p>
+                </div>
+              </div>
+              <a
+                href="https://app.vocalflow.site/vocabulary"
+                className="pt-2 text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"
+              >
+                <span>Học từ vựng Tiếng Hàn</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* 5. Tiếng Đức */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-yellow-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-3xl">🇩🇪</span>
+                    <div>
+                      <h3 className="text-lg font-black text-white">Tiếng Đức</h3>
+                      <span className="text-[10px] text-slate-400">Deutsch</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+                    Goethe A1 → B2
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Học quán từ der/die/das chuẩn xác, cách chia đuôi tính từ và các cấu trúc ngữ pháp thi cử B1-B2.
+                </p>
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-white/[0.06] text-xs space-y-1">
+                  <div className="font-bold text-yellow-300 flex items-center justify-between">
+                    <span>Mẫu từ vựng:</span>
+                    <span className="text-[11px] text-slate-400">zuverlässig</span>
+                  </div>
+                  <p className="text-white font-semibold">Zuverlässig (Tin cậy)</p>
+                  <p className="text-[11px] text-slate-400">Đối tác cực kỳ đáng tin cậy trong các dự án phức tạp.</p>
+                </div>
+              </div>
+              <a
+                href="https://app.vocalflow.site/vocabulary"
+                className="pt-2 text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+              >
+                <span>Học từ vựng Tiếng Đức</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* 6. Tiếng Pháp & Tây Ban Nha */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-purple-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-3xl">🇫🇷 🇪🇸</span>
+                    <div>
+                      <h3 className="text-lg font-black text-white">Pháp & Tây Ban Nha</h3>
+                      <span className="text-[10px] text-slate-400">DELF & DELE</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                    B1 - C1 Chuẩn
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Tiếp cận hai ngôn ngữ lãng mạn phổ biến nhất thế giới với hệ thống chia động từ và phát âm ngữ điệu chuẩn.
+                </p>
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-white/[0.06] text-xs space-y-1">
+                  <div className="font-bold text-purple-300 flex items-center justify-between">
+                    <span>Mẫu từ vựng:</span>
+                    <span className="text-[11px] text-slate-400">Persévérance • Desarrollo</span>
+                  </div>
+                  <p className="text-white font-semibold">Kiên trì & Phát triển</p>
+                  <p className="text-[11px] text-slate-400">Chìa khóa cốt lõi để thành công trong mọi hành trình học tập.</p>
+                </div>
+              </div>
+              <a
+                href="https://app.vocalflow.site/vocabulary"
+                className="pt-2 text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              >
+                <span>Khám phá ngôn ngữ mới</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* =========================================================================
+            SECTION III: QUICK ACTIONS (5 COMPACT CARDS)
+            ========================================================================= */}
+        <section id="quick-actions" className="py-12 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6" data-aos="fade-up">
             <div>
               <span className="text-[11px] font-black text-indigo-400 uppercase tracking-wider block">
@@ -412,8 +704,7 @@ export const App: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5" data-aos="fade-up">
-            {/* Action 1 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" data-aos="fade-up">
             <a
               href="https://app.vocalflow.site/vocabulary"
               className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-indigo-400/40 card-hover-smooth flex flex-col justify-between group"
@@ -435,7 +726,6 @@ export const App: React.FC = () => {
               </div>
             </a>
 
-            {/* Action 2 */}
             <a
               href="https://app.vocalflow.site/review"
               className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-sky-400/40 card-hover-smooth flex flex-col justify-between group"
@@ -457,7 +747,6 @@ export const App: React.FC = () => {
               </div>
             </a>
 
-            {/* Action 3 */}
             <a
               href="https://app.vocalflow.site/exams"
               className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-emerald-400/40 card-hover-smooth flex flex-col justify-between group"
@@ -479,7 +768,6 @@ export const App: React.FC = () => {
               </div>
             </a>
 
-            {/* Action 4 */}
             <a
               href="https://app.vocalflow.site/community-knowledge"
               className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-purple-400/40 card-hover-smooth flex flex-col justify-between group"
@@ -501,7 +789,6 @@ export const App: React.FC = () => {
               </div>
             </a>
 
-            {/* Action 5 */}
             <a
               href="https://app.vocalflow.site/notes"
               className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-amber-400/40 card-hover-smooth flex flex-col justify-between group"
@@ -526,13 +813,7 @@ export const App: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            SECTION V: WHAT'S NEW ("CÓ GÌ MỚI?")
-            Real features only:
-            - Smart Learning
-            - Test Bank
-            - Community
-            - Quick Notes (Bôi đen & lưu note)
-            - Learning Progress
+            SECTION IV: WHAT'S NEW ("CÓ GÌ MỚI?")
             ========================================================================= */}
         <section id="whats-new" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
           <div className="space-y-3 mb-10 text-left" data-aos="fade-up">
@@ -549,7 +830,6 @@ export const App: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-aos="fade-up">
-            {/* Feature 1: Smart Learning */}
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-indigo-400/30 card-hover-smooth space-y-4">
               <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-black">
                 <Brain className="w-5 h-5" />
@@ -570,7 +850,6 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Feature 2: Test Bank */}
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-emerald-400/30 card-hover-smooth space-y-4">
               <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-black">
                 <Award className="w-5 h-5" />
@@ -591,7 +870,6 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Feature 3: Community */}
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-purple-400/30 card-hover-smooth space-y-4">
               <div className="w-10 h-10 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center font-black">
                 <Users className="w-5 h-5" />
@@ -612,7 +890,6 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Feature 4: Quick Notes */}
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-amber-400/30 card-hover-smooth space-y-4">
               <div className="w-10 h-10 rounded-2xl bg-amber-600/20 text-amber-400 flex items-center justify-center font-black">
                 <MousePointerClick className="w-5 h-5" />
@@ -633,7 +910,6 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Feature 5: Learning Progress */}
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-sky-400/30 card-hover-smooth space-y-4">
               <div className="w-10 h-10 rounded-2xl bg-sky-600/20 text-sky-400 flex items-center justify-center font-black">
                 <TrendingUp className="w-5 h-5" />
@@ -654,7 +930,6 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Feature 6: Admin Quotas & Limits */}
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-rose-400/30 card-hover-smooth space-y-4">
               <div className="w-10 h-10 rounded-2xl bg-rose-600/20 text-rose-400 flex items-center justify-center font-black">
                 <ShieldCheck className="w-5 h-5" />
@@ -678,11 +953,10 @@ export const App: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            SECTION VI: CORE LEARNING LOOP (LUỒNG HỌC CỐT LÕI)
-            Học → Luyện đề → Phát hiện điều chưa hiểu → Bôi đen → Thêm vào ghi chú → Ôn lại
+            SECTION V: CORE LEARNING LOOP (LUỒNG HỌC CỐT LÕI)
             ========================================================================= */}
         <section id="learning-loop" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-12" data-aos="fade-up">
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-10" data-aos="fade-up">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/25 text-indigo-300 text-xs font-bold">
               <Brain className="w-3.5 h-3.5" />
               <span>Quy Trình Học Tập Khép Kín</span>
@@ -696,57 +970,14 @@ export const App: React.FC = () => {
             </p>
           </div>
 
-          {/* Interactive Steps Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3" data-aos="fade-up">
             {[
-              {
-                step: 1,
-                title: 'Học',
-                desc: 'Nắm từ vựng & cấu trúc ngữ pháp',
-                icon: BookOpen,
-                color: 'text-indigo-400',
-                bg: 'bg-indigo-500/15',
-              },
-              {
-                step: 2,
-                title: 'Luyện',
-                desc: 'Làm đề thi thử bấm giờ thực tế',
-                icon: Award,
-                color: 'text-sky-400',
-                bg: 'bg-sky-500/15',
-              },
-              {
-                step: 3,
-                title: 'Phát hiện',
-                desc: 'Nhận ra câu sai & cụm từ chưa hiểu',
-                icon: HelpCircle,
-                color: 'text-amber-400',
-                bg: 'bg-amber-500/15',
-              },
-              {
-                step: 4,
-                title: 'Bôi đen',
-                desc: 'Chọn text ngay trên bài thi',
-                icon: MousePointerClick,
-                color: 'text-rose-400',
-                bg: 'bg-rose-500/15',
-              },
-              {
-                step: 5,
-                title: 'Thêm note',
-                desc: 'Lưu 1-click có gắn nguồn gốc đề',
-                icon: FileText,
-                color: 'text-purple-400',
-                bg: 'bg-purple-500/15',
-              },
-              {
-                step: 6,
-                title: 'Ôn lại',
-                desc: 'SRS ngắt quãng khóa vào trí nhớ',
-                icon: TrendingUp,
-                color: 'text-emerald-400',
-                bg: 'bg-emerald-500/15',
-              },
+              { step: 1, title: 'Học', desc: 'Nắm từ vựng & cấu trúc ngữ pháp', icon: BookOpen, color: 'text-indigo-400', bg: 'bg-indigo-500/15' },
+              { step: 2, title: 'Luyện', desc: 'Làm đề thi thử bấm giờ thực tế', icon: Award, color: 'text-sky-400', bg: 'bg-sky-500/15' },
+              { step: 3, title: 'Phát hiện', desc: 'Nhận ra câu sai & cụm từ chưa hiểu', icon: HelpCircle, color: 'text-amber-400', bg: 'bg-amber-500/15' },
+              { step: 4, title: 'Bôi đen', desc: 'Chọn text ngay trên bài thi', icon: MousePointerClick, color: 'text-rose-400', bg: 'bg-rose-500/15' },
+              { step: 5, title: 'Thêm note', desc: 'Lưu 1-click có gắn nguồn gốc đề', icon: FileText, color: 'text-purple-400', bg: 'bg-purple-500/15' },
+              { step: 6, title: 'Ôn lại', desc: 'SRS ngắt quãng khóa vào trí nhớ', icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
             ].map((item) => {
               const Icon = item.icon;
               const isActive = activeLoopStep === item.step;
@@ -756,7 +987,7 @@ export const App: React.FC = () => {
                   onClick={() => setActiveLoopStep(item.step)}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer card-hover-smooth flex flex-col justify-between ${
                     isActive
-                      ? 'bg-slate-800/90 border-indigo-400 shadow-md shadow-indigo-500/10'
+                      ? 'bg-slate-800/90 border-indigo-400'
                       : 'bg-white/[0.03] border-white/[0.08] hover:border-white/20'
                   }`}
                 >
@@ -777,7 +1008,7 @@ export const App: React.FC = () => {
                   {isActive && (
                     <div className="mt-3 pt-2 border-t border-white/10 flex items-center gap-1 text-[10px] font-bold text-indigo-300">
                       <Check className="w-3 h-3 text-indigo-400" />
-                      <span>Đang chọn</span>
+                      <span>Đang xem</span>
                     </div>
                   )}
                 </div>
@@ -787,12 +1018,11 @@ export const App: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            SECTION VII: TEXT SELECTION & "THÊM VÀO GHI CHÚ" SHOWCASE
-            Demonstrates: Bôi đen text trong Test và Community → Floating toolbar xuất hiện
+            SECTION VI: TEXT SELECTION & "THÊM VÀO GHI CHÚ" SHOWCASE
             ========================================================================= */}
         <section id="quick-notes" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left: Explanation */}
+            {/* Left */}
             <div className="lg:col-span-6 space-y-5 text-left" data-aos="fade-up">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/25 text-amber-300 text-xs font-bold">
                 <MousePointerClick className="w-3.5 h-3.5" />
@@ -813,7 +1043,7 @@ export const App: React.FC = () => {
                 đoạn text được chọn.
               </p>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-2.5 pt-1">
                 <div className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
@@ -846,10 +1076,9 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Interactive Visual Simulation */}
+            {/* Right: Simulation */}
             <div className="lg:col-span-6" data-aos="fade-up" data-aos-delay="100">
-              <div className="p-6 rounded-3xl bg-slate-900 border border-white/15 space-y-4 shadow-xl">
-                {/* Simulated Test Question Header */}
+              <div className="p-6 rounded-3xl bg-slate-900 border border-white/15 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white font-black text-[11px]">
@@ -862,16 +1091,14 @@ export const App: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Question Text with Simulated Selection */}
                 <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/[0.08] relative">
-                  {/* Floating Action Tooltip Simulator */}
-                  <div className="absolute -top-4 left-24 z-20 animate-fade-in">
+                  <div className="absolute -top-4 left-24 z-20">
                     <button
                       onClick={() => {
                         setDemoSavedToNotes(true);
                         setTimeout(() => setDemoSavedToNotes(false), 3000);
                       }}
-                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-600/40 flex items-center gap-1.5 transition active:scale-95"
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold flex items-center gap-1.5 transition active:scale-95"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>{demoSavedToNotes ? '✓ Đã lưu vào ghi chú!' : 'Thêm vào ghi chú'}</span>
@@ -887,7 +1114,6 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Explanation Area */}
                 <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-800/40 space-y-1 text-xs text-slate-300">
                   <div className="flex items-center gap-1.5 font-bold text-indigo-400">
                     <HelpCircle className="w-3.5 h-3.5" />
@@ -899,7 +1125,6 @@ export const App: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Saved Note Card Feedback */}
                 <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
@@ -923,81 +1148,285 @@ export const App: React.FC = () => {
         </section>
 
         {/* =========================================================================
-            SECTION VIII: LEARNING PROGRESS & ANALYTICS SHOWCASE
+            SECTION VII: ĐẤU TRƯỜNG 1v1 PvP REALTIME & AI COACH (GIỮ NGUYÊN SECTION CŨ)
             ========================================================================= */}
-        <section id="progress" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-10" data-aos="fade-up">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/25 text-emerald-300 text-xs font-bold">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>Đo Lường Trực Quan</span>
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              Biết Bạn Đang Ở Đâu & Cần Cải Thiện Gì
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-400">
-              Không còn mơ hồ về năng lực. Bảng thống kê hiển thị thời gian học, độ bền trí nhớ và mức độ làm chủ từng cấp độ.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-aos="fade-up">
-            {/* Metric 1 */}
-            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-slate-400">Độ Bền Trí Nhớ (SRS)</span>
-                <span className="text-xs font-extrabold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  Tối ưu
+        <section id="pvp-arena" className="py-16 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div data-aos="fade-right" className="text-left space-y-5">
+              <span className="text-xs font-black uppercase tracking-widest text-violet-400 bg-violet-500/10 px-3 py-1.5 rounded-full border border-violet-400/20 inline-block">
+                Gamification & Realtime Multiplay
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight">
+                Đấu Trường Từ Vựng 1v1 <br />
+                <span className="bg-gradient-to-r from-violet-400 via-indigo-300 to-sky-300 bg-clip-text text-transparent">
+                  Thi Đấu Thời Gian Thực Socket.IO
                 </span>
-              </div>
-              <p className="text-3xl font-black text-white">88.4%</p>
-              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '88%' }} />
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Xác suất gợi nhớ từ vựng chính xác khi gặp lại trong bài đọc/nghe thực tế.
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Biến việc học từ vựng thành trò chơi kịch tính! Thách đấu bạn bè hoặc so tài ngẫu nhiên
+                cùng người học trên toàn thế giới qua các chế độ mini-game hấp dẫn.
               </p>
+
+              <ul className="space-y-3 pt-1">
+                <li className="flex items-start gap-3 text-xs sm:text-sm text-slate-200">
+                  <Swords className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Word Match & Speed Scramble:</strong> Tranh đua tốc độ nối từ với nghĩa trong 60 giây nghẹt thở.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3 text-xs sm:text-sm text-slate-200">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Bảng Xếp Hạng & Rank Tiers:</strong> Tích lũy EXP, thăng cấp từ Đồng (Bronze) lên Thách Đấu (Grandmaster).
+                  </span>
+                </li>
+                <li className="flex items-start gap-3 text-xs sm:text-sm text-slate-200">
+                  <Mic className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Gia Sư AI Luyện Nói 24/7:</strong> Đối thoại trực tiếp, sửa lỗi phát âm và phản hồi ngữ cảnh với độ trễ siêu thấp dưới 150ms.
+                  </span>
+                </li>
+              </ul>
+
+              <div className="pt-2">
+                <a
+                  href="https://app.vocalflow.site/pvp"
+                  className="btn-glass-primary !py-2.5 !px-5 text-xs font-bold inline-flex items-center gap-2 card-hover-smooth"
+                >
+                  <Swords className="w-4 h-4" />
+                  <span>Tham gia đấu trường ngay</span>
+                </a>
+              </div>
             </div>
 
-            {/* Metric 2 */}
-            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-slate-400">Chuỗi Ngày Học (Streak)</span>
-                <span className="text-xs font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                  Đều đặn
-                </span>
-              </div>
-              <p className="text-3xl font-black text-white">14 Ngày</p>
-              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: '92%' }} />
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Duy trì thói quen học ngắt quãng 10-15 phút mỗi ngày thay vì nhồi nhét.
-              </p>
-            </div>
+            {/* Right: Mockup PvP Arena Match */}
+            <div data-aos="fade-left" className="w-full">
+              <div className="p-6 rounded-3xl bg-slate-900 border border-white/15 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-bold text-white">Trận Đấu Xếp Hạng Rank Vàng</span>
+                  </div>
+                  <span className="font-mono text-cyan-400 font-extrabold bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-500/30">
+                    Thời gian: 00:42
+                  </span>
+                </div>
 
-            {/* Metric 3 */}
-            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-slate-400">Độ Phủ CEFR B1 - C1</span>
-                <span className="text-xs font-extrabold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
-                  Chuẩn hóa
-                </span>
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/[0.08] space-y-3 text-xs">
+                  <div className="text-center space-y-1">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider">Từ vựng TOEIC Part 5</span>
+                    <p className="text-slate-300">
+                      Từ khóa: <strong className="text-white font-black text-base">"pragmatic"</strong>
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-xs font-bold text-emerald-200 text-center">
+                      ✓ realistic / practical
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-800/80 border border-white/[0.08] text-xs font-bold text-slate-400 text-center">
+                      theoretical
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-white/[0.08] flex items-center justify-between text-xs">
+                    <span className="text-slate-300">Tỉ số hiện tại:</span>
+                    <div className="flex items-center gap-3 font-black">
+                      <span className="text-cyan-400">Bạn: 2,450 pts</span>
+                      <span className="text-slate-500">VS</span>
+                      <span className="text-amber-400">Đối thủ: 2,120 pts</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-900/90 border border-white/[0.08] flex items-center justify-between text-[11px] text-slate-400">
+                  <span>Kết nối Socket.IO P2P</span>
+                  <span className="text-cyan-400 font-bold">Độ trễ: 18ms</span>
+                </div>
               </div>
-              <p className="text-3xl font-black text-white">1,420 Từ</p>
-              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-indigo-500 rounded-full" style={{ width: '76%' }} />
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Đã thành thạo 76% lượng từ vựng cốt lõi thường xuất hiện trong đề thi TOEIC 750+.
-              </p>
             </div>
           </div>
         </section>
 
         {/* =========================================================================
-            SECTION IX: FINAL CTA
+            SECTION VIII: SMART FEATURES (WORD BANK, IMPORT, KIDS, OFFLINE)
+            ========================================================================= */}
+        <section id="smart-features" className="py-16 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-xs font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 px-3 py-1.5 rounded-full border border-sky-400/20 inline-block mb-3">
+              Tính Năng Đột Phá
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight mb-3">
+              Không Chỉ Là Flashcard Đơn Thuần
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              VocabFlow cung cấp trọn bộ công cụ mạnh mẽ hỗ trợ mọi nhu cầu học tập của bạn,
+              từ học sinh nhỏ tuổi tới người đi làm bận rộn.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5" data-aos="fade-up">
+            {/* Feature 1: Word Bank & Import */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-amber-400/30 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  Tự Tạo Kho Từ • Nhập File Tự Động
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Nhập danh sách từ vựng từ Excel, CSV, file PDF tài liệu hoặc chụp ảnh OCR.
+                  AI tự động tra phiên âm, dịch nghĩa và sinh câu ví dụ mẫu trong 3 giây.
+                </p>
+              </div>
+              <a
+                href="https://app.vocalflow.site/vocabulary"
+                className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1 pt-2"
+              >
+                <span>Khám phá Word Bank</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* Feature 2: Kids World */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-pink-400/30 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-pink-500/15 border border-pink-500/25 flex items-center justify-center text-pink-400">
+                  <Smile className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  VocabFlow Kid: Không Gian Cho Bé
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Thiết kế giao diện tươi sáng thân thiện, game ghép tranh, phát âm mẫu âm thanh
+                  sinh động và hệ thống sticker khen thưởng khích lệ tư duy ngôn ngữ sớm.
+                </p>
+              </div>
+              <a
+                href="https://kid.vocalflow.site"
+                className="text-xs font-bold text-pink-400 hover:underline flex items-center gap-1 pt-2"
+              >
+                <span>Trải nghiệm Thế Giới Bé</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* Feature 3: Offline Sync */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-emerald-400/30 card-hover-smooth flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                  <WifiOff className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  Học Ngoại Tuyến (Offline PWA)
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Lưu bộ từ vựng vào bộ nhớ máy qua IndexedDB. Ôn bài trên xe bus, máy bay
+                  hoặc khi không có internet. Tự động đồng bộ tiến độ khi kết nối mạng trở lại.
+                </p>
+              </div>
+              <a
+                href="https://app.vocalflow.site/dashboard"
+                className="text-xs font-bold text-emerald-400 hover:underline flex items-center gap-1 pt-2"
+              >
+                <span>Cài đặt ứng dụng PWA</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* =========================================================================
+            SECTION IX: REVIEWS / SOCIAL PROOF (GIỮ NGUYÊN SECTION CŨ)
+            ========================================================================= */}
+        <section id="reviews" className="py-16 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-xs font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-400/20 inline-block mb-3">
+              Cộng Đồng Tin Dùng
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight mb-3">
+              Học Viên Đã Bứt Phá Điểm Số Cùng VocabFlow
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Hơn 12,000 học viên đã chinh phục thành công chứng chỉ TOEIC, JLPT và HSK mục tiêu.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5" data-aos="fade-up">
+            {/* Review 1 */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-4">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-300 italic leading-relaxed">
+                "Tính năng bôi đen câu hỏi trong đề thi TOEIC rồi lưu thẳng vào ghi chú đã cứu cánh mình!
+                Trước đây làm xong đề phải mở sổ ghi chép lại rất mất thời gian. Mình đã tăng từ 650 lên 895 TOEIC sau 2 tháng."
+              </p>
+              <div className="pt-2 border-t border-white/10 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-sky-400 text-white flex items-center justify-center font-bold text-xs">
+                  MN
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-white">Minh Nhật</h4>
+                  <span className="text-[10px] text-slate-400">TOEIC 895 • Sinh viên ĐH Ngoại Thương</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 2 */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-4">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-300 italic leading-relaxed">
+                "Học tiếng Nhật với chế độ Furigana và đấu trường 1v1 cực kỳ lôi cuốn.
+                Thuật toán SRS nhắc đúng những từ mình hay quên, giúp mình đỗ JLPT N2 ngay trong lần thi đầu tiên."
+              </p>
+              <div className="pt-2 border-t border-white/10 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-rose-500 to-amber-400 text-white flex items-center justify-center font-bold text-xs">
+                  HA
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-white">Hoàng Anh</h4>
+                  <span className="text-[10px] text-slate-400">JLPT N2 • Kỹ sư phần mềm Tokyo</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 3 */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-4">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-300 italic leading-relaxed">
+                "Kho từ vựng HSK 5 có phát âm chuẩn thanh điệu và ví dụ sát đề thi thực tế.
+                Bảng tiến độ theo dõi rất chi tiết, tạo động lực duy trì chuỗi học 45 ngày liên tục."
+              </p>
+              <div className="pt-2 border-t border-white/10 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-emerald-400 text-white flex items-center justify-center font-bold text-xs">
+                  TL
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-white">Thùy Linh</h4>
+                  <span className="text-[10px] text-slate-400">HSK 5 (268 pts) • Biên phiên dịch</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =========================================================================
+            SECTION X: FINAL CTA & FOOTER
             ========================================================================= */}
         <section className="py-16 px-4 sm:px-6 max-w-5xl mx-auto w-full text-center" data-aos="fade-up">
-          <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-indigo-900/50 via-slate-900 to-slate-950 border border-indigo-500/30 space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-indigo-950/70 via-slate-900 to-slate-950 border border-indigo-500/30 space-y-6 relative overflow-hidden">
             <div className="space-y-3 relative z-10 max-w-xl mx-auto">
               <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
                 Sẵn sàng bứt phá mục tiêu ngôn ngữ của bạn?
@@ -1011,7 +1440,7 @@ export const App: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center gap-3.5 relative z-10 pt-2">
               <a
                 href="https://app.vocalflow.site/dashboard"
-                className="btn-glass-primary !py-3 !px-7 text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-600/40 card-hover-smooth"
+                className="btn-glass-primary !py-3 !px-7 text-sm font-extrabold flex items-center gap-2 card-hover-smooth"
               >
                 <span>Bắt đầu học miễn phí</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1041,17 +1470,23 @@ export const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-5 text-slate-400 font-medium">
+              <a href="#languages" className="hover:text-white transition">
+                Đa ngôn ngữ
+              </a>
               <a href="https://app.vocalflow.site/vocabulary" className="hover:text-white transition">
                 Từ vựng
               </a>
               <a href="https://app.vocalflow.site/exams" className="hover:text-white transition">
                 Ngân hàng đề
               </a>
-              <a href="https://app.vocalflow.site/community-knowledge" className="hover:text-white transition">
-                Cộng đồng
+              <a href="#pvp-arena" className="hover:text-white transition">
+                Đấu trường 1v1
               </a>
               <a href="https://app.vocalflow.site/notes" className="hover:text-white transition">
                 Ghi chú
+              </a>
+              <a href="https://kid.vocalflow.site" className="text-amber-400 hover:text-amber-300 transition">
+                Thế giới bé
               </a>
             </div>
           </div>

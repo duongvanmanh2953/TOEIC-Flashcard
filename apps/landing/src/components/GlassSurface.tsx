@@ -51,7 +51,6 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
         borderRadius: `${borderRadius}px`,
         backgroundColor: 'rgba(15, 23, 42, 0.75)',
         border: '1px solid rgba(255, 255, 255, 0.12)',
-        boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.25)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         transform: 'translateZ(0)', // Force GPU layer

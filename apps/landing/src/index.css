@@ -17,14 +17,13 @@
   }
 }
 
-/* Primary Glass Button from original system */
+/* Primary Glass Button from original system - Clean, crisp, NO box-shadow */
 .btn-glass-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
   color: #ffffff;
   border-radius: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5), 0 8px 10px -6px rgba(99, 102, 241, 0.3);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -32,8 +31,8 @@
 }
 .btn-glass-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.65), 0 10px 12px -5px rgba(99, 102, 241, 0.4);
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 .btn-glass-primary:active {
   transform: translateY(1px);
@@ -68,9 +67,9 @@
   transform: translateY(-2px);
 }
 
-/* Lightweight hover transition helper */
+/* Lightweight hover transition helper (clean, no box-shadow) */
 .card-hover-smooth {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 .card-hover-smooth:hover {
   transform: translateY(-2px);
