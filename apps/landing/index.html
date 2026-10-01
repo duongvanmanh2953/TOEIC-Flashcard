@@ -1153,6 +1153,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
   <script>
+    // 0. Auto scroll to top on load
+    window.addEventListener('load', () => {
+      window.scrollTo(0, 0);
+      if (typeof lenis !== 'undefined') {
+        lenis.scrollTo(0, { immediate: true });
+      }
+    });
+
     // 1. Initialize Lenis Buttery Smooth Inertial Scrolling
     const lenis = new Lenis({
       duration: 1.2,
