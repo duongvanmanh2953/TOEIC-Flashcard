@@ -34,11 +34,12 @@ import {
 } from 'lucide-react';
 import { GlassSurface } from './components/GlassSurface';
 import { LiquidBackground } from './components/LiquidBackground';
+import { CountryFlag } from './components/CountryFlag';
 
 // Multi-language sample data with rich flags & certified standards
 interface LangSample {
   id: 'en' | 'ja' | 'zh' | 'ko' | 'de' | 'fr' | 'es';
-  flag: string;
+  countryCode: string;
   langName: string;
   badge: string;
   word: string;
@@ -54,7 +55,7 @@ interface LangSample {
 const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
   en: {
     id: 'en',
-    flag: '🇬🇧',
+    countryCode: 'gb',
     langName: 'Tiếng Anh',
     badge: 'TOEIC ETS & IELTS 8.0',
     word: 'accommodate',
@@ -68,7 +69,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
   },
   ja: {
     id: 'ja',
-    flag: '🇯🇵',
+    countryCode: 'jp',
     langName: 'Tiếng Nhật',
     badge: 'JLPT N2 - N1 Business',
     word: '改善 (かいぜん)',
@@ -82,7 +83,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
   },
   zh: {
     id: 'zh',
-    flag: '🇨🇳',
+    countryCode: 'cn',
     langName: 'Tiếng Trung',
     badge: 'HSK 4 - HSK 5 Chuẩn',
     word: '坚持 (jiānchí)',
@@ -96,7 +97,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
   },
   ko: {
     id: 'ko',
-    flag: '🇰🇷',
+    countryCode: 'kr',
     langName: 'Tiếng Hàn',
     badge: 'TOPIK II Trung - Cao Cấp',
     word: '도전 (Dojeon)',
@@ -110,7 +111,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
   },
   de: {
     id: 'de',
-    flag: '🇩🇪',
+    countryCode: 'de',
     langName: 'Tiếng Đức',
     badge: 'Goethe-Zertifikat B1-B2',
     word: 'Zuverlässig',
@@ -124,7 +125,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
   },
   fr: {
     id: 'fr',
-    flag: '🇫🇷',
+    countryCode: 'fr',
     langName: 'Tiếng Pháp',
     badge: 'DELF B1 - B2 Chuẩn Châu Âu',
     word: 'Persévérance',
@@ -138,7 +139,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
   },
   es: {
     id: 'es',
-    flag: '🇪🇸',
+    countryCode: 'es',
     langName: 'Tiếng Tây Ban Nha',
     badge: 'DELE B1 - C1 Chuẩn Instituto Cervantes',
     word: 'Desarrollo',
@@ -231,7 +232,12 @@ export const App: React.FC = () => {
             {/* Navigation Links */}
             <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-slate-300">
               <a href="#languages" className="hover:text-cyan-400 transition py-1 flex items-center gap-1.5">
-                <span>🇬🇧 🇯🇵 🇨🇳 Đa Ngôn Ngữ</span>
+                <div className="flex items-center -space-x-1">
+                  <CountryFlag countryCode="gb" size="xs" />
+                  <CountryFlag countryCode="jp" size="xs" />
+                  <CountryFlag countryCode="cn" size="xs" />
+                </div>
+                <span>Đa Ngôn Ngữ</span>
               </a>
               <a href="#quick-actions" className="hover:text-cyan-400 transition py-1">
                 Lối Tắt
@@ -370,12 +376,15 @@ export const App: React.FC = () => {
                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
                       Chọn ngôn ngữ ôn luyện:
                     </span>
-                    <span className="text-xs font-bold text-indigo-300">
-                      {currentSample.flag} {currentSample.langName}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <CountryFlag countryCode={currentSample.countryCode} size="sm" />
+                      <span className="text-xs font-bold text-indigo-300">
+                        {currentSample.langName}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Flag Buttons: Cờ quốc gia trực quan, rộng rãi, không dồn chữ */}
+                  {/* Flag Buttons: Cờ quốc gia thực tế sắc nét, không dồn chữ */}
                   <div className="grid grid-cols-7 gap-1.5 p-1.5 rounded-2xl bg-slate-900/90 border border-white/10">
                     {(['en', 'ja', 'zh', 'ko', 'de', 'fr', 'es'] as const).map((langId) => {
                       const sample = MULTI_LANG_SAMPLES[langId];
@@ -385,14 +394,14 @@ export const App: React.FC = () => {
                           key={langId}
                           type="button"
                           onClick={() => setSelectedLang(langId)}
-                          className={`py-2 rounded-xl text-lg sm:text-xl flex items-center justify-center transition-all ${
+                          className={`py-2 px-1 rounded-xl flex items-center justify-center transition-all ${
                             isActive
-                              ? 'bg-indigo-600 border border-indigo-400/80 scale-105'
+                              ? 'bg-indigo-600/40 border border-indigo-400 scale-105'
                               : 'hover:bg-white/[0.08] opacity-75 hover:opacity-100 border border-transparent'
                           }`}
-                          title={`${sample.flag} ${sample.langName} (${sample.badge})`}
+                          title={`${sample.langName} (${sample.badge})`}
                         >
-                          <span>{sample.flag}</span>
+                          <CountryFlag countryCode={sample.countryCode} size="md" />
                         </button>
                       );
                     })}
@@ -472,8 +481,8 @@ export const App: React.FC = () => {
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-blue-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-3xl">🇬🇧</span>
+                  <div className="flex items-center gap-3">
+                    <CountryFlag countryCode="gb" size="lg" />
                     <div>
                       <h3 className="text-lg font-black text-white">Tiếng Anh</h3>
                       <span className="text-[10px] text-slate-400">English Language</span>
@@ -508,8 +517,8 @@ export const App: React.FC = () => {
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-rose-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-3xl">🇯🇵</span>
+                  <div className="flex items-center gap-3">
+                    <CountryFlag countryCode="jp" size="lg" />
                     <div>
                       <h3 className="text-lg font-black text-white">Tiếng Nhật</h3>
                       <span className="text-[10px] text-slate-400">日本語 (Nihongo)</span>
@@ -544,8 +553,8 @@ export const App: React.FC = () => {
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-amber-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-3xl">🇨🇳</span>
+                  <div className="flex items-center gap-3">
+                    <CountryFlag countryCode="cn" size="lg" />
                     <div>
                       <h3 className="text-lg font-black text-white">Tiếng Trung</h3>
                       <span className="text-[10px] text-slate-400">中文 (Zhongwen)</span>
@@ -580,8 +589,8 @@ export const App: React.FC = () => {
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-sky-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-3xl">🇰🇷</span>
+                  <div className="flex items-center gap-3">
+                    <CountryFlag countryCode="kr" size="lg" />
                     <div>
                       <h3 className="text-lg font-black text-white">Tiếng Hàn</h3>
                       <span className="text-[10px] text-slate-400">한국어 (Hangugeo)</span>
@@ -616,8 +625,8 @@ export const App: React.FC = () => {
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-yellow-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-3xl">🇩🇪</span>
+                  <div className="flex items-center gap-3">
+                    <CountryFlag countryCode="de" size="lg" />
                     <div>
                       <h3 className="text-lg font-black text-white">Tiếng Đức</h3>
                       <span className="text-[10px] text-slate-400">Deutsch</span>
@@ -652,8 +661,11 @@ export const App: React.FC = () => {
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-purple-400/40 card-hover-smooth flex flex-col justify-between space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-3xl">🇫🇷 🇪🇸</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <CountryFlag countryCode="fr" size="lg" />
+                      <CountryFlag countryCode="es" size="lg" />
+                    </div>
                     <div>
                       <h3 className="text-lg font-black text-white">Pháp & Tây Ban Nha</h3>
                       <span className="text-[10px] text-slate-400">DELF & DELE</span>
