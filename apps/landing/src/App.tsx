@@ -231,25 +231,11 @@ export const App: React.FC = () => {
 
             {/* Navigation Links */}
             <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-slate-300">
-              <a href="#languages" className="hover:text-cyan-400 transition py-1 flex items-center gap-1.5">
-                <div className="flex items-center -space-x-1">
-                  <CountryFlag countryCode="gb" size="xs" />
-                  <CountryFlag countryCode="jp" size="xs" />
-                  <CountryFlag countryCode="cn" size="xs" />
-                </div>
-                <span>Đa Ngôn Ngữ</span>
-              </a>
-              <a href="#quick-actions" className="hover:text-cyan-400 transition py-1">
-                Lối Tắt
-              </a>
               <a href="#whats-new" className="hover:text-cyan-400 transition py-1">
                 Có Gì Mới?
               </a>
               <a href="#learning-loop" className="hover:text-cyan-400 transition py-1 text-indigo-300 font-bold">
                 Luồng Học
-              </a>
-              <a href="#quick-notes" className="hover:text-cyan-400 transition py-1">
-                Bôi Đen & Ghi Chú
               </a>
               <a href="#pvp-arena" className="hover:text-cyan-400 transition py-1 flex items-center gap-1 text-violet-300">
                 <Swords className="w-3.5 h-3.5 text-violet-400" />
@@ -257,9 +243,6 @@ export const App: React.FC = () => {
               </a>
               <a href="#smart-features" className="hover:text-cyan-400 transition py-1">
                 Tính Năng AI
-              </a>
-              <a href="#reviews" className="hover:text-cyan-400 transition py-1">
-                Đánh Giá
               </a>
               <a
                 href="https://kid.vocalflow.site"
