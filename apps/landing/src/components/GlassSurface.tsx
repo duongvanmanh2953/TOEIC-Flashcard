@@ -68,9 +68,9 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
   onClick
 }) => {
   const uniqueId = useId().replace(/:/g, '-');
-  const filterId = `reactbits-glass-${uniqueId}`;
-  const redGradId = `red-grad-${uniqueId}`;
-  const blueGradId = `blue-grad-${uniqueId}`;
+  const filterId = `landing-glass-${uniqueId}`;
+  const redGradId = `landing-red-grad-${uniqueId}`;
+  const blueGradId = `landing-blue-grad-${uniqueId}`;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const feImageRef = useRef<SVGFEImageElement>(null);
@@ -182,7 +182,7 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
     width: width !== undefined ? (typeof width === 'number' ? `${width}px` : width) : undefined,
     height: height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : undefined,
     borderRadius: `${borderRadius}px`,
-    background: 'rgba(15, 23, 42, 0.45)',
+    background: 'rgba(12, 18, 36, 0.72)',
     backdropFilter: svgSupported ? `blur(${blur}px) saturate(${saturation})` : 'blur(20px) saturate(1.4)',
     WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
     border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -211,7 +211,7 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
           className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-500 rounded-[inherit]"
           style={{
             opacity: mousePos.active ? 1 : 0,
-            background: `radial-gradient(400px circle at ${mousePos.x}% ${mousePos.y}%, rgba(56, 189, 248, 0.18), rgba(129, 140, 248, 0.08) 40%, transparent 80%)`
+            background: `radial-gradient(420px circle at ${mousePos.x}% ${mousePos.y}%, rgba(56, 189, 248, 0.18), rgba(129, 140, 248, 0.08) 40%, transparent 80%)`
           }}
         />
       )}

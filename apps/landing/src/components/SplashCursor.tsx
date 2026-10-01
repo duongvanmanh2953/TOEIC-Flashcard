@@ -469,7 +469,8 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
           p.x *= aspectRatio;
           vec3 splat = exp(-dot(p, p) / radius) * color;
           vec3 base = texture2D(uTarget, vUv).xyz;
-          gl_FragColor = vec4(base + splat, 1.0);\n      }
+          gl_FragColor = vec4(base + splat, 1.0);
+      }
     `
     );
 
@@ -1167,7 +1168,6 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
       if (!config.RAINBOW_MODE) {
         return hexToRGB(config.COLOR);
       }
-      // Elegant futuristic teal/sky/indigo palette
       const c = HSVtoRGB(Math.random(), 0.85, 1.0);
       c.r *= 0.18;
       c.g *= 0.18;
@@ -1276,7 +1276,6 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
     window.addEventListener('touchmove', onTouchMove, { passive: true });
     window.addEventListener('touchend', onTouchEnd, { passive: true });
 
-    // Start loop
     updateFrame();
 
     return () => {
