@@ -1,12 +1,11 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
-COPY package*.json ./
-COPY packages/shared ./packages/shared
-COPY services/kid-api ./services/kid-api
-RUN npm --workspace=services/kid-api install
-RUN npm --workspace=services/kid-api run prisma:generate
-RUN npm --workspace=services/kid-api run build
+COPY services/kid-api/package*.json ./
+RUN npm install
+COPY services/kid-api ./
+RUN npx prisma generate
+RUN npm run build
 
 FROM node:20-slim AS runner
 WORKDIR /app
@@ -14,10 +13,10 @@ ENV NODE_ENV=production
 RUN apt-get update -y && apt-get install -y openssl netcat-openbsd wget && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/services/kid-api/node_modules ./services/kid-api/node_modules
-COPY --from=builder /app/services/kid-api/dist ./dist
-COPY --from=builder /app/services/kid-api/prisma ./prisma
-COPY --from=builder /app/services/kid-api/package*.json ./
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/public ./public
 COPY services/kid-api/docker-entrypoint.sh /entrypoint.sh
 
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh

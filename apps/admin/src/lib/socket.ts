@@ -4,9 +4,11 @@ let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const serverUrl =
+      import.meta.env.VITE_WS_URL ||
       import.meta.env.VITE_API_URL?.replace('/api/v1', '') ||
-      `${window.location.protocol}//${window.location.hostname}:4000`;
+      (isLocal ? `${window.location.protocol}//${window.location.hostname}:4200` : window.location.origin);
 
     socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
@@ -31,9 +33,11 @@ let chatSocket: Socket | null = null;
 
 export const getChatSocket = (userId?: string): Socket => {
   if (!chatSocket) {
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const serverUrl =
+      import.meta.env.VITE_WS_URL ||
       import.meta.env.VITE_API_URL?.replace('/api/v1', '') ||
-      `${window.location.protocol}//${window.location.hostname}:4000`;
+      (isLocal ? `${window.location.protocol}//${window.location.hostname}:4200` : window.location.origin);
 
     chatSocket = io(`${serverUrl}/chat`, {
       transports: ['websocket', 'polling'],

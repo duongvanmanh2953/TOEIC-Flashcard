@@ -1,59 +1,32 @@
-# ==============================================================================
-# Cloudflare Tunnel Ingress Configuration for VocalFlow (8 Hostnames)
-# ==============================================================================
-# If running cloudflared via config file, apply the following ingress rules:
-
 tunnel: 74b06db0-84c1-4dca-b950-a9550d8c410f
-credentials-file: /etc/cloudflared/credentials.json
+credentials-file: /etc/cloudflared/74b06db0-84c1-4dca-b950-a9550d8c410f.json
 
 ingress:
-  # 1. Landing & Legacy URL Redirector
   - hostname: vocalflow.site
     service: http://landing:80
-    originRequest:
-      noTLSVerify: true
 
-  # 2. Student Web Application
+  - hostname: www.vocalflow.site
+    service: http://landing:80
+
   - hostname: app.vocalflow.site
     service: http://student:80
-    originRequest:
-      noTLSVerify: true
 
-  # 3. Student Backend API
   - hostname: app-api.vocalflow.site
     service: http://app-api:4000
-    originRequest:
-      noTLSVerify: true
 
-  # 4. Kid Web Application & Games
   - hostname: kid.vocalflow.site
     service: http://kid:80
-    originRequest:
-      noTLSVerify: true
 
-  # 5. Kid Backend API
   - hostname: kid-api.vocalflow.site
     service: http://kid-api:4100
-    originRequest:
-      noTLSVerify: true
 
-  # 6. Admin Management Portal
   - hostname: admin.vocalflow.site
     service: http://admin:80
-    originRequest:
-      noTLSVerify: true
 
-  # 7. Admin Backend API
   - hostname: admin-api.vocalflow.site
     service: http://admin-api:4200
-    originRequest:
-      noTLSVerify: true
 
-  # 8. High-Performance Static Assets & Media
   - hostname: assets.vocalflow.site
     service: http://assets:80
-    originRequest:
-      noTLSVerify: true
 
-  # Catch-all HTTP 404 fallback
   - service: http_status:404

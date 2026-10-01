@@ -98,6 +98,17 @@ const RootRedirect: React.FC = () => {
   return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 };
 
+const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
+  React.useEffect(() => {
+    window.location.href = to;
+  }, [to]);
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+    </div>
+  );
+};
+
 export const App: React.FC = () => {
   return (
     <I18nProvider>
@@ -248,6 +259,14 @@ export const App: React.FC = () => {
                 <Route path="/notifications" element={<NotificationCenterPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
+
+              {/* Cross-App External Redirects */}
+              <Route path="/kids" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
+              <Route path="/kids/*" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
+              <Route path="/kid" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
+              <Route path="/kid/*" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
+              <Route path="/admin" element={<ExternalRedirect to="https://admin.vocalflow.site" />} />
+              <Route path="/admin/*" element={<ExternalRedirect to="https://admin.vocalflow.site" />} />
 
               {/* Catch-all redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />

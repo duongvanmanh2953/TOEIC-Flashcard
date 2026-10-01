@@ -17,21 +17,49 @@ export const App: React.FC = () => {
       <LearningProvider>
         <BrowserRouter>
           <Routes>
+            {/* Primary Routes */}
             <Route path="/" element={<KidsLayout />}>
               <Route index element={<KidsHomePage />} />
               <Route path="home" element={<KidsHomePage />} />
               <Route path="dashboard" element={<KidsHomePage />} />
               <Route path="journey" element={<KidsJourneyPage />} />
               <Route path="library" element={<KidsJourneyPage />} />
-              <Route path="lesson/:lessonId" element={<KidsLessonPage />} />
               <Route path="games" element={<KidsGamesPage />} />
+              <Route path="games/:gameId" element={<KidsGamesPage />} />
               <Route path="practice" element={<KidsGamesPage />} />
+              <Route path="lesson/:lessonId" element={<KidsLessonPage />} />
+              <Route path="learning/:lessonId" element={<KidsLessonPage />} />
               <Route path="world" element={<KidsMyWorldPage />} />
               <Route path="my-world" element={<KidsMyWorldPage />} />
+              <Route path="rewards" element={<KidsMyWorldPage />} />
               <Route path="flashcards" element={<KidsFlashcardsPage />} />
               <Route path="vocabulary" element={<KidsFlashcardsPage />} />
               <Route path="parent" element={<KidsParentDashboardPage />} />
               <Route path="parents" element={<KidsParentDashboardPage />} />
+              <Route path="profile" element={<KidsParentDashboardPage />} />
+              <Route path="progress" element={<KidsParentDashboardPage />} />
+            </Route>
+
+            {/* Legacy /kids/* Alias Routes */}
+            <Route path="/kids" element={<KidsLayout />}>
+              <Route index element={<KidsHomePage />} />
+              <Route path="home" element={<KidsHomePage />} />
+              <Route path="dashboard" element={<KidsHomePage />} />
+              <Route path="journey" element={<KidsJourneyPage />} />
+              <Route path="library" element={<KidsJourneyPage />} />
+              <Route path="games" element={<KidsGamesPage />} />
+              <Route path="games/:gameId" element={<KidsGamesPage />} />
+              <Route path="practice" element={<KidsGamesPage />} />
+              <Route path="lesson/:lessonId" element={<KidsLessonPage />} />
+              <Route path="learning/:lessonId" element={<KidsLessonPage />} />
+              <Route path="world" element={<KidsMyWorldPage />} />
+              <Route path="my-world" element={<KidsMyWorldPage />} />
+              <Route path="rewards" element={<KidsMyWorldPage />} />
+              <Route path="flashcards" element={<KidsFlashcardsPage />} />
+              <Route path="vocabulary" element={<KidsFlashcardsPage />} />
+              <Route path="parent" element={<KidsParentDashboardPage />} />
+              <Route path="parents" element={<KidsParentDashboardPage />} />
+              <Route path="profile" element={<KidsParentDashboardPage />} />
               <Route path="progress" element={<KidsParentDashboardPage />} />
             </Route>
 

@@ -110,56 +110,60 @@ export const KidsLayout: React.FC = () => {
   const handleOpenParentGate = (targetRoute: string, customTitle?: string, customDesc?: string) => {
     kidsSound.play('pop');
     setPendingParentRoute(targetRoute);
-    setParentModalTitle(customTitle || (targetRoute === '/dashboard' ? 'Trở Về Màn Học Viên' : 'Khu Vực Phụ Huynh'));
-    setParentModalDesc(customDesc || (targetRoute === '/dashboard' ? 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.' : 'Nhấn và giữ nút tròn bên dưới để mở khóa.'));
+    setParentModalTitle(customTitle || (targetRoute.includes('dashboard') ? 'Trở Về Màn Học Viên' : 'Khu Vực Phụ Huynh'));
+    setParentModalDesc(customDesc || (targetRoute.includes('dashboard') ? 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.' : 'Nhấn và giữ nút tròn bên dưới để mở khóa.'));
     setParentModalOpen(true);
   };
 
   const handleParentVerified = () => {
     kidsSound.play('celebration');
     setParentModalOpen(false);
-    navigate(pendingParentRoute);
+    if (pendingParentRoute.startsWith('http://') || pendingParentRoute.startsWith('https://')) {
+      window.location.href = pendingParentRoute;
+    } else {
+      navigate(pendingParentRoute);
+    }
   };
 
   const navItems = [
     {
-      to: '/kids',
+      to: '/',
       label: 'Trang chủ',
       icon: Home,
       exact: true,
     },
     {
-      to: '/kids/flashcards',
+      to: '/flashcards',
       label: 'Học từ vựng',
       icon: BookOpen,
     },
     {
-      to: '/kids/world',
+      to: '/world',
       label: 'Luyện nghe nói',
       icon: Headphones,
     },
     {
-      to: '/kids/games',
+      to: '/games',
       label: 'Trò chơi vui nhộn',
       icon: ClipboardList,
     },
     {
-      to: '/kids/journey',
+      to: '/journey',
       label: 'Thư viện',
       icon: Layers,
     },
     {
-      to: '/kids/parent',
+      to: '/parent',
       label: 'Kết quả học tập',
       icon: Users,
     },
   ];
 
-  const isLessonMode = location.pathname.startsWith('/kids/lesson');
-  const isGamePlayingMode = location.pathname === '/kids/games' && new URLSearchParams(location.search).has('game');
+  const isLessonMode = location.pathname.includes('/lesson');
+  const isGamePlayingMode = location.pathname.includes('/games') && new URLSearchParams(location.search).has('game');
   const isFlashcardsMode =
-    location.pathname.startsWith('/kids/flashcards') ||
-    location.pathname.startsWith('/kids/vocabulary');
+    location.pathname.includes('/flashcards') ||
+    location.pathname.includes('/vocabulary');
   const isFocusMode = isLessonMode || isGamePlayingMode || isFlashcardsMode;
 
   const renderSidebarContent = (isDrawer: boolean) => (
@@ -169,7 +173,7 @@ export const KidsLayout: React.FC = () => {
         <div
           onClick={() => {
             kidsSound.play('pop');
-            navigate('/kids');
+            navigate('/');
             if (isDrawer) setMobileMenuOpen(false);
           }}
           className="flex items-center gap-3 cursor-pointer group select-none"
@@ -268,7 +272,7 @@ export const KidsLayout: React.FC = () => {
           type="button"
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
-            handleOpenParentGate('/kids/parent');
+            handleOpenParentGate('/parent');
           }}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
         >
@@ -281,7 +285,7 @@ export const KidsLayout: React.FC = () => {
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
             handleOpenParentGate(
-              '/dashboard',
+              'https://app.vocalflow.site/dashboard',
               'Trở Về Màn Học Viên',
               'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
             );
@@ -401,7 +405,7 @@ export const KidsLayout: React.FC = () => {
                   type="button"
                   onClick={() =>
                     handleOpenParentGate(
-                      '/dashboard',
+                      'https://app.vocalflow.site/dashboard',
                       'Trở Về Màn Học Viên',
                       'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
                     )
@@ -418,7 +422,7 @@ export const KidsLayout: React.FC = () => {
                 <button
                   onClick={() => {
                     kidsSound.play('sparkle');
-                    handleOpenParentGate('/kids/parent');
+                    handleOpenParentGate('/parent');
                   }}
                   className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white hover:bg-amber-50/70 border border-slate-200/90 text-xs font-black text-slate-800 shadow-2xs cursor-pointer transition-all active:scale-95"
                 >

@@ -178,8 +178,9 @@ export const AdminLayout: React.FC = () => {
       ],
     },
     {
-      title: 'KHO NỘI DUNG',
+      title: 'KHO NỘI DUNG & TÀI NGUYÊN',
       items: [
+        { to: '/admin/assets', label: 'Kho Media & Assets', icon: Layers, badge: 'CDN' },
         { to: '/admin/languages', label: 'Quản Lý Ngôn Ngữ', icon: Globe },
         { to: '/admin/games', label: 'Quản Trị Games & Đề', icon: Gamepad2 },
         { to: '/admin/vocabulary', label: 'Từ Vựng (Vocab)', icon: BookOpen },
@@ -350,10 +351,12 @@ export const AdminLayout: React.FC = () => {
               )}
               {sec.items.map((item) => {
                 const Icon = item.icon;
+                const normPath = location.pathname.replace(/^\/admin/, '') || '/';
+                const normTo = item.to.replace(/^\/admin/, '') || '/';
                 const isActive =
+                  normPath === normTo ||
                   location.pathname === item.to ||
-                  ((item as any).aliasTo && location.pathname === (item as any).aliasTo) ||
-                  (item.to === '/admin' && (location.pathname === '/admin' || location.pathname === '/admin/dashboard'));
+                  ((item as any).aliasTo && (location.pathname === (item as any).aliasTo || normPath === (item as any).aliasTo.replace(/^\/admin/, '')));
 
                 return (
                   <NavLink
@@ -410,7 +413,7 @@ export const AdminLayout: React.FC = () => {
           <button
             onClick={() => {
               setSidebarOpen(false);
-              navigate('/dashboard');
+              window.location.href = 'https://app.vocalflow.site/dashboard';
             }}
             className={`rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center border border-slate-200 dark:border-slate-700/60 ${sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
               }`}
@@ -421,6 +424,22 @@ export const AdminLayout: React.FC = () => {
               {!sidebarCollapsed && <span>Sang Học Viên</span>}
             </div>
             {!sidebarCollapsed && <span className="text-[10px] text-slate-400">&rarr;</span>}
+          </button>
+
+          <button
+            onClick={() => {
+              setSidebarOpen(false);
+              window.location.href = 'https://kid.vocalflow.site/';
+            }}
+            className={`rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-xs font-bold transition flex items-center border border-amber-200 dark:border-amber-800/60 ${sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
+              }`}
+            title="Mở khu trò chơi trẻ em"
+          >
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              {!sidebarCollapsed && <span>Sang Kid Games</span>}
+            </div>
+            {!sidebarCollapsed && <span className="text-[10px] text-amber-500">&rarr;</span>}
           </button>
 
           <div className={`flex items-center rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 ${sidebarCollapsed ? 'flex-col gap-1.5 p-1 w-9 mx-auto' : 'justify-between p-2'

@@ -203,6 +203,30 @@ services:
     networks:
       - vocalflow-network
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: always
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-eyJhIjoiODZjYmRiMDBlMGUxMTY4ZmUxOGYzMGE3ODIzOTlkNjUiLCJ0IjoiNzRiMDZkYjAtODRjMS00ZGNhLWI5NTAtYTk1NTBkOGM0MTBmIiwicyI6Ik0yWmxaV0ZoTjJVdE9HVmtOeTAwTkROaUxUazFOakF0T1RnNU5qRm1NMlF3Tm1WayJ9}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./infra/cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ./infra/cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
+      - ./infra/cloudflared/74b06db0-84c1-4dca-b950-a9550d8c410f.json:/etc/cloudflared/74b06db0-84c1-4dca-b950-a9550d8c410f.json:ro
+    depends_on:
+      - landing
+      - student
+      - kid
+      - admin
+      - app-api
+      - kid-api
+      - admin-api
+      - assets
+    networks:
+      - vocalflow-network
+
+
 volumes:
   postgres_data:
   redis_data:

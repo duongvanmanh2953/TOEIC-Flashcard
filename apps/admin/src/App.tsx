@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { I18nProvider } from './i18n';
 import { AdminLayout } from './components/admin/AdminLayout';
@@ -54,6 +54,12 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+const AdminPrefixRedirect: React.FC = () => {
+  const location = useLocation();
+  const target = location.pathname.replace(/^\/admin/, '') || '/';
+  return <Navigate to={target + location.search} replace />;
+};
+
 export const App: React.FC = () => {
   return (
     <I18nProvider>
@@ -80,6 +86,8 @@ export const App: React.FC = () => {
               <Route path="dashboard" element={<Navigate to="/" replace />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="assets" element={<AdminAssetManagementPage />} />
+              <Route path="asset-management" element={<AdminAssetManagementPage />} />
+              <Route path="media" element={<AdminAssetManagementPage />} />
               <Route path="games" element={<AdminGamesPage />} />
               <Route path="support" element={<AdminSupportPage />} />
               <Route path="conversations" element={<AdminSupportPage />} />
@@ -102,6 +110,10 @@ export const App: React.FC = () => {
               <Route path="firebase" element={<AdminFirebasePage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
+
+            {/* Handle /admin/* aliases gracefully */}
+            <Route path="/admin/*" element={<AdminPrefixRedirect />} />
+            <Route path="/admin" element={<Navigate to="/" replace />} />
 
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />

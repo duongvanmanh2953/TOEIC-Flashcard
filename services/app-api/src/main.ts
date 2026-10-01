@@ -79,8 +79,18 @@ async function bootstrap() {
   // Register Global Exception Filter for standardized Vietnamese errors
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Root Health Check endpoint
+  // Root Health Check & Service info endpoint
   const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('/', (_req: any, res: any) => {
+    res.status(200).json({
+      name: 'VocabFlow Student API',
+      service: 'vocabflow-app-api',
+      status: 'UP',
+      health: '/health',
+      docs: '/api/docs',
+      timestamp: new Date().toISOString(),
+    });
+  });
   expressApp.get('/health', (_req: any, res: any) => {
     res.status(200).json({ status: 'UP', service: 'vocabflow-app-api', timestamp: new Date().toISOString() });
   });

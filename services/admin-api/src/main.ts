@@ -35,8 +35,18 @@ async function bootstrap() {
   const port = process.env.ADMIN_PORT || process.env.PORT || 4200;
   const clientUrl = process.env.ADMIN_CLIENT_URL || 'http://localhost:3200';
 
-  // Root Health Check endpoint
+  // Root Health Check & Service info endpoint
   const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('/', (_req: any, res: any) => {
+    res.status(200).json({
+      name: 'VocabFlow Admin API',
+      service: 'vocabflow-admin-api',
+      status: 'UP',
+      health: '/health',
+      docs: '/api/docs',
+      timestamp: new Date().toISOString(),
+    });
+  });
   expressApp.get('/health', (_req: any, res: any) => {
     res.status(200).json({ status: 'UP', service: 'vocabflow-admin-api', timestamp: new Date().toISOString() });
   });

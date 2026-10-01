@@ -173,18 +173,26 @@ class GameAssetService {
     const controller = new AbortController();
     this.activeControllers.add(controller);
 
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+    const rawApiBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+    const apiBase = rawApiBase.endsWith('/api/v1')
+      ? rawApiBase
+      : rawApiBase.endsWith('/api')
+      ? `${rawApiBase}/v1`
+      : rawApiBase
+      ? `${rawApiBase}/api/v1`
+      : '/api/v1';
+
     const assetsBase = (import.meta.env.VITE_ASSETS_BASE_URL || '').replace(/\/+$/, '');
 
     try {
       let res: Response | null = null;
       if (apiBase) {
         try {
-          res = await fetch(`${apiBase}/api/v1/games/assets`, { signal: controller.signal });
+          res = await fetch(`${apiBase}/games/assets`, { signal: controller.signal });
         } catch {}
         if (!res || !res.ok) {
           try {
-            res = await fetch(`${apiBase}/api/v1/game-assets`, { signal: controller.signal });
+            res = await fetch(`${apiBase}/game-assets`, { signal: controller.signal });
           } catch {}
         }
       }

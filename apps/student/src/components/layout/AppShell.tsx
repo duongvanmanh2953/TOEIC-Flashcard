@@ -423,10 +423,11 @@ export const AppShell: React.FC = () => {
             title: 'TIẾNG ANH CHO BÉ',
             items: [
               {
-                to: '/kids',
+                to: 'https://kid.vocalflow.site',
                 label: 'Học cùng bé',
                 icon: Baby,
                 badge: 'NEW',
+                external: true,
               },
             ],
           },
@@ -483,7 +484,7 @@ export const AppShell: React.FC = () => {
         { to: '/notifications', label: 'Thông báo', icon: Bell },
         { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
         { to: '/settings', label: t('nav.settings', 'Cài đặt'), icon: Settings },
-        ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
+        ...(isAdmin ? [{ to: 'https://admin.vocalflow.site', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true, external: true }] : []),
       ],
     },
   ];
@@ -549,40 +550,61 @@ export const AppShell: React.FC = () => {
                 {section.title}
               </p>
               <div className="space-y-0.5">
-                {section.items.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 ${isActive
-                        ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
-                        : (item as any).admin
-                          ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
-                          : item.highlight
-                            ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
-                      }`
-                    }
-                  >
-                    <div className="flex items-center gap-2.5 flex-1 truncate mr-1.5 min-w-0">
-                      <item.icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      (item as any).isUnlock ? (
-                        /* Liquid Glass Gold Badge */
-                        <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0">
-                          <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
-                          <span>MỞ KHÓA</span>
-                        </span>
-                      ) : (
-                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
-                          {item.badge}
-                        </span>
-                      )
-                    )}
-                  </NavLink>
-                ))}
+                {section.items.map((item) => {
+                  const isExt = (item as any).external;
+                  const itemContent = (
+                    <>
+                      <div className="flex items-center gap-2.5 flex-1 truncate mr-1.5 min-w-0">
+                        <item.icon className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        (item as any).isUnlock ? (
+                          /* Liquid Glass Gold Badge */
+                          <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0">
+                            <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                            <span>MỞ KHÓA</span>
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
+                            {item.badge}
+                          </span>
+                        )
+                      )}
+                    </>
+                  );
+
+                  if (isExt) {
+                    return (
+                      <a
+                        key={item.to}
+                        href={item.to}
+                        className="flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200"
+                      >
+                        {itemContent}
+                      </a>
+                    );
+                  }
+
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 ${isActive
+                          ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
+                          : (item as any).admin
+                            ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                            : item.highlight
+                              ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                        }`
+                      }
+                    >
+                      {itemContent}
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -868,14 +890,14 @@ export const AppShell: React.FC = () => {
             </NavLink>
 
             {isAdmin && (
-              <NavLink
-                to="/admin"
+              <a
+                href="https://admin.vocalflow.site"
                 title="Admin Center"
                 className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 transition shadow-xs"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
                 <span className="hidden xl:inline">🛠 Admin Center</span>
-              </NavLink>
+              </a>
             )}
 
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 xl:mx-1" />
@@ -1077,7 +1099,7 @@ export const AppShell: React.FC = () => {
             <button
               onClick={() => {
                 setProfileModalOpen(false);
-                navigate('/admin');
+                window.location.href = 'https://admin.vocalflow.site';
               }}
               className="w-full mb-3 py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-amber-500/25 transition shadow-xs"
             >

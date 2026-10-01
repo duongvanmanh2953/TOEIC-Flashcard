@@ -5,7 +5,7 @@
 // ============================================================================
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams } from 'react-router-dom';
 import { soundManager } from '../services/sound/KidsSoundManager';
 import { kidsAudioManager } from '../services/audio/KidsAudioManager';
 import { getKidsProgress, updateKidsProgress } from '../curriculum/curriculumProgress';
@@ -57,7 +57,8 @@ const CATEGORIES: CategoryTab[] = [
 
 export const KidsGamesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialGameParam = searchParams.get('game') as GameId | null;
+  const { gameId: pathGameId } = useParams<{ gameId?: string }>();
+  const initialGameParam = (pathGameId || searchParams.get('game')) as GameId | null;
 
   // Active game state
   const [activeGameId, setActiveGameId] = useState<GameId | null>(initialGameParam || null);
@@ -66,14 +67,15 @@ export const KidsGamesPage: React.FC = () => {
   // Kids progress
   const [progress, setProgress] = useState(() => getKidsProgress());
 
-  // Listen to searchParams changes
+  // Listen to searchParams and path changes
   useEffect(() => {
-    if (initialGameParam && KIDS_GAMES_REGISTRY.some((g) => g.id === initialGameParam)) {
-      setActiveGameId(initialGameParam);
-    } else if (!initialGameParam) {
+    const target = (pathGameId || searchParams.get('game')) as GameId | null;
+    if (target && KIDS_GAMES_REGISTRY.some((g) => g.id === target)) {
+      setActiveGameId(target);
+    } else if (!target) {
       setActiveGameId(null);
     }
-  }, [initialGameParam]);
+  }, [pathGameId, searchParams]);
 
   // Sync progress
   useEffect(() => {

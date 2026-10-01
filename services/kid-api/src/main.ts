@@ -34,8 +34,18 @@ async function bootstrap() {
   const port = process.env.KID_PORT || process.env.PORT || 4100;
   const clientUrl = process.env.KID_CLIENT_URL || 'http://localhost:3100';
 
-  // Root Health Check endpoint
+  // Root Health Check & Service info endpoint
   const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.get('/', (_req: any, res: any) => {
+    res.status(200).json({
+      name: 'VocabFlow Kid API',
+      service: 'vocabflow-kid-api',
+      status: 'UP',
+      health: '/health',
+      docs: '/api/docs',
+      timestamp: new Date().toISOString(),
+    });
+  });
   expressApp.get('/health', (_req: any, res: any) => {
     res.status(200).json({ status: 'UP', service: 'vocabflow-kid-api', timestamp: new Date().toISOString() });
   });

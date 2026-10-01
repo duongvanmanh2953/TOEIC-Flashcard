@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GamesModule } from './modules/games/games.module';
 import { KidModule } from './modules/kid/kid.module';
+import { VocabularyModule } from './modules/vocabulary/vocabulary.module';
 import { HealthModule } from './modules/health/health.module';
 import { RedisCacheModule } from './common/cache/redis-cache.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -17,6 +18,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     RedisCacheModule,
     HealthModule,
     AuthModule,
+    VocabularyModule,
     GamesModule,
     KidModule,
   ],

@@ -98,7 +98,11 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
   // Setup Socket.IO connection
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '')?.replace('/api', '') || 'http://localhost:4000';
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const socketUrl =
+      import.meta.env.VITE_WS_URL ||
+      import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '')?.replace('/api', '') ||
+      (isLocal ? 'http://localhost:4000' : window.location.origin);
     const s = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
