@@ -23,6 +23,7 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 interface ScheduleItem {
   gameMode: string;
@@ -356,9 +357,7 @@ export const GameLobbyPage: React.FC = () => {
           {/* Card 1: Word Match Challenge */}
           <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/70 border border-indigo-500/30 hover:border-indigo-400 transition-all duration-300 space-y-4 shadow-lg group">
             <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 group-hover:scale-110 transition">
-                <Sparkles className="w-6 h-6" />
-              </div>
+              <VocabFlowLogo size="md" showContainer={true} className="group-hover:scale-110 transition" />
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
                 Lật Thẻ Trí Nhớ
               </span>

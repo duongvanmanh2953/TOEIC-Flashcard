@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { UserPlus, AlertCircle } from 'lucide-react';
-import { VocabFlowLogo } from '../components/common/VocabFlowLogo';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 export const RegisterPage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');

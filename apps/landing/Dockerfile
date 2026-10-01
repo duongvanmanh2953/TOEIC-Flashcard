@@ -1,6 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
+COPY packages/shared ./packages/shared
 COPY apps/landing/package*.json ./apps/landing/
 RUN npm install
 COPY apps/landing ./apps/landing

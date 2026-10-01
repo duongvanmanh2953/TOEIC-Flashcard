@@ -35,7 +35,7 @@ import {
 import { GlassSurface } from './components/GlassSurface';
 import { LiquidBackground } from './components/LiquidBackground';
 import { CountryFlag } from './components/CountryFlag';
-import { VocabFlowLogo } from './components/VocabFlowLogo';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 // Multi-language sample data with rich flags & certified standards
 interface LangSample {

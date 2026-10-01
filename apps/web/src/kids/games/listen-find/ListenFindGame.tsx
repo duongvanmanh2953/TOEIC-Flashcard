@@ -1,14 +1,14 @@
 // ============================================================================
-// GAME 01: LISTEN & FIND (NGHE & CHỌN ĐÚNG TRANH)
-// HEAR -> SCAN -> TAP • Interactive Scene with Floating Meadow Pedestals
-// Non-Auto-Advancing: User taps Continue button after praise audio finishes
+// GAME 01: LISTEN & FIND (NGHE TRANH ĐOÁN CHỮ / CHỌN ĐÚNG TRANH)
+// Professional Illustrated Stage • 3D Tactile Game Cards • Interactive Audio Station
+// Non-spoiled Cards: Answers revealed upon correct tap with celebration!
 // ============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Volume2, Sparkles, Check } from 'lucide-react';
+import { Volume2, Sparkles, Check, RotateCcw, ArrowRight, HelpCircle } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
-import { VERIFIED_GAME_VOCABULARY, GameVocabularyItem } from '../../data/vocabulary/verifiedGameVocabulary';
+import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
@@ -35,9 +35,10 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
   const [isGameComplete, setIsGameComplete] = useState(false);
   const [isReadyToContinue, setIsReadyToContinue] = useState(false);
   const [praiseVi, setPraiseVi] = useState('');
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
-  const [targetItem, setTargetItem] = useState<GameVocabularyItem>(VERIFIED_GAME_VOCABULARY[0]);
-  const [options, setOptions] = useState<GameVocabularyItem[]>([]);
+  const [targetItem, setTargetItem] = useState<VocabularyItem>(COMPREHENSIVE_VOCABULARY[0]);
+  const [options, setOptions] = useState<VocabularyItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [resultState, setResultState] = useState<'correct' | 'wrong' | null>(null);
 
@@ -47,29 +48,23 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
     setResultState(null);
     setIsReadyToContinue(false);
 
-    const shuffled = [...VERIFIED_GAME_VOCABULARY].sort(() => Math.random() - 0.5);
+    const shuffled = [...COMPREHENSIVE_VOCABULARY].sort(() => Math.random() - 0.5);
     const target = shuffled[0];
-    const choices = [target, ...shuffled.slice(1, 4)].sort(() => Math.random() - 0.5);
+    const choices = shuffled.slice(0, 4).sort(() => Math.random() - 0.5);
 
     setTargetItem(target);
     setOptions(choices);
 
-    // Preload verified image assets into browser cache ahead of rendering
-    preloadUpcomingImages(
-      choices.map((c) =>
-        c.category === 'fruits'
-          ? `/kid/fruits/${c.imageKey}.png`
-          : `/kid/animals/${c.imageKey}.png`
-      )
-    );
-
-    // Preload target and choices voices in browser cache immediately
+    preloadUpcomingImages(choices.map((c) => `/kid/animals/${c.word.toLowerCase()}.png`));
     voiceService.preloadWords([target.word, ...choices.map((c) => c.word)]);
 
-    // Audio-first: Pronounce target word briskly (80ms)
+    // Audio prompt with animation trigger
+    setIsPlayingAudio(true);
     const promptTimer = setTimeout(() => {
-      voiceService.speakWord(target.word);
-    }, 80);
+      voiceService.speakWord(target.word, {
+        onEnd: () => setIsPlayingAudio(false),
+      });
+    }, 120);
 
     return () => clearTimeout(promptTimer);
   }, []);
@@ -80,10 +75,13 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
 
   const handleReplayAudio = () => {
     soundManager.play('pop');
-    voiceService.speakWord(targetItem.word);
+    setIsPlayingAudio(true);
+    voiceService.speakWord(targetItem.word, {
+      onEnd: () => setIsPlayingAudio(false),
+    });
   };
 
-  const handleSelectOption = (item: GameVocabularyItem) => {
+  const handleSelectOption = (item: VocabularyItem) => {
     if (resultState === 'correct' || isReadyToContinue) return;
 
     setSelectedId(item.id);
@@ -100,14 +98,12 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
       const praise = celebrationManager.getRandomPraise(false);
       setPraiseVi(praise);
 
-      // Super-fast responsive audio: Speak word immediately, trigger praise in parallel,
-      // and make Continue button ready within 500ms so the child is NEVER stuck waiting!
+      // Play word audio then Vietnamese praise
       voiceService.speakWord(item.word);
       setTimeout(() => {
         voiceService.speakVietnamese(praise);
       }, 450);
 
-      // Fast continue unlock: 500ms
       setTimeout(() => {
         setIsReadyToContinue(true);
       }, 500);
@@ -119,7 +115,7 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
       setTimeout(() => {
         setSelectedId(null);
         setResultState(null);
-      }, 450);
+      }, 600);
     }
   };
 
@@ -142,8 +138,8 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
       starsEarned={starsEarned}
       streak={streak}
       worldTheme="starter"
-      instructionEn={`Find the ${targetItem.word}`}
-      instructionVi={`Bé hãy tìm: ${targetItem.viMeaning}`}
+      instructionEn={`Listen and find: ${targetItem.word}`}
+      instructionVi={`Bé hãy nghe âm thanh và chọn đúng bức tranh!`}
       isReadyToContinue={isReadyToContinue}
       onContinueRound={handleAdvanceRound}
       praiseVi={praiseVi}
@@ -158,38 +154,89 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
       }}
       isGameComplete={isGameComplete}
     >
-      {/* FULL-BLEED SUNNY MEADOW SCENE */}
-      <div className="relative w-full h-full p-4 sm:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-emerald-100">
-        {/* Living Meadow Background Decor */}
-        <div className="absolute top-4 left-8 w-10 h-10 text-sky-400/40 pointer-events-none select-none animate-pulse">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
-            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
-          </svg>
-        </div>
-        <div className="absolute top-6 right-12 w-10 h-10 text-amber-400/60 pointer-events-none select-none animate-spin-slow">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
-            <circle cx="12" cy="12" r="5" />
-            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </div>
-        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-emerald-400 to-transparent pointer-events-none rounded-t-[50%]" />
+      {/* ================================================================ */}
+      {/* ILLUSTRATED CARTOON NATURE STAGE                                  */}
+      {/* ================================================================ */}
+      <div className="relative w-full h-full p-4 sm:p-6 lg:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-[#87CEEB] via-[#C5E8FF] to-[#E2F7D8] select-none">
+        
+        {/* Layer 1: Sky & Atmosphere with Floating Clouds & Sun */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Smiling Cartoon Sun */}
+          <div className="absolute -top-4 right-10 w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-gradient-to-tr from-amber-300 to-yellow-200 border-4 border-yellow-300/80 shadow-[0_0_50px_rgba(251,191,36,0.6)] flex items-center justify-center animate-spin-slow">
+            <div className="w-16 h-16 rounded-full bg-amber-400/20" />
+          </div>
 
-        {/* Floating Voice Banner */}
-        <div className="relative z-20 flex flex-col items-center text-center space-y-1">
+          {/* Drifting Clouds */}
+          <div className="absolute top-6 left-12 opacity-80 animate-pulse">
+            <svg width="120" height="48" viewBox="0 0 120 48" fill="white">
+              <path d="M 20 40 Q 20 20 38 20 Q 48 4 72 10 Q 94 4 100 24 Q 116 28 112 40 Z" />
+            </svg>
+          </div>
+          <div className="absolute top-16 right-1/3 opacity-70 animate-pulse" style={{ animationDelay: '1.5s' }}>
+            <svg width="100" height="40" viewBox="0 0 120 48" fill="white">
+              <path d="M 20 40 Q 20 20 38 20 Q 48 4 72 10 Q 94 4 100 24 Q 116 28 112 40 Z" />
+            </svg>
+          </div>
+
+          {/* Rolling Green Hills Background */}
+          <div className="absolute bottom-0 inset-x-0 h-44 bg-[#88D475] rounded-t-[45%] scale-x-125 opacity-70" />
+          <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[#5EB848] via-[#6ECB56] to-[#7ED966] rounded-t-[35%]" />
+          
+          {/* Wildflowers and Mushroom Sprinkles on Meadow */}
+          <div className="absolute bottom-4 left-8 text-2xl opacity-80">🌼</div>
+          <div className="absolute bottom-6 left-28 text-xl opacity-75">🌸</div>
+          <div className="absolute bottom-3 right-16 text-2xl opacity-80">🍄</div>
+          <div className="absolute bottom-7 right-36 text-xl opacity-75">🌷</div>
+        </div>
+
+        {/* ================================================================ */}
+        {/* CENTER AUDIO CHALLENGE STATION (MAGIC SPEAKER PODIUM)            */}
+        {/* ================================================================ */}
+        <div className="relative z-20 flex flex-col items-center text-center space-y-2 max-w-xl mx-auto">
+          {/* Whimsical Audio Speaker Pill Button */}
           <button
             onClick={handleReplayAudio}
-            className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-white/95 text-emerald-950 font-black text-xs sm:text-sm shadow-md border-2 border-emerald-400 flex items-center gap-2 hover:scale-105 active:scale-95 cursor-pointer transition-all animate-bounce min-h-[44px]"
+            type="button"
+            className={`group px-6 py-2.5 sm:px-8 sm:py-3 rounded-full bg-white text-emerald-950 font-black text-sm sm:text-base shadow-[0_8px_20px_rgba(16,185,129,0.25)] border-3 border-emerald-400 flex items-center gap-3 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 ${
+              isPlayingAudio ? 'ring-4 ring-emerald-300 scale-105 bg-emerald-50' : 'animate-bounce'
+            }`}
           >
-            <Volume2 className="w-4 h-4 text-emerald-600" />
-            <span>"FIND THE {targetItem.word.toUpperCase()}"</span>
+            {/* Animated Speaker Horn with pulsing Soundwaves */}
+            <div className={`w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0 transition-transform ${isPlayingAudio ? 'rotate-12 scale-110' : 'group-hover:rotate-6'}`}>
+              <Volume2 className="w-5 h-5" />
+            </div>
+
+            <div className="flex flex-col text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs uppercase tracking-wider text-emerald-600 font-bold">
+                  Bấm để nghe âm thanh:
+                </span>
+                {isPlayingAudio && (
+                  <span className="inline-flex gap-0.5 text-emerald-500 font-black animate-pulse">
+                    ♫ ♪
+                  </span>
+                )}
+              </div>
+              <span className="text-base sm:text-lg font-black text-slate-900 tracking-wide">
+                "{targetItem.word.toUpperCase()}"
+              </span>
+            </div>
+
+            <div className="ml-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black group-hover:bg-emerald-200">
+              🔊 Nghe lại
+            </div>
           </button>
-          <span className="text-xs font-bold text-slate-700">
-            Bé chạm vào vật thể trên đồi cỏ nhé!
-          </span>
+
+          {/* Subtitle / Encouragement Banner */}
+          <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-white/85 backdrop-blur-xs border border-emerald-300 text-emerald-900 font-bold text-xs shadow-xs">
+            <span>🐾 Bé hãy chạm vào bức tranh tương ứng trên bãi cỏ nhé!</span>
+          </div>
         </div>
 
-        {/* 4 Interactive Standing Objects on Grassy Pedestals */}
-        <div className="relative z-10 w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 my-auto items-end justify-items-center py-6">
+        {/* ================================================================ */}
+        {/* 4 TACTILE 3D CARTOON PICTURE CARDS (TRANH ĐOÁN CHỮ)             */}
+        {/* ================================================================ */}
+        <div className="relative z-10 w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 lg:gap-7 my-auto items-stretch justify-items-center py-4">
           {options.map((opt, idx) => {
             const isSelected = selectedId === opt.id;
             const isTarget = opt.id === targetItem.id;
@@ -200,62 +247,109 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
               <div
                 key={opt.id}
                 onClick={() => handleSelectOption(opt)}
-                className="relative flex flex-col items-center cursor-pointer group select-none"
+                className={`group relative w-full max-w-[190px] flex flex-col items-center cursor-pointer select-none rounded-[28px] transition-all duration-300 ${
+                  isSuccess
+                    ? 'scale-110 -translate-y-4 z-30 drop-shadow-[0_20px_35px_rgba(16,185,129,0.45)]'
+                    : isError
+                    ? 'animate-shake'
+                    : 'hover:-translate-y-2 hover:scale-[1.03] active:translate-y-0 active:scale-95'
+                }`}
               >
-                {/* Object with Subtle Idle Float & Bounce on Correct */}
+                {/* 3D Toy Tile Surface */}
                 <div
-                  className={`relative p-2.5 rounded-3xl transition-all duration-300 flex flex-col items-center justify-center ${
+                  className={`relative w-full h-[200px] sm:h-[220px] rounded-[26px] p-3 flex flex-col items-center justify-between transition-all duration-300 overflow-hidden border-3 shadow-lg ${
                     isSuccess
-                      ? '-translate-y-6 scale-120 drop-shadow-[0_12px_24px_rgba(16,185,129,0.5)] z-30'
+                      ? 'bg-gradient-to-b from-[#ECFDF5] via-white to-[#D1FAE5] border-emerald-500 ring-4 ring-emerald-300/80 shadow-emerald-400/30'
                       : isError
-                      ? 'animate-shake'
-                      : 'hover:-translate-y-2 active:scale-95 group-hover:scale-105'
+                      ? 'bg-gradient-to-b from-rose-50 to-white border-rose-400 ring-4 ring-rose-200'
+                      : 'bg-gradient-to-b from-white via-[#FCFBF7] to-[#F5F2EA] border-slate-200/90 hover:border-emerald-300 hover:shadow-xl'
                   }`}
                   style={{
-                    animation: isSuccess ? undefined : `gentleFloat 3s ease-in-out infinite ${idx * 0.4}s`,
+                    borderBottomWidth: isSuccess ? '5px' : '6px',
                   }}
                 >
-                  {/* Glow Ring */}
-                  {isSuccess && (
-                    <div className="absolute inset-0 rounded-full bg-emerald-400/30 blur-lg animate-pulse pointer-events-none" />
-                  )}
+                  {/* Top Header: Number Badge & Status */}
+                  <div className="w-full flex items-center justify-between">
+                    <span
+                      className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shadow-xs border ${
+                        isSuccess
+                          ? 'bg-emerald-500 text-white border-emerald-400'
+                          : 'bg-amber-100 text-amber-900 border-amber-300'
+                      }`}
+                    >
+                      {idx + 1}
+                    </span>
 
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
+                    {isSuccess ? (
+                      <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md animate-bounce">
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-[11px] font-bold group-hover:text-emerald-500 group-hover:bg-emerald-50 transition-colors">
+                        <HelpCircle className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Centered High-Res 3D Illustration in Glowing Halo */}
+                  <div className="relative my-auto w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+                    {/* Glowing Soft Backdrop Blob */}
+                    <div
+                      className={`absolute inset-0 rounded-full blur-md transition-all ${
+                        isSuccess
+                          ? 'bg-emerald-400/40 scale-110 animate-pulse'
+                          : 'bg-amber-200/30 group-hover:scale-105'
+                      }`}
+                    />
+
                     <KidsIllustration
                       name={opt.word.toLowerCase()}
-                      className="w-full h-full object-contain filter drop-shadow-md"
+                      className={`relative z-10 w-full h-full object-contain filter drop-shadow-md transition-transform duration-300 ${
+                        isSuccess ? 'scale-110' : 'group-hover:scale-105'
+                      }`}
                       alt={opt.word}
                     />
                   </div>
 
-                  {/* Word Name (revealed or emphasized) */}
-                  <div
-                    className={`mt-1.5 px-3 py-0.5 rounded-full text-center transition-all ${
-                      isSuccess
-                        ? 'bg-emerald-600 text-white font-black shadow-md scale-105'
-                        : 'bg-white/95 text-slate-900 font-bold text-xs shadow-xs border border-white'
-                    }`}
-                  >
-                    <span className="text-sm font-black capitalize block text-slate-900">
-                      {opt.word}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-600 block">
-                      {opt.viMeaning}
-                    </span>
+                  {/* BOTTOM REVEAL BANNER: ONLY REVEALED ON CORRECT TAP (NO SPOILER BEFOREHAND!) */}
+                  <div className="w-full pt-1">
+                    {isSuccess ? (
+                      <div className="w-full py-1.5 px-2 rounded-2xl bg-emerald-600 text-white text-center shadow-md animate-fadeIn">
+                        <span className="text-sm font-black uppercase tracking-wider block leading-tight">
+                          {opt.word}
+                        </span>
+                        <span className="text-[10px] font-bold opacity-90 block leading-tight">
+                          ({opt.viMeaning})
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="w-full py-1.5 px-2 rounded-2xl bg-slate-100/90 group-hover:bg-emerald-100/70 border border-slate-200/60 text-slate-600 group-hover:text-emerald-900 text-center transition-colors">
+                        <span className="text-xs font-black tracking-wide block">
+                          Chạm để chọn 👆
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Grassy Meadow Pedestal */}
-                <div className="w-24 sm:w-32 h-6 bg-emerald-500/80 rounded-[50%] border-t-2 border-emerald-300 shadow-inner flex items-center justify-center -mt-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-200/80" />
-                </div>
+                {/* Tactile Grassy Mound Pedestal Below Card */}
+                <div
+                  className={`w-28 sm:w-36 h-5 rounded-[50%] transition-all -mt-2 -z-10 ${
+                    isSuccess
+                      ? 'bg-emerald-600/70 blur-xs scale-110'
+                      : 'bg-[#4EA33A]/60 shadow-inner group-hover:scale-105'
+                  }`}
+                />
               </div>
             );
           })}
         </div>
 
-        <div className="relative z-10 text-[11px] font-bold text-emerald-900/80 pb-1">
-          🌱 Vườn hoa tri thức — Chạm đúng để bạn vật thể nhảy lên ăn mừng!
+        {/* ================================================================ */}
+        {/* FOOTER: COZY HINT & STATUS                                       */}
+        {/* ================================================================ */}
+        <div className="relative z-10 text-[11px] sm:text-xs font-bold text-emerald-950 bg-white/75 backdrop-blur-xs px-4 py-1 rounded-full border border-emerald-300/80 shadow-2xs">
+          🌱 Vườn hoa tri thức — Chạm đúng bạn thú để mở khoá từ vựng và nhận sao vàng!
         </div>
       </div>
     </KidsGameWrapper>

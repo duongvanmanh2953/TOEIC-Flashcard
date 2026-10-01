@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
+import { VocabFlowLogo } from '@vocabflow/shared';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 import { kidAsset } from '../../utils/kidAsset';
@@ -94,9 +95,9 @@ const GameCardItem = memo<GameCardItemProps>(({ card, onCardClick, onVoiceClick,
             VOCALFLOW
           </div>
 
-          {/* Center Golden Motif */}
-          <div className="relative z-10 w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-amber-400/20 backdrop-blur-xs border border-amber-300/40 flex items-center justify-center shadow-xs">
-            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-300 filter drop-shadow-xs" />
+          {/* Center Brand Emblem */}
+          <div className="relative z-10 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-amber-300/40 p-1 flex items-center justify-center shadow-md overflow-hidden">
+            <VocabFlowLogo size="sm" className="w-full h-full object-contain rounded-xl drop-shadow-sm" />
           </div>
 
           {/* Bottom Flip Indicator */}

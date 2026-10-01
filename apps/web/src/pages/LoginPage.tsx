@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, AlertCircle, ShieldCheck, Sparkles, Lightbulb } from 'lucide-react';
 import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
-import { VocabFlowLogo } from '../components/common/VocabFlowLogo';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');

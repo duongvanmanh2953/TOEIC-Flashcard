@@ -58,7 +58,7 @@ import { VirtualChatPane } from '../chat/VirtualChatPane';
 import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
-import { VocabFlowLogo } from '../common/VocabFlowLogo';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 export const AppShell: React.FC = () => {
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();

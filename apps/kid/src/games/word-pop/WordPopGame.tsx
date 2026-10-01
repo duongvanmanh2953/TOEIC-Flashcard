@@ -1,11 +1,10 @@
 // ============================================================================
-// GAME 03: WORD POP (BẮN NỔ BONG BÓNG TỪ)
-// HEAR -> TRACK -> POP • 2D Floating Bubbles • Squash & Pop Physics
-// Non-Auto-Advancing: User taps Continue button after praise audio finishes
+// GAME 03: WORD POP (BẮN NỔ BONG BÓNG TỪ VỰNG)
+// Sky Carnival Atmosphere • Iridescent Soap Bubbles • Elastic Pop Physics
 // ============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Volume2, Sparkles, Target } from 'lucide-react';
+import { Volume2, Sparkles, Target, RotateCcw, ArrowRight } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
@@ -17,17 +16,18 @@ interface BubbleItem {
   id: string;
   word: string;
   viMeaning: string;
-  colorClass: string;
-  leftPercent: number;
+  hueColor: string;
+  borderColor: string;
+  textColor: string;
   isPopped: boolean;
 }
 
-const BUBBLE_THEMES = [
-  { colorClass: 'from-rose-400 to-red-500 border-rose-300 text-white' },
-  { colorClass: 'from-sky-400 to-blue-500 border-sky-300 text-white' },
-  { colorClass: 'from-emerald-400 to-teal-500 border-emerald-300 text-white' },
-  { colorClass: 'from-amber-400 to-orange-500 border-amber-300 text-white' },
-  { colorClass: 'from-purple-400 to-indigo-500 border-purple-300 text-white' },
+const BUBBLE_PALETTES = [
+  { hueColor: 'from-rose-400/80 via-pink-300/70 to-purple-400/80', borderColor: 'border-rose-300', textColor: 'text-rose-950' },
+  { hueColor: 'from-sky-400/80 via-cyan-300/70 to-blue-400/80', borderColor: 'border-sky-300', textColor: 'text-sky-950' },
+  { hueColor: 'from-emerald-400/80 via-teal-300/70 to-lime-400/80', borderColor: 'border-emerald-300', textColor: 'text-emerald-950' },
+  { hueColor: 'from-amber-400/80 via-yellow-300/70 to-orange-400/80', borderColor: 'border-amber-300', textColor: 'text-amber-950' },
+  { hueColor: 'from-purple-400/80 via-indigo-300/70 to-violet-400/80', borderColor: 'border-purple-300', textColor: 'text-purple-950' },
 ];
 
 interface WordPopGameProps {
@@ -63,25 +63,26 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
     const choices = shuffled.slice(0, 4);
 
     setTargetWord(target);
-
-    // Preload audio words
     voiceService.preloadWords(choices.map((c) => c.word));
 
-    const newBubbles: BubbleItem[] = choices.map((item, idx) => ({
-      id: `${item.id}_${idx}_${Date.now()}`,
-      word: item.word,
-      viMeaning: item.viMeaning,
-      colorClass: BUBBLE_THEMES[idx % BUBBLE_THEMES.length].colorClass,
-      leftPercent: 10 + idx * 22,
-      isPopped: false,
-    }));
+    const newBubbles: BubbleItem[] = choices.map((item, idx) => {
+      const palette = BUBBLE_PALETTES[idx % BUBBLE_PALETTES.length];
+      return {
+        id: `${item.id}_${idx}_${Date.now()}`,
+        word: item.word,
+        viMeaning: item.viMeaning,
+        hueColor: palette.hueColor,
+        borderColor: palette.borderColor,
+        textColor: palette.textColor,
+        isPopped: false,
+      };
+    });
 
     setBubbles(newBubbles);
 
-    // Speak prompt promptly
     const promptTimer = setTimeout(() => {
       voiceService.speakWord(target.word);
-    }, 80);
+    }, 100);
 
     return () => clearTimeout(promptTimer);
   }, []);
@@ -94,7 +95,7 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
     if (poppedId || bubble.isPopped || isReadyToContinue) return;
 
     if (bubble.word.toLowerCase() === targetWord.word.toLowerCase()) {
-      // CORRECT! SQUASH AND POP!
+      // CORRECT! BUBBLE SQUASH & BURST
       setPoppedId(bubble.id);
       soundManager.play('bubble_burst');
       soundManager.play('pop');
@@ -108,23 +109,21 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
       setStarsEarned((prev) => prev + earned);
       if (onStarsAwarded) onStarsAwarded(earned);
 
-      const praise = 'Bé ngắm bắn bóng chuẩn lắm!';
+      const praise = 'Bé bắn nổ bóng chuẩn xác lắm! Tuyệt vời!';
       setPraiseVi(praise);
 
-      // Super-fast responsive audio
       voiceService.speakWord(bubble.word);
       setTimeout(() => {
         voiceService.speakVietnamese(praise);
       }, 450);
 
-      // Fast continue unlock: 500ms
       setTimeout(() => {
         setIsReadyToContinue(true);
       }, 500);
     } else {
       // WRONG BUBBLE
       soundManager.play('wrong');
-      voiceService.speakVietnamese('Thử lại nhé bé ơi!');
+      voiceService.speakVietnamese('Chưa đúng rồi, bé chọn quả bóng khác nhé!');
     }
   };
 
@@ -146,8 +145,8 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
       totalRounds={TOTAL_ROUNDS}
       starsEarned={starsEarned}
       worldTheme="starter"
-      instructionEn={`Pop ${targetWord.word.toUpperCase()}!`}
-      instructionVi={`Làm nổ quả bóng: ${targetWord.viMeaning}`}
+      instructionEn={`Pop the balloon with "${targetWord.word.toUpperCase()}"!`}
+      instructionVi={`Bé hãy làm nổ bong bóng: ${targetWord.viMeaning}`}
       isReadyToContinue={isReadyToContinue}
       onContinueRound={handleAdvanceRound}
       praiseVi={praiseVi}
@@ -161,33 +160,63 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
       }}
       isGameComplete={isGameComplete}
     >
-      {/* FULL-BLEED SKY ARCADE BUBBLE FIELD */}
-      <div className="relative w-full h-full p-4 sm:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-sky-400 via-sky-200 to-indigo-100 select-none">
-        {/* Arcade Background Floating Orbs */}
-        <div className="absolute top-6 left-10 w-12 h-12 text-white/30 pointer-events-none select-none animate-pulse">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
-            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
-          </svg>
-        </div>
-        <div className="absolute top-10 right-14 w-12 h-12 text-white/30 pointer-events-none select-none animate-pulse">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
-            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
-          </svg>
+      {/* ================================================================ */}
+      {/* SKY CARNIVAL ATMOSPHERE WITH BUNTING & FLUFFY CLOUDS             */}
+      {/* ================================================================ */}
+      <div className="relative w-full h-full p-4 sm:p-6 lg:p-8 flex flex-col justify-between items-center overflow-hidden bg-gradient-to-b from-[#60A5FA] via-[#93C5FD] to-[#E0F2FE] select-none">
+        
+        {/* Sky Background Decor */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Carnival Pennant Bunting Garland */}
+          <div className="absolute top-0 inset-x-0 flex justify-around opacity-80">
+            <span className="w-6 h-8 bg-rose-400 clip-triangle shadow-xs" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+            <span className="w-6 h-8 bg-amber-400 clip-triangle shadow-xs" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+            <span className="w-6 h-8 bg-emerald-400 clip-triangle shadow-xs" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+            <span className="w-6 h-8 bg-purple-400 clip-triangle shadow-xs" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+            <span className="w-6 h-8 bg-sky-300 clip-triangle shadow-xs" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+            <span className="w-6 h-8 bg-pink-400 clip-triangle shadow-xs" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+            <span className="w-6 h-8 bg-orange-400 clip-triangle shadow-xs" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }} />
+          </div>
+
+          {/* Floating Puffy Clouds */}
+          <div className="absolute top-8 left-10 w-24 h-10 bg-white/60 rounded-full blur-[1px] animate-pulse" />
+          <div className="absolute top-14 right-14 w-28 h-12 bg-white/60 rounded-full blur-[1px] animate-pulse" style={{ animationDelay: '2s' }} />
+          <div className="absolute bottom-10 left-1/4 w-32 h-12 bg-white/40 rounded-full blur-xs" />
         </div>
 
-        {/* Target Callout Banner */}
-        <div className="relative z-20 flex flex-col items-center text-center space-y-1">
-          <div className="px-6 py-2.5 rounded-full bg-white/95 text-slate-950 font-black text-sm sm:text-base shadow-lg border-2 border-sky-400 flex items-center gap-2">
-            <Target className="w-5 h-5 text-sky-600 animate-spin-slow" />
-            <span>BẮN NỔ BÓNG: "{targetWord.word.toUpperCase()}" ({targetWord.viMeaning})</span>
-          </div>
-          <span className="text-xs font-bold text-slate-700">
-            Chạm vào bong bóng xà phòng mang đúng từ nhé!
+        {/* TOP TARGET CALLOUT BANNER WITH REPLAY AUDIO */}
+        <div className="relative z-20 flex flex-col items-center text-center space-y-1.5 max-w-xl mx-auto">
+          <button
+            onClick={() => voiceService.speakWord(targetWord.word)}
+            type="button"
+            className="group px-6 py-2 sm:px-8 sm:py-2.5 rounded-full bg-white/95 text-sky-950 font-black text-sm sm:text-base shadow-[0_8px_20px_rgba(2,132,199,0.25)] border-3 border-sky-400 flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95 transition-all"
+          >
+            <div className="w-8 h-8 rounded-full bg-sky-500 text-white flex items-center justify-center shadow-xs group-hover:rotate-12 transition-transform">
+              <Volume2 className="w-4 h-4" />
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span>BẮN NỔ BÓNG:</span>
+              <span className="text-sky-700 underline uppercase tracking-wide font-black">
+                "{targetWord.word.toUpperCase()}"
+              </span>
+              <span className="text-slate-600 font-bold hidden sm:inline">
+                ({targetWord.viMeaning})
+              </span>
+            </div>
+
+            <span className="ml-1 text-xs font-black text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full">
+              🔊 Nghe
+            </span>
+          </button>
+
+          <span className="text-xs font-bold text-sky-950 bg-white/80 backdrop-blur-xs px-3.5 py-0.5 rounded-full border border-sky-200">
+            🎈 Chạm vào bong bóng xà phòng mang đúng hình ảnh nhé!
           </span>
         </div>
 
-        {/* Floating Soap Bubbles Field (Wider & Spaced for Comfort) */}
-        <div className="relative z-10 w-full max-w-4xl my-auto py-8 sm:py-12 flex items-center justify-around gap-4 sm:gap-8">
+        {/* FLOATING IRIDESCENT 3D SOAP BUBBLES FIELD */}
+        <div className="relative z-10 w-full max-w-4xl my-auto py-6 sm:py-10 flex items-center justify-around gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
           {bubbles.map((bubble, idx) => {
             const isTarget = bubble.word.toLowerCase() === targetWord.word.toLowerCase();
             const isPopping = poppedId === bubble.id;
@@ -198,43 +227,58 @@ export const WordPopGame: React.FC<WordPopGameProps> = ({
               <div
                 key={bubble.id}
                 onClick={() => handlePopBubble(bubble)}
-                className={`relative flex flex-col items-center cursor-pointer select-none group transition-transform ${
-                  isPopping ? 'animate-bubble-squash-pop pointer-events-none' : 'hover:scale-110 active:scale-95'
+                className={`relative flex flex-col items-center cursor-pointer select-none group transition-all duration-300 ${
+                  isPopping
+                    ? 'animate-bubble-squash-pop scale-125 z-30 pointer-events-none'
+                    : 'hover:scale-110 hover:-translate-y-2 active:scale-95'
                 }`}
                 style={{
                   animation: isPopping
                     ? undefined
-                    : `gentleFloat 3.5s ease-in-out infinite ${idx * 0.5}s`,
+                    : `gentleFloat 3.8s ease-in-out infinite ${idx * 0.45}s`,
                 }}
               >
-                {/* Bubble Sphere with Glass Sheen */}
+                {/* Iridescent Bubble Sphere with Multilayer Glass Sheen */}
                 <div
-                  className={`w-28 sm:w-36 h-28 sm:h-36 rounded-full bg-gradient-to-tr ${bubble.colorClass} border-4 shadow-xl flex flex-col items-center justify-center p-3 relative overflow-hidden backdrop-blur-xs`}
+                  className={`w-32 h-32 sm:w-38 sm:h-38 rounded-full bg-gradient-to-tr ${bubble.hueColor} ${bubble.borderColor} border-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] flex flex-col items-center justify-center p-3 relative overflow-hidden backdrop-blur-xs transition-shadow group-hover:shadow-[0_16px_36px_rgba(255,255,255,0.4)]`}
                 >
-                  {/* Glossy Reflection Highlight */}
-                  <div className="absolute top-2 left-3 w-6 sm:w-8 h-3 sm:h-4 bg-white/60 rounded-full -rotate-45 pointer-events-none" />
+                  {/* Top Specular Glint Reflection */}
+                  <div className="absolute top-2.5 left-4 w-7 sm:w-9 h-3.5 sm:h-4.5 bg-white/80 rounded-full -rotate-45 pointer-events-none blur-[0.5px]" />
+                  
+                  {/* Secondary Bottom Rim Reflection */}
+                  <div className="absolute bottom-2.5 right-4 w-5 h-2.5 bg-white/40 rounded-full -rotate-45 pointer-events-none" />
 
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
+                  {/* Centered Illustration */}
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center pointer-events-none">
                     <KidsIllustration
                       name={bubble.word.toLowerCase()}
-                      className="w-full h-full object-contain filter drop-shadow-md"
+                      className="w-full h-full object-contain filter drop-shadow-md group-hover:scale-105 transition-transform"
                       alt={bubble.word}
                     />
                   </div>
-                  <span className="text-sm sm:text-base font-black capitalize mt-0.5 drop-shadow-md">
-                    {bubble.word}
-                  </span>
-                  <span className="text-[10px] font-bold opacity-90">
-                    {bubble.viMeaning}
-                  </span>
+
+                  {/* Word Label Pill inside Bubble */}
+                  <div className="mt-1 px-2.5 py-0.5 rounded-full bg-white/90 shadow-2xs border border-white/60 text-center pointer-events-none">
+                    <span className="text-xs sm:text-sm font-black capitalize text-slate-900 block leading-tight">
+                      {bubble.word}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Pop Splash Particles (Visible when popping) */}
+                {isPopping && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none animate-ping">
+                    <Sparkles className="w-16 h-16 text-amber-300 drop-shadow-lg" />
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        <div className="relative z-10 text-[11px] font-bold text-slate-700 pb-1">
-          Arcade Mini-Game — Bong bóng chuyển động mượt mà theo vật lý đàn hồi
+        {/* BOTTOM GAME FOOTER */}
+        <div className="relative z-10 text-[11px] font-bold text-sky-950 bg-white/80 backdrop-blur-xs px-4 py-1 rounded-full border border-sky-200 shadow-2xs">
+          🎈 Bong bóng nổi bồng bềnh — Chạm thật nhanh và chuẩn xác để ghi điểm combo!
         </div>
       </div>
     </KidsGameWrapper>

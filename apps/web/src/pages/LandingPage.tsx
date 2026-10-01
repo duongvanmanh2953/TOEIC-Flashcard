@@ -18,7 +18,7 @@ import {
   Check,
 } from 'lucide-react';
 import { LiquidBackground } from '../components/common/LiquidBackground';
-import { VocabFlowLogo } from '../components/common/VocabFlowLogo';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 export const LandingPage: React.FC = () => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);

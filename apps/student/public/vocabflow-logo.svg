@@ -1,27 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4F46E5" />
-      <stop offset="50%" stop-color="#6366F1" />
-      <stop offset="100%" stop-color="#8B5CF6" />
+    <linearGradient id="vf-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="35%" stop-color="#6366F1" />
+      <stop offset="70%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
     </linearGradient>
-    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#E0E7FF" />
+    <linearGradient id="vf-wave1" x1="0%" y1="50%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#1E40AF" stop-opacity="0.7" />
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="8" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    <linearGradient id="vf-wave2" x1="0%" y1="70%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0.85" />
+    </linearGradient>
+    <filter id="vf-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.18" />
     </filter>
   </defs>
-  <!-- Background squircle -->
-  <rect width="512" height="512" rx="128" fill="url(#bg)" />
-  <!-- Sparkles SVG from user (scaled from 24x24 to center of 512x512) -->
-  <g transform="translate(96, 96) scale(13.3333)" stroke="url(#sparkleGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow)">
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" fill="rgba(255,255,255,0.18)" />
-    <path d="M5 3v4" />
-    <path d="M19 17v4" />
-    <path d="M3 5h4" />
-    <path d="M17 19h4" />
-  </g>
+
+  <!-- Base Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#vf-bg)" />
+
+  <!-- Flow Wave Overlays -->
+  <path d="M 0 320 C 140 280, 240 380, 512 260 L 512 512 L 0 512 Z" fill="url(#vf-wave1)" />
+  <path d="M 0 400 C 180 340, 320 460, 512 360 L 512 512 L 0 512 Z" fill="url(#vf-wave2)" />
+
+  <!-- Iconic Pure White Bold 'V' with Rounded Geometry -->
+  <path d="M 124 142
+           C 111 142, 100 153, 100 166
+           C 100 178, 107 189, 117 194
+           L 226 388
+           C 232 399, 243 406, 256 406
+           C 269 406, 280 399, 286 388
+           L 395 194
+           C 405 189, 412 178, 412 166
+           C 412 153, 401 142, 388 142
+           C 376 142, 366 149, 361 160
+           L 256 348
+           L 151 160
+           C 146 149, 136 142, 124 142 Z"
+        fill="#FFFFFF"
+        filter="url(#vf-shadow)" />
 </svg>

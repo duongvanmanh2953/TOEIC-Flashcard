@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Volume2, Sparkles, Check, Move } from 'lucide-react';
+import { Volume2, Sparkles, Check, Move, ArrowRight, Heart } from 'lucide-react';
 import { KidsGameWrapper } from '../core/KidsGameWrapper';
 import { KIDS_GAMES_REGISTRY } from '../../data/games/gamesRegistry';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
@@ -71,8 +71,6 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
     const roundSelection = [...fruits.slice(0, 2), ...animals.slice(0, 2)].sort(() => Math.random() - 0.5);
 
     setCurrentItems(roundSelection);
-
-    // Preload speech for all items in this round
     voiceService.preloadWords(roundSelection.map((s) => s.nameEn));
   }, []);
 
@@ -98,9 +96,8 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
 
     if (item.category === zoneCategory) {
       // CORRECT ZONE!
-      soundManager.play('star_burst');
+      soundManager.play('correct');
       soundManager.play('pop');
-      voiceService.speakWord(item.nameEn);
 
       if (zoneCategory === 'fruit') {
         setFruitBasket((prev) => [...prev, item]);
@@ -114,58 +111,43 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
       setDraggedItem(null);
       setDragOverZone(null);
 
-      // Check if all items in current round are sorted
+      // Voice praise
+      voiceService.speakWord(item.nameEn);
+
       if (remaining.length === 0) {
-        const earned = 2;
+        // ALL ITEMS SORTED!
+        soundManager.play('star_burst');
+        const earned = 3;
         setStarsEarned((prev) => prev + earned);
         if (onStarsAwarded) onStarsAwarded(earned);
 
-        const praiseOptions = [
-          'Giỏi quá! Bé đã phân loại chính xác!',
-          'Tuyệt vời! Tất cả đã về đúng chỗ!',
-          'Bé thông minh quá!',
-        ];
-        const randomPraise = praiseOptions[Math.floor(Math.random() * praiseOptions.length)];
-        setPraiseVi(randomPraise);
-
-        soundManager.play('correct');
+        const praise = 'Tuyệt vời! Bé đã phân loại chính xác tất cả!';
+        setPraiseVi(praise);
         setTimeout(() => {
-          voiceService.speakVietnamese(randomPraise);
-        }, 300);
-
-        // Fast continue unlock: 500ms
-        setTimeout(() => {
-          if (currentRound < TOTAL_ROUNDS) {
-            setIsReadyToContinue(true);
-          } else {
-            setIsGameComplete(true);
-            soundManager.play('celebration');
-          }
+          voiceService.speakVietnamese(praise);
+          setIsReadyToContinue(true);
         }, 500);
       }
     } else {
-      // WRONG ZONE
+      // WRONG ZONE!
       soundManager.play('wrong');
-      voiceService.speakVietnamese(`Bạn ${item.nameVi} không thuộc nhóm này rồi! Bé thử lại xem!`);
-      setSelectedItem(null);
-      setDraggedItem(null);
+      voiceService.speakVietnamese(
+        item.category === 'fruit'
+          ? `${item.nameVi} là trái cây, hãy bỏ vào giỏ nhé!`
+          : `${item.nameVi} là bạn động vật, hãy đưa vào chuồng nhé!`
+      );
       setDragOverZone(null);
     }
   };
 
-  // Click on drop zone
   const handleClickZone = (zoneCategory: 'fruit' | 'animal') => {
-    if (!selectedItem) {
-      voiceService.speakVietnamese('Bé hãy chạm vào một hình rồi kéo hoặc chạm vào đây nhé!');
-      return;
+    if (selectedItem) {
+      handleExecuteDrop(selectedItem, zoneCategory);
     }
-    handleExecuteDrop(selectedItem, zoneCategory);
   };
 
-  // Touch drag tracking for mobile
   const handleTouchMove = (e: React.TouchEvent, item: SortableItem) => {
     const touch = e.touches[0];
-    if (!touch) return;
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
     const zoneElement = target?.closest('[data-zone]');
     if (zoneElement) {
@@ -196,8 +178,8 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
       currentRound={currentRound}
       totalRounds={TOTAL_ROUNDS}
       starsEarned={starsEarned}
-      instructionEn="Drag and drop or tap to sort!"
-      instructionVi="Bé hãy kéo thả hoặc chạm hình vào Giỏ Trái Cây hoặc Chuồng Thú nhé!"
+      instructionEn="Drag or tap items into the correct home!"
+      instructionVi="Bé hãy kéo thả hoặc chạm hình vào Giỏ Trái Cây hoặc Nông Trại Động Vật nhé!"
       onExit={onExit}
       onNextGame={onNextGame}
       onPlayAgain={() => {
@@ -212,80 +194,94 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
       onContinueRound={handleContinueRound}
       praiseVi={praiseVi}
     >
-      <div className="p-4 sm:p-8 flex flex-col items-center justify-between min-h-[440px] bg-gradient-to-b from-amber-50 via-emerald-50 to-white select-none space-y-6">
-        {/* Available Items Tray */}
-        <div className="w-full max-w-xl">
-          <div className="flex items-center justify-between px-2 mb-2">
-            <span className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+      <div className="relative w-full h-full p-4 sm:p-6 flex flex-col items-center justify-between min-h-[440px] bg-gradient-to-b from-[#FEF9E7] via-[#F0FDF4] to-[#DCFCE7] select-none space-y-4 overflow-hidden">
+        
+        {/* Soft Sunny Decor */}
+        <div className="absolute top-2 left-6 text-2xl opacity-60 pointer-events-none">🌻</div>
+        <div className="absolute top-4 right-10 text-2xl opacity-60 pointer-events-none">🌾</div>
+
+        {/* Available Items Tray (3D Toy Tiles) */}
+        <div className="w-full max-w-xl z-10">
+          <div className="flex items-center justify-between px-2 mb-1.5">
+            <span className="text-xs font-black text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
               <Move className="w-3.5 h-3.5 text-amber-500" />
-              <span>Kéo thả hình hoặc chạm để chọn:</span>
+              <span>Chạm hoặc kéo vật thể vào đúng nơi:</span>
             </span>
-            <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full">
+            <span className="text-xs font-black text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full">
               Còn {currentItems.length} hình
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 p-3.5 rounded-3xl bg-white/95 border-2 border-slate-200/90 shadow-sm w-full">
-            {currentItems.map((item) => {
-              const isSelected = selectedItem?.id === item.id;
-              const isDragging = draggedItem?.id === item.id;
+          <div className="flex flex-wrap items-center justify-center gap-3 p-3 rounded-[24px] bg-white/95 border-3 border-emerald-200 shadow-md w-full min-h-[96px]">
+            {currentItems.length === 0 ? (
+              <div className="flex items-center gap-2 text-emerald-600 font-black text-sm animate-bounce">
+                <Sparkles className="w-5 h-5 text-amber-500" />
+                <span>Đã xếp xong tất cả! Giỏi quá!</span>
+              </div>
+            ) : (
+              currentItems.map((item) => {
+                const isSelected = selectedItem?.id === item.id;
+                const isDragging = draggedItem?.id === item.id;
 
-              return (
-                <div
-                  key={item.id}
-                  draggable={!isReadyToContinue}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/plain', item.id);
-                    setDraggedItem(item);
-                    setSelectedItem(item);
-                    soundManager.play('pop');
-                  }}
-                  onDragEnd={() => {
-                    setDraggedItem(null);
-                    setDragOverZone(null);
-                  }}
-                  onTouchStart={() => {
-                    setDraggedItem(item);
-                    setSelectedItem(item);
-                    soundManager.play('pop');
-                  }}
-                  onTouchMove={(e) => handleTouchMove(e, item)}
-                  onTouchEnd={(e) => handleTouchEnd(e, item)}
-                  onClick={() => {
-                    soundManager.play('pop');
-                    setSelectedItem(item);
-                    voiceService.speakWord(item.nameEn);
-                  }}
-                  className={`p-2.5 sm:p-3.5 rounded-2xl border-3 flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing transition-all select-none ${
-                    isDragging
-                      ? 'opacity-40 scale-95 border-dashed border-amber-400'
-                      : isSelected
-                      ? 'border-amber-500 bg-amber-100 scale-110 shadow-lg ring-4 ring-amber-300/40'
-                      : 'border-slate-200 bg-white hover:bg-amber-50 hover:scale-105'
-                  }`}
-                >
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center pointer-events-none">
-                    <KidsIllustration
-                      name={item.id}
-                      className="w-full h-full object-contain filter drop-shadow-xs"
-                      alt={item.nameEn}
-                    />
+                return (
+                  <div
+                    key={item.id}
+                    draggable={!isReadyToContinue}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('text/plain', item.id);
+                      setDraggedItem(item);
+                      setSelectedItem(item);
+                      soundManager.play('pop');
+                    }}
+                    onDragEnd={() => {
+                      setDraggedItem(null);
+                      setDragOverZone(null);
+                    }}
+                    onTouchStart={() => {
+                      setDraggedItem(item);
+                      setSelectedItem(item);
+                      soundManager.play('pop');
+                    }}
+                    onTouchMove={(e) => handleTouchMove(e, item)}
+                    onTouchEnd={(e) => handleTouchEnd(e, item)}
+                    onClick={() => {
+                      soundManager.play('pop');
+                      setSelectedItem(item);
+                      voiceService.speakWord(item.nameEn);
+                    }}
+                    className={`p-2 sm:p-2.5 rounded-2xl border-3 flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing transition-all select-none ${
+                      isDragging
+                        ? 'opacity-40 scale-95 border-dashed border-amber-400'
+                        : isSelected
+                        ? 'border-amber-500 bg-amber-100 scale-110 shadow-lg ring-4 ring-amber-300/40 -translate-y-1'
+                        : 'border-slate-200 bg-white hover:bg-amber-50 hover:scale-105 hover:-translate-y-0.5'
+                    }`}
+                    style={{ borderBottomWidth: '5px' }}
+                  >
+                    <div className="w-13 h-13 sm:w-16 sm:h-16 flex items-center justify-center pointer-events-none">
+                      <KidsIllustration
+                        name={item.id}
+                        className="w-full h-full object-contain filter drop-shadow-xs"
+                        alt={item.nameEn}
+                      />
+                    </div>
+                    <span className="text-xs sm:text-sm font-black text-slate-900 mt-0.5 pointer-events-none">
+                      {item.nameEn}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold pointer-events-none">
+                      {item.nameVi}
+                    </span>
                   </div>
-                  <span className="text-xs sm:text-sm font-black text-slate-800 mt-1 pointer-events-none">
-                    {item.nameEn}
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-bold pointer-events-none">
-                    {item.nameVi}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* 2 Large Distinct Drop Zones (Interactive Drag & Drop Targets) */}
-        <div className="grid grid-cols-2 gap-4 sm:gap-8 w-full max-w-2xl">
-          {/* Zone 1: Fruit Basket */}
+        {/* 2 Custom Illustrated Drop Targets: Wicker Fruit Basket & Farm Animal Barn */}
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl z-10">
+          
+          {/* Target 1: Woven Fruit Basket (Illustrated) */}
           <div
             data-zone="fruit"
             onClick={() => handleClickZone('fruit')}
@@ -305,30 +301,34 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
               const item = currentItems.find((i) => i.id === itemId) || draggedItem || selectedItem;
               if (item) handleExecuteDrop(item, 'fruit');
             }}
-            className={`p-5 sm:p-6 rounded-3xl shadow-lg flex flex-col items-center justify-between min-h-[200px] cursor-pointer transition-all duration-200 select-none ${
+            className={`relative p-4 sm:p-5 rounded-[28px] shadow-lg flex flex-col items-center justify-between min-h-[190px] cursor-pointer transition-all duration-200 select-none overflow-hidden border-4 ${
               dragOverZone === 'fruit'
-                ? 'bg-rose-100 border-4 border-rose-500 scale-105 ring-8 ring-rose-300/40 shadow-xl'
-                : 'bg-rose-50/95 border-3 border-rose-300 hover:border-rose-400 hover:scale-102'
+                ? 'bg-rose-100 border-rose-500 scale-105 ring-6 ring-rose-300/50 shadow-xl'
+                : 'bg-gradient-to-b from-[#FFF5F5] to-[#FFEBEB] border-rose-300/90 hover:border-rose-400 hover:scale-102'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🍎</span>
-              <span className="text-sm sm:text-base font-black text-rose-950">
-                Giỏ Trái Cây (Fruits)
-              </span>
+            {/* Basket Handle Arch */}
+            <div className="w-20 h-4 border-t-4 border-amber-800/40 rounded-t-full -mt-2 mb-1" />
+
+            {/* Title Badge */}
+            <div className="px-3.5 py-1 rounded-full bg-rose-500 text-white font-black text-xs sm:text-sm shadow-sm flex items-center gap-1.5 border border-rose-600">
+              <span>🍎 Giỏ Trái Cây</span>
             </div>
 
             {/* Placed Fruit Icons */}
-            <div className="flex flex-wrap gap-2.5 justify-center my-3 min-h-[50px] items-center">
+            <div className="flex flex-wrap gap-2 justify-center my-2 min-h-[50px] items-center">
               {fruitBasket.length === 0 ? (
-                <span className="text-xs text-rose-400 font-semibold italic">
-                  Chưa có trái cây
-                </span>
+                <div className="flex flex-col items-center opacity-60">
+                  <span className="text-3xl">🧺</span>
+                  <span className="text-[11px] text-rose-500 font-bold mt-0.5">
+                    Đang trống
+                  </span>
+                </div>
               ) : (
                 fruitBasket.map((f) => (
                   <div
                     key={f.id}
-                    className="w-11 h-11 sm:w-13 sm:h-13 p-1 rounded-xl bg-white/80 border border-rose-200 shadow-xs flex items-center justify-center animate-bounce"
+                    className="w-10 h-10 sm:w-12 sm:h-12 p-1 rounded-2xl bg-white/95 border-2 border-rose-200 shadow-xs flex items-center justify-center animate-bounce"
                     title={f.nameEn}
                   >
                     <KidsIllustration
@@ -341,18 +341,17 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[11px] font-black px-3.5 py-1 rounded-full transition-all ${
-                dragOverZone === 'fruit'
-                  ? 'bg-rose-600 text-white animate-pulse'
-                  : 'text-rose-800 bg-rose-200/80'
-              }`}>
-                {dragOverZone === 'fruit' ? 'Thả vào đây ngay! ✨' : 'Kéo thả hoặc chạm vào đây'}
-              </span>
-            </div>
+            {/* Bottom Status Callout */}
+            <span className={`text-[10px] sm:text-[11px] font-black px-3 py-1 rounded-full transition-all text-center ${
+              dragOverZone === 'fruit'
+                ? 'bg-rose-600 text-white animate-pulse'
+                : 'text-rose-900 bg-rose-200/80 border border-rose-300'
+            }`}>
+              {dragOverZone === 'fruit' ? 'Thả vào giỏ ngay! ✨' : 'Thả trái cây vào đây'}
+            </span>
           </div>
 
-          {/* Zone 2: Animal Barn */}
+          {/* Target 2: Farm Animal Barn (Illustrated) */}
           <div
             data-zone="animal"
             onClick={() => handleClickZone('animal')}
@@ -372,30 +371,34 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
               const item = currentItems.find((i) => i.id === itemId) || draggedItem || selectedItem;
               if (item) handleExecuteDrop(item, 'animal');
             }}
-            className={`p-5 sm:p-6 rounded-3xl shadow-lg flex flex-col items-center justify-between min-h-[200px] cursor-pointer transition-all duration-200 select-none ${
+            className={`relative p-4 sm:p-5 rounded-[28px] shadow-lg flex flex-col items-center justify-between min-h-[190px] cursor-pointer transition-all duration-200 select-none overflow-hidden border-4 ${
               dragOverZone === 'animal'
-                ? 'bg-emerald-100 border-4 border-emerald-500 scale-105 ring-8 ring-emerald-300/40 shadow-xl'
-                : 'bg-emerald-50/95 border-3 border-emerald-300 hover:border-emerald-400 hover:scale-102'
+                ? 'bg-emerald-100 border-emerald-500 scale-105 ring-6 ring-emerald-300/50 shadow-xl'
+                : 'bg-gradient-to-b from-[#F0FDF4] to-[#DCFCE7] border-emerald-300/90 hover:border-emerald-400 hover:scale-102'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🐶</span>
-              <span className="text-sm sm:text-base font-black text-emerald-950">
-                Chuồng Thú (Animals)
-              </span>
+            {/* Barn Roof Gable */}
+            <div className="w-20 h-4 border-t-4 border-emerald-800/40 rounded-t-full -mt-2 mb-1" />
+
+            {/* Title Badge */}
+            <div className="px-3.5 py-1 rounded-full bg-emerald-600 text-white font-black text-xs sm:text-sm shadow-sm flex items-center gap-1.5 border border-emerald-700">
+              <span>🐾 Nông Trại Thú</span>
             </div>
 
             {/* Placed Animal Icons */}
-            <div className="flex flex-wrap gap-2.5 justify-center my-3 min-h-[50px] items-center">
+            <div className="flex flex-wrap gap-2 justify-center my-2 min-h-[50px] items-center">
               {animalBarn.length === 0 ? (
-                <span className="text-xs text-emerald-400 font-semibold italic">
-                  Chưa có động vật
-                </span>
+                <div className="flex flex-col items-center opacity-60">
+                  <span className="text-3xl">🏡</span>
+                  <span className="text-[11px] text-emerald-600 font-bold mt-0.5">
+                    Đang trống
+                  </span>
+                </div>
               ) : (
                 animalBarn.map((a) => (
                   <div
                     key={a.id}
-                    className="w-11 h-11 sm:w-13 sm:h-13 p-1 rounded-xl bg-white/80 border border-emerald-200 shadow-xs flex items-center justify-center animate-bounce"
+                    className="w-10 h-10 sm:w-12 sm:h-12 p-1 rounded-2xl bg-white/95 border-2 border-emerald-200 shadow-xs flex items-center justify-center animate-bounce"
                     title={a.nameEn}
                   >
                     <KidsIllustration
@@ -408,19 +411,22 @@ export const SortMatchGame: React.FC<SortMatchGameProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[11px] font-black px-3.5 py-1 rounded-full transition-all ${
-                dragOverZone === 'animal'
-                  ? 'bg-emerald-600 text-white animate-pulse'
-                  : 'text-emerald-800 bg-emerald-200/80'
-              }`}>
-                {dragOverZone === 'animal' ? 'Thả vào đây ngay! ✨' : 'Kéo thả hoặc chạm vào đây'}
-              </span>
-            </div>
+            {/* Bottom Status Callout */}
+            <span className={`text-[10px] sm:text-[11px] font-black px-3 py-1 rounded-full transition-all text-center ${
+              dragOverZone === 'animal'
+                ? 'bg-emerald-600 text-white animate-pulse'
+                : 'text-emerald-900 bg-emerald-200/80 border border-emerald-300'
+            }`}>
+              {dragOverZone === 'animal' ? 'Đưa vào nông trại ngay! ✨' : 'Thả động vật vào đây'}
+            </span>
           </div>
+        </div>
+
+        {/* Footer Guidance */}
+        <div className="text-[11px] font-bold text-emerald-900 bg-white/80 px-4 py-1 rounded-full border border-emerald-300 shadow-2xs">
+          🧺 Phân loại đúng giúp bé rèn luyện tư duy logic và nhớ từ vựng lâu hơn!
         </div>
       </div>
     </KidsGameWrapper>
   );
 };
-
