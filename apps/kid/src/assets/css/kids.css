@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ==========================================================================
    KIDS MODULE - DESIGN SYSTEM TOKENS & PLAYFUL STYLES
    ========================================================================== */
