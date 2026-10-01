@@ -49,7 +49,7 @@ export const App: React.FC = () => {
     AOS.init({
       once: true,
       duration: 800,
-      offset: 60,
+      offset: 50,
       easing: 'ease-out-cubic',
     });
 
@@ -73,25 +73,29 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen text-slate-100 flex flex-col overflow-x-hidden selection:bg-indigo-600 selection:text-white bg-[#060813] font-sans">
-      {/* 1. React Bits Splash Cursor (Fluid WebGL simulation following pointer) */}
+    <div className="relative min-h-screen text-slate-100 flex flex-col overflow-x-hidden selection:bg-indigo-600 selection:text-white bg-[#050713] font-sans">
+      {/* 1. React Bits Splash Cursor (Compact, vivid & rich fluid simulation) */}
       <SplashCursor
         SIM_RESOLUTION={128}
         DYE_RESOLUTION={1024}
-        DENSITY_DISSIPATION={2.8}
-        VELOCITY_DISSIPATION={1.8}
-        PRESSURE={0.12}
+        DENSITY_DISSIPATION={3.2}
+        VELOCITY_DISSIPATION={2.0}
+        PRESSURE={0.14}
         CURL={4.5}
-        SPLAT_RADIUS={0.22}
-        SPLAT_FORCE={5500}
+        SPLAT_RADIUS={0.08}
+        SPLAT_FORCE={4000}
         RAINBOW_MODE={true}
       />
 
-      {/* 2. Original Ambient Dynamic Liquid Canvas Background from prod/v2 */}
+      {/* 2. Ambient Dynamic Space Liquid Canvas Background with Depth Pools & Grid */}
       <LiquidBackground />
 
-      {/* 3. Original Navbar Structure (Single row, deleted "Động Cơ 5D" to avoid wrapping) */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#060813]/80 border-b border-slate-800/60 transition-colors duration-300">
+      {/* 3. Original Navbar Structure with entrance AOS (Single row, no "Động Cơ 5D") */}
+      <header
+        data-aos="fade-down"
+        data-aos-duration="600"
+        className="sticky top-0 z-50 backdrop-blur-xl bg-[#060813]/80 border-b border-slate-800/60 transition-colors duration-300"
+      >
         <div className="px-4 sm:px-6 py-3.5 sm:py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
           {/* Brand Logo */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
@@ -163,21 +167,22 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* 4. Hero Section */}
+      {/* 4. Hero Section with Top AOS Staggering */}
       <section className="relative pt-16 sm:pt-24 pb-20 px-4 sm:px-6 max-w-7xl mx-auto w-full flex flex-col items-center text-center">
-        {/* Luminous Top Pill Badge */}
+        {/* Luminous Top Pill Badge with AOS */}
         <div
           data-aos="fade-down"
+          data-aos-delay="100"
           className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full card-brand-effect overflow-hidden bg-sky-500/[0.08] border border-sky-400/35 text-sky-300 text-xs sm:text-sm font-bold mb-8 backdrop-blur-xl leading-normal shadow-xs"
         >
           <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0" />
           <span>Thuật toán Lặp lại Ngắt quãng Thích ứng + Gia sư VocabFlow AI 24/7</span>
         </div>
 
-        {/* Hero Title with Generous, Breathable Line-Height */}
+        {/* Hero Title with Generous Line-Height & AOS */}
         <h1
           data-aos="fade-up"
-          data-aos-delay="100"
+          data-aos-delay="200"
           className="text-4xl sm:text-6xl md:text-7xl font-black tracking-normal leading-[1.3] sm:leading-[1.25] mb-6 max-w-4xl text-white"
         >
           Học ít từ hơn. <br className="hidden sm:block" />
@@ -186,10 +191,10 @@ export const App: React.FC = () => {
           </span>
         </h1>
 
-        {/* Hero Subtitle with Generous Line-Height */}
+        {/* Hero Subtitle with Generous Line-Height & AOS */}
         <p
           data-aos="fade-up"
-          data-aos-delay="200"
+          data-aos-delay="300"
           className="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal"
         >
           VocabFlow không bắt bạn lật flashcard máy móc. Nền tảng ứng dụng thuật toán FSRS v5 đo lường độ bền trí nhớ, tự động phát hiện lỗ hổng và nhắc nhở đúng{' '}
@@ -199,10 +204,10 @@ export const App: React.FC = () => {
           trước khi não bộ quên từ vựng.
         </p>
 
-        {/* Hero Action Buttons */}
+        {/* Hero Action Buttons with AOS */}
         <div
           data-aos="fade-up"
-          data-aos-delay="300"
+          data-aos-delay="400"
           className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto mb-16"
         >
           <a
@@ -229,10 +234,10 @@ export const App: React.FC = () => {
           </a>
         </div>
 
-        {/* Interactive Live Card Preview Showcase Wrapped in React Bits GlassSurface */}
+        {/* Interactive Live Card Preview Showcase with AOS */}
         <div
           data-aos="zoom-in"
-          data-aos-delay="400"
+          data-aos-delay="500"
           className="w-full max-w-2xl mx-auto mb-20"
         >
           <GlassSurface
@@ -380,54 +385,59 @@ export const App: React.FC = () => {
           </GlassSurface>
         </div>
 
-        {/* Metrics Stats Bar Wrapped in React Bits GlassSurface */}
-        <div
-          data-aos="fade-up"
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full max-w-5xl mb-24"
-        >
-          <GlassSurface borderRadius={20} className="w-full text-center">
-            <div className="p-6">
-              <div className="text-3xl sm:text-4xl font-black text-cyan-400 leading-none mb-2">
-                600+
+        {/* Metrics Stats Bar Cascading AOS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full max-w-5xl mb-24">
+          <div data-aos="fade-up" data-aos-delay="550">
+            <GlassSurface borderRadius={20} className="w-full text-center">
+              <div className="p-6">
+                <div className="text-3xl sm:text-4xl font-black text-cyan-400 leading-none mb-2">
+                  600+
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
+                  Từ TOEIC chuẩn đề thi ETS
+                </p>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
-                Từ TOEIC chuẩn đề thi ETS
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={20} className="w-full text-center">
-            <div className="p-6">
-              <div className="text-3xl sm:text-4xl font-black text-indigo-400 leading-none mb-2">
-                98.4%
+          <div data-aos="fade-up" data-aos-delay="650">
+            <GlassSurface borderRadius={20} className="w-full text-center">
+              <div className="p-6">
+                <div className="text-3xl sm:text-4xl font-black text-indigo-400 leading-none mb-2">
+                  98.4%
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
+                  Tỷ lệ duy trì trí nhớ 6 tháng
+                </p>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
-                Tỷ lệ duy trì trí nhớ 6 tháng
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={20} className="w-full text-center">
-            <div className="p-6">
-              <div className="text-3xl sm:text-4xl font-black text-emerald-400 leading-none mb-2">
-                4.2x
+          <div data-aos="fade-up" data-aos-delay="750">
+            <GlassSurface borderRadius={20} className="w-full text-center">
+              <div className="p-6">
+                <div className="text-3xl sm:text-4xl font-black text-emerald-400 leading-none mb-2">
+                  4.2x
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
+                  Tăng tốc độ nhận diện đề thi
+                </p>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
-                Tăng tốc độ nhận diện đề thi
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={20} className="w-full text-center">
-            <div className="p-6">
-              <div className="text-3xl sm:text-4xl font-black text-amber-400 leading-none mb-2">
-                24/7
+          <div data-aos="fade-up" data-aos-delay="850">
+            <GlassSurface borderRadius={20} className="w-full text-center">
+              <div className="p-6">
+                <div className="text-3xl sm:text-4xl font-black text-amber-400 leading-none mb-2">
+                  24/7
+                </div>
+                <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
+                  Gia sư AI phản xạ thời gian thực
+                </p>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-slate-400 leading-normal">
-                Gia sư AI phản xạ thời gian thực
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
         </div>
       </section>
 
@@ -449,61 +459,69 @@ export const App: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6">
-                <Brain className="w-6 h-6" />
+          <div data-aos="fade-up" data-aos-delay="100">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6">
+                  <Brain className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-snug">
+                  Stability & Retrievability
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Tách biệt độ bền trí nhớ và khả năng nhớ lại, giúp không ôn lặp lại vô ích các từ đã khắc sâu vào tiềm thức.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                Stability & Retrievability
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Tách biệt độ bền trí nhớ và khả năng nhớ lại, giúp không ôn lặp lại vô ích các từ đã khắc sâu vào tiềm thức.
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-6">
-                <Compass className="w-6 h-6" />
+          <div data-aos="fade-up" data-aos-delay="200">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-6">
+                  <Compass className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-snug">
+                  Contextual Clue Matrix
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Liên kết từ vựng với cấu trúc ngữ pháp Part 5 & 6 TOEIC, học trọn vẹn cả cụm từ đi kèm (collocations) và họ từ.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                Contextual Clue Matrix
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Liên kết từ vựng với cấu trúc ngữ pháp Part 5 & 6 TOEIC, học trọn vẹn cả cụm từ đi kèm (collocations) và họ từ.
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-6">
-                <Flame className="w-6 h-6" />
+          <div data-aos="fade-up" data-aos-delay="300">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-6">
+                  <Flame className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-snug">
+                  Anti-Leech Smart Detector
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Tự động nhận diện những từ bạn hay quên hoặc nhầm lẫn, lập tức gợi ý giải thích chi tiết và ví dụ ngữ cảnh mới.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                Anti-Leech Smart Detector
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Tự động nhận diện những từ bạn hay quên hoặc nhầm lẫn, lập tức gợi ý giải thích chi tiết và ví dụ ngữ cảnh mới.
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-6">
-                <TrendingUp className="w-6 h-6" />
+          <div data-aos="fade-up" data-aos-delay="400">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-6">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-snug">
+                  Tối Ưu Thời Gian Học
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Cắt giảm 38.5% số lần lật thẻ vô ích so với flashcard thông thường, đạt mốc 800+ TOEIC với chỉ 20 phút mỗi ngày.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                Tối Ưu Thời Gian Học
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Cắt giảm 38.5% số lần lật thẻ vô ích so với flashcard thông thường, đạt mốc 800+ TOEIC với chỉ 20 phút mỗi ngày.
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
         </div>
       </section>
 
@@ -525,71 +543,77 @@ export const App: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black text-cyan-400 uppercase tracking-wider bg-cyan-500/10 px-3 py-1 rounded-md border border-cyan-500/20 leading-normal">
-                  Chủ Đề 01 - 10
-                </span>
-                <span className="text-xs font-bold text-slate-400 leading-normal">120 Từ vựng</span>
+          <div data-aos="fade-up" data-aos-delay="100">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-black text-cyan-400 uppercase tracking-wider bg-cyan-500/10 px-3 py-1 rounded-md border border-cyan-500/20 leading-normal">
+                    Chủ Đề 01 - 10
+                  </span>
+                  <span className="text-xs font-bold text-slate-400 leading-normal">120 Từ vựng</span>
+                </div>
+                <h3 className="text-xl font-black text-white mb-2 leading-snug">
+                  Hợp Đồng, Bảo Hành & Mua Bán
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
+                  Tập trung vào: Contracts, Warranties, Business Planning, Conferences, Marketing và Sales Pitch.
+                </p>
+                <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">obligate</span>
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">provision</span>
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">assurance</span>
+                </div>
               </div>
-              <h3 className="text-xl font-black text-white mb-2 leading-snug">
-                Hợp Đồng, Bảo Hành & Mua Bán
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                Tập trung vào: Contracts, Warranties, Business Planning, Conferences, Marketing và Sales Pitch.
-              </p>
-              <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">obligate</span>
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">provision</span>
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">assurance</span>
-              </div>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black text-indigo-400 uppercase tracking-wider bg-indigo-500/10 px-3 py-1 rounded-md border border-indigo-500/20 leading-normal">
-                  Chủ Đề 11 - 20
-                </span>
-                <span className="text-xs font-bold text-slate-400 leading-normal">125 Từ vựng</span>
+          <div data-aos="fade-up" data-aos-delay="200">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-black text-indigo-400 uppercase tracking-wider bg-indigo-500/10 px-3 py-1 rounded-md border border-indigo-500/20 leading-normal">
+                    Chủ Đề 11 - 20
+                  </span>
+                  <span className="text-xs font-bold text-slate-400 leading-normal">125 Từ vựng</span>
+                </div>
+                <h3 className="text-xl font-black text-white mb-2 leading-snug">
+                  Tài Chính, Ngân Hàng & Kế Toán
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
+                  Tập trung vào: Banking, Accounting, Investments, Taxes, Financial Statements và Invoicing.
+                </p>
+                <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">dividend</span>
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">reconcile</span>
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">depreciation</span>
+                </div>
               </div>
-              <h3 className="text-xl font-black text-white mb-2 leading-snug">
-                Tài Chính, Ngân Hàng & Kế Toán
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                Tập trung vào: Banking, Accounting, Investments, Taxes, Financial Statements và Invoicing.
-              </p>
-              <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">dividend</span>
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">reconcile</span>
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">depreciation</span>
-              </div>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black text-emerald-400 uppercase tracking-wider bg-emerald-500/10 px-3 py-1 rounded-md border border-emerald-500/20 leading-normal">
-                  Chủ Đề 21 - 30
-                </span>
-                <span className="text-xs font-bold text-slate-400 leading-normal">115 Từ vựng</span>
+          <div data-aos="fade-up" data-aos-delay="300">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-black text-emerald-400 uppercase tracking-wider bg-emerald-500/10 px-3 py-1 rounded-md border border-emerald-500/20 leading-normal">
+                    Chủ Đề 21 - 30
+                  </span>
+                  <span className="text-xs font-bold text-slate-400 leading-normal">115 Từ vựng</span>
+                </div>
+                <h3 className="text-xl font-black text-white mb-2 leading-snug">
+                  Quản Trị Nhân Sự & Tuyển Dụng
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
+                  Tập trung vào: Job Advertising, Recruiting, Interviewing, Hiring, Salaries và Benefits.
+                </p>
+                <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">candidate</span>
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">remuneration</span>
+                  <span className="bg-slate-800/80 px-2 py-1 rounded-md">probation</span>
+                </div>
               </div>
-              <h3 className="text-xl font-black text-white mb-2 leading-snug">
-                Quản Trị Nhân Sự & Tuyển Dụng
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                Tập trung vào: Job Advertising, Recruiting, Interviewing, Hiring, Salaries và Benefits.
-              </p>
-              <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-400">
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">candidate</span>
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">remuneration</span>
-                <span className="bg-slate-800/80 px-2 py-1 rounded-md">probation</span>
-              </div>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
         </div>
       </section>
 
@@ -704,50 +728,56 @@ export const App: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-6">
-                <Zap className="w-6 h-6" />
+          <div data-aos="fade-up" data-aos-delay="100">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-6">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-snug">Test Trình Độ Đầu Vào</h3>
+                <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
+                  Bài kiểm tra thích ứng chỉ trong 3 phút giúp xác định chính xác vốn từ vựng hiện tại và đề xuất lộ trình ôn tập cá nhân hóa.
+                </p>
+                <a href="https://app.vocalflow.site/placement-test" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 leading-normal">
+                  Làm bài test ngay <ChevronRight className="w-3.5 h-3.5" />
+                </a>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 leading-snug">Test Trình Độ Đầu Vào</h3>
-              <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                Bài kiểm tra thích ứng chỉ trong 3 phút giúp xác định chính xác vốn từ vựng hiện tại và đề xuất lộ trình ôn tập cá nhân hóa.
-              </p>
-              <a href="https://app.vocalflow.site/placement-test" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 leading-normal">
-                Làm bài test ngay <ChevronRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-6">
-                <BookOpen className="w-6 h-6" />
+          <div data-aos="fade-up" data-aos-delay="200">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-6">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-snug">Kho Từ Vựng Cá Nhân Hóa</h3>
+                <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
+                  Tự tạo bộ thẻ riêng, nhập dữ liệu từ Excel, PDF hoặc Word chỉ trong một nốt nhạc với sự hỗ trợ tự động điền nghĩa từ AI.
+                </p>
+                <a href="https://app.vocalflow.site/vocabulary" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 leading-normal">
+                  Khám phá kho từ <ChevronRight className="w-3.5 h-3.5" />
+                </a>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 leading-snug">Kho Từ Vựng Cá Nhân Hóa</h3>
-              <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                Tự tạo bộ thẻ riêng, nhập dữ liệu từ Excel, PDF hoặc Word chỉ trong một nốt nhạc với sự hỗ trợ tự động điền nghĩa từ AI.
-              </p>
-              <a href="https://app.vocalflow.site/vocabulary" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 leading-normal">
-                Khám phá kho từ <ChevronRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-6">
-                <Users className="w-6 h-6" />
+          <div data-aos="fade-up" data-aos-delay="300">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-6">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2 leading-snug">Cộng Đồng & Diễn Đàn</h3>
+                <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
+                  Chia sẻ bộ thẻ flashcard điểm cao, thảo luận các câu khó trong đề thi TOEIC và tham gia thi đấu cùng hàng chục ngàn học viên.
+                </p>
+                <a href="https://app.vocalflow.site/dashboard" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 leading-normal">
+                  Gia nhập cộng đồng <ChevronRight className="w-3.5 h-3.5" />
+                </a>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2 leading-snug">Cộng Đồng & Diễn Đàn</h3>
-              <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                Chia sẻ bộ thẻ flashcard điểm cao, thảo luận các câu khó trong đề thi TOEIC và tham gia thi đấu cùng hàng chục ngàn học viên.
-              </p>
-              <a href="https://app.vocalflow.site/dashboard" className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 leading-normal">
-                Gia nhập cộng đồng <ChevronRight className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
         </div>
       </section>
 
@@ -801,35 +831,37 @@ export const App: React.FC = () => {
               stars: 5
             }
           ].map((item, idx) => (
-            <GlassSurface key={idx} borderRadius={24} className="w-full text-left">
-              <div className="p-7 sm:p-8 flex flex-col justify-between h-full">
-                <div>
-                  <div className="flex items-center gap-1 text-amber-400 mb-4">
-                    {[...Array(item.stars)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic mb-6">
-                    "{item.content}"
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-white/[0.08] flex items-center gap-3">
-                  <img
-                    src={item.avatar}
-                    alt={item.name}
-                    className="w-11 h-11 rounded-full object-cover border border-white/20"
-                  />
+            <div key={idx} data-aos="fade-up" data-aos-delay={(idx + 1) * 100}>
+              <GlassSurface borderRadius={24} className="w-full text-left">
+                <div className="p-7 sm:p-8 flex flex-col justify-between h-full">
                   <div>
-                    <h4 className="text-sm font-bold text-white leading-normal">{item.name}</h4>
-                    <p className="text-[11px] text-slate-400 leading-normal">{item.role}</p>
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider leading-normal">
-                      {item.score} • {item.badge}
-                    </span>
+                    <div className="flex items-center gap-1 text-amber-400 mb-4">
+                      {[...Array(item.stars)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-amber-400" />
+                      ))}
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic mb-6">
+                      "{item.content}"
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/[0.08] flex items-center gap-3">
+                    <img
+                      src={item.avatar}
+                      alt={item.name}
+                      className="w-11 h-11 rounded-full object-cover border border-white/20"
+                    />
+                    <div>
+                      <h4 className="text-sm font-bold text-white leading-normal">{item.name}</h4>
+                      <p className="text-[11px] text-slate-400 leading-normal">{item.role}</p>
+                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider leading-normal">
+                        {item.score} • {item.badge}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </GlassSurface>
+              </GlassSurface>
+            </div>
           ))}
         </div>
       </section>
@@ -846,47 +878,53 @@ export const App: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="text-4xl font-black text-cyan-400 mb-3 leading-none">
-                01
+          <div data-aos="fade-up" data-aos-delay="100">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="text-4xl font-black text-cyan-400 mb-3 leading-none">
+                  01
+                </div>
+                <h4 className="font-bold text-base text-white mb-2 leading-snug">
+                  Định vị trình độ ban đầu
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Làm bài test nhanh 15 câu chuẩn đoán để hệ thống xác định vốn từ hiện tại và tự động phân bổ lộ trình từ vựng mục tiêu.
+                </p>
               </div>
-              <h4 className="font-bold text-base text-white mb-2 leading-snug">
-                Định vị trình độ ban đầu
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Làm bài test nhanh 15 câu chuẩn đoán để hệ thống xác định vốn từ hiện tại và tự động phân bổ lộ trình từ vựng mục tiêu.
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="text-4xl font-black text-indigo-400 mb-3 leading-none">
-                02
+          <div data-aos="fade-up" data-aos-delay="200">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="text-4xl font-black text-indigo-400 mb-3 leading-none">
+                  02
+                </div>
+                <h4 className="font-bold text-base text-white mb-2 leading-snug">
+                  Lặp lại ngắt quãng thích ứng
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Mỗi ngày chỉ cần 10-15 phút ôn tập đúng các thẻ từ sắp quên. Thuật toán FSRS v5 tự động xếp lịch chính xác từng ngày.
+                </p>
               </div>
-              <h4 className="font-bold text-base text-white mb-2 leading-snug">
-                Lặp lại ngắt quãng thích ứng
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Mỗi ngày chỉ cần 10-15 phút ôn tập đúng các thẻ từ sắp quên. Thuật toán FSRS v5 tự động xếp lịch chính xác từng ngày.
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
 
-          <GlassSurface borderRadius={24} className="w-full text-left">
-            <div className="p-7">
-              <div className="text-4xl font-black text-purple-400 mb-3 leading-none">
-                03
+          <div data-aos="fade-up" data-aos-delay="300">
+            <GlassSurface borderRadius={24} className="w-full text-left">
+              <div className="p-7">
+                <div className="text-4xl font-black text-purple-400 mb-3 leading-none">
+                  03
+                </div>
+                <h4 className="font-bold text-base text-white mb-2 leading-snug">
+                  Tự tin làm chủ đề thi
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Chuyển hóa từ vựng thành phản xạ tự nhiên, hiểu sâu ngữ cảnh đề thi TOEIC và bứt phá mục tiêu điểm số.
+                </p>
               </div>
-              <h4 className="font-bold text-base text-white mb-2 leading-snug">
-                Tự tin làm chủ đề thi
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Chuyển hóa từ vựng thành phản xạ tự nhiên, hiểu sâu ngữ cảnh đề thi TOEIC và bứt phá mục tiêu điểm số.
-              </p>
-            </div>
-          </GlassSurface>
+            </GlassSurface>
+          </div>
         </div>
       </section>
 

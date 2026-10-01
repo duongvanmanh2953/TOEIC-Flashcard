@@ -63,15 +63,15 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
   SIM_RESOLUTION = 128,
   DYE_RESOLUTION = 1024,
   CAPTURE_RESOLUTION = 512,
-  DENSITY_DISSIPATION = 2.8,
-  VELOCITY_DISSIPATION = 1.8,
-  PRESSURE = 0.12,
+  DENSITY_DISSIPATION = 3.2,
+  VELOCITY_DISSIPATION = 2.0,
+  PRESSURE = 0.14,
   PRESSURE_ITERATIONS = 20,
-  CURL = 4,
-  SPLAT_RADIUS = 0.22,
-  SPLAT_FORCE = 5500,
+  CURL = 4.5,
+  SPLAT_RADIUS = 0.09,
+  SPLAT_FORCE = 4200,
   SHADING = true,
-  COLOR_UPDATE_SPEED = 8,
+  COLOR_UPDATE_SPEED = 9,
   BACK_COLOR = { r: 0.5, g: 0, b: 0 },
   TRANSPARENT = true,
   RAINBOW_MODE = true,
@@ -1161,17 +1161,17 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
       const r = parseInt(val.slice(0, 2), 16) / 255;
       const g = parseInt(val.slice(2, 4), 16) / 255;
       const b = parseInt(val.slice(4, 6), 16) / 255;
-      return { r: r * 0.16, g: g * 0.16, b: b * 0.16 };
+      return { r: r * 0.32, g: g * 0.32, b: b * 0.32 };
     }
 
     function generateColor(): ColorRGB {
       if (!config.RAINBOW_MODE) {
         return hexToRGB(config.COLOR);
       }
-      const c = HSVtoRGB(Math.random(), 0.85, 1.0);
-      c.r *= 0.18;
-      c.g *= 0.18;
-      c.b *= 0.18;
+      const c = HSVtoRGB(Math.random(), 0.95, 1.0);
+      c.r *= 0.32;
+      c.g *= 0.32;
+      c.b *= 0.32;
       return c;
     }
 
