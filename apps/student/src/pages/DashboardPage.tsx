@@ -345,6 +345,7 @@ export const DashboardPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <QuotaMeter
+                label={t('quota.aiTutor', 'Trợ lý AI Gia sư')}
                 feature="AI_TUTOR"
                 used={quotas.aiTutor?.used ?? quotas.AI_TUTOR?.used ?? 0}
                 limit={isPro ? 200 : (quotas.aiTutor?.limit ?? quotas.AI_TUTOR?.limit ?? 10)}
@@ -353,23 +354,25 @@ export const DashboardPage: React.FC = () => {
                 onUpgrade={() => navigate('/subscription')}
               />
               <QuotaMeter
+                label={t('quota.textToVocab', 'Trích từ vựng AI')}
                 feature="TEXT_TO_VOCAB"
                 used={quotas.textToVocab?.used ?? quotas.TEXT_TO_VOCAB?.used ?? 0}
-                limit={isPro ? 50 : (quotas.textToVocab?.limit ?? quotas.TEXT_TO_VOCAB?.limit ?? 3)}
-                remaining={isPro ? Math.max(0, 50 - (quotas.textToVocab?.used ?? quotas.TEXT_TO_VOCAB?.used ?? 0)) : (quotas.textToVocab?.remaining ?? quotas.TEXT_TO_VOCAB?.remaining ?? 3)}
+                limit={isPro ? 50 : (quotas.textToVocab?.limit ?? quotas.TEXT_TO_VOCAB?.limit ?? 0)}
+                remaining={isPro ? Math.max(0, 50 - (quotas.textToVocab?.used ?? quotas.TEXT_TO_VOCAB?.used ?? 0)) : (quotas.textToVocab?.remaining ?? quotas.TEXT_TO_VOCAB?.remaining ?? 0)}
                 tier={effectiveTier}
                 onUpgrade={() => navigate('/subscription')}
               />
               <QuotaMeter
+                label={t('quota.storyGen', 'Tạo truyện từ vựng AI')}
                 feature="STORY_GEN"
                 used={quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0}
-                limit={isPro ? 20 : (quotas.storyGen?.limit ?? quotas.AI_STORY?.limit ?? 1)}
-                remaining={isPro ? Math.max(0, 20 - (quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0)) : (quotas.storyGen?.remaining ?? quotas.AI_STORY?.remaining ?? 1)}
+                limit={isPro ? 20 : (quotas.storyGen?.limit ?? quotas.AI_STORY?.limit ?? 0)}
+                remaining={isPro ? Math.max(0, 20 - (quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0)) : (quotas.storyGen?.remaining ?? quotas.AI_STORY?.remaining ?? 0)}
                 tier={effectiveTier}
                 onUpgrade={() => navigate('/subscription')}
               />
               <QuotaMeter
-                label="Ghi chú cá nhân"
+                label={t('quota.notes', 'Ghi chú cá nhân')}
                 feature="NOTES"
                 used={notesUsage?.used ?? 0}
                 limit={notesUsage?.unlimited ? -1 : (notesUsage?.limit ?? (isPro ? 500 : 20))}

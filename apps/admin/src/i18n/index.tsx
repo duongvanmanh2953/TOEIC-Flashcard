@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
-import { en } from './locales/en';
-import { vi } from './locales/vi';
+import en from './locales/en.json';
+import vi from './locales/vi.json';
 
 export type Locale = 'vi' | 'en';
 

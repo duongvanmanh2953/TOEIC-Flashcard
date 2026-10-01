@@ -427,6 +427,7 @@ export const AITutorPage: React.FC = () => {
       {quotaStatus && (
         <div className="shrink-0">
           <QuotaMeter
+            label={t('quota.aiTutor', 'Trợ lý AI Gia sư')}
             feature="AI_TUTOR"
             used={isPro ? 0 : (quotaStatus.aiTutor?.used ?? quotaStatus.AI_TUTOR?.used ?? 0)}
             limit={isPro ? -1 : (quotaStatus.aiTutor?.limit ?? quotaStatus.AI_TUTOR?.limit ?? 10)}
