@@ -80,6 +80,12 @@ export class NotesController {
   // Note Endpoints
   // ---------------------------------------------------------------------------
 
+  @Get('notes/usage')
+  @ApiOperation({ summary: 'Get user note storage usage, quota and limit' })
+  getNotesUsage(@CurrentUser('id') userId: string) {
+    return this.notesService.getNotesUsage(userId);
+  }
+
   @Get('notes/count')
   @ApiOperation({ summary: 'Get cached notes count and summary for header badge' })
   getNotesCount(@CurrentUser('id') userId: string) {

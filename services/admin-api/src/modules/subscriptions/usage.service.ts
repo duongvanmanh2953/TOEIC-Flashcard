@@ -12,7 +12,8 @@ export type FeatureKey =
   | 'TEXT_TO_VOCAB'
   | 'PRONUNCIATION'
   | 'MESSAGES'
-  | 'ACCESS_KEYS';
+  | 'ACCESS_KEYS'
+  | 'NOTES';
 
 export interface QuotaStatus {
   feature: FeatureKey;
@@ -114,6 +115,7 @@ export class UsageService {
         PRONUNCIATION: 5,
         MESSAGES: 5,
         ACCESS_KEYS: 0,
+        NOTES: 0,
       };
       const limit = guestLimits[feature] || 0;
       return {
@@ -217,6 +219,23 @@ export class UsageService {
         used = userId
           ? await this.prisma.bankAccessGrant.count({
               where: { createdBy: userId, status: 'ACTIVE' },
+            })
+          : 0;
+        break;
+      }
+
+      case 'NOTES': {
+        const planLimits = sub?.plan?.limits as Record<string, any> | null;
+        if (isPro) {
+          limit = -1;
+        } else if (planLimits?.notes !== undefined && !isNaN(Number(planLimits.notes))) {
+          limit = Number(planLimits.notes);
+        } else {
+          limit = await this.getSystemConfigNumber('FREE_NOTES_LIMIT', 20);
+        }
+        used = userId
+          ? await this.prisma.note.count({
+              where: { userId, isDeleted: false },
             })
           : 0;
         break;

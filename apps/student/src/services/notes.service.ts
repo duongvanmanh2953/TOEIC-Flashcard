@@ -22,6 +22,13 @@ export interface NoteItem {
   tags: string[];
   isPinned: boolean;
   isArchived: boolean;
+  sourceType?: string;
+  sourceId?: string;
+  sourceTitle?: string;
+  sourceUrl?: string;
+  questionId?: string;
+  selectedText?: string;
+  context?: string;
   createdAt: string;
   updatedAt: string;
   category?: {
@@ -30,6 +37,14 @@ export interface NoteItem {
     color?: string;
     icon?: string;
   } | null;
+}
+
+export interface NotesUsage {
+  feature: string;
+  used: number;
+  limit: number;
+  remaining: number;
+  unlimited: boolean;
 }
 
 export interface NotesOverviewCount {
@@ -119,6 +134,13 @@ export const notesService = {
     categoryId?: string;
     tags?: string[];
     isPinned?: boolean;
+    sourceType?: string;
+    sourceId?: string;
+    sourceTitle?: string;
+    sourceUrl?: string;
+    questionId?: string;
+    selectedText?: string;
+    context?: string;
   }): Promise<NoteItem> {
     const res = await api.post('/notes', data);
     return extractApiData<NoteItem>(res, res as any);
@@ -133,6 +155,13 @@ export const notesService = {
       tags?: string[];
       isPinned?: boolean;
       isArchived?: boolean;
+      sourceType?: string;
+      sourceId?: string;
+      sourceTitle?: string;
+      sourceUrl?: string;
+      questionId?: string;
+      selectedText?: string;
+      context?: string;
     },
   ): Promise<NoteItem> {
     const res = await api.patch(`/notes/${id}`, data);
@@ -155,6 +184,17 @@ export const notesService = {
       activeNotes: 0,
       archivedNotes: 0,
       categoriesCount: 0,
+    });
+  },
+
+  async getNotesUsage(): Promise<NotesUsage> {
+    const res = await api.get('/notes/usage');
+    return extractApiData<NotesUsage>(res, {
+      feature: 'notes',
+      used: 0,
+      limit: 20,
+      remaining: 20,
+      unlimited: false,
     });
   },
 };

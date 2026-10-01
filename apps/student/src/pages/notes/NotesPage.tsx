@@ -24,10 +24,12 @@ import {
   NoteItem,
   NoteCategory,
   NotesOverviewCount,
+  NoteUsageResponse,
 } from '../../services/notes.service';
 import { VirtualScrollList } from '../../components/common/VirtualScrollList';
 import { NoteEditor } from '../../components/notes/NoteEditor';
 import { CategoryModal } from '../../components/notes/CategoryModal';
+import { QuotaMeter } from '../../components/common/QuotaMeter';
 
 export const NotesPage: React.FC = () => {
   // State: Categories & Overview
@@ -38,6 +40,7 @@ export const NotesPage: React.FC = () => {
     archivedNotes: 0,
     categoriesCount: 0,
   });
+  const [notesUsage, setNotesUsage] = useState<NoteUsageResponse | null>(null);
 
   // State: Selected Filters & Search
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -68,15 +71,17 @@ export const NotesPage: React.FC = () => {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeRequestSeq = useRef(0);
 
-  // 1. Fetch Categories & Overview Counts
+  // 1. Fetch Categories & Overview Counts & Quota Usage
   const loadCategoriesAndOverview = async () => {
     try {
-      const [cats, counts] = await Promise.all([
+      const [cats, counts, usageRes] = await Promise.all([
         notesService.getCategories(),
         notesService.getNotesCount(),
+        notesService.getNotesUsage().catch(() => null),
       ]);
       setCategories(cats);
       setOverviewCount(counts);
+      if (usageRes) setNotesUsage(usageRes);
     } catch (err) {
       console.error('Failed to load categories/counts:', err);
     }
@@ -490,6 +495,19 @@ export const NotesPage: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Quota / Usage Footer Indicator */}
+          {notesUsage && (
+            <div className="p-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
+              <QuotaMeter
+                label="Hạn mức ghi chú"
+                feature="NOTES"
+                used={notesUsage.used}
+                limit={notesUsage.unlimited ? -1 : notesUsage.limit}
+                remaining={notesUsage.remaining}
+              />
+            </div>
+          )}
         </aside>
 
         {/* =====================================================================

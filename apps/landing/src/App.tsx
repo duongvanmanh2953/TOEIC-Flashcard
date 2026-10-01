@@ -11,24 +11,27 @@ import {
   CheckCircle2,
   TrendingUp,
   Brain,
-  Compass,
-  Flame,
   Award,
   Users,
   Star,
   Globe,
-  Swords,
-  UploadCloud,
-  Smile,
-  Mic,
-  WifiOff,
-  ChevronRight
+  Check,
+  ChevronRight,
+  FileText,
+  MousePointerClick,
+  Layers,
+  ShieldCheck,
+  Clock,
+  HelpCircle,
+  FolderPlus,
+  Compass,
+  Flame,
+  ArrowUpRight,
 } from 'lucide-react';
-import { SplashCursor } from './components/SplashCursor';
 import { GlassSurface } from './components/GlassSurface';
 import { LiquidBackground } from './components/LiquidBackground';
 
-// Multi-language demo card data
+// Multi-language demo card data for Hero preview
 interface LangSample {
   id: 'en' | 'ja' | 'zh' | 'ko' | 'de';
   flag: string;
@@ -53,11 +56,11 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
     word: 'accommodate',
     pronunciation: '/əˈkɑːmədeɪt/',
     pos: 'verb',
-    meaning: 'Cung cấp nơi ở, phòng ở; đáp ứng hoặc giải quyết (nhu cầu, mong muốn)',
+    meaning: 'Cung cấp nơi ở; đáp ứng hoặc giải quyết (nhu cầu, mong muốn)',
     example: '"The new convention center is spacious enough to accommodate up to 2,500 participants."',
     highlight: 'accommodate',
     speechCode: 'en-US',
-    statsLabel: 'Xuất hiện trong 42% đề đọc TOEIC Part 5 & 7'
+    statsLabel: 'Xuất hiện trong 42% đề đọc TOEIC Part 5 & 7',
   },
   ja: {
     id: 'ja',
@@ -67,11 +70,11 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
     word: '改善 (かいぜん)',
     pronunciation: 'Kaizen • かいぜん',
     pos: 'noun / suru verb',
-    meaning: 'Cải tiến liên tục, đổi mới và hoàn thiện quy trình làm việc từng bước một',
+    meaning: 'Cải tiến liên tục, hoàn thiện quy trình từng bước một',
     example: '「工場では生産性を向上させるために、作業プロセスの改善を進めている。」',
     highlight: '改善',
     speechCode: 'ja-JP',
-    statsLabel: 'Thuộc 100 từ vựng kinh doanh cốt lõi JLPT'
+    statsLabel: 'Thuộc 100 từ vựng kinh doanh cốt lõi JLPT',
   },
   zh: {
     id: 'zh',
@@ -85,7 +88,7 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
     example: '「只要坚持每天背单词，你的词汇量就会有质的飞跃。」',
     highlight: '坚持',
     speechCode: 'zh-CN',
-    statsLabel: 'Tần suất xuất hiện cao trong đề thi HSK đọc hiểu'
+    statsLabel: 'Tần suất xuất hiện cao trong đề thi HSK đọc hiểu',
   },
   ko: {
     id: 'ko',
@@ -99,36 +102,35 @@ const MULTI_LANG_SAMPLES: Record<string, LangSample> = {
     example: '「새로운 언어를 배우는 것은 언제나 가치 있는 도전이다.」',
     highlight: '도전',
     speechCode: 'ko-KR',
-    statsLabel: 'Từ vựng trọng tâm trong các bài luận TOPIK II'
+    statsLabel: 'Xuất hiện thường xuyên trong TOPIK Đọc',
   },
   de: {
     id: 'de',
     flag: '🇩🇪',
     langName: 'Tiếng Đức',
-    badge: 'Goethe B2 / Telc',
-    word: 'die Gemütlichkeit',
-    pronunciation: '/ɡəˈmyːtlɪçkaɪt/',
-    pos: 'Feminin (die)',
-    meaning: 'Cảm giác ấm cúng, thư thái, an yên đặc trưng trong văn hóa Đức',
-    example: '„Bei Kerzenlicht und heißem Tee genossen sie die Gemütlichkeit des Abends.“',
-    highlight: 'Gemütlichkeit',
+    badge: 'Goethe-Zertifikat B1-B2',
+    word: 'Zuverlässig',
+    pronunciation: '/ˈtsuːfɛɐ̯ˌlɛsɪç/',
+    pos: 'adjective',
+    meaning: 'Đáng tin cậy, chắc chắn, hoạt động ổn định',
+    example: '"Er ist ein äußerst zuverlässiger Partner bei anspruchsvollen Projekten."',
+    highlight: 'zuverlässiger',
     speechCode: 'de-DE',
-    statsLabel: 'Từ ghép biểu tượng văn hóa Đức & CEFR B2'
-  }
+    statsLabel: 'Từ vựng trọng tâm trong kỳ thi viết B2',
+  },
 };
 
 export const App: React.FC = () => {
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [activeFSRSRating, setActiveFSRSRating] = useState<number | null>(null);
   const [selectedLang, setSelectedLang] = useState<'en' | 'ja' | 'zh' | 'ko' | 'de'>('en');
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [activeLoopStep, setActiveLoopStep] = useState(3); // Interactive selection step demo
+  const [demoSelectedText, setDemoSelectedText] = useState('take immediate responsibility');
+  const [demoSavedToNotes, setDemoSavedToNotes] = useState(false);
 
+  // Initialize smooth scrolling and entrance animation once on mount
   useEffect(() => {
-    // 0. Auto-scroll to top on reload
-    window.scrollTo(0, 0);
-
-    // 1. Initialize Lenis Smooth Scrolling
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
     });
@@ -140,12 +142,11 @@ export const App: React.FC = () => {
     }
     animationFrameId = requestAnimationFrame(raf);
 
-    // 2. Initialize AOS (Animate on Scroll)
     AOS.init({
+      duration: 600,
       once: true,
-      duration: 800,
-      offset: 50,
       easing: 'ease-out-cubic',
+      offset: 40,
     });
 
     return () => {
@@ -154,92 +155,66 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const playWordAudio = (word: string, speechCode: string = 'en-US') => {
-    if ('speechSynthesis' in window) {
-      setIsPlayingAudio(true);
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = speechCode;
-      utterance.rate = 0.9;
-      utterance.onend = () => setIsPlayingAudio(false);
-      utterance.onerror = () => setIsPlayingAudio(false);
-      window.speechSynthesis.speak(utterance);
-    }
+  const handleSpeak = (text: string, langCode: string) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = langCode;
+    utterance.rate = 0.9;
+    utterance.onstart = () => setIsPlayingAudio(true);
+    utterance.onend = () => setIsPlayingAudio(false);
+    utterance.onerror = () => setIsPlayingAudio(false);
+    window.speechSynthesis.speak(utterance);
   };
 
   const currentSample = MULTI_LANG_SAMPLES[selectedLang];
 
   return (
-    <div className="relative min-h-screen text-slate-100 flex flex-col overflow-x-hidden selection:bg-indigo-600 selection:text-white bg-transparent font-sans">
-      {/* 1. Luminous Ambient Dynamic Liquid Canvas Background with Glowing Pools */}
+    <div className="relative min-h-screen text-slate-100 flex flex-col overflow-x-hidden selection:bg-indigo-600 selection:text-white bg-[#060813] font-sans">
+      {/* 1. Static GPU-friendly Ambient Gradient Background */}
       <LiquidBackground />
 
-      {/* 2. Splash Cursor (Compact splat radius & dense vivid fluid, screen blend mode) */}
-      <SplashCursor
-        SIM_RESOLUTION={128}
-        DYE_RESOLUTION={1024}
-        DENSITY_DISSIPATION={3.8}
-        VELOCITY_DISSIPATION={2.0}
-        PRESSURE={0.15}
-        CURL={4.5}
-        SPLAT_RADIUS={0.045}
-        SPLAT_FORCE={4200}
-        RAINBOW_MODE={true}
-      />
-
-      {/* 3. Main Foreground App Content */}
+      {/* 2. Main Foreground App Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Navigation Bar */}
-        <header
-          data-aos="fade-down"
-          data-aos-duration="600"
-          className="sticky top-0 z-50 backdrop-blur-xl bg-[#070a1a]/75 border-b border-white/[0.08] transition-colors duration-300"
-        >
-          <div className="px-4 sm:px-6 py-3.5 sm:py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
+        <header className="sticky top-0 z-50 backdrop-blur-md bg-[#060813]/80 border-b border-white/[0.08] transition-colors">
+          <div className="px-4 sm:px-6 py-3.5 max-w-7xl mx-auto w-full flex items-center justify-between">
             {/* Brand Logo */}
-            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <a href="/" className="flex items-center gap-2.5 shrink-0 group">
               <img
                 src="/vocabflow-logo-256.png"
                 alt="VocabFlow"
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain border border-white/15"
+                className="w-8 h-8 rounded-xl object-contain border border-white/15"
               />
               <div className="flex flex-col text-left">
-                <span className="font-extrabold text-lg sm:text-xl bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent leading-snug">
+                <span className="font-black text-lg bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent leading-snug">
                   VocabFlow
                 </span>
                 <span className="hidden sm:inline-block text-[10px] font-semibold text-slate-400 tracking-wider uppercase leading-none">
-                  Multi-Language Flashcard Platform
+                  Smart Learning Platform
                 </span>
               </div>
-            </div>
+            </a>
 
-            {/* Navigation Links (Single-row layout) */}
-            <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-300">
-              <a
-                href="#languages"
-                className="hover:text-cyan-400 transition py-1 flex items-center gap-1.5"
-              >
-                <Globe className="w-4 h-4 text-cyan-400" />
-                <span>Đa Ngôn Ngữ</span>
+            {/* Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
+              <a href="#quick-actions" className="hover:text-cyan-400 transition py-1">
+                Lối Tắt Học Tập
               </a>
-              <a
-                href="https://app.vocalflow.site/review"
-                className="hover:text-cyan-400 transition py-1"
-              >
-                Smart Review
+              <a href="#whats-new" className="hover:text-cyan-400 transition py-1">
+                Có Gì Mới?
               </a>
-              <a
-                href="#pvp-arena"
-                className="hover:text-cyan-400 transition py-1 flex items-center gap-1.5 text-violet-300"
-              >
-                <Swords className="w-4 h-4 text-violet-400" />
-                <span>Đấu Trường 1v1</span>
+              <a href="#learning-loop" className="hover:text-cyan-400 transition py-1 text-indigo-300 font-bold">
+                Luồng Học Cốt Lõi
               </a>
-              <a
-                href="https://kid.vocalflow.site"
-                className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 transition py-1 px-3 rounded-full bg-amber-500/15 border border-amber-500/30 text-xs font-bold"
-              >
-                Thế Giới Bé
+              <a href="#quick-notes" className="hover:text-cyan-400 transition py-1">
+                Bôi Đen & Ghi Chú
+              </a>
+              <a href="#community" className="hover:text-cyan-400 transition py-1">
+                Cộng Đồng
+              </a>
+              <a href="#progress" className="hover:text-cyan-400 transition py-1">
+                Tiến Độ
               </a>
             </nav>
 
@@ -247,13 +222,13 @@ export const App: React.FC = () => {
             <div className="flex items-center gap-3 shrink-0">
               <a
                 href="https://app.vocalflow.site/login"
-                className="whitespace-nowrap px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-200 hover:text-cyan-400 hover:bg-white/[0.06] transition shrink-0"
+                className="whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-cyan-400 hover:bg-white/[0.06] transition"
               >
                 Đăng nhập
               </a>
               <a
                 href="https://app.vocalflow.site/dashboard"
-                className="whitespace-nowrap btn-glass-primary !py-2 sm:!py-2.5 !px-3.5 sm:!px-5 text-xs sm:text-sm font-bold shrink-0 flex items-center gap-1.5"
+                className="whitespace-nowrap btn-glass-primary !py-2 !px-4 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
               >
                 <span>Bắt đầu học ngay</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -262,902 +237,822 @@ export const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Hero Section */}
-        <section className="relative pt-14 sm:pt-20 pb-16 px-4 sm:px-6 max-w-7xl mx-auto w-full flex flex-col items-center text-center">
-          {/* Luminous Top Pill Badge */}
-          <div
-            data-aos="fade-down"
-            data-aos-delay="100"
-            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full card-brand-effect bg-sky-500/[0.12] border border-sky-400/40 text-sky-200 text-xs sm:text-sm font-bold mb-6 backdrop-blur-xl leading-normal"
-          >
-            <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-            <span>Nền tảng Từ vựng Đa Ngôn Ngữ • Spaced Repetition FSRS v5 • Đấu Trường 1v1</span>
-          </div>
+        {/* =========================================================================
+            SECTION I & III: HERO SECTION (LIGHTWEIGHT, FAST, DIRECT)
+            Answers:
+            1. Tôi đang học gì? (Hệ thống đa ngôn ngữ & luyện thi TOEIC/IELTS chuẩn quốc tế)
+            2. VocalFlow giúp tôi học như thế nào? (Luồng học tích hợp: Học -> Luyện -> Ghi chú -> Ôn ngắt quãng)
+            3. Tính năng nào giúp tôi học nhanh hơn? (Quick Notes 1-click, Smart Learning, Test Bank chi tiết)
+            ========================================================================= */}
+        <section className="relative pt-12 sm:pt-16 pb-14 px-4 sm:px-6 max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            {/* Left Column: Core Value Proposition */}
+            <div className="lg:col-span-7 space-y-6 text-left" data-aos="fade-up">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/25 text-indigo-300 text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span>Nền tảng học thông minh • Performance-First</span>
+              </div>
 
-          {/* Hero Title */}
-          <h1
-            data-aos="fade-up"
-            data-aos-delay="200"
-            className="text-4xl sm:text-6xl md:text-7xl font-black tracking-normal leading-[1.25] sm:leading-[1.2] mb-6 max-w-4xl text-white"
-          >
-            Chinh Phục Mọi Ngôn Ngữ. <br className="hidden sm:block" />
-            <span className="inline-block mt-2 bg-gradient-to-r from-sky-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">
-              Ghi Nhớ Trọn Đời Với AI.
-            </span>
-          </h1>
+              {/* Main Headline */}
+              <div className="space-y-2">
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
+                  Học ít hơn.
+                  <br />
+                  <span className="bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
+                    Nhưng nhớ lâu hơn.
+                  </span>
+                </h1>
+                <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed font-normal pt-1">
+                  Từ vựng, flashcard, bài kiểm tra, cộng đồng và ghi chú trong cùng một luồng học liền mạch.
+                  Không chuyển đổi qua lại giữa hàng tá ứng dụng rời rạc.
+                </p>
+              </div>
 
-          {/* Hero Subtitle */}
-          <p
-            data-aos="fade-up"
-            data-aos-delay="300"
-            className="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal"
-          >
-            Học thông minh Tiếng Anh (TOEIC, IELTS), Tiếng Nhật (JLPT N5-N1), Tiếng Trung (HSK), Tiếng Hàn (TOPIK), Tiếng Đức, Tiếng Pháp, Tiếng Tây Ban Nha. Thuật toán FSRS v5 đo lường độ bền trí nhớ, tự động nhắc nhở đúng{' '}
-            <span className="font-semibold text-cyan-400 underline decoration-cyan-400/40 underline-offset-4">
-              thời điểm vàng
-            </span>{' '}
-            trước khi não bộ quên từ.
-          </p>
+              {/* 3 Core Clarity Pillars */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
+                  <span className="text-[10px] font-black uppercase text-indigo-400 block tracking-wider">
+                    Bạn học gì?
+                  </span>
+                  <p className="text-xs font-bold text-white mt-0.5">
+                    TOEIC, IELTS & 5 ngôn ngữ thực chiến
+                  </p>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
+                  <span className="text-[10px] font-black uppercase text-sky-400 block tracking-wider">
+                    Học thế nào?
+                  </span>
+                  <p className="text-xs font-bold text-white mt-0.5">
+                    Học → Luyện đề → Ghi chú 1 chạm → Ôn SRS
+                  </p>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
+                  <span className="text-[10px] font-black uppercase text-emerald-400 block tracking-wider">
+                    Tăng tốc bằng gì?
+                  </span>
+                  <p className="text-xs font-bold text-white mt-0.5">
+                    Bôi đen lưu note ngay & giải thích đề chi tiết
+                  </p>
+                </div>
+              </div>
 
-          {/* Hero Action Buttons */}
-          <div
-            data-aos="fade-up"
-            data-aos-delay="400"
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto mb-14"
-          >
-            <a
-              href="https://app.vocalflow.site/review"
-              className="btn-glass-primary w-full sm:w-auto !py-4 !px-8 text-base font-bold flex items-center justify-center gap-2.5"
-            >
-              <Sparkles className="w-5 h-5 fill-white/80" />
-              <span>Trải nghiệm Smart Review</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
-            <a
-              href="#languages"
-              className="btn-glass-secondary w-full sm:w-auto !py-4 !px-7 text-base font-bold flex items-center justify-center gap-2"
-            >
-              <Globe className="w-4 h-4 text-indigo-400" />
-              <span>Khám phá 7+ Ngôn ngữ</span>
-            </a>
-            <a
-              href="https://app.vocalflow.site/placement-test"
-              className="btn-glass-secondary w-full sm:w-auto !py-4 !px-6 text-base font-bold text-cyan-300 flex items-center justify-center gap-2"
-            >
-              <Zap className="w-4 h-4 text-amber-400" />
-              <span>Test Trình Độ (Free)</span>
-            </a>
-          </div>
+              {/* Primary & Secondary CTAs */}
+              <div className="pt-3 flex flex-wrap items-center gap-3.5">
+                <a
+                  href="https://app.vocalflow.site/dashboard"
+                  className="btn-glass-primary !py-3 !px-6 text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-600/30 card-hover-smooth"
+                >
+                  <span>Bắt đầu học</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
 
-          {/* Interactive Live Multi-Language Card Preview Showcase */}
-          <div
-            data-aos="zoom-in"
-            data-aos-delay="500"
-            className="w-full max-w-2xl mx-auto mb-16"
-          >
-            {/* Multi-language switcher tabs on top of card */}
-            <div className="flex items-center justify-center flex-wrap gap-2 mb-4">
-              {Object.values(MULTI_LANG_SAMPLES).map((lang) => {
-                const isActive = selectedLang === lang.id;
-                return (
-                  <button
-                    key={lang.id}
-                    onClick={() => setSelectedLang(lang.id as any)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
-                      isActive
-                        ? 'bg-indigo-600 text-white border-indigo-400'
-                        : 'bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 border-white/[0.1]'
-                    }`}
-                  >
-                    <span>{lang.flag}</span>
-                    <span>{lang.langName}</span>
-                  </button>
-                );
-              })}
+                <a
+                  href="#whats-new"
+                  className="btn-glass-secondary !py-3 !px-5 text-sm font-bold flex items-center gap-2 card-hover-smooth"
+                >
+                  <Compass className="w-4 h-4 text-slate-300" />
+                  <span>Khám phá tính năng</span>
+                </a>
+              </div>
             </div>
 
-            <GlassSurface
-              borderRadius={26}
-              borderWidth={0.09}
-              brightness={65}
-              opacity={0.94}
-              blur={14}
-              className="w-full text-left"
-            >
-              <div className="p-6 sm:p-8">
-                {/* Card Header Meta */}
-                <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
-                    <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
-                    <span className="ml-2 text-xs font-bold text-slate-400 tracking-wide uppercase leading-normal">
-                      Flashcard Thích Ứng • {currentSample.flag} {currentSample.langName}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black uppercase px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                      FSRS v5: {activeFSRSRating ? `${activeFSRSRating}d` : '4.2d'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Main Card Content */}
-                <div className="pt-6">
-                  <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                        {currentSample.word}
-                      </h3>
+            {/* Right Column: Lightweight Interactive Sample Card */}
+            <div className="lg:col-span-5" data-aos="fade-up" data-aos-delay="100">
+              <GlassSurface className="p-6 sm:p-7 border border-white/15 space-y-5">
+                {/* Language Switcher Tabs */}
+                <div className="flex items-center justify-between gap-1 p-1 rounded-2xl bg-slate-900/80 border border-white/10">
+                  {(['en', 'ja', 'zh', 'ko', 'de'] as const).map((langId) => {
+                    const sample = MULTI_LANG_SAMPLES[langId];
+                    const isActive = selectedLang === langId;
+                    return (
                       <button
-                        onClick={() => playWordAudio(currentSample.highlight, currentSample.speechCode)}
-                        title={`Nghe phát âm chuẩn ${currentSample.langName}`}
-                        className={`p-2.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 border border-indigo-400/30 transition flex items-center gap-1.5 text-xs font-bold cursor-pointer group ${
-                          isPlayingAudio ? 'ring-2 ring-cyan-400' : ''
+                        key={langId}
+                        onClick={() => setSelectedLang(langId)}
+                        className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition ${
+                          isActive
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                         }`}
                       >
-                        <Volume2 className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-                        <span className="text-slate-200">
-                          {isPlayingAudio ? 'Đang phát...' : 'Phát âm'}
-                        </span>
+                        <span>{sample.flag}</span>
+                        <span className="hidden sm:inline">{sample.langName}</span>
                       </button>
-                    </div>
-                    <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20 w-fit">
-                      {currentSample.pronunciation} • {currentSample.pos}
+                    );
+                  })}
+                </div>
+
+                {/* Card Word Header */}
+                <div className="flex items-start justify-between gap-3 pt-1">
+                  <div>
+                    <span className="inline-block px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 mb-1.5">
+                      {currentSample.badge}
                     </span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                      {currentSample.word}
+                    </h3>
+                    <p className="text-xs text-slate-400 font-mono mt-0.5">
+                      {currentSample.pronunciation} • <span className="italic">{currentSample.pos}</span>
+                    </p>
                   </div>
 
-                  <p className="text-base sm:text-lg font-semibold text-slate-200 mb-5 leading-normal">
+                  <button
+                    onClick={() => handleSpeak(currentSample.word, currentSample.speechCode)}
+                    disabled={isPlayingAudio}
+                    className="p-2.5 rounded-2xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 transition shrink-0"
+                    title="Nghe phát âm chuẩn bản ngữ"
+                  >
+                    <Volume2 className={`w-4 h-4 ${isPlayingAudio ? 'animate-bounce text-cyan-400' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Meaning & Context */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950/60 border border-white/[0.06] text-xs">
+                  <p className="font-semibold text-slate-200 leading-relaxed">
                     {currentSample.meaning}
                   </p>
-
-                  <div className="p-4 rounded-xl bg-slate-900/60 border border-white/[0.08] mb-5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5 leading-normal">
-                      Ví dụ ngữ cảnh thực chiến ({currentSample.badge}):
-                    </p>
-                    <p className="text-sm sm:text-base font-medium text-slate-300 italic leading-relaxed">
-                      {currentSample.example}
-                    </p>
-                  </div>
-
-                  {/* Progress Indicators & AI Insight */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-                    <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                      <div className="flex items-center justify-between text-xs font-bold mb-2">
-                        <span className="text-slate-300">Xác suất nhớ lại</span>
-                        <span className="text-indigo-400 font-black">94% (Rất cao)</span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full w-[94%]"></div>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
-                      <Award className="w-5 h-5 text-emerald-400 shrink-0" />
-                      <p className="text-xs font-medium text-slate-300 leading-normal">
-                        <strong className="text-emerald-400 font-bold">VocabFlow AI:</strong> {currentSample.statsLabel}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Interactive Rating Demo */}
-                  <div className="pt-3 border-t border-white/[0.08]">
-                    <p className="text-xs font-bold text-slate-400 mb-2 leading-normal">
-                      Thử nghiệm phản xạ thuật toán FSRS v5 (chọn mức độ nhớ):
-                    </p>
-                    <div className="grid grid-cols-4 gap-2">
-                      <button
-                        onClick={() => setActiveFSRSRating(1)}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-bold transition-all border ${
-                          activeFSRSRating === 1
-                            ? 'bg-rose-500/30 border-rose-400 text-rose-200'
-                            : 'bg-rose-500/10 hover:bg-rose-500/20 border-rose-500/30 text-rose-300'
-                        }`}
-                      >
-                        <div>Quên</div>
-                        <div className="text-[10px] opacity-75">1 ngày</div>
-                      </button>
-                      <button
-                        onClick={() => setActiveFSRSRating(3)}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-bold transition-all border ${
-                          activeFSRSRating === 3
-                            ? 'bg-amber-500/30 border-amber-400 text-amber-200'
-                            : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
-                        }`}
-                      >
-                        <div>Khó</div>
-                        <div className="text-[10px] opacity-75">3 ngày</div>
-                      </button>
-                      <button
-                        onClick={() => setActiveFSRSRating(7)}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-bold transition-all border ${
-                          activeFSRSRating === 7
-                            ? 'bg-blue-500/30 border-blue-400 text-blue-200'
-                            : 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 text-blue-300'
-                        }`}
-                      >
-                        <div>Nhớ</div>
-                        <div className="text-[10px] opacity-75">7 ngày</div>
-                      </button>
-                      <button
-                        onClick={() => setActiveFSRSRating(14)}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-bold transition-all border ${
-                          activeFSRSRating === 14
-                            ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200'
-                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
-                        }`}
-                      >
-                        <div>Dễ</div>
-                        <div className="text-[10px] opacity-75">14 ngày</div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </GlassSurface>
-          </div>
-
-          {/* Metrics Stats Bar: Perfectly Aligned Grid, Equal Heights, NO boxshadow */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full max-w-5xl mb-24 items-stretch">
-            <div data-aos="fade-up" data-aos-delay="550" className="h-full flex flex-col">
-              <GlassSurface borderRadius={20} className="w-full h-full text-center flex flex-col">
-                <div className="p-5 sm:p-6 h-full flex flex-col justify-center items-center text-center min-h-[130px]">
-                  <div className="text-3xl sm:text-4xl font-black text-cyan-400 leading-none mb-2">
-                    7+
-                  </div>
-                  <p className="text-xs sm:text-sm font-bold text-slate-300 leading-normal">
-                    Ngôn ngữ chuẩn quốc tế
+                  <p className="text-slate-400 italic leading-relaxed pt-1 border-t border-white/[0.06]">
+                    {currentSample.example}
                   </p>
-                  <span className="text-[10px] text-slate-400 mt-1">Anh, Nhật, Trung, Hàn, Đức...</span>
                 </div>
-              </GlassSurface>
-            </div>
 
-            <div data-aos="fade-up" data-aos-delay="650" className="h-full flex flex-col">
-              <GlassSurface borderRadius={20} className="w-full h-full text-center flex flex-col">
-                <div className="p-5 sm:p-6 h-full flex flex-col justify-center items-center text-center min-h-[130px]">
-                  <div className="text-3xl sm:text-4xl font-black text-indigo-400 leading-none mb-2">
-                    98.4%
-                  </div>
-                  <p className="text-xs sm:text-sm font-bold text-slate-300 leading-normal">
-                    Tỷ lệ duy trì trí nhớ 6 tháng
-                  </p>
-                  <span className="text-[10px] text-slate-400 mt-1">Thuật toán FSRS v5 tiên tiến</span>
-                </div>
-              </GlassSurface>
-            </div>
-
-            <div data-aos="fade-up" data-aos-delay="750" className="h-full flex flex-col">
-              <GlassSurface borderRadius={20} className="w-full h-full text-center flex flex-col">
-                <div className="p-5 sm:p-6 h-full flex flex-col justify-center items-center text-center min-h-[130px]">
-                  <div className="text-3xl sm:text-4xl font-black text-emerald-400 leading-none mb-2">
-                    1v1 PvP
-                  </div>
-                  <p className="text-xs sm:text-sm font-bold text-slate-300 leading-normal">
-                    Đấu trường từ vựng trực tiếp
-                  </p>
-                  <span className="text-[10px] text-slate-400 mt-1">Thi đấu Realtime Socket.IO</span>
-                </div>
-              </GlassSurface>
-            </div>
-
-            <div data-aos="fade-up" data-aos-delay="850" className="h-full flex flex-col">
-              <GlassSurface borderRadius={20} className="w-full h-full text-center flex flex-col">
-                <div className="p-5 sm:p-6 h-full flex flex-col justify-center items-center text-center min-h-[130px]">
-                  <div className="text-3xl sm:text-4xl font-black text-amber-400 leading-none mb-2">
-                    24/7 AI
-                  </div>
-                  <p className="text-xs sm:text-sm font-bold text-slate-300 leading-normal">
-                    Gia sư phát âm & Word Bank
-                  </p>
-                  <span className="text-[10px] text-slate-400 mt-1">Tự động import Excel, PDF</span>
+                {/* Real Usage Stat Badge */}
+                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>SRS Chu kỳ nhớ 3 ngày</span>
+                  </span>
+                  <span className="font-medium text-slate-400">{currentSample.statsLabel}</span>
                 </div>
               </GlassSurface>
             </div>
           </div>
         </section>
 
-        {/* 4. Section: Không Gian Đa Ngôn Ngữ Chuyên Sâu (Multi-Language Mastery) */}
-        <section id="languages" className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-          <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 px-3 py-1.5 rounded-full border border-cyan-400/20 inline-block mb-3 leading-normal">
-              Không Giới Hạn TOEIC • Hệ Sinh Thái Toàn Diện
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-snug sm:leading-normal mb-4">
-              Làm Chủ 7+ Ngôn Ngữ Toàn Cầu <br />
-              <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
-                Với Công Nghệ Flashcard Cá Nhân Hóa
+        {/* =========================================================================
+            SECTION IV: QUICK ACTIONS (5 COMPACT CARDS, TRANSLATEY -2PX)
+            1. Học từ vựng
+            2. Ôn Flashcard
+            3. Làm bài kiểm tra
+            4. Khám phá cộng đồng
+            5. Ghi chú
+            ========================================================================= */}
+        <section id="quick-actions" className="py-10 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6" data-aos="fade-up">
+            <div>
+              <span className="text-[11px] font-black text-indigo-400 uppercase tracking-wider block">
+                Truy Cập Nhanh
               </span>
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Mỗi ngôn ngữ sở hữu không gian học tập riêng biệt: từ điển chuyên ngành, phát âm bản xứ chuẩn ngữ điệu, toggle phiên âm Pinyin / Romaji / Furigana và phân cấp chứng chỉ quốc tế.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {/* 1. Tiếng Anh */}
-            <div data-aos="fade-up" data-aos-delay="100" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🇬🇧</span>
-                        <h3 className="text-xl font-black text-white">Tiếng Anh</h3>
-                      </div>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                        TOEIC • IELTS • CEFR
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Kho 600+ từ cốt lõi ETS TOEIC, IELTS Academic 8.0+, Oxford 3000/5000 và kho bài giảng tương tác cho trẻ nhỏ.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
-                    <span>Phát âm US / UK / AU</span>
-                    <span className="text-cyan-400 font-bold">10,000+ từ</span>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            {/* 2. Tiếng Nhật */}
-            <div data-aos="fade-up" data-aos-delay="150" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🇯🇵</span>
-                        <h3 className="text-xl font-black text-white">Tiếng Nhật</h3>
-                      </div>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                        JLPT N5 - N1
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Học bảng chữ cái Hiragana, Katakana, 2136 Hán tự Kanji thường dụng, có toggle Furigana và Romaji tiện lợi.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
-                    <span>Kana-Kanji & Âm Hán Việt</span>
-                    <span className="text-rose-400 font-bold">6,000+ từ</span>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            {/* 3. Tiếng Trung */}
-            <div data-aos="fade-up" data-aos-delay="200" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🇨🇳</span>
-                        <h3 className="text-xl font-black text-white">Tiếng Trung</h3>
-                      </div>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                        HSK 1 - HSK 6
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Phiên âm chuẩn Pinyin, hướng dẫn 4 thanh điệu, chiết tự 214 bộ thủ giúp ghi nhớ chữ Hán sâu sắc và trực quan.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
-                    <span>Chữ giản thể & Pinyin</span>
-                    <span className="text-amber-400 font-bold">5,000+ từ</span>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            {/* 4. Tiếng Hàn */}
-            <div data-aos="fade-up" data-aos-delay="250" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🇰🇷</span>
-                        <h3 className="text-xl font-black text-white">Tiếng Hàn</h3>
-                      </div>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
-                        TOPIK I & II
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Từ vựng Hangul theo chủ đề đời sống, phim ảnh, công sở và cấu trúc ngữ pháp thi chứng chỉ TOPIK các cấp.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
-                    <span>Phiên âm Latin & Hangul</span>
-                    <span className="text-indigo-400 font-bold">4,500+ từ</span>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            {/* 5. Tiếng Đức */}
-            <div data-aos="fade-up" data-aos-delay="300" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🇩🇪</span>
-                        <h3 className="text-xl font-black text-white">Tiếng Đức</h3>
-                      </div>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                        Goethe A1 - C1
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Hệ thống màu sắc phân biệt giống Der / Die / Das thông minh, giải nghĩa các từ ghép phức tạp và dạng số nhiều.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
-                    <span>Màu sắc giống danh từ</span>
-                    <span className="text-emerald-400 font-bold">4,000+ từ</span>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            {/* 6. Tiếng Pháp & Tây Ban Nha */}
-            <div data-aos="fade-up" data-aos-delay="350" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">🇫🇷 🇪🇸</span>
-                        <h3 className="text-xl font-black text-white">Pháp & TBN</h3>
-                      </div>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                        DELF & DELE
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Luyện phản xạ chia thì động từ, giống danh từ Le/La, El/La và ngữ điệu luyến láy sang trọng chuẩn Âu châu.
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
-                    <span>Chia động từ & Ngữ điệu</span>
-                    <span className="text-purple-400 font-bold">7,000+ từ</span>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. Section: Spaced Repetition Engine (FSRS v5) */}
-        <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-          <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-black uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-400/20 inline-block mb-3 leading-normal">
-              Đột Phá Khoa Học Trí Nhớ
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-snug sm:leading-normal mb-4">
-              Động Cơ FSRS v5 Spaced Repetition <br />
-              <span className="bg-gradient-to-r from-sky-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">
-                Vượt Trội Hoàn Toàn SM-2 Cổ Điển
-              </span>
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Các app flashcard truyền thống vẫn sử dụng thuật toán SuperMemo-2 từ năm 1987. VocabFlow nâng cấp lên FSRS v5 mô phỏng chính xác tốc độ phân rã trí nhớ của vỏ não người.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            <div data-aos="fade-up" data-aos-delay="100" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6">
-                      <Brain className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                      Độ Bền & Phản Xạ
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      Tách biệt độ bền ký ức (Stability) và khả năng nhớ lại (Retrievability), không lặp lại vô ích từ đã khắc sâu vào não.
-                    </p>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            <div data-aos="fade-up" data-aos-delay="200" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-6">
-                      <Compass className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                      Ma Trận Ngữ Cảnh
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      Liên kết từ vựng với cấu trúc ngữ pháp thực tế, học trọn vẹn cả cụm từ đi kèm (collocations), thành ngữ và họ từ.
-                    </p>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            <div data-aos="fade-up" data-aos-delay="300" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-6">
-                      <Flame className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                      Diệt "Từ Ký Sinh" (Leech)
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      Tự động nhận diện những từ bạn hay quên hoặc nhầm lẫn, lập tức kích hoạt ví dụ thực tế và giải thích chi tiết mới.
-                    </p>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-
-            <div data-aos="fade-up" data-aos-delay="400" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-6">
-                      <TrendingUp className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                      Tiết Kiệm 38.5% Thời Gian
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      Cắt giảm hơn một phần ba số lần ôn bài so với flashcard thông thường. Đạt mục tiêu điểm số chỉ với 15-20 phút/ngày.
-                    </p>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-          </div>
-        </section>
-
-        {/* 6. Section: Đấu Trường 1v1 PvP Realtime & AI Coach */}
-        <section id="pvp-arena" className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div data-aos="fade-right" className="text-left">
-              <span className="text-xs font-black uppercase tracking-widest text-violet-400 bg-violet-500/10 px-3 py-1.5 rounded-full border border-violet-400/20 inline-block mb-3 leading-normal">
-                Gamification & Realtime Multiplay
-              </span>
-              <h2 className="text-3xl sm:text-5xl font-black text-white leading-snug sm:leading-normal mb-6">
-                Đấu Trường Từ Vựng 1v1 <br />
-                <span className="bg-gradient-to-r from-violet-400 via-indigo-300 to-sky-300 bg-clip-text text-transparent">
-                  Thi Đấu Thời Gian Thực Socket.IO
-                </span>
+              <h2 className="text-xl sm:text-2xl font-black text-white">
+                5 Không Gian Học Tập Cốt Lõi
               </h2>
-              <p className="text-base text-slate-300 mb-6 leading-relaxed">
-                Biến việc học từ vựng thành trò chơi kịch tính! Thách đấu bạn bè hoặc so tài ngẫu nhiên cùng người học trên toàn thế giới qua các chế độ mini-game hấp dẫn.
+            </div>
+            <p className="text-xs text-slate-400 max-w-md">
+              Mỗi module được tối ưu cho một giai đoạn trong chu kỳ tiếp thu và ghi nhớ ngôn ngữ.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5" data-aos="fade-up">
+            {/* Action 1 */}
+            <a
+              href="https://app.vocalflow.site/vocabulary"
+              className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-indigo-400/40 card-hover-smooth flex flex-col justify-between group"
+            >
+              <div className="space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <h3 className="font-extrabold text-sm text-white group-hover:text-indigo-300 transition">
+                  Học từ vựng
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Từ vựng theo chủ đề TOEIC, IELTS & khung CEFR A1-C2.
+                </p>
+              </div>
+              <div className="pt-3 flex items-center gap-1 text-[11px] font-bold text-indigo-400">
+                <span>Vào thư viện</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </a>
+
+            {/* Action 2 */}
+            <a
+              href="https://app.vocalflow.site/review"
+              className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-sky-400/40 card-hover-smooth flex flex-col justify-between group"
+            >
+              <div className="space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <h3 className="font-extrabold text-sm text-white group-hover:text-sky-300 transition">
+                  Ôn Flashcard
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Thuật toán SRS lặp lại ngắt quãng cứu từ sắp quên.
+                </p>
+              </div>
+              <div className="pt-3 flex items-center gap-1 text-[11px] font-bold text-sky-400">
+                <span>Bắt đầu ôn</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </a>
+
+            {/* Action 3 */}
+            <a
+              href="https://app.vocalflow.site/exams"
+              className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-emerald-400/40 card-hover-smooth flex flex-col justify-between group"
+            >
+              <div className="space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                  <Award className="w-4 h-4" />
+                </div>
+                <h3 className="font-extrabold text-sm text-white group-hover:text-emerald-300 transition">
+                  Làm bài kiểm tra
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Ngân hàng đề thi TOEIC chuẩn ETS, có giải thích từng câu.
+                </p>
+              </div>
+              <div className="pt-3 flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                <span>Vào phòng thi</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </a>
+
+            {/* Action 4 */}
+            <a
+              href="https://app.vocalflow.site/community-knowledge"
+              className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-purple-400/40 card-hover-smooth flex flex-col justify-between group"
+            >
+              <div className="space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                  <Users className="w-4 h-4" />
+                </div>
+                <h3 className="font-extrabold text-sm text-white group-hover:text-purple-300 transition">
+                  Khám phá cộng đồng
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Bộ đề, kinh nghiệm và hỏi đáp do học viên cùng chia sẻ.
+                </p>
+              </div>
+              <div className="pt-3 flex items-center gap-1 text-[11px] font-bold text-purple-400">
+                <span>Xem bảng tin</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </a>
+
+            {/* Action 5 */}
+            <a
+              href="https://app.vocalflow.site/notes"
+              className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-amber-400/40 card-hover-smooth flex flex-col justify-between group"
+            >
+              <div className="space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <h3 className="font-extrabold text-sm text-white group-hover:text-amber-300 transition">
+                  Ghi chú cá nhân
+                </h3>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Ghi chú gắn nguồn gốc từ đề thi & bài viết cộng đồng.
+                </p>
+              </div>
+              <div className="pt-3 flex items-center gap-1 text-[11px] font-bold text-amber-400">
+                <span>Mở sổ ghi chú</span>
+                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </a>
+          </div>
+        </section>
+
+        {/* =========================================================================
+            SECTION V: WHAT'S NEW ("CÓ GÌ MỚI?")
+            Real features only:
+            - Smart Learning
+            - Test Bank
+            - Community
+            - Quick Notes (Bôi đen & lưu note)
+            - Learning Progress
+            ========================================================================= */}
+        <section id="whats-new" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div className="space-y-3 mb-10 text-left" data-aos="fade-up">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/25 text-cyan-300 text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Nâng Cấp Mới Thực Tế</span>
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              Có gì mới trên VocabFlow?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+              Hệ thống được thiết kế lại xoay quanh tính hiệu quả trong từng phút học thực tế của bạn.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-aos="fade-up">
+            {/* Feature 1: Smart Learning */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-indigo-400/30 card-hover-smooth space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-black">
+                <Brain className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase text-indigo-400 tracking-wider">
+                  Trí Tuệ Nhân Tạo & SRS
+                </span>
+                <h3 className="text-lg font-black text-white">Smart Learning</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Tự động tính toán xác suất quên của từng từ dựa trên lịch sử phản xạ thực tế.
+                Chỉ ôn đúng từ cần ôn, tiết kiệm 70% thời gian so với học thụ động.
               </p>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3 text-sm text-slate-200 leading-normal">
-                  <Swords className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Word Match & Speed Scramble:</strong> Tranh đua tốc độ nối từ với nghĩa trong 60 giây nghẹt thở.
-                  </span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-200 leading-normal">
-                  <CheckCircle2 className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Bảng Xếp Hạng & Rank Tiers:</strong> Tích lũy EXP, thăng cấp từ Đồng (Bronze) lên Thách Đấu (Grandmaster).
-                  </span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-200 leading-normal">
-                  <Mic className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong>Gia Sư AI Luyện Nói 24/7:</strong> Đối thoại trực tiếp, sửa lỗi phát âm và phản hồi ngữ cảnh với độ trễ siêu thấp dưới 150ms.
-                  </span>
-                </li>
-              </ul>
-
-              <a
-                href="https://app.vocalflow.site/dashboard"
-                className="btn-glass-primary !py-3.5 !px-8 text-sm font-bold inline-flex items-center gap-2"
-              >
-                <span>Tham gia Đấu Trường ngay</span>
-                <ArrowRight className="w-4 h-4" />
-              </a>
+              <div className="pt-2 text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Memory Rescue cảnh báo từ nguy cơ</span>
+              </div>
             </div>
 
-            <div data-aos="fade-left">
-              <GlassSurface borderRadius={28} className="w-full text-left">
-                <div className="p-7 sm:p-9">
-                  <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-violet-300 font-bold">
-                        PvP
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white leading-normal">Đấu Trường Realtime</h4>
-                        <span className="text-[11px] text-emerald-400 flex items-center gap-1 leading-normal">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                          Phòng thi đấu trực tuyến
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold text-slate-300 bg-indigo-500/20 px-3 py-1 rounded-md border border-indigo-500/30 leading-normal">
-                      Rank: Kim Cương II
-                    </span>
-                  </div>
-
-                  {/* Battle Match Simulation */}
-                  <div className="space-y-4 mb-6">
-                    <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs sm:text-sm text-slate-200 leading-relaxed">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-cyan-400">Vòng 3: Nối từ đồng nghĩa (10s)</span>
-                        <span className="text-xs font-black text-rose-400">⏱️ 00:04</span>
-                      </div>
-                      <p className="text-slate-300">
-                        Từ khóa: <strong className="text-white font-black text-base">"pragmatic"</strong>
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400 text-xs font-bold text-emerald-200 text-center">
-                        ✓ realistic / practical
-                      </div>
-                      <div className="p-3 rounded-xl bg-slate-800/80 border border-white/[0.08] text-xs font-bold text-slate-400 text-center">
-                        theoretical
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08] flex items-center justify-between text-xs">
-                      <span className="text-slate-300">Tỉ số hiện tại:</span>
-                      <div className="flex items-center gap-3 font-black">
-                        <span className="text-cyan-400">Bạn: 2,450 pts</span>
-                        <span className="text-slate-500">VS</span>
-                        <span className="text-amber-400">Đối thủ: 2,120 pts</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-900/90 border border-white/[0.08] flex items-center justify-between text-xs text-slate-400 leading-normal">
-                    <span>Kết nối Socket.IO P2P</span>
-                    <span className="text-cyan-400 font-bold">Độ trễ: 18ms</span>
-                  </div>
-                </div>
-              </GlassSurface>
-            </div>
-          </div>
-        </section>
-
-        {/* 7. Section: Smart Features (Word Bank, File Import, Kids, Offline) */}
-        <section id="smart-features" className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-          <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-black uppercase tracking-widest text-sky-400 bg-sky-500/10 px-3 py-1.5 rounded-full border border-sky-400/20 inline-block mb-3 leading-normal">
-              Tính Năng Đột Phá
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-snug sm:leading-normal mb-4">
-              Không Chỉ Là Flashcard Đơn Thuần
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              VocabFlow cung cấp trọn bộ công cụ mạnh mẽ hỗ trợ mọi nhu cầu học tập của bạn, từ học sinh nhỏ tuổi tới người đi làm bận rộn.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-            {/* Feature 1: Smart Word Bank & Import */}
-            <div data-aos="fade-up" data-aos-delay="100" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-6">
-                      <UploadCloud className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                      Tự Tạo Kho Từ • Nhập File Tự Động
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Nhập danh sách từ vựng từ Excel, CSV, file PDF tài liệu hoặc chụp ảnh OCR. AI tự động tra phiên âm, dịch nghĩa và sinh câu ví dụ mẫu trong 3 giây.
-                    </p>
-                  </div>
-                  <a
-                    href="https://app.vocalflow.site/vocabulary"
-                    className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1 leading-normal pt-2"
-                  >
-                    Khám phá Word Bank <ChevronRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </GlassSurface>
+            {/* Feature 2: Test Bank */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-emerald-400/30 card-hover-smooth space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-black">
+                <Award className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">
+                  Đề Thi Chuẩn ETS
+                </span>
+                <h3 className="text-lg font-black text-white">Test Bank Toàn Diện</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Làm bài kiểm tra có bấm giờ, chấm điểm tự động và xem ngay giải thích chi tiết
+                từng đáp án A, B, C, D cùng phân tích ngữ pháp liên quan.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Chế độ ôn riêng các câu làm sai</span>
+              </div>
             </div>
 
-            {/* Feature 2: Kids English World */}
-            <div data-aos="fade-up" data-aos-delay="200" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-6">
-                      <Smile className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                      Thế Giới Tiếng Anh Cho Trẻ Em (Kids)
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Phân hệ dành riêng cho các bé với đồ họa hoạt hình dễ thương, âm thanh vui nhộn, mini-game nhận diện mặt chữ giúp trẻ thích thú tiếp cận ngôn ngữ tự nhiên.
-                    </p>
-                  </div>
-                  <a
-                    href="https://kid.vocalflow.site"
-                    className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1 leading-normal pt-2"
-                  >
-                    Vào Thế Giới Bé <ChevronRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </GlassSurface>
+            {/* Feature 3: Community */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-purple-400/30 card-hover-smooth space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center font-black">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase text-purple-400 tracking-wider">
+                  Tri Thức Mở
+                </span>
+                <h3 className="text-lg font-black text-white">Cộng Đồng Học Tập</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Khám phá các bài phân tích đề, mẹo tránh bẫy Part 5 & 7 và bài giảng chất lượng
+                được chia sẻ bởi giảng viên và các học viên điểm cao.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Thảo luận, lưu trữ và tương tác 2 chiều</span>
+              </div>
             </div>
 
-            {/* Feature 3: Offline-First IndexedDB */}
-            <div data-aos="fade-up" data-aos-delay="300" className="h-full flex flex-col">
-              <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                <div className="p-7 flex flex-col justify-between h-full">
-                  <div>
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-6">
-                      <WifiOff className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-2 leading-snug">
-                      100% Offline-First (Không Cần Mạng)
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">
-                      Lưu trữ hoàn toàn dữ liệu thẻ học trên trình duyệt bằng IndexedDB. Ôn bài trên máy bay, tàu điện hay vùng mất sóng, dữ liệu sẽ tự động đồng bộ khi online.
-                    </p>
-                  </div>
-                  <span className="text-xs font-bold text-emerald-400 flex items-center gap-1 leading-normal pt-2">
-                    ✓ Hoạt động mọi lúc mọi nơi
-                  </span>
-                </div>
-              </GlassSurface>
+            {/* Feature 4: Quick Notes */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-amber-400/30 card-hover-smooth space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-amber-600/20 text-amber-400 flex items-center justify-center font-black">
+                <MousePointerClick className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
+                  Tính Năng Mới Đột Phá
+                </span>
+                <h3 className="text-lg font-black text-white">Quick Notes 1-Click</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Bôi đen bất kỳ cụm từ hay câu nào trong đề thi hoặc bài viết cộng đồng → thanh
+                công cụ nổi tức thì xuất hiện để lưu thẳng vào sổ ghi chép có gắn nguồn.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Tự động liên kết nguồn đề và câu hỏi</span>
+              </div>
+            </div>
+
+            {/* Feature 5: Learning Progress */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-sky-400/30 card-hover-smooth space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-sky-600/20 text-sky-400 flex items-center justify-center font-black">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase text-sky-400 tracking-wider">
+                  Phân Tích Dữ Liệu
+                </span>
+                <h3 className="text-lg font-black text-white">Tiến Độ Chuẩn CEFR</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Biết chính xác bạn đang ở đâu trên thang đo A1 đến C2. Xem biểu đồ độ bền trí nhớ,
+                tính đều đặn của chuỗi Streak và tốc độ phản xạ.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Dự báo số lượng từ vựng cần ôn mỗi ngày</span>
+              </div>
+            </div>
+
+            {/* Feature 6: Admin Quotas & Limits */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] hover:border-rose-400/30 card-hover-smooth space-y-4">
+              <div className="w-10 h-10 rounded-2xl bg-rose-600/20 text-rose-400 flex items-center justify-center font-black">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">
+                  Bảo Vệ Tài Nguyên
+                </span>
+                <h3 className="text-lg font-black text-white">Quota Enforced</h3>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Hệ thống hạn mức ghi chú và tính năng được cấu hình động theo Role/Plan từ Admin,
+                thực thi giao dịch phân tán backend chống trùng lặp và race condition.
+              </p>
+              <div className="pt-2 text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Hiển thị trực quan quota trên Student Dashboard</span>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* 8. Section: Testimonials & Reviews */}
-        <section id="reviews" className="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-          <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-400/20 inline-block mb-3 leading-normal">
-              Đánh Giá Từ Người Dùng
+        {/* =========================================================================
+            SECTION VI: CORE LEARNING LOOP (LUỒNG HỌC CỐT LÕI)
+            Học → Luyện đề → Phát hiện điều chưa hiểu → Bôi đen → Thêm vào ghi chú → Ôn lại
+            ========================================================================= */}
+        <section id="learning-loop" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-12" data-aos="fade-up">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/25 text-indigo-300 text-xs font-bold">
+              <Brain className="w-3.5 h-3.5" />
+              <span>Quy Trình Học Tập Khép Kín</span>
             </span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-snug sm:leading-normal mb-4">
-              Được Tin Dùng Bởi Hơn 15,000+ <br />
-              <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
-                Người Học Đa Ngôn Ngữ Khắp Toàn Quốc
-              </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              Luồng Học Cốt Lõi Tại VocabFlow
             </h2>
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              Trải nghiệm thực tế từ các học viên bứt phá điểm số chứng chỉ và làm chủ vốn từ tự nhiên cùng VocabFlow.
+            <p className="text-xs sm:text-sm text-slate-400">
+              Không học vẹt rời rạc. Mỗi lỗ hổng kiến thức phát hiện khi làm bài đều được
+              đưa ngay vào chu trình ghi nhớ dài hạn.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+          {/* Interactive Steps Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3" data-aos="fade-up">
             {[
               {
-                name: 'Nguyễn Minh Quân',
-                role: 'Sinh viên ĐH Bách Khoa HN',
-                score: '915 TOEIC & JLPT N2',
-                badge: 'Học song song Anh - Nhật',
-                content:
-                  'Trước đây mình dùng Anki nhưng giao diện chán và SM-2 rất dễ dồn bài. Chuyển sang VocabFlow với FSRS v5, vừa luyện 600 từ TOEIC vừa học Hán tự Kanji cực kỳ nhàn, số từ phải ôn mỗi ngày giảm gần 40%!',
-                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                stars: 5
+                step: 1,
+                title: 'Học',
+                desc: 'Nắm từ vựng & cấu trúc ngữ pháp',
+                icon: BookOpen,
+                color: 'text-indigo-400',
+                bg: 'bg-indigo-500/15',
               },
               {
-                name: 'Trần Thị Phương Mai',
-                role: 'Chuyên viên Kiểm toán Big4',
-                score: 'HSK 5 & IELTS 7.5',
-                badge: 'Tăng tốc học từ',
-                content:
-                  'Tính năng nhập file Excel tạo deck tự động quá tuyệt vời! Mình xuất danh sách từ vựng chuyên ngành tài chính ra, VocabFlow tự điền Pinyin và nghĩa chuẩn xác, tranh thủ 15 phút nghỉ trưa là ôn xong.',
-                avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-                stars: 5
+                step: 2,
+                title: 'Luyện',
+                desc: 'Làm đề thi thử bấm giờ thực tế',
+                icon: Award,
+                color: 'text-sky-400',
+                bg: 'bg-sky-500/15',
               },
               {
-                name: 'Lê Hoàng Nam',
-                role: 'Kỹ sư phần mềm tại Nhật',
-                score: 'JLPT N1 & Goethe B1',
-                badge: 'Vượt mục tiêu làm việc',
-                content:
-                  'Chế độ Đấu trường PvP 1v1 làm mình nghiện học từ vựng mỗi tối. Thách đấu cùng các bạn trong cộng đồng vừa vui vừa nhớ lâu kinh khủng, phản xạ từ vựng tiếng Nhật nảy số tự nhiên.',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-                stars: 5
-              }
-            ].map((item, idx) => (
-              <div key={idx} data-aos="fade-up" data-aos-delay={(idx + 1) * 100} className="h-full flex flex-col">
-                <GlassSurface borderRadius={24} className="w-full h-full text-left flex flex-col">
-                  <div className="p-7 sm:p-8 flex flex-col justify-between h-full">
-                    <div>
-                      <div className="flex items-center gap-1 text-amber-400 mb-4">
-                        {[...Array(item.stars)].map((_, i) => (
-                          <Star key={i} className="w-4 h-4 fill-amber-400" />
-                        ))}
+                step: 3,
+                title: 'Phát hiện',
+                desc: 'Nhận ra câu sai & cụm từ chưa hiểu',
+                icon: HelpCircle,
+                color: 'text-amber-400',
+                bg: 'bg-amber-500/15',
+              },
+              {
+                step: 4,
+                title: 'Bôi đen',
+                desc: 'Chọn text ngay trên bài thi',
+                icon: MousePointerClick,
+                color: 'text-rose-400',
+                bg: 'bg-rose-500/15',
+              },
+              {
+                step: 5,
+                title: 'Thêm note',
+                desc: 'Lưu 1-click có gắn nguồn gốc đề',
+                icon: FileText,
+                color: 'text-purple-400',
+                bg: 'bg-purple-500/15',
+              },
+              {
+                step: 6,
+                title: 'Ôn lại',
+                desc: 'SRS ngắt quãng khóa vào trí nhớ',
+                icon: TrendingUp,
+                color: 'text-emerald-400',
+                bg: 'bg-emerald-500/15',
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activeLoopStep === item.step;
+              return (
+                <div
+                  key={item.step}
+                  onClick={() => setActiveLoopStep(item.step)}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer card-hover-smooth flex flex-col justify-between ${
+                    isActive
+                      ? 'bg-slate-800/90 border-indigo-400 shadow-md shadow-indigo-500/10'
+                      : 'bg-white/[0.03] border-white/[0.08] hover:border-white/20'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-slate-500">
+                        Bước {item.step}
+                      </span>
+                      <div className={`w-7 h-7 rounded-xl ${item.bg} ${item.color} flex items-center justify-center`}>
+                        <Icon className="w-3.5 h-3.5" />
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic mb-6">
-                        "{item.content}"
-                      </p>
                     </div>
-
-                    <div className="pt-4 border-t border-white/[0.08] flex items-center gap-3">
-                      <img
-                        src={item.avatar}
-                        alt={item.name}
-                        className="w-11 h-11 rounded-full object-cover border border-white/20"
-                      />
-                      <div>
-                        <h4 className="text-sm font-bold text-white leading-normal">{item.name}</h4>
-                        <p className="text-[11px] text-slate-400 leading-normal">{item.role}</p>
-                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wider leading-normal">
-                          {item.score} • {item.badge}
-                        </span>
-                      </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-white">{item.title}</h4>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-snug">{item.desc}</p>
                     </div>
                   </div>
-                </GlassSurface>
-              </div>
-            ))}
+                  {isActive && (
+                    <div className="mt-3 pt-2 border-t border-white/10 flex items-center gap-1 text-[10px] font-bold text-indigo-300">
+                      <Check className="w-3 h-3 text-indigo-400" />
+                      <span>Đang chọn</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        {/* 9. Bottom Call to Action Banner */}
-        <section className="py-16 px-4 sm:px-6 max-w-5xl mx-auto w-full">
-          <div data-aos="zoom-in">
-            <GlassSurface
-              borderRadius={32}
-              borderWidth={0.12}
-              brightness={70}
-              className="w-full p-8 sm:p-14 text-center relative overflow-hidden"
-            >
-              <div className="max-w-xl mx-auto relative z-10">
-                <h2 className="text-2xl sm:text-4xl font-black mb-4 leading-snug text-white">
-                  Làm chủ từ vựng đa ngôn ngữ ngay hôm nay
-                </h2>
-                <p className="text-sm sm:text-base text-slate-300 mx-auto mb-8 leading-relaxed font-normal">
-                  Trải nghiệm công nghệ FSRS v5 và kho từ vựng đa dạng hoàn toàn miễn phí trên nền tảng VocabFlow AI.
-                </p>
+        {/* =========================================================================
+            SECTION VII: TEXT SELECTION & "THÊM VÀO GHI CHÚ" SHOWCASE
+            Demonstrates: Bôi đen text trong Test và Community → Floating toolbar xuất hiện
+            ========================================================================= */}
+        <section id="quick-notes" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left: Explanation */}
+            <div className="lg:col-span-6 space-y-5 text-left" data-aos="fade-up">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/25 text-amber-300 text-xs font-bold">
+                <MousePointerClick className="w-3.5 h-3.5" />
+                <span>Trải Nghiệm Độc Quyền</span>
+              </span>
 
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                Bôi đen bất kỳ đâu.
+                <br />
+                <span className="bg-gradient-to-r from-amber-300 via-rose-300 to-indigo-300 bg-clip-text text-transparent">
+                  Lưu vào ghi chú tức thì.
+                </span>
+              </h2>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Khi làm bài kiểm tra hoặc đọc bài giảng trong cộng đồng, chỉ cần dùng chuột bôi đen
+                cụm từ bạn muốn lưu. Thanh công cụ nổi thông minh sẽ xuất hiện ngay phía trên
+                đoạn text được chọn.
+              </p>
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">Tự động giữ nguồn tài liệu</span>
+                    <span className="text-[11px] text-slate-400">
+                      Ghi chú ghi nhớ chính xác nó đến từ Bài thi số mấy, Câu hỏi nào hay Bài viết cộng đồng nào.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">Chống trùng lặp thông minh</span>
+                    <span className="text-[11px] text-slate-400">
+                      Không tạo spam ghi chú trùng lặp nếu bạn bôi đen lại cùng một nội dung từ cùng nguồn.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="text-xs font-bold text-white block">Kiểm soát hạn mức theo Role</span>
+                    <span className="text-[11px] text-slate-400">
+                      Admin cấu hình hạn mức linh hoạt cho từng gói, backend bảo vệ bằng database transaction.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Interactive Visual Simulation */}
+            <div className="lg:col-span-6" data-aos="fade-up" data-aos-delay="100">
+              <div className="p-6 rounded-3xl bg-slate-900 border border-white/15 space-y-4 shadow-xl">
+                {/* Simulated Test Question Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white font-black text-[11px]">
+                      Câu 24 • TOEIC Part 5
+                    </span>
+                    <span className="text-slate-400 font-semibold">Incomplete Sentences</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                    Mô phỏng thực tế
+                  </span>
+                </div>
+
+                {/* Question Text with Simulated Selection */}
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/[0.08] relative">
+                  {/* Floating Action Tooltip Simulator */}
+                  <div className="absolute -top-4 left-24 z-20 animate-fade-in">
+                    <button
+                      onClick={() => {
+                        setDemoSavedToNotes(true);
+                        setTimeout(() => setDemoSavedToNotes(false), 3000);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-lg shadow-indigo-600/40 flex items-center gap-1.5 transition active:scale-95"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>{demoSavedToNotes ? '✓ Đã lưu vào ghi chú!' : 'Thêm vào ghi chú'}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-sm font-semibold text-slate-300 leading-relaxed select-text">
+                    "The project director promised to{' '}
+                    <span className="bg-indigo-600/40 text-white px-1.5 py-0.5 rounded border border-indigo-500/60 font-bold">
+                      {demoSelectedText}
+                    </span>{' '}
+                    for resolving any unforeseen discrepancies in the quarterly budget."
+                  </p>
+                </div>
+
+                {/* Explanation Area */}
+                <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-800/40 space-y-1 text-xs text-slate-300">
+                  <div className="flex items-center gap-1.5 font-bold text-indigo-400">
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    <span>Giải thích:</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    Cụm cố định: <strong className="text-white">take responsibility for something</strong> (chịu trách nhiệm về điều gì).
+                    Cần một trạng từ 'immediate' bổ nghĩa để tạo nghĩa 'chịu trách nhiệm ngay lập tức'.
+                  </p>
+                </div>
+
+                {/* Saved Note Card Feedback */}
+                <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-white block">Sổ ghi chú đã liên kết:</span>
+                      <span className="text-[11px] text-slate-400">
+                        Nguồn: Đề thi TOEIC ETS #4 → Part 5 → Câu 24
+                      </span>
+                    </div>
+                  </div>
                   <a
-                    href="https://app.vocalflow.site/review"
-                    className="btn-glass-primary !py-4 !px-9 text-sm font-extrabold flex items-center justify-center gap-2"
+                    href="https://app.vocalflow.site/notes"
+                    className="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 font-bold text-[11px] border border-indigo-500/30 transition"
                   >
-                    <span>Học thử miễn phí</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                  <a
-                    href="https://app.vocalflow.site/placement-test"
-                    className="btn-glass-secondary !py-4 !px-8 text-sm font-bold flex items-center justify-center gap-2"
-                  >
-                    Làm bài test trình độ
+                    Xem ghi chú
                   </a>
                 </div>
               </div>
-            </GlassSurface>
+            </div>
           </div>
         </section>
 
-        {/* 10. Footer */}
-        <footer className="py-12 border-t border-white/[0.08] bg-[#04060d]/90 text-xs text-slate-400">
-          <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <img src="/vocabflow-logo-256.png" alt="VocabFlow" className="w-6 h-6 rounded-md object-contain" />
-              <span className="font-extrabold text-slate-200 text-sm leading-normal">VocabFlow AI</span>
-              <span className="leading-normal">— Multi-Language Spaced Repetition & Realtime PvP Platform</span>
+        {/* =========================================================================
+            SECTION VIII: LEARNING PROGRESS & ANALYTICS SHOWCASE
+            ========================================================================= */}
+        <section id="progress" className="py-14 px-4 sm:px-6 max-w-7xl mx-auto w-full border-t border-white/[0.06]">
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-10" data-aos="fade-up">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/25 text-emerald-300 text-xs font-bold">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Đo Lường Trực Quan</span>
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+              Biết Bạn Đang Ở Đâu & Cần Cải Thiện Gì
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400">
+              Không còn mơ hồ về năng lực. Bảng thống kê hiển thị thời gian học, độ bền trí nhớ và mức độ làm chủ từng cấp độ.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-aos="fade-up">
+            {/* Metric 1 */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-400">Độ Bền Trí Nhớ (SRS)</span>
+                <span className="text-xs font-extrabold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  Tối ưu
+                </span>
+              </div>
+              <p className="text-3xl font-black text-white">88.4%</p>
+              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '88%' }} />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Xác suất gợi nhớ từ vựng chính xác khi gặp lại trong bài đọc/nghe thực tế.
+              </p>
             </div>
-            <div className="flex items-center gap-6 text-slate-400 leading-normal">
-              <a href="https://app.vocalflow.site" className="hover:text-white transition">Học Viên</a>
-              <a href="https://kid.vocalflow.site" className="hover:text-white transition">Trẻ Em</a>
-              <a href="https://admin.vocalflow.site" className="hover:text-white transition">Quản Trị</a>
-              <span>© 2026 VocabFlow. All rights reserved.</span>
+
+            {/* Metric 2 */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-400">Chuỗi Ngày Học (Streak)</span>
+                <span className="text-xs font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                  Đều đặn
+                </span>
+              </div>
+              <p className="text-3xl font-black text-white">14 Ngày</p>
+              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full bg-amber-500 rounded-full" style={{ width: '92%' }} />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Duy trì thói quen học ngắt quãng 10-15 phút mỗi ngày thay vì nhồi nhét.
+              </p>
+            </div>
+
+            {/* Metric 3 */}
+            <div className="p-6 rounded-3xl bg-slate-900/60 border border-white/[0.08] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-slate-400">Độ Phủ CEFR B1 - C1</span>
+                <span className="text-xs font-extrabold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                  Chuẩn hóa
+                </span>
+              </div>
+              <p className="text-3xl font-black text-white">1,420 Từ</p>
+              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full" style={{ width: '76%' }} />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Đã thành thạo 76% lượng từ vựng cốt lõi thường xuất hiện trong đề thi TOEIC 750+.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* =========================================================================
+            SECTION IX: FINAL CTA
+            ========================================================================= */}
+        <section className="py-16 px-4 sm:px-6 max-w-5xl mx-auto w-full text-center" data-aos="fade-up">
+          <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-br from-indigo-900/50 via-slate-900 to-slate-950 border border-indigo-500/30 space-y-6 shadow-2xl relative overflow-hidden">
+            <div className="space-y-3 relative z-10 max-w-xl mx-auto">
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                Sẵn sàng bứt phá mục tiêu ngôn ngữ của bạn?
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Tham gia cùng hàng ngàn học viên đang sử dụng VocabFlow để học thông minh hơn,
+                làm đề thực chiến và lưu ghi chép 1 chạm mỗi ngày.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3.5 relative z-10 pt-2">
+              <a
+                href="https://app.vocalflow.site/dashboard"
+                className="btn-glass-primary !py-3 !px-7 text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-indigo-600/40 card-hover-smooth"
+              >
+                <span>Bắt đầu học miễn phí</span>
+                <ArrowRight className="w-4 h-4" />
+              </a>
+
+              <a
+                href="https://app.vocalflow.site/login"
+                className="btn-glass-secondary !py-3 !px-6 text-sm font-bold card-hover-smooth"
+              >
+                Đăng nhập tài khoản
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-auto py-8 px-4 sm:px-6 border-t border-white/[0.08] text-xs text-slate-500">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <img
+                src="/vocabflow-logo-256.png"
+                alt="VocabFlow"
+                className="w-5 h-5 rounded-md object-contain opacity-80"
+              />
+              <span className="font-bold text-slate-400">VocabFlow</span>
+              <span>• Nền tảng học đa ngôn ngữ & flashcard thông minh</span>
+            </div>
+
+            <div className="flex items-center gap-5 text-slate-400 font-medium">
+              <a href="https://app.vocalflow.site/vocabulary" className="hover:text-white transition">
+                Từ vựng
+              </a>
+              <a href="https://app.vocalflow.site/exams" className="hover:text-white transition">
+                Ngân hàng đề
+              </a>
+              <a href="https://app.vocalflow.site/community-knowledge" className="hover:text-white transition">
+                Cộng đồng
+              </a>
+              <a href="https://app.vocalflow.site/notes" className="hover:text-white transition">
+                Ghi chú
+              </a>
             </div>
           </div>
         </footer>

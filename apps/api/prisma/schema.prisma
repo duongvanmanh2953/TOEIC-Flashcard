@@ -1564,6 +1564,13 @@ model Note {
   isArchived       Boolean       @default(false)
   isDeleted        Boolean       @default(false)
   deletedAt        DateTime?
+  sourceType       String?       // "test" | "community_post" | "vocabulary" | "lesson"
+  sourceId         String?       // ID of the test, post, etc.
+  sourceTitle      String?       // Human-readable title of source
+  sourceUrl        String?       // Deep-link to original source
+  questionId       String?       // Question ID if from an exam
+  selectedText     String?       // Exact text snippet highlighted by student
+  context          String?       // Surrounding context sentence / paragraph
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -1574,6 +1581,7 @@ model Note {
   @@index([userId, categoryId])
   @@index([userId, isArchived, isDeleted])
   @@index([userId, updatedAt])
+  @@index([userId, sourceType, sourceId])
 }
 
 // =============================================================================

@@ -15,6 +15,10 @@ import {
 import api from '../../lib/api';
 import { ModalPortal } from '../../components/common/ModalPortal';
 import { confirmModal } from '../../components/common/ConfirmDialog';
+import {
+  NoteSelectableContent,
+  TextSelectionNoteToolbar,
+} from '../../components/notes/TextSelectionNoteToolbar';
 
 export const ExamSessionPage: React.FC = () => {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -222,7 +226,13 @@ export const ExamSessionPage: React.FC = () => {
       <div className="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left / Center Area: Question Canvas */}
         <div className="lg:col-span-3 flex flex-col justify-between space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
+          <NoteSelectableContent
+            sourceType="test"
+            sourceId={examData?.id || attemptId || 'exam'}
+            sourceTitle={examData?.title || 'Bài thi'}
+            questionId={currentQuestion?.id}
+            className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6"
+          >
             {/* Question Header & Flags */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
@@ -296,7 +306,7 @@ export const ExamSessionPage: React.FC = () => {
                 );
               })}
             </div>
-          </div>
+          </NoteSelectableContent>
 
           {/* Navigation Controls */}
           <div className="flex items-center justify-between gap-3 pt-2">
@@ -436,6 +446,9 @@ export const ExamSessionPage: React.FC = () => {
           </div>
         </ModalPortal>
       )}
+
+      {/* Floating Note Selection Action Toolbar */}
+      <TextSelectionNoteToolbar />
     </div>
   );
 };

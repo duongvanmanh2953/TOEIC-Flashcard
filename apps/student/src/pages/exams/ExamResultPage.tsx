@@ -19,6 +19,10 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { GlassCard } from '../../components/common/GlassCard';
+import {
+  NoteSelectableContent,
+  TextSelectionNoteToolbar,
+} from '../../components/notes/TextSelectionNoteToolbar';
 
 export const ExamResultPage: React.FC = () => {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -288,9 +292,16 @@ export const ExamResultPage: React.FC = () => {
             const optExp = q.optionExplanations || {};
 
             return (
-              <GlassCard
+              <NoteSelectableContent
                 key={q.id}
-                className={`p-6 space-y-4 border-l-4 transition ${
+                sourceType="test"
+                sourceId={attemptId || 'exam-result'}
+                sourceTitle={result.examTitle || 'Kết quả bài thi'}
+                questionId={q.questionId || q.id}
+                className="block"
+              >
+                <GlassCard
+                  className={`p-6 space-y-4 border-l-4 transition ${
                   isCorrect
                     ? 'border-l-emerald-500 bg-white/80 dark:bg-slate-900/60'
                     : isSkipped
@@ -415,11 +426,15 @@ export const ExamResultPage: React.FC = () => {
                     })}
                   </div>
                 )}
-              </GlassCard>
+                </GlassCard>
+              </NoteSelectableContent>
             );
           })}
         </div>
       </div>
+
+      {/* Floating Note Selection Action Toolbar */}
+      <TextSelectionNoteToolbar />
     </div>
   );
 };

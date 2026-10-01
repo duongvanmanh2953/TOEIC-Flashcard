@@ -68,18 +68,17 @@
   transform: translateY(-2px);
 }
 
-/* Smooth Animated Glow Pulse */
-@keyframes pulseSlow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(1.04); }
+/* Lightweight hover transition helper */
+.card-hover-smooth {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.animate-pulse-slow {
-  animation: pulseSlow 8s ease-in-out infinite;
+.card-hover-smooth:hover {
+  transform: translateY(-2px);
 }
 
-/* Custom Scrollbar for Lenis */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
   background: #060813;
@@ -91,3 +90,16 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #4f46e5;
 }
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

@@ -74,6 +74,7 @@ const DEFAULT_LIMITS = {
   pronunciation: 5,
   textToVocab: 3,
   storyGen: 0,
+  notes: 20,
 };
 
 const FEATURE_DEFINITIONS = [
@@ -95,6 +96,7 @@ const LIMIT_DEFINITIONS = [
   { key: 'pronunciation', label: 'Pronunciation Checks / Day', unit: 'tests/day', hint: '-1 for unlimited' },
   { key: 'textToVocab', label: 'Text-to-Vocab Extractions', unit: 'runs/day', hint: '-1 for unlimited' },
   { key: 'storyGen', label: 'AI Story Generators / Day', unit: 'stories/day', hint: '-1 for unlimited' },
+  { key: 'notes', label: 'Personal Notes Storage Limit', unit: 'notes max', hint: '-1 for unlimited (e.g. Free: 20, Pro: 500, Premium: 2000)' },
 ];
 
 export const AdminPlansPage: React.FC = () => {

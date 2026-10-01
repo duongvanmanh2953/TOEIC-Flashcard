@@ -12,6 +12,10 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { GlassCard } from '../../components/common/GlassCard';
+import {
+  NoteSelectableContent,
+  TextSelectionNoteToolbar,
+} from '../../components/notes/TextSelectionNoteToolbar';
 
 export const WrongAnswerReviewPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -117,7 +121,14 @@ export const WrongAnswerReviewPage: React.FC = () => {
       </div>
 
       {/* Main Review Card */}
-      <GlassCard className="p-6 sm:p-8 space-y-6">
+      <NoteSelectableContent
+        sourceType="test"
+        sourceId={currentQ.examId || 'wrong-answer-review'}
+        sourceTitle={currentQ.examTitle || 'Ôn tập câu sai'}
+        questionId={currentQ.id || currentQ.questionId}
+        className="block"
+      >
+        <GlassCard className="p-6 sm:p-8 space-y-6">
         <div className="flex items-center justify-between gap-2">
           <span className="px-3 py-1 rounded-xl text-xs font-black bg-indigo-600 text-white">
             Câu {currentIndex + 1}
@@ -223,7 +234,11 @@ export const WrongAnswerReviewPage: React.FC = () => {
             </div>
           </div>
         )}
-      </GlassCard>
+        </GlassCard>
+      </NoteSelectableContent>
+
+      {/* Floating Note Selection Action Toolbar */}
+      <TextSelectionNoteToolbar />
     </div>
   );
 };

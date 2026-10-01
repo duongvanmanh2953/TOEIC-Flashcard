@@ -26,6 +26,10 @@ import {
 } from '../../services/communityKnowledge.service';
 import { useAuth } from '../../contexts/AuthContext';
 import { RichContentRenderer } from '../../components/community/RichContentRenderer';
+import {
+  NoteSelectableContent,
+  TextSelectionNoteToolbar,
+} from '../../components/notes/TextSelectionNoteToolbar';
 
 export const CommunityPostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -449,13 +453,21 @@ export const CommunityPostDetailPage: React.FC = () => {
             )}
           </div>
 
-          {/* Title */}
-          <h1 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
-            {post.title}
-          </h1>
+          {/* Selectable Post Content for Quick Notes */}
+          <NoteSelectableContent
+            sourceType="community_post"
+            sourceId={post.id}
+            sourceTitle={post.title}
+            className="space-y-4"
+          >
+            {/* Title */}
+            <h1 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
+              {post.title}
+            </h1>
 
-          {/* Full Academic Rich Content */}
-          <RichContentRenderer content={post.content} />
+            {/* Full Academic Rich Content */}
+            <RichContentRenderer content={post.content} />
+          </NoteSelectableContent>
 
           {/* Tags */}
           {post.tags.length > 0 && (
@@ -697,6 +709,9 @@ export const CommunityPostDetailPage: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* Floating Note Selection Action Toolbar */}
+      <TextSelectionNoteToolbar />
     </div>
   );
 };

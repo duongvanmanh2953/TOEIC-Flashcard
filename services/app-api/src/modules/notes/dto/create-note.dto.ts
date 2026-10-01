@@ -26,6 +26,41 @@ export class CreateNoteDto {
   @IsOptional()
   @IsBoolean()
   isPinned?: boolean;
+
+  @ApiPropertyOptional({ description: 'Source type (e.g. test, community_post, vocabulary, lesson)' })
+  @IsOptional()
+  @IsString()
+  sourceType?: string;
+
+  @ApiPropertyOptional({ description: 'Source ID' })
+  @IsOptional()
+  @IsString()
+  sourceId?: string;
+
+  @ApiPropertyOptional({ description: 'Source human-readable title' })
+  @IsOptional()
+  @IsString()
+  sourceTitle?: string;
+
+  @ApiPropertyOptional({ description: 'Source deep link URL' })
+  @IsOptional()
+  @IsString()
+  sourceUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Exam Question ID if from test' })
+  @IsOptional()
+  @IsString()
+  questionId?: string;
+
+  @ApiPropertyOptional({ description: 'Exact selected text snippet' })
+  @IsOptional()
+  @IsString()
+  selectedText?: string;
+
+  @ApiPropertyOptional({ description: 'Surrounding context sentence / paragraph' })
+  @IsOptional()
+  @IsString()
+  context?: string;
 }
 
 export class UpdateNoteDto {
@@ -59,6 +94,41 @@ export class UpdateNoteDto {
   @IsOptional()
   @IsBoolean()
   isArchived?: boolean;
+
+  @ApiPropertyOptional({ description: 'Source type' })
+  @IsOptional()
+  @IsString()
+  sourceType?: string;
+
+  @ApiPropertyOptional({ description: 'Source ID' })
+  @IsOptional()
+  @IsString()
+  sourceId?: string;
+
+  @ApiPropertyOptional({ description: 'Source title' })
+  @IsOptional()
+  @IsString()
+  sourceTitle?: string;
+
+  @ApiPropertyOptional({ description: 'Source URL' })
+  @IsOptional()
+  @IsString()
+  sourceUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Question ID' })
+  @IsOptional()
+  @IsString()
+  questionId?: string;
+
+  @ApiPropertyOptional({ description: 'Selected text' })
+  @IsOptional()
+  @IsString()
+  selectedText?: string;
+
+  @ApiPropertyOptional({ description: 'Context' })
+  @IsOptional()
+  @IsString()
+  context?: string;
 }
 
 export enum NoteSortBy {

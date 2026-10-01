@@ -10,6 +10,7 @@ import { CountryFlag } from '../components/language/CountryFlag';
 import { MemoryRescueCard } from '../components/dashboard/MemoryRescueCard';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { PremiumBadge } from '../components/common/PremiumBadge';
+import { notesService, NoteUsageResponse } from '../services/notes.service';
 import {
   Sparkles,
   Flame,
@@ -43,6 +44,7 @@ export const DashboardPage: React.FC = () => {
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [memoryRescue, setMemoryRescue] = useState<any>(null);
   const [quotas, setQuotas] = useState<any>(null);
+  const [notesUsage, setNotesUsage] = useState<NoteUsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSpotlight, setShowSpotlight] = useState(() => {
     return localStorage.getItem('vocabflow_hide_dash_spotlight') !== 'true';
@@ -57,18 +59,20 @@ export const DashboardPage: React.FC = () => {
     const fetchDashboard = async () => {
       try {
         const quotaEndpoint = isGuest ? '/subscriptions/guest-quotas' : '/subscriptions/my-quotas';
-        const [dashRes, heatRes, rescueRes, quotaRes, words]: any = await Promise.all([
+        const [dashRes, heatRes, rescueRes, quotaRes, words, notesUsageRes]: any = await Promise.all([
           api.get('/dashboard', { params: { language: activeLanguage.id } }).catch(() => ({ data: {} })),
           api.get('/dashboard/heatmap').catch(() => ({ data: [] })),
           api.get('/reviews/memory-rescue', { params: { language: activeLanguage.id } }).catch(() => ({ data: null })),
           api.get(quotaEndpoint).catch(() => ({ data: null })),
           idbGetWords(user?.id, activeLanguage.id),
+          notesService.getNotesUsage().catch(() => null),
         ]);
         setData(dashRes.data || dashRes || {});
         setHeatmap(heatRes.data || heatRes || []);
         setMemoryRescue(rescueRes?.data || rescueRes || null);
         setQuotas(quotaRes?.data || quotaRes || null);
         setLocalWords(words || []);
+        if (notesUsageRes) setNotesUsage(notesUsageRes);
       } catch (err) {
         console.error('Error loading dashboard data', err);
       } finally {
@@ -339,7 +343,7 @@ export const DashboardPage: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <QuotaMeter
                 feature="AI_TUTOR"
                 used={quotas.aiTutor?.used ?? quotas.AI_TUTOR?.used ?? 0}
@@ -361,6 +365,15 @@ export const DashboardPage: React.FC = () => {
                 used={quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0}
                 limit={isPro ? 20 : (quotas.storyGen?.limit ?? quotas.AI_STORY?.limit ?? 1)}
                 remaining={isPro ? Math.max(0, 20 - (quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0)) : (quotas.storyGen?.remaining ?? quotas.AI_STORY?.remaining ?? 1)}
+                tier={effectiveTier}
+                onUpgrade={() => navigate('/subscription')}
+              />
+              <QuotaMeter
+                label="Ghi chú cá nhân"
+                feature="NOTES"
+                used={notesUsage?.used ?? 0}
+                limit={notesUsage?.unlimited ? -1 : (notesUsage?.limit ?? (isPro ? 500 : 20))}
+                remaining={notesUsage?.remaining}
                 tier={effectiveTier}
                 onUpgrade={() => navigate('/subscription')}
               />
