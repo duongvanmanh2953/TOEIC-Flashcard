@@ -162,7 +162,7 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
         supportLinearFiltering = !!gl.getExtension('OES_texture_half_float_linear');
       }
 
-      gl.clearColor(0, 0, 0, 1);
+      gl.clearColor(0, 0, 0, 0);
 
       const halfFloatTexType = isWebGL2
         ? (gl as WebGL2RenderingContext).HALF_FLOAT
@@ -674,7 +674,7 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
           gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
         }
         if (doClear) {
-          gl.clearColor(0, 0, 0, 1);
+          gl.clearColor(0, 0, 0, 0);
           gl.clear(gl.COLOR_BUFFER_BIT);
         }
         gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
@@ -1308,13 +1308,14 @@ export const SplashCursor: React.FC<SplashCursorProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 pointer-events-none z-30 overflow-hidden ${className}`}
+      className={`fixed inset-0 pointer-events-none z-20 overflow-hidden ${className}`}
       aria-hidden="true"
     >
       <canvas
         ref={canvasRef}
         id="reactbits-splash-cursor"
-        className="w-full h-full block pointer-events-none opacity-85 transition-opacity duration-700"
+        className="w-full h-full block pointer-events-none opacity-90 transition-opacity duration-700"
+        style={{ mixBlendMode: 'screen' }}
       />
     </div>
   );

@@ -182,16 +182,11 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
     width: width !== undefined ? (typeof width === 'number' ? `${width}px` : width) : undefined,
     height: height !== undefined ? (typeof height === 'number' ? `${height}px` : height) : undefined,
     borderRadius: `${borderRadius}px`,
-    background: 'rgba(12, 18, 36, 0.72)',
+    background: 'rgba(15, 23, 42, 0.38)',
     backdropFilter: svgSupported ? `blur(${blur}px) saturate(${saturation})` : 'blur(20px) saturate(1.4)',
     WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    boxShadow: `
-      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-      0 1px 2px 0 rgba(255, 255, 255, 0.12) inset,
-      0 16px 36px -8px rgba(0, 0, 0, 0.4),
-      0 4px 12px -2px rgba(0, 0, 0, 0.25)
-    `
+    border: '1px solid rgba(255, 255, 255, 0.14)',
+    boxShadow: 'none'
   };
 
   return (
@@ -266,7 +261,7 @@ export const GlassSurface: React.FC<GlassSurfaceProps> = ({
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent z-10" />
 
       {/* Content wrapper */}
-      <div className="relative z-10 w-full h-full">
+      <div className="relative z-10 w-full h-full flex flex-col">
         {children}
       </div>
     </div>
