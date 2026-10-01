@@ -1,3 +1,4 @@
+@import 'aos/dist/aos.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,17 +6,18 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   body {
     background-color: #060813;
     color: #e2e8f0;
     overflow-x: hidden;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
 
-/* Primary Glass Button */
+/* Primary Glass Button from original system */
 .btn-glass-primary {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
@@ -58,16 +60,25 @@
   transform: translateY(-2px);
 }
 
-/* Subtle Floating Animation */
-@keyframes floatingOrb {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-18px) scale(1.05); }
+/* Card Brand Effect */
+.card-brand-effect {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
 }
-.animate-float-slow {
-  animation: floatingOrb 10s ease-in-out infinite;
+.card-brand-effect:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Scrollbar */
+/* Smooth Animated Glow Pulse */
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.04); }
+}
+.animate-pulse-slow {
+  animation: pulseSlow 8s ease-in-out infinite;
+}
+
+/* Custom Scrollbar for Lenis */
 ::-webkit-scrollbar {
   width: 8px;
 }
