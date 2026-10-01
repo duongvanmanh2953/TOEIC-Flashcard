@@ -31,40 +31,41 @@ export class AuthController {
     private oauthService: OAuthService,
   ) {}
 
-  private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
-    if (!res) return;
+  private getCookieOptions() {
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = {
+    const cookieDomain = process.env.COOKIE_DOMAIN || (isProduction ? '.vocalflow.site' : undefined);
+    return {
       httpOnly: true,
       secure: isProduction,
       sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
       path: '/',
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     };
+  }
+
+  private setAuthCookies(res: Response, accessToken?: string, refreshToken?: string) {
+    if (!res) return;
+    const cookieOptions = this.getCookieOptions();
+    const fifteenDaysMs = 15 * 24 * 60 * 60 * 1000; // 15 days policy
 
     if (accessToken) {
       res.cookie('token', accessToken, {
         ...cookieOptions,
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: fifteenDaysMs,
       });
     }
 
     if (refreshToken) {
       res.cookie('refreshToken', refreshToken, {
         ...cookieOptions,
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        maxAge: fifteenDaysMs,
       });
     }
   }
 
   private clearAuthCookies(res: Response) {
     if (!res) return;
-    const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
-      path: '/',
-    };
+    const cookieOptions = this.getCookieOptions();
     res.clearCookie('token', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
   }

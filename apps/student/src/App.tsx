@@ -81,7 +81,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolea
     );
   }
 
-  if (!user) {
+  if (requireAuth && !user) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;

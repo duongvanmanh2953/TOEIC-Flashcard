@@ -29,6 +29,15 @@ export function getOrCreateDeviceId(): string {
   return deviceId;
 }
 
+export function isStrictProtectedRoute(pathname: string): boolean {
+  if (!pathname) return false;
+  const strictRoutes = [
+    '/admin',
+    '/settings',
+  ];
+  return strictRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
+}
+
 let activeRequestsCount = 0;
 let activeMutationsCount = 0;
 
@@ -149,6 +158,14 @@ api.interceptors.response.use(
     }
 
     if (is401 && !originalRequest?._retry) {
+      if (
+        (originalRequest as any)?._skipAuthRedirect ||
+        originalRequest?.url?.includes('/auth/me') ||
+        originalRequest?.url?.includes('/auth/refresh')
+      ) {
+        return Promise.reject(error.response?.data?.error || error);
+      }
+
       const errMsg = error.response?.data?.message || '';
       if (
         typeof errMsg === 'string' &&
@@ -170,7 +187,7 @@ api.interceptors.response.use(
               },
             }),
           );
-          if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          if (isStrictProtectedRoute(window.location.pathname)) {
             window.location.href = '/login';
           }
         }
@@ -181,16 +198,20 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('vocabflow_refresh_token');
       if (refreshToken) {
         try {
-          const res = await axios.post('/api/v1/auth/refresh', { refreshToken });
-          if (res.data?.success) {
-            const { accessToken, refreshToken: newRefresh } = res.data.data;
+          const res = await api.post('/auth/refresh', { refreshToken }, {
+            _skipAuthRedirect: true,
+          } as any);
+          if (res.data?.success || res.data?.accessToken || res.data?.data?.accessToken) {
+            const tokenData = res.data?.data || res.data;
+            const accessToken = tokenData.accessToken;
+            const newRefresh = tokenData.refreshToken;
             localStorage.setItem('vocabflow_access_token', accessToken);
             if (newRefresh) localStorage.setItem('vocabflow_refresh_token', newRefresh);
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-            return axios(originalRequest);
+            return api(originalRequest);
           }
         } catch {
-          // Token expired, revoked, or device logged in elsewhere
+          // Token expired (15 days), revoked, or device limit
           localStorage.removeItem('vocabflow_access_token');
           localStorage.removeItem('vocabflow_refresh_token');
           if (typeof window !== 'undefined') {
@@ -199,11 +220,11 @@ api.interceptors.response.use(
                 detail: {
                   type: 'warning',
                   title: 'Phiên đăng nhập kết thúc',
-                  message: 'Phiên làm việc của bạn đã hết hạn hoặc bị thu hồi từ thiết bị khác. Vui lòng đăng nhập lại.',
+                  message: 'Phiên làm việc của bạn đã hết hạn (15 ngày) hoặc đạt giới hạn thiết bị.',
                 },
               }),
             );
-            if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+            if (isStrictProtectedRoute(window.location.pathname)) {
               setTimeout(() => {
                 window.location.href = '/login';
               }, 400);
@@ -211,10 +232,10 @@ api.interceptors.response.use(
           }
         }
       } else {
-        // Stale or missing token
+        // Stale or missing token - do NOT redirect unless on strict route
         localStorage.removeItem('vocabflow_access_token');
         localStorage.removeItem('vocabflow_refresh_token');
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        if (typeof window !== 'undefined' && isStrictProtectedRoute(window.location.pathname)) {
           setTimeout(() => {
             window.location.href = '/login';
           }, 400);

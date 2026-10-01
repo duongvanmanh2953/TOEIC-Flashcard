@@ -19,7 +19,8 @@ import {
 } from './dto/password-reset.dto';
 import { MailService } from './mail.service';
 import * as bcrypt from 'bcrypt';
-import { CefrLevel, Role, SubscriptionTier } from '@prisma/client';
+import * as crypto from 'crypto';
+import { CefrLevel, Role, SubscriptionTier, SessionStatus, DeviceStatus } from '@prisma/client';
 import { DeviceSecurityService, DeviceMetadata } from './device-security.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
@@ -198,18 +199,61 @@ export class AuthService {
         where: { id: payload.sub },
       });
 
-      if (!user || !user.refreshToken) {
+      if (!user || user.status !== 'ACTIVE') {
         throw new UnauthorizedException('Access denied');
       }
 
-      const isMatch = await bcrypt.compare(token, user.refreshToken);
-      if (!isMatch) {
-        throw new UnauthorizedException('Invalid refresh token');
+      // Check active UserSession by SHA-256 hash (allowing up to 3 devices concurrently)
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const session = await (this.prisma as any).userSession?.findFirst({
+        where: {
+          userId: user.id,
+          status: SessionStatus.ACTIVE,
+          refreshTokenHash: tokenHash,
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } },
+          ],
+        },
+        include: { device: true },
+      });
+
+      let isValid = false;
+      if (session) {
+        if (!session.device || (session.device.isAllowed && session.device.status === DeviceStatus.ACTIVE)) {
+          isValid = true;
+        }
+      } else if (user.refreshToken) {
+        isValid = await bcrypt.compare(token, user.refreshToken).catch(() => false);
+      }
+
+      if (!isValid) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
       }
 
       const tokens = await this.generateTokens(user.id, user.email, user.role);
-      await this.updateRefreshToken(user.id, tokens.refreshToken);
 
+      // If matched an active session, update session with new refresh token hash & 15-day expiry
+      if (session) {
+        const newHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
+        const newExpiresAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 days
+        await (this.prisma as any).userSession.update({
+          where: { id: session.id },
+          data: {
+            refreshTokenHash: newHash,
+            lastSeenAt: new Date(),
+            expiresAt: newExpiresAt,
+          },
+        }).catch(() => {});
+        if (session.deviceId) {
+          await (this.prisma as any).userDevice.updateMany({
+            where: { userId: user.id, deviceId: session.deviceId },
+            data: { lastSeenAt: new Date() },
+          }).catch(() => {});
+        }
+      }
+
+      await this.updateRefreshToken(user.id, tokens.refreshToken);
       return tokens;
     } catch {
       throw new UnauthorizedException('Expired or invalid refresh token');
@@ -283,9 +327,9 @@ export class AuthService {
   async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
     const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
-    const accessExpiresInStr = isAdmin ? '1d' : '7d';
-    const accessExpiresInSec = isAdmin ? 86400 : 604800; // 1 day or 7 days in seconds
-    const refreshExpiresInStr = isAdmin ? '2d' : '30d';
+    const accessExpiresInStr = isAdmin ? '1d' : '15d';
+    const accessExpiresInSec = isAdmin ? 86400 : 15 * 86400; // 15 days in seconds
+    const refreshExpiresInStr = isAdmin ? '2d' : '15d'; // Keep 15-day policy
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {

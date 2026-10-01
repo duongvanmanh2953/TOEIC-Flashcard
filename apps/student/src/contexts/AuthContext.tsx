@@ -189,22 +189,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     try {
-      const res: any = await api.get('/auth/me');
+      const res: any = await api.get('/auth/me', { _skipAuthRedirect: true } as any);
       if (res?.success && res.data) {
         setUser(normalizeUser({ ...res.data, isAnonymous: false }));
         setAuthState('AUTHENTICATED');
+        if (res.data?.accessToken) {
+          localStorage.setItem('vocabflow_access_token', res.data.accessToken);
+        }
         return;
       }
     } catch {
-      // Fallback to guest session
+      // Fallback to guest session quietly without any forced redirect
     }
 
     // Initialize Anonymous Guest Session if not authenticated
-    const anonUid = getOrCreateAnonymousUid();
+    const anon = await signInAnonymously().catch(() => null);
+    const anonUid = anon?.uid || getOrCreateAnonymousUid();
     setUser({
       id: anonUid,
       email: null,
-      displayName: 'Khách Khám Phá',
+      displayName: anon?.displayName || 'Khách Khám Phá',
       role: 'GUEST',
       isAnonymous: true,
       profile: {
@@ -224,39 +228,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthState('GUEST');
   };
 
-  // Restore session on app load
+  // Restore session on app load (supports localStorage and cross-subdomain cookie SSO)
   useEffect(() => {
-    const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('vocabflow_access_token');
-    if (token) {
-      refreshProfile().finally(() => {
-        // Handled in refreshProfile
-      });
-    } else {
-      // Initialize Anonymous Guest Session
-      signInAnonymously().then((anon) => {
-        setUser({
-          id: anon.uid,
-          email: null,
-          displayName: anon.displayName || 'Khách Học Thử',
-          role: 'GUEST',
-          isAnonymous: true,
-          profile: {
-            englishLevel: 'B1',
-            targetLevel: 'B2',
-            dailyGoal: 20,
-          },
-          streak: {
-            currentStreak: 0,
-            longestStreak: 0,
-          },
-          xp: {
-            totalXP: 0,
-            currentLevel: 1,
-          },
-        });
-        setAuthState('GUEST');
-      });
-    }
+    refreshProfile().catch(() => {});
   }, []);
 
   const login = async (credentials: { email: string; password: string }) => {

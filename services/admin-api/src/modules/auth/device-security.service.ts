@@ -305,7 +305,7 @@ export class DeviceSecurityService {
     refreshToken?: string,
   ) {
     const refreshTokenHash = refreshToken ? crypto.createHash('sha256').update(refreshToken).digest('hex') : null;
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const expiresAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 days policy
 
     await tx.userSession.create({
       data: {
