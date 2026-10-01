@@ -20,6 +20,7 @@ import { CustomQuizPage } from './pages/CustomQuizPage';
 import { SubscriptionUpgradePage } from './pages/SubscriptionUpgradePage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { AICoachStudioPage } from './pages/AICoachStudioPage';
+import { LandingPage } from './pages/LandingPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
 
 // Exam Bank & Evaluation Engine Pages
@@ -95,7 +96,7 @@ const RootRedirect: React.FC = () => {
       </div>
     );
   }
-  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+  return user ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 };
 
 const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
