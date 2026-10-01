@@ -4,6 +4,9 @@
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "scripts": {
+    "build": "echo '@vocabflow/shared ready'"
+  },
   "dependencies": {},
   "peerDependencies": {
     "react": "^18.0.0"
