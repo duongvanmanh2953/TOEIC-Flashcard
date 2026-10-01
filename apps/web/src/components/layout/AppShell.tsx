@@ -508,13 +508,13 @@ export const AppShell: React.FC = () => {
         {/* 1. FIXED TOP: Brand Logo & User Streak (NEVER scrolls, always stays pinned) */}
         <div className="shrink-0 pb-3 border-b border-slate-200/60 dark:border-slate-800/60 space-y-2.5">
           {/* Brand Header with Logo */}
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center justify-between">
             <div
               className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden cursor-pointer group"
               onClick={() => navigate('/dashboard')}
               title="VocabFlow Smart Adaptive English"
             >
-              <VocabFlowLogo size="sm" showContainer={true} className="group-hover:scale-110 transition-transform duration-200" />
+              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200" />
               <div className="min-w-0 flex-1 truncate">
                 <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
                   VocabFlow
@@ -683,7 +683,7 @@ export const AppShell: React.FC = () => {
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
           <div className="flex items-center gap-2">
             <div onClick={() => navigate('/dashboard')} className="cursor-pointer">
-              <VocabFlowLogo size="xs" showContainer={true} />
+              <VocabFlowLogo size="xs" showContainer={false} />
             </div>
             <LanguageSwitcher variant="compact" />
           </div>

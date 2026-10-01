@@ -1,9 +1,10 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-COPY packages/shared ./packages/shared
+COPY packages/shared/package*.json ./packages/shared/
 COPY apps/landing/package*.json ./apps/landing/
-RUN npm install
+RUN npm install --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+COPY packages/shared ./packages/shared
 COPY apps/landing ./apps/landing
 
 RUN npm --workspace=apps/landing run build

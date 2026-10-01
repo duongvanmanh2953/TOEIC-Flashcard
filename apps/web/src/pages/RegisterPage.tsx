@@ -33,9 +33,7 @@ export const RegisterPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50 dark:bg-slate-950 py-12">
       <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-3">
-            <VocabFlowLogo size="lg" showContainer={true} className="w-8 h-8" />
-          </div>
+          <VocabFlowLogo size="xl" className="w-14 h-14 mx-auto mb-3 shadow-lg shadow-indigo-500/20" />
           <h2 className="text-2xl font-bold tracking-tight">Tạo tài khoản học tập</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Bắt đầu lộ trình cá nhân hóa cùng <span className="font-semibold text-indigo-600 dark:text-indigo-400">VocabFlow</span>

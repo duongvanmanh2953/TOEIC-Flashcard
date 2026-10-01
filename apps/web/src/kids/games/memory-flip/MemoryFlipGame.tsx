@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
+import { VocabFlowLogo } from '@vocabflow/shared';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 import { kidAsset } from '../../utils/kidAsset';
@@ -95,15 +96,8 @@ const GameCardItem = memo<GameCardItemProps>(({ card, onCardClick, onVoiceClick,
           </div>
 
           {/* Center Brand Emblem */}
-          <div className="relative z-10 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-amber-300/40 p-1 flex items-center justify-center shadow-md overflow-hidden">
-            <img
-              src="/vocabflow-logo.png"
-              alt="VocalFlow"
-              className="w-full h-full object-contain rounded-xl drop-shadow-sm"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/assets/vocabflow-logo.png';
-              }}
-            />
+          <div className="relative z-10 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-amber-300/40 p-0 flex items-center justify-center shadow-md overflow-hidden">
+            <VocabFlowLogo size="sm" className="w-full h-full object-contain rounded-xl drop-shadow-sm" />
           </div>
 
           {/* Bottom Flip Indicator */}

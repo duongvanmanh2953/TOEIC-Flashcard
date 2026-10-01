@@ -509,13 +509,13 @@ export const AppShell: React.FC = () => {
         {/* 1. FIXED TOP: Brand Logo & User Streak (NEVER scrolls, always stays pinned) */}
         <div className="shrink-0 pb-3 border-b border-slate-200/60 dark:border-slate-800/60 space-y-2.5">
           {/* Brand Header with Logo */}
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center justify-between">
             <div
               className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden cursor-pointer group"
               onClick={() => navigate('/dashboard')}
               title="VocabFlow Smart Adaptive English"
             >
-              <VocabFlowLogo size="sm" showContainer={true} className="group-hover:scale-105 transition-transform duration-200" />
+              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-105 transition-transform duration-200" />
               <div className="min-w-0 flex-1 truncate">
                 <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
                   VocabFlow
@@ -706,7 +706,7 @@ export const AppShell: React.FC = () => {
           <div className="flex items-center gap-2">
             <VocabFlowLogo
               size="xs"
-              showContainer={true}
+              showContainer={false}
               className="cursor-pointer"
               onClick={() => navigate('/dashboard')}
             />

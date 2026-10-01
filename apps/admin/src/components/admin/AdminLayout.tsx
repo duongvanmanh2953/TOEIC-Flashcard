@@ -277,11 +277,11 @@ export const AdminLayout: React.FC = () => {
           } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand & Command Center Header */}
-        <div className={`py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-1'}`}>
+        <div className={`py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-0'}`}>
           <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
             <VocabFlowLogo
               size="sm"
-              showContainer={true}
+              showContainer={false}
               className="cursor-pointer hover:scale-105 transition"
               onClick={() => navigate('/admin')}
             />

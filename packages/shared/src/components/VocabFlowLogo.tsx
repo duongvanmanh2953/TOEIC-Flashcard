@@ -17,27 +17,22 @@ export const VocabFlowLogo: React.FC<VocabFlowLogoProps> = ({
 }) => {
   const iconSizeClasses = {
     xs: 'w-4 h-4',
-    sm: 'w-7 h-7',
-    md: 'w-8 h-8',
+    sm: 'w-7 h-7 sm:w-8 sm:h-8',
+    md: 'w-8 h-8 sm:w-9 sm:h-9',
     lg: 'w-12 h-12',
     xl: 'w-16 h-16',
   };
 
-  const containerSizeClasses = {
-    xs: 'w-6 h-6 rounded-lg p-0.5',
-    sm: 'w-9 h-9 rounded-xl p-1',
-    md: 'w-11 h-11 rounded-2xl p-1.5',
-    lg: 'w-16 h-16 rounded-3xl p-2',
-    xl: 'w-20 h-20 rounded-3xl p-2.5',
-  };
+  const hasCustomDimension = /\b(w-|h-)/.test(className);
+  const sizeClass = hasCustomDimension ? '' : iconSizeClasses[size] || iconSizeClasses.md;
 
-  // Luôn dùng hình ảnh logo gốc (Original PNG) chuẩn nhận diện thương hiệu VocabFlow
-  const imageElement = (
+  // Luôn trả về trực tiếp thẻ <img> của logo gốc với 0 padding, 0 margin, 0 viền
+  return (
     <img
       src="/vocabflow-logo-256.png"
       alt={alt}
       onClick={onClick}
-      className={`shrink-0 object-contain rounded-xl select-none ${iconSizeClasses[size]} ${className}`}
+      className={`shrink-0 object-contain select-none p-0 m-0 border-0 ${sizeClass} ${className}`.trim()}
       loading="eager"
       decoding="async"
       onError={(e) => {
@@ -51,19 +46,6 @@ export const VocabFlowLogo: React.FC<VocabFlowLogoProps> = ({
         }
       }}
     />
-  );
-
-  if (!showContainer) {
-    return imageElement;
-  }
-
-  return (
-    <div
-      onClick={onClick}
-      className={`${containerSizeClasses[size]} bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 shadow-xs overflow-hidden ${className}`}
-    >
-      {imageElement}
-    </div>
   );
 };
 

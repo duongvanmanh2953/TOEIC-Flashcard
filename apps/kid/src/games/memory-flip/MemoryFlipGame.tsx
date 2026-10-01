@@ -96,7 +96,7 @@ const GameCardItem = memo<GameCardItemProps>(({ card, onCardClick, onVoiceClick,
           </div>
 
           {/* Center Brand Emblem */}
-          <div className="relative z-10 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-amber-300/40 p-1 flex items-center justify-center shadow-md overflow-hidden">
+          <div className="relative z-10 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-amber-300/40 p-0 flex items-center justify-center shadow-md overflow-hidden">
             <VocabFlowLogo size="sm" className="w-full h-full object-contain rounded-xl drop-shadow-sm" />
           </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { CommandPaletteModal } from './CommandPaletteModal';
+import { VocabFlowLogo } from '@vocabflow/shared';
 import {
   LayoutDashboard,
   Users,
@@ -277,12 +278,10 @@ export const AdminLayout: React.FC = () => {
         {/* Brand & Command Center Header */}
         <div className={`py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-1'}`}>
           <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
-            <img
-              src="/vocabflow-logo-256.png"
-              alt="VocabFlow"
-              className="w-8 h-8 rounded-xl object-contain shadow-md shrink-0 cursor-pointer hover:scale-105 transition"
+            <VocabFlowLogo
+              size="sm"
+              className="cursor-pointer hover:scale-105 transition"
               onClick={() => navigate('/admin')}
-              title="VocabFlow Admin"
             />
             {!sidebarCollapsed && (
               <div>

@@ -215,7 +215,7 @@ export const App: React.FC = () => {
           <div className="px-4 sm:px-6 py-3.5 max-w-7xl mx-auto w-full flex items-center justify-between">
             {/* Brand Logo */}
             <a href="/" className="flex items-center gap-2.5 shrink-0 group">
-              <VocabFlowLogo size="sm" showContainer={true} className="group-hover:scale-110 transition-transform duration-200" />
+              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200" />
               <div className="flex flex-col text-left">
                 <span className="font-black text-lg bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent leading-snug">
                   VocabFlow
