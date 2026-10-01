@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" class="dark scroll-smooth">
+<html lang="vi" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -75,62 +75,59 @@
       overflow-x: hidden;
     }
 
-    /* True 3D Liquid Glassmorphism Effect */
-    .glass-dark-card {
+    /* Pastel Frosted Glassmorphism Effect */
+    .frosted-glass-panel {
       position: relative;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 50%, rgba(0, 0, 0, 0.15) 100%);
-      backdrop-filter: blur(40px) saturate(220%) contrast(110%) brightness(110%);
-      -webkit-backdrop-filter: blur(40px) saturate(220%) contrast(110%) brightness(110%);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-top: 1px solid rgba(255, 255, 255, 0.35); /* Strong highlights for 3D bevel */
-      border-left: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(32px) saturate(180%);
+      -webkit-backdrop-filter: blur(32px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 1);
+      border-bottom-color: rgba(255, 255, 255, 0.6);
+      border-right-color: rgba(255, 255, 255, 0.6);
       overflow: hidden;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease, box-shadow 0.4s ease;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
       box-shadow: 
-        inset 1px 1px 3px rgba(255, 255, 255, 0.4),
-        inset -1px -1px 4px rgba(0, 0, 0, 0.5),
-        0 20px 40px -15px rgba(0, 0, 0, 0.5); /* Ambient occlusion shadow to float */
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        0 15px 35px -10px rgba(71, 85, 105, 0.1);
     }
     
-    /* Subtle Frost/Noise Texture overlay for physical glass feel */
-    .glass-dark-card::after {
+    /* Soft Frosted Texture */
+    .frosted-glass-panel::after {
       content: '';
       position: absolute;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      opacity: 0.05;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.15;
       mix-blend-mode: overlay;
       pointer-events: none;
       z-index: 1;
     }
 
-    /* Dynamic Hover Glow Layer */
-    .glass-dark-card::before {
+    /* Soft White Hover Glow Layer */
+    .frosted-glass-panel::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: radial-gradient(700px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.18), transparent 40%);
+      background: radial-gradient(700px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.8), transparent 40%);
       opacity: 0;
       transition: opacity 0.5s ease;
       pointer-events: none;
       z-index: 2;
     }
 
-    .glass-dark-card:hover::before {
+    .frosted-glass-panel:hover::before {
       opacity: 1;
     }
 
-    .glass-dark-card:hover {
-      border-color: rgba(99, 102, 241, 0.4);
-      border-top-color: rgba(255, 255, 255, 0.5);
+    .frosted-glass-panel:hover {
       transform: translateY(-6px) scale(1.02);
       box-shadow: 
-        inset 1px 1px 5px rgba(255, 255, 255, 0.6),
-        inset -1px -1px 5px rgba(0, 0, 0, 0.7),
-        0 30px 60px -15px rgba(0, 0, 0, 0.6);
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        0 25px 50px -12px rgba(71, 85, 105, 0.15),
+        0 0 25px rgba(255, 255, 255, 0.8);
     }
 
-    .glass-dark-card > * {
+    .frosted-glass-panel > * {
       position: relative;
       z-index: 3;
     }
@@ -203,41 +200,41 @@
     }
   </style>
 </head>
-<body class="selection:bg-indigo-600 selection:text-white">
+<body class="selection:bg-indigo-600 selection:text-slate-800">
 
   <!-- ========================================================================= -->
   <!-- 1. Ambient Dynamic Deep Space Canvas Background (Cohesive Dark Luxury)     -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none">
-    <!-- Deep Obsidian Base Layer -->
-    <div class="absolute inset-0 bg-[#060813]"></div>
+  <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none bg-[#fdfbf9]">
+    <!-- Modern Subtle Grid Pattern Overlay -->
+    <div class="absolute inset-0" style="background-image: linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px); background-size: 32px 32px;"></div>
 
-    <!-- Soft Luminous Radial Mesh Gradients - INCREASED OPACITY for stronger distortion -->
-    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[580px] rounded-full bg-gradient-to-b from-indigo-600/40 via-purple-600/25 to-transparent blur-[130px]"></div>
+    <!-- Soft Luminous Radial Mesh Gradients (Pastel Palette) -->
+    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[580px] rounded-full bg-gradient-to-b from-rose-200/60 via-pink-200/40 to-transparent blur-[120px]"></div>
     
-    <!-- Top-Left Indigo/Violet Spreading Pool -->
-    <div class="absolute -top-24 -left-20 w-[650px] h-[650px] rounded-full bg-gradient-to-br from-indigo-500/50 via-violet-700/35 to-transparent blur-[140px] animate-float-slow"></div>
+    <!-- Top-Left Soft Peach/Coral -->
+    <div class="absolute -top-24 -left-20 w-[650px] h-[650px] rounded-full bg-gradient-to-br from-orange-200/50 via-amber-200/40 to-transparent blur-[140px] animate-float-slow"></div>
 
-    <!-- Top-Right Azure / Cyan Radiant Pool -->
-    <div class="absolute top-10 -right-24 w-[620px] h-[620px] rounded-full bg-gradient-to-bl from-cyan-500/45 via-sky-600/30 to-transparent blur-[135px]"></div>
+    <!-- Top-Right Sky Blue / Mint -->
+    <div class="absolute top-10 -right-24 w-[620px] h-[620px] rounded-full bg-gradient-to-bl from-sky-200/60 via-cyan-100/40 to-transparent blur-[135px]"></div>
 
-    <!-- Center Floating Fuchsia / Rose Nebula -->
-    <div class="absolute top-[42%] -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-rose-500/40 via-fuchsia-600/25 to-transparent blur-[140px] animate-float-slow" style="animation-delay: -3s;"></div>
+    <!-- Center Floating Lavender -->
+    <div class="absolute top-[42%] -right-28 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-purple-200/50 via-fuchsia-200/30 to-transparent blur-[140px] animate-float-slow" style="animation-delay: -3s;"></div>
 
-    <!-- Center-Left Electric Blue Depth Pool -->
-    <div class="absolute top-[55%] -left-28 w-[560px] h-[560px] rounded-full bg-gradient-to-tr from-blue-600/45 via-indigo-600/30 to-transparent blur-[130px]"></div>
+    <!-- Center-Left Mint / Emerald -->
+    <div class="absolute top-[55%] -left-28 w-[560px] h-[560px] rounded-full bg-gradient-to-tr from-emerald-100/50 via-teal-100/30 to-transparent blur-[130px]"></div>
 
-    <!-- Bottom-Left Fresh Emerald / Mint Pool -->
-    <div class="absolute -bottom-20 -left-20 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-emerald-500/45 via-teal-600/30 to-transparent blur-[135px] animate-float-slow" style="animation-delay: -6s;"></div>
+    <!-- Bottom-Left Sky Blue Pool -->
+    <div class="absolute -bottom-20 -left-20 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-blue-200/50 via-indigo-100/30 to-transparent blur-[135px] animate-float-slow" style="animation-delay: -6s;"></div>
 
-    <!-- Bottom-Right Warm Amber / Gold Pool -->
-    <div class="absolute -bottom-20 -right-20 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-amber-500/40 via-orange-600/25 to-transparent blur-[130px]"></div>
+    <!-- Bottom-Right Warm Yellow / Coral -->
+    <div class="absolute -bottom-20 -right-20 w-[580px] h-[580px] rounded-full bg-gradient-to-tl from-yellow-100/60 via-orange-100/40 to-transparent blur-[130px]"></div>
   </div>
 
   <!-- ========================================================================= -->
   <!-- 2. Sticky Glass Header                                                    -->
   <!-- ========================================================================= -->
-  <header class="sticky top-0 z-50 backdrop-blur-2xl bg-[#060813]/75 border-b border-white/[0.08] transition-all duration-300">
+  <header class="sticky top-0 z-50 backdrop-blur-2xl bg-[#fdfbf9]/75 border-b border-slate-200/60 transition-all duration-300">
     <div class="px-4 sm:px-8 py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
       <!-- Brand Logo -->
       <a href="/" class="flex items-center gap-3 shrink-0 group">
@@ -255,14 +252,14 @@
               v4.2 AI
             </span>
           </div>
-          <span class="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mt-1 leading-none">
+          <span class="text-[10px] font-semibold text-slate-500 tracking-wider uppercase mt-1 leading-none">
             Cognitive 5D Spaced Repetition
           </span>
         </div>
       </a>
 
       <!-- Navigation Links -->
-      <nav class="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-300">
+      <nav class="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-600">
         <a href="#features-5d" class="hover:text-cyan-400 transition-colors py-1">Động Cơ 5D</a>
         <a href="#features-toeic" class="hover:text-cyan-400 transition-colors py-1">Luyện Thi TOEIC</a>
         <a href="#features-ai" class="hover:text-cyan-400 transition-colors py-1">AI Coach & PvP</a>
@@ -277,7 +274,7 @@
       <div class="flex items-center gap-3 shrink-0">
         <a
           href="https://app.vocalflow.site/login"
-          class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800/80 transition"
+          class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-800/80 transition"
         >
           Đăng nhập
         </a>
@@ -314,7 +311,7 @@
     <h1
       data-aos="fade-up"
       data-aos-delay="100"
-      class="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.18] sm:leading-[1.12] mb-6 max-w-5xl text-white"
+      class="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.18] sm:leading-[1.12] mb-6 max-w-5xl text-slate-800"
     >
       Học ít từ hơn. <br>
       <span class="bg-gradient-to-r from-sky-400 via-indigo-300 to-cyan-300 bg-clip-text text-transparent">
@@ -326,9 +323,9 @@
     <p
       data-aos="fade-up"
       data-aos-delay="200"
-      class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal"
+      class="text-base sm:text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed font-normal"
     >
-      Xóa bỏ cách lật flashcard máy móc. VocabFlow ứng dụng thuật toán <strong class="text-white font-bold">FSRS v5</strong> đo lường độ bền trí nhớ, tự động phát hiện lỗ hổng nhận thức và nhắc nhở đúng <span class="text-cyan-400 font-bold underline decoration-cyan-500/50 underline-offset-4">thời điểm vàng</span> trước khi não bộ quên từ vựng.
+      Xóa bỏ cách lật flashcard máy móc. VocabFlow ứng dụng thuật toán <strong class="text-slate-800 font-bold">FSRS v5</strong> đo lường độ bền trí nhớ, tự động phát hiện lỗ hổng nhận thức và nhắc nhở đúng <span class="text-cyan-400 font-bold underline decoration-cyan-500/50 underline-offset-4">thời điểm vàng</span> trước khi não bộ quên từ vựng.
     </p>
 
     <!-- Hero Action Buttons -->
@@ -380,14 +377,14 @@
       class="w-full max-w-2xl mx-auto mb-20"
     >
       <div class="relative rounded-3xl p-1 bg-gradient-to-b from-indigo-500/40 via-purple-500/20 to-transparent shadow-2xl shadow-indigo-950/60">
-        <div class="rounded-[22px] bg-[#0c1222]/90 backdrop-blur-2xl p-6 sm:p-8 border border-white/10 text-left">
+        <div class="rounded-[22px] bg-white/70 backdrop-blur-2xl p-6 sm:p-8 border border-slate-200/60 text-left">
           <!-- Card Header Bar -->
-          <div class="flex items-center justify-between pb-5 border-b border-white/[0.08]">
+          <div class="flex items-center justify-between pb-5 border-b border-slate-200/60">
             <div class="flex items-center gap-2">
               <span class="w-3 h-3 rounded-full bg-rose-500 inline-block shadow-sm shadow-rose-500/50"></span>
               <span class="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-sm shadow-amber-500/50"></span>
               <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-sm shadow-emerald-500/50"></span>
-              <span class="text-xs font-bold text-slate-400 ml-2">
+              <span class="text-xs font-bold text-slate-500 ml-2">
                 Mô Phỏng Thẻ Học Trí Tuệ 5D LexiMind
               </span>
             </div>
@@ -402,7 +399,7 @@
           <div class="pt-6">
             <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 mb-3">
               <div class="flex items-center gap-3">
-                <h3 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                <h3 class="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight">
                   accommodate
                 </h3>
                 <button
@@ -414,7 +411,7 @@
                   <svg id="audioIcon" class="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   </svg>
-                  <span class="text-slate-200">Phát âm US</span>
+                  <span class="text-slate-700">Phát âm US</span>
                 </button>
               </div>
               <span class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-lg border border-cyan-500/20">
@@ -422,15 +419,15 @@
               </span>
             </div>
 
-            <p class="text-base sm:text-lg font-semibold text-slate-200 mb-5 leading-normal">
+            <p class="text-base sm:text-lg font-semibold text-slate-700 mb-5 leading-normal">
               Cung cấp nơi ở, phòng ở; đáp ứng hoặc giải quyết (nhu cầu, mong muốn)
             </p>
 
-            <div class="p-4 rounded-xl bg-slate-900/80 border border-white/[0.08] mb-5">
-              <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+            <div class="p-4 rounded-xl bg-white/50 border border-slate-200/60 mb-5">
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 Ví dụ ngữ cảnh đề thi TOEIC thực chiến:
               </p>
-              <p class="text-sm sm:text-base font-medium text-slate-300 italic leading-relaxed">
+              <p class="text-sm sm:text-base font-medium text-slate-600 italic leading-relaxed">
                 "The new convention center is spacious enough to <span class="text-cyan-400 font-bold not-italic underline decoration-cyan-400/40">accommodate</span> up to 2,500 participants."
               </p>
             </div>
@@ -439,7 +436,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <div class="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
                 <div class="flex items-center justify-between text-xs font-bold mb-2">
-                  <span class="text-slate-300">Xác suất nhớ lại (Retrievability)</span>
+                  <span class="text-slate-600">Xác suất nhớ lại (Retrievability)</span>
                   <span class="text-indigo-400 font-black">94% (Rất cao)</span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
@@ -451,7 +448,7 @@
                 <svg class="w-5 h-5 text-emerald-400 flex-shrink-0 fill-current" viewBox="0 0 24 24">
                   <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6.4-4.8-6.4 4.8 2.4-7.2-6-4.8h7.6z"/>
                 </svg>
-                <p class="text-xs font-medium text-slate-300 leading-normal">
+                <p class="text-xs font-medium text-slate-600 leading-normal">
                   <strong class="text-emerald-400 font-bold">AI Insight:</strong> Xuất hiện trong 42% đề đọc TOEIC Part 5 & 7 (Chủ đề Business Facility).
                 </p>
               </div>
@@ -468,38 +465,38 @@
       data-aos="fade-up"
       class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full max-w-5xl mb-24"
     >
-      <div class="glass-dark-card p-6 rounded-2xl text-center">
+      <div class="frosted-glass-panel p-6 rounded-2xl text-center">
         <div class="text-3xl sm:text-4xl font-black text-cyan-400 leading-none mb-2">
           600+
         </div>
-        <p class="text-xs sm:text-sm font-bold text-slate-400">
+        <p class="text-xs sm:text-sm font-bold text-slate-500">
           Từ TOEIC chuẩn đề thi ETS
         </p>
       </div>
 
-      <div class="glass-dark-card p-6 rounded-2xl text-center">
+      <div class="frosted-glass-panel p-6 rounded-2xl text-center">
         <div class="text-3xl sm:text-4xl font-black text-emerald-400 leading-none mb-2">
           94%
         </div>
-        <p class="text-xs sm:text-sm font-bold text-slate-400">
+        <p class="text-xs sm:text-sm font-bold text-slate-500">
           Ghi nhớ bền vững sau 30 ngày
         </p>
       </div>
 
-      <div class="glass-dark-card p-6 rounded-2xl text-center">
+      <div class="frosted-glass-panel p-6 rounded-2xl text-center">
         <div class="text-3xl sm:text-4xl font-black text-indigo-400 leading-none mb-2">
           3.2x
         </div>
-        <p class="text-xs sm:text-sm font-bold text-slate-400">
+        <p class="text-xs sm:text-sm font-bold text-slate-500">
           Tốc độ phản xạ nhận thức từ
         </p>
       </div>
 
-      <div class="glass-dark-card p-6 rounded-2xl text-center">
+      <div class="frosted-glass-panel p-6 rounded-2xl text-center">
         <div class="text-3xl sm:text-4xl font-black text-amber-400 leading-none mb-2">
           24/7
         </div>
-        <p class="text-xs sm:text-sm font-bold text-slate-400">
+        <p class="text-xs sm:text-sm font-bold text-slate-500">
           Gia sư AI cá nhân hóa & sửa lỗi
         </p>
       </div>
@@ -514,10 +511,10 @@
       <span class="text-xs font-black uppercase tracking-widest text-cyan-400 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/20">
         Động Cơ Trí Nhớ 5 Chiều
       </span>
-      <h2 class="text-3xl sm:text-5xl font-black text-white mt-4 mb-4 tracking-tight">
+      <h2 class="text-3xl sm:text-5xl font-black text-slate-800 mt-4 mb-4 tracking-tight">
         Giải Quyết Triệt Để Bệnh "Nhớ Mặt Chữ Nhưng Không Nói Được"
       </h2>
-      <p class="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+      <p class="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
         Phần lớn người học gặp phải hố sâu giữa <em>Trí nhớ Thụ động (Passive)</em> và <em>Trí nhớ Chủ động (Active)</em>. LexiMind™ theo dõi và bồi dưỡng độc lập 5 chiều nhận thức cho từng từ vựng.
       </p>
     </div>
@@ -525,81 +522,81 @@
     <!-- 5D Pillars Grid -->
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-12">
       <!-- 5D 1: Recognition -->
-      <div data-aos="fade-up" data-aos-delay="100" class="glass-dark-card p-6 rounded-2xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="100" class="frosted-glass-panel p-6 rounded-2xl flex flex-col justify-between">
         <div>
           <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center font-black text-lg mb-4">
             01
           </div>
-          <h3 class="font-extrabold text-base text-white mb-2">Recognition</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
+          <h3 class="font-extrabold text-base text-slate-800 mb-2">Recognition</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
             Nhận diện mặt chữ: Phản xạ chọn đúng nghĩa khi gặp từ trong câu hỏi trắc nghiệm hoặc bài đọc nhanh.
           </p>
         </div>
-        <div class="mt-4 pt-3 border-t border-white/[0.06] text-[11px] font-bold text-blue-400">
+        <div class="mt-4 pt-3 border-t border-slate-200/60 text-[11px] font-bold text-blue-400">
           Chỉ số thụ động
         </div>
       </div>
 
       <!-- 5D 2: Recall -->
-      <div data-aos="fade-up" data-aos-delay="200" class="glass-dark-card p-6 rounded-2xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="200" class="frosted-glass-panel p-6 rounded-2xl flex flex-col justify-between">
         <div>
           <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-black text-lg mb-4">
             02
           </div>
-          <h3 class="font-extrabold text-base text-white mb-2">Recall</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
+          <h3 class="font-extrabold text-base text-slate-800 mb-2">Recall</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
             Hồi tưởng ngữ nghĩa: Khả năng tự bật ra từ tiếng Anh khi chỉ nhìn thấy ý niệm nghĩa tiếng Việt mà không cần gợi ý.
           </p>
         </div>
-        <div class="mt-4 pt-3 border-t border-white/[0.06] text-[11px] font-bold text-indigo-400">
+        <div class="mt-4 pt-3 border-t border-slate-200/60 text-[11px] font-bold text-indigo-400">
           Chuyển hóa nhận thức
         </div>
       </div>
 
       <!-- 5D 3: Context -->
-      <div data-aos="fade-up" data-aos-delay="300" class="glass-dark-card p-6 rounded-2xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="300" class="frosted-glass-panel p-6 rounded-2xl flex flex-col justify-between">
         <div>
           <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-black text-lg mb-4">
             03
           </div>
-          <h3 class="font-extrabold text-base text-white mb-2">Context</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
+          <h3 class="font-extrabold text-base text-slate-800 mb-2">Context</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
             Ngữ cảnh sử dụng: Cảm nhận sắc thái tự nhiên của từ, hiểu cụm collocations và tránh các bẫy đảo ngữ trong bài thi.
           </p>
         </div>
-        <div class="mt-4 pt-3 border-t border-white/[0.06] text-[11px] font-bold text-cyan-400">
+        <div class="mt-4 pt-3 border-t border-slate-200/60 text-[11px] font-bold text-cyan-400">
           Độ sâu ngôn ngữ
         </div>
       </div>
 
       <!-- 5D 4: Production -->
-      <div data-aos="fade-up" data-aos-delay="400" class="glass-dark-card p-6 rounded-2xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="400" class="frosted-glass-panel p-6 rounded-2xl flex flex-col justify-between">
         <div>
           <div class="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 flex items-center justify-center font-black text-lg mb-4">
             04
           </div>
-          <h3 class="font-extrabold text-base text-white mb-2">Production</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
+          <h3 class="font-extrabold text-base text-slate-800 mb-2">Production</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
             Tạo câu chủ động: Tự tay ứng dụng từ để viết email, viết bài luận và diễn đạt ý tưởng chuẩn văn phong bản xứ.
           </p>
         </div>
-        <div class="mt-4 pt-3 border-t border-white/[0.06] text-[11px] font-bold text-purple-400">
+        <div class="mt-4 pt-3 border-t border-slate-200/60 text-[11px] font-bold text-purple-400">
           Trí nhớ chủ động
         </div>
       </div>
 
       <!-- 5D 5: Speaking -->
-      <div data-aos="fade-up" data-aos-delay="500" class="glass-dark-card p-6 rounded-2xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="500" class="frosted-glass-panel p-6 rounded-2xl flex flex-col justify-between">
         <div>
           <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-black text-lg mb-4">
             05
           </div>
-          <h3 class="font-extrabold text-base text-white mb-2">Speaking</h3>
-          <p class="text-xs text-slate-400 leading-relaxed">
+          <h3 class="font-extrabold text-base text-slate-800 mb-2">Speaking</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
             Phát âm & Nói: Nhấn đúng trọng âm, bật chuẩn âm đuôi và phát âm tự tin trong các tình huống hội thoại thời gian thực.
           </p>
         </div>
-        <div class="mt-4 pt-3 border-t border-white/[0.06] text-[11px] font-bold text-emerald-400">
+        <div class="mt-4 pt-3 border-t border-slate-200/60 text-[11px] font-bold text-emerald-400">
           Phản xạ giao tiếp
         </div>
       </div>
@@ -607,14 +604,14 @@
 
     <!-- Feature Sub-Grid: Vocabulary X-Ray & Confusion Engine -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div data-aos="fade-right" class="glass-dark-card p-8 rounded-3xl">
+      <div data-aos="fade-right" class="frosted-glass-panel p-8 rounded-3xl">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
             🔬
           </div>
-          <h4 class="text-xl font-bold text-white">Vocabulary X-Ray & Word Journey</h4>
+          <h4 class="text-xl font-bold text-slate-800">Vocabulary X-Ray & Word Journey</h4>
         </div>
-        <p class="text-sm text-slate-300 leading-relaxed mb-6">
+        <p class="text-sm text-slate-600 leading-relaxed mb-6">
           Chẩn đoán trực diện nguyên nhân: <em>"Tại sao tôi hay quên từ này?"</em>. Hệ thống bóc tách phổ chất lượng trí nhớ theo các cấp độ CEFR A1-C2, ghi nhận lịch sử từng phiên chat với AI và cảnh báo các từ đang ở trạng thái rủi ro lãng quên.
         </p>
         <div class="flex items-center gap-2 text-xs font-bold text-indigo-400">
@@ -623,14 +620,14 @@
         </div>
       </div>
 
-      <div data-aos="fade-left" class="glass-dark-card p-8 rounded-3xl">
+      <div data-aos="fade-left" class="frosted-glass-panel p-8 rounded-3xl">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
             ⚡
           </div>
-          <h4 class="text-xl font-bold text-white">Real-World Capture & Confusion Engine</h4>
+          <h4 class="text-xl font-bold text-slate-800">Real-World Capture & Confusion Engine</h4>
         </div>
-        <p class="text-sm text-slate-300 leading-relaxed mb-6">
+        <p class="text-sm text-slate-600 leading-relaxed mb-6">
           Dán bất kỳ bài báo tiếng Anh, email công việc hay video transcript nào vào hệ thống. AI tự loại bỏ từ đã biết, bóc tách các từ đắt giá theo ngữ cảnh. Đồng thời, <strong>Confusion Engine</strong> so sánh trực quan các cặp từ hay nhầm lẫn (<em>affect vs effect</em>, <em>principal vs principle</em>).
         </p>
         <div class="flex items-center gap-2 text-xs font-bold text-cyan-400">
@@ -645,7 +642,7 @@
   <!-- 5. Section: TOEIC International Exam Hub                                  -->
   <!-- ========================================================================= -->
   <section id="features-toeic" class="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-    <div class="glass-dark-card p-8 sm:p-14 rounded-3xl relative overflow-hidden border-indigo-500/20" data-aos="zoom-in">
+    <div class="frosted-glass-panel p-8 sm:p-14 rounded-3xl relative overflow-hidden border-indigo-500/20" data-aos="zoom-in">
       <div class="absolute -top-32 -right-32 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
@@ -653,25 +650,25 @@
           <span class="text-xs font-black uppercase tracking-widest text-indigo-400 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/20">
             Luyện Thi TOEIC Thực Chiến 2026
           </span>
-          <h2 class="text-3xl sm:text-5xl font-black text-white mt-4 mb-5 tracking-tight leading-tight">
+          <h2 class="text-3xl sm:text-5xl font-black text-slate-800 mt-4 mb-5 tracking-tight leading-tight">
             Môi Trường Thi Mô Phỏng Chuẩn ETS 120 Phút
           </h2>
-          <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
+          <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-8">
             Không chỉ học từ rời rạc. VocabFlow cung cấp ngân hàng đề thi TOEIC Full Test 200 câu, Mini Test rút gọn và phân loại chi tiết theo từng Part 1-7. Tự động quy đổi điểm số 10 - 990, kèm tính năng <strong class="text-cyan-400">Wrong Answer Review</strong> để sửa đúng các câu làm sai.
           </p>
 
           <div class="space-y-4 mb-8">
             <div class="flex items-start gap-3">
               <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
-              <p class="text-xs sm:text-sm text-slate-300"><strong class="text-white">Full Test & Mini Test:</strong> Đồng hồ đếm ngược 120 phút, audio player phân đoạn mượt mà, Answer Sheet hỗ trợ gắn cờ câu hỏi (Flag).</p>
+              <p class="text-xs sm:text-sm text-slate-600"><strong class="text-slate-800">Full Test & Mini Test:</strong> Đồng hồ đếm ngược 120 phút, audio player phân đoạn mượt mà, Answer Sheet hỗ trợ gắn cờ câu hỏi (Flag).</p>
             </div>
             <div class="flex items-start gap-3">
               <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
-              <p class="text-xs sm:text-sm text-slate-300"><strong class="text-white">Báo Cáo Năng Lực Chi Tiết:</strong> Bóc tách điểm Listening & Reading, lời giải chi tiết tiếng Việt kèm transcript cho 100% câu hỏi.</p>
+              <p class="text-xs sm:text-sm text-slate-600"><strong class="text-slate-800">Báo Cáo Năng Lực Chi Tiết:</strong> Bóc tách điểm Listening & Reading, lời giải chi tiết tiếng Việt kèm transcript cho 100% câu hỏi.</p>
             </div>
             <div class="flex items-start gap-3">
               <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
-              <p class="text-xs sm:text-sm text-slate-300"><strong class="text-white">Luyện Lại Câu Sai:</strong> Tập trung giải quyết dứt điểm các bẫy ngữ pháp và từ vựng còn yếu.</p>
+              <p class="text-xs sm:text-sm text-slate-600"><strong class="text-slate-800">Luyện Lại Câu Sai:</strong> Tập trung giải quyết dứt điểm các bẫy ngữ pháp và từ vựng còn yếu.</p>
             </div>
           </div>
 
@@ -682,10 +679,10 @@
         </div>
 
         <!-- Simulated Exam Interface Preview -->
-        <div class="rounded-2xl bg-[#080d1a] border border-white/10 p-6 shadow-2xl">
-          <div class="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-5">
+        <div class="rounded-2xl bg-white/60 border border-slate-200/60 p-6 shadow-2xl">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-200/60 mb-5">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-400">TOEIC Practice Test #04</span>
+              <span class="text-xs font-bold text-slate-500">TOEIC Practice Test #04</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
@@ -697,28 +694,28 @@
           <!-- Question Sample -->
           <div class="text-left space-y-4">
             <div class="text-xs font-bold text-indigo-400 uppercase">Part 5 • Incomplete Sentences</div>
-            <p class="text-sm font-semibold text-slate-200">
+            <p class="text-sm font-semibold text-slate-700">
               The regional manager commended Ms. Lee for handling the client complaint in a highly ______ manner.
             </p>
 
             <div class="space-y-2 pt-2 text-xs font-medium">
-              <div class="p-3 rounded-xl bg-slate-900/60 border border-white/[0.06] text-slate-300 flex items-center justify-between">
+              <div class="p-3 rounded-xl bg-white/50 border border-slate-200/60 text-slate-600 flex items-center justify-between">
                 <span>(A) profession</span>
               </div>
               <div class="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center justify-between font-bold">
                 <span>(B) professional</span>
                 <span class="text-emerald-400">✓ Đúng</span>
               </div>
-              <div class="p-3 rounded-xl bg-slate-900/60 border border-white/[0.06] text-slate-300 flex items-center justify-between">
+              <div class="p-3 rounded-xl bg-white/50 border border-slate-200/60 text-slate-600 flex items-center justify-between">
                 <span>(C) professionally</span>
               </div>
-              <div class="p-3 rounded-xl bg-slate-900/60 border border-white/[0.06] text-slate-300 flex items-center justify-between">
+              <div class="p-3 rounded-xl bg-white/50 border border-slate-200/60 text-slate-600 flex items-center justify-between">
                 <span>(D) professionalize</span>
               </div>
             </div>
 
             <!-- Mini explanation box -->
-            <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-slate-300">
+            <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-slate-600">
               <strong class="text-cyan-400">Giải thích:</strong> Cần một tính từ (professional) đứng trước danh từ "manner" để bổ nghĩa cho cụm từ "in a highly professional manner".
             </div>
           </div>
@@ -733,19 +730,19 @@
   <section id="features-ai" class="py-20 px-4 sm:px-6 max-w-7xl mx-auto w-full">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
       <!-- AI Tutor & Roleplay -->
-      <div data-aos="fade-up" data-aos-delay="100" class="glass-dark-card p-8 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="100" class="frosted-glass-panel p-8 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl mb-6">
             🤖
           </div>
           <span class="text-xs font-black uppercase tracking-wider text-indigo-400">Gia Sư Cá Nhân Hóa 24/7</span>
-          <h3 class="text-2xl sm:text-3xl font-black text-white mt-2 mb-4">
+          <h3 class="text-2xl sm:text-3xl font-black text-slate-800 mt-2 mb-4">
             AI Tutor Studio & 20+ Kịch Bản Roleplay
           </h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">
+          <p class="text-sm text-slate-600 leading-relaxed mb-6">
             Tự động kích hoạt cơ chế <strong>Memory Injection</strong>: AI tự chèn danh sách các từ vựng bạn đang ghi nhớ yếu vào cuộc trò chuyện phỏng vấn xin việc, thuyết trình dự án hay đàm phán hợp đồng để bạn vận dụng trực tiếp.
           </p>
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-white/[0.08] text-xs space-y-2 mb-6 text-slate-400">
+          <div class="p-4 rounded-xl bg-white/50 border border-slate-200/60 text-xs space-y-2 mb-6 text-slate-500">
             <div class="flex items-center justify-between">
               <span>Chấm điểm phát âm chuẩn âm học (Phonetic Accuracy):</span>
               <span class="text-emerald-400 font-bold">96%</span>
@@ -763,25 +760,25 @@
       </div>
 
       <!-- Realtime 1v1 PvP Gaming -->
-      <div data-aos="fade-up" data-aos-delay="200" class="glass-dark-card p-8 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="200" class="frosted-glass-panel p-8 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mb-6">
             ⚔️
           </div>
           <span class="text-xs font-black uppercase tracking-wider text-amber-400">Đấu Trường Từ Vựng Real-time</span>
-          <h3 class="text-2xl sm:text-3xl font-black text-white mt-2 mb-4">
+          <h3 class="text-2xl sm:text-3xl font-black text-slate-800 mt-2 mb-4">
             PvP Đấu Trí 1v1 Qua WebSockets
           </h3>
-          <p class="text-sm text-slate-300 leading-relaxed mb-6">
+          <p class="text-sm text-slate-600 leading-relaxed mb-6">
             Ghép trận ngẫu nhiên hoặc tạo phòng so tài cùng bạn bè với 10 câu hỏi từ vựng tốc độ cao. Ai trả lời chuẩn xác và nhanh hơn sẽ giành cúp vô địch và thăng hạng trên Leaderboard toàn cầu.
           </p>
           <div class="grid grid-cols-2 gap-3 mb-6 text-center">
-            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08]">
-              <div class="text-xs font-bold text-slate-400">Word Match Game</div>
+            <div class="p-3.5 rounded-xl bg-white/50 border border-slate-200/60">
+              <div class="text-xs font-bold text-slate-500">Word Match Game</div>
               <div class="text-xs text-amber-400 font-extrabold mt-1">Nối từ phản xạ</div>
             </div>
-            <div class="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08]">
-              <div class="text-xs font-bold text-slate-400">Word Scramble</div>
+            <div class="p-3.5 rounded-xl bg-white/50 border border-slate-200/60">
+              <div class="text-xs font-bold text-slate-500">Word Scramble</div>
               <div class="text-xs text-cyan-400 font-extrabold mt-1">Xếp chữ thử thách</div>
             </div>
           </div>
@@ -802,10 +799,10 @@
       <span class="text-xs font-black uppercase tracking-widest text-indigo-400 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/20">
         Hệ Sinh Thái Phân Tán
       </span>
-      <h2 class="text-3xl sm:text-5xl font-black text-white mt-4 mb-4 tracking-tight">
+      <h2 class="text-3xl sm:text-5xl font-black text-slate-800 mt-4 mb-4 tracking-tight">
         Một Tài Khoản — Trọn Vẹn Hệ Sinh Thái Học Tập
       </h2>
-      <p class="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+      <p class="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
         VocabFlow được kiến trúc thành 3 ứng dụng chuyên biệt, đáp ứng hoàn hảo cho từng đối tượng từ học viên luyện thi, trẻ em khám phá đến nhà quản trị.
       </p>
     </div>
@@ -816,20 +813,20 @@
         href="https://app.vocalflow.site"
         data-aos="fade-up"
         data-aos-delay="100"
-        class="glass-dark-card p-8 rounded-3xl flex flex-col justify-between group border-indigo-500/20 hover:border-indigo-400/60"
+        class="frosted-glass-panel p-8 rounded-3xl flex flex-col justify-between group border-indigo-500/20 hover:border-indigo-400/60"
       >
         <div>
           <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
             🎓
           </div>
-          <h3 class="text-xl font-black text-white mt-5 group-hover:text-indigo-400 transition-colors">
+          <h3 class="text-xl font-black text-slate-800 mt-5 group-hover:text-indigo-400 transition-colors">
             Cổng Học Viên (Student)
           </h3>
-          <p class="text-xs text-slate-400 mt-2.5 leading-relaxed">
+          <p class="text-xs text-slate-500 mt-2.5 leading-relaxed">
             Kho 600+ từ TOEIC, thuật toán FSRS lặp lại ngắt quãng, AI Coach Studio, thi thử ETS 120 phút và sổ tay ghi chép từ vựng thông minh.
           </p>
         </div>
-        <div class="mt-8 pt-4 border-t border-white/[0.08] flex items-center justify-between">
+        <div class="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between">
           <span class="text-xs font-mono font-bold text-indigo-400">app.vocalflow.site</span>
           <span class="text-indigo-400 font-bold text-sm group-hover:translate-x-1.5 transition-transform">Truy cập →</span>
         </div>
@@ -840,20 +837,20 @@
         href="https://kid.vocalflow.site"
         data-aos="fade-up"
         data-aos-delay="200"
-        class="glass-dark-card p-8 rounded-3xl flex flex-col justify-between group border-amber-500/20 hover:border-amber-400/60"
+        class="frosted-glass-panel p-8 rounded-3xl flex flex-col justify-between group border-amber-500/20 hover:border-amber-400/60"
       >
         <div>
           <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
             🦁
           </div>
-          <h3 class="text-xl font-black text-white mt-5 group-hover:text-amber-400 transition-colors">
+          <h3 class="text-xl font-black text-slate-800 mt-5 group-hover:text-amber-400 transition-colors">
             Thế Giới Bé (Kids English)
           </h3>
-          <p class="text-xs text-slate-400 mt-2.5 leading-relaxed">
+          <p class="text-xs text-slate-500 mt-2.5 leading-relaxed">
             20+ mini-games âm thanh sống động, bản đồ phiêu lưu Kids Journey, sở thú từ vựng Kids My World và góc phụ huynh Parent Lock an toàn.
           </p>
         </div>
-        <div class="mt-8 pt-4 border-t border-white/[0.08] flex items-center justify-between">
+        <div class="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between">
           <span class="text-xs font-mono font-bold text-amber-400">kid.vocalflow.site</span>
           <span class="text-amber-400 font-bold text-sm group-hover:translate-x-1.5 transition-transform">Truy cập →</span>
         </div>
@@ -864,22 +861,22 @@
         href="https://admin.vocalflow.site"
         data-aos="fade-up"
         data-aos-delay="300"
-        class="glass-dark-card p-8 rounded-3xl flex flex-col justify-between group border-slate-700/60 hover:border-slate-500"
+        class="frosted-glass-panel p-8 rounded-3xl flex flex-col justify-between group border-slate-700/60 hover:border-slate-500"
       >
         <div>
-          <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-300 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+          <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
             ⚙️
           </div>
-          <h3 class="text-xl font-black text-white mt-5 group-hover:text-slate-300 transition-colors">
+          <h3 class="text-xl font-black text-slate-800 mt-5 group-hover:text-slate-600 transition-colors">
             Quản Trị (Admin Command)
           </h3>
-          <p class="text-xs text-slate-400 mt-2.5 leading-relaxed">
+          <p class="text-xs text-slate-500 mt-2.5 leading-relaxed">
             Giám sát rủi ro thiết bị (Device Limits, OTP Logout), quản lý 13 nhóm cài đặt hệ thống, import đề thi Excel và phân quyền RBAC đa cấp.
           </p>
         </div>
-        <div class="mt-8 pt-4 border-t border-white/[0.08] flex items-center justify-between">
-          <span class="text-xs font-mono font-bold text-slate-400">admin.vocalflow.site</span>
-          <span class="text-slate-300 font-bold text-sm group-hover:translate-x-1.5 transition-transform">Quản trị →</span>
+        <div class="mt-8 pt-4 border-t border-slate-200/60 flex items-center justify-between">
+          <span class="text-xs font-mono font-bold text-slate-500">admin.vocalflow.site</span>
+          <span class="text-slate-600 font-bold text-sm group-hover:translate-x-1.5 transition-transform">Quản trị →</span>
         </div>
       </a>
     </div>
@@ -893,136 +890,136 @@
       <span class="text-xs font-black uppercase tracking-widest text-emerald-400 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/20">
         Câu Chuyện Học Viên
       </span>
-      <h2 class="text-3xl sm:text-5xl font-black text-white mt-4 mb-4 tracking-tight">
+      <h2 class="text-3xl sm:text-5xl font-black text-slate-800 mt-4 mb-4 tracking-tight">
         Hơn 12,000+ Học Viên Đã Bứt Phá Mục Tiêu
       </h2>
-      <p class="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+      <p class="text-slate-500 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
         Lắng nghe chia sẻ thực tế từ học viên luyện thi TOEIC, chuyên gia công nghệ và phụ huynh tin chọn VocabFlow.
       </p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Review 1 -->
-      <div data-aos="fade-up" data-aos-delay="100" class="glass-dark-card p-7 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="100" class="frosted-glass-panel p-7 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="flex items-center gap-1 text-amber-400 mb-4 text-sm">
             ★★★★★
           </div>
-          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 italic">
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 italic">
             "Mình từng học Anki nhưng cài đặt rất phức tạp và nhanh nản. Sang VocabFlow giao diện cực mượt, thuật toán FSRS tính thời điểm ôn cực chuẩn. Sau 6 tuần mình bứt phá từ 520 lên 865 TOEIC!"
           </p>
         </div>
-        <div class="flex items-center gap-3 pt-4 border-t border-white/[0.08]">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200/60">
           <div class="w-10 h-10 rounded-full bg-indigo-500/30 border border-indigo-400/40 flex items-center justify-center font-bold text-sm text-indigo-300">
             HN
           </div>
           <div>
-            <div class="text-sm font-extrabold text-white">Nguyễn Hoàng Nam</div>
+            <div class="text-sm font-extrabold text-slate-800">Nguyễn Hoàng Nam</div>
             <div class="text-[11px] text-emerald-400 font-semibold">TOEIC 520 ➔ 865 ETS</div>
           </div>
         </div>
       </div>
 
       <!-- Review 2 -->
-      <div data-aos="fade-up" data-aos-delay="200" class="glass-dark-card p-7 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="200" class="frosted-glass-panel p-7 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="flex items-center gap-1 text-amber-400 mb-4 text-sm">
             ★★★★★
           </div>
-          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 italic">
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 italic">
             "Tính năng Vocabulary Capture đỉnh thật sự! Đọc báo Bloomberg hay tài liệu chuyên ngành chỉ cần dán vào là AI tự lọc từ vựng đắt giá kèm Collocations để ôn tập. Rất đáng đồng tiền."
           </p>
         </div>
-        <div class="flex items-center gap-3 pt-4 border-t border-white/[0.08]">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200/60">
           <div class="w-10 h-10 rounded-full bg-cyan-500/30 border border-cyan-400/40 flex items-center justify-center font-bold text-sm text-cyan-300">
             TM
           </div>
           <div>
-            <div class="text-sm font-extrabold text-white">Trần Thảo My</div>
+            <div class="text-sm font-extrabold text-slate-800">Trần Thảo My</div>
             <div class="text-[11px] text-cyan-400 font-semibold">IELTS 7.5 • Du học sinh Melbourne</div>
           </div>
         </div>
       </div>
 
       <!-- Review 3 -->
-      <div data-aos="fade-up" data-aos-delay="300" class="glass-dark-card p-7 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="300" class="frosted-glass-panel p-7 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="flex items-center gap-1 text-amber-400 mb-4 text-sm">
             ★★★★★
           </div>
-          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 italic">
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 italic">
             "Động cơ nhận thức 5D giải quyết đúng căn bệnh nhớ từ nhưng không nói được. Phỏng vấn tiếng Anh với AI Tutor cực kỳ thực tế, có chấm độ chính xác phát âm âm đuôi từng từ."
           </p>
         </div>
-        <div class="flex items-center gap-3 pt-4 border-t border-white/[0.08]">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200/60">
           <div class="w-10 h-10 rounded-full bg-purple-500/30 border border-purple-400/40 flex items-center justify-center font-bold text-sm text-purple-300">
             MQ
           </div>
           <div>
-            <div class="text-sm font-extrabold text-white">Lê Minh Quân</div>
+            <div class="text-sm font-extrabold text-slate-800">Lê Minh Quân</div>
             <div class="text-[11px] text-purple-400 font-semibold">Senior Frontend Engineer</div>
           </div>
         </div>
       </div>
 
       <!-- Review 4 -->
-      <div data-aos="fade-up" data-aos-delay="400" class="glass-dark-card p-7 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="400" class="frosted-glass-panel p-7 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="flex items-center gap-1 text-amber-400 mb-4 text-sm">
             ★★★★★
           </div>
-          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 italic">
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 italic">
             "Bé Ben 7 tuổi nhà mình ngày nào cũng đòi vào Thế Giới Bé chơi game ghép từ và nông trại. Vừa học vừa chơi không bị áp lực, phát âm theo giọng bản xứ rất tự nhiên."
           </p>
         </div>
-        <div class="flex items-center gap-3 pt-4 border-t border-white/[0.08]">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200/60">
           <div class="w-10 h-10 rounded-full bg-amber-500/30 border border-amber-400/40 flex items-center justify-center font-bold text-sm text-amber-300">
             ML
           </div>
           <div>
-            <div class="text-sm font-extrabold text-white">Chị Vũ Mai Lan</div>
+            <div class="text-sm font-extrabold text-slate-800">Chị Vũ Mai Lan</div>
             <div class="text-[11px] text-amber-400 font-semibold">Phụ huynh học sinh Tiểu học</div>
           </div>
         </div>
       </div>
 
       <!-- Review 5 -->
-      <div data-aos="fade-up" data-aos-delay="500" class="glass-dark-card p-7 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="500" class="frosted-glass-panel p-7 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="flex items-center gap-1 text-amber-400 mb-4 text-sm">
             ★★★★★
           </div>
-          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 italic">
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 italic">
             "Phần thi thử Full Test 200 câu mô phỏng chuẩn ETS 100%, có giải thích chi tiết tiếng Việt và phân tích điểm yếu từng Part. Nhờ tính năng luyện lại câu sai mà mình đạt 850 TOEIC."
           </p>
         </div>
-        <div class="flex items-center gap-3 pt-4 border-t border-white/[0.08]">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200/60">
           <div class="w-10 h-10 rounded-full bg-rose-500/30 border border-rose-400/40 flex items-center justify-center font-bold text-sm text-rose-300">
             TH
           </div>
           <div>
-            <div class="text-sm font-extrabold text-white">Hoàng Thu Hà</div>
+            <div class="text-sm font-extrabold text-slate-800">Hoàng Thu Hà</div>
             <div class="text-[11px] text-rose-400 font-semibold">Chuyên viên Ngân hàng Vietcombank</div>
           </div>
         </div>
       </div>
 
       <!-- Review 6 -->
-      <div data-aos="fade-up" data-aos-delay="600" class="glass-dark-card p-7 rounded-3xl flex flex-col justify-between">
+      <div data-aos="fade-up" data-aos-delay="600" class="frosted-glass-panel p-7 rounded-3xl flex flex-col justify-between">
         <div>
           <div class="flex items-center gap-1 text-amber-400 mb-4 text-sm">
             ★★★★★
           </div>
-          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6 italic">
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 italic">
             "Chế độ đấu trường từ vựng 1v1 cuốn khủng khiếp, thi đấu tốc độ với bạn bè làm phản xạ từ tăng vọt. Vừa duy trì Streak vừa leo Rank cực kỳ hào hứng mỗi ngày."
           </p>
         </div>
-        <div class="flex items-center gap-3 pt-4 border-t border-white/[0.08]">
+        <div class="flex items-center gap-3 pt-4 border-t border-slate-200/60">
           <div class="w-10 h-10 rounded-full bg-emerald-500/30 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-300">
             QH
           </div>
           <div>
-            <div class="text-sm font-extrabold text-white">Đặng Quốc Huy</div>
+            <div class="text-sm font-extrabold text-slate-800">Đặng Quốc Huy</div>
             <div class="text-[11px] text-emerald-400 font-semibold">Sinh viên ĐH Bách Khoa • 910 TOEIC</div>
           </div>
         </div>
@@ -1035,47 +1032,47 @@
   <!-- ========================================================================= -->
   <section class="py-20 px-4 sm:px-6 max-w-5xl mx-auto w-full text-center">
     <div class="mb-14" data-aos="fade-up">
-      <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-3">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-800 mb-3">
         Hành Trình 3 Bước Chinh Phục Từ Vựng
       </h2>
-      <p class="text-sm sm:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
+      <p class="text-sm sm:text-base text-slate-500 max-w-xl mx-auto leading-relaxed">
         Phương pháp khoa học giúp bạn học ít hơn mỗi ngày nhưng đạt kết quả bền vững nhất.
       </p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-      <div data-aos="fade-up" data-aos-delay="100" class="glass-dark-card p-7 rounded-2xl">
+      <div data-aos="fade-up" data-aos-delay="100" class="frosted-glass-panel p-7 rounded-2xl">
         <div class="text-4xl font-black text-cyan-400 mb-3 leading-none">
           01
         </div>
-        <h4 class="font-bold text-base text-white mb-2 leading-snug">
+        <h4 class="font-bold text-base text-slate-800 mb-2 leading-snug">
           Định vị trình độ ban đầu
         </h4>
-        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+        <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
           Làm bài test nhanh 15 câu chuẩn đoán để hệ thống xác định vốn từ hiện tại và tự động phân bổ lộ trình từ vựng mục tiêu.
         </p>
       </div>
 
-      <div data-aos="fade-up" data-aos-delay="200" class="glass-dark-card p-7 rounded-2xl">
+      <div data-aos="fade-up" data-aos-delay="200" class="frosted-glass-panel p-7 rounded-2xl">
         <div class="text-4xl font-black text-indigo-400 mb-3 leading-none">
           02
         </div>
-        <h4 class="font-bold text-base text-white mb-2 leading-snug">
+        <h4 class="font-bold text-base text-slate-800 mb-2 leading-snug">
           Lặp lại ngắt quãng thích ứng
         </h4>
-        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+        <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
           Mỗi ngày chỉ cần 10-15 phút ôn tập đúng các thẻ từ sắp quên. Thuật toán FSRS v5 tự động xếp lịch chính xác từng ngày.
         </p>
       </div>
 
-      <div data-aos="fade-up" data-aos-delay="300" class="glass-dark-card p-7 rounded-2xl">
+      <div data-aos="fade-up" data-aos-delay="300" class="frosted-glass-panel p-7 rounded-2xl">
         <div class="text-4xl font-black text-purple-400 mb-3 leading-none">
           03
         </div>
-        <h4 class="font-bold text-base text-white mb-2 leading-snug">
+        <h4 class="font-bold text-base text-slate-800 mb-2 leading-snug">
           Tự tin làm chủ đề thi
         </h4>
-        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+        <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
           Chuyển hóa từ vựng thành phản xạ tự nhiên, hiểu sâu ngữ cảnh đề thi TOEIC và bứt phá mục tiêu điểm số.
         </p>
       </div>
@@ -1088,15 +1085,15 @@
   <section class="py-16 px-4 sm:px-6 max-w-5xl mx-auto w-full">
     <div
       data-aos="zoom-in"
-      class="p-8 sm:p-14 rounded-3xl bg-gradient-to-br from-[#0c1224] via-[#101b38] to-[#0a152d] backdrop-blur-2xl border border-cyan-500/30 text-white text-center shadow-2xl shadow-indigo-950/70 relative overflow-hidden"
+      class="p-8 sm:p-14 rounded-3xl bg-gradient-to-br from-[#0c1224] via-[#101b38] to-[#0a152d] backdrop-blur-2xl border border-cyan-500/30 text-slate-800 text-center shadow-2xl shadow-indigo-950/70 relative overflow-hidden"
     >
       <div class="absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-      <h2 class="text-2xl sm:text-4xl font-black mb-4 leading-snug text-white">
+      <h2 class="text-2xl sm:text-4xl font-black mb-4 leading-snug text-slate-800">
         Bắt đầu làm chủ từ vựng ngay hôm nay
       </h2>
-      <p class="text-sm sm:text-base text-slate-300 max-w-xl mx-auto mb-8 leading-relaxed font-normal">
+      <p class="text-sm sm:text-base text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed font-normal">
         Không cần cài đặt rườm rà. Trải nghiệm phương pháp ghi nhớ hiện đại nhất hoàn toàn miễn phí trên nền tảng VocabFlow AI.
       </p>
 
@@ -1123,17 +1120,17 @@
   <!-- ========================================================================= -->
   <!-- 11. Footer                                                                -->
   <!-- ========================================================================= -->
-  <footer class="py-12 border-t border-white/[0.08] bg-[#04060d] text-xs text-slate-400">
+  <footer class="py-12 border-t border-slate-200/60 bg-white/40 text-xs text-slate-500">
     <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
       <div class="flex items-center gap-3">
         <img src="/vocabflow-logo-256.png" alt="Logo" class="w-6 h-6 rounded-md object-contain" />
-        <span class="font-extrabold text-slate-200 text-sm">VocabFlow AI</span>
+        <span class="font-extrabold text-slate-700 text-sm">VocabFlow AI</span>
         <span>— Next-Gen Cognitive 5D & Adaptive Spaced Repetition Platform</span>
       </div>
-      <div class="flex items-center gap-6 text-slate-400">
-        <a href="https://app.vocalflow.site" class="hover:text-white transition">Học Viên</a>
-        <a href="https://kid.vocalflow.site" class="hover:text-white transition">Trẻ Em</a>
-        <a href="https://admin.vocalflow.site" class="hover:text-white transition">Quản Trị</a>
+      <div class="flex items-center gap-6 text-slate-500">
+        <a href="https://app.vocalflow.site" class="hover:text-slate-800 transition">Học Viên</a>
+        <a href="https://kid.vocalflow.site" class="hover:text-slate-800 transition">Trẻ Em</a>
+        <a href="https://admin.vocalflow.site" class="hover:text-slate-800 transition">Quản Trị</a>
         <span>© 2026 VocabFlow. All rights reserved.</span>
       </div>
     </div>
@@ -1223,7 +1220,7 @@
     }
 
     // 5. Liquid Glass Dynamic Hover Glow Effect
-    document.querySelectorAll('.glass-dark-card').forEach(card => {
+    document.querySelectorAll('.frosted-glass-panel').forEach(card => {
       card.addEventListener('mousemove', e => {
         const rect = card.getBoundingClientRect();
         const x = e.clientX - rect.left;
