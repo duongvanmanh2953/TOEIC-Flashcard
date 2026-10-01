@@ -236,22 +236,10 @@ export const App: React.FC = () => {
                 <span>Đấu Trường 1v1</span>
               </a>
               <a
-                href="#smart-features"
-                className="hover:text-cyan-400 transition py-1"
-              >
-                Nhập File Tự Động
-              </a>
-              <a
-                href="https://app.vocalflow.site/placement-test"
-                className="hover:text-cyan-400 transition py-1"
-              >
-                Test Trình Độ
-              </a>
-              <a
                 href="https://kid.vocalflow.site"
                 className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 transition py-1 px-3 rounded-full bg-amber-500/15 border border-amber-500/30 text-xs font-bold"
               >
-                <span>🦁</span> Thế Giới Bé
+                Thế Giới Bé
               </a>
             </nav>
 
