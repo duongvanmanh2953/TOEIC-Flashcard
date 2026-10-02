@@ -1040,19 +1040,76 @@ export class AdminService {
 
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (data.projectId && data.projectId.toLowerCase() !== projectId.toLowerCase()) {
+        const rawApiProjectId = (data.projectId || '').trim();
+        const authorizedDomains: string[] = Array.isArray(data.authorizedDomains) ? data.authorizedDomains : [];
+        const cleanInputProject = projectId.toLowerCase();
+        const cleanAuthDomain = (dto.authDomain || '').toLowerCase().trim();
+
+        // 1. Direct match: Google returned the project ID or user input matches data.projectId
+        let isMatch = rawApiProjectId.toLowerCase() === cleanInputProject;
+        let detectedProjectNumber: string | undefined = undefined;
+        let detectedProjectId: string = projectId;
+
+        // 2. If data.projectId is a numeric Google Cloud Project Number (e.g. "558974914414")
+        if (!isMatch && /^\d+$/.test(rawApiProjectId)) {
+          detectedProjectNumber = rawApiProjectId;
+
+          // Check if any authorized domain corresponds to the input project ID (e.g. "vocalflow-e04ca.firebaseapp.com")
+          const domainMatch = authorizedDomains.some((d: string) => {
+            const domainLower = String(d).toLowerCase().trim();
+            return (
+              domainLower === cleanInputProject ||
+              domainLower === `${cleanInputProject}.firebaseapp.com` ||
+              domainLower === `${cleanInputProject}.web.app` ||
+              domainLower.startsWith(`${cleanInputProject}.`) ||
+              domainLower.includes(cleanInputProject)
+            );
+          });
+
+          // Check if user input authDomain matches authorized domains
+          const authDomainMatch =
+            cleanAuthDomain &&
+            authorizedDomains.some((d: string) => String(d).toLowerCase().trim() === cleanAuthDomain);
+
+          if (domainMatch || authDomainMatch) {
+            isMatch = true;
+          } else {
+            // Check if there is an explicit conflicting project domain in authorizedDomains
+            const conflictingDomain = authorizedDomains.find((d: string) => {
+              const dom = String(d).toLowerCase().trim();
+              return (dom.endsWith('.firebaseapp.com') || dom.endsWith('.web.app')) && !dom.includes(cleanInputProject);
+            });
+
+            if (conflictingDomain) {
+              const otherProjectId = conflictingDomain.replace('.firebaseapp.com', '').replace('.web.app', '');
+              detectedProjectId = otherProjectId;
+              isMatch = false;
+            } else {
+              // No conflicting domain found and API key is valid for this project number
+              isMatch = true;
+            }
+          }
+        }
+
+        if (!isMatch) {
           return {
             success: false,
             latencyMs,
-            message: `Kiểm tra thất bại: API Key hợp lệ nhưng thuộc dự án "${data.projectId}", không khớp với Project ID bạn đã nhập ("${projectId}").`,
+            message: `Kiểm tra thất bại: API Key hợp lệ nhưng thuộc dự án "${detectedProjectId}"${
+              detectedProjectNumber ? ` (Mã dự án Google Cloud: ${detectedProjectNumber})` : ''
+            }, không khớp với Project ID bạn đã nhập ("${projectId}").`,
           };
         }
+
         return {
           success: true,
           latencyMs,
-          projectId: data.projectId || projectId,
+          projectId: detectedProjectId || projectId,
+          projectNumber: detectedProjectNumber,
           authorizedDomains: data.authorizedDomains || [],
-          message: `Kết nối Firebase thành công (${latencyMs}ms)! Khóa API Key và Project ID hợp lệ, sẵn sàng phục vụ OAuth.`,
+          message: `Kết nối Firebase thành công (${latencyMs}ms)! Khóa API Key và Project ID hợp lệ${
+            detectedProjectNumber ? ` (Mã dự án: ${detectedProjectNumber})` : ''
+          }, sẵn sàng phục vụ OAuth.`,
         };
       } else {
         const errData = await res.json().catch(() => ({}));

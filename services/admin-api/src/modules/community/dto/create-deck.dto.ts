@@ -76,6 +76,16 @@ export class CreateDeckDto {
   @IsBoolean()
   isPublic?: boolean = true;
 
+  @ApiPropertyOptional({ example: 'en', default: 'en' })
+  @IsOptional()
+  @IsString()
+  languageId?: string = 'en';
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  isOfficial?: boolean = false;
+
   @ApiPropertyOptional({ example: 'Secret123!' })
   @IsOptional()
   @IsString()
@@ -132,6 +142,16 @@ export class UpdateDeckDto {
   @IsOptional()
   @IsBoolean()
   isPublic?: boolean;
+
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  @IsString()
+  languageId?: string;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  isOfficial?: boolean;
 
   @ApiPropertyOptional({ example: 'NewSecret123!' })
   @IsOptional()

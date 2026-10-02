@@ -45,6 +45,8 @@ interface SharedDeck {
   description?: string;
   category: string;
   cefrLevel: string;
+  languageId?: string;
+  isOfficial?: boolean;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   isProtected?: boolean;
   hasPassword?: boolean;
@@ -71,6 +73,8 @@ export const AdminSharedVocabularyPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [spaceFilter, setSpaceFilter] = useState('ALL');
+  const [officialFilter, setOfficialFilter] = useState<'ALL' | 'OFFICIAL' | 'COMMUNITY'>('ALL');
   const [selectedDeck, setSelectedDeck] = useState<SharedDeck | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -78,6 +82,9 @@ export const AdminSharedVocabularyPage: React.FC = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showApproveConfirmModal, setShowApproveConfirmModal] = useState(false);
   const [showUnapproveConfirmModal, setShowUnapproveConfirmModal] = useState(false);
+  const [showChangeLangModal, setShowChangeLangModal] = useState(false);
+  const [deckToChangeLang, setDeckToChangeLang] = useState<SharedDeck | null>(null);
+  const [selectedNewLang, setSelectedNewLang] = useState<string>('en');
   const [messageToast, setMessageToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const showToast = (type: 'success' | 'error', text: string) => {
@@ -91,6 +98,8 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       const res = await api.get('/admin/shared-vocabulary', {
         params: {
           status: statusFilter !== 'ALL' ? statusFilter : undefined,
+          languageId: spaceFilter !== 'ALL' ? spaceFilter : undefined,
+          isOfficial: officialFilter === 'OFFICIAL' ? 'true' : officialFilter === 'COMMUNITY' ? 'false' : undefined,
           search: search.trim() || undefined,
         },
       });
@@ -102,7 +111,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search]);
+  }, [statusFilter, spaceFilter, officialFilter, search]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -110,6 +119,53 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [fetchDecks]);
+
+  const handleToggleOfficial = async (deck: SharedDeck) => {
+    setActionLoading(true);
+    try {
+      const nextOfficial = !deck.isOfficial;
+      await api.post(`/admin/shared-vocabulary/${deck.id}/toggle-official`, {
+        isOfficial: nextOfficial,
+      });
+      showToast(
+        'success',
+        nextOfficial
+          ? `⭐ Đã thiết lập "${deck.title}" làm KHO CHÍNH của app!`
+          : `Đã hủy thiết lập kho chính cho "${deck.title}".`,
+      );
+      if (selectedDeck && selectedDeck.id === deck.id) {
+        setSelectedDeck((prev) => (prev ? { ...prev, isOfficial: nextOfficial } : null));
+      }
+      fetchDecks();
+    } catch (err: any) {
+      console.error('Toggle official error:', err);
+      showToast('error', err?.response?.data?.message || 'Không thể cập nhật trạng thái kho chính.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateLanguage = async (deckId: string, newLangId: string) => {
+    setActionLoading(true);
+    try {
+      await api.patch(`/admin/shared-vocabulary/${deckId}/language`, {
+        languageId: newLangId,
+      });
+      const langObj = SUPPORTED_LANGUAGES.find((l) => l.id === newLangId);
+      showToast('success', `Đã chuyển bộ từ sang không gian ngôn ngữ: ${langObj?.name || newLangId}`);
+      setShowChangeLangModal(false);
+      setDeckToChangeLang(null);
+      if (selectedDeck && selectedDeck.id === deckId) {
+        setSelectedDeck((prev) => (prev ? { ...prev, languageId: newLangId } : null));
+      }
+      fetchDecks();
+    } catch (err: any) {
+      console.error('Update deck language error:', err);
+      showToast('error', err?.response?.data?.message || 'Không thể chuyển đổi không gian ngôn ngữ.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleModerate = async (
     action: 'APPROVE' | 'REJECT' | 'PENDING',
@@ -190,15 +246,24 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     { value: 'REJECTED', label: 'Bị từ chối (Rejected)' },
   ];
 
-  const [spaceFilter, setSpaceFilter] = useState('ALL');
+  const officialOptions = [
+    { value: 'ALL', label: 'Tất cả loại kho' },
+    { value: 'OFFICIAL', label: '⭐ Kho chính của App' },
+    { value: 'COMMUNITY', label: '👥 Kho cộng đồng' },
+  ];
 
   const baseDecks = Array.isArray(decks) ? decks : [];
   const deckList = baseDecks.filter((d: any) => {
-    if (spaceFilter === 'ALL') return true;
-    return d.languageId === spaceFilter || d.languageSpaceId === spaceFilter;
+    if (spaceFilter !== 'ALL' && d.languageId !== spaceFilter && d.languageSpaceId !== spaceFilter) {
+      return false;
+    }
+    if (officialFilter === 'OFFICIAL' && !d.isOfficial) return false;
+    if (officialFilter === 'COMMUNITY' && d.isOfficial) return false;
+    return true;
   });
   const pendingCount = deckList.filter((d) => d.status === 'PENDING').length;
   const approvedCount = deckList.filter((d) => d.status === 'APPROVED').length;
+  const officialCount = deckList.filter((d) => d.isOfficial).length;
 
   return (
     <div className="space-y-6">
@@ -231,20 +296,24 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                 Kho Từ Vựng Học Viên (Learner Shared Vault)
               </h2>
               <p className="text-xs text-slate-400">
-                Kiểm duyệt nội dung cộng đồng đóng góp, đánh giá AI Quality Score và xuất bản vào từ điển chính thống.
+                Phân quyền Kho Chính hiển thị trên app, quản lý không gian ngôn ngữ và kiểm duyệt nội dung cộng đồng đóng góp.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-amber-300">{pendingCount} Chờ Phê Duyệt</span>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-bold text-amber-300">{officialCount} Kho Chính App</span>
           </div>
-          <div className="px-3.5 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
+          <div className="px-3 py-1.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-indigo-400" />
+            <span className="text-xs font-bold text-indigo-300">{pendingCount} Chờ Duyệt</span>
+          </div>
+          <div className="px-3 py-1.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-bold text-emerald-300">{approvedCount} Đã Xuất Bản</span>
+            <span className="text-xs font-bold text-emerald-300">{approvedCount} Đã Duyệt</span>
           </div>
         </div>
       </div>
@@ -252,7 +321,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       {/* Search & Filter Bar */}
       <div className="glass-card p-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
-          <div className="sm:col-span-2 lg:col-span-5 relative">
+          <div className="sm:col-span-2 lg:col-span-4 relative">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
@@ -280,11 +349,21 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             />
           </div>
 
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <FilterSelect
               value={statusFilter}
               onChange={(val) => setStatusFilter(String(val))}
               options={statusOptions}
+              size="sm"
+              className="w-full"
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <FilterSelect
+              value={officialFilter}
+              onChange={(val) => setOfficialFilter(val as any)}
+              options={officialOptions}
               size="sm"
               className="w-full"
             />
@@ -321,10 +400,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <table className="w-full min-w-[1020px] text-left border-collapse text-xs">
+            <table className="w-full min-w-[1100px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-800/80 bg-slate-950/50 text-slate-400 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap select-none">
                   <th className="py-3 px-4 min-w-[280px]">Bộ Từ Vựng & Đóng Góp</th>
+                  <th className="py-3 px-3.5 min-w-[130px]">Không Gian Ngôn Ngữ</th>
                   <th className="py-3 px-3.5 min-w-[170px]">Người Đóng Góp</th>
                   <th className="py-3 px-3.5 min-w-[110px]">Số Từ / CEFR</th>
                   <th className="py-3 px-3.5 min-w-[140px]">AI Quality Score</th>
@@ -347,6 +427,16 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                       <td className="py-3.5 px-4 min-w-[280px]">
                         <div className="font-bold text-white group-hover:text-indigo-400 transition flex items-center gap-2 flex-wrap">
                           <span>{deck.title}</span>
+                          {deck.isOfficial ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs">
+                              <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
+                              <span>Kho chính App</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/50">
+                              Cộng đồng
+                            </span>
+                          )}
                           {deck.category && (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/50">
                               {deck.category}
@@ -364,6 +454,15 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                             {deck.description}
                           </p>
                         )}
+                      </td>
+
+                      <td className="py-3.5 px-3.5 min-w-[130px]">
+                        <div className="flex items-center gap-1.5">
+                          <CountryFlag languageId={deck.languageId || 'en'} size="xs" />
+                          <span className="font-semibold text-slate-200">
+                            {SUPPORTED_LANGUAGES.find((l) => l.id === (deck.languageId || 'en'))?.name || deck.languageId || 'Tiếng Anh'}
+                          </span>
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-3.5 min-w-[170px]">
@@ -452,6 +551,22 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                                 label: 'Xem chi tiết bộ từ',
                                 icon: <FileText className="w-3.5 h-3.5" />,
                                 onClick: () => setSelectedDeck(deck),
+                              },
+                              {
+                                id: 'toggle-official',
+                                label: deck.isOfficial ? 'Hủy quyền Kho chính của App' : '⭐ Đặt làm Kho chính của App',
+                                icon: <Sparkles className={`w-3.5 h-3.5 ${deck.isOfficial ? 'text-amber-400' : 'text-amber-400'}`} />,
+                                onClick: () => handleToggleOfficial(deck),
+                              },
+                              {
+                                id: 'change-lang',
+                                label: 'Đổi không gian ngôn ngữ',
+                                icon: <Tag className="w-3.5 h-3.5 text-indigo-400" />,
+                                onClick: () => {
+                                  setDeckToChangeLang(deck);
+                                  setSelectedNewLang(deck.languageId || 'en');
+                                  setShowChangeLangModal(true);
+                                },
                               },
                               ...(deck.status === 'PENDING'
                                 ? [
@@ -573,6 +688,72 @@ export const AdminSharedVocabularyPage: React.FC = () => {
 
             {/* Modal Body */}
             <div className="p-6 space-y-6 overflow-y-auto flex-1 text-xs">
+              {/* Official Status Configuration Card */}
+              <div
+                className={`p-4 rounded-2xl flex items-center justify-between gap-3 border ${
+                  selectedDeck.isOfficial
+                    ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
+                    : 'bg-slate-950/50 border-slate-800 text-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2.5 rounded-xl shrink-0 ${
+                      selectedDeck.isOfficial ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold flex items-center gap-1.5">
+                      {selectedDeck.isOfficial ? '⭐ KHO CHÍNH CỦA APP (Official Vault)' : 'Kho Đóng Góp Cộng Đồng'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {selectedDeck.isOfficial
+                        ? 'Bộ từ này được duyệt làm kho chính thức và sẽ hiển thị ưu tiên tại Kho Từ Vựng trên app.'
+                        : 'Đang ở chế độ cộng đồng. Đặt làm kho chính để hiển thị nổi bật trên ứng dụng học viên.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleOfficial(selectedDeck)}
+                  disabled={actionLoading}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                    selectedDeck.isOfficial
+                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{selectedDeck.isOfficial ? 'Hủy Kho chính' : 'Đặt làm Kho chính'}</span>
+                </button>
+              </div>
+
+              {/* Language Workspace Card */}
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <CountryFlag languageId={selectedDeck.languageId || 'en'} size="sm" />
+                  <div>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">Không gian ngôn ngữ học</span>
+                    <span className="font-bold text-slate-200 text-xs">
+                      {SUPPORTED_LANGUAGES.find((l) => l.id === (selectedDeck.languageId || 'en'))?.name || selectedDeck.languageId || 'Tiếng Anh'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeckToChangeLang(selectedDeck);
+                    setSelectedNewLang(selectedDeck.languageId || 'en');
+                    setShowChangeLangModal(true);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-semibold border border-indigo-500/20 transition cursor-pointer"
+                >
+                  Đổi ngôn ngữ
+                </button>
+              </div>
+
               {(selectedDeck.isProtected || selectedDeck.hasPassword) && (
                 <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 flex items-start gap-3">
                   <div className="p-2 rounded-xl bg-purple-900/50 text-purple-300 shrink-0">
@@ -866,6 +1047,76 @@ export const AdminSharedVocabularyPage: React.FC = () => {
               >
                 {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
                 <span>Xác Nhận Thu Hồi</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Language Workspace Modal */}
+      {showChangeLangModal && deckToChangeLang && (
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative z-[110] animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <Tag className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Chuyển Không Gian Ngôn Ngữ</h3>
+                <p className="text-xs text-slate-400 truncate max-w-[280px]">
+                  {deckToChangeLang.title}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Chọn không gian ngôn ngữ phù hợp cho bộ từ này. Sau khi chuyển đổi, bộ từ sẽ chỉ xuất hiện ở không gian học tương ứng trên app học viên.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-slate-400">Chọn Ngôn Ngữ Đích:</label>
+              <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.id}
+                    type="button"
+                    onClick={() => setSelectedNewLang(lang.id)}
+                    className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition cursor-pointer ${
+                      selectedNewLang === lang.id
+                        ? 'bg-indigo-600/20 border-indigo-500 text-white font-bold'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <CountryFlag languageId={lang.id} size="sm" />
+                    <div className="min-w-0">
+                      <p className="text-xs truncate">{lang.name}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{lang.nativeName}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowChangeLangModal(false);
+                  setDeckToChangeLang(null);
+                }}
+                disabled={actionLoading}
+                className="btn-glass-secondary btn-glass-sm font-semibold"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleUpdateLanguage(deckToChangeLang.id, selectedNewLang)}
+                disabled={actionLoading}
+                className="btn-glass-primary btn-glass-sm font-bold"
+              >
+                {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Lưu Thay Đổi</span>
               </button>
             </div>
           </div>

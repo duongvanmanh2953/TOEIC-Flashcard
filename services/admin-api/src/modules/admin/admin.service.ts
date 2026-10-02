@@ -1040,19 +1040,76 @@ export class AdminService {
 
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (data.projectId && data.projectId.toLowerCase() !== projectId.toLowerCase()) {
+        const rawApiProjectId = (data.projectId || '').trim();
+        const authorizedDomains: string[] = Array.isArray(data.authorizedDomains) ? data.authorizedDomains : [];
+        const cleanInputProject = projectId.toLowerCase();
+        const cleanAuthDomain = (dto.authDomain || '').toLowerCase().trim();
+
+        // 1. Direct match: Google returned the project ID or user input matches data.projectId
+        let isMatch = rawApiProjectId.toLowerCase() === cleanInputProject;
+        let detectedProjectNumber: string | undefined = undefined;
+        let detectedProjectId: string = projectId;
+
+        // 2. If data.projectId is a numeric Google Cloud Project Number (e.g. "558974914414")
+        if (!isMatch && /^\d+$/.test(rawApiProjectId)) {
+          detectedProjectNumber = rawApiProjectId;
+
+          // Check if any authorized domain corresponds to the input project ID (e.g. "vocalflow-e04ca.firebaseapp.com")
+          const domainMatch = authorizedDomains.some((d: string) => {
+            const domainLower = String(d).toLowerCase().trim();
+            return (
+              domainLower === cleanInputProject ||
+              domainLower === `${cleanInputProject}.firebaseapp.com` ||
+              domainLower === `${cleanInputProject}.web.app` ||
+              domainLower.startsWith(`${cleanInputProject}.`) ||
+              domainLower.includes(cleanInputProject)
+            );
+          });
+
+          // Check if user input authDomain matches authorized domains
+          const authDomainMatch =
+            cleanAuthDomain &&
+            authorizedDomains.some((d: string) => String(d).toLowerCase().trim() === cleanAuthDomain);
+
+          if (domainMatch || authDomainMatch) {
+            isMatch = true;
+          } else {
+            // Check if there is an explicit conflicting project domain in authorizedDomains
+            const conflictingDomain = authorizedDomains.find((d: string) => {
+              const dom = String(d).toLowerCase().trim();
+              return (dom.endsWith('.firebaseapp.com') || dom.endsWith('.web.app')) && !dom.includes(cleanInputProject);
+            });
+
+            if (conflictingDomain) {
+              const otherProjectId = conflictingDomain.replace('.firebaseapp.com', '').replace('.web.app', '');
+              detectedProjectId = otherProjectId;
+              isMatch = false;
+            } else {
+              // No conflicting domain found and API key is valid for this project number
+              isMatch = true;
+            }
+          }
+        }
+
+        if (!isMatch) {
           return {
             success: false,
             latencyMs,
-            message: `Kiểm tra thất bại: API Key hợp lệ nhưng thuộc dự án "${data.projectId}", không khớp với Project ID bạn đã nhập ("${projectId}").`,
+            message: `Kiểm tra thất bại: API Key hợp lệ nhưng thuộc dự án "${detectedProjectId}"${
+              detectedProjectNumber ? ` (Mã dự án Google Cloud: ${detectedProjectNumber})` : ''
+            }, không khớp với Project ID bạn đã nhập ("${projectId}").`,
           };
         }
+
         return {
           success: true,
           latencyMs,
-          projectId: data.projectId || projectId,
+          projectId: detectedProjectId || projectId,
+          projectNumber: detectedProjectNumber,
           authorizedDomains: data.authorizedDomains || [],
-          message: `Kết nối Firebase thành công (${latencyMs}ms)! Khóa API Key và Project ID hợp lệ, sẵn sàng phục vụ OAuth.`,
+          message: `Kết nối Firebase thành công (${latencyMs}ms)! Khóa API Key và Project ID hợp lệ${
+            detectedProjectNumber ? ` (Mã dự án: ${detectedProjectNumber})` : ''
+          }, sẵn sàng phục vụ OAuth.`,
         };
       } else {
         const errData = await res.json().catch(() => ({}));
@@ -1764,6 +1821,8 @@ export class AdminService {
   async getSharedVocabularyDecks(query: {
     status?: string;
     search?: string;
+    languageId?: string;
+    isOfficial?: string;
     page?: number;
     limit?: number;
   }) {
@@ -1774,6 +1833,12 @@ export class AdminService {
     const where: any = {};
     if (query.status && query.status !== 'ALL') {
       where.status = query.status as ModerationStatus;
+    }
+    if (query.languageId && query.languageId !== 'ALL') {
+      where.languageId = query.languageId;
+    }
+    if (query.isOfficial !== undefined && query.isOfficial !== 'ALL') {
+      where.isOfficial = query.isOfficial === 'true';
     }
     if (query.search) {
       where.OR = [
@@ -1792,7 +1857,7 @@ export class AdminService {
           words: true,
           _count: { select: { clones: true, words: true } },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ isOfficial: 'desc' }, { createdAt: 'desc' }],
         skip,
         take: limit,
       }),
@@ -1831,6 +1896,8 @@ export class AdminService {
       const { passwordHash: _ph, ...deckWithoutPassword } = deck;
       return {
         ...deckWithoutPassword,
+        languageId: deck.languageId || 'en',
+        isOfficial: Boolean(deck.isOfficial),
         hasPassword: deck.isProtected,
         qualityScore,
         flags,
@@ -1844,6 +1911,73 @@ export class AdminService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async toggleOfficialSharedDeck(deckId: string, isOfficial?: boolean, actorId?: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Shared deck not found');
+
+    const nextOfficial = isOfficial !== undefined ? Boolean(isOfficial) : !deck.isOfficial;
+    const updated = await this.prisma.communityDeck.update({
+      where: { id: deckId },
+      data: { isOfficial: nextOfficial, updatedAt: new Date() },
+      include: {
+        author: { select: { id: true, displayName: true, email: true } },
+        words: true,
+        _count: { select: { clones: true, words: true } },
+      },
+    });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: nextOfficial ? 'SET_OFFICIAL_DECK' : 'UNSET_OFFICIAL_DECK',
+            targetType: 'COMMUNITY_DECK',
+            targetId: deckId,
+            metadata: { deckTitle: deck.title, isOfficial: nextOfficial },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return updated;
+  }
+
+  async updateSharedDeckLanguage(deckId: string, languageId: string, actorId?: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Shared deck not found');
+
+    const updated = await this.prisma.communityDeck.update({
+      where: { id: deckId },
+      data: { languageId: languageId || 'en', updatedAt: new Date() },
+      include: {
+        author: { select: { id: true, displayName: true, email: true } },
+        words: true,
+        _count: { select: { clones: true, words: true } },
+      },
+    });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: 'UPDATE_DECK_LANGUAGE',
+            targetType: 'COMMUNITY_DECK',
+            targetId: deckId,
+            metadata: { deckTitle: deck.title, oldLanguageId: deck.languageId, newLanguageId: languageId },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return updated;
   }
 
   async moderateSharedDeck(
@@ -1940,12 +2074,14 @@ export class AdminService {
             phonetic: w.phonetic,
             partOfSpeech: w.partOfSpeech || 'n.',
             cefrLevel: deck.cefrLevel,
+            languageId: deck.languageId || 'en',
             difficulty: 3.0,
           },
           update: {
             definition: w.definition || w.meaning,
             phonetic: w.phonetic || undefined,
             partOfSpeech: w.partOfSpeech || undefined,
+            languageId: deck.languageId || 'en',
           },
         });
         publishedCount++;

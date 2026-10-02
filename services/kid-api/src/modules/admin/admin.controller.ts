@@ -425,12 +425,16 @@ export class AdminController {
   getSharedVocabularyDecks(
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('languageId') languageId?: string,
+    @Query('isOfficial') isOfficial?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
     return this.adminService.getSharedVocabularyDecks({
       status,
       search,
+      languageId,
+      isOfficial,
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
     });
@@ -446,6 +450,28 @@ export class AdminController {
     @CurrentUser('id') actorId?: string,
   ) {
     return this.adminService.moderateSharedDeck(deckId, action, reason, actorId);
+  }
+
+  @Post('shared-vocabulary/:id/toggle-official')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Toggle or set official status for a shared vocabulary deck' })
+  toggleOfficialSharedDeck(
+    @Param('id') deckId: string,
+    @Body('isOfficial') isOfficial?: boolean,
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.toggleOfficialSharedDeck(deckId, isOfficial, actorId);
+  }
+
+  @Patch('shared-vocabulary/:id/language')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update language workspace of a shared vocabulary deck' })
+  updateSharedDeckLanguage(
+    @Param('id') deckId: string,
+    @Body('languageId') languageId: string,
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.updateSharedDeckLanguage(deckId, languageId, actorId);
   }
 
   @Post('shared-vocabulary/:id/publish-master')

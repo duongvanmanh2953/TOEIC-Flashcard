@@ -788,16 +788,26 @@ export const CommunityDecksPage: React.FC = () => {
   });
 
   // Infinite Scroll & Lazy Loading for Public Decks
+  const [vaultCategory, setVaultCategory] = useState<'ALL' | 'OFFICIAL' | 'COMMUNITY'>('ALL');
+
+  const filteredCommunityDecks = useMemo(() => {
+    return decks.filter((d: any) => {
+      if (vaultCategory === 'OFFICIAL' && !d.isOfficial) return false;
+      if (vaultCategory === 'COMMUNITY' && d.isOfficial) return false;
+      return true;
+    });
+  }, [decks, vaultCategory]);
+
   const {
     visibleItems: visibleDecks,
     hasMore: hasMoreDecks,
     isLoadingMore: isLoadingMoreDecks,
     sentinelRef: decksSentinelRef,
   } = useScrollLoad({
-    items: decks,
+    items: filteredCommunityDecks,
     initialBatch: 12,
     batchSize: 12,
-    resetDependencies: [search, category, cefrLevel],
+    resetDependencies: [search, category, cefrLevel, vaultCategory],
   });
 
   // Infinite Scroll & Lazy Loading for My Decks
@@ -942,11 +952,60 @@ export const CommunityDecksPage: React.FC = () => {
       {/* TAB 1: COMMUNITY DECKS */}
       {mainTab === 'community' && (
         <>
+          {/* Sub-filter Category Switcher */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setVaultCategory('ALL')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                vaultCategory === 'ALL'
+                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Tất cả kho từ</span>
+              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-slate-500/20">{decks.length}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setVaultCategory('OFFICIAL')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                vaultCategory === 'OFFICIAL'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
+                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>⭐ Kho chính của App</span>
+              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-amber-500/20">
+                {decks.filter((d) => d.isOfficial).length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setVaultCategory('COMMUNITY')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                vaultCategory === 'COMMUNITY'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>👥 Đóng góp cộng đồng</span>
+              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-slate-500/20">
+                {decks.filter((d) => !d.isOfficial).length}
+              </span>
+            </button>
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
-          ) : decks.length === 0 ? (
+          ) : filteredCommunityDecks.length === 0 ? (
             <div className="text-center py-20 text-slate-400 space-y-3 bg-white/50 dark:bg-slate-900/50 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 p-8">
               <Layers className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
               <p className="text-sm font-medium">Chưa tìm thấy bộ từ vựng cộng đồng nào phù hợp.</p>
@@ -974,11 +1033,21 @@ export const CommunityDecksPage: React.FC = () => {
                   <div
                     key={deck.id}
                     onClick={() => handleActionOnDeck(deck, 'view')}
-                    className="p-5 flex flex-col justify-between relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs hover:border-indigo-400 dark:hover:border-indigo-600 hover:shadow-md transition duration-150 cv-auto-card cursor-pointer group"
+                    className={`p-5 flex flex-col justify-between relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border shadow-xs hover:shadow-md transition duration-150 cv-auto-card cursor-pointer group ${
+                      deck.isOfficial
+                        ? 'border-amber-400/60 dark:border-amber-500/50 bg-gradient-to-b from-amber-500/[0.05] via-transparent to-transparent hover:border-amber-500 dark:hover:border-amber-400'
+                        : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-indigo-600'
+                    }`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-2.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                          {deck.isOfficial && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 shadow-xs shrink-0">
+                              <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
+                              <span>KHO CHÍNH</span>
+                            </span>
+                          )}
                           <LanguageBadge languageIdOrCode={targetLang} size="xs" />
                           <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900 shrink-0">
                             {deck.cefrLevel === 'ALL' ? 'Tất cả' : `CEFR ${deck.cefrLevel}`}

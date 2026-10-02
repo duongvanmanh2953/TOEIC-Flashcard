@@ -47,22 +47,22 @@ export const VocabularyExplorerPage: React.FC = () => {
     items: words,
     initialBatch: 24,
     batchSize: 18,
-    resetDependencies: [search, selectedCefr, selectedTopic, scrollMode],
+    resetDependencies: [search, selectedCefr, selectedTopic, scrollMode, activeLanguage.id],
   });
 
   // Load Topics from API with IndexedDB caching
   useEffect(() => {
-    idbGetCache('vocab_topics').then((cachedTopics) => {
+    idbGetCache(`vocab_topics_${activeLanguage.id}`).then((cachedTopics) => {
       if (cachedTopics) setTopics(cachedTopics);
     });
 
-    api.get('/vocabulary/topics').then((res: any) => {
+    api.get('/vocabulary/topics', { params: { languageId: activeLanguage.id } }).then((res: any) => {
       if (res?.success && res.data) {
         setTopics(res.data);
-        idbSetCache('vocab_topics', res.data, 24 * 3600 * 1000);
+        idbSetCache(`vocab_topics_${activeLanguage.id}`, res.data, 24 * 3600 * 1000);
       }
     }).catch(() => {});
-  }, []);
+  }, [activeLanguage.id]);
 
   // Fetch Vocabulary Page from real database
   const fetchVocabPage = useCallback(
@@ -74,7 +74,7 @@ export const VocabularyExplorerPage: React.FC = () => {
       }
       setLoadError(null);
 
-      const cacheKey = `vocab_p${targetPage}_${search}_${selectedCefr}_${selectedTopic}`;
+      const cacheKey = `vocab_${activeLanguage.id}_p${targetPage}_${search}_${selectedCefr}_${selectedTopic}`;
 
       // Check cache only for initial page 1 to allow 0ms start
       if (targetPage === 1 && !append) {
@@ -88,7 +88,7 @@ export const VocabularyExplorerPage: React.FC = () => {
       }
 
       try {
-        const params: any = { page: targetPage, limit: 18 };
+        const params: any = { page: targetPage, limit: 18, languageId: activeLanguage.id };
         if (search.trim()) params.search = search.trim();
         if (selectedCefr) params.cefrLevel = selectedCefr;
         if (selectedTopic) params.topic = selectedTopic;
@@ -135,7 +135,7 @@ export const VocabularyExplorerPage: React.FC = () => {
         setLoadingMore(false);
       }
     },
-    [search, selectedCefr, selectedTopic]
+    [search, selectedCefr, selectedTopic, activeLanguage.id]
   );
 
   // Trigger initial fetch when search or filter parameters change

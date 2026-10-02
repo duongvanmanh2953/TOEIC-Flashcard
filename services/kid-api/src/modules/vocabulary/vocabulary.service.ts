@@ -52,6 +52,10 @@ export class VocabularyService {
       };
     }
 
+    if (query.languageId && query.languageId !== 'ALL') {
+      (where as any).languageId = query.languageId;
+    }
+
     const orderBy: Prisma.VocabularyOrderByWithRelationInput = {
       [sortBy || 'word']: sortOrder || 'asc',
     };

@@ -27,17 +27,23 @@ export class CommunityController {
     @Query('search') search?: string,
     @Query('category') category?: string,
     @Query('cefrLevel') cefrLevel?: CefrLevel,
+    @Query('languageId') languageId?: string,
+    @Query('isOfficial') isOfficial?: string,
     @CurrentUser('id') userId?: string,
   ) {
-    return this.communityService.getPublicDecks(search, category, cefrLevel, userId);
+    const isOfficialBool = isOfficial !== undefined && isOfficial !== 'ALL' ? isOfficial === 'true' : undefined;
+    return this.communityService.getPublicDecks(search, category, cefrLevel, languageId, isOfficialBool, userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-decks')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user personal decks with pending/approved/rejected status' })
-  getMyDecks(@CurrentUser('id') userId: string) {
-    return this.communityService.getMyDecks(userId);
+  getMyDecks(
+    @CurrentUser('id') userId: string,
+    @Query('languageId') languageId?: string,
+  ) {
+    return this.communityService.getMyDecks(userId, languageId);
   }
 
   @Public()

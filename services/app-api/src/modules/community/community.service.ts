@@ -20,11 +20,26 @@ export class CommunityService {
     private cacheService: RedisCacheService,
   ) {}
 
-  async getPublicDecks(search?: string, category?: string, cefrLevel?: CefrLevel, userId?: string) {
+  async getPublicDecks(
+    search?: string,
+    category?: string,
+    cefrLevel?: CefrLevel,
+    languageId?: string,
+    isOfficial?: boolean,
+    userId?: string,
+  ) {
     const where: any = {
       isPublic: true,
       status: ModerationStatus.APPROVED,
     };
+
+    if (languageId && languageId !== 'ALL') {
+      where.languageId = languageId;
+    }
+
+    if (isOfficial !== undefined) {
+      where.isOfficial = isOfficial;
+    }
 
     if (search) {
       where.OR = [
@@ -54,7 +69,12 @@ export class CommunityService {
           select: { words: true, clones: true, comments: true },
         },
       },
-      orderBy: [{ cloneCount: 'desc' }, { likeCount: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [
+        { isOfficial: 'desc' },
+        { cloneCount: 'desc' },
+        { likeCount: 'desc' },
+        { createdAt: 'desc' },
+      ],
     });
 
     const userLikes = userId
@@ -262,10 +282,15 @@ export class CommunityService {
     };
   }
 
-  async getMyDecks(userId: string) {
+  async getMyDecks(userId: string, languageId?: string) {
+    const deckWhere: any = { userId };
+    if (languageId && languageId !== 'ALL') {
+      deckWhere.languageId = languageId;
+    }
+
     // 1. Decks created by this user
     const createdDecks = await this.prisma.communityDeck.findMany({
-      where: { userId },
+      where: deckWhere,
       include: {
         author: {
           select: { id: true, displayName: true, avatar: true },
@@ -275,12 +300,17 @@ export class CommunityService {
           select: { words: true, clones: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ isOfficial: 'desc' }, { createdAt: 'desc' }],
     });
+
+    const cloneWhere: any = { userId };
+    if (languageId && languageId !== 'ALL') {
+      cloneWhere.deck = { languageId };
+    }
 
     // 2. Decks cloned by this user from community
     const clonedRecords = await this.prisma.deckClone.findMany({
-      where: { userId },
+      where: cloneWhere,
       include: {
         deck: {
           include: {
@@ -326,6 +356,8 @@ export class CommunityService {
     // Check user role: If admin, auto-approve; if learner, set to PENDING
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     const status = user?.role === 'ADMIN' ? ModerationStatus.APPROVED : ModerationStatus.PENDING;
+    const languageId = dto.languageId || 'en';
+    const isOfficial = Boolean(dto.isOfficial && (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'));
 
     // Secure password hashing
     const isProtected = Boolean(dto.password && dto.password.trim().length > 0);
@@ -346,6 +378,8 @@ export class CommunityService {
       const updated = await this.prisma.communityDeck.update({
         where: { id: existingPending.id },
         data: {
+          languageId,
+          isOfficial,
           description: dto.description,
           category: dto.category || 'General',
           cefrLevel: dto.cefrLevel || CefrLevel.B2,
@@ -377,6 +411,8 @@ export class CommunityService {
     const created = await this.prisma.communityDeck.create({
       data: {
         userId,
+        languageId,
+        isOfficial,
         title: dto.title,
         description: dto.description,
         category: dto.category || 'General',
@@ -745,6 +781,8 @@ export class CommunityService {
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.cefrLevel !== undefined) data.cefrLevel = dto.cefrLevel;
     if (dto.isPublic !== undefined) data.isPublic = dto.isPublic;
+    if (dto.languageId !== undefined) data.languageId = dto.languageId;
+    if (dto.isOfficial !== undefined && isAdmin) data.isOfficial = dto.isOfficial;
     
     // Status management: Admin can set any status. Owner can re-submit (PENDING) or withdraw to private
     if (dto.status !== undefined) {

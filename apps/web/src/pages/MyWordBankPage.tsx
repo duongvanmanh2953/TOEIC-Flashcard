@@ -2063,6 +2063,16 @@ export const MyWordBankPage: React.FC = () => {
                 <span>Tạo kho mới</span>
               </button>
 
+              <button
+                type="button"
+                onClick={() => navigate('/community-decks')}
+                className="btn-glass-secondary btn-glass-sm inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold border-amber-500/30 hover:bg-amber-500/10"
+                title="Khám phá Kho từ vựng chính thức và cộng đồng"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Kho từ của App</span>
+              </button>
+
               {/* Nhập từ dropdown */}
               <CustomDropdown
                 trigger={
