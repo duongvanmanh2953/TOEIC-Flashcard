@@ -262,10 +262,13 @@ export class CommunityService {
     };
   }
 
-  async getMyDecks(userId: string) {
+  async getMyDecks(userId: string, languageId?: string) {
     // 1. Decks created by this user
     const createdDecks = await this.prisma.communityDeck.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        ...(languageId ? { languageId } : {})
+      },
       include: {
         author: {
           select: { id: true, displayName: true, avatar: true },
@@ -280,7 +283,10 @@ export class CommunityService {
 
     // 2. Decks cloned by this user from community
     const clonedRecords = await this.prisma.deckClone.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        deck: languageId ? { languageId } : undefined
+      },
       include: {
         deck: {
           include: {
@@ -667,8 +673,12 @@ export class CommunityService {
     };
   }
 
-  async getMyWords(userId: string, filter?: string) {
+  async getMyWords(userId: string, filter?: string, languageId?: string) {
     const where: any = { userId };
+    
+    if (languageId) {
+      where.languageId = languageId;
+    }
 
     if (filter === 'FAVORITES') {
       where.isFavorite = true;

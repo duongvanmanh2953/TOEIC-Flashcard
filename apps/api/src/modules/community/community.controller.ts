@@ -36,8 +36,8 @@ export class CommunityController {
   @Get('my-decks')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user personal decks with pending/approved/rejected status' })
-  getMyDecks(@CurrentUser('id') userId: string) {
-    return this.communityService.getMyDecks(userId);
+  getMyDecks(@CurrentUser('id') userId: string, @Query('languageId') languageId?: string) {
+    return this.communityService.getMyDecks(userId, languageId);
   }
 
   @Public()
@@ -189,8 +189,8 @@ export class CommunityController {
   @Get('my-words')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get personal word bank categorized by status' })
-  getMyWords(@CurrentUser('id') userId: string, @Query('filter') filter?: string) {
-    return this.communityService.getMyWords(userId, filter);
+  getMyWords(@CurrentUser('id') userId: string, @Query('filter') filter?: string, @Query('languageId') languageId?: string) {
+    return this.communityService.getMyWords(userId, filter, languageId);
   }
 
   @UseGuards(JwtAuthGuard)

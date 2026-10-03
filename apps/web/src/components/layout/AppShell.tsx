@@ -690,7 +690,6 @@ export const AppShell: React.FC = () => {
               <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
               <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span>
             </div>
-            <LanguageSwitcher variant="compact" />
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -755,6 +754,11 @@ export const AppShell: React.FC = () => {
                     {activeProfile.level}
                   </span>
                 </div>
+              </div>
+
+              {/* Language Space Selector */}
+              <div className="flex justify-center bg-slate-50 dark:bg-slate-800/60 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+                <LanguageSwitcher variant="header" />
               </div>
 
               {/* 2. Upgrade / Account Status Banner (Moved from header) */}
