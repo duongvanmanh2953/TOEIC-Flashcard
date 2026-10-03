@@ -195,9 +195,7 @@ export class CommunityController {
   @Get('my-words')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get personal word bank categorized by status' })
-  getMyWords(@CurrentUser('id') userId: string, @Query('filter') filter?: string) {
-    return this.communityService.getMyWords(userId, filter);
-  }
+  getMyWords(@CurrentUser('id') userId: string, @Query('filter') filter?: string, @Query('languageId') languageId?: string) { return this.communityService.getMyWords(userId, filter, languageId); }
 
   @UseGuards(JwtAuthGuard)
   @Post('words/:id/favorite')

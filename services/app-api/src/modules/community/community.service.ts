@@ -703,8 +703,12 @@ export class CommunityService {
     };
   }
 
-  async getMyWords(userId: string, filter?: string) {
+  async getMyWords(userId: string, filter?: string, languageId?: string) {
     const where: any = { userId };
+    
+    if (languageId && languageId !== 'ALL') {
+      where.vocabulary = { languageId };
+    }
 
     if (filter === 'FAVORITES') {
       where.isFavorite = true;

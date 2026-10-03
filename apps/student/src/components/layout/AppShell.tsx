@@ -704,17 +704,39 @@ export const AppShell: React.FC = () => {
         {/* Mobile Header — Sticky fixed at top */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
           <div className="flex items-center gap-2">
-            <VocabFlowLogo
-              size="xs"
-              showContainer={false}
-              className="cursor-pointer"
-              onClick={() => navigate('/dashboard')}
-            />
+            <div onClick={() => navigate('/dashboard')} className="cursor-pointer flex items-center gap-2 group shrink-0" title="VocabFlow"><VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" /><span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span></div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <NotificationBell />
+            <button
+              onClick={() => {
+                if (!user || user.isAnonymous) {
+                  promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
+                  return;
+                }
+                setQuickNoteOpen(true);
+              }}
+              title="Ghi chép nhanh"
+              className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (!user || user.isAnonymous) {
+                  promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
+                  return;
+                }
+                setChatDrawerOpen(true);
+              }}
+              title="Tin nhắn học tập"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            >
+              <MessageSquare className="w-4 h-4 text-indigo-500" />
+            </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ml-1"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -739,7 +761,7 @@ export const AppShell: React.FC = () => {
               <div className="flex flex-col gap-3 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">
-                    <LanguageSwitcher variant="header" />
+                    <LanguageSwitcher variant="compact" />
                   </div>
                   <div className="shrink-0">
                     <NotificationBell />
@@ -854,7 +876,7 @@ export const AppShell: React.FC = () => {
         <header className="hidden lg:flex items-center justify-between px-4 lg:px-6 xl:px-8 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
           <div className="flex items-center gap-3 shrink-0">
             {/* Multi-Language Switcher */}
-            <LanguageSwitcher variant="header" />
+            <LanguageSwitcher variant="compact" />
             <span className="hidden xl:inline text-xs font-semibold text-slate-400 dark:text-slate-500">
               •
             </span>
