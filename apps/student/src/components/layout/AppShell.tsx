@@ -710,51 +710,8 @@ export const AppShell: React.FC = () => {
               className="cursor-pointer"
               onClick={() => navigate('/dashboard')}
             />
-            <LanguageSwitcher variant="compact" />
           </div>
           <div className="flex items-center gap-2">
-            {!isPro && (
-              <button
-                onClick={() => navigate('/upgrade')}
-                className="relative overflow-hidden px-2.5 py-1 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 hover:border-amber-300 transition-all group"
-              >
-                <Crown className="w-3 h-3 text-amber-500 dark:text-amber-300 fill-amber-400" />
-                <span>Mở khóa</span>
-              </button>
-            )}
-            <NotificationBell />
-            <button
-              onClick={() => {
-                if (!user || user.isAnonymous) {
-                  promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
-                  return;
-                }
-                setQuickNoteOpen(true);
-              }}
-              title="Ghi chép nhanh (Alt+N)"
-              className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                if (!user || user.isAnonymous) {
-                  promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
-                  return;
-                }
-                setChatDrawerOpen(true);
-              }}
-              title="Tin nhắn học tập E2EE"
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <MessageSquare className="w-4 h-4 text-indigo-500" />
-            </button>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -778,6 +735,56 @@ export const AppShell: React.FC = () => {
               className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3 max-h-[80vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Mobile Drawer Top Actions */}
+              <div className="flex flex-col gap-3 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <LanguageSwitcher variant="header" />
+                  </div>
+                  <div className="shrink-0">
+                    <NotificationBell />
+                  </div>
+                  <button onClick={toggleTheme} className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (!user || user.isAnonymous) { promptLogin('Đăng nhập để sử dụng ghi chép'); return; }
+                      setQuickNoteOpen(true);
+                    }}
+                    className="flex items-center justify-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <BookOpen className="w-4 h-4 text-indigo-500" />
+                    Ghi chép
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (!user || user.isAnonymous) { promptLogin('Đăng nhập để sử dụng tin nhắn'); return; }
+                      setChatDrawerOpen(true);
+                    }}
+                    className="flex items-center justify-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <MessageSquare className="w-4 h-4 text-indigo-500" />
+                    Tin nhắn
+                  </button>
+                </div>
+                
+                {!isPro && (
+                  <button
+                    onClick={() => navigate('/upgrade')}
+                    className="w-full relative overflow-hidden px-3 py-2.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:border-amber-300 transition-all group"
+                  >
+                    <Crown className="w-4 h-4 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                    <span>Mở khóa Pro</span>
+                  </button>
+                )}
+              </div>
+
               {navSections.map((section) => (
                 <div key={section.title} className="space-y-1">
                   <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
