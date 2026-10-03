@@ -679,69 +679,36 @@ export const AppShell: React.FC = () => {
 
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightPage ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
-        {/* Mobile Header — Sticky fixed at top */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
-          <div className="flex items-center gap-2">
-            <div onClick={() => navigate('/dashboard')} className="cursor-pointer">
-              <VocabFlowLogo size="xs" showContainer={false} />
+        {/* Mobile Header — Clean, compact, never overflows or stretches */}
+        <header className="lg:hidden flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              onClick={() => navigate('/dashboard')}
+              className="cursor-pointer flex items-center gap-2 group shrink-0"
+              title="VocabFlow"
+            >
+              <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
+              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span>
             </div>
             <LanguageSwitcher variant="compact" />
           </div>
-          <div className="flex items-center gap-2">
-            {!isPro && (
-              <button
-                onClick={() => navigate('/upgrade')}
-                className="relative overflow-hidden px-2.5 py-1 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 hover:border-amber-300 transition-all group"
-              >
-                <Crown className="w-3 h-3 text-amber-500 dark:text-amber-300 fill-amber-400" />
-                <span>Mở khóa</span>
-              </button>
-            )}
+
+          <div className="flex items-center gap-1.5 shrink-0">
             <NotificationBell />
             <button
-              onClick={() => {
-                if (!user || user.isAnonymous) {
-                  promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
-                  return;
-                }
-                setQuickNoteOpen(true);
-              }}
-              title="Ghi chép nhanh (Alt+N)"
-              className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                if (!user || user.isAnonymous) {
-                  promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
-                  return;
-                }
-                setChatDrawerOpen(true);
-              }}
-              title="Tin nhắn học tập E2EE"
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <MessageSquare className="w-4 h-4 text-indigo-500" />
-            </button>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-            <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              aria-label="Menu điều hướng"
+              title="Menu điều hướng & Công cụ"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </header>
 
         {/* Mobile Menu Overlay Drawer — FIXED OVERLAY, NEVER SCROLLS WITH PAGE */}
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-x-0 top-[57px] bottom-0 z-40 flex flex-col">
+          <div className="lg:hidden fixed inset-x-0 top-[53px] bottom-0 z-40 flex flex-col">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-xs"
@@ -750,9 +717,123 @@ export const AppShell: React.FC = () => {
             />
             {/* Drawer Menu Content */}
             <div
-              className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3 max-h-[80vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200"
+              className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3.5 max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* 1. Mobile Sidebar Top: User Profile & Streak */}
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+                <div
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setProfileModalOpen(true);
+                  }}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                      {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="min-w-0 truncate">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {user?.displayName || user?.email?.split('@')[0] || 'Learner'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {user?.email || 'Học viên'}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                </div>
+
+                {/* User Streak Pill */}
+                <div className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs min-w-0 truncate">
+                    <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
+                    <span className="truncate">{activeProfile.currentStreak || 0} Day Streak</span>
+                  </div>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-extrabold shrink-0 border border-amber-500/30">
+                    {activeProfile.level}
+                  </span>
+                </div>
+              </div>
+
+              {/* 2. Upgrade / Account Status Banner (Moved from header) */}
+              <div
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/upgrade');
+                }}
+                className="relative p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 hover:border-amber-400/80 cursor-pointer transition flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+                    <Crown className="w-4 h-4 text-amber-500 fill-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-wider leading-none">
+                      {isPro ? 'VocabFlow Pro VIP' : 'Nâng cấp tài khoản'}
+                    </p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+                      {isPro ? 'Đã kích hoạt toàn bộ đặc quyền' : 'Mở khóa kho từ & AI không giới hạn'}
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2 py-1 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-wide shrink-0">
+                  {isPro ? 'VIP PRO' : 'Mở khóa'}
+                </span>
+              </div>
+
+              {/* 3. Mobile Header Actions Bar (Now nicely tucked in sidebar) */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (!user || user.isAnonymous) {
+                      promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
+                      return;
+                    }
+                    setQuickNoteOpen(true);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-800 transition text-center"
+                >
+                  <BookOpen className="w-4 h-4 text-indigo-500 mb-1" />
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Ghi chép</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (!user || user.isAnonymous) {
+                      promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
+                      return;
+                    }
+                    setChatDrawerOpen(true);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-800 transition text-center"
+                >
+                  <MessageSquare className="w-4 h-4 text-indigo-500 mb-1" />
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Tin nhắn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center"
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="w-4 h-4 text-amber-400 mb-1" />
+                  ) : (
+                    <Moon className="w-4 h-4 text-indigo-500 mb-1" />
+                  )}
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    {theme === 'dark' ? 'Sáng' : 'Tối'}
+                  </span>
+                </button>
+              </div>
+
+              {/* 4. Navigation Menu Sections */}
               {navSections.map((section) => (
                 <div key={section.title} className="space-y-1">
                   <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -793,7 +874,7 @@ export const AppShell: React.FC = () => {
                 </div>
               ))}
 
-              {/* ONLY Show Logout If Authenticated; Show Login If Guest */}
+              {/* 5. ONLY Show Logout If Authenticated; Show Login If Guest */}
               {user?.isAnonymous || !user ? (
                 <button
                   onClick={() => {
