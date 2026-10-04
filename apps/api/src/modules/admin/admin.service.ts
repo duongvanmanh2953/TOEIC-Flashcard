@@ -9,6 +9,7 @@ import {
   SubscriptionTier,
   SupportPriority,
   CefrLevel,
+  ExamStatus,
 } from '@prisma/client';
 import { DeviceSecurityService } from '../auth/device-security.service';
 import { AdminChangePasswordDto } from '../auth/dto/change-password.dto';
@@ -2028,6 +2029,203 @@ export class AdminService {
       message: `Đã xuất bản thành công ${publishedCount} từ vựng vào từ điển hệ thống!`,
       publishedCount,
     };
+  }
+
+  async toggleOfficialSharedDeck(deckId: string, isOfficial?: boolean, actorId?: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Shared deck not found');
+
+    const nextOfficial = isOfficial !== undefined ? Boolean(isOfficial) : !deck.isOfficial;
+    const updated = await this.prisma.communityDeck.update({
+      where: { id: deckId },
+      data: { isOfficial: nextOfficial, updatedAt: new Date() },
+      include: {
+        author: { select: { id: true, displayName: true, email: true } },
+        words: true,
+        _count: { select: { clones: true, words: true } },
+      },
+    });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: nextOfficial ? 'SET_OFFICIAL_DECK' : 'UNSET_OFFICIAL_DECK',
+            targetType: 'COMMUNITY_DECK',
+            targetId: deckId,
+            metadata: { deckTitle: deck.title, isOfficial: nextOfficial },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return updated;
+  }
+
+  async updateSharedDeckLanguage(deckId: string, languageId: string, actorId?: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Shared deck not found');
+
+    const updated = await this.prisma.communityDeck.update({
+      where: { id: deckId },
+      data: { languageId: languageId || 'en', updatedAt: new Date() },
+      include: {
+        author: { select: { id: true, displayName: true, email: true } },
+        words: true,
+        _count: { select: { clones: true, words: true } },
+      },
+    });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: 'UPDATE_DECK_LANGUAGE',
+            targetType: 'COMMUNITY_DECK',
+            targetId: deckId,
+            metadata: { deckTitle: deck.title, oldLanguageId: deck.languageId, newLanguageId: languageId },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return updated;
+  }
+
+  async deleteSharedDeck(deckId: string, actorId?: string) {
+    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    if (!deck) throw new NotFoundException('Kho từ vựng không tồn tại');
+
+    await this.prisma.communityDeck.delete({ where: { id: deckId } });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: 'ADMIN_PERMANENT_DELETE_DECK',
+            targetType: 'COMMUNITY_DECK',
+            targetId: deckId,
+            metadata: { deckTitle: deck.title },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return { success: true, message: `Đã xóa vĩnh viễn kho từ "${deck.title}" thành công` };
+  }
+
+  async bulkDeleteSharedDecks(deckIds: string[], actorId?: string) {
+    if (!deckIds || deckIds.length === 0) return { success: true, deletedCount: 0 };
+
+    const res = await this.prisma.communityDeck.deleteMany({
+      where: { id: { in: deckIds } },
+    });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: 'ADMIN_PERMANENT_BULK_DELETE_DECKS',
+            targetType: 'COMMUNITY_DECK',
+            targetId: 'BULK',
+            metadata: { count: res.count, ids: deckIds },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return { success: true, deletedCount: res.count, message: `Đã xóa vĩnh viễn ${res.count} kho từ vựng thành công` };
+  }
+
+  async adminGetExams(query: {
+    languageId?: string;
+    examType?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.languageId && query.languageId !== 'ALL') {
+      where.languageId = query.languageId;
+    }
+    if (query.examType && query.examType !== 'ALL') {
+      where.examType = query.examType;
+    }
+    if (query.status && query.status !== 'ALL') {
+      where.status = query.status as ExamStatus;
+    }
+    if (query.search) {
+      where.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { author: { displayName: { contains: query.search, mode: 'insensitive' } } },
+        { author: { email: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.exam.findMany({
+        where,
+        include: {
+          author: { select: { id: true, displayName: true, email: true } },
+          _count: { select: { questions: true, attempts: true, likes: true, comments: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.exam.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async adminDeleteExam(examId: string, actorId?: string) {
+    const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
+    if (!exam) throw new NotFoundException('Bộ đề thi không tồn tại');
+
+    await this.prisma.exam.delete({ where: { id: examId } });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: 'ADMIN_PERMANENT_DELETE_EXAM',
+            targetType: 'EXAM',
+            targetId: examId,
+            metadata: { examTitle: exam.title, authorId: exam.authorId },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return { success: true, message: `Đã xóa vĩnh viễn bộ đề thi "${exam.title}" thành công` };
   }
 
   /**

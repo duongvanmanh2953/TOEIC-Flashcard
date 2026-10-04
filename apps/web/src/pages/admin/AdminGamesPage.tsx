@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Gamepad2,
   Plus,
@@ -25,10 +25,14 @@ import {
   Tag,
   DollarSign,
   AlertTriangle,
+  FileText,
+  Globe,
 } from 'lucide-react';
-import api from '../../lib/api';
+import api, { extractApiList } from '../../lib/api';
 import { useTranslation } from '../../i18n';
 import { confirmModal } from '../../components/common/ConfirmDialog';
+import { SUPPORTED_LANGUAGES } from '../../config/languages';
+import { CountryFlag } from '../../components/language/CountryFlag';
 import {
   AdminButton,
   AdminFilterBar,
@@ -40,6 +44,29 @@ import {
   Column,
   SelectOption,
 } from '../../components/admin/ui';
+
+export interface AdminExamItem {
+  id: string;
+  title: string;
+  description?: string;
+  examType: string;
+  section?: string;
+  level?: string;
+  languageId?: string;
+  durationMinutes: number;
+  totalQuestions: number;
+  status: string;
+  createdAt: string;
+  author?: {
+    id: string;
+    displayName?: string;
+    email?: string;
+  };
+  _count?: {
+    questions?: number;
+    attempts?: number;
+  };
+}
 
 export interface GameItem {
   id: string;
@@ -97,7 +124,7 @@ export interface QuestionItem {
 
 export const AdminGamesPage: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'games' | 'rooms' | 'questions'>('games');
+  const [activeTab, setActiveTab] = useState<'games' | 'rooms' | 'questions' | 'exams'>('games');
 
   // Search & Filter state
   const [search, setSearch] = useState('');
@@ -105,6 +132,12 @@ export const AdminGamesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Exams State
+  const [exams, setExams] = useState<AdminExamItem[]>([]);
+  const [examLoading, setExamLoading] = useState(false);
+  const [examLanguageFilter, setExamLanguageFilter] = useState('ALL');
+  const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
 
   // Test mode flag
   const [testMode, setTestMode] = useState<boolean>(true);
@@ -209,7 +242,72 @@ export const AdminGamesPage: React.FC = () => {
   useEffect(() => {
     fetchConfigsAndRooms();
     fetchQuestions();
+    fetchExams();
   }, []);
+
+  const fetchExams = async () => {
+    setExamLoading(true);
+    try {
+      const res: any = await api.get('/admin/exams', { params: { limit: 100 } }).catch(() => {
+        return api.get('/exams', { params: { limit: 100 } });
+      });
+      const list = extractApiList(res) || res?.data || res?.items || (Array.isArray(res) ? res : []);
+      if (Array.isArray(list)) {
+        setExams(list);
+      }
+    } catch (err) {
+      console.error('Fetch exams error:', err);
+    } finally {
+      setExamLoading(false);
+    }
+  };
+
+  const handleDeleteExam = async (exam: AdminExamItem) => {
+    const ok = await confirmModal({
+      title: 'Xóa vĩnh viễn bộ đề thi',
+      message: `Bạn có chắc chắn muốn XÓA VĨNH VIỄN bộ đề thi "${exam.title}"? Toàn bộ câu hỏi, phần thi và kết quả làm bài của học viên sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu mà không cần thông qua chủ đề thi!`,
+      type: 'danger',
+      confirmText: 'Xóa vĩnh viễn',
+      cancelText: 'Hủy bỏ',
+    });
+    if (!ok) return;
+
+    try {
+      await api.delete(`/admin/exams/${exam.id}`).catch(() => {
+        return api.delete(`/exams/${exam.id}`);
+      });
+      setExams((prev) => prev.filter((e) => e.id !== exam.id));
+      setSelectedExamIds((prev) => prev.filter((id) => id !== exam.id));
+    } catch (err: any) {
+      console.error('Delete exam error:', err);
+      alert(err?.response?.data?.message || 'Không thể xóa bộ đề thi.');
+    }
+  };
+
+  const handleBulkDeleteExams = async () => {
+    if (selectedExamIds.length === 0) return;
+    const ok = await confirmModal({
+      title: 'Xóa hàng loạt bộ đề thi',
+      message: `Bạn có chắc chắn muốn XÓA VĨNH VIỄN ${selectedExamIds.length} bộ đề thi đã chọn? Thao tác này xóa trực tiếp trên database mà không cần thông qua chủ đề thi!`,
+      type: 'danger',
+      confirmText: `Xóa ${selectedExamIds.length} đề thi`,
+      cancelText: 'Hủy bỏ',
+    });
+    if (!ok) return;
+
+    try {
+      await Promise.all(
+        selectedExamIds.map((id) =>
+          api.delete(`/admin/exams/${id}`).catch(() => api.delete(`/exams/${id}`)),
+        ),
+      );
+      setExams((prev) => prev.filter((e) => !selectedExamIds.includes(e.id)));
+      setSelectedExamIds([]);
+    } catch (err: any) {
+      console.error('Bulk delete exams error:', err);
+      alert(err?.response?.data?.message || 'Không thể xóa hàng loạt bộ đề thi.');
+    }
+  };
 
   const fetchConfigsAndRooms = async () => {
     setLoading(true);
@@ -635,6 +733,153 @@ export const AdminGamesPage: React.FC = () => {
     },
   ];
 
+  // Filtered Exams
+  const filteredExams = useMemo(() => {
+    return exams.filter((e) => {
+      const matchSearch =
+        !search ||
+        e.title?.toLowerCase().includes(search.toLowerCase()) ||
+        e.description?.toLowerCase().includes(search.toLowerCase()) ||
+        e.examType?.toLowerCase().includes(search.toLowerCase());
+      const matchLang =
+        examLanguageFilter === 'ALL' || (e.languageId || 'en') === examLanguageFilter;
+      const matchStatus =
+        statusFilter === 'ALL' || e.status === statusFilter;
+      return matchSearch && matchLang && matchStatus;
+    });
+  }, [exams, search, examLanguageFilter, statusFilter]);
+
+  const examLanguageCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    SUPPORTED_LANGUAGES.forEach((l) => {
+      counts[l.id] = 0;
+    });
+    exams.forEach((e) => {
+      const lid = e.languageId || 'en';
+      counts[lid] = (counts[lid] || 0) + 1;
+    });
+    return counts;
+  }, [exams]);
+
+  // Table Columns for Exams
+  const examColumns: Column<AdminExamItem>[] = [
+    {
+      key: 'title',
+      header: 'Bộ Đề Thi & Loại Đề',
+      render: (item) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-white hover:text-indigo-400 transition">
+              {item.title}
+            </span>
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              {item.examType || 'TOEIC'}
+            </span>
+            {item.level && (
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700/50">
+                {item.level}
+              </span>
+            )}
+          </div>
+          {item.description && (
+            <p className="text-[11px] text-slate-400 line-clamp-1 max-w-sm">
+              {item.description}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'language',
+      header: 'Ngôn Ngữ',
+      render: (item) => (
+        <div className="flex items-center gap-1.5">
+          <CountryFlag languageId={item.languageId || 'en'} size="xs" />
+          <span className="text-xs font-semibold text-slate-200">
+            {SUPPORTED_LANGUAGES.find((l) => l.id === (item.languageId || 'en'))?.name || item.languageId || 'Tiếng Anh'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'author',
+      header: 'Tác Giả / Người Tạo',
+      render: (item) => (
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-indigo-300 shrink-0">
+            {item.author?.displayName?.[0] || item.author?.email?.[0]?.toUpperCase() || 'U'}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-200 truncate">
+              {item.author?.displayName || 'Ẩn danh'}
+            </p>
+            <p className="text-[10px] text-slate-500 truncate">{item.author?.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'stats',
+      header: 'Câu Hỏi / Thời Lượng',
+      render: (item) => (
+        <div className="space-y-0.5 text-xs text-slate-300">
+          <div className="font-semibold text-white">
+            {item.totalQuestions || item._count?.questions || 0} câu
+          </div>
+          <div className="text-[10px] text-slate-400">
+            {item.durationMinutes} phút
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Trạng Thái',
+      render: (item) => (
+        <div>
+          {item.status === 'PUBLISHED' ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <CheckCircle className="w-3 h-3" />
+              Công Khai
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              <Clock className="w-3 h-3" />
+              {item.status || 'Bản Nháp'}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Ngày Tạo',
+      render: (item) => (
+        <span className="text-[11px] text-slate-400 whitespace-nowrap">
+          {new Date(item.createdAt).toLocaleDateString('vi-VN')}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Thao Tác',
+      align: 'right',
+      render: (item) => (
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => handleDeleteExam(item)}
+            className="px-2.5 py-1.5 rounded-xl bg-rose-600/10 hover:bg-rose-600 border border-rose-500/30 hover:border-rose-500 text-rose-400 hover:text-white text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+            title="Xóa vĩnh viễn đề thi mà không cần thông qua tác giả"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Xóa Vĩnh Viễn</span>
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in text-slate-100">
       {/* Header */}
@@ -714,6 +959,18 @@ export const AdminGamesPage: React.FC = () => {
           <BookOpen className="w-3.5 h-3.5" />
           <span>Ngân Hàng Câu Hỏi ({questions.length})</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('exams')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
+            activeTab === 'exams'
+              ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Quản Trị Bộ Đề Thi ({exams.length})</span>
+        </button>
       </div>
 
       {/* Universal Filter Bar */}
@@ -725,6 +982,8 @@ export const AdminGamesPage: React.FC = () => {
             ? 'Tìm tựa game, mô tả...'
             : activeTab === 'rooms'
             ? 'Tìm mã phòng, tên phòng...'
+            : activeTab === 'exams'
+            ? 'Tìm bộ đề thi, loại đề (TOEIC, IELTS...)...'
             : 'Tìm câu hỏi...'
         }
         filters={[
@@ -748,11 +1007,18 @@ export const AdminGamesPage: React.FC = () => {
             key: 'status',
             label: 'Trạng Thái',
             value: statusFilter,
-            options: [
-              { value: 'ALL', label: 'Tất cả trạng thái' },
-              { value: 'ACTIVE', label: 'Đang Hoạt Động' },
-              { value: 'INACTIVE', label: 'Đã Vô Hiệu Hóa' },
-            ],
+            options:
+              activeTab === 'exams'
+                ? [
+                    { value: 'ALL', label: 'Tất cả trạng thái' },
+                    { value: 'PUBLISHED', label: 'Công Khai' },
+                    { value: 'DRAFT', label: 'Bản Nháp' },
+                  ]
+                : [
+                    { value: 'ALL', label: 'Tất cả trạng thái' },
+                    { value: 'ACTIVE', label: 'Đang Hoạt Động' },
+                    { value: 'INACTIVE', label: 'Đã Vô Hiệu Hóa' },
+                  ],
             onChange: (val: any) => setStatusFilter(val),
           },
         ]}
@@ -760,6 +1026,7 @@ export const AdminGamesPage: React.FC = () => {
           setSearch('');
           setCategoryFilter('ALL');
           setStatusFilter('ALL');
+          setExamLanguageFilter('ALL');
         }}
       />
 
@@ -821,6 +1088,126 @@ export const AdminGamesPage: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Tab Content: Exam Bank Management */}
+      {activeTab === 'exams' && (
+        <div className="space-y-4">
+          {/* Prominent Language Bar for Exams */}
+          <div className="glass-card p-3 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-2 px-1">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+                <Globe className="w-4 h-4 text-indigo-400" />
+                <span>Phân Loại Bộ Đề Thi Theo Ngôn Ngữ</span>
+              </div>
+              <span className="text-[11px] text-slate-400">
+                Quản trị viên có toàn quyền xóa vĩnh viễn đề thi mà không cần thông qua chủ đề thi
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setExamLanguageFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
+                  examLanguageFilter === 'ALL'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+                }`}
+              >
+                <span>🌐 Tất cả ngôn ngữ</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                    examLanguageFilter === 'ALL'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-900 text-slate-400'
+                  }`}
+                >
+                  {exams.length}
+                </span>
+              </button>
+
+              {SUPPORTED_LANGUAGES.map((lang) => {
+                const count = examLanguageCounts[lang.id] || 0;
+                const isSelected = examLanguageFilter === lang.id;
+                return (
+                  <button
+                    key={lang.id}
+                    type="button"
+                    onClick={() => setExamLanguageFilter(lang.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                        : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+                    }`}
+                  >
+                    <CountryFlag languageId={lang.id} size="xs" />
+                    <span>{lang.name}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-900 text-slate-400'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sticky Bulk Action Bar for Exams */}
+          {selectedExamIds.length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shadow-xl">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center">
+                  {selectedExamIds.length}
+                </span>
+                <span className="text-xs font-semibold text-indigo-200">
+                  bộ đề thi đã chọn
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleBulkDeleteExams}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Xóa Vĩnh Viễn ({selectedExamIds.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedExamIds([])}
+                  className="px-2.5 py-1.5 rounded-xl text-slate-400 hover:text-white text-xs cursor-pointer"
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Exams Table */}
+          <AdminTable
+            columns={examColumns}
+            data={filteredExams}
+            loading={examLoading}
+            emptyMessage="Không tìm thấy bộ đề thi nào phù hợp với bộ lọc"
+            selectedIds={selectedExamIds}
+            onSelectAll={(checked) =>
+              setSelectedExamIds(checked ? filteredExams.map((e) => e.id) : [])
+            }
+            onSelectRow={(id, checked) =>
+              setSelectedExamIds((prev) =>
+                checked ? [...prev, id] : prev.filter((i) => i !== id),
+              )
+            }
+            getId={(item) => item.id}
+          />
         </div>
       )}
 

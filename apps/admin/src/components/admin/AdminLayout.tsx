@@ -39,6 +39,8 @@ import {
   Gamepad2,
   BarChart3,
   Globe,
+  Library,
+  Database,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
@@ -184,8 +186,8 @@ export const AdminLayout: React.FC = () => {
         { to: '/admin/assets', label: 'Kho Media & Assets', icon: Layers, badge: 'CDN' },
         { to: '/admin/languages', label: 'Quản Lý Ngôn Ngữ', icon: Globe },
         { to: '/admin/games', label: 'Quản Trị Games & Đề', icon: Gamepad2 },
-        { to: '/admin/vocabulary', label: 'Từ Vựng (Vocab)', icon: BookOpen },
-        { to: '/admin/shared-vocabulary', label: 'Kho Dùng Chung', icon: Layers },
+        { to: '/admin/shared-vocabulary', label: 'Kho Từ Vựng (Decks)', icon: Library },
+        { to: '/admin/vocabulary', label: 'Từ Vựng Master (Words)', icon: Database },
         {
           to: '/admin/community-moderation',
           label: 'Duyệt Bài Cộng Đồng & AI',

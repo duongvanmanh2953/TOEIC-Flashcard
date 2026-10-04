@@ -483,6 +483,61 @@ export class AdminController {
     return this.adminService.publishDeckToMaster(deckId, actorId);
   }
 
+  @Delete('shared-vocabulary/:id')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Permanently delete a community deck by admin without author approval' })
+  deleteSharedDeck(
+    @Param('id') deckId: string,
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.deleteSharedDeck(deckId, actorId);
+  }
+
+  @Post('shared-vocabulary/bulk-delete')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Permanently bulk delete community decks by admin' })
+  bulkDeleteSharedDecks(
+    @Body('ids') deckIds: string[],
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.bulkDeleteSharedDecks(deckIds, actorId);
+  }
+
+  // =========================================================================
+  // ADMIN EXAMS / BỘ ĐỀ THI MANAGEMENT
+  // =========================================================================
+
+  @Get('exams')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'List all exams with language & status filters for admin' })
+  adminGetExams(
+    @Query('languageId') languageId?: string,
+    @Query('examType') examType?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '50',
+  ) {
+    return this.adminService.adminGetExams({
+      languageId,
+      examType,
+      status,
+      search,
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+    });
+  }
+
+  @Delete('exams/:id')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Permanently delete an exam by admin without author restriction' })
+  adminDeleteExam(
+    @Param('id') examId: string,
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.adminDeleteExam(examId, actorId);
+  }
+
   // =========================================================================
   // SMART PRICING & COST MODEL INTELLIGENCE
   // =========================================================================

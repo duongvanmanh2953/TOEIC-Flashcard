@@ -106,10 +106,11 @@ export const ExamBankPage: React.FC = () => {
   const [unlockedExamIds, setUnlockedExamIds] = useState<Record<string, boolean>>({});
   const [pendingExamAction, setPendingExamAction] = useState<'start' | 'like' | 'dislike' | 'duplicate' | 'export' | null>(null);
 
+  const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
+
   const isExamLocked = (exam: any) => {
     if (!exam) return false;
     const isOwner = Boolean(user?.id && (exam.authorId === user.id || exam.isOwner));
-    const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
     const isKeyUnlocked = sessionStorage.getItem(`vf_unlocked_EXAM_${exam.id}`) === 'true';
     return Boolean(exam.isProtected && !isOwner && !isAdmin && !unlockedExamIds[exam.id] && !isKeyUnlocked);
   };
@@ -1094,6 +1095,9 @@ export const ExamBankPage: React.FC = () => {
                                           ? [{ value: 'duplicate', label: 'Sao chép về đề của tôi', icon: Copy }]
                                           : [{ value: 'already_cloned', label: 'Đã có trong đề của tôi', icon: CheckCircle }]),
                                         { value: 'export_excel', label: 'Xuất ra Excel (.xlsx)', icon: FileSpreadsheet },
+                                        ...(isAdmin
+                                          ? [{ value: 'delete', label: 'Xóa vĩnh viễn (Admin)', icon: Trash2 }]
+                                          : []),
                                       ]),
                                   ]}
                                   onSelect={(val) => {
@@ -1545,6 +1549,20 @@ export const ExamBankPage: React.FC = () => {
                         <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
                         <span>Liên hệ tác giả</span>
                       </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDeleteMyExam(detailModalExam.id);
+                            setDetailModalExam(null);
+                          }}
+                          className="h-10 px-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0 text-xs font-bold"
+                          title="Xóa vĩnh viễn đề thi mà không cần thông qua tác giả"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Xóa Vĩnh Viễn (Admin)</span>
+                        </button>
+                      )}
                       {isExamLocked(detailModalExam) && (
                         <button
                           type="button"
