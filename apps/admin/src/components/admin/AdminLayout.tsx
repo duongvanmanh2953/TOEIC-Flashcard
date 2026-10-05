@@ -39,9 +39,11 @@ import {
   Gamepad2,
   BarChart3,
   Globe,
+  Smile,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
+import { navigateToApp } from '../../lib/sso';
 
 export const AdminLayout: React.FC = () => {
   const { user, theme, toggleTheme, logout } = useAuth();
@@ -182,6 +184,7 @@ export const AdminLayout: React.FC = () => {
       title: 'KHO NỘI DUNG & TÀI NGUYÊN',
       items: [
         { to: '/admin/assets', label: 'Kho Media & Assets', icon: Layers, badge: 'CDN' },
+        { to: '/admin/kid', label: 'Quản Lý Bé (Kid Zone)', icon: Smile, badge: 'Mới' },
         { to: '/admin/languages', label: 'Quản Lý Ngôn Ngữ', icon: Globe },
         { to: '/admin/games', label: 'Quản Trị Games & Đề', icon: Gamepad2 },
         { to: '/admin/vocabulary', label: 'Từ Vựng (Vocab)', icon: BookOpen },
@@ -413,7 +416,7 @@ export const AdminLayout: React.FC = () => {
           <button
             onClick={() => {
               setSidebarOpen(false);
-              window.location.href = 'https://app.vocalflow.site/dashboard';
+              navigateToApp('student', '/dashboard');
             }}
             className={`rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center border border-slate-200 dark:border-slate-700/60 ${sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
               }`}
@@ -429,7 +432,7 @@ export const AdminLayout: React.FC = () => {
           <button
             onClick={() => {
               setSidebarOpen(false);
-              window.location.href = 'https://kid.vocalflow.site/';
+              navigateToApp('kid');
             }}
             className={`rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-xs font-bold transition flex items-center border border-amber-200 dark:border-amber-800/60 ${sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
               }`}

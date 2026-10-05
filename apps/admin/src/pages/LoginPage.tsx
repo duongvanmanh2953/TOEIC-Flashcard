@@ -18,8 +18,15 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
-  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { user, isGuest, loading: authLoading, login, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
+
+  // If already authenticated as Admin, auto-redirect to command center
+  React.useEffect(() => {
+    if (!authLoading && user && !isGuest && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
+      navigate('/', { replace: true });
+    }
+  }, [user, isGuest, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

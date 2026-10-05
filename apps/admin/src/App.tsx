@@ -30,6 +30,7 @@ import { AdminCommunityModerationPage } from './pages/admin/AdminCommunityModera
 import { AdminFirebasePage } from './pages/admin/AdminFirebasePage';
 import { AdminLanguagePage } from './pages/admin/AdminLanguagePage';
 import { AdminAssetManagementPage } from './pages/admin/AdminAssetManagementPage';
+import { AdminKidManagementPage } from './pages/admin/AdminKidManagementPage';
 
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { GlobalConfirmDialog } from './components/common/ConfirmDialog';
@@ -88,6 +89,8 @@ export const App: React.FC = () => {
               <Route path="assets" element={<AdminAssetManagementPage />} />
               <Route path="asset-management" element={<AdminAssetManagementPage />} />
               <Route path="media" element={<AdminAssetManagementPage />} />
+              <Route path="kid" element={<AdminKidManagementPage />} />
+              <Route path="kid-management" element={<AdminKidManagementPage />} />
               <Route path="games" element={<AdminGamesPage />} />
               <Route path="support" element={<AdminSupportPage />} />
               <Route path="conversations" element={<AdminSupportPage />} />

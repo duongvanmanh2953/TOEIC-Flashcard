@@ -1,11 +1,45 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="vf-fav-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="vf-bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#8B5CF6" />
-      <stop offset="40%" stop-color="#6366F1" />
+      <stop offset="35%" stop-color="#6366F1" />
+      <stop offset="70%" stop-color="#3B82F6" />
       <stop offset="100%" stop-color="#1D4ED8" />
     </linearGradient>
+    <linearGradient id="vf-wave1" x1="0%" y1="50%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#1E40AF" stop-opacity="0.7" />
+    </linearGradient>
+    <linearGradient id="vf-wave2" x1="0%" y1="70%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#1D4ED8" stop-opacity="0.85" />
+    </linearGradient>
+    <filter id="vf-shadow" x="-10%" y="-10%" width="120%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.18" />
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="128" fill="url(#vf-fav-bg)" />
-  <path d="M 124 142 C 111 142, 100 153, 100 166 C 100 178, 107 189, 117 194 L 226 388 C 232 399, 243 406, 256 406 C 269 406, 280 399, 286 388 L 395 194 C 405 189, 412 178, 412 166 C 412 153, 401 142, 388 142 C 376 142, 366 149, 361 160 L 256 348 L 151 160 C 146 149, 136 142, 124 142 Z" fill="#FFFFFF" />
+
+  <!-- Base Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#vf-bg)" />
+
+  <!-- Flow Wave Overlays -->
+  <path d="M 0 320 C 140 280, 240 380, 512 260 L 512 512 L 0 512 Z" fill="url(#vf-wave1)" />
+  <path d="M 0 400 C 180 340, 320 460, 512 360 L 512 512 L 0 512 Z" fill="url(#vf-wave2)" />
+
+  <!-- Iconic Pure White Bold 'V' with Rounded Geometry -->
+  <path d="M 124 142
+           C 111 142, 100 153, 100 166
+           C 100 178, 107 189, 117 194
+           L 226 388
+           C 232 399, 243 406, 256 406
+           C 269 406, 280 399, 286 388
+           L 395 194
+           C 405 189, 412 178, 412 166
+           C 412 153, 401 142, 388 142
+           C 376 142, 366 149, 361 160
+           L 256 348
+           L 151 160
+           C 146 149, 136 142, 124 142 Z"
+        fill="#FFFFFF"
+        filter="url(#vf-shadow)" />
 </svg>

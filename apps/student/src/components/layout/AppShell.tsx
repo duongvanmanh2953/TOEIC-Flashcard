@@ -58,6 +58,7 @@ import { VirtualChatPane } from '../chat/VirtualChatPane';
 import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
+import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { VocabFlowLogo } from '@vocabflow/shared';
 
 export const AppShell: React.FC = () => {
@@ -485,7 +486,7 @@ export const AppShell: React.FC = () => {
         { to: '/notifications', label: 'Thông báo', icon: Bell },
         { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
         { to: '/settings', label: t('nav.settings', 'Cài đặt'), icon: Settings },
-        ...(isAdmin ? [{ to: 'https://admin.vocalflow.site', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true, external: true }] : []),
+        ...(isAdmin ? [{ to: buildSsoUrl('admin'), label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true, external: true }] : []),
       ],
     },
   ];
@@ -576,6 +577,12 @@ export const AppShell: React.FC = () => {
                       <a
                         key={item.to}
                         href={item.to}
+                        onClick={(e) => {
+                          if ((item as any).admin) {
+                            e.preventDefault();
+                            navigateToApp('admin');
+                          }
+                        }}
                         className="flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200"
                       >
                         {itemContent}
@@ -888,7 +895,11 @@ export const AppShell: React.FC = () => {
 
             {isAdmin && (
               <a
-                href="https://admin.vocalflow.site"
+                href={buildSsoUrl('admin')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToApp('admin');
+                }}
                 title="Admin Center"
                 className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 transition shadow-xs"
               >
@@ -1096,7 +1107,7 @@ export const AppShell: React.FC = () => {
             <button
               onClick={() => {
                 setProfileModalOpen(false);
-                window.location.href = 'https://admin.vocalflow.site';
+                navigateToApp('admin');
               }}
               className="w-full mb-3 py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-amber-500/25 transition shadow-xs"
             >

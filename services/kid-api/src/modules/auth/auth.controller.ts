@@ -143,9 +143,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh expired access token' })
   async refreshToken(
     @Body() dto: RefreshTokenDto,
+    @Req() req: any,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.refreshToken(dto.refreshToken);
+    let token = dto?.refreshToken;
+    if (!token && req) {
+      if (req.cookies?.refreshToken) token = req.cookies.refreshToken;
+      else if (req.headers?.cookie) {
+        const match = req.headers.cookie.match(/(?:^|;\s*)refreshToken=([^;]+)/);
+        if (match) token = decodeURIComponent(match[1]);
+      }
+    }
+    const result = await this.authService.refreshToken(token);
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
     return result;
   }

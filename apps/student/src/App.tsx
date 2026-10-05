@@ -22,6 +22,7 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { AICoachStudioPage } from './pages/AICoachStudioPage';
 import { LandingPage } from './pages/LandingPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
+import { navigateToApp, SubApp } from './lib/sso';
 
 // Exam Bank & Evaluation Engine Pages
 import { ExamBankPage } from './pages/exams/ExamBankPage';
@@ -99,10 +100,14 @@ const RootRedirect: React.FC = () => {
   return user ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 };
 
-const ExternalRedirect: React.FC<{ to: string }> = ({ to }) => {
+const ExternalRedirect: React.FC<{ to?: string; app?: SubApp; path?: string }> = ({ to, app, path }) => {
   React.useEffect(() => {
-    window.location.href = to;
-  }, [to]);
+    if (app) {
+      navigateToApp(app, path || '/');
+    } else if (to) {
+      window.location.href = to;
+    }
+  }, [to, app, path]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -261,13 +266,13 @@ export const App: React.FC = () => {
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
 
-              {/* Cross-App External Redirects */}
-              <Route path="/kids" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
-              <Route path="/kids/*" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
-              <Route path="/kid" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
-              <Route path="/kid/*" element={<ExternalRedirect to="https://kid.vocalflow.site" />} />
-              <Route path="/admin" element={<ExternalRedirect to="https://admin.vocalflow.site" />} />
-              <Route path="/admin/*" element={<ExternalRedirect to="https://admin.vocalflow.site" />} />
+              {/* Cross-App External Redirects with SSO Handoff */}
+              <Route path="/kids" element={<ExternalRedirect app="kid" />} />
+              <Route path="/kids/*" element={<ExternalRedirect app="kid" />} />
+              <Route path="/kid" element={<ExternalRedirect app="kid" />} />
+              <Route path="/kid/*" element={<ExternalRedirect app="kid" />} />
+              <Route path="/admin" element={<ExternalRedirect app="admin" />} />
+              <Route path="/admin/*" element={<ExternalRedirect app="admin" />} />
 
               {/* Catch-all redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />
