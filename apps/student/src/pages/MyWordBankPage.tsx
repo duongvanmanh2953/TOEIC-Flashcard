@@ -87,6 +87,16 @@ import {
   ParsedWordItem,
 } from '../utils/excelTemplate';
 import { WordBankTour } from '../components/common/WordBankTour';
+import { DeckStandardFields } from '../components/deck/DeckStandardFields';
+import {
+  getLanguageStandard,
+  getCertificatesForLanguage,
+  getCategoriesForLanguage,
+  getDefaultCategoryForLanguage,
+  getDefaultLevelForLanguage,
+  getDefaultCertificateForLanguage,
+  mapToCefrEquivalent,
+} from '../config/languageStandards';
 
 export const MyWordBankPage: React.FC = () => {
   const navigate = useNavigate();
@@ -185,12 +195,23 @@ export const MyWordBankPage: React.FC = () => {
   const [deckToEdit, setDeckToEdit] = useState<LocalDeck | null>(null);
   const [deckTitleInput, setDeckTitleInput] = useState('');
   const [deckDescInput, setDeckDescInput] = useState('');
-  const [deckCatInput, setDeckCatInput] = useState('Business English');
-  const [deckCefrInput, setDeckCefrInput] = useState('B1');
   const [deckLangInput, setDeckLangInput] = useState<string>(activeLanguage.id);
+  const [deckCertInput, setDeckCertInput] = useState<string>(() => getDefaultCertificateForLanguage(activeLanguage.id).id);
+  const [deckCatInput, setDeckCatInput] = useState<string>(() => getDefaultCategoryForLanguage(activeLanguage.id));
+  const [deckCefrInput, setDeckCefrInput] = useState<string>(() => getDefaultLevelForLanguage(activeLanguage.id).name);
   const [deckPasswordInput, setDeckPasswordInput] = useState('');
   const [deckStatusInput, setDeckStatusInput] = useState<'PENDING' | 'PRIVATE' | 'APPROVED'>('PRIVATE');
   const [creatingDeck, setCreatingDeck] = useState(false);
+  const [createDeckMode, setCreateDeckMode] = useState<'manual' | 'file'>('manual');
+
+  // Auto-sync deck modal defaults when active language changes
+  useEffect(() => {
+    setDeckLangInput(activeLanguage.id);
+    const defCert = getDefaultCertificateForLanguage(activeLanguage.id);
+    setDeckCertInput(defCert.id);
+    setDeckCatInput(getDefaultCategoryForLanguage(activeLanguage.id));
+    setDeckCefrInput(getDefaultLevelForLanguage(activeLanguage.id).name);
+  }, [activeLanguage.id]);
 
   // User-defined and preset deck categories with persistence
   const DEFAULT_DECK_CATEGORIES = [
@@ -342,14 +363,27 @@ export const MyWordBankPage: React.FC = () => {
   const [importProgressMsg, setImportProgressMsg] = useState<string | null>(null);
   const [importDeckMode, setImportDeckMode] = useState<'existing' | 'new'>('existing');
   const [importTargetDeckName, setImportTargetDeckName] = useState('');
+  const [importNewDeckLang, setImportNewDeckLang] = useState<string>(activeLanguage.id);
+  const [importNewDeckCert, setImportNewDeckCert] = useState<string>(() => getDefaultCertificateForLanguage(activeLanguage.id).id);
+  const [importNewDeckCategory, setImportNewDeckCategory] = useState<string>(() => getDefaultCategoryForLanguage(activeLanguage.id));
+  const [importNewDeckLevel, setImportNewDeckLevel] = useState<string>(() => getDefaultLevelForLanguage(activeLanguage.id).name);
   const [idbSyncMsg, setIdbSyncMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-sync import modal defaults when active language changes
+  useEffect(() => {
+    setImportNewDeckLang(activeLanguage.id);
+    const defCert = getDefaultCertificateForLanguage(activeLanguage.id);
+    setImportNewDeckCert(defCert.id);
+    setImportNewDeckCategory(getDefaultCategoryForLanguage(activeLanguage.id));
+    setImportNewDeckLevel(getDefaultLevelForLanguage(activeLanguage.id).name);
+  }, [activeLanguage.id]);
 
   // Share Deck Modal
   const [shareModalDeck, setShareModalDeck] = useState<LocalDeck | null>(null);
   const [shareTitle, setShareTitle] = useState('');
   const [shareDescription, setShareDescription] = useState('');
-  const [shareCategory, setShareCategory] = useState('Business English');
+  const [shareCategory, setShareCategory] = useState<string>(() => getDefaultCategoryForLanguage(activeLanguage.id));
   const [shareEnablePassword, setShareEnablePassword] = useState(false);
   const [sharePassword, setSharePassword] = useState('');
   const [sharing, setSharing] = useState(false);
@@ -684,6 +718,17 @@ export const MyWordBankPage: React.FC = () => {
   const handleConfirmCreateDeck = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deckTitleInput.trim() || creatingDeck) return;
+
+    const validWords =
+      createDeckMode === 'file'
+        ? parsedWords.filter((w) => w.word && w.word.trim() && w.meaning && w.meaning.trim())
+        : [];
+
+    if (createDeckMode === 'file' && selectedFile && validWords.length === 0) {
+      alert('File đã chọn không có từ vựng hợp lệ. Vui lòng kiểm tra lại cấu trúc file.');
+      return;
+    }
+
     setCreatingDeck(true);
 
     try {
@@ -698,7 +743,7 @@ export const MyWordBankPage: React.FC = () => {
         description: deckDescInput.trim() || undefined,
         category: deckCatInput,
         cefrLevel: deckCefrInput,
-        wordCount: 0,
+        wordCount: validWords.length,
         words: [],
         isProtected: Boolean(deckPasswordInput.trim()),
         hasPassword: Boolean(deckPasswordInput.trim()),
@@ -711,20 +756,78 @@ export const MyWordBankPage: React.FC = () => {
 
       // 1. Save locally to IndexedDB
       await idbSaveLocalDeck(newDeck, currentUserId);
-      setDecks((prev) => [newDeck, ...prev]);
 
-      // 2. Sync to Cloud API if authenticated
+      // 2. If file import mode with words, save words into IndexedDB
+      if (validWords.length > 0) {
+        const itemsToSave = validWords.map((item, idx) => {
+          const cleanW = item.word.trim().toLowerCase();
+          const cleanM = item.meaning.trim();
+          const realTopic = item.topic?.trim() || deckCatInput || 'General';
+          const id = `word_${cleanW.replace(/[^a-z0-9]/g, '_')}_${Date.now()}_${idx}`;
+
+          return {
+            id,
+            userId: currentUserId,
+            languageId: targetLangId,
+            word: cleanW,
+            phonetic: item.phonetic || '',
+            partOfSpeech: item.partOfSpeech || 'noun',
+            meaning: cleanM,
+            example: item.example || '',
+            exampleTranslation: item.exampleTranslation || '',
+            topic: realTopic,
+            cefrLevel: item.cefrLevel || deckCefrInput || 'B1',
+            deckId: newDeckId,
+            deckName: newDeck.title,
+            status: 'NEW',
+            isFavorite: false,
+            vocabulary: {
+              id,
+              languageId: targetLangId,
+              word: cleanW,
+              phonetic: item.phonetic || '',
+              partOfSpeech: item.partOfSpeech || 'noun',
+              shortDefinition: cleanM,
+              definition: cleanM,
+              topic: realTopic,
+              cefrLevel: item.cefrLevel || deckCefrInput || 'B1',
+              meanings: [{ meaning: cleanM }],
+              examples: item.example ? [{ sentence: item.example, translation: item.exampleTranslation }] : [],
+            },
+          };
+        });
+
+        await idbSaveWords(itemsToSave, currentUserId);
+        newDeck.words = itemsToSave;
+        newDeck.wordCount = itemsToSave.length;
+        await idbSaveLocalDeck(newDeck, currentUserId);
+      }
+
+      setDecks((prev) => [newDeck, ...prev]);
+      setSelectedDeck(newDeck);
+
+      // 3. Sync to Cloud API if authenticated
       if (user && !isGuest) {
         try {
           const res: any = await api.post('/community/decks', {
             title: newDeck.title,
             description: newDeck.description,
             category: newDeck.category,
-            cefrLevel: newDeck.cefrLevel,
+            cefrLevel: mapToCefrEquivalent(newDeck.cefrLevel),
             languageId: targetLangId,
             isPublic: true,
             password: newDeck.password,
-            words: [],
+            words: validWords.map((w) => ({
+              word: w.word.trim().toLowerCase(),
+              phonetic: w.phonetic,
+              partOfSpeech: w.partOfSpeech,
+              meaning: w.meaning.trim(),
+              definition: w.meaning.trim(),
+              example: w.example,
+              exampleTranslation: w.exampleTranslation,
+              topic: w.topic || newDeck.category || 'General',
+              cefrLevel: mapToCefrEquivalent(w.cefrLevel || newDeck.cefrLevel),
+            })),
           });
           if (res?.id) {
             newDeck.id = res.id;
@@ -741,7 +844,16 @@ export const MyWordBankPage: React.FC = () => {
       setDeckTitleInput('');
       setDeckDescInput('');
       setDeckPasswordInput('');
-      setActionSuccessMsg(`Đã tạo thành công kho từ vựng "${newDeck.title}"!`);
+      setSelectedFile(null);
+      setParsedWords([]);
+      setCreateDeckMode('manual');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+      const successToast =
+        validWords.length > 0
+          ? `Đã tạo kho "${newDeck.title}" và nạp thành công ${validWords.length} từ vựng!`
+          : `Đã tạo thành công kho từ vựng "${newDeck.title}"!`;
+      setActionSuccessMsg(successToast);
       setTimeout(() => setActionSuccessMsg(null), 3500);
     } finally {
       setCreatingDeck(false);
@@ -751,11 +863,15 @@ export const MyWordBankPage: React.FC = () => {
   // Edit Deck
   const handleOpenEditDeck = (deck: LocalDeck, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const dLang = deck.languageId || activeLanguage.id;
     setDeckToEdit(deck);
     setDeckTitleInput(deck.title);
     setDeckDescInput(deck.description || '');
-    setDeckCatInput(deck.category || 'Business English');
-    setDeckCefrInput(deck.cefrLevel || 'B1');
+    setDeckLangInput(dLang);
+    const defCert = getDefaultCertificateForLanguage(dLang);
+    setDeckCertInput(defCert.id);
+    setDeckCatInput(deck.category || getDefaultCategoryForLanguage(dLang));
+    setDeckCefrInput(deck.cefrLevel || getDefaultLevelForLanguage(dLang).name);
     setDeckPasswordInput(deck.password || '');
     setDeckStatusInput(deck.status === 'APPROVED' ? 'APPROVED' : (deck.status === 'PENDING' ? 'PENDING' : 'PRIVATE'));
     setShowEditDeckModal(true);
@@ -1751,6 +1867,9 @@ export const MyWordBankPage: React.FC = () => {
         : selectedDeck?.title || importTargetDeckName || decks[0]?.title || 'General';
 
     const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
+    const targetLangId = importDeckMode === 'new' ? importNewDeckLang : (selectedDeck?.languageId || activeLanguage.id);
+    const targetCat = importDeckMode === 'new' ? importNewDeckCategory : (selectedDeck?.category || getDefaultCategoryForLanguage(targetLangId));
+    const targetLevel = importDeckMode === 'new' ? importNewDeckLevel : (selectedDeck?.cefrLevel || getDefaultLevelForLanguage(targetLangId).name);
 
     // Check or create deck for imported words
     let deckObj = decks.find((d) => d.title === targetDeckTitle);
@@ -1759,10 +1878,10 @@ export const MyWordBankPage: React.FC = () => {
       deckObj = {
         id: newDeckId,
         userId: currentUserId,
-        languageId: activeLanguage.id,
+        languageId: targetLangId,
         title: targetDeckTitle,
-        category: 'Business English',
-        cefrLevel: 'B1',
+        category: targetCat,
+        cefrLevel: targetLevel,
         wordCount: validWords.length,
         status: 'APPROVED',
         createdAt: Date.now(),
@@ -1778,13 +1897,13 @@ export const MyWordBankPage: React.FC = () => {
         const cleanW = item.word.trim().toLowerCase();
         const cleanM = item.meaning.trim();
         // CRITICAL FIX: Real topic from CSV is preserved! NEVER OVERWRITE WITH DECK NAME!
-        const realTopic = item.topic?.trim() || 'General';
+        const realTopic = item.topic?.trim() || targetCat || 'General';
         const id = `word_${cleanW.replace(/[^a-z0-9]/g, '_')}_${Date.now()}_${idx}`;
 
         return {
           id,
           userId: currentUserId,
-          languageId: activeLanguage.id,
+          languageId: targetLangId,
           word: cleanW,
           phonetic: item.phonetic || '',
           partOfSpeech: item.partOfSpeech || 'noun',
@@ -1792,21 +1911,21 @@ export const MyWordBankPage: React.FC = () => {
           example: item.example || '',
           exampleTranslation: item.exampleTranslation || '',
           topic: realTopic, // REAL TOPIC FROM CSV
-          cefrLevel: item.cefrLevel || 'B1',
+          cefrLevel: item.cefrLevel || targetLevel,
           deckId: deckObj?.id,
           deckName: targetDeckTitle,
           status: 'NEW',
           isFavorite: false,
           vocabulary: {
             id,
-            languageId: activeLanguage.id,
+            languageId: targetLangId,
             word: cleanW,
             phonetic: item.phonetic || '',
             partOfSpeech: item.partOfSpeech || 'noun',
             shortDefinition: cleanM,
             definition: cleanM,
             topic: realTopic,
-            cefrLevel: item.cefrLevel || 'B1',
+            cefrLevel: item.cefrLevel || targetLevel,
             meanings: [{ meaning: cleanM }],
             examples: item.example ? [{ sentence: item.example, translation: item.exampleTranslation || '' }] : [],
           },
@@ -4325,7 +4444,7 @@ export const MyWordBankPage: React.FC = () => {
                   Tạo Kho Từ Vựng Mới
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Thiết lập thông tin kho từ vựng cá nhân để lưu trữ, ôn tập theo lộ trình và chia sẻ
+                  Thiết lập chuẩn hóa theo chứng chỉ & ngôn ngữ học tập, tích hợp nhập file đồng bộ
                 </p>
               </div>
             </div>
@@ -4340,6 +4459,40 @@ export const MyWordBankPage: React.FC = () => {
           </div>
 
           <div className="space-y-5 text-xs sm:text-sm flex-1 min-h-0 overflow-y-auto py-4 pr-1">
+            {/* Mode Switcher: Manual vs File Import */}
+            <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/70">
+              <button
+                type="button"
+                onClick={() => setCreateDeckMode('manual')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  createDeckMode === 'manual'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                }`}
+              >
+                <Folder className="w-3.5 h-3.5" />
+                <span>Soạn thảo thủ công</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateDeckMode('file')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  createDeckMode === 'file'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                }`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Tải lên Excel / CSV</span>
+                {parsedWords.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white">
+                    {parsedWords.length} từ
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Deck Title */}
             <div>
               <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
                 Tên kho từ vựng <span className="text-rose-500">*</span>
@@ -4349,53 +4502,130 @@ export const MyWordBankPage: React.FC = () => {
                 required
                 value={deckTitleInput}
                 onChange={(e) => setDeckTitleInput(e.target.value)}
-                placeholder="Ví dụ: TOEIC 600 Essential Words, IELTS Speaking Part 1, Business Email..."
+                placeholder="Ví dụ: TOPIK I Từ Vựng Trọng Tâm, 600 Essential Words, JLPT N3 Kaiwa..."
                 className="w-full h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-xs sm:text-sm text-slate-900 dark:text-white transition placeholder:text-slate-400"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
-                  Không gian học tập (Mặc định)
-                </label>
-                <div className="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-semibold text-xs text-slate-900 dark:text-white">
-                  <CountryFlag languageId={activeLanguage.id} size="sm" />
-                  <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
+            {/* Language Standards, Certificates, Levels and Categories */}
+            <DeckStandardFields
+              languageId={deckLangInput}
+              allowLanguageChange={true}
+              onLanguageChange={(newLang) => {
+                setDeckLangInput(newLang);
+                const defCert = getDefaultCertificateForLanguage(newLang);
+                setDeckCertInput(defCert.id);
+                setDeckCatInput(getDefaultCategoryForLanguage(newLang));
+                setDeckCefrInput(getDefaultLevelForLanguage(newLang).name);
+              }}
+              certificateId={deckCertInput}
+              onCertificateChange={setDeckCertInput}
+              level={deckCefrInput}
+              onLevelChange={setDeckCefrInput}
+              category={deckCatInput}
+              onCategoryChange={setDeckCatInput}
+              customCategories={customCategories}
+              onAddCustomCategory={handleCreateCategory}
+              gridCols={3}
+            />
+
+            {/* Integrated File Upload Zone when in file mode */}
+            {createDeckMode === 'file' && (
+              <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                    <span>Nạp dữ liệu từ file Excel (.xlsx) hoặc CSV</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => downloadVocabularyTemplate('xlsx')}
+                      className="btn-glass-secondary btn-glass-sm text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Mẫu .xlsx</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadVocabularyTemplate('csv')}
+                      className="btn-glass-secondary btn-glass-sm text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Mẫu .csv</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
-                  Lĩnh vực / Danh mục
-                </label>
-                <CustomDropdown
-                  value={deckCatInput}
-                  onChange={(val) => setDeckCatInput(val)}
-                  options={allDeckCategories.map((c) => ({ value: c, label: c }))}
-                  searchable={true}
-                  searchPlaceholder="Tìm kiếm hoặc tạo danh mục mới..."
-                  creatable={true}
-                  createPlaceholder='Tạo danh mục mới: "{query}"'
-                  onCreateOption={handleCreateCategory}
-                  size="md"
-                  className="w-full"
-                />
-              </div>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-4 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Upload className="w-5 h-5 mx-auto text-slate-400 mb-1" />
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {selectedFile ? selectedFile.name : 'Bấm vào đây để chọn file Excel (.xlsx) hoặc CSV từ máy tính'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Tự động nhận diện 7 cột chuẩn: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic
+                  </p>
+                </div>
 
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm truncate">
-                  Cấp độ ({selectedDeckLangDef.nativeName})
-                </label>
-                <CustomDropdown
-                  value={deckCefrInput}
-                  onChange={(val) => setDeckCefrInput(val)}
-                  options={dynamicLevelOptions}
-                  size="md"
-                  className="w-full"
-                />
+                {isParsing && (
+                  <div className="py-2 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Đang giải mã và đọc file...</span>
+                  </div>
+                )}
+
+                {parsingError && (
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium">
+                    {parsingError}
+                  </div>
+                )}
+
+                {parsedWords.length > 0 && (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span>Đã nhận diện thành công: {parsedWords.length} từ vựng</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleClearAllParsed}
+                        className="text-[11px] text-rose-500 hover:underline"
+                      >
+                        Xóa file đã chọn
+                      </button>
+                    </div>
+                    <div className="max-h-32 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-[11px]">
+                      {parsedWords.slice(0, 5).map((w, idx) => (
+                        <div key={idx} className="py-1 flex items-center justify-between gap-2">
+                          <span className="font-bold text-slate-900 dark:text-white truncate">
+                            {idx + 1}. {w.word}
+                          </span>
+                          <span className="text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                            {w.meaning}
+                          </span>
+                        </div>
+                      ))}
+                      {parsedWords.length > 5 && (
+                        <div className="py-1 text-center text-[10px] text-slate-400 italic">
+                          ... và {parsedWords.length - 5} từ vựng khác
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* LÝ DO TẠO KHO & MỤC TIÊU HỌC TẬP */}
             <div>
@@ -4411,15 +4641,12 @@ export const MyWordBankPage: React.FC = () => {
                 </span>
               </div>
               <textarea
-                rows={5}
+                rows={4}
                 value={deckDescInput}
                 onChange={(e) => setDeckDescInput(e.target.value)}
-                placeholder={"Ví dụ:\n• Lý do: Chuẩn bị thi TOEIC đạt mốc 750+ vào tháng 11 để phục vụ công việc.\n• Mục tiêu: Nắm vững 30 từ vựng hợp đồng kinh tế và báo cáo tài chính mỗi tuần.\n• Nguồn tài liệu: Trích xuất từ đề thi ETS 2024 và tài liệu thực tế tại văn phòng..."}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs sm:text-sm leading-relaxed text-slate-900 dark:text-white transition resize-y min-h-[140px] placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                placeholder={"Ví dụ:\n• Lý do: Chuẩn bị thi chứng chỉ mục tiêu vào cuối năm.\n• Mục tiêu: Nắm vững 30 từ vựng chuyên ngành và giao tiếp mỗi tuần.\n• Nguồn tài liệu: Trích xuất từ đề thi chính thức và tài liệu thực tế..."}
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs sm:text-sm leading-relaxed text-slate-900 dark:text-white transition resize-y min-h-[110px] placeholder:text-slate-400 dark:placeholder:text-slate-600"
               />
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
-                Mô tả chi tiết giúp bạn duy trì kỷ luật học tập và giúp bạn bè hiểu rõ giá trị khi bạn chia sẻ kho từ này.
-              </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
@@ -4462,7 +4689,11 @@ export const MyWordBankPage: React.FC = () => {
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  <span>Xác nhận tạo kho</span>
+                  <span>
+                    {createDeckMode === 'file' && parsedWords.length > 0
+                      ? `Tạo kho & Nạp ${parsedWords.length} từ vựng`
+                      : 'Xác nhận tạo kho'}
+                  </span>
                 </>
               )}
             </button>
@@ -4514,45 +4745,20 @@ export const MyWordBankPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
-                  Lĩnh vực / Danh mục
-                </label>
-                <CustomDropdown
-                  value={deckCatInput}
-                  onChange={(val) => setDeckCatInput(val)}
-                  options={allDeckCategories.map((c) => ({ value: c, label: c }))}
-                  searchable={true}
-                  searchPlaceholder="Tìm kiếm hoặc tạo danh mục mới..."
-                  creatable={true}
-                  createPlaceholder='Tạo danh mục mới: "{query}"'
-                  onCreateOption={handleCreateCategory}
-                  size="md"
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
-                  Cấp độ chuẩn (CEFR)
-                </label>
-                <CustomDropdown
-                  value={deckCefrInput}
-                  onChange={(val) => setDeckCefrInput(val)}
-                  options={[
-                    { value: 'A1', label: 'A1 — Beginner', badge: 'A1' },
-                    { value: 'A2', label: 'A2 — Elementary', badge: 'A2' },
-                    { value: 'B1', label: 'B1 — Intermediate', badge: 'B1' },
-                    { value: 'B2', label: 'B2 — Upper-Inter', badge: 'B2' },
-                    { value: 'C1', label: 'C1 — Advanced', badge: 'C1' },
-                    { value: 'C2', label: 'C2 — Mastery', badge: 'C2' },
-                  ]}
-                  size="md"
-                  className="w-full"
-                />
-              </div>
-            </div>
+            {/* Language Standards, Certificates, Levels and Categories */}
+            <DeckStandardFields
+              languageId={deckLangInput}
+              allowLanguageChange={false}
+              certificateId={deckCertInput}
+              onCertificateChange={setDeckCertInput}
+              level={deckCefrInput}
+              onLevelChange={setDeckCefrInput}
+              category={deckCatInput}
+              onCategoryChange={setDeckCatInput}
+              customCategories={customCategories}
+              onAddCustomCategory={handleCreateCategory}
+              gridCols={3}
+            />
 
             {/* LÝ DO TẠO KHO & MỤC TIÊU HỌC TẬP */}
             <div>
@@ -5144,67 +5350,97 @@ export const MyWordBankPage: React.FC = () => {
 
           <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
             {/* Options: Target Deck & Template Download */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Nạp vào Kho Từ Vựng nào?</label>
-                <div className="flex items-center gap-2">
-                  <CustomDropdown
-                    value={decks.length === 0 ? 'new' : importDeckMode}
-                    onChange={(val) => setImportDeckMode(val as any)}
-                    options={
-                      decks.length === 0
-                        ? [{ value: 'new', label: 'Tạo kho mới' }]
-                        : [
-                            { value: 'existing', label: 'Kho có sẵn' },
-                            { value: 'new', label: 'Tạo kho mới' },
-                          ]
-                    }
-                    size="md"
-                    className="w-36"
-                  />
-
-                  {importDeckMode === 'existing' && decks.length > 0 ? (
+            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Nạp vào Kho Từ Vựng nào?
+                  </label>
+                  <div className="flex items-center gap-2">
                     <CustomDropdown
-                      value={importTargetDeckName}
-                      onChange={(val) => setImportTargetDeckName(val)}
-                      options={decks.map((d) => ({
-                        value: d.title,
-                        label: d.title,
-                        badge: d.cefrLevel,
-                      }))}
+                      value={decks.length === 0 ? 'new' : importDeckMode}
+                      onChange={(val) => setImportDeckMode(val as any)}
+                      options={
+                        decks.length === 0
+                          ? [{ value: 'new', label: 'Tạo kho mới' }]
+                          : [
+                              { value: 'existing', label: 'Kho có sẵn' },
+                              { value: 'new', label: 'Tạo kho mới' },
+                            ]
+                      }
                       size="md"
-                      className="flex-1"
+                      className="w-36"
                     />
-                  ) : (
-                    <input
-                      type="text"
-                      value={importTargetDeckName}
-                      onChange={(e) => setImportTargetDeckName(e.target.value)}
-                      placeholder={decks.length === 0 ? "Nhập tên kho mới cho các từ..." : "Nhập tên kho mới..."}
-                      className="flex-1 h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-xs text-slate-900 dark:text-white"
-                    />
-                  )}
+
+                    {importDeckMode === 'existing' && decks.length > 0 ? (
+                      <CustomDropdown
+                        value={importTargetDeckName}
+                        onChange={(val) => setImportTargetDeckName(val)}
+                        options={decks.map((d) => ({
+                          value: d.title,
+                          label: d.title,
+                          badge: d.cefrLevel,
+                        }))}
+                        size="md"
+                        className="flex-1"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={importTargetDeckName}
+                        onChange={(e) => setImportTargetDeckName(e.target.value)}
+                        placeholder={decks.length === 0 ? 'Nhập tên kho mới cho các từ...' : 'Nhập tên kho mới...'}
+                        className="flex-1 h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-xs text-slate-900 dark:text-white"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-start sm:justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadVocabularyTemplate('xlsx')}
+                    className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Tải mẫu .xlsx</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadVocabularyTemplate('csv')}
+                    className="btn-glass-secondary btn-glass-sm text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Tải mẫu .csv</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-end justify-start sm:justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => downloadVocabularyTemplate('xlsx')}
-                  className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải mẫu .xlsx</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadVocabularyTemplate('csv')}
-                  className="btn-glass-secondary btn-glass-sm text-indigo-600 dark:text-indigo-400"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải mẫu .csv</span>
-                </button>
-              </div>
+              {/* Dynamic language, certificate, level, category when creating a new deck */}
+              {importDeckMode === 'new' && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-700/60 mt-3">
+                  <DeckStandardFields
+                    languageId={importNewDeckLang}
+                    allowLanguageChange={true}
+                    onLanguageChange={(newLang) => {
+                      setImportNewDeckLang(newLang);
+                      const defCert = getDefaultCertificateForLanguage(newLang);
+                      setImportNewDeckCert(defCert.id);
+                      setImportNewDeckCategory(getDefaultCategoryForLanguage(newLang));
+                      setImportNewDeckLevel(getDefaultLevelForLanguage(newLang).name);
+                    }}
+                    certificateId={importNewDeckCert}
+                    onCertificateChange={setImportNewDeckCert}
+                    level={importNewDeckLevel}
+                    onLevelChange={setImportNewDeckLevel}
+                    category={importNewDeckCategory}
+                    onCategoryChange={setImportNewDeckCategory}
+                    customCategories={customCategories}
+                    onAddCustomCategory={handleCreateCategory}
+                    gridCols={3}
+                  />
+                </div>
+              )}
             </div>
 
             {/* File Upload Drop Zone */}
@@ -5591,17 +5827,16 @@ export const MyWordBankPage: React.FC = () => {
 
               <div>
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                  Danh mục
+                  Lĩnh vực / Danh mục
                 </label>
                 <CustomDropdown
                   value={shareCategory}
                   onChange={(val) => setShareCategory(val)}
-                  options={[
-                    { value: 'Business English', label: 'Business English' },
-                    { value: 'TOEIC Test', label: 'TOEIC Test' },
-                    { value: 'IELTS Academic', label: 'IELTS Academic' },
-                    { value: 'Daily Communication', label: 'Giao tiếp hàng ngày' },
-                  ]}
+                  options={getCategoriesForLanguage(shareModalDeck?.languageId || activeLanguage.id).map((c) => ({
+                    value: c.name,
+                    label: c.name,
+                  }))}
+                  searchable={true}
                   size="md"
                   className="w-full"
                 />

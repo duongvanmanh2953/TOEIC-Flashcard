@@ -58,5 +58,6 @@ export interface ApiResponse<T = any> {
 }
 
 export * from './components/VocabFlowLogo';
+export * from './config/languageStandards';
 export { default as enTranslations } from './locales/en.json';
 export { default as viTranslations } from './locales/vi.json';

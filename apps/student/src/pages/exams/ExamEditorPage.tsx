@@ -60,10 +60,32 @@ export const ExamEditorPage: React.FC = () => {
   const [isMetadataExpanded, setIsMetadataExpanded] = useState(!examId);
 
   // Form State
+  const getInitialExamType = (langId: string) => {
+    if (langId === 'ko') return 'TOPIK';
+    if (langId === 'ja') return 'JLPT';
+    if (langId === 'zh') return 'HSK';
+    if (langId === 'vi') return 'THPT';
+    return 'TOEIC';
+  };
+
+  const getInitialExamLevel = (langId: string) => {
+    if (langId === 'ko') return 'TOPIK I - Cấp 1';
+    if (langId === 'ja') return 'JLPT N5';
+    if (langId === 'zh') return 'HSK 1';
+    return 'Intermediate';
+  };
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [examType, setExamType] = useState('TOEIC');
-  const [level, setLevel] = useState('Intermediate');
+  const [examType, setExamType] = useState(() => getInitialExamType(activeLanguage.id));
+  const [level, setLevel] = useState(() => getInitialExamLevel(activeLanguage.id));
+
+  useEffect(() => {
+    if (!examId) {
+      setExamType(getInitialExamType(activeLanguage.id));
+      setLevel(getInitialExamLevel(activeLanguage.id));
+    }
+  }, [activeLanguage.id, examId]);
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [passingScore, setPassingScore] = useState(50);
   const [isProtected, setIsProtected] = useState(false);

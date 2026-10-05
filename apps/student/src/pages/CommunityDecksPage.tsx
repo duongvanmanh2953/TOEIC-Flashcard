@@ -11,6 +11,16 @@ import { CustomDropdown } from '../components/common/CustomDropdown';
 import { ToggleSwitch } from '../components/common/ToggleSwitch';
 import { LanguageBadge } from '../components/language/LanguageBadge';
 import { CountryFlag } from '../components/language/CountryFlag';
+import { DeckStandardFields } from '../components/deck/DeckStandardFields';
+import {
+  getLanguageStandard,
+  getCertificatesForLanguage,
+  getCategoriesForLanguage,
+  getDefaultCategoryForLanguage,
+  getDefaultLevelForLanguage,
+  getDefaultCertificateForLanguage,
+  mapToCefrEquivalent,
+} from '../config/languageStandards';
 import {
   idbSaveLocalDeck,
   idbGetLocalDecks,
@@ -188,10 +198,19 @@ export const CommunityDecksPage: React.FC = () => {
   // New deck form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Business English');
-  const [cefrLevel, setCefrLevel] = useState('ALL');
+  const [category, setCategory] = useState<string>(() => getDefaultCategoryForLanguage(activeLanguage.id));
+  const [certId, setCertId] = useState<string>(() => getDefaultCertificateForLanguage(activeLanguage.id).id);
+  const [cefrLevel, setCefrLevel] = useState<string>('ALL');
   const [createDeckLang, setCreateDeckLang] = useState<string>(activeLanguage.id);
   const [createDeckTab, setCreateDeckTab] = useState<'my-words' | 'manual'>('my-words');
+
+  // Auto-sync form defaults when active learning space changes
+  useEffect(() => {
+    setCreateDeckLang(activeLanguage.id);
+    setCategory(getDefaultCategoryForLanguage(activeLanguage.id));
+    setCertId(getDefaultCertificateForLanguage(activeLanguage.id).id);
+    setCefrLevel('ALL');
+  }, [activeLanguage.id]);
 
   // Words from personal bank
   const [myWords, setMyWords] = useState<any[]>([]);
@@ -835,7 +854,7 @@ export const CommunityDecksPage: React.FC = () => {
         title: title.trim(),
         description: description.trim(),
         category,
-        cefrLevel,
+        cefrLevel: mapToCefrEquivalent(cefrLevel) as any,
         languageId: targetLangId,
         isPublic: true,
         password: enablePassword && deckPassword.trim() ? deckPassword.trim() : undefined,
@@ -1002,11 +1021,13 @@ export const CommunityDecksPage: React.FC = () => {
               onChange={(val) => setSelectedLevelFilter(val)}
               options={[
                 { value: 'ALL', label: 'Tất cả trình độ', badge: 'ALL' },
-                ...(activeLanguage.supportedLevels || []).map((lvl) => ({
-                  value: lvl,
-                  label: `Trình độ ${lvl}`,
-                  badge: lvl,
-                })),
+                ...getCertificatesForLanguage(activeLanguage.id).flatMap((cert) =>
+                  cert.levels.map((lvl) => ({
+                    value: lvl.name,
+                    label: `${lvl.name} (${cert.name})`,
+                    badge: lvl.badge,
+                  }))
+                ),
               ]}
               size="sm"
               className="w-full"
@@ -2080,74 +2101,32 @@ export const CommunityDecksPage: React.FC = () => {
             </div>
 
             {/* DECK SUMMARY & DETAILS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Tên bộ từ hiển thị trên cộng đồng *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ví dụ: TOEIC 600 Essential Words..."
-                  className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold text-xs sm:text-sm focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Chủ đề / Danh mục
-                </label>
-                <CustomDropdown
-                  value={category}
-                  onChange={(val) => setCategory(val)}
-                  options={[
-                    { value: 'Business English', label: 'Business English (Kinh doanh)' },
-                    { value: 'Technology', label: 'Technology & AI (Công nghệ)' },
-                    { value: 'IELTS Prep', label: 'IELTS Academic (Luyện thi)' },
-                    { value: 'Daily Life', label: 'Daily Conversation (Đời sống)' },
-                    { value: 'Travel & Hospitality', label: 'Travel & Hospitality (Du lịch)' },
-                    { value: 'General', label: 'General (Tổng hợp)' },
-                  ]}
-                  searchable={true}
-                  size="md"
-                  className="w-full"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Tên bộ từ hiển thị trên cộng đồng *
+              </label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ví dụ: TOPIK I Từ Vựng Trọng Tâm, TOEIC 600 Essential Words..."
+                className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold text-xs sm:text-sm focus:outline-none focus:border-indigo-500"
+              />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Không gian học tập (Tự động kế thừa)
-                </label>
-                <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-900 dark:text-white">
-                  <CountryFlag languageId={activeLanguage.id} size="sm" />
-                  <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Khung trình độ
-                </label>
-                <CustomDropdown
-                  value={cefrLevel}
-                  onChange={(val) => setCefrLevel(val)}
-                  options={[
-                    { value: 'ALL', label: 'ALL — Tất cả trình độ', badge: 'ALL' },
-                    ...(activeLanguage.supportedLevels || []).map((lvl) => ({
-                      value: lvl,
-                      label: `${lvl} — Trình độ ${lvl}`,
-                      badge: lvl,
-                    })),
-                  ]}
-                  size="md"
-                  className="w-full"
-                />
-              </div>
-            </div>
+            {/* Standard Language Fields: Language, Certificate, Level, Category */}
+            <DeckStandardFields
+              languageId={createDeckLang}
+              allowLanguageChange={false}
+              certificateId={certId}
+              onCertificateChange={setCertId}
+              level={cefrLevel}
+              onLevelChange={setCefrLevel}
+              category={category}
+              onCategoryChange={setCategory}
+              gridCols={3}
+            />
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">

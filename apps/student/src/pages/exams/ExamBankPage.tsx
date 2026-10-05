@@ -200,6 +200,21 @@ export const ExamBankPage: React.FC = () => {
     fetchExams();
   }, [activeTab, examType, level, sortBy]);
 
+  // Adapt recommended exam type when active learning space changes
+  useEffect(() => {
+    if (activeLanguage.id === 'ko') {
+      setExamType('TOPIK');
+    } else if (activeLanguage.id === 'ja') {
+      setExamType('JLPT');
+    } else if (activeLanguage.id === 'zh') {
+      setExamType('HSK');
+    } else if (activeLanguage.id === 'vi') {
+      setExamType('THPT');
+    } else {
+      setExamType('ALL');
+    }
+  }, [activeLanguage.id]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchExams();

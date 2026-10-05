@@ -1,0 +1,522 @@
+{
+  "$schema": "./languageStandards.schema.json",
+  "version": "1.0.0",
+  "languages": {
+    "en": {
+      "languageId": "en",
+      "name": "English",
+      "nativeName": "English",
+      "flag": "🇬🇧",
+      "defaultCertificateId": "toeic",
+      "defaultLevelId": "toeic-500",
+      "defaultCategoryId": "business-en",
+      "certificates": [
+        {
+          "id": "toeic",
+          "name": "TOEIC",
+          "fullName": "Test of English for International Communication",
+          "description": "Chứng chỉ tiếng Anh giao tiếp quốc tế phổ biến cho người đi làm & chuẩn đầu ra đại học",
+          "levels": [
+            { "id": "toeic-350", "name": "TOEIC 350+ (Sơ cấp)", "badge": "350+", "cefrEquivalent": "A2", "description": "Giao tiếp câu ngắn, đọc hiểu thông báo cơ bản" },
+            { "id": "toeic-500", "name": "TOEIC 500+ (Cơ bản - Chuẩn ra trường)", "badge": "500+", "cefrEquivalent": "B1", "description": "Giao tiếp công sở thông dụng, xử lý email đơn giản" },
+            { "id": "toeic-650", "name": "TOEIC 650+ (Khá - Tiêu chuẩn tuyển dụng)", "badge": "650+", "cefrEquivalent": "B2", "description": "Làm việc văn phòng tự tin, hiểu rõ tài liệu nghiệp vụ" },
+            { "id": "toeic-800", "name": "TOEIC 800+ (Nâng cao - Quản lý)", "badge": "800+", "cefrEquivalent": "C1", "description": "Thuyết trình, đàm phán hợp đồng, phân tích báo cáo" },
+            { "id": "toeic-900", "name": "TOEIC 900+ (Xuất sắc - Gần bản ngữ)", "badge": "900+", "cefrEquivalent": "C2", "description": "Sử dụng tiếng Anh linh hoạt, chuẩn xác như tiếng mẹ đẻ" }
+          ]
+        },
+        {
+          "id": "ielts",
+          "name": "IELTS",
+          "fullName": "International English Language Testing System",
+          "description": "Chứng chỉ học thuật & định cư quốc tế (IELTS Academic / General)",
+          "levels": [
+            { "id": "ielts-4.5", "name": "IELTS 4.5 - 5.0 (Foundation)", "badge": "4.5-5.0", "cefrEquivalent": "B1", "description": "Hiểu ý chính các cuộc hội thoại thông thường" },
+            { "id": "ielts-5.5", "name": "IELTS 5.5 - 6.0 (Competent)", "badge": "5.5-6.0", "cefrEquivalent": "B2", "description": "Đáp ứng điều kiện du học đại học cơ bản" },
+            { "id": "ielts-6.5", "name": "IELTS 6.5 - 7.0 (Good User)", "badge": "6.5-7.0", "cefrEquivalent": "B2", "description": "Đọc hiểu luận văn, giao tiếp lưu loát đa chủ đề" },
+            { "id": "ielts-7.5", "name": "IELTS 7.5 - 8.0 (Very Good User)", "badge": "7.5-8.0", "cefrEquivalent": "C1", "description": "Làm chủ từ vựng học thuật, viết luận chuyên sâu" },
+            { "id": "ielts-8.5", "name": "IELTS 8.5+ (Expert User)", "badge": "8.5+", "cefrEquivalent": "C2", "description": "Thành thạo tối đa 4 kỹ năng Nghe - Nói - Đọc - Viết" }
+          ]
+        },
+        {
+          "id": "cefr",
+          "name": "Khung Châu Âu CEFR",
+          "fullName": "Common European Framework of Reference",
+          "description": "Khung tham chiếu trình độ ngôn ngữ chung chuẩn Châu Âu",
+          "levels": [
+            { "id": "A1", "name": "A1 — Beginner (Mới bắt đầu)", "badge": "A1", "cefrEquivalent": "A1", "description": "Căn bản cho người mới học" },
+            { "id": "A2", "name": "A2 — Elementary (Sơ cấp)", "badge": "A2", "cefrEquivalent": "A2", "description": "Giao tiếp tình huống quen thuộc" },
+            { "id": "B1", "name": "B1 — Intermediate (Trung cấp)", "badge": "B1", "cefrEquivalent": "B1", "description": "Tự tin diễn đạt ý kiến và trải nghiệm" },
+            { "id": "B2", "name": "B2 — Upper-Intermediate (Trung cao)", "badge": "B2", "cefrEquivalent": "B2", "description": "Hiểu văn bản phức tạp, trao đổi chuyên ngành" },
+            { "id": "C1", "name": "C1 — Advanced (Cao cấp)", "badge": "C1", "cefrEquivalent": "C1", "description": "Diễn đạt trôi chảy, từ vựng phong phú sâu sắc" },
+            { "id": "C2", "name": "C2 — Mastery (Thành thạo)", "badge": "C2", "cefrEquivalent": "C2", "description": "Thông thạo hoàn toàn mọi ngữ cảnh giao tiếp" }
+          ]
+        },
+        {
+          "id": "toefl",
+          "name": "TOEFL iBT",
+          "fullName": "Test of English as a Foreign Language",
+          "description": "Chứng chỉ học thuật chuẩn Mỹ phục vụ du học và học bổng",
+          "levels": [
+            { "id": "toefl-42", "name": "TOEFL 42 - 71 (Sơ - Trung cấp)", "badge": "42-71", "cefrEquivalent": "B1", "description": "Đáp ứng điều kiện nhập học cơ bản" },
+            { "id": "toefl-72", "name": "TOEFL 72 - 94 (Khá - Tiêu chuẩn du học)", "badge": "72-94", "cefrEquivalent": "B2", "description": "Đạt chuẩn vào hầu hết đại học quốc tế" },
+            { "id": "toefl-95", "name": "TOEFL 95 - 120 (Cao cấp - Học bổng)", "badge": "95-120", "cefrEquivalent": "C1", "description": "Đạt tiêu chuẩn các trường đại học top đầu thế giới" }
+          ]
+        },
+        {
+          "id": "cambridge",
+          "name": "Cambridge English",
+          "fullName": "Cambridge Assessment English Qualifications",
+          "description": "Hệ thống chứng chỉ tiếng Anh học thuật trọn đời của Cambridge",
+          "levels": [
+            { "id": "cam-a2", "name": "A2 Key (KET)", "badge": "KET", "cefrEquivalent": "A2", "description": "Giao tiếp cơ bản và đơn giản" },
+            { "id": "cam-b1", "name": "B1 Preliminary (PET)", "badge": "PET", "cefrEquivalent": "B1", "description": "Độc lập sử dụng tiếng Anh thực tế" },
+            { "id": "cam-b2", "name": "B2 First (FCE)", "badge": "FCE", "cefrEquivalent": "B2", "description": "Tiêu chuẩn làm việc và học tập ở nước ngoài" },
+            { "id": "cam-c1", "name": "C1 Advanced (CAE)", "badge": "CAE", "cefrEquivalent": "C1", "description": "Chứng chỉ cao cấp phục vụ đại học và định cư" },
+            { "id": "cam-c2", "name": "C2 Proficiency (CPE)", "badge": "CPE", "cefrEquivalent": "C2", "description": "Đỉnh cao thành thạo tiếng Anh" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ",
+          "fullName": "Chế độ Tự do & Đời sống (Không áp chứng chỉ)",
+          "description": "Dành cho học từ vựng giao tiếp tự do, sở thích hoặc đời sống",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ (Tự do)", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ, phù hợp mọi người học" },
+            { "id": "Beginner", "name": "Cơ bản — Beginner", "badge": "BEG", "cefrEquivalent": "A1", "description": "Dành cho người mới bắt đầu" },
+            { "id": "Intermediate", "name": "Trung cấp — Intermediate", "badge": "INT", "cefrEquivalent": "B1", "description": "Nâng cấp vốn từ thực tế" },
+            { "id": "Advanced", "name": "Nâng cao — Advanced", "badge": "ADV", "cefrEquivalent": "C1", "description": "Chuyên sâu và mở rộng" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "business-en", "name": "Business English (Kinh doanh & Công sở)", "description": "Giao tiếp công sở, đàm phán hợp đồng, thuyết trình, email" },
+        { "id": "toeic-prep", "name": "Luyện Thi TOEIC (Part 1 - 7)", "description": "Từ vựng trọng tâm xuất hiện trong đề thi ETS TOEIC" },
+        { "id": "ielts-prep", "name": "Luyện Thi IELTS (Academic & General)", "description": "Chủ đề học thuật, từ đồng nghĩa và collocations ăn điểm" },
+        { "id": "daily-comm", "name": "Giao Tiếp & Đời Sống Hàng Ngày", "description": "Hội thoại thường nhật, kết bạn, thói quen, giải trí" },
+        { "id": "tech-it", "name": "Công Nghệ & Kỹ Thuật (Technology & IT)", "description": "Lập trình, AI, kỹ thuật phần mềm, dữ liệu" },
+        { "id": "travel-food", "name": "Du Lịch & Ẩm Thực (Travel & Hospitality)", "description": "Sân bay, khách sạn, nhà hàng, chỉ đường" },
+        { "id": "academic", "name": "Học Thuật & Nghiên Cứu (Academic English)", "description": "Đọc tài liệu khoa học, viết bài báo, viết luận" },
+        { "id": "high-school", "name": "Tiếng Anh Thi THPT & Đại Học", "description": "Ngữ pháp, từ vựng và bài đọc hiểu bám sát đề thi THPT Quốc Gia" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (General Vocabulary)", "description": "Kho từ vựng tổng hợp tự do nhiều chủ đề" }
+      ]
+    },
+    "ko": {
+      "languageId": "ko",
+      "name": "Korean",
+      "nativeName": "한국어",
+      "flag": "🇰🇷",
+      "defaultCertificateId": "topik",
+      "defaultLevelId": "topik-1",
+      "defaultCategoryId": "topik-prep",
+      "certificates": [
+        {
+          "id": "topik",
+          "name": "TOPIK (한국어능력시험)",
+          "fullName": "Test of Proficiency in Korean",
+          "description": "Kỳ thi đánh giá năng lực tiếng Hàn chuẩn quốc tế do Viện Giáo dục Quốc tế Quốc gia Hàn Quốc (NIIED) tổ chức",
+          "levels": [
+            { "id": "topik-1", "name": "TOPIK I - Cấp 1 (1급 - Sơ cấp 1)", "badge": "1급", "cefrEquivalent": "A1", "description": "Nhận biết câu ngắn, chào hỏi đơn giản, mua sắm" },
+            { "id": "topik-2", "name": "TOPIK I - Cấp 2 (2급 - Sơ cấp 2)", "badge": "2급", "cefrEquivalent": "A2", "description": "Sinh hoạt hàng ngày, gọi điện, nhờ vả, bưu điện, phương tiện" },
+            { "id": "topik-3", "name": "TOPIK II - Cấp 3 (3급 - Trung cấp 1)", "badge": "3급", "cefrEquivalent": "B1", "description": "Giao tiếp xã hội, sử dụng cơ sở công cộng, đủ điều kiện du học đại học" },
+            { "id": "topik-4", "name": "TOPIK II - Cấp 4 (4급 - Trung cấp 2)", "badge": "4급", "cefrEquivalent": "B2", "description": "Đọc hiểu báo chí, làm việc công sở, theo học chuyên ngành tại Hàn" },
+            { "id": "topik-5", "name": "TOPIK II - Cấp 5 (5급 - Cao cấp 1)", "badge": "5급", "cefrEquivalent": "C1", "description": "Chuyên môn học thuật, nghiên cứu chính trị, kinh tế - xã hội Hàn Quốc" },
+            { "id": "topik-6", "name": "TOPIK II - Cấp 6 (6급 - Cao cấp 2)", "badge": "6급", "cefrEquivalent": "C2", "description": "Thành thạo toàn diện mọi lĩnh vực như người bản xứ" }
+          ]
+        },
+        {
+          "id": "eps-topik",
+          "name": "EPS-TOPIK (Xuất Khẩu Lao Động)",
+          "fullName": "Employment Permit System - TOPIK",
+          "description": "Kỳ thi tiếng Hàn cho chương trình cấp phép việc làm EPS của Bộ Lao động Việc làm Hàn Quốc",
+          "levels": [
+            { "id": "eps-basic", "name": "EPS-TOPIK Căn bản (Sản xuất & Xưởng)", "badge": "EPS-1", "cefrEquivalent": "A1", "description": "An toàn lao động, giao tiếp công xưởng, chỉ dẫn của quản lý" },
+            { "id": "eps-adv", "name": "EPS-TOPIK Nâng cao (Nghiệp vụ lao động)", "badge": "EPS-2", "cefrEquivalent": "A2", "description": "Xây dựng, nông nghiệp, sản xuất chế tạo chuyên ngành" }
+          ]
+        },
+        {
+          "id": "klat",
+          "name": "KLAT (Kỳ thi Năng lực Tiếng Hàn)",
+          "fullName": "Korean Language Ability Test",
+          "description": "Kỳ thi đánh giá năng lực tiếng Hàn thực dụng cho người nước ngoài",
+          "levels": [
+            { "id": "klat-b", "name": "B-KLAT (Sơ cấp nhập môn)", "badge": "B-KLAT", "cefrEquivalent": "A1", "description": "Căn bản cho người mới học tiếng Hàn" },
+            { "id": "klat-mid", "name": "KLAT Trung cấp (Cấp 3 - 4)", "badge": "KLAT 3-4", "cefrEquivalent": "B1", "description": "Đủ năng lực sinh hoạt và học tập tại Hàn Quốc" },
+            { "id": "klat-adv", "name": "KLAT Cao cấp (Cấp 5 - 6)", "badge": "KLAT 5-6", "cefrEquivalent": "C1", "description": "Đáp ứng điều kiện làm việc chuyên nghiệp tại doanh nghiệp Hàn" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ (한국어 종합)",
+          "fullName": "Chế độ Tự do & Đời sống (Không áp chứng chỉ)",
+          "description": "Học tiếng Hàn giao tiếp, xem phim K-Drama, nghe nhạc K-Pop hoặc đời sống tự do",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ (Tự do)", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ, phù hợp mọi người học" },
+            { "id": "Sơ cấp", "name": "Sơ cấp (초급 - Beginner)", "badge": "초급", "cefrEquivalent": "A1", "description": "Bảng chữ Hangul và ngữ pháp căn bản" },
+            { "id": "Trung cấp", "name": "Trung cấp (중급 - Intermediate)", "badge": "중급", "cefrEquivalent": "B1", "description": "Giao tiếp phản xạ và mở rộng chủ đề" },
+            { "id": "Cao cấp", "name": "Cao cấp (고급 - Advanced)", "badge": "고급", "cefrEquivalent": "C1", "description": "Chuyên sâu, quán dụng ngữ và văn phong trang trọng" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "topik-prep", "name": "Ôn Thi TOPIK I & II (토픽 시험 대비)", "description": "Từ vựng trọng tâm các đề thi TOPIK chính thức" },
+        { "id": "daily-comm", "name": "Tiếng Hàn Giao Tiếp Hàng Ngày (일상 회화)", "description": "Giao tiếp đời sống, kết bạn, ăn uống, du lịch Hàn Quốc" },
+        { "id": "business-ko", "name": "Tiếng Hàn Thương Mại & Công Sở (비즈니스 한국어)", "description": "Làm việc tại doanh nghiệp Hàn Quốc, viết email, đàm phán" },
+        { "id": "study-abroad", "name": "Du Học & Đời Sống Hàn Quốc (유학 & 한국 생활)", "description": "Thủ tục trường học, đăng ký cư trú, sinh hoạt đại học" },
+        { "id": "k-culture", "name": "K-Pop, Phim Ảnh K-Drama & Văn Hóa (한류 문화)", "description": "Từ lóng, lời bài hát, câu thoại phim truyền hình Hàn Quốc" },
+        { "id": "eps-labor", "name": "Tiếng Hàn Xuất Khẩu Lao Động EPS (EPS-TOPIK 근로)", "description": "Từ vựng xí nghiệp, an toàn lao động, máy móc thiết bị" },
+        { "id": "grammar-basic", "name": "Ngữ Pháp & Từ Vựng Căn Bản (기초 어휘 & 문법)", "description": "Bảng chữ Hangul, chia đuôi câu 요/습니다, trợ từ" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (종합 어휘)", "description": "Kho từ vựng tiếng Hàn tự do không phân loại" }
+      ]
+    },
+    "ja": {
+      "languageId": "ja",
+      "name": "Japanese",
+      "nativeName": "日本語",
+      "flag": "🇯🇵",
+      "defaultCertificateId": "jlpt",
+      "defaultLevelId": "jlpt-n5",
+      "defaultCategoryId": "jlpt-prep",
+      "certificates": [
+        {
+          "id": "jlpt",
+          "name": "JLPT (日本語能力試験)",
+          "fullName": "Japanese-Language Proficiency Test",
+          "description": "Kỳ thi năng lực tiếng Nhật quốc tế chuẩn hóa do Japan Foundation và JEES tổ chức",
+          "levels": [
+            { "id": "jlpt-n5", "name": "JLPT N5 (Sơ cấp căn bản)", "badge": "N5", "cefrEquivalent": "A1", "description": "Hiragana, Katakana, ~100 Kanji, ~800 từ vựng căn bản" },
+            { "id": "jlpt-n4", "name": "JLPT N4 (Sơ cấp mở rộng)", "badge": "N4", "cefrEquivalent": "A2", "description": "Hội thoại thường ngày chậm, ~300 Kanji, ~1,500 từ vựng" },
+            { "id": "jlpt-n3", "name": "JLPT N3 (Trung cấp giao tiếp)", "badge": "N3", "cefrEquivalent": "B1", "description": "Giao tiếp tình huống cụ thể, ~650 Kanji, ~3,750 từ vựng" },
+            { "id": "jlpt-n2", "name": "JLPT N2 (Trung - Cao cấp làm việc)", "badge": "N2", "cefrEquivalent": "B2", "description": "Đọc báo chí, làm việc tại công ty Nhật Bản, ~1,000 Kanji" },
+            { "id": "jlpt-n1", "name": "JLPT N1 (Cao cấp thành thạo)", "badge": "N1", "cefrEquivalent": "C1", "description": "Chuyên môn học thuật, bài xã luận, ~2,000 Kanji, ~10,000 từ vựng" }
+          ]
+        },
+        {
+          "id": "bjt",
+          "name": "BJT (Tiếng Nhật Thương Mại)",
+          "fullName": "Business Japanese Proficiency Test",
+          "description": "Đánh giá năng lực tiếng Nhật thực tế trong môi trường thương mại và doanh nghiệp",
+          "levels": [
+            { "id": "bjt-j3", "name": "BJT J3 - J4 (Kinh doanh cơ bản)", "badge": "J3-J4", "cefrEquivalent": "B1", "description": "Xử lý nghiệp vụ hành chính thông thường" },
+            { "id": "bjt-j1", "name": "BJT J1 - J2 (Kinh doanh chuyên sâu)", "badge": "J1-J2", "cefrEquivalent": "B2", "description": "Đàm phán thương mại, thuyết trình kinh doanh chuyên nghiệp" }
+          ]
+        },
+        {
+          "id": "nat-test",
+          "name": "NAT-TEST",
+          "fullName": "Japanese NAT-TEST",
+          "description": "Kỳ thi đánh giá năng lực tiếng Nhật dành cho du học sinh và tu nghiệp sinh",
+          "levels": [
+            { "id": "nat-5q", "name": "NAT-TEST 5Q (Tương đương N5)", "badge": "5Q", "cefrEquivalent": "A1", "description": "Căn bản cho người mới học" },
+            { "id": "nat-4q", "name": "NAT-TEST 4Q (Tương đương N4)", "badge": "4Q", "cefrEquivalent": "A2", "description": "Sơ cấp mở rộng" },
+            { "id": "nat-3q", "name": "NAT-TEST 3Q (Tương đương N3)", "badge": "3Q", "cefrEquivalent": "B1", "description": "Trung cấp thực dụng" },
+            { "id": "nat-2q", "name": "NAT-TEST 2Q (Tương đương N2)", "badge": "2Q", "cefrEquivalent": "B2", "description": "Trung cao cấp đủ điều kiện làm việc" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ (日本語総合)",
+          "fullName": "Chế độ Tự do & Đời sống (Không áp chứng chỉ)",
+          "description": "Học tiếng Nhật giao tiếp Kaiwa, xem Anime, đọc Manga hoặc du lịch",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ (Tự do)", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ" },
+            { "id": "Sơ cấp", "name": "Sơ cấp (初級 - Beginner)", "badge": "初級", "cefrEquivalent": "A1", "description": "Nhập môn căn bản" },
+            { "id": "Trung cấp", "name": "Trung cấp (中級 - Intermediate)", "badge": "中級", "cefrEquivalent": "B1", "description": "Giao tiếp phản xạ mở rộng" },
+            { "id": "Cao cấp", "name": "Cao cấp (上級 - Advanced)", "badge": "上級", "cefrEquivalent": "C1", "description": "Chuyên môn và kính ngữ Keigo" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "jlpt-prep", "name": "Luyện Thi JLPT N5 - N1 (JLPT対策)", "description": "Từ vựng trọng tâm các cấp độ đề thi JLPT" },
+        { "id": "kaiwa-daily", "name": "Tiếng Nhật Giao Tiếp Kaiwa (日常会話)", "description": "Hội thoại thực tế đời sống người Nhật, kết bạn, sinh hoạt" },
+        { "id": "business-ja", "name": "Tiếng Nhật Thương Mại & IT (ビジネス・IT日本語)", "description": "Kính ngữ Keigo, viết mail báo cáo, làm việc công ty IT Nhật" },
+        { "id": "kanji-master", "name": "Hán Tự Kanji Chuyên Đề (漢字マスター)", "description": "Học Kanji theo bộ thủ, âm Hán Việt, âm On/Kun" },
+        { "id": "study-abroad", "name": "Du Học & Đời Sống Nhật Bản (日本留学・生活)", "description": "Thủ tục Cục xuất nhập cảnh, làm thêm baito, sinh hoạt trường" },
+        { "id": "anime-culture", "name": "Anime, Manga & Văn Hóa (アニメ・日本文化)", "description": "Từ lóng, lời thoại Anime nổi tiếng, ẩm thực & lễ hội Matsuri" },
+        { "id": "grammar-basic", "name": "Ngữ Pháp & Nhập Môn Căn Bản (基礎文法)", "description": "Minna no Nihongo, trợ từ は/が/を/に, thể Te, thể Ta" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (日本語総合)", "description": "Kho từ vựng tiếng Nhật tự do không phân loại" }
+      ]
+    },
+    "zh": {
+      "languageId": "zh",
+      "name": "Chinese",
+      "nativeName": "中文",
+      "flag": "🇨🇳",
+      "defaultCertificateId": "hsk",
+      "defaultLevelId": "hsk-1",
+      "defaultCategoryId": "hsk-prep",
+      "certificates": [
+        {
+          "id": "hsk",
+          "name": "HSK (汉语水平考试)",
+          "fullName": "Hanyu Shuiping Kaoshi",
+          "description": "Kỳ thi chuẩn hóa quốc tế đánh giá năng lực Hán ngữ của Bộ Giáo dục Trung Quốc",
+          "levels": [
+            { "id": "hsk-1", "name": "HSK 1 (Sơ cấp 1 - 150 từ)", "badge": "HSK 1", "cefrEquivalent": "A1", "description": "Nhận biết các từ và câu cực kỳ đơn giản" },
+            { "id": "hsk-2", "name": "HSK 2 (Sơ cấp 2 - 300 từ)", "badge": "HSK 2", "cefrEquivalent": "A2", "description": "Giao tiếp trực tiếp về các chủ đề quen thuộc đời sống" },
+            { "id": "hsk-3", "name": "HSK 3 (Trung cấp 1 - 600 từ)", "badge": "HSK 3", "cefrEquivalent": "B1", "description": "Hoàn thành nhiệm vụ giao tiếp cơ bản trong công việc, học tập" },
+            { "id": "hsk-4", "name": "HSK 4 (Trung cấp 2 - 1,200 từ)", "badge": "HSK 4", "cefrEquivalent": "B2", "description": "Thảo luận về các chủ đề tương đối rộng, giao tiếp lưu loát với người bản ngữ" },
+            { "id": "hsk-5", "name": "HSK 5 (Cao cấp 1 - 2,500 từ)", "badge": "HSK 5", "cefrEquivalent": "C1", "description": "Đọc báo chí, thưởng thức phim ảnh, diễn thuyết trọn vẹn" },
+            { "id": "hsk-6", "name": "HSK 6 (Cao cấp 2 - 5,000+ từ)", "badge": "HSK 6", "cefrEquivalent": "C2", "description": "Tiếp thu thông tin bằng tiếng Hán và tự do biểu đạt ý kiến" },
+            { "id": "hsk-79", "name": "HSK 7 - 9 (Chuyên sâu học thuật)", "badge": "HSK 7-9", "cefrEquivalent": "C2", "description": "Nghiên cứu chuyên sâu, dịch thuật cao cấp, làm việc học thuật" }
+          ]
+        },
+        {
+          "id": "hskk",
+          "name": "HSKK (Khẩu Ngữ Hán Ngữ)",
+          "fullName": "Hanyu Shuiping Kouyu Kaoshi",
+          "description": "Kỳ thi đánh giá năng lực nói và biểu đạt khẩu ngữ tiếng Trung",
+          "levels": [
+            { "id": "hskk-pri", "name": "HSKK Sơ cấp (初级)", "badge": "HSKK-Sơ", "cefrEquivalent": "A2", "description": "Nói câu ngắn, giao tiếp đời sống đơn giản" },
+            { "id": "hskk-int", "name": "HSKK Trung cấp (中级)", "badge": "HSKK-Trung", "cefrEquivalent": "B1", "description": "Thuyết trình chủ đề quen thuộc và đối thoại tự nhiên" },
+            { "id": "hskk-adv", "name": "HSKK Cao cấp (高级)", "badge": "HSKK-Cao", "cefrEquivalent": "C1", "description": "Biểu đạt ý kiến trôi chảy, phản xạ nhanh và chuẩn xác" }
+          ]
+        },
+        {
+          "id": "tocfl",
+          "name": "TOCFL (Năng Lực Hoa Ngữ)",
+          "fullName": "Test of Chinese as a Foreign Language",
+          "description": "Kỳ thi năng lực Hoa ngữ do Ủy ban Công tác Thúc đẩy Kỳ thi Năng lực Hoa ngữ Đài Loan tổ chức",
+          "levels": [
+            { "id": "tocfl-a", "name": "TOCFL Band A (Cấp 1 - 2)", "badge": "Band A", "cefrEquivalent": "A1", "description": "Căn bản cho du học sinh và lao động Đài Loan" },
+            { "id": "tocfl-b", "name": "TOCFL Band B (Cấp 3 - 4)", "badge": "Band B", "cefrEquivalent": "B1", "description": "Đủ điều kiện nhập học đại học và làm việc tại Đài Loan" },
+            { "id": "tocfl-c", "name": "TOCFL Band C (Cấp 5 - 6)", "badge": "Band C", "cefrEquivalent": "C1", "description": "Thành thạo học thuật và nghiên cứu chuyên sâu" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ (汉语综合)",
+          "fullName": "Chế độ Tự do & Đời sống (Không áp chứng chỉ)",
+          "description": "Học tiếng Trung giao tiếp, kinh doanh đàm phán mua hàng Taobao, 1688 hoặc phim ảnh",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ (Tự do)", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ" },
+            { "id": "Sơ cấp", "name": "Sơ cấp (初级 - Beginner)", "badge": "初级", "cefrEquivalent": "A1", "description": "Pinyin phiên âm, thanh điệu và chữ Hán đơn" },
+            { "id": "Trung cấp", "name": "Trung cấp (中级 - Intermediate)", "badge": "中级", "cefrEquivalent": "B1", "description": "Ghép câu phức và hội thoại thực tế" },
+            { "id": "Cao cấp", "name": "Cao cấp (高级 - Advanced)", "badge": "高级", "cefrEquivalent": "C1", "description": "Thành ngữ 4 chữ Thành ngữ Hán và chuyên ngành" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "hsk-prep", "name": "Luyện Thi HSK & HSKK (HSK考试)", "description": "Từ vựng trọng tâm bám sát giáo trình HSK tiêu chuẩn" },
+        { "id": "daily-comm", "name": "Tiếng Trung Giao Tiếp Hàng Ngày (日常口语)", "description": "Hội thoại đời sống thực tế, chào hỏi, ăn uống, mua sắm" },
+        { "id": "business-zh", "name": "Tiếng Trung Thương Mại & Đánh Hàng (商务汉语)", "description": "Đàm phán giá, hợp đồng, nhập hàng Taobao/1688, xưởng sản xuất" },
+        { "id": "hanzi-radicals", "name": "Chữ Hán & Bộ Thủ Căn Bản (汉字 & 偏旁部首)", "description": "Phương pháp nhớ 214 bộ thủ, quy tắc bút thuận" },
+        { "id": "travel-study", "name": "Du Lịch & Du Học Trung Hoa (留学・旅游)", "description": "Thủ tục xin visa, tàu cao tốc, khách sạn, ẩm thực Trung Hoa" },
+        { "id": "traditional-tw", "name": "Tiếng Trung Phồn Thể & Đài Loan (繁体中文)", "description": "Chữ phồn thể, từ vựng đời sống và công việc tại Đài Loan" },
+        { "id": "grammar-basic", "name": "Ngữ Pháp & Phiên Âm Pinyin Căn Bản", "description": "4 thanh điệu chuẩn, phụ âm, nguyên âm và cấu trúc câu" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (汉语综合)", "description": "Kho từ vựng tiếng Trung tự do không phân loại" }
+      ]
+    },
+    "de": {
+      "languageId": "de",
+      "name": "German",
+      "nativeName": "Deutsch",
+      "flag": "🇩🇪",
+      "defaultCertificateId": "goethe",
+      "defaultLevelId": "goethe-a1",
+      "defaultCategoryId": "daily-comm",
+      "certificates": [
+        {
+          "id": "goethe",
+          "name": "Goethe-Zertifikat / TestDaF",
+          "fullName": "Goethe-Institut Sprachprüfungen & TestDaF",
+          "description": "Hệ thống chứng chỉ tiếng Đức chuẩn viện Goethe và chuẩn du học TestDaF",
+          "levels": [
+            { "id": "goethe-a1", "name": "Goethe-Zertifikat A1 (Start Deutsch 1)", "badge": "A1", "cefrEquivalent": "A1", "description": "Căn bản cho đoàn tụ gia đình và visa" },
+            { "id": "goethe-a2", "name": "Goethe-Zertifikat A2 (Start Deutsch 2)", "badge": "A2", "cefrEquivalent": "A2", "description": "Giao tiếp tình huống hàng ngày đơn giản" },
+            { "id": "goethe-b1", "name": "Goethe-Zertifikat B1 (Zertifikat Deutsch)", "badge": "B1", "cefrEquivalent": "B1", "description": "Điều kiện du học nghề và nhập cư Đức" },
+            { "id": "goethe-b2", "name": "Goethe-Zertifikat B2 (Nâng cao)", "badge": "B2", "cefrEquivalent": "B2", "description": "Điều kiện học đại học hoặc làm việc chuyên môn tại Đức" },
+            { "id": "goethe-c1", "name": "Goethe C1 / TestDaF (Thành thạo)", "badge": "C1", "cefrEquivalent": "C1", "description": "Yêu cầu cho hầu hết các ngành đại học Đức" },
+            { "id": "goethe-c2", "name": "Goethe-Zertifikat C2 (GDS)", "badge": "C2", "cefrEquivalent": "C2", "description": "Mastery trình độ cao nhất" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ (Deutsch Allgemein)",
+          "fullName": "Chế độ Tự do (Không áp chứng chỉ)",
+          "description": "Học tiếng Đức giao tiếp đời sống, du lịch hoặc công việc tự do",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ" },
+            { "id": "A1", "name": "A1 — Cơ bản nhập môn", "badge": "A1", "cefrEquivalent": "A1", "description": "Der, die, das và câu chào hỏi" },
+            { "id": "B1", "name": "B1 — Trung cấp giao tiếp", "badge": "B1", "cefrEquivalent": "B1", "description": "Diễn đạt quan điểm cá nhân" },
+            { "id": "B2", "name": "B2 — Trung cao làm việc", "badge": "B2", "cefrEquivalent": "B2", "description": "Chuyên môn văn phòng" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "daily-comm", "name": "Giao Tiếp Hàng Ngày (Alltagskommunikation)", "description": "Hội thoại thực tế tại Đức, mua sắm, nhà ga, bạn bè" },
+        { "id": "business-de", "name": "Tiếng Đức Công Sở (Deutsch im Beruf)", "description": "Làm việc tại doanh nghiệp Đức, email, báo cáo" },
+        { "id": "study-germany", "name": "Du Học & Du Học Nghề (Ausbildung & Studium)", "description": "Ngành điều dưỡng, nhà hàng khách sạn, cơ khí kỹ thuật" },
+        { "id": "grammar-words", "name": "Ngữ Pháp & Giống Từ Der/Die/Das", "description": "Quán từ, 4 cách Nominativ, Akkusativ, Dativ, Genitiv" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (Allgemeiner Wortschatz)", "description": "Kho từ vựng tiếng Đức tự do" }
+      ]
+    },
+    "fr": {
+      "languageId": "fr",
+      "name": "French",
+      "nativeName": "Français",
+      "flag": "🇫🇷",
+      "defaultCertificateId": "delf-dalf",
+      "defaultLevelId": "delf-a1",
+      "defaultCategoryId": "daily-comm",
+      "certificates": [
+        {
+          "id": "delf-dalf",
+          "name": "DELF / DALF / TCF",
+          "fullName": "Diplôme d'Études en Langue Française",
+          "description": "Văn bằng tiếng Pháp chuẩn quốc tế của Bộ Giáo dục Pháp",
+          "levels": [
+            { "id": "delf-a1", "name": "DELF A1 (Sơ cấp 1)", "badge": "A1", "cefrEquivalent": "A1", "description": "Giao tiếp căn bản quen thuộc" },
+            { "id": "delf-a2", "name": "DELF A2 (Sơ cấp 2)", "badge": "A2", "cefrEquivalent": "A2", "description": "Sinh hoạt hàng ngày đơn giản" },
+            { "id": "delf-b1", "name": "DELF B1 (Trung cấp)", "badge": "B1", "cefrEquivalent": "B1", "description": "Tự lập giao tiếp, tiêu chuẩn du học cơ bản" },
+            { "id": "delf-b2", "name": "DELF B2 (Độc lập)", "badge": "B2", "cefrEquivalent": "B2", "description": "Đủ điều kiện vào đại học tại Pháp" },
+            { "id": "dalf-c1", "name": "DALF C1 (Tự chủ cao cấp)", "badge": "C1", "cefrEquivalent": "C1", "description": "Nghiên cứu học thuật chuyên sâu" },
+            { "id": "dalf-c2", "name": "DALF C2 (Bậc thầy)", "badge": "C2", "cefrEquivalent": "C2", "description": "Thành thạo xuất sắc" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ",
+          "fullName": "Chế độ Tự do (Français Général)",
+          "description": "Học tiếng Pháp du lịch, ẩm thực, văn hóa hoặc giao tiếp tự do",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ" },
+            { "id": "A1", "name": "A1 — Cơ bản", "badge": "A1", "cefrEquivalent": "A1", "description": "Nhập môn từ vựng" },
+            { "id": "B1", "name": "B1 — Trung cấp", "badge": "B1", "cefrEquivalent": "B1", "description": "Giao tiếp phản xạ" },
+            { "id": "B2", "name": "B2 — Nâng cao", "badge": "B2", "cefrEquivalent": "B2", "description": "Lưu loát đa chủ đề" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "daily-comm", "name": "Giao Tiếp Hàng Ngày (Communication Quotidienne)", "description": "Đời sống, hỏi đường, mua sắm tại Pháp" },
+        { "id": "business-fr", "name": "Tiếng Pháp Thương Mại (Français des Affaires)", "description": "Công sở, thư từ hành chính, hợp đồng" },
+        { "id": "travel-food", "name": "Ẩm Thực & Du Lịch (Gastronomie & Voyage)", "description": "Nhà hàng, rượu vang, văn hóa Pháp" },
+        { "id": "study-france", "name": "Du Học Pháp (Études en France)", "description": "Thủ tục Campus France, trường đại học" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (Vocabulaire Général)", "description": "Kho từ vựng tiếng Pháp tổng hợp" }
+      ]
+    },
+    "es": {
+      "languageId": "es",
+      "name": "Spanish",
+      "nativeName": "Español",
+      "flag": "🇪🇸",
+      "defaultCertificateId": "dele-siele",
+      "defaultLevelId": "dele-a1",
+      "defaultCategoryId": "daily-comm",
+      "certificates": [
+        {
+          "id": "dele-siele",
+          "name": "DELE / SIELE",
+          "fullName": "Diplomas de Español como Lengua Extranjera & SIELE",
+          "description": "Chứng chỉ tiếng Tây Ban Nha quốc tế cấp bởi Viện Cervantes",
+          "levels": [
+            { "id": "dele-a1", "name": "DELE A1 (Acceso)", "badge": "A1", "cefrEquivalent": "A1", "description": "Căn bản ban đầu" },
+            { "id": "dele-a2", "name": "DELE A2 (Plataforma)", "badge": "A2", "cefrEquivalent": "A2", "description": "Tình huống giao tiếp thông thường" },
+            { "id": "dele-b1", "name": "DELE B1 (Umbral)", "badge": "B1", "cefrEquivalent": "B1", "description": "Du lịch và sinh hoạt độc lập" },
+            { "id": "dele-b2", "name": "DELE B2 (Avanzado)", "badge": "B2", "cefrEquivalent": "B2", "description": "Làm việc và du học đại học" },
+            { "id": "dele-c1", "name": "DELE C1 (Dominio Operativo)", "badge": "C1", "cefrEquivalent": "C1", "description": "Giao tiếp thành thạo chuyên sâu" },
+            { "id": "dele-c2", "name": "DELE C2 (Maestría)", "badge": "C2", "cefrEquivalent": "C2", "description": "Bản ngữ đỉnh cao" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ",
+          "fullName": "Chế độ Tự do (Español General)",
+          "description": "Học tiếng Tây Ban Nha giao tiếp, du lịch Mỹ Latinh hoặc sở thích",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ" },
+            { "id": "A1", "name": "A1 — Cơ bản", "badge": "A1", "cefrEquivalent": "A1", "description": "Nhập môn từ vựng" },
+            { "id": "B1", "name": "B1 — Trung cấp", "badge": "B1", "cefrEquivalent": "B1", "description": "Giao tiếp tự tin" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "daily-comm", "name": "Giao Tiếp Hàng Ngày (Conversación Diaria)", "description": "Gặp gỡ bạn bè, thói quen, đời sống" },
+        { "id": "business-es", "name": "Tiếng Tây Ban Nha Thương Mại (Español de Negocios)", "description": "Xuất nhập khẩu, đàm phán, thương mại" },
+        { "id": "travel-latin", "name": "Du Lịch & Văn Hóa Tây Ban Nha - Mỹ Latinh", "description": "Ẩm thực, khiêu vũ, âm nhạc và du lịch" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (Vocabulario General)", "description": "Kho từ vựng tổng hợp tự do" }
+      ]
+    },
+    "vi": {
+      "languageId": "vi",
+      "name": "Vietnamese",
+      "nativeName": "Tiếng Việt",
+      "flag": "🇻🇳",
+      "defaultCertificateId": "vsl",
+      "defaultLevelId": "vsl-1",
+      "defaultCategoryId": "daily-comm",
+      "certificates": [
+        {
+          "id": "vsl",
+          "name": "Khung Năng Lực Tiếng Việt (VSL)",
+          "fullName": "Vietnamese as a Second Language Framework",
+          "description": "Khung năng lực tiếng Việt 6 bậc cho người nước ngoài theo Bộ GD&ĐT",
+          "levels": [
+            { "id": "vsl-1", "name": "Bậc 1 (A1 - Sơ cấp 1)", "badge": "Bậc 1", "cefrEquivalent": "A1", "description": "Nhận biết từ vựng đơn giản, phát âm 6 thanh điệu" },
+            { "id": "vsl-2", "name": "Bậc 2 (A2 - Sơ cấp 2)", "badge": "Bậc 2", "cefrEquivalent": "A2", "description": "Giao tiếp sinh hoạt hàng ngày, mua bán tại chợ" },
+            { "id": "vsl-3", "name": "Bậc 3 (B1 - Trung cấp 1)", "badge": "Bậc 3", "cefrEquivalent": "B1", "description": "Độc lập giao tiếp tại nơi làm việc và đời sống" },
+            { "id": "vsl-4", "name": "Bậc 4 (B2 - Trung cấp 2)", "badge": "Bậc 4", "cefrEquivalent": "B2", "description": "Đọc báo chí, hiểu văn bản hành chính công việc" },
+            { "id": "vsl-5", "name": "Bậc 5 (C1 - Cao cấp 1)", "badge": "Bậc 5", "cefrEquivalent": "C1", "description": "Thuyết trình, đàm phán kinh doanh chuyên sâu" },
+            { "id": "vsl-6", "name": "Bậc 6 (C2 - Cao cấp 2)", "badge": "Bậc 6", "cefrEquivalent": "C2", "description": "Thành thạo văn phong và thành ngữ như người bản xứ" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ",
+          "fullName": "Chế độ Tự do & Đời sống",
+          "description": "Kho từ vựng tiếng Việt tự do",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ" },
+            { "id": "Cơ bản", "name": "Cơ bản — Mới học", "badge": "Cơ bản", "cefrEquivalent": "A1", "description": "Thanh điệu và câu chào hỏi" },
+            { "id": "Nâng cao", "name": "Nâng cao — Thành ngữ", "badge": "Nâng cao", "cefrEquivalent": "B2", "description": "Từ vựng phong phú và tục ngữ" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "daily-comm", "name": "Tiếng Việt Giao Tiếp Đời Sống", "description": "Hội thoại phố phường, ăn uống, gia đình, bạn bè" },
+        { "id": "business-vi", "name": "Tiếng Việt Thương Mại & Đầu Tư", "description": "Môi trường doanh nghiệp, đàm phán hợp đồng tại Việt Nam" },
+        { "id": "travel-food", "name": "Du Lịch & Ẩm Thực Ba Miền", "description": "Danh lam thắng cảnh, văn hóa ẩm thực Bắc - Trung - Nam" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do", "description": "Kho từ vựng tiếng Việt tự do" }
+      ]
+    },
+    "th": {
+      "languageId": "th",
+      "name": "Thai",
+      "nativeName": "ภาษาไทย",
+      "flag": "🇹🇭",
+      "defaultCertificateId": "cutfl",
+      "defaultLevelId": "cutfl-novice",
+      "defaultCategoryId": "daily-comm",
+      "certificates": [
+        {
+          "id": "cutfl",
+          "name": "CUTFL (Chulalongkorn University)",
+          "fullName": "Chulalongkorn University Proficiency Test of Thai as a Foreign Language",
+          "description": "Kỳ thi đánh giá năng lực tiếng Thái của Đại học Chulalongkorn",
+          "levels": [
+            { "id": "cutfl-novice", "name": "Novice (Sơ cấp)", "badge": "Novice", "cefrEquivalent": "A1", "description": "Giao tiếp cơ bản và nhận diện chữ Thái" },
+            { "id": "cutfl-int", "name": "Intermediate (Trung cấp)", "badge": "Inter", "cefrEquivalent": "B1", "description": "Giao tiếp tự nhiên trong cuộc sống thường ngày" },
+            { "id": "cutfl-adv", "name": "Advanced (Cao cấp)", "badge": "Adv", "cefrEquivalent": "B2", "description": "Đọc hiểu tài liệu và làm việc tại Thái Lan" },
+            { "id": "cutfl-sup", "name": "Superior (Thành thạo)", "badge": "Sup", "cefrEquivalent": "C1", "description": "Lưu loát toàn diện" }
+          ]
+        },
+        {
+          "id": "general",
+          "name": "Tự do / Tất cả trình độ",
+          "fullName": "Chế độ Tự do (ภาษาไทยทั่วไป)",
+          "description": "Học tiếng Thái giao tiếp, du lịch, xem phim Thái hoặc đời sống",
+          "levels": [
+            { "id": "ALL", "name": "ALL — Tất cả trình độ", "badge": "ALL", "cefrEquivalent": "ALL", "description": "Không giới hạn cấp độ" },
+            { "id": "Beginner", "name": "Sơ cấp — Beginner", "badge": "BEG", "cefrEquivalent": "A1", "description": "Phụ âm, nguyên âm và thanh điệu" },
+            { "id": "Intermediate", "name": "Trung cấp — Intermediate", "badge": "INT", "cefrEquivalent": "B1", "description": "Giao tiếp phản xạ" }
+          ]
+        }
+      ],
+      "categories": [
+        { "id": "daily-comm", "name": "Tiếng Thái Giao Tiếp Hàng Ngày (บทสนทนาประจำวัน)", "description": "Chào hỏi, mua sắm chợ đêm, ẩm thực đường phố Bangkok" },
+        { "id": "travel-food", "name": "Du Lịch & Ẩm Thực Thái (ท่องเที่ยว & อาหาร)", "description": "Chùa chiền, du lịch biển đảo, món Thái nổi tiếng" },
+        { "id": "business-th", "name": "Tiếng Thái Thương Mại (ภาษาไทยธุรกิจ)", "description": "Giao dịch buôn bán, thương mại Việt - Thái" },
+        { "id": "general", "name": "Tổng Hợp & Tự Do (ทั่วไป)", "description": "Kho từ vựng tiếng Thái tự do" }
+      ]
+    }
+  }
+}
