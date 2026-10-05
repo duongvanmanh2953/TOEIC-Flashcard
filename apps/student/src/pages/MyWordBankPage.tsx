@@ -2930,15 +2930,16 @@ export const MyWordBankPage: React.FC = () => {
                             {/* Option More Menu for List Row */}
                             <CustomDropdown
                               align="right"
+                              searchable={false}
                               trigger={
-                                <button
-                                  type="button"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition"
+                                <div
+                                  role="button"
+                                  tabIndex={0}
+                                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer inline-flex items-center justify-center"
                                   title="Tùy chọn khác"
                                 >
                                   <MoreHorizontal className="w-4 h-4" />
-                                </button>
+                                </div>
                               }
                               options={getDeckMoreOptions(deck)}
                               value=""
@@ -3121,16 +3122,17 @@ export const MyWordBankPage: React.FC = () => {
                     {/* Option More Dropdown for Grid Card */}
                     <CustomDropdown
                       align="right"
+                      searchable={false}
                       trigger={
-                        <button
-                          type="button"
-                          onClick={(e) => e.stopPropagation()}
+                        <div
+                          role="button"
+                          tabIndex={0}
                           className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition inline-flex items-center justify-center cursor-pointer"
                           title="Tùy chọn khác"
                           aria-label="Tùy chọn khác"
                         >
                           <MoreVertical className="w-4 h-4" />
-                        </button>
+                        </div>
                       }
                       options={getDeckMoreOptions(deck)}
                       value=""

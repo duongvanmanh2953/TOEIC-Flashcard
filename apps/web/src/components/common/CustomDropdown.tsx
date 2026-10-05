@@ -372,6 +372,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         createPortal(
           <div
             ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
               top: menuCoords.top !== undefined ? `${menuCoords.top}px` : undefined,
@@ -433,7 +435,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                       type="button"
                       role="option"
                       aria-selected={isSelected}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         onChange?.(option.value);
                         onSelect?.(option.value);
                         handleClose();
