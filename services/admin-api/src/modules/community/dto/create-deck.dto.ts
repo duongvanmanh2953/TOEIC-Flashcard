@@ -1,7 +1,27 @@
 import { IsNotEmpty, IsString, IsOptional, IsArray, ValidateNested, IsBoolean, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CefrLevel, ModerationStatus } from '@prisma/client';
+
+export function transformToCefrLevel(value: any): CefrLevel {
+  if (!value) return CefrLevel.B1;
+  const clean = String(value).trim().toUpperCase();
+  if (Object.values(CefrLevel).includes(clean as CefrLevel)) {
+    return clean as CefrLevel;
+  }
+  if (clean.includes('TẤT CẢ') || clean.includes('ALL') || clean.includes('TỰ DO') || clean.includes('FREE')) return CefrLevel.ALL;
+  if (clean.includes('TOPIK 1') || clean.includes('1급') || clean.includes('SƠ CẤP 1') || clean.includes('N5') || clean.includes('HSK 1') || clean.includes('350')) return CefrLevel.A1;
+  if (clean.includes('TOPIK 2') || clean.includes('2급') || clean.includes('SƠ CẤP 2') || clean.includes('SƠ CẤP') || clean.includes('N4') || clean.includes('HSK 2') || clean.includes('450')) return CefrLevel.A2;
+  if (clean.includes('TOPIK 3') || clean.includes('3급') || clean.includes('TRUNG CẤP 1') || clean.includes('TRUNG CẤP') || clean.includes('N3') || clean.includes('HSK 3') || clean.includes('500') || clean.includes('600')) return CefrLevel.B1;
+  if (clean.includes('TOPIK 4') || clean.includes('4급') || clean.includes('TRUNG CẤP 2') || clean.includes('N2') || clean.includes('HSK 4') || clean.includes('650') || clean.includes('750')) return CefrLevel.B2;
+  if (clean.includes('TOPIK 5') || clean.includes('5급') || clean.includes('CAO CẤP 1') || clean.includes('CAO CẤP') || clean.includes('N1') || clean.includes('HSK 5') || clean.includes('800') || clean.includes('850')) return CefrLevel.C1;
+  if (clean.includes('TOPIK 6') || clean.includes('6급') || clean.includes('CAO CẤP 2') || clean.includes('HSK 6') || clean.includes('900') || clean.includes('950')) return CefrLevel.C2;
+  if (clean.includes('4.5') || clean.includes('5.0')) return CefrLevel.B1;
+  if (clean.includes('5.5') || clean.includes('6.0') || clean.includes('6.5')) return CefrLevel.B2;
+  if (clean.includes('7.0') || clean.includes('7.5') || clean.includes('8.0')) return CefrLevel.C1;
+  if (clean.includes('8.5') || clean.includes('9.0')) return CefrLevel.C2;
+  return CefrLevel.B1;
+}
 
 export class CreateWordItemDto {
   @ApiProperty({ example: 'synergy' })
@@ -68,6 +88,7 @@ export class CreateDeckDto {
 
   @ApiPropertyOptional({ enum: CefrLevel, default: CefrLevel.B2 })
   @IsOptional()
+  @Transform(({ value }) => transformToCefrLevel(value))
   @IsEnum(CefrLevel)
   cefrLevel?: CefrLevel = CefrLevel.B2;
 
@@ -135,6 +156,7 @@ export class UpdateDeckDto {
 
   @ApiPropertyOptional({ enum: CefrLevel })
   @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? transformToCefrLevel(value) : undefined))
   @IsEnum(CefrLevel)
   cefrLevel?: CefrLevel;
 

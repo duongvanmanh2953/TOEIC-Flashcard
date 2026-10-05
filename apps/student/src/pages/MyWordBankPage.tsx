@@ -920,7 +920,7 @@ export const MyWordBankPage: React.FC = () => {
           title: updates.title,
           description: updates.description,
           category: updates.category,
-          cefrLevel: updates.cefrLevel,
+          cefrLevel: updates.cefrLevel ? mapToCefrEquivalent(updates.cefrLevel) : undefined,
           password: updates.password,
           status: deckStatusInput === 'PENDING' ? 'PENDING' : undefined,
           isPublic: deckStatusInput !== 'PRIVATE',
@@ -1297,7 +1297,7 @@ export const MyWordBankPage: React.FC = () => {
         example: w.example,
         exampleTranslation: w.exampleTranslation,
         topic: w.topic || 'General', // TRUE TOPIC
-        cefrLevel: w.cefrLevel || 'B1',
+        cefrLevel: mapToCefrEquivalent(w.cefrLevel || deck.cefrLevel),
       }));
 
       let cloudId = deck.id;
@@ -1307,7 +1307,7 @@ export const MyWordBankPage: React.FC = () => {
           title: deck.title,
           description: deck.description,
           category: deck.category,
-          cefrLevel: deck.cefrLevel,
+          cefrLevel: mapToCefrEquivalent(deck.cefrLevel),
           password: deck.password,
         });
       } else {
@@ -1316,7 +1316,7 @@ export const MyWordBankPage: React.FC = () => {
           title: deck.title,
           description: deck.description,
           category: deck.category,
-          cefrLevel: deck.cefrLevel,
+          cefrLevel: mapToCefrEquivalent(deck.cefrLevel),
           isPublic: true,
           password: deck.password,
           words: payloadWords,
@@ -1369,6 +1369,7 @@ export const MyWordBankPage: React.FC = () => {
         title: shareTitle.trim(),
         description: shareDescription.trim(),
         category: shareCategory,
+        cefrLevel: mapToCefrEquivalent(shareModalDeck.cefrLevel),
         isPublic: true,
         password: shareEnablePassword ? sharePassword.trim() : undefined,
         words: deckWords.map((w) => ({
@@ -1378,7 +1379,7 @@ export const MyWordBankPage: React.FC = () => {
           meaning: w.meaning,
           example: w.example,
           topic: w.topic || 'General',
-          cefrLevel: w.cefrLevel || 'B1',
+          cefrLevel: mapToCefrEquivalent(w.cefrLevel || shareModalDeck.cefrLevel),
         })),
       });
 

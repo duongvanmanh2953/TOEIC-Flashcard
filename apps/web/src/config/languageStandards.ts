@@ -151,6 +151,10 @@ export function mapToCefrEquivalent(levelValue?: string): string {
     return clean;
   }
 
+  if (clean.includes('TẤT CẢ') || clean.includes('ALL') || clean.includes('TỰ DO') || clean.includes('FREE')) {
+    return 'ALL';
+  }
+
   // Scan all language standards to find matching level
   for (const langKey of Object.keys(rawData)) {
     const std = rawData[langKey];
@@ -160,7 +164,8 @@ export function mapToCefrEquivalent(levelValue?: string): string {
           lvl.id.toUpperCase() === clean ||
           lvl.name.toUpperCase() === clean ||
           lvl.badge.toUpperCase() === clean ||
-          lvl.name.toUpperCase().includes(clean)
+          clean.includes(lvl.id.toUpperCase()) ||
+          clean.includes(lvl.badge.toUpperCase())
         ) {
           if (lvl.cefrEquivalent) return lvl.cefrEquivalent;
         }
@@ -168,13 +173,18 @@ export function mapToCefrEquivalent(levelValue?: string): string {
     }
   }
 
-  // Common heuristic mappings
-  if (clean.includes('N5') || clean.includes('1급') || clean.includes('HSK 1') || clean.includes('350')) return 'A1';
-  if (clean.includes('N4') || clean.includes('2급') || clean.includes('HSK 2') || clean.includes('450')) return 'A2';
-  if (clean.includes('N3') || clean.includes('3급') || clean.includes('HSK 3') || clean.includes('500') || clean.includes('600')) return 'B1';
-  if (clean.includes('N2') || clean.includes('4급') || clean.includes('HSK 4') || clean.includes('650') || clean.includes('750')) return 'B2';
-  if (clean.includes('N1') || clean.includes('5급') || clean.includes('HSK 5') || clean.includes('800') || clean.includes('850')) return 'C1';
-  if (clean.includes('6급') || clean.includes('HSK 6') || clean.includes('900') || clean.includes('950')) return 'C2';
+  // Common heuristic mappings for Korean, Japanese, Chinese, TOEIC, IELTS
+  if (clean.includes('TOPIK 1') || clean.includes('1급') || clean.includes('SƠ CẤP 1') || clean.includes('N5') || clean.includes('HSK 1') || clean.includes('350')) return 'A1';
+  if (clean.includes('TOPIK 2') || clean.includes('2급') || clean.includes('SƠ CẤP 2') || clean.includes('SƠ CẤP') || clean.includes('N4') || clean.includes('HSK 2') || clean.includes('450')) return 'A2';
+  if (clean.includes('TOPIK 3') || clean.includes('3급') || clean.includes('TRUNG CẤP 1') || clean.includes('N3') || clean.includes('HSK 3') || clean.includes('500') || clean.includes('600')) return 'B1';
+  if (clean.includes('TOPIK 4') || clean.includes('4급') || clean.includes('TRUNG CẤP 2') || clean.includes('TRUNG CẤP') || clean.includes('N2') || clean.includes('HSK 4') || clean.includes('650') || clean.includes('750')) return 'B2';
+  if (clean.includes('TOPIK 5') || clean.includes('5급') || clean.includes('CAO CẤP 1') || clean.includes('N1') || clean.includes('HSK 5') || clean.includes('800') || clean.includes('850')) return 'C1';
+  if (clean.includes('TOPIK 6') || clean.includes('6급') || clean.includes('CAO CẤP 2') || clean.includes('CAO CẤP') || clean.includes('HSK 6') || clean.includes('900') || clean.includes('950')) return 'C2';
+
+  if (clean.includes('4.5') || clean.includes('5.0')) return 'B1';
+  if (clean.includes('5.5') || clean.includes('6.0') || clean.includes('6.5')) return 'B2';
+  if (clean.includes('7.0') || clean.includes('7.5') || clean.includes('8.0')) return 'C1';
+  if (clean.includes('8.5') || clean.includes('9.0')) return 'C2';
 
   return 'B1';
 }
