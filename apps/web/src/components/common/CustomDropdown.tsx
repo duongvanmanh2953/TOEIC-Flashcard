@@ -21,7 +21,7 @@ export interface CustomDropdownProps {
   trigger?: React.ReactNode;
   className?: string;
   menuClassName?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   disabled?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -288,22 +288,30 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   };
 
   const sizeClasses = {
-    sm: 'h-10 min-h-[40px] px-3.5 text-xs sm:text-sm rounded-xl',
-    md: 'h-11 min-h-[44px] px-4 text-xs sm:text-sm rounded-xl',
-    lg: 'h-12 min-h-[48px] px-4.5 text-sm sm:text-base rounded-2xl',
+    xs: 'h-8 min-h-[32px] px-2.5 text-xs rounded-lg',
+    sm: 'h-9 min-h-[36px] px-3 text-xs rounded-xl',
+    md: 'h-10 min-h-[40px] px-3.5 text-xs sm:text-sm rounded-xl',
+    lg: 'h-11 min-h-[44px] px-4 text-sm sm:text-base rounded-2xl',
   }[size];
 
   return (
     <div
       ref={containerRef}
-      className={`relative ${className?.includes('w-full') ? 'w-full block' : 'inline-block min-w-[220px]'} text-left ${className}`}
+      className={`relative ${className?.includes('w-full') ? 'w-full block' : 'inline-block min-w-[32px]'} text-left ${className}`}
     >
       {/* Trigger Button */}
       {trigger ? (
         <div
           role="button"
           tabIndex={0}
-          onClick={() => (isOpen ? handleClose() : handleOpen())}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isOpen) {
+              handleClose();
+            } else {
+              handleOpen();
+            }
+          }}
           className="cursor-pointer inline-flex items-center"
           aria-haspopup="listbox"
           aria-expanded={isOpen}
