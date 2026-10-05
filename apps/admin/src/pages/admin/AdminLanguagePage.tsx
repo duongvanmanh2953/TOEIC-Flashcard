@@ -29,6 +29,7 @@ import {
 } from '../../config/languages';
 import { GlassCard } from '../../components/common/GlassCard';
 import { CustomDropdown } from '../../components/common/CustomDropdown';
+import { SearchableSelect, DropdownOption } from '../../components/common/SearchableSelect';
 import { ModalPortal } from '../../components/common/ModalPortal';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { LanguageBadge } from '../../components/language/LanguageBadge';
@@ -67,6 +68,32 @@ export const AdminLanguagePage: React.FC = () => {
     totalLearningHours: 840,
     avgSessionMins: 14.5,
   });
+
+  const regionCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      ALL: languages.length,
+      Europe: 0,
+      Asia: 0,
+      Americas: 0,
+      'Middle East': 0,
+      Global: 0,
+    };
+    languages.forEach((l) => {
+      if (l.region && counts[l.region] !== undefined) {
+        counts[l.region] = (counts[l.region] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [languages]);
+
+  const regionOptions: DropdownOption[] = useMemo(() => [
+    { value: 'ALL', label: 'Tất cả khu vực', badge: regionCounts.ALL },
+    { value: 'Europe', label: 'Châu Âu (Europe)', badge: regionCounts.Europe },
+    { value: 'Asia', label: 'Châu Á (Asia)', badge: regionCounts.Asia },
+    { value: 'Americas', label: 'Châu Mỹ (Americas)', badge: regionCounts.Americas },
+    { value: 'Middle East', label: 'Trung Đông (Middle East)', badge: regionCounts['Middle East'] },
+    { value: 'Global', label: 'Toàn cầu (Global)', badge: regionCounts.Global },
+  ], [regionCounts]);
 
   const filteredLanguages = useMemo(() => {
     return languages.filter((lang) => {
@@ -190,21 +217,15 @@ export const AdminLanguagePage: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              {['ALL', 'Europe', 'Asia', 'Americas', 'Middle East', 'Global'].map((reg) => (
-                <button
-                  key={reg}
-                  type="button"
-                  onClick={() => setRegionFilter(reg)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 border cursor-pointer ${
-                    regionFilter === reg
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-200'
-                  }`}
-                >
-                  {reg === 'ALL' ? 'Tất cả khu vực' : reg}
-                </button>
-              ))}
+            <div className="w-full sm:w-64 shrink-0">
+              <SearchableSelect
+                value={regionFilter}
+                onChange={(val) => setRegionFilter(val)}
+                options={regionOptions}
+                placeholder="Chọn khu vực..."
+                searchPlaceholder="Tìm kiếm khu vực..."
+                size="sm"
+              />
             </div>
           </div>
 

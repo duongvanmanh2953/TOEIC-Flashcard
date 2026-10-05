@@ -282,23 +282,30 @@ export const AdminLayout: React.FC = () => {
           } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand & Command Center Header */}
-        <div className={`py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-0'}`}>
-          <div className={`flex items-center gap-2 min-w-0 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+        <div className={`py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center ${sidebarCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between px-1'}`}>
+          <div
+            className={`flex items-center gap-2.5 min-w-0 cursor-pointer group ${sidebarCollapsed ? 'justify-center' : 'flex-1 overflow-hidden'}`}
+            onClick={() => navigate('/admin')}
+            title="VocabFlow Admin"
+          >
             <VocabFlowLogo
               size="sm"
               showContainer={false}
-              className="cursor-pointer hover:scale-105 transition"
-              onClick={() => navigate('/admin')}
+              className="group-hover:scale-105 transition-transform duration-200"
             />
             {!sidebarCollapsed && (
-              <div>
+              <div className="min-w-0 flex-1 truncate">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">VocabFlow</span>
-                  <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30">
+                  <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
+                    VocabFlow
+                  </h2>
+                  <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30 shrink-0">
                     ADMIN
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Command Center v7.0</p>
+                <p className="text-[11px] text-slate-400 font-medium truncate">
+                  Quản Trị Hệ Thống
+                </p>
               </div>
             )}
           </div>
@@ -545,6 +552,19 @@ export const AdminLayout: React.FC = () => {
             >
               <Menu className="w-5 h-5" />
             </button>
+
+            {/* Mobile Brand Logo (matching Student app standard) */}
+            <div
+              onClick={() => navigate('/admin')}
+              className="lg:hidden cursor-pointer flex items-center gap-2 group shrink-0"
+              title="VocabFlow Admin"
+            >
+              <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
+              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span>
+              <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30">
+                ADMIN
+              </span>
+            </div>
 
             {/* Quick Search Shortcut */}
             <div

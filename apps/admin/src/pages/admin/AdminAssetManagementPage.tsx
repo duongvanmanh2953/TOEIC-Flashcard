@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { confirmModal } from '../../components/common/ConfirmDialog';
+import { SearchableSelect, DropdownOption } from '../../components/common/SearchableSelect';
 
 export interface AssetItem {
   id: string;
@@ -217,6 +218,27 @@ export const AdminAssetManagementPage: React.FC = () => {
 
   const selectedUsedCount = selectedList.filter((a) => a.isUsed).length;
   const selectedUnusedCount = selectedList.filter((a) => !a.isUsed).length;
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: assets.length };
+    ASSET_CATEGORIES.forEach((c) => {
+      if (c.id !== 'all') counts[c.id] = 0;
+    });
+    assets.forEach((a) => {
+      if (counts[a.category] !== undefined) {
+        counts[a.category] = (counts[a.category] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [assets]);
+
+  const assetCategoryOptions: DropdownOption[] = useMemo(() => {
+    return ASSET_CATEGORIES.map((cat) => ({
+      value: cat.id,
+      label: cat.label,
+      badge: categoryCounts[cat.id] ?? (cat.id === 'all' ? assets.length : undefined),
+    }));
+  }, [categoryCounts, assets.length]);
 
   // Checkbox handlers
   const handleToggleSelect = (id: string) => {
@@ -543,25 +565,20 @@ export const AdminAssetManagementPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Category Tabs & Search input */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
-            {ASSET_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
-                  selectedCategory === cat.id
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+        {/* Category Dropdown & Search input */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="w-full sm:w-72 shrink-0">
+            <SearchableSelect
+              value={selectedCategory}
+              onChange={(val) => setSelectedCategory(val)}
+              options={assetCategoryOptions}
+              placeholder="Chọn danh mục tài nguyên..."
+              searchPlaceholder="Tìm kiếm danh mục..."
+              size="sm"
+            />
           </div>
 
-          <div className="relative min-w-[260px]">
+          <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"

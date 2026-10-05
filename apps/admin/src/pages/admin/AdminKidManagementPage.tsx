@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { confirmModal } from '../../components/common/ConfirmDialog';
+import { SearchableSelect, DropdownOption } from '../../components/common/SearchableSelect';
 
 export interface KidCategory {
   id: string;
@@ -121,6 +122,27 @@ export const AdminKidManagementPage: React.FC = () => {
 
   // Selection
   const [selectedWordIds, setSelectedWordIds] = useState<Set<string>>(new Set());
+
+  // Category Dropdown Options with live counts and icons
+  const categoryOptions: DropdownOption[] = useMemo(() => [
+    {
+      value: 'all',
+      label: `✨ Tất cả chủ đề (${words.length} từ)`,
+      badge: words.length,
+      icon: '✨',
+      description: `Hiển thị toàn bộ ${words.length} từ vựng trong tất cả các chủ đề`,
+    },
+    ...categories.map((cat) => {
+      const count = words.filter((w) => w.category === cat.id).length;
+      return {
+        value: cat.id,
+        label: `${cat.nameVi} (${cat.nameEn})`,
+        badge: count,
+        icon: cat.icon || '📁',
+        description: `Chủ đề: ${cat.nameVi} • ${count} từ vựng đang có`,
+      };
+    }),
+  ], [categories, words]);
 
   // Modals
   const [isWordModalOpen, setIsWordModalOpen] = useState<boolean>(false);
@@ -588,59 +610,39 @@ export const AdminKidManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Categories Horizontal Tabs */}
-      <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-black uppercase text-slate-400 tracking-wider">
-            Chọn Khu Vực Từ Vựng (Chủ Đề)
-          </span>
-          <button
-            onClick={() => handleOpenAddWord(selectedCategory !== 'all' ? selectedCategory : undefined)}
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" /> Thêm từ vào khu vực này
-          </button>
+      {/* Category Dropdown Selector with Built-in Search & Direct Action */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1 max-w-xl">
+          <label className="text-xs font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider shrink-0 flex items-center gap-1.5">
+            <Smile className="w-4 h-4 text-amber-500" />
+            <span>Khu Vực Từ Vựng (Chủ Đề):</span>
+          </label>
+          <div className="flex-1 min-w-[240px]">
+            <SearchableSelect
+              value={selectedCategory}
+              onChange={(val) => setSelectedCategory(String(val))}
+              options={categoryOptions}
+              placeholder="Chọn khu vực từ vựng..."
+              searchPlaceholder="Tìm kiếm chủ đề (Động vật, Trái cây, Giao thông...)..."
+              size="sm"
+              className="w-full"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => setSelectedCategory('all')}
-            className={`px-3 py-2 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-              selectedCategory === 'all'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
+            onClick={() => handleOpenAddWord(selectedCategory !== 'all' ? selectedCategory : undefined)}
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-indigo-600/20"
           >
-            <span>✨ Tất cả ({words.length})</span>
+            <Plus className="w-3.5 h-3.5" /> Thêm từ mới
           </button>
-
-          {categories.map((cat) => {
-            const count = words.filter((w) => w.category === cat.id).length;
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer flex items-center gap-2 ${
-                  isSelected
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span>{cat.icon || '📁'}</span>
-                <span>{cat.nameVi}</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                    isSelected
-                      ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border border-slate-200 dark:border-slate-700/60"
+          >
+            <FolderPlus className="w-3.5 h-3.5" /> Tạo chủ đề mới
+          </button>
         </div>
       </div>
 

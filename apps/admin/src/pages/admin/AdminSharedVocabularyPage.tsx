@@ -29,6 +29,7 @@ import { confirmModal } from '../../components/common/ConfirmDialog';
 import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
+import { SearchableSelect, DropdownOption } from '../../components/common/SearchableSelect';
 
 interface CommunityWord {
   id: string;
@@ -277,6 +278,26 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     return map;
   }, [baseDecks]);
 
+  const languageSpaceOptions: DropdownOption[] = React.useMemo(() => [
+    {
+      value: 'ALL',
+      label: `🌐 Tất cả không gian ngôn ngữ (${baseDecks.length})`,
+      badge: baseDecks.length,
+      icon: '🌐',
+      description: `Hiển thị toàn bộ ${baseDecks.length} kho từ vựng của mọi ngôn ngữ`,
+    },
+    ...SUPPORTED_LANGUAGES.map((lang) => {
+      const count = languageCounts[lang.id] || 0;
+      return {
+        value: lang.id,
+        label: `${lang.name} (${lang.nativeName})`,
+        badge: count,
+        icon: <CountryFlag languageId={lang.id} size="xs" />,
+        description: `Ngôn ngữ: ${lang.name} • ${count} kho từ`,
+      };
+    }),
+  ], [baseDecks.length, languageCounts]);
+
   const pendingCount = deckList.filter((d) => d.status === 'PENDING').length;
   const approvedCount = deckList.filter((d) => d.status === 'APPROVED').length;
   const rejectedCount = deckList.filter((d) => d.status === 'REJECTED').length;
@@ -454,60 +475,32 @@ export const AdminSharedVocabularyPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Prominent Language Bar - Hiển Thị Hết Ra Theo Ngôn Ngữ */}
-      <div className="glass-card p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
-        <div className="flex items-center justify-between gap-2 mb-2 px-1">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-            <Globe className="w-4 h-4 text-indigo-400" />
-            <span>Phân Loại Kho Từ Theo Ngôn Ngữ Học (Language Spaces)</span>
+      {/* Prominent Language Bar - Searchable Dropdown */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <Globe className="w-4 h-4" />
           </div>
-          <span className="text-[11px] text-slate-400">
-            Hiển thị toàn bộ kho từ theo từng ngôn ngữ học
-          </span>
+          <div>
+            <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100">
+              Phân Loại Kho Từ Theo Ngôn Ngữ Học (Language Spaces)
+            </h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Chọn hoặc tìm kiếm không gian ngôn ngữ để lọc và quản lý danh sách bộ từ
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          <button
-            type="button"
-            onClick={() => setSpaceFilter('ALL')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-              spaceFilter === 'ALL'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
-            }`}
-          >
-            <span>🌐 Tất cả ngôn ngữ</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-              spaceFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
-            }`}>
-              {baseDecks.length}
-            </span>
-          </button>
-
-          {SUPPORTED_LANGUAGES.map((lang) => {
-            const count = languageCounts[lang.id] || 0;
-            const isSelected = spaceFilter === lang.id;
-            return (
-              <button
-                key={lang.id}
-                type="button"
-                onClick={() => setSpaceFilter(lang.id)}
-                className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
-                }`}
-              >
-                <CountryFlag languageId={lang.id} size="xs" />
-                <span>{lang.name}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+        <div className="w-full sm:w-80">
+          <SearchableSelect
+            value={spaceFilter}
+            onChange={(val) => setSpaceFilter(String(val))}
+            options={languageSpaceOptions}
+            placeholder="Chọn không gian ngôn ngữ..."
+            searchPlaceholder="Tìm kiếm ngôn ngữ (Anh, Hàn, Nhật, Trung...)..."
+            size="sm"
+            className="w-full"
+          />
         </div>
       </div>
 

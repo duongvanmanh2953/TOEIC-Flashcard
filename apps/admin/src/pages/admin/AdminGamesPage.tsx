@@ -33,6 +33,7 @@ import { useTranslation } from '../../i18n';
 import { confirmModal } from '../../components/common/ConfirmDialog';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
+import { SearchableSelect, DropdownOption } from '../../components/common/SearchableSelect';
 import {
   AdminButton,
   AdminFilterBar,
@@ -761,6 +762,23 @@ export const AdminGamesPage: React.FC = () => {
     return counts;
   }, [exams]);
 
+  const examLanguageOptions: DropdownOption[] = useMemo(() => {
+    return [
+      {
+        value: 'ALL',
+        label: 'Tất cả ngôn ngữ',
+        badge: exams.length,
+        icon: <Globe className="w-4 h-4 text-indigo-400" />,
+      },
+      ...SUPPORTED_LANGUAGES.map((lang) => ({
+        value: lang.id,
+        label: lang.name,
+        badge: examLanguageCounts[lang.id] || 0,
+        icon: <CountryFlag languageId={lang.id} size="xs" />,
+      })),
+    ];
+  }, [exams.length, examLanguageCounts]);
+
   // Table Columns for Exams
   const examColumns: Column<AdminExamItem>[] = [
     {
@@ -1095,67 +1113,26 @@ export const AdminGamesPage: React.FC = () => {
       {activeTab === 'exams' && (
         <div className="space-y-4">
           {/* Prominent Language Bar for Exams */}
-          <div className="glass-card p-3 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
-            <div className="flex items-center justify-between gap-2 mb-2 px-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-                <Globe className="w-4 h-4 text-indigo-400" />
-                <span>Phân Loại Bộ Đề Thi Theo Ngôn Ngữ</span>
+          <div className="glass-card p-3 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-indigo-400 shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-slate-200">Phân Loại Bộ Đề Thi Theo Ngôn Ngữ</span>
+                <p className="text-[11px] text-slate-400">
+                  Quản trị viên có toàn quyền xóa vĩnh viễn đề thi mà không cần thông qua chủ đề thi
+                </p>
               </div>
-              <span className="text-[11px] text-slate-400">
-                Quản trị viên có toàn quyền xóa vĩnh viễn đề thi mà không cần thông qua chủ đề thi
-              </span>
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-              <button
-                type="button"
-                onClick={() => setExamLanguageFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-                  examLanguageFilter === 'ALL'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
-                }`}
-              >
-                <span>🌐 Tất cả ngôn ngữ</span>
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                    examLanguageFilter === 'ALL'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-900 text-slate-400'
-                  }`}
-                >
-                  {exams.length}
-                </span>
-              </button>
-
-              {SUPPORTED_LANGUAGES.map((lang) => {
-                const count = examLanguageCounts[lang.id] || 0;
-                const isSelected = examLanguageFilter === lang.id;
-                return (
-                  <button
-                    key={lang.id}
-                    type="button"
-                    onClick={() => setExamLanguageFilter(lang.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                        : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
-                    }`}
-                  >
-                    <CountryFlag languageId={lang.id} size="xs" />
-                    <span>{lang.name}</span>
-                    <span
-                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                        isSelected
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-900 text-slate-400'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="w-full sm:w-72 shrink-0">
+              <SearchableSelect
+                value={examLanguageFilter}
+                onChange={(val) => setExamLanguageFilter(val)}
+                options={examLanguageOptions}
+                placeholder="Chọn ngôn ngữ đề thi..."
+                searchPlaceholder="Tìm kiếm ngôn ngữ..."
+                size="sm"
+              />
             </div>
           </div>
 
