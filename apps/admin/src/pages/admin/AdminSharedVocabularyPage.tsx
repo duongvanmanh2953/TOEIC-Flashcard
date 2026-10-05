@@ -491,14 +491,14 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="w-full sm:w-80">
+        <div className="w-full sm:w-96 shrink-0">
           <SearchableSelect
             value={spaceFilter}
             onChange={(val) => setSpaceFilter(String(val))}
             options={languageSpaceOptions}
             placeholder="Chọn không gian ngôn ngữ..."
             searchPlaceholder="Tìm kiếm ngôn ngữ (Anh, Hàn, Nhật, Trung...)..."
-            size="sm"
+            size="md"
             className="w-full"
           />
         </div>
@@ -545,7 +545,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm theo tiêu đề bộ từ, người đóng góp, hoặc email..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition min-h-[38px]"
+              className="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition h-10 min-h-[40px]"
             />
           </div>
 
@@ -590,7 +590,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             <button
               onClick={fetchDecks}
               title="Làm mới danh sách"
-              className="w-full h-[38px] flex items-center justify-center rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
+              className="w-full h-10 min-h-[40px] flex items-center justify-center rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
             >
               <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
             </button>

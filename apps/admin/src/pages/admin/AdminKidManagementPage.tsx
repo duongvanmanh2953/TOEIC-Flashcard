@@ -617,14 +617,14 @@ export const AdminKidManagementPage: React.FC = () => {
             <Smile className="w-4 h-4 text-amber-500" />
             <span>Khu Vực Từ Vựng (Chủ Đề):</span>
           </label>
-          <div className="flex-1 min-w-[240px]">
+          <div className="flex-1 min-w-[260px]">
             <SearchableSelect
               value={selectedCategory}
               onChange={(val) => setSelectedCategory(String(val))}
               options={categoryOptions}
               placeholder="Chọn khu vực từ vựng..."
               searchPlaceholder="Tìm kiếm chủ đề (Động vật, Trái cây, Giao thông...)..."
-              size="sm"
+              size="md"
               className="w-full"
             />
           </div>

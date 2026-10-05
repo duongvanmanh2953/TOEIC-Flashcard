@@ -288,15 +288,15 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   };
 
   const sizeClasses = {
-    sm: 'h-9 px-3 text-xs rounded-xl',
-    md: 'h-10 px-3.5 text-xs sm:text-sm rounded-xl',
-    lg: 'h-12 px-4 text-sm rounded-2xl',
+    sm: 'h-10 min-h-[40px] px-3.5 text-xs sm:text-sm rounded-xl',
+    md: 'h-11 min-h-[44px] px-4 text-xs sm:text-sm rounded-xl',
+    lg: 'h-12 min-h-[48px] px-4.5 text-sm sm:text-base rounded-2xl',
   }[size];
 
   return (
     <div
       ref={containerRef}
-      className={`relative ${className.includes('w-full') ? 'block' : 'inline-block'} text-left ${className}`}
+      className={`relative ${className?.includes('w-full') ? 'w-full block' : 'inline-block min-w-[220px]'} text-left ${className}`}
     >
       {/* Trigger Button */}
       {trigger ? (
@@ -319,14 +319,14 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
-          <div className="flex items-center gap-2 min-w-0 truncate pl-0.5">
+          <div className="flex items-center gap-2 min-w-0 flex-1 truncate pl-0.5">
             {renderIcon(LeftIcon, 'w-4 h-4 text-slate-400 shrink-0 ml-0.5')}
             {renderIcon(selectedOption?.icon, 'w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 ml-0.5')}
-            <span className="truncate font-semibold text-slate-800 dark:text-slate-100">
+            <span className="truncate font-semibold text-slate-800 dark:text-slate-100 text-left flex-1">
               {selectedOption ? selectedOption.label : placeholder}
             </span>
             {selectedOption?.badge !== undefined && (
-              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-600 shrink-0">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-600 shrink-0">
                 {selectedOption.badge}
               </span>
             )}

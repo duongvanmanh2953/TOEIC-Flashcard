@@ -213,18 +213,18 @@ export const AdminLanguagePage: React.FC = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Tìm ngôn ngữ theo tên, mã ISO..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium h-10 min-h-[40px]"
               />
             </div>
 
-            <div className="w-full sm:w-64 shrink-0">
+            <div className="w-full sm:w-72 shrink-0">
               <SearchableSelect
                 value={regionFilter}
                 onChange={(val) => setRegionFilter(val)}
                 options={regionOptions}
                 placeholder="Chọn khu vực..."
                 searchPlaceholder="Tìm kiếm khu vực..."
-                size="sm"
+                size="md"
               />
             </div>
           </div>

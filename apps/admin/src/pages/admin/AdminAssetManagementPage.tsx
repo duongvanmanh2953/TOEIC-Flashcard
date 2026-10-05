@@ -567,14 +567,14 @@ export const AdminAssetManagementPage: React.FC = () => {
 
         {/* Category Dropdown & Search input */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="w-full sm:w-72 shrink-0">
+          <div className="w-full sm:w-80 shrink-0">
             <SearchableSelect
               value={selectedCategory}
               onChange={(val) => setSelectedCategory(val)}
               options={assetCategoryOptions}
               placeholder="Chọn danh mục tài nguyên..."
               searchPlaceholder="Tìm kiếm danh mục..."
-              size="sm"
+              size="md"
             />
           </div>
 
@@ -585,7 +585,7 @@ export const AdminAssetManagementPage: React.FC = () => {
               placeholder="Tìm theo tên file, bài học, từ vựng..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:border-indigo-500"
+              className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-hidden focus:border-indigo-500 h-10 min-h-[40px]"
             />
           </div>
         </div>

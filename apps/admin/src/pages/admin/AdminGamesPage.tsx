@@ -1124,14 +1124,14 @@ export const AdminGamesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="w-full sm:w-72 shrink-0">
+            <div className="w-full sm:w-80 shrink-0">
               <SearchableSelect
                 value={examLanguageFilter}
                 onChange={(val) => setExamLanguageFilter(val)}
                 options={examLanguageOptions}
                 placeholder="Chọn ngôn ngữ đề thi..."
                 searchPlaceholder="Tìm kiếm ngôn ngữ..."
-                size="sm"
+                size="md"
               />
             </div>
           </div>

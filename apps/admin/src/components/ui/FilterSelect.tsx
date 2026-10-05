@@ -109,9 +109,9 @@ export function FilterSelect<T extends string | number>({
   }, [isOpen, updatePosition]);
 
   const sizeClasses = {
-    xs: 'py-1 px-2 text-[11px] rounded-lg min-h-[28px]',
-    sm: 'h-10 px-3 text-xs rounded-xl',
-    md: 'h-11 px-3.5 text-xs sm:text-sm rounded-xl',
+    xs: 'min-h-[36px] h-9 py-1 px-2.5 text-xs rounded-xl',
+    sm: 'min-h-[40px] h-10 px-3.5 text-xs rounded-xl',
+    md: 'min-h-[44px] h-11 px-4 text-xs sm:text-sm rounded-xl',
   }[size];
 
   const renderIcon = (
@@ -133,19 +133,19 @@ export function FilterSelect<T extends string | number>({
   };
 
   return (
-    <div className={`relative ${isFullWidth ? 'w-full block' : 'inline-block'} ${className}`} ref={containerRef}>
+    <div className={`relative ${isFullWidth ? 'w-full block' : 'inline-block min-w-[160px]'} ${className}`} ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`${
           isFullWidth ? 'w-full justify-between' : ''
-        } h-full flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer ${sizeClasses}`}
+        } w-full flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer ${sizeClasses}`}
       >
         <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
           {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 shrink-0')}
           {!LeftIcon && renderIcon(selectedOption?.icon, 'w-3.5 h-3.5 text-slate-400 shrink-0')}
           {label && <span className="text-slate-500 font-normal shrink-0">{label}:</span>}
-          <span className={`font-semibold text-slate-200 truncate ${isFullWidth ? 'flex-1 text-left' : 'max-w-[140px]'}`}>
+          <span className={`font-semibold text-slate-200 truncate ${isFullWidth ? 'flex-1 text-left' : ''}`}>
             {selectedOption ? selectedOption.label : String(value)}
           </span>
           {selectedOption?.badge !== undefined && (
