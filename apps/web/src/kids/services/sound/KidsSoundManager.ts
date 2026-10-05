@@ -9,6 +9,7 @@
 export type SoundEffectType =
   | 'click'
   | 'pop'
+  | 'chew'
   | 'bubble_burst'
   | 'fruit_pop'
   | 'star_burst'

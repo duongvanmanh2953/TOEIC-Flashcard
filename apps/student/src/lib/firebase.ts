@@ -92,6 +92,7 @@ export interface FirebaseConnectionTestResult {
   latencyMs?: number;
   message: string;
   projectId?: string;
+  projectNumber?: string;
   authorizedDomains?: string[];
   error?: string;
 }

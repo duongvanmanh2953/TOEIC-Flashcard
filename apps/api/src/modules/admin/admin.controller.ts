@@ -499,6 +499,42 @@ export class AdminController {
     return this.adminService.bulkDeleteSharedDecks(deckIds, actorId);
   }
 
+  @Get('shared-vocabulary/official-targets')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get official system decks available for merging words' })
+  getOfficialTargetDecks(
+    @Query('languageId') languageId?: string,
+  ) {
+    return this.adminService.getOfficialTargetDecks(languageId);
+  }
+
+  @Post('shared-vocabulary/check-merge-duplicates')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Analyze and detect duplicate words before merging shared decks into system deck' })
+  checkSharedDecksMergeDuplicates(
+    @Body('sourceDeckIds') sourceDeckIds: string[],
+    @Body('targetDeckId') targetDeckId?: string,
+  ) {
+    return this.adminService.checkSharedDecksMergeDuplicates(sourceDeckIds, targetDeckId);
+  }
+
+  @Post('shared-vocabulary/merge-into-system-deck')
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Clone and merge selected words from multiple decks into admin system deck' })
+  mergeSharedDecksIntoSystemDeck(
+    @Body() payload: {
+      sourceDeckIds: string[];
+      targetDeckId?: string;
+      createNewDeck?: boolean;
+      newDeckData?: any;
+      excludedWords?: string[];
+      excludedWordIds?: string[];
+    },
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.adminService.mergeSharedDecksIntoSystemDeck(payload, actorId);
+  }
+
   // =========================================================================
   // ADMIN EXAMS / BỘ ĐỀ THI MANAGEMENT
   // =========================================================================

@@ -47,6 +47,8 @@ export interface NotesUsage {
   unlimited: boolean;
 }
 
+export type NoteUsageResponse = NotesUsage;
+
 export interface NotesOverviewCount {
   totalNotes: number;
   activeNotes: number;

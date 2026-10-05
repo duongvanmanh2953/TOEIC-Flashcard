@@ -50,6 +50,7 @@ import {
   ChevronDown,
   ArrowRight,
   Heart,
+  Cloud,
   CloudUpload,
   Crown,
   HardDrive,
@@ -129,6 +130,7 @@ export const MyWordBankPage: React.FC = () => {
   const [selectedDeckIds, setSelectedDeckIds] = useState<string[]>([]);
   const [deckSearch, setDeckSearch] = useState('');
   const [deckCategoryFilter, setDeckCategoryFilter] = useState('ALL');
+  const [deckSyncFilter, setDeckSyncFilter] = useState<'ALL' | 'ONLINE' | 'OFFLINE'>('ALL');
 
   // Inside Deck Words Selection & Filter states
   const [selectedWordIds, setSelectedWordIds] = useState<string[]>([]);
@@ -376,46 +378,47 @@ export const MyWordBankPage: React.FC = () => {
   const loadData = async (forceCloudSync = false) => {
     if (forceCloudSync) {
       setSyncingCloud(true);
+      setIdbSyncMsg('Đang kiểm tra Database và đồng bộ kho từ vựng...');
     } else {
       setLoading(true);
     }
 
     const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
+    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
     // 1. Instant Cache-First Load from IndexedDB scoped strictly to current user and active language
     let cachedDecks: LocalDeck[] = [];
+    let cachedWords: any[] = [];
     try {
-      const [idbDecks, cachedWords] = await Promise.all([
+      const [idbDecks, idbWords] = await Promise.all([
         idbGetLocalDecks(currentUserId, activeLanguage.id),
         idbGetWords(currentUserId, activeLanguage.id),
       ]);
 
       cachedDecks = idbDecks || [];
-      if (cachedDecks.length > 0) {
+      cachedWords = idbWords || [];
+
+      // If offline or guest session, immediately show local cached decks (Offline Mode)
+      if (!isOnline || isGuest || !user) {
         setDecks(cachedDecks);
-      } else {
-        setDecks([]);
-      }
-      if (cachedWords && cachedWords.length > 0) {
         setWords(cachedWords);
-        if (!forceCloudSync) setLoading(false);
-      } else {
-        setWords([]);
+        setLoading(false);
+        return;
       }
     } catch (err) {
       console.warn('IDB read warning:', err);
     }
 
-    // 2. Background Revalidation from Cloud API scoped to active language
-    if (user && !isGuest) {
+    // 2. Authoritative Revalidation & Database Check from Cloud API
+    if (user && !isGuest && isOnline) {
       try {
         const [cloudDecksRes, cloudWordsRes] = await Promise.allSettled([
           api.get('/community/my-decks', { params: { languageId: activeLanguage.id } }),
           api.get('/community/my-words', { params: { languageId: activeLanguage.id } }),
         ]);
 
-        let updatedDecks: LocalDeck[] = [];
         if (cloudDecksRes.status === 'fulfilled' && Array.isArray(cloudDecksRes.value)) {
+          // Decks returned by DB are definitely ON DATABASE -> Mark ONLINE (isSyncedToCloud: true)
           const apiDecks: LocalDeck[] = cloudDecksRes.value.map((d: any) => ({
             id: d.id,
             userId: currentUserId,
@@ -431,39 +434,89 @@ export const MyWordBankPage: React.FC = () => {
             status: d.status,
             createdAt: new Date(d.createdAt).getTime(),
             updatedAt: new Date(d.updatedAt || d.createdAt).getTime(),
-            isSyncedToCloud: true,
+            isSyncedToCloud: true, // CÒN TRÊN DATABASE -> HIỂN THỊ ONLINE
             isCloned: Boolean(d.isCloned),
             isReadOnly: Boolean(d.isReadOnly),
             author: d.author,
           }));
 
-          // Merge local-only decks strictly belonging to this user and language
           const apiIds = new Set(apiDecks.map((cd) => cd.id));
-          const localOnly = cachedDecks.filter((ld) => {
-            if (!ld || !ld.id) return false;
-            if (ld.userId !== currentUserId) return false;
-            if (ld.isSyncedToCloud) return false;
-            if (apiIds.has(ld.id)) return false;
-            if (ld.originDeckId && apiIds.has(ld.originDeckId)) return false;
-            if (ld.id.startsWith('cloned_') && apiIds.has(ld.id.replace('cloned_', ''))) return false;
-            return true;
-          });
+
+          // Reconcile cached decks from IndexedDB against authoritative DB state:
+          // - If a deck was previously on DB but is NO LONGER on DB: It was DELETED on DB -> PURGE IT!
+          // - If a deck is purely local/offline (created offline, never on DB): Keep it as OFFLINE!
+          const decksToDeleteFromIdb: string[] = [];
+          const localOnlyOfflineDecks: LocalDeck[] = [];
+
+          for (const ld of cachedDecks) {
+            if (!ld || !ld.id) continue;
+            if (ld.userId !== currentUserId) continue;
+
+            const isPresentInApi =
+              apiIds.has(ld.id) ||
+              Boolean(ld.originDeckId && apiIds.has(ld.originDeckId)) ||
+              (ld.id.startsWith('cloned_') && apiIds.has(ld.id.replace('cloned_', '')));
+
+            if (isPresentInApi) {
+              // Present in DB -> handled by apiDecks (Online)
+              continue;
+            }
+
+            // Not present in DB:
+            // Check if it was previously a DB deck (was synced, cloned, UUID ID, or moderated status)
+            const wasCloudDeck =
+              ld.isSyncedToCloud === true ||
+              ld.isCloned === true ||
+              Boolean(ld.originDeckId) ||
+              /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ld.id) ||
+              /^[0-9a-f]{24}$/i.test(ld.id) ||
+              ['APPROVED', 'PENDING', 'REJECTED'].includes(ld.status as string);
+
+            if (wasCloudDeck) {
+              // ĐÃ BỊ XÓA TRÊN DB -> XÓA TRIỆT ĐỂ KHỎI INDEXEDDB ĐỂ KHÔNG BAO GIỜ HỒI SINH!
+              decksToDeleteFromIdb.push(ld.id);
+              if (ld.originDeckId) decksToDeleteFromIdb.push(ld.originDeckId);
+            } else {
+              // Kho Offline thuần túy (tạo cục bộ trên máy này, chưa từng đẩy lên DB):
+              // Giữ lại và hiển thị trạng thái OFFLINE (isSyncedToCloud: false)
+              localOnlyOfflineDecks.push({
+                ...ld,
+                isSyncedToCloud: false, // HIỂN THỊ OFFLINE
+              });
+            }
+          }
+
+          // Purge deleted decks from IndexedDB and cleanup orphaned words
+          if (decksToDeleteFromIdb.length > 0) {
+            await idbDeleteLocalDecks(decksToDeleteFromIdb);
+            const orphanedWordIds = cachedWords
+              .filter((w) => decksToDeleteFromIdb.includes(w.deckId))
+              .map((w) => w.id);
+            if (orphanedWordIds.length > 0) {
+              await idbDeleteWords(orphanedWordIds);
+            }
+          }
 
           // Strict canonical deduplication
           const seenCanonical = new Set<string>();
-          updatedDecks = [];
-          for (const d of [...apiDecks, ...localOnly]) {
+          const updatedDecks: LocalDeck[] = [];
+          for (const d of [...apiDecks, ...localOnlyOfflineDecks]) {
             const canonicalKey = d.originDeckId || (d.id?.startsWith('cloned_') ? d.id.replace('cloned_', '') : d.id);
             if (!seenCanonical.has(canonicalKey)) {
               seenCanonical.add(canonicalKey);
               updatedDecks.push(d);
             }
           }
+
           setDecks(updatedDecks);
 
+          // Save reconciled decks to IndexedDB for offline resilience
           for (const d of updatedDecks) {
             await idbSaveLocalDeck(d, currentUserId);
           }
+        } else {
+          // Cloud call was rejected or returned non-array -> fallback to local cache
+          setDecks(cachedDecks);
         }
 
         if (cloudWordsRes.status === 'fulfilled' && Array.isArray(cloudWordsRes.value)) {
@@ -506,9 +559,13 @@ export const MyWordBankPage: React.FC = () => {
             });
             setIdbSyncMsg(null);
           }
+        } else if (cachedWords.length > 0) {
+          setWords(cachedWords);
         }
       } catch (cloudErr) {
         console.warn('Background cloud revalidation notice (offline-safe):', cloudErr);
+        setDecks(cachedDecks);
+        setWords(cachedWords);
       }
     }
  
@@ -599,9 +656,13 @@ export const MyWordBankPage: React.FC = () => {
       const q = deckSearch.toLowerCase().trim();
       const matchesSearch = !q || deck.title.toLowerCase().includes(q) || (deck.description || '').toLowerCase().includes(q);
       const matchesCat = deckCategoryFilter === 'ALL' || deck.category === deckCategoryFilter;
-      return matchesSearch && matchesCat;
+      const matchesSync =
+        deckSyncFilter === 'ALL' ||
+        (deckSyncFilter === 'ONLINE' && Boolean(deck.isSyncedToCloud)) ||
+        (deckSyncFilter === 'OFFLINE' && !deck.isSyncedToCloud);
+      return matchesSearch && matchesCat && matchesSync;
     });
-  }, [deckListWithStats, deckSearch, deckCategoryFilter]);
+  }, [deckListWithStats, deckSearch, deckCategoryFilter, deckSyncFilter]);
 
   // Infinite Scroll & Lazy Loading for Decks (Smooth 0ms FPS)
   // Virtual List Windowing for Decks (Table: 56px, Grid: 240px)
@@ -766,37 +827,55 @@ export const MyWordBankPage: React.FC = () => {
     try {
       const targetId = deckToDelete.id;
       const targetTitle = deckToDelete.title;
+      const cleanServerId = targetId.startsWith('cloned_') ? targetId.replace('cloned_', '') : targetId;
+      const originId = deckToDelete.originDeckId;
 
-      // 1. Delete deck from IndexedDB
+      // 1. Delete deck from IndexedDB (targetId, cleanServerId and originId)
       await idbDeleteLocalDeck(targetId);
-      setDecks((prev) => prev.filter((d) => d.id !== targetId));
+      if (cleanServerId !== targetId) await idbDeleteLocalDeck(cleanServerId);
+      if (originId) await idbDeleteLocalDeck(originId);
 
-      // 2. Delete words belonging to this deck from local storage
+      setDecks((prev) => prev.filter((d) => d.id !== targetId && d.id !== cleanServerId && d.id !== originId));
+
+      // 2. Delete words belonging to this deck from local storage & state
       const wordsToDelete = words.filter(
-        (w) => w.deckId === targetId || (w.deckName && w.deckName === targetTitle)
+        (w) =>
+          w.deckId === targetId ||
+          w.deckId === cleanServerId ||
+          (originId && w.deckId === originId) ||
+          (w.deckName && w.deckName === targetTitle)
       );
       if (wordsToDelete.length > 0) {
         await idbDeleteWords(wordsToDelete.map((w) => w.id));
         setWords((prev) =>
-          prev.filter((w) => w.deckId !== targetId && w.deckName !== targetTitle)
+          prev.filter((w) => !wordsToDelete.some((wt) => wt.id === w.id))
         );
       }
 
-      // 3. Sync delete to Cloud API
-      if (user && !isGuest && deckToDelete.isSyncedToCloud) {
+      // 3. Always attempt to delete from Cloud API if user is authenticated
+      if (user && !isGuest) {
         try {
-          await api.delete(`/community/decks/${targetId}`);
-        } catch (err) {
-          console.warn('Cloud deck deletion notice:', err);
+          await api.delete(`/community/decks/${cleanServerId}`).catch(async (err) => {
+            if (originId && originId !== cleanServerId) {
+              return api.delete(`/community/decks/${originId}`).catch(() => {});
+            }
+            if (err?.response?.status !== 404) {
+              console.warn('Cloud deck deletion note:', err);
+            }
+          });
+        } catch (err: any) {
+          if (err?.response?.status !== 404) {
+            console.warn('Cloud deck deletion note:', err);
+          }
         }
       }
 
-      if (selectedDeck?.id === targetId) {
+      if (selectedDeck?.id === targetId || selectedDeck?.id === cleanServerId || selectedDeck?.id === originId) {
         setSelectedDeck(null);
       }
 
       setDeckToDelete(null);
-      setActionSuccessMsg(`Đã xóa kho từ vựng "${targetTitle}" cùng toàn bộ từ vựng bên trong!`);
+      setActionSuccessMsg(`Đã xóa vĩnh viễn kho từ vựng "${targetTitle}" thành công!`);
       setTimeout(() => setActionSuccessMsg(null), 3500);
     } catch (err: any) {
       alert('Lỗi khi xóa kho: ' + (err.message || err));
@@ -811,48 +890,54 @@ export const MyWordBankPage: React.FC = () => {
     setDeletingDecks(true);
 
     try {
-      const count = selectedDeckIds.length;
+      const idsToDelete = [...selectedDeckIds];
+      const allCleanIds: string[] = [];
+
+      for (const id of idsToDelete) {
+        allCleanIds.push(id);
+        if (id.startsWith('cloned_')) allCleanIds.push(id.replace('cloned_', ''));
+      }
+      const matchingDecks = decks.filter((d) => idsToDelete.includes(d.id));
+      for (const d of matchingDecks) {
+        if (d.originDeckId) allCleanIds.push(d.originDeckId);
+      }
+      const uniqueCleanIds = Array.from(new Set(allCleanIds));
 
       // 1. Delete from IndexedDB
-      await idbDeleteLocalDecks(selectedDeckIds);
-      setDecks((prev) => prev.filter((d) => !selectedDeckIds.includes(d.id)));
+      await idbDeleteLocalDecks(uniqueCleanIds);
+      setDecks((prev) => prev.filter((d) => !idsToDelete.includes(d.id) && !uniqueCleanIds.includes(d.id)));
 
       // 2. Delete corresponding words
-      const deletedDeckTitles = decks
-        .filter((d) => selectedDeckIds.includes(d.id))
-        .map((d) => d.title);
-
+      const deletedDeckTitles = matchingDecks.map((d) => d.title);
       const wordsToDelete = words.filter(
-        (w) => selectedDeckIds.includes(w.deckId) || (w.deckName && deletedDeckTitles.includes(w.deckName))
+        (w) => uniqueCleanIds.includes(w.deckId) || (w.deckName && deletedDeckTitles.includes(w.deckName))
       );
       if (wordsToDelete.length > 0) {
         await idbDeleteWords(wordsToDelete.map((w) => w.id));
         setWords((prev) =>
-          prev.filter(
-            (w) => !selectedDeckIds.includes(w.deckId) && (!w.deckName || !deletedDeckTitles.includes(w.deckName))
-          )
+          prev.filter((w) => !wordsToDelete.some((wt) => wt.id === w.id))
         );
       }
 
       // 3. Sync to Cloud API
       if (user && !isGuest) {
         try {
-          await api.post('/community/decks/bulk-delete', { ids: selectedDeckIds });
+          await api.post('/community/decks/bulk-delete', { ids: uniqueCleanIds });
         } catch (err) {
           console.warn('Cloud bulk deck delete notice:', err);
         }
       }
 
-      if (selectedDeck && selectedDeckIds.includes(selectedDeck.id)) {
+      if (selectedDeck && (idsToDelete.includes(selectedDeck.id) || uniqueCleanIds.includes(selectedDeck.id))) {
         setSelectedDeck(null);
       }
 
       setSelectedDeckIds([]);
       setShowBulkDeleteDecksModal(false);
-      setActionSuccessMsg(`Đã xóa thành công ${count} kho từ vựng đã chọn!`);
+      setActionSuccessMsg(`Đã xóa vĩnh viễn ${idsToDelete.length} kho từ vựng đã chọn!`);
       setTimeout(() => setActionSuccessMsg(null), 3500);
     } catch (err: any) {
-      alert('Lỗi khi xóa nhiều kho: ' + (err.message || err));
+      alert('Lỗi khi xóa hàng loạt kho: ' + (err.message || err));
     } finally {
       setDeletingDecks(false);
     }
@@ -1898,11 +1983,10 @@ export const MyWordBankPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Consolidated Action Area */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* TRONG KHO ĐANG MỞ */}
-          {selectedDeck ? (
-            isSelectedDeckLocked ? (
+        {/* Consolidated Action Area (Inside opened deck) */}
+        {selectedDeck && (
+          <div className="flex flex-wrap items-center gap-2">
+            {isSelectedDeckLocked ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20">
                 <Lock className="w-3.5 h-3.5" />
                 <span>Yêu cầu mật khẩu để mở khóa</span>
@@ -2046,7 +2130,59 @@ export const MyWordBankPage: React.FC = () => {
                 size="sm"
               />
             </>
-          )) : activeTab === 'decks' ? (
+          )}
+        </div>
+      )}
+      </div>
+
+      {/* Real-time IndexedDB Activity Progress Notification Banner */}
+      {idbSyncMsg && (
+        <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center justify-between gap-3 animate-in fade-in shadow-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <span className="truncate">{idbSyncMsg}</span>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 shrink-0">
+            IndexedDB Sync
+          </span>
+        </div>
+      )}
+
+      {/* Action Success Toast Banner */}
+      {actionSuccessMsg && (
+        <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-2 animate-in fade-in">
+          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>{actionSuccessMsg}</span>
+        </div>
+      )}
+
+            {/* Main Mode Navigation Bar: "Kho của tôi" vs "Tất cả từ" + Contextual Actions */}
+      {!selectedDeck && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="tab-pill-container self-start">
+            <button
+              type="button"
+              onClick={() => setActiveTab('decks')}
+              className={`tab-pill ${activeTab === 'decks' ? 'tab-pill-active' : ''}`}
+            >
+              <FolderKanban className="w-4 h-4" />
+              <span>Kho Của Tôi</span>
+              <span className="tab-pill-badge">{decks.length}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('all_words')}
+              className={`tab-pill ${activeTab === 'all_words' ? 'tab-pill-active' : ''}`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Tất Cả Từ</span>
+              <span className="tab-pill-badge">{words.length}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {activeTab === 'decks' ? (
             /* TRANG QUẢN LÝ TẤT CẢ KHO */
             <>
               <button
@@ -2288,54 +2424,11 @@ export const MyWordBankPage: React.FC = () => {
               />
             </>
           )}
-        </div>
-      </div>
-
-      {/* Real-time IndexedDB Activity Progress Notification Banner */}
-      {idbSyncMsg && (
-        <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center justify-between gap-3 animate-in fade-in shadow-xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400 shrink-0" />
-            <span className="truncate">{idbSyncMsg}</span>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 shrink-0">
-            IndexedDB Sync
-          </span>
         </div>
       )}
 
-      {/* Action Success Toast Banner */}
-      {actionSuccessMsg && (
-        <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-2 animate-in fade-in">
-          <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span>{actionSuccessMsg}</span>
-        </div>
-      )}
-
-      {/* Main Mode Navigation Bar: "Kho của tôi" vs "Tất cả từ" */}
-      {!selectedDeck && (
-        <div className="tab-pill-container self-start">
-          <button
-            onClick={() => setActiveTab('decks')}
-            className={`tab-pill ${activeTab === 'decks' ? 'tab-pill-active' : ''}`}
-          >
-            <FolderKanban className="w-4 h-4" />
-            <span>Kho Của Tôi</span>
-            <span className="tab-pill-badge">{decks.length}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('all_words')}
-            className={`tab-pill ${activeTab === 'all_words' ? 'tab-pill-active' : ''}`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Tất Cả Từ</span>
-            <span className="tab-pill-badge">{words.length}</span>
-          </button>
-        </div>
-      )}
-
-      {/* =============================================================================
+{/* =============================================================================
           TAB 1: KHO CỦA TÔI (MY DECKS VIEW) - DEDICATED DECK MANAGEMENT
           ============================================================================= */}
       {!selectedDeck && activeTab === 'decks' && (
@@ -2403,6 +2496,21 @@ export const MyWordBankPage: React.FC = () => {
                   <List className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Danh sách</span>
                 </button>
+              </div>
+
+              {/* Online / Offline Filter Dropdown */}
+              <div className="w-36 h-9 shrink-0">
+                <CustomDropdown
+                  value={deckSyncFilter}
+                  onChange={(val) => setDeckSyncFilter(val as any)}
+                  options={[
+                    { value: 'ALL', label: 'Tất cả trạng thái' },
+                    { value: 'ONLINE', label: '🌐 Online (Trên DB)' },
+                    { value: 'OFFLINE', label: '💾 Offline (Lưu máy)' },
+                  ]}
+                  size="sm"
+                  className="w-full h-9"
+                />
               </div>
 
               {/* Deck Search Box */}
@@ -2565,16 +2673,17 @@ export const MyWordBankPage: React.FC = () => {
                             </div>
                           </td>
                           <td className="py-3 px-3 text-center whitespace-nowrap">
-                            <div className="inline-flex items-center gap-1">
+                            <div className="inline-flex items-center gap-1.5">
                               {deck.isSyncedToCloud ? (
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1">
-                                  <CloudUpload className="w-2.5 h-2.5" />
-                                  <span>Cloud</span>
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1 shadow-2xs" title="Kho từ vựng Online — Đã đồng bộ an toàn trên Cơ sở dữ liệu Cloud">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  <Cloud className="w-2.5 h-2.5" />
+                                  <span>Online</span>
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold border border-slate-200 inline-flex items-center gap-1">
-                                  <HardDrive className="w-2.5 h-2.5" />
-                                  <span>Local</span>
+                                <span className="px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[10px] font-extrabold border border-amber-200 dark:border-amber-800/60 inline-flex items-center gap-1 shadow-2xs" title="Kho từ vựng Offline — Chỉ lưu trên máy này (Ngoại tuyến, chưa có trên DB)">
+                                  <HardDrive className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                                  <span>Offline</span>
                                 </span>
                               )}
                               {deck.status === 'PENDING' && (
@@ -2634,15 +2743,15 @@ export const MyWordBankPage: React.FC = () => {
                                   <button
                                     onClick={(e) => handleUploadDeckToCloud(deck, e)}
                                     disabled={syncingDeckId === deck.id}
-                                    className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                                    className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                                       deck.isSyncedToCloud
                                         ? 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80'
-                                        : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
+                                        : 'bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/80'
                                     }`}
                                     title={
                                       deck.isSyncedToCloud
-                                        ? 'Kho đã đồng bộ lên Cloud (Bấm để đồng bộ lại nếu vừa sửa từ)'
-                                        : 'Kho chưa đồng bộ - Nhấn để đẩy kho này lên Cloud'
+                                        ? 'Kho Online — Đã lưu trên Database (Bấm để đồng bộ lại)'
+                                        : 'Kho Offline — Bấm để đồng bộ lên Database thành Online'
                                     }
                                   >
                                     {syncingDeckId === deck.id ? (
@@ -2650,12 +2759,12 @@ export const MyWordBankPage: React.FC = () => {
                                     ) : deck.isSyncedToCloud ? (
                                       <>
                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                        <span className="text-[10px]">Đã đồng bộ</span>
+                                        <span className="text-[10px]">Online</span>
                                       </>
                                     ) : (
                                       <>
-                                        <CloudUpload className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                                        <span className="text-[10px]">Đồng bộ</span>
+                                        <CloudUpload className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                        <span className="text-[10px]">Lên Online</span>
                                       </>
                                     )}
                                   </button>
@@ -2762,16 +2871,17 @@ export const MyWordBankPage: React.FC = () => {
                             {deck.category || 'General'}
                           </span>
 
-                          {/* Cloud / Local Sync Badge */}
+                          {/* Online / Offline Sync Badge */}
                           {deck.isSyncedToCloud ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800">
-                              <CloudUpload className="w-2.5 h-2.5" />
-                              <span>Cloud</span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800 shadow-2xs" title="Kho từ Online (Đã lưu trên Database)">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <Cloud className="w-2.5 h-2.5" />
+                              <span>Online</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-extrabold border border-slate-200 dark:border-slate-700">
-                              <HardDrive className="w-2.5 h-2.5" />
-                              <span>Local</span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[10px] font-extrabold border border-amber-200 dark:border-amber-800/60 shadow-2xs" title="Kho từ Offline (Lưu cục bộ trên thiết bị)">
+                              <HardDrive className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                              <span>Offline</span>
                             </span>
                           )}
 

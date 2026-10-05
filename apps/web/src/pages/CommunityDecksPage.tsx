@@ -14,6 +14,8 @@ import { CountryFlag } from '../components/language/CountryFlag';
 import {
   idbSaveLocalDeck,
   idbGetLocalDecks,
+  idbDeleteLocalDeck,
+  idbDeleteLocalDecks,
   idbGetWords,
   idbSaveWords,
   getSessionUnlockedDecks,
@@ -120,8 +122,15 @@ export const CommunityDecksPage: React.FC = () => {
       if (selectedDeck && selectedDeck.id === deck.id) {
         setSelectedDeck(null);
       }
+      const idsToDelete = [
+        deck.id,
+        deck.originDeckId,
+        deck.id?.startsWith('cloned_') ? deck.id.replace('cloned_', '') : `cloned_${deck.id}`,
+      ].filter(Boolean);
+      await idbDeleteLocalDecks(idsToDelete).catch(() => {});
+
       setDecks((prev) => prev.filter((d) => d.id !== deck.id));
-      setMyDecks((prev) => prev.filter((d) => d.id !== deck.id));
+      setMyDecks((prev) => prev.filter((d) => d.id !== deck.id && d.originDeckId !== deck.id));
       alert('Đã xóa vĩnh viễn kho từ vựng thành công.');
     } catch (err: any) {
       console.error('Delete deck error:', err);
@@ -237,18 +246,57 @@ export const CommunityDecksPage: React.FC = () => {
         ? remoteRes
         : [];
       const remoteIds = new Set(remoteList.map((d: any) => d.id));
-      const filteredLocal = (localDecks || []).filter((ld: any) => {
-        if (!ld || !ld.id) return false;
-        if (remoteIds.has(ld.id)) return false;
-        if (ld.originDeckId && remoteIds.has(ld.originDeckId)) return false;
-        if (ld.id.startsWith('cloned_') && remoteIds.has(ld.id.replace('cloned_', ''))) return false;
-        return true;
-      });
+
+      // Authoritative DB reconciliation:
+      // Kiểm tra kho local: nếu từng là cloud deck hoặc có server ID nhưng DB hiện không còn
+      // -> XÓA SẠCH VĨNH VIỄN KHỎI INDEXEDDB
+      const staleDeckIdsToDelete: string[] = [];
+      const validLocalDecks: any[] = [];
+
+      for (const ld of (localDecks || [])) {
+        if (!ld || !ld.id) continue;
+        const isServerDeck = Boolean(
+          ld.isSyncedToCloud ||
+          ld.originDeckId ||
+          ld.status === 'PENDING' ||
+          ld.status === 'APPROVED' ||
+          ld.status === 'REJECTED' ||
+          (!ld.id.startsWith('local_') && !ld.id.startsWith('deck_'))
+        );
+
+        if (isServerDeck) {
+          const cleanServerId = ld.id?.startsWith('cloned_') ? ld.id.replace('cloned_', '') : ld.id;
+          const originId = ld.originDeckId;
+          const stillExistsOnDb = remoteIds.has(ld.id) || (cleanServerId && remoteIds.has(cleanServerId)) || (originId && remoteIds.has(originId));
+          if (!stillExistsOnDb) {
+            staleDeckIdsToDelete.push(ld.id);
+            if (originId) staleDeckIdsToDelete.push(originId);
+            if (cleanServerId) staleDeckIdsToDelete.push(cleanServerId);
+            continue;
+          }
+        }
+
+        if (!remoteIds.has(ld.id)) {
+          validLocalDecks.push({
+            ...ld,
+            isSyncedToCloud: false,
+          });
+        }
+      }
+
+      if (staleDeckIdsToDelete.length > 0) {
+        await idbDeleteLocalDecks(staleDeckIdsToDelete).catch(() => {});
+      }
+
+      const onlineRemoteDecks = remoteList.map((d: any) => ({
+        ...d,
+        isSyncedToCloud: true,
+      }));
 
       // Strict canonical deduplication
       const seenCanonical = new Set<string>();
       const deduplicated: any[] = [];
-      for (const d of [...remoteList, ...filteredLocal]) {
+      for (const d of [...onlineRemoteDecks, ...validLocalDecks]) {
         const canonicalKey = d.originDeckId || (d.id?.startsWith('cloned_') ? d.id.replace('cloned_', '') : d.id);
         if (!seenCanonical.has(canonicalKey)) {
           seenCanonical.add(canonicalKey);
@@ -1342,11 +1390,19 @@ export const CommunityDecksPage: React.FC = () => {
                         {deck.description || 'Bộ từ vựng do chính bạn tạo.'}
                       </p>
 
-                      <div className="mt-3 flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <HardDrive className="w-3.5 h-3.5 text-indigo-500" />
-                          <span>Lưu máy (IndexedDB)</span>
-                        </span>
+                      <div className="mt-3 flex items-center gap-2 flex-wrap text-[11px] text-slate-500 dark:text-slate-400">
+                        {deck.isSyncedToCloud ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shadow-2xs" title="Kho từ Online (Đã lưu trên Database)">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <Cloud className="w-3.5 h-3.5" />
+                            <span>Online (Database)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 shadow-2xs" title="Kho từ Offline (Lưu máy, chưa có trên DB)">
+                            <HardDrive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <span>Offline (Lưu máy)</span>
+                          </span>
+                        )}
                         {(deck.hasPassword || deck.isProtected) && (
                           <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-bold">
                             <Lock className="w-3.5 h-3.5" />
@@ -1403,6 +1459,16 @@ export const CommunityDecksPage: React.FC = () => {
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span className="hidden sm:inline">Xuất file</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDeckAdmin(deck);
+                          }}
+                          className="h-9 w-9 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 transition inline-flex items-center justify-center cursor-pointer"
+                          title="Xóa kho từ này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>

@@ -2149,6 +2149,310 @@ export class AdminService {
     return { success: true, deletedCount: res.count, message: `Đã xóa vĩnh viễn ${res.count} kho từ vựng thành công` };
   }
 
+  async getOfficialTargetDecks(languageId?: string) {
+    const where: any = {
+      OR: [
+        { isOfficial: true },
+        { author: { role: { in: [Role.ADMIN, Role.SUPER_ADMIN] } } },
+      ],
+    };
+    if (languageId && languageId !== 'ALL') {
+      where.languageId = languageId;
+    }
+    const decks = await this.prisma.communityDeck.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        author: { select: { id: true, displayName: true, email: true } },
+        _count: { select: { words: true } },
+      },
+    });
+    return decks;
+  }
+
+  async checkSharedDecksMergeDuplicates(sourceDeckIds: string[], targetDeckId?: string) {
+    if (!sourceDeckIds || sourceDeckIds.length === 0) {
+      return {
+        totalSourceWords: 0,
+        duplicateCount: 0,
+        duplicates: [],
+        validWordsCount: 0,
+        validWords: [],
+        targetDeck: null,
+      };
+    }
+
+    const sourceDecks = await this.prisma.communityDeck.findMany({
+      where: { id: { in: sourceDeckIds } },
+      include: { words: true },
+    });
+
+    let targetDeck: any = null;
+    const targetWordMap = new Map<string, any>();
+
+    if (targetDeckId) {
+      targetDeck = await this.prisma.communityDeck.findUnique({
+        where: { id: targetDeckId },
+        include: { words: true },
+      });
+      if (targetDeck?.words) {
+        for (const w of targetDeck.words) {
+          const norm = w.word.trim().toLowerCase();
+          if (norm && !targetWordMap.has(norm)) {
+            targetWordMap.set(norm, w);
+          }
+        }
+      }
+    }
+
+    let totalSourceWords = 0;
+    const duplicates: Array<{
+      id: string;
+      word: string;
+      phonetic?: string | null;
+      meaning: string;
+      partOfSpeech?: string | null;
+      sourceDeckId: string;
+      sourceDeckTitle: string;
+      reason: 'ALREADY_IN_TARGET' | 'DUPLICATE_IN_SOURCES';
+      conflictWith: string;
+    }> = [];
+
+    const seenInSources = new Map<string, { wordObj: any; deckTitle: string; deckId: string }>();
+    const validWordsMap = new Map<string, any>();
+
+    for (const deck of sourceDecks) {
+      for (const w of deck.words) {
+        totalSourceWords++;
+        const norm = w.word.trim().toLowerCase();
+        if (!norm) continue;
+
+        // Check 1: Already exists in target system deck
+        if (targetWordMap.has(norm)) {
+          duplicates.push({
+            id: w.id,
+            word: w.word.trim(),
+            phonetic: w.phonetic,
+            meaning: w.meaning,
+            partOfSpeech: w.partOfSpeech,
+            sourceDeckId: deck.id,
+            sourceDeckTitle: deck.title,
+            reason: 'ALREADY_IN_TARGET',
+            conflictWith: targetDeck?.title || 'Kho hệ thống đích',
+          });
+          continue;
+        }
+
+        // Check 2: Duplicate across source decks
+        if (seenInSources.has(norm)) {
+          const prev = seenInSources.get(norm)!;
+          duplicates.push({
+            id: w.id,
+            word: w.word.trim(),
+            phonetic: w.phonetic,
+            meaning: w.meaning,
+            partOfSpeech: w.partOfSpeech,
+            sourceDeckId: deck.id,
+            sourceDeckTitle: deck.title,
+            reason: 'DUPLICATE_IN_SOURCES',
+            conflictWith: prev.deckTitle,
+          });
+          continue;
+        }
+
+        // Valid candidate word
+        seenInSources.set(norm, { wordObj: w, deckTitle: deck.title, deckId: deck.id });
+        validWordsMap.set(norm, {
+          id: w.id,
+          word: w.word.trim(),
+          phonetic: w.phonetic,
+          partOfSpeech: w.partOfSpeech || 'n.',
+          meaning: w.meaning,
+          definition: w.definition,
+          example: w.example,
+          exampleTranslation: w.exampleTranslation,
+          sourceDeckTitle: deck.title,
+          sourceDeckId: deck.id,
+        });
+      }
+    }
+
+    const validWords = Array.from(validWordsMap.values());
+
+    return {
+      totalSourceWords,
+      duplicateCount: duplicates.length,
+      duplicates,
+      validWordsCount: validWords.length,
+      validWords: validWords.slice(0, 100),
+      allValidWords: validWords,
+      targetDeck: targetDeck
+        ? {
+            id: targetDeck.id,
+            title: targetDeck.title,
+            wordCount: targetDeck.words?.length || 0,
+            isOfficial: targetDeck.isOfficial,
+            languageId: targetDeck.languageId,
+          }
+        : null,
+    };
+  }
+
+  async mergeSharedDecksIntoSystemDeck(
+    payload: {
+      sourceDeckIds: string[];
+      targetDeckId?: string;
+      createNewDeck?: boolean;
+      newDeckData?: any;
+      excludedWords?: string[];
+      excludedWordIds?: string[];
+    },
+    actorId?: string,
+  ) {
+    const { sourceDeckIds, targetDeckId, createNewDeck, newDeckData, excludedWords = [], excludedWordIds = [] } = payload;
+
+    if (!sourceDeckIds || sourceDeckIds.length === 0) {
+      throw new BadRequestException('Vui lòng chọn ít nhất một kho từ nguồn để đẩy');
+    }
+
+    let adminUserId = actorId;
+    if (!adminUserId) {
+      const admin = await this.prisma.user.findFirst({
+        where: { role: { in: [Role.ADMIN, Role.SUPER_ADMIN] } },
+      });
+      adminUserId = admin?.id || '';
+    }
+
+    let targetDeck: any = null;
+
+    if (createNewDeck && newDeckData?.title) {
+      targetDeck = await this.prisma.communityDeck.create({
+        data: {
+          userId: adminUserId,
+          title: newDeckData.title.trim(),
+          description: newDeckData.description || 'Kho từ vựng hệ thống do quản trị viên tổng hợp',
+          category: newDeckData.category || 'General',
+          cefrLevel: (newDeckData.cefrLevel as CefrLevel) || CefrLevel.B1,
+          languageId: newDeckData.languageId || 'en',
+          isOfficial: true,
+          isPublic: true,
+          status: ModerationStatus.APPROVED,
+        },
+      });
+    } else if (targetDeckId) {
+      targetDeck = await this.prisma.communityDeck.findUnique({
+        where: { id: targetDeckId },
+        include: { words: true },
+      });
+      if (!targetDeck) throw new NotFoundException('Kho đích không tồn tại');
+
+      if (!targetDeck.isOfficial) {
+        await this.prisma.communityDeck.update({
+          where: { id: targetDeckId },
+          data: { isOfficial: true },
+        });
+        targetDeck.isOfficial = true;
+      }
+    } else {
+      throw new BadRequestException('Vui lòng chọn kho hệ thống đích hoặc nhập thông tin tạo kho mới');
+    }
+
+    const existingWords = await this.prisma.communityWord.findMany({
+      where: { deckId: targetDeck.id },
+      select: { word: true },
+    });
+    const existingNormSet = new Set(existingWords.map((w) => w.word.trim().toLowerCase()));
+    const excludedNormSet = new Set(excludedWords.map((w) => w.trim().toLowerCase()));
+    const excludedIdSet = new Set(excludedWordIds);
+
+    const sourceDecks = await this.prisma.communityDeck.findMany({
+      where: { id: { in: sourceDeckIds } },
+      include: { words: true },
+    });
+
+    const wordsToCreate: Array<{
+      deckId: string;
+      word: string;
+      phonetic?: string | null;
+      partOfSpeech?: string | null;
+      meaning: string;
+      definition?: string | null;
+      example?: string | null;
+      exampleTranslation?: string | null;
+    }> = [];
+
+    const seenInBatch = new Set<string>();
+    let totalScanned = 0;
+
+    for (const deck of sourceDecks) {
+      for (const w of deck.words) {
+        totalScanned++;
+        if (excludedIdSet.has(w.id)) continue;
+
+        const norm = w.word.trim().toLowerCase();
+        if (!norm) continue;
+        if (excludedNormSet.has(norm)) continue;
+        if (existingNormSet.has(norm)) continue;
+        if (seenInBatch.has(norm)) continue;
+
+        seenInBatch.add(norm);
+        wordsToCreate.push({
+          deckId: targetDeck.id,
+          word: w.word.trim(),
+          phonetic: w.phonetic,
+          partOfSpeech: w.partOfSpeech || 'n.',
+          meaning: w.meaning,
+          definition: w.definition,
+          example: w.example,
+          exampleTranslation: w.exampleTranslation,
+        });
+      }
+    }
+
+    if (wordsToCreate.length > 0) {
+      await this.prisma.communityWord.createMany({
+        data: wordsToCreate,
+      });
+    }
+
+    await this.prisma.communityDeck.update({
+      where: { id: targetDeck.id },
+      data: { updatedAt: new Date() },
+    });
+
+    if (actorId) {
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            actorId,
+            action: 'ADMIN_MERGE_SHARED_DECKS_TO_SYSTEM',
+            targetType: 'COMMUNITY_DECK',
+            targetId: targetDeck.id,
+            metadata: {
+              targetDeckTitle: targetDeck.title,
+              addedWordsCount: wordsToCreate.length,
+              sourceDeckIds,
+            },
+          },
+        });
+      } catch (err) {
+        this.logger.warn(`Could not create audit log: ${err}`);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Đã clone thành công ${wordsToCreate.length} từ vựng vào kho hệ thống "${targetDeck.title}" (đã lọc sạch từ trùng lặp)!`,
+      targetDeck: {
+        id: targetDeck.id,
+        title: targetDeck.title,
+        isOfficial: targetDeck.isOfficial,
+      },
+      addedCount: wordsToCreate.length,
+      skippedCount: totalScanned - wordsToCreate.length,
+    };
+  }
+
   async adminGetExams(query: {
     languageId?: string;
     examType?: string;

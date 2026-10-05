@@ -856,14 +856,7 @@ export class CommunityService {
 
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-    if (!isAdmin) {
-      const pendingCount = await this.prisma.communityDeck.count({
-        where: { id: { in: deckIds }, userId, status: ModerationStatus.PENDING },
-      });
-      if (pendingCount > 0) {
-        throw new BadRequestException(`Có ${pendingCount} kho từ vựng đang chờ kiểm duyệt (PENDING_REVIEW), không thể xóa.`);
-      }
-    }
+    // Owner or Admin can delete their decks directly at any time (even if PENDING)
     
     // 1. Delete owned decks (or any decks if admin)
     const res = await this.prisma.communityDeck.deleteMany({

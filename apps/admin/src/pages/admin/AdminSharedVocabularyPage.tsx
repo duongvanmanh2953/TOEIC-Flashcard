@@ -30,6 +30,8 @@ import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { SearchableSelect, DropdownOption } from '../../components/common/SearchableSelect';
+import { idbDeleteLocalDeck, idbDeleteLocalDecks } from '../../lib/idb';
+import { AdminMergeDecksModal } from '../../components/admin/AdminMergeDecksModal';
 
 interface CommunityWord {
   id: string;
@@ -89,7 +91,15 @@ export const AdminSharedVocabularyPage: React.FC = () => {
   const [showChangeLangModal, setShowChangeLangModal] = useState(false);
   const [deckToChangeLang, setDeckToChangeLang] = useState<SharedDeck | null>(null);
   const [selectedNewLang, setSelectedNewLang] = useState<string>('en');
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeSourceDeckIds, setMergeSourceDeckIds] = useState<string[]>([]);
   const [messageToast, setMessageToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleOpenMergeModal = (deckIds: string[]) => {
+    if (!deckIds || deckIds.length === 0) return;
+    setMergeSourceDeckIds(deckIds);
+    setShowMergeModal(true);
+  };
 
   const showToast = (type: 'success' | 'error', text: string) => {
     setMessageToast({ type, text });
@@ -320,6 +330,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       await api.delete(`/admin/shared-vocabulary/${target.id}`).catch(() => {
         return api.delete(`/community/decks/${target.id}`);
       });
+      // Xóa triệt để khỏi IndexedDB nếu có lưu trên máy này
+      await idbDeleteLocalDeck(target.id).catch(() => {});
+      if ((target as any).originDeckId) {
+        await idbDeleteLocalDeck((target as any).originDeckId).catch(() => {});
+      }
       showToast('success', `Đã xóa vĩnh viễn kho từ "${target.title}" thành công.`);
       if (selectedDeck && selectedDeck.id === target.id) {
         setSelectedDeck(null);
@@ -350,6 +365,8 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       await api.post('/admin/shared-vocabulary/bulk-delete', { ids: selectedIds }).catch(() => {
         return api.post('/community/decks/bulk-delete', { ids: selectedIds });
       });
+      // Xóa hàng loạt khỏi IndexedDB nếu có trên máy
+      await idbDeleteLocalDecks(selectedIds).catch(() => {});
       showToast('success', `Đã xóa vĩnh viễn ${selectedIds.length} kho từ vựng.`);
       setSelectedIds([]);
       fetchDecks();
@@ -510,6 +527,16 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleOpenMergeModal(selectedIds)}
+              disabled={actionLoading}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md"
+              title="Đẩy và clone từ vựng từ các kho đã chọn vào kho hệ thống của Admin (có lọc trùng)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Đẩy vào kho hệ thống ({selectedIds.length})</span>
+            </button>
             <button
               type="button"
               onClick={handleBulkDelete}
@@ -837,6 +864,16 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                                     },
                                   },
                                   {
+                                    id: 'merge-to-system',
+                                    label: 'Đẩy vào kho hệ thống (Admin)',
+                                    variant: 'primary' as const,
+                                    icon: <Sparkles className="w-3.5 h-3.5 text-amber-300" />,
+                                    disabled: actionLoading,
+                                    onClick: () => {
+                                      handleOpenMergeModal([deck.id]);
+                                    },
+                                  },
+                                  {
                                     id: 'unapprove',
                                     label: 'Hủy duyệt (Thu hồi)',
                                     variant: 'danger' as const,
@@ -1079,6 +1116,16 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             {/* Modal Footer Controls */}
             <div className="p-6 border-t border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenMergeModal([selectedDeck.id])}
+                  disabled={actionLoading}
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  title="Đẩy và clone các từ trong kho này vào kho hệ thống của Admin (có lọc trùng)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Đẩy Vào Kho Hệ Thống (Admin)</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => handlePublishToMaster()}
@@ -1368,6 +1415,22 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ADMIN MERGE DECKS MODAL (WITH DUPLICATE CHECK & ELIMINATION) */}
+      <AdminMergeDecksModal
+        isOpen={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        sourceDeckIds={mergeSourceDeckIds}
+        sourceDecks={deckList.filter((d) => mergeSourceDeckIds.includes(d.id))}
+        onSuccess={(targetTitle, addedCount, skippedCount) => {
+          showToast(
+            'success',
+            `🎉 Đã clone thành công ${addedCount} từ vựng vào kho hệ thống "${targetTitle}"! (Đã tự động lọc sạch ${skippedCount} từ trùng lặp)`,
+          );
+          setSelectedIds([]);
+          fetchDecks();
+        }}
+      />
     </div>
   );
 };
