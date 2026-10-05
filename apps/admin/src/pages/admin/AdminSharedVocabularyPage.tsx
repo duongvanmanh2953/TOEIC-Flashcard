@@ -19,10 +19,13 @@ import {
   FileText,
   Lock,
   Loader2,
+  Trash2,
+  Globe,
 } from 'lucide-react';
 import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
 import { MoreActionsDropdown } from '../../components/common/MoreActionsDropdown';
+import { confirmModal } from '../../components/common/ConfirmDialog';
 import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
@@ -101,6 +104,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           languageId: spaceFilter !== 'ALL' ? spaceFilter : undefined,
           isOfficial: officialFilter === 'OFFICIAL' ? 'true' : officialFilter === 'COMMUNITY' ? 'false' : undefined,
           search: search.trim() || undefined,
+          limit: 100,
         },
       });
       const list = extractApiList<SharedDeck>(res);
@@ -252,6 +256,8 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     { value: 'COMMUNITY', label: '👥 Kho cộng đồng' },
   ];
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const baseDecks = Array.isArray(decks) ? decks : [];
   const deckList = baseDecks.filter((d: any) => {
     if (spaceFilter !== 'ALL' && d.languageId !== spaceFilter && d.languageSpaceId !== spaceFilter) {
@@ -261,9 +267,92 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     if (officialFilter === 'COMMUNITY' && d.isOfficial) return false;
     return true;
   });
+
+  const languageCounts = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    baseDecks.forEach((d: any) => {
+      const lang = d.languageId || 'en';
+      map[lang] = (map[lang] || 0) + 1;
+    });
+    return map;
+  }, [baseDecks]);
+
   const pendingCount = deckList.filter((d) => d.status === 'PENDING').length;
   const approvedCount = deckList.filter((d) => d.status === 'APPROVED').length;
+  const rejectedCount = deckList.filter((d) => d.status === 'REJECTED').length;
   const officialCount = deckList.filter((d) => d.isOfficial).length;
+
+  const handleDeleteDeck = async (deck?: SharedDeck) => {
+    const target = deck || selectedDeck;
+    if (!target) return;
+    const ok = await confirmModal({
+      title: 'Xóa vĩnh viễn kho từ vựng',
+      message: `Bạn có chắc chắn muốn XÓA VĨNH VIỄN kho từ "${target.title}"? Toàn bộ danh sách từ vựng, câu ví dụ và liên kết học viên sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu mà không cần thông qua chủ kho!`,
+      type: 'danger',
+      confirmText: 'Xóa vĩnh viễn',
+      cancelText: 'Giữ lại',
+    });
+    if (!ok) return;
+
+    setActionLoading(true);
+    try {
+      await api.delete(`/admin/shared-vocabulary/${target.id}`).catch(() => {
+        return api.delete(`/community/decks/${target.id}`);
+      });
+      showToast('success', `Đã xóa vĩnh viễn kho từ "${target.title}" thành công.`);
+      if (selectedDeck && selectedDeck.id === target.id) {
+        setSelectedDeck(null);
+      }
+      setSelectedIds((prev) => prev.filter((id) => id !== target.id));
+      fetchDecks();
+    } catch (err: any) {
+      console.error('Delete deck error:', err);
+      showToast('error', err?.response?.data?.message || 'Không thể xóa kho từ vựng.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    const ok = await confirmModal({
+      title: 'Xóa hàng loạt kho từ vựng',
+      message: `Bạn có chắc chắn muốn XÓA VĨNH VIỄN ${selectedIds.length} kho từ vựng đã chọn khỏi hệ thống? Thao tác này xóa trực tiếp trên database mà không cần thông qua chủ kho!`,
+      type: 'danger',
+      confirmText: `Xóa ${selectedIds.length} kho từ`,
+      cancelText: 'Hủy bỏ',
+    });
+    if (!ok) return;
+
+    setActionLoading(true);
+    try {
+      await api.post('/admin/shared-vocabulary/bulk-delete', { ids: selectedIds }).catch(() => {
+        return api.post('/community/decks/bulk-delete', { ids: selectedIds });
+      });
+      showToast('success', `Đã xóa vĩnh viễn ${selectedIds.length} kho từ vựng.`);
+      setSelectedIds([]);
+      fetchDecks();
+    } catch (err: any) {
+      console.error('Bulk delete error:', err);
+      showToast('error', err?.response?.data?.message || 'Không thể xóa hàng loạt kho từ.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(deckList.map((d) => d.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -293,30 +382,165 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">
-                Kho Từ Vựng Học Viên (Learner Shared Vault)
+                Quản Lý Kho Từ Vựng & Bộ Thẻ (Vocabulary Decks Vault)
               </h2>
               <p className="text-xs text-slate-400">
-                Phân quyền Kho Chính hiển thị trên app, quản lý không gian ngôn ngữ và kiểm duyệt nội dung cộng đồng đóng góp.
+                Hiển thị toàn bộ kho từ theo ngôn ngữ. Quản trị viên có toàn quyền kiểm duyệt, gắn nhãn Kho Chính App và xóa vĩnh viễn kho từ mà không cần chờ chủ kho.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="px-3 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-amber-300">{officialCount} Kho Chính App</span>
-          </div>
-          <div className="px-3 py-1.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-bold text-indigo-300">{pendingCount} Chờ Duyệt</span>
-          </div>
-          <div className="px-3 py-1.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-bold text-emerald-300">{approvedCount} Đã Duyệt</span>
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('ALL')}
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
+              statusFilter === 'ALL'
+                ? 'bg-slate-800 border-indigo-500 text-white font-bold'
+                : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <span className="text-xs">Tất cả ({deckList.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOfficialFilter(officialFilter === 'OFFICIAL' ? 'ALL' : 'OFFICIAL')}
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
+              officialFilter === 'OFFICIAL'
+                ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/15'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-xs font-bold">{officialCount} Kho Chính App</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
+              statusFilter === 'PENDING'
+                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
+                : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/15'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="text-xs font-bold">{pendingCount} Chờ Duyệt</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === 'APPROVED' ? 'ALL' : 'APPROVED')}
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
+              statusFilter === 'APPROVED'
+                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
+                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-xs font-bold">{approvedCount} Đã Duyệt</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === 'REJECTED' ? 'ALL' : 'REJECTED')}
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
+              statusFilter === 'REJECTED'
+                ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-bold'
+                : 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/15'
+            }`}
+          >
+            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+            <span className="text-xs font-bold">{rejectedCount} Bị Từ Chối</span>
+          </button>
         </div>
       </div>
+
+      {/* Prominent Language Bar - Hiển Thị Hết Ra Theo Ngôn Ngữ */}
+      <div className="glass-card p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
+        <div className="flex items-center justify-between gap-2 mb-2 px-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+            <Globe className="w-4 h-4 text-indigo-400" />
+            <span>Phân Loại Kho Từ Theo Ngôn Ngữ Học (Language Spaces)</span>
+          </div>
+          <span className="text-[11px] text-slate-400">
+            Hiển thị toàn bộ kho từ theo từng ngôn ngữ học
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setSpaceFilter('ALL')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
+              spaceFilter === 'ALL'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+            }`}
+          >
+            <span>🌐 Tất cả ngôn ngữ</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+              spaceFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+            }`}>
+              {baseDecks.length}
+            </span>
+          </button>
+
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const count = languageCounts[lang.id] || 0;
+            const isSelected = spaceFilter === lang.id;
+            return (
+              <button
+                key={lang.id}
+                type="button"
+                onClick={() => setSpaceFilter(lang.id)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+                }`}
+              >
+                <CountryFlag languageId={lang.id} size="xs" />
+                <span>{lang.name}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sticky Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div className="p-3.5 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shadow-xl animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center">
+              {selectedIds.length}
+            </span>
+            <span className="text-xs font-semibold text-indigo-200">kho từ vựng đã chọn</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={actionLoading}
+              className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Xóa Vĩnh Viễn ({selectedIds.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="px-2.5 py-1.5 rounded-xl text-slate-400 hover:text-white text-xs cursor-pointer"
+            >
+              Bỏ chọn
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="glass-card p-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
@@ -403,6 +627,15 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             <table className="w-full min-w-[1100px] text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-800/80 bg-slate-950/50 text-slate-400 font-bold uppercase tracking-wider text-[10px] whitespace-nowrap select-none">
+                  <th className="py-3 px-3 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      aria-label="Chọn tất cả kho từ"
+                      checked={deckList.length > 0 && selectedIds.length === deckList.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3 px-4 min-w-[280px]">Bộ Từ Vựng & Đóng Góp</th>
                   <th className="py-3 px-3.5 min-w-[130px]">Không Gian Ngôn Ngữ</th>
                   <th className="py-3 px-3.5 min-w-[170px]">Người Đóng Góp</th>
@@ -424,6 +657,15 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                       onClick={() => setSelectedDeck(deck)}
                       className="hover:bg-slate-800/40 transition cursor-pointer group"
                     >
+                      <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Chọn kho ${deck.title}`}
+                          checked={selectedIds.includes(deck.id)}
+                          onChange={() => handleSelectOne(deck.id)}
+                          className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="py-3.5 px-4 min-w-[280px]">
                         <div className="font-bold text-white group-hover:text-indigo-400 transition flex items-center gap-2 flex-wrap">
                           <span>{deck.title}</span>
@@ -635,17 +877,26 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                                   },
                                 ]
                                 : []),
-                              {
-                                id: 'copy-id',
-                                label: 'Sao chép ID bộ từ',
-                                divider: true,
-                                icon: <Sparkles className="w-3.5 h-3.5 text-slate-400" />,
-                                onClick: () => {
-                                  navigator.clipboard.writeText(deck.id);
-                                  showToast('success', 'Đã sao chép ID bộ từ');
+                                {
+                                  id: 'delete-deck',
+                                  label: 'Xóa vĩnh viễn kho từ',
+                                  variant: 'danger' as const,
+                                  icon: <Trash2 className="w-3.5 h-3.5 text-rose-400" />,
+                                  divider: true,
+                                  disabled: actionLoading,
+                                  onClick: () => handleDeleteDeck(deck),
                                 },
-                              },
-                            ]}
+                                {
+                                  id: 'copy-id',
+                                  label: 'Sao chép ID bộ từ',
+                                  divider: true,
+                                  icon: <Sparkles className="w-3.5 h-3.5 text-slate-400" />,
+                                  onClick: () => {
+                                    navigator.clipboard.writeText(deck.id);
+                                    showToast('success', 'Đã sao chép ID bộ từ');
+                                  },
+                                },
+                              ]}
                           />
                         </div>
                       </td>
@@ -842,15 +1093,26 @@ export const AdminSharedVocabularyPage: React.FC = () => {
 
             {/* Modal Footer Controls */}
             <div className="p-6 border-t border-slate-800 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => handlePublishToMaster()}
-                disabled={actionLoading}
-                className="btn-glass-primary btn-glass-sm font-semibold"
-              >
-                <UploadCloud className="w-4 h-4" />
-                <span>Xuất Bản Vào Từ Điển Hệ Thống (Master)</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePublishToMaster()}
+                  disabled={actionLoading}
+                  className="btn-glass-primary btn-glass-sm font-semibold"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>Xuất Bản Vào Từ Điển Master</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteDeck(selectedDeck)}
+                  disabled={actionLoading}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/40 hover:border-rose-500 text-rose-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400 group-hover:text-white" />
+                  <span>Xóa Vĩnh Viễn</span>
+                </button>
+              </div>
 
               <div className="flex items-center gap-2">
                 {selectedDeck.status === 'APPROVED' ? (

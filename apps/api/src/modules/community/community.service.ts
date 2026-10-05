@@ -262,10 +262,13 @@ export class CommunityService {
     };
   }
 
-  async getMyDecks(userId: string) {
+  async getMyDecks(userId: string, languageId?: string) {
     // 1. Decks created by this user
     const createdDecks = await this.prisma.communityDeck.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        ...(languageId ? { languageId } : {})
+      },
       include: {
         author: {
           select: { id: true, displayName: true, avatar: true },
@@ -280,7 +283,10 @@ export class CommunityService {
 
     // 2. Decks cloned by this user from community
     const clonedRecords = await this.prisma.deckClone.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        deck: languageId ? { languageId } : undefined
+      },
       include: {
         deck: {
           include: {
@@ -667,8 +673,12 @@ export class CommunityService {
     };
   }
 
-  async getMyWords(userId: string, filter?: string) {
+  async getMyWords(userId: string, filter?: string, languageId?: string) {
     const where: any = { userId };
+    
+    if (languageId) {
+      where.languageId = languageId;
+    }
 
     if (filter === 'FAVORITES') {
       where.isFavorite = true;
@@ -813,7 +823,8 @@ export class CommunityService {
     if (!deckIds || deckIds.length === 0) return { success: true, deletedCount: 0 };
 
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-    if (user?.role !== 'ADMIN') {
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+    if (!isAdmin) {
       const pendingCount = await this.prisma.communityDeck.count({
         where: { id: { in: deckIds }, userId, status: ModerationStatus.PENDING },
       });
@@ -822,14 +833,14 @@ export class CommunityService {
       }
     }
     
-    // 1. Delete owned decks
+    // 1. Delete owned decks (or any decks if admin)
     const res = await this.prisma.communityDeck.deleteMany({
-      where: { id: { in: deckIds }, userId },
+      where: isAdmin ? { id: { in: deckIds } } : { id: { in: deckIds }, userId },
     });
     
     // 2. Remove any cloned deck references
     const cloneRes = await this.prisma.deckClone.deleteMany({
-      where: { deckId: { in: deckIds }, userId },
+      where: isAdmin ? { deckId: { in: deckIds } } : { deckId: { in: deckIds }, userId },
     });
 
     for (const id of deckIds) {

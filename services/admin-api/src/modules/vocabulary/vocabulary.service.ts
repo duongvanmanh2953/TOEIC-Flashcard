@@ -323,6 +323,23 @@ export class VocabularyService {
     return deleted;
   }
 
+  async clearAll(languageId?: string, adminId?: string) {
+    const where = languageId && languageId !== 'ALL' ? { languageId } : {};
+    const res = await this.prisma.vocabulary.deleteMany({ where });
+    if (adminId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: adminId,
+          action: 'VOCABULARY_CLEAR_ALL',
+          targetType: 'VOCABULARY',
+          targetId: 'ALL',
+          metadata: { count: res.count, languageId: languageId || 'ALL' },
+        },
+      });
+    }
+    return { success: true, count: res.count, message: `Đã xóa thành công ${res.count} từ vựng hệ thống.` };
+  }
+
   async bulkAction(ids: string[], action: string, value: any, adminId?: string) {
     if (!ids.length) return { count: 0 };
 

@@ -78,6 +78,11 @@ import {
   HelpCircle,
   MoreHorizontal,
   Tag,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Key,
+  FolderPlus,
 } from 'lucide-react';
 import {
   downloadVocabularyTemplate,
@@ -125,23 +130,55 @@ export const MyWordBankPage: React.FC = () => {
   const [words, setWords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Decks Selection & Search state
+  // Decks Selection, Filter, Sort & Grouping state
   const [selectedDeckIds, setSelectedDeckIds] = useState<string[]>([]);
   const [deckSearch, setDeckSearch] = useState('');
   const [deckCategoryFilter, setDeckCategoryFilter] = useState('ALL');
+  const [deckCefrFilter, setDeckCefrFilter] = useState('ALL');
+  const [deckGroupByCat, setDeckGroupByCat] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('vocabflow_deck_group_by_cat');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleDeckGroupByCat = () => {
+    setDeckGroupByCat((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('vocabflow_deck_group_by_cat', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Inside Deck Words Selection & Filter states
   const [selectedWordIds, setSelectedWordIds] = useState<string[]>([]);
   const [deckWordSearch, setDeckWordSearch] = useState('');
   const [deckWordTopicFilter, setDeckWordTopicFilter] = useState('ALL');
+  const [deckWordPosFilter, setDeckWordPosFilter] = useState('ALL');
+  const [deckWordCefrFilter, setDeckWordCefrFilter] = useState('ALL');
   const [deckWordStatusFilter, setDeckWordStatusFilter] = useState<'ALL' | 'LEARNING' | 'MASTERED' | 'FAVORITES'>('ALL');
   const [deckWordSort, setDeckWordSort] = useState<'newest' | 'oldest' | 'az' | 'za'>('newest');
+  const [deckWordSortCol, setDeckWordSortCol] = useState<'word' | 'meaning' | 'topic' | 'cefr' | 'status' | 'date' | null>(null);
+  const [deckWordSortDir, setDeckWordSortDir] = useState<'asc' | 'desc'>('asc');
 
-  // "Tất cả từ" Tab Filters (2 distinct rows)
+  // "Tất cả từ" Tab Filters
   const [allWordStatusFilter, setAllWordStatusFilter] = useState<'ALL' | 'LEARNING' | 'MASTERED' | 'FAVORITES'>('ALL');
   const [allWordTopicFilter, setAllWordTopicFilter] = useState('ALL');
   const [allWordCefrFilter, setAllWordCefrFilter] = useState('ALL');
+  const [allWordPosFilter, setAllWordPosFilter] = useState('ALL');
   const [allWordSearch, setAllWordSearch] = useState('');
+  const [allWordSortCol, setAllWordSortCol] = useState<'word' | 'meaning' | 'deck' | 'topic' | 'cefr' | 'status' | 'date' | null>(null);
+  const [allWordSortDir, setAllWordSortDir] = useState<'asc' | 'desc'>('asc');
+
+  // Unified Deck Modal State (Manual vs File Import)
+  const [deckModalTab, setDeckModalTab] = useState<'manual' | 'file'>('manual');
+  const [showDeckPassword, setShowDeckPassword] = useState(false);
+  const [importExistingDeckPass, setImportExistingDeckPass] = useState('');
+  const [showImportPass, setShowImportPass] = useState(false);
 
   // View Modes: 'grid' (dưới ô) vs 'list' (danh sách)
   const [deckViewMode, setDeckViewMode] = useState<'grid' | 'list'>(() => {
@@ -593,15 +630,48 @@ export const MyWordBankPage: React.FC = () => {
     });
   }, [decks, words]);
 
-  // Filtered decks for Deck Management Tab
+  // Filtered decks for Deck Management Tab with Category, CEFR & Sorting
   const filteredDecks = useMemo(() => {
-    return deckListWithStats.filter((deck) => {
+    let list = deckListWithStats.filter((deck) => {
       const q = deckSearch.toLowerCase().trim();
       const matchesSearch = !q || deck.title.toLowerCase().includes(q) || (deck.description || '').toLowerCase().includes(q);
-      const matchesCat = deckCategoryFilter === 'ALL' || deck.category === deckCategoryFilter;
-      return matchesSearch && matchesCat;
+      const matchesCat = deckCategoryFilter === 'ALL' || (deck.category || 'General').toLowerCase() === deckCategoryFilter.toLowerCase();
+      const matchesCefr = deckCefrFilter === 'ALL' || (deck.cefrLevel || 'B1').toUpperCase() === deckCefrFilter.toUpperCase();
+      return matchesSearch && matchesCat && matchesCefr;
     });
-  }, [deckListWithStats, deckSearch, deckCategoryFilter]);
+
+    list.sort((a, b) => {
+      if (deckSort === 'az') return a.title.localeCompare(b.title);
+      if (deckSort === 'za') return b.title.localeCompare(a.title);
+      if (deckSort === 'words_desc') return (b.computedWordCount || 0) - (a.computedWordCount || 0);
+      if (deckSort === 'progress_desc') return (b.percentMastered || 0) - (a.percentMastered || 0);
+      if (deckSort === 'oldest') return (a.createdAt || 0) - (b.createdAt || 0);
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+
+    return list;
+  }, [deckListWithStats, deckSearch, deckCategoryFilter, deckCefrFilter, deckSort]);
+
+  // Grouped decks by category for hierarchical organization
+  const decksGroupedByCategory = useMemo(() => {
+    const groups: { [cat: string]: typeof filteredDecks } = {};
+    filteredDecks.forEach((deck) => {
+      const cat = deck.category || 'General';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(deck);
+    });
+    return groups;
+  }, [filteredDecks]);
+
+  // Count of decks per category (across all user's decks)
+  const deckCategoryCounts = useMemo(() => {
+    const counts: { [cat: string]: number } = {};
+    deckListWithStats.forEach((d) => {
+      const cat = d.category || 'General';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [deckListWithStats]);
 
   // Infinite Scroll & Lazy Loading for Decks (Smooth 0ms FPS)
   // Virtual List Windowing for Decks (Table: 56px, Grid: 240px)
@@ -1262,6 +1332,9 @@ export const MyWordBankPage: React.FC = () => {
     return wordsInSelectedDeck.filter((item) => {
       const q = deckWordSearch.toLowerCase().trim();
       const itemTopic = item.topic || item.vocabulary?.topic || 'General';
+      const itemPos = (item.partOfSpeech || item.vocabulary?.partOfSpeech || 'noun').toLowerCase();
+      const itemCefr = (item.cefrLevel || item.vocabulary?.cefrLevel || 'B1').toUpperCase();
+
       const matchesSearch =
         !q ||
         (item.word || '').toLowerCase().includes(q) ||
@@ -1270,6 +1343,8 @@ export const MyWordBankPage: React.FC = () => {
         itemTopic.toLowerCase().includes(q);
 
       const matchesTopic = deckWordTopicFilter === 'ALL' || itemTopic === deckWordTopicFilter;
+      const matchesPos = deckWordPosFilter === 'ALL' || itemPos === deckWordPosFilter.toLowerCase();
+      const matchesCefr = deckWordCefrFilter === 'ALL' || itemCefr === deckWordCefrFilter;
 
       const isFav = favoriteIds.includes(item.id) || item.isFavorite;
       const matchesStatus =
@@ -1278,14 +1353,36 @@ export const MyWordBankPage: React.FC = () => {
         (deckWordStatusFilter === 'LEARNING' && (item.status === 'LEARNING' || item.status === 'NEW' || !item.status)) ||
         (deckWordStatusFilter === 'MASTERED' && item.status === 'MASTERED');
 
-      return matchesSearch && matchesTopic && matchesStatus;
+      return matchesSearch && matchesTopic && matchesPos && matchesCefr && matchesStatus;
     }).sort((a, b) => {
+      if (deckWordSortCol) {
+        let valA = '';
+        let valB = '';
+        if (deckWordSortCol === 'word') {
+          valA = (a.word || '').toLowerCase();
+          valB = (b.word || '').toLowerCase();
+        } else if (deckWordSortCol === 'meaning') {
+          valA = (a.meaning || '').toLowerCase();
+          valB = (b.meaning || '').toLowerCase();
+        } else if (deckWordSortCol === 'topic') {
+          valA = (a.topic || a.vocabulary?.topic || 'General').toLowerCase();
+          valB = (b.topic || b.vocabulary?.topic || 'General').toLowerCase();
+        } else if (deckWordSortCol === 'cefr') {
+          valA = (a.cefrLevel || a.vocabulary?.cefrLevel || 'B1').toUpperCase();
+          valB = (b.cefrLevel || b.vocabulary?.cefrLevel || 'B1').toUpperCase();
+        } else if (deckWordSortCol === 'status') {
+          valA = a.status || 'NEW';
+          valB = b.status || 'NEW';
+        }
+        const cmp = valA.localeCompare(valB);
+        return deckWordSortDir === 'asc' ? cmp : -cmp;
+      }
       if (deckWordSort === 'az') return (a.word || '').localeCompare(b.word || '');
       if (deckWordSort === 'za') return (b.word || '').localeCompare(a.word || '');
       if (deckWordSort === 'oldest') return (a.createdAt || 0) - (b.createdAt || 0);
       return (b.createdAt || 0) - (a.createdAt || 0);
     });
-  }, [wordsInSelectedDeck, deckWordSearch, deckWordTopicFilter, deckWordStatusFilter, deckWordSort, favoriteIds]);
+  }, [wordsInSelectedDeck, deckWordSearch, deckWordTopicFilter, deckWordPosFilter, deckWordCefrFilter, deckWordStatusFilter, deckWordSort, deckWordSortCol, deckWordSortDir, favoriteIds]);
 
   // Learning Progress Stats inside Opened Deck
   const deckLearningStats = useMemo(() => {
@@ -1662,23 +1759,28 @@ export const MyWordBankPage: React.FC = () => {
 
     const targetDeckTitle =
       importDeckMode === 'new'
-        ? importTargetDeckName.trim() || 'Custom Word Deck'
+        ? (deckTitleInput.trim() || importTargetDeckName.trim() || 'Custom Word Deck')
         : selectedDeck?.title || importTargetDeckName || decks[0]?.title || 'General';
 
     const currentUserId = user?.id || (isGuest ? 'guest' : 'unknown');
 
-    // Check or create deck for imported words
+    // Check or create deck for imported words with full security & metadata
     let deckObj = decks.find((d) => d.title === targetDeckTitle);
-    if (!deckObj) {
+    if (!deckObj || importDeckMode === 'new') {
       const newDeckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const hasPass = Boolean(deckPasswordInput.trim());
       deckObj = {
         id: newDeckId,
         userId: currentUserId,
         languageId: activeLanguage.id,
         title: targetDeckTitle,
-        category: 'Business English',
-        cefrLevel: 'B1',
+        description: deckDescInput.trim() || undefined,
+        category: deckCatInput || 'Business English',
+        cefrLevel: deckCefrInput || 'B1',
         wordCount: validWords.length,
+        isProtected: hasPass,
+        hasPassword: hasPass,
+        password: hasPass ? deckPasswordInput.trim() : undefined,
         status: 'APPROVED',
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -1686,6 +1788,17 @@ export const MyWordBankPage: React.FC = () => {
       };
       await idbSaveLocalDeck(deckObj, currentUserId);
       setDecks((prev) => [deckObj!, ...prev]);
+    } else {
+      // Existing deck: verify password protection if configured
+      if (deckObj.hasPassword || deckObj.isProtected) {
+        const sessionUnlocked = getSessionUnlockedDecks();
+        const isUnlocked = sessionUnlocked.includes(deckObj.id);
+        if (!isUnlocked && deckObj.password && deckObj.password !== importExistingDeckPass.trim()) {
+          setParsingError('Mật khẩu mở khóa kho từ này không chính xác! Vui lòng nhập đúng mật khẩu để nạp từ.');
+          setIsImporting(false);
+          return;
+        }
+      }
     }
 
     try {
@@ -1772,6 +1885,7 @@ export const MyWordBankPage: React.FC = () => {
 
       setImportProgressMsg(null);
       setShowImportModal(false);
+      setShowCreateDeckModal(false);
       setSelectedFile(null);
       setParsedWords([]);
       setActionSuccessMsg(`Đã nạp thành công ${validWords.length} từ vựng vào kho "${targetDeckTitle}"!`);
@@ -1798,7 +1912,7 @@ export const MyWordBankPage: React.FC = () => {
     return ['General', ...Array.from(set).sort()];
   }, [words]);
 
-  // Filtered words for "Tất cả từ" Tab
+  // Filtered words for "Tất cả từ" Tab with POS and Sorting
   const allFilteredWords = useMemo(() => {
     return words.filter((item) => {
       const q = allWordSearch.toLowerCase().trim();
@@ -1812,6 +1926,9 @@ export const MyWordBankPage: React.FC = () => {
       const itemCefr = (item.cefrLevel || item.vocabulary?.cefrLevel || 'B1').toUpperCase();
       const matchesCefr = allWordCefrFilter === 'ALL' || itemCefr === allWordCefrFilter;
 
+      const itemPos = (item.partOfSpeech || item.vocabulary?.partOfSpeech || 'noun').toLowerCase();
+      const matchesPos = allWordPosFilter === 'ALL' || itemPos === allWordPosFilter.toLowerCase();
+
       const isFav = favoriteIds.includes(item.id) || item.isFavorite;
       const matchesStatus =
         allWordStatusFilter === 'ALL' ||
@@ -1819,9 +1936,36 @@ export const MyWordBankPage: React.FC = () => {
         (allWordStatusFilter === 'LEARNING' && (item.status === 'LEARNING' || item.status === 'NEW' || !item.status)) ||
         (allWordStatusFilter === 'MASTERED' && item.status === 'MASTERED');
 
-      return matchesSearch && matchesTopic && matchesCefr && matchesStatus;
+      return matchesSearch && matchesTopic && matchesCefr && matchesPos && matchesStatus;
+    }).sort((a, b) => {
+      if (allWordSortCol) {
+        let valA = '';
+        let valB = '';
+        if (allWordSortCol === 'word') {
+          valA = (a.word || '').toLowerCase();
+          valB = (b.word || '').toLowerCase();
+        } else if (allWordSortCol === 'meaning') {
+          valA = (a.meaning || '').toLowerCase();
+          valB = (b.meaning || '').toLowerCase();
+        } else if (allWordSortCol === 'deck') {
+          valA = (a.deckName || '').toLowerCase();
+          valB = (b.deckName || '').toLowerCase();
+        } else if (allWordSortCol === 'topic') {
+          valA = (a.topic || a.vocabulary?.topic || 'General').toLowerCase();
+          valB = (b.topic || b.vocabulary?.topic || 'General').toLowerCase();
+        } else if (allWordSortCol === 'cefr') {
+          valA = (a.cefrLevel || a.vocabulary?.cefrLevel || 'B1').toUpperCase();
+          valB = (b.cefrLevel || b.vocabulary?.cefrLevel || 'B1').toUpperCase();
+        } else if (allWordSortCol === 'status') {
+          valA = a.status || 'NEW';
+          valB = b.status || 'NEW';
+        }
+        const cmp = valA.localeCompare(valB);
+        return allWordSortDir === 'asc' ? cmp : -cmp;
+      }
+      return (b.createdAt || 0) - (a.createdAt || 0);
     });
-  }, [words, allWordSearch, allWordTopicFilter, allWordCefrFilter, allWordStatusFilter, favoriteIds]);
+  }, [words, allWordSearch, allWordTopicFilter, allWordCefrFilter, allWordPosFilter, allWordStatusFilter, allWordSortCol, allWordSortDir, favoriteIds]);
 
   // Virtual List Windowing for All Words Tab (Table: 52px, Grid: 220px)
   const virtualAllWordsTable = useVirtualList({
@@ -1837,6 +1981,526 @@ export const MyWordBankPage: React.FC = () => {
     columns: (w) => (w < 640 ? 1 : w < 1024 ? 2 : w < 1280 ? 3 : 4),
     overscan: 3,
   });
+
+  // Sorting handlers for interactive table headers
+  const handleToggleDeckWordSort = (col: 'word' | 'meaning' | 'topic' | 'cefr' | 'status') => {
+    if (deckWordSortCol === col) {
+      if (deckWordSortDir === 'asc') {
+        setDeckWordSortDir('desc');
+      } else {
+        setDeckWordSortCol(null);
+        setDeckWordSortDir('asc');
+      }
+    } else {
+      setDeckWordSortCol(col);
+      setDeckWordSortDir('asc');
+    }
+  };
+
+  const handleToggleAllWordSort = (col: 'word' | 'meaning' | 'deck' | 'topic' | 'cefr' | 'status') => {
+    if (allWordSortCol === col) {
+      if (allWordSortDir === 'asc') {
+        setAllWordSortDir('desc');
+      } else {
+        setAllWordSortCol(null);
+        setAllWordSortDir('asc');
+      }
+    } else {
+      setAllWordSortCol(col);
+      setAllWordSortDir('asc');
+    }
+  };
+
+  // Helper to render neat, color-coded Part of Speech badge
+  const renderPosBadge = (pos?: string) => {
+    if (!pos) return null;
+    const p = pos.toLowerCase().trim();
+    if (p.includes('noun') || p === 'n') {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+          n.
+        </span>
+      );
+    }
+    if (p.includes('verb') || p === 'v') {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
+          v.
+        </span>
+      );
+    }
+    if (p.includes('adj') || p === 'a') {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
+          adj.
+        </span>
+      );
+    }
+    if (p.includes('adv')) {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
+          adv.
+        </span>
+      );
+    }
+    if (p.includes('phrase') || p.includes('idiom')) {
+      return (
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
+          {p.includes('idiom') ? 'idm.' : 'phr.'}
+        </span>
+      );
+    }
+    return (
+      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+        {p}
+      </span>
+    );
+  };
+
+  // Single Deck Table Row Renderer (used by both flat list and grouped by category in List view)
+  const renderSingleDeckTableRow = (deck: any) => {
+    const isSelected = selectedDeckIds.includes(deck.id);
+    return (
+      <tr
+        key={deck.id}
+        className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 cv-auto-row ${
+          isSelected ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''
+        }`}
+      >
+        <td className="py-3 px-4">
+          <button
+            onClick={() =>
+              setSelectedDeckIds((prev) =>
+                prev.includes(deck.id) ? prev.filter((id) => id !== deck.id) : [...prev, deck.id]
+              )
+            }
+            className="p-0.5 text-slate-400 hover:text-indigo-600 transition"
+          >
+            {isSelected ? (
+              <CheckSquare className="w-4 h-4 text-indigo-600" />
+            ) : (
+              <Square className="w-4 h-4" />
+            )}
+          </button>
+        </td>
+        <td className="py-3 px-4">
+          <div
+            onClick={() => handleOpenDeckOrAction(deck)}
+            className="cursor-pointer group flex items-start gap-2.5"
+          >
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
+              <Folder className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition truncate max-w-xs sm:max-w-md">
+                {deck.title}
+              </div>
+              {deck.description && (
+                <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{deck.description}</p>
+              )}
+            </div>
+          </div>
+        </td>
+        <td className="py-3 px-3 whitespace-nowrap">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
+            {deck.category || 'General'}
+          </span>
+        </td>
+        <td className="py-3 px-3 text-center whitespace-nowrap">
+          <span className="inline-flex items-center px-2 py-0.5 rounded font-black text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            {deck.cefrLevel || 'B1'}
+          </span>
+        </td>
+        <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+          {deck.computedWordCount} từ
+        </td>
+        <td className="py-3 px-4 min-w-[140px]">
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px] font-bold text-slate-500">
+              <span>{deck.masteredCount} từ</span>
+              <span className="text-indigo-600 dark:text-indigo-400">{deck.percentMastered}%</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full"
+                style={{ width: `${deck.percentMastered}%` }}
+              />
+            </div>
+          </div>
+        </td>
+        <td className="py-3 px-3 text-center whitespace-nowrap">
+          <div className="inline-flex items-center gap-1">
+            {deck.isSyncedToCloud ? (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1">
+                <CloudUpload className="w-2.5 h-2.5" />
+                <span>Cloud</span>
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold border border-slate-200 inline-flex items-center gap-1">
+                <HardDrive className="w-2.5 h-2.5" />
+                <span>Local</span>
+              </span>
+            )}
+            {deck.status === 'PENDING' && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-bold border border-amber-200">
+                Chờ duyệt
+              </span>
+            )}
+            {deck.hasPassword && (
+              <span className="p-1 rounded bg-amber-50 dark:bg-amber-950 text-amber-600" title="Có mật khẩu bảo vệ">
+                <Lock className="w-2.5 h-2.5" />
+              </span>
+            )}
+          </div>
+        </td>
+        <td className="py-3 px-4 text-right whitespace-nowrap">
+          <div className="inline-flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => handleOpenDeckOrAction(deck)}
+              className="btn-glass-primary btn-glass-sm text-xs font-semibold"
+              title="Xem và quản lý từ trong kho"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Xem từ</span>
+            </button>
+            <button
+              onClick={() => handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`))}
+              className="btn-glass-primary btn-glass-sm text-xs font-semibold"
+              title="Ôn tập kho này"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+              <span>Ôn tập</span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const deckWords = words.filter((w) => w.deckId === deck.id || w.deckName === deck.title);
+                exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'xlsx');
+              }}
+              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
+              title="Tải Excel (.xlsx)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const deckWords = words.filter((w) => w.deckId === deck.id || w.deckName === deck.title);
+                exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'csv');
+              }}
+              className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
+              title="Tải CSV (.csv)"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-500" />
+            </button>
+            {!deck.isReadOnly && (
+              <>
+                <button
+                  onClick={(e) => handleUploadDeckToCloud(deck, e)}
+                  disabled={syncingDeckId === deck.id}
+                  className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                    deck.isSyncedToCloud
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80'
+                      : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
+                  }`}
+                  title={
+                    deck.isSyncedToCloud
+                      ? 'Kho đã đồng bộ lên Cloud (Bấm để đồng bộ lại nếu vừa sửa từ)'
+                      : 'Kho chưa đồng bộ - Nhấn để đẩy kho này lên Cloud'
+                  }
+                >
+                  {syncingDeckId === deck.id ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : deck.isSyncedToCloud ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-[10px]">Đã đồng bộ</span>
+                    </>
+                  ) : (
+                    <>
+                      <CloudUpload className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-[10px]">Đồng bộ</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={(e) => handleOpenEditDeck(deck, e)}
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-400 hover:text-indigo-600 transition"
+                  title="Sửa thông tin kho"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+                {deck.isSyncedToCloud && (
+                  <button
+                    onClick={(e) => handleUnlinkFromCloud(deck, e)}
+                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 transition"
+                    title="Gỡ kho khỏi Cloud (Lưu về máy)"
+                  >
+                    <CloudUpload className="w-3.5 h-3.5 rotate-180" />
+                  </button>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareModalDeck(deck);
+                    setSharePassword('');
+                  }}
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-purple-600 transition"
+                  title="Chia sẻ kho này"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-purple-600" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeckToDelete(deck);
+                  }}
+                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-600 transition"
+                  title="Xóa kho"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  // Single Deck Card Renderer (used by both flat grid and grouped by category)
+  const renderSingleDeckCard = (deck: any) => {
+    const isSelected = selectedDeckIds.includes(deck.id);
+    return (
+      <div
+        key={deck.id}
+        onClick={() => handleOpenDeckOrAction(deck)}
+        className={`p-5 flex flex-col justify-between space-y-4 rounded-2xl bg-white dark:bg-slate-900 border transition duration-150 shadow-xs hover:shadow-md cursor-pointer ${
+          isSelected
+            ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
+            : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40'
+        }`}
+      >
+        <div>
+          {/* Top Bar: Checkbox + Tags */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDeckIds((prev) =>
+                    prev.includes(deck.id) ? prev.filter((id) => id !== deck.id) : [...prev, deck.id]
+                  );
+                }}
+                className="p-1 text-slate-400 hover:text-indigo-600 transition"
+              >
+                {isSelected ? (
+                  <CheckSquare className="w-4 h-4 text-indigo-600" />
+                ) : (
+                  <Square className="w-4 h-4" />
+                )}
+              </button>
+
+              <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">
+                {deck.cefrLevel || 'B1'}
+              </span>
+
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                {deck.category || 'General'}
+              </span>
+
+              {/* Cloud / Local Sync Badge */}
+              {deck.isSyncedToCloud ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800">
+                  <CloudUpload className="w-2.5 h-2.5" />
+                  <span>Cloud</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-extrabold border border-slate-200 dark:border-slate-700">
+                  <HardDrive className="w-2.5 h-2.5" />
+                  <span>Local</span>
+                </span>
+              )}
+
+              {deck.hasPassword && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold border border-amber-200">
+                  <Lock className="w-2.5 h-2.5" />
+                  <span>Khóa</span>
+                </span>
+              )}
+
+              {deck.isReadOnly && (
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold border border-purple-200 dark:border-purple-800">
+                  <Lock className="w-2.5 h-2.5" />
+                  <span>Clone (Chỉ đọc)</span>
+                </span>
+              )}
+            </div>
+
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap pt-0.5">
+              {deck.computedWordCount} từ vựng
+            </span>
+          </div>
+
+          {/* Title & Description */}
+          <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug truncate">
+            {deck.title}
+          </h3>
+          {deck.description && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+              {deck.description}
+            </p>
+          )}
+
+          {(deck.authorName || deck.sourceName || deck.isReadOnly) && (
+            <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                Nguồn: {deck.sourceName || (deck.isReadOnly ? 'Cộng đồng' : 'Cá nhân')}
+              </span>
+              {deck.authorName && (
+                <span>• Tác giả: <strong className="text-slate-700 dark:text-slate-300">{deck.authorName}</strong></span>
+              )}
+            </div>
+          )}
+
+          {/* Progress Bar */}
+          <div className="mt-4 space-y-1.5">
+            <div className="flex justify-between text-[11px] font-bold text-slate-500">
+              <span>Đã thuộc: {deck.masteredCount} từ</span>
+              <span className="text-indigo-600 dark:text-indigo-400">{deck.percentMastered}%</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500"
+                style={{ width: `${deck.percentMastered}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Updated Date */}
+          <p className="text-[10px] text-slate-400 mt-2 font-medium">
+            Cập nhật: {new Date(deck.updatedAt || deck.createdAt).toLocaleDateString('vi-VN')}
+          </p>
+        </div>
+
+        {/* Action Controls */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDeckOrAction(deck);
+              }}
+              className="h-8 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors"
+              aria-label="Xem và quản lý từ trong kho"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Xem từ</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`));
+              }}
+              className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors"
+              title="Ôn tập riêng kho này"
+              aria-label="Ôn tập riêng kho này"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Ôn tập</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {/* Download Deck Excel */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const deckWords = words.filter(
+                  (w) => w.deckId === deck.id || w.deckName === deck.title
+                );
+                exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'xlsx');
+              }}
+              className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition inline-flex items-center justify-center cursor-pointer"
+              title="Tải kho này dưới dạng Excel (.xlsx)"
+              aria-label="Tải Excel"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+            </button>
+
+            {!deck.isReadOnly && (
+              <button
+                onClick={(e) => handleOpenEditDeck(deck, e)}
+                className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-400 hover:text-indigo-600 transition inline-flex items-center justify-center cursor-pointer"
+                title="Sửa thông tin kho"
+                aria-label="Sửa thông tin kho"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {deck.isSyncedToCloud && !deck.isReadOnly && (
+              <button
+                onClick={(e) => handleUnlinkFromCloud(deck, e)}
+                className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 transition inline-flex items-center justify-center cursor-pointer"
+                title="Gỡ kho khỏi Cloud (Lưu về máy)"
+                aria-label="Gỡ khỏi Cloud"
+              >
+                <CloudUpload className="w-3.5 h-3.5 rotate-180" />
+              </button>
+            )}
+
+            <button
+              onClick={(e) => handleOpenShareDeck(deck, e)}
+              className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-purple-600 transition inline-flex items-center justify-center cursor-pointer"
+              title="Chia sẻ lên cộng đồng"
+              aria-label="Chia sẻ lên cộng đồng"
+            >
+              <Share2 className="w-3.5 h-3.5 text-purple-600" />
+            </button>
+
+            <button
+              onClick={(e) => handleUploadDeckToCloud(deck, e)}
+              disabled={syncingDeckId === deck.id}
+              className={`h-8 px-2.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer ${
+                deck.isSyncedToCloud
+                  ? 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80'
+                  : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
+              }`}
+              title={
+                deck.isSyncedToCloud
+                  ? 'Kho đã đồng bộ lên Cloud (Bấm để đồng bộ lại nếu vừa sửa từ)'
+                  : 'Kho chưa đồng bộ - Nhấn để đẩy kho này lên Cloud'
+              }
+              aria-label={deck.isSyncedToCloud ? 'Đã đồng bộ' : 'Đồng bộ Cloud'}
+            >
+              {syncingDeckId === deck.id ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : deck.isSyncedToCloud ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <CloudUpload className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              )}
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeckToDelete(deck);
+              }}
+              className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer"
+              title="Xóa kho từ vựng này"
+              aria-label="Xóa kho từ vựng này"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // =============================================================================
   // RENDER
@@ -1957,7 +2621,8 @@ export const MyWordBankPage: React.FC = () => {
                       setParsingError(null);
                       setImportDeckMode('existing');
                       setImportTargetDeckName(selectedDeck.title);
-                      setShowImportModal(true);
+                      setDeckModalTab('file');
+                      setShowCreateDeckModal(true);
                     }
                   }}
                   size="sm"
@@ -2055,6 +2720,7 @@ export const MyWordBankPage: React.FC = () => {
                   setDeckTitleInput('');
                   setDeckDescInput('');
                   setDeckPasswordInput('');
+                  setDeckModalTab('manual');
                   setShowCreateDeckModal(true);
                 }}
                 className="btn-glass-primary btn-glass-sm inline-flex items-center gap-1.5 font-bold shadow-sm"
@@ -2108,7 +2774,8 @@ export const MyWordBankPage: React.FC = () => {
                     setParsingError(null);
                     setImportDeckMode('new');
                     setImportTargetDeckName('');
-                    setShowImportModal(true);
+                    setDeckModalTab('file');
+                    setShowCreateDeckModal(true);
                   }
                 }}
                 size="sm"
@@ -2222,7 +2889,8 @@ export const MyWordBankPage: React.FC = () => {
                     setParsingError(null);
                     setImportDeckMode('existing');
                     setImportTargetDeckName(decks[0]?.title || 'General');
-                    setShowImportModal(true);
+                    setDeckModalTab('file');
+                    setShowCreateDeckModal(true);
                   }
                 }}
                 size="sm"
@@ -2340,8 +3008,74 @@ export const MyWordBankPage: React.FC = () => {
           ============================================================================= */}
       {!selectedDeck && activeTab === 'decks' && (
         <div className="space-y-4">
-          {/* Deck Search, View Switcher & Bulk Action Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
+          {/* 1. Category Navigation Pills Bar (Phân hệ Kho Từ Vựng) */}
+          <div className="bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-indigo-500" />
+                <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Phân hệ kho từ vựng
+                </span>
+              </div>
+              <span className="text-[11px] font-medium text-slate-400">
+                {filteredDecks.length} / {decks.length} kho từ
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setDeckCategoryFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 ${
+                  deckCategoryFilter === 'ALL'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                    : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/80'
+                }`}
+              >
+                <span>Tất cả</span>
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                    deckCategoryFilter === 'ALL'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {decks.length}
+                </span>
+              </button>
+
+              {allDeckCategories.map((cat) => {
+                const count = deckCategoryCounts[cat] || 0;
+                const isActive = deckCategoryFilter.toLowerCase() === cat.toLowerCase();
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setDeckCategoryFilter(isActive ? 'ALL' : cat)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                        : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/80'
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                        isActive
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. Secondary Filter, Sort, Search & View Controls */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white/70 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/80">
             <div className="flex flex-wrap items-center gap-2">
               {/* Select All Checkbox */}
               <button
@@ -2372,9 +3106,61 @@ export const MyWordBankPage: React.FC = () => {
                   <span>Xóa {selectedDeckIds.length} kho đã chọn</span>
                 </button>
               )}
+
+              {/* Group by Category Toggle */}
+              <button
+                type="button"
+                onClick={toggleDeckGroupByCat}
+                className={`btn-glass-sm flex items-center gap-1.5 transition ${
+                  deckGroupByCat
+                    ? 'btn-glass-purple !bg-purple-600 !text-white'
+                    : 'btn-glass-secondary text-slate-600 dark:text-slate-400'
+                }`}
+                title="Gom nhóm hiển thị theo từng phân hệ danh mục"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Nhóm theo phân hệ</span>
+              </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* CEFR Level Filter Dropdown */}
+              <div className="w-28 h-9 shrink-0">
+                <CustomDropdown
+                  value={deckCefrFilter}
+                  onChange={(val) => setDeckCefrFilter(val)}
+                  options={[
+                    { value: 'ALL', label: 'Cấp độ: Tất cả' },
+                    { value: 'A1', label: 'Cấp độ A1' },
+                    { value: 'A2', label: 'Cấp độ A2' },
+                    { value: 'B1', label: 'Cấp độ B1' },
+                    { value: 'B2', label: 'Cấp độ B2' },
+                    { value: 'C1', label: 'Cấp độ C1' },
+                    { value: 'C2', label: 'Cấp độ C2' },
+                  ]}
+                  size="sm"
+                  className="w-full h-9"
+                />
+              </div>
+
+              {/* Deck Sorting Dropdown */}
+              <div className="w-36 h-9 shrink-0">
+                <CustomDropdown
+                  value={deckSort}
+                  onChange={(val) => setDeckSort(val as any)}
+                  options={[
+                    { value: 'newest', label: 'Mới nhất' },
+                    { value: 'oldest', label: 'Cũ nhất' },
+                    { value: 'az', label: 'Tên A → Z' },
+                    { value: 'za', label: 'Tên Z → A' },
+                    { value: 'words_desc', label: 'Nhiều từ nhất' },
+                    { value: 'progress_desc', label: 'Thuộc cao nhất' },
+                  ]}
+                  size="sm"
+                  className="w-full h-9"
+                />
+              </div>
+
               {/* View Mode Switcher (Dưới ô vs Danh sách) */}
               <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
                 <button
@@ -2406,15 +3192,24 @@ export const MyWordBankPage: React.FC = () => {
               </div>
 
               {/* Deck Search Box */}
-              <div className="relative w-full sm:w-60 h-9">
+              <div className="relative w-full sm:w-48 lg:w-56 h-9">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={deckSearch}
                   onChange={(e) => setDeckSearch(e.target.value)}
                   placeholder="Tìm kiếm tên kho từ..."
-                  className="w-full h-full pl-8 pr-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
+                  className="w-full h-full pl-8 pr-7 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 font-medium"
                 />
+                {deckSearch && (
+                  <button
+                    onClick={() => setDeckSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600"
+                    title="Xóa tìm kiếm"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -2444,6 +3239,7 @@ export const MyWordBankPage: React.FC = () => {
                   setDeckTitleInput('');
                   setDeckDescInput('');
                   setDeckPasswordInput('');
+                  setDeckModalTab('manual');
                   setShowCreateDeckModal(true);
                 }}
                 className="btn-glass-purple btn-glass-sm !px-5 !py-2.5 !h-auto text-xs"
@@ -2488,225 +3284,44 @@ export const MyWordBankPage: React.FC = () => {
                       <th className="py-3 px-4 text-right">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody ref={virtualDecksTable.containerRef as any} className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
-                    {virtualDecksTable.topSpacerHeight > 0 && (
-                      <tr>
-                        <td colSpan={8} style={{ height: `${virtualDecksTable.topSpacerHeight}px` }} />
-                      </tr>
-                    )}
-                    {virtualDecksTable.virtualItems.map(({ item: deck }) => {
-                      const isSelected = selectedDeckIds.includes(deck.id);
-                      return (
-                        <tr
-                          key={deck.id}
-                          className={`hover:bg-indigo-50/30 dark:hover:bg-slate-800/40 transition duration-150 cv-auto-row ${
-                            isSelected ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''
-                          }`}
-                        >
-                          <td className="py-3 px-4">
-                            <button
-                              onClick={() =>
-                                setSelectedDeckIds((prev) =>
-                                  prev.includes(deck.id) ? prev.filter((id) => id !== deck.id) : [...prev, deck.id]
-                                )
-                              }
-                              className="p-0.5 text-slate-400 hover:text-indigo-600 transition"
-                            >
-                              {isSelected ? (
-                                <CheckSquare className="w-4 h-4 text-indigo-600" />
-                              ) : (
-                                <Square className="w-4 h-4" />
-                              )}
-                            </button>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div
-                              onClick={() => handleOpenDeckOrAction(deck)}
-                              className="cursor-pointer group flex items-start gap-2.5"
-                            >
-                              <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform shrink-0">
-                                <Folder className="w-4 h-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition truncate max-w-xs sm:max-w-md">
-                                  {deck.title}
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
+                    {deckGroupByCat ? (
+                      /* Grouped by Category in List/Table View */
+                      Object.entries(decksGroupedByCategory).map(([catName, catDecks]) => (
+                        <React.Fragment key={catName}>
+                          <tr className="bg-slate-100/90 dark:bg-slate-800/80 border-y border-slate-200 dark:border-slate-700/80 font-bold">
+                            <td colSpan={8} className="py-2.5 px-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 ring-2 ring-indigo-500/20" />
+                                  <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                                    Phân hệ: {catName}
+                                  </span>
                                 </div>
-                                {deck.description && (
-                                  <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{deck.description}</p>
-                                )}
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                                  {catDecks.length} kho từ vựng
+                                </span>
                               </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
-                              {deck.category || 'General'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-center whitespace-nowrap">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded font-black text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                              {deck.cefrLevel || 'B1'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                            {deck.computedWordCount} từ
-                          </td>
-                          <td className="py-3 px-4 min-w-[140px]">
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] font-bold text-slate-500">
-                                <span>{deck.masteredCount} từ</span>
-                                <span className="text-indigo-600 dark:text-indigo-400">{deck.percentMastered}%</span>
-                              </div>
-                              <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full"
-                                  style={{ width: `${deck.percentMastered}%` }}
-                                />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center whitespace-nowrap">
-                            <div className="inline-flex items-center gap-1">
-                              {deck.isSyncedToCloud ? (
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-200 inline-flex items-center gap-1">
-                                  <CloudUpload className="w-2.5 h-2.5" />
-                                  <span>Cloud</span>
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold border border-slate-200 inline-flex items-center gap-1">
-                                  <HardDrive className="w-2.5 h-2.5" />
-                                  <span>Local</span>
-                                </span>
-                              )}
-                              {deck.status === 'PENDING' && (
-                                <span className="px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-bold border border-amber-200">
-                                  Chờ duyệt
-                                </span>
-                              )}
-                              {deck.hasPassword && (
-                                <span className="p-1 rounded bg-amber-50 dark:bg-amber-950 text-amber-600" title="Có mật khẩu bảo vệ">
-                                  <Lock className="w-2.5 h-2.5" />
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-right whitespace-nowrap">
-                            <div className="inline-flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleOpenDeckOrAction(deck)}
-                                className="btn-glass-primary btn-glass-sm text-xs font-semibold"
-                                title="Xem và quản lý từ trong kho"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>Xem từ</span>
-                              </button>
-                              <button
-                                onClick={() => handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`))}
-                                className="btn-glass-primary btn-glass-sm text-xs font-semibold"
-                                title="Ôn tập kho này"
-                              >
-                                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                                <span>Ôn tập</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const deckWords = words.filter((w) => w.deckId === deck.id || w.deckName === deck.title);
-                                  exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'xlsx');
-                                }}
-                                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
-                                title="Tải Excel (.xlsx)"
-                              >
-                                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const deckWords = words.filter((w) => w.deckId === deck.id || w.deckName === deck.title);
-                                  exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'csv');
-                                }}
-                                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
-                                title="Tải CSV (.csv)"
-                              >
-                                <Download className="w-3.5 h-3.5 text-indigo-500" />
-                              </button>
-                              {!deck.isReadOnly && (
-                                <>
-                                  <button
-                                    onClick={(e) => handleUploadDeckToCloud(deck, e)}
-                                    disabled={syncingDeckId === deck.id}
-                                    className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                                      deck.isSyncedToCloud
-                                        ? 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80'
-                                        : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
-                                    }`}
-                                    title={
-                                      deck.isSyncedToCloud
-                                        ? 'Kho đã đồng bộ lên Cloud (Bấm để đồng bộ lại nếu vừa sửa từ)'
-                                        : 'Kho chưa đồng bộ - Nhấn để đẩy kho này lên Cloud'
-                                    }
-                                  >
-                                    {syncingDeckId === deck.id ? (
-                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                    ) : deck.isSyncedToCloud ? (
-                                      <>
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                        <span className="text-[10px]">Đã đồng bộ</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <CloudUpload className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                                        <span className="text-[10px]">Đồng bộ</span>
-                                      </>
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={(e) => handleOpenEditDeck(deck, e)}
-                                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-400 hover:text-indigo-600 transition"
-                                    title="Sửa thông tin kho"
-                                  >
-                                    <Edit3 className="w-3.5 h-3.5" />
-                                  </button>
-                                  {deck.isSyncedToCloud && (
-                                    <button
-                                      onClick={(e) => handleUnlinkFromCloud(deck, e)}
-                                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 transition"
-                                      title="Gỡ kho khỏi Cloud (Lưu về máy)"
-                                    >
-                                      <CloudUpload className="w-3.5 h-3.5 rotate-180" />
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShareModalDeck(deck);
-                                      setSharePassword('');
-                                    }}
-                                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-purple-600 transition"
-                                    title="Chia sẻ kho này"
-                                  >
-                                    <Share2 className="w-3.5 h-3.5 text-purple-600" />
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeckToDelete(deck);
-                                    }}
-                                    className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-600 transition"
-                                    title="Xóa kho"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {virtualDecksTable.bottomSpacerHeight > 0 && (
-                      <tr>
-                        <td colSpan={8} style={{ height: `${virtualDecksTable.bottomSpacerHeight}px` }} />
-                      </tr>
+                            </td>
+                          </tr>
+                          {catDecks.map((deck) => renderSingleDeckTableRow(deck))}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      /* Flat Virtualized List/Table View */
+                      <>
+                        {virtualDecksTable.topSpacerHeight > 0 && (
+                          <tr>
+                            <td colSpan={8} style={{ height: `${virtualDecksTable.topSpacerHeight}px` }} />
+                          </tr>
+                        )}
+                        {virtualDecksTable.virtualItems.map(({ item: deck }) => renderSingleDeckTableRow(deck))}
+                        {virtualDecksTable.bottomSpacerHeight > 0 && (
+                          <tr>
+                            <td colSpan={8} style={{ height: `${virtualDecksTable.bottomSpacerHeight}px` }} />
+                          </tr>
+                        )}
+                      </>
                     )}
                   </tbody>
                 </table>
@@ -2716,249 +3331,40 @@ export const MyWordBankPage: React.FC = () => {
             /* =================================================================
                GRID VIEW FOR DECKS (DƯỚI Ô)
                ================================================================= */
-            <div ref={virtualDecksGrid.containerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {virtualDecksGrid.topSpacerHeight > 0 && (
-                <div style={{ height: `${virtualDecksGrid.topSpacerHeight}px` }} className="col-span-full" />
-              )}
-              {virtualDecksGrid.virtualItems.map(({ item: deck }) => {
-                const isSelected = selectedDeckIds.includes(deck.id);
-
-                return (
-                  <div
-                    key={deck.id}
-                    onClick={() => handleOpenDeckOrAction(deck)}
-                    className={`p-5 flex flex-col justify-between space-y-4 rounded-2xl bg-white dark:bg-slate-900 border transition duration-150 shadow-xs hover:shadow-md cursor-pointer ${
-                      isSelected
-                        ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/20'
-                        : 'border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-500/40'
-                    }`}
-                  >
-                    <div>
-                      {/* Top Bar: Checkbox + Tags */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedDeckIds((prev) =>
-                                prev.includes(deck.id) ? prev.filter((id) => id !== deck.id) : [...prev, deck.id]
-                              );
-                            }}
-                            className="p-1 text-slate-400 hover:text-indigo-600 transition"
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="w-4 h-4 text-indigo-600" />
-                            ) : (
-                              <Square className="w-4 h-4" />
-                            )}
-                          </button>
-
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">
-                            {deck.cefrLevel || 'B1'}
-                          </span>
-
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                            {deck.category || 'General'}
-                          </span>
-
-                          {/* Cloud / Local Sync Badge */}
-                          {deck.isSyncedToCloud ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-800">
-                              <CloudUpload className="w-2.5 h-2.5" />
-                              <span>Cloud</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-extrabold border border-slate-200 dark:border-slate-700">
-                              <HardDrive className="w-2.5 h-2.5" />
-                              <span>Local</span>
-                            </span>
-                          )}
-
-                          {deck.hasPassword && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold border border-amber-200">
-                              <Lock className="w-2.5 h-2.5" />
-                              <span>Khóa</span>
-                            </span>
-                          )}
-
-                          {deck.isReadOnly && (
-                            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold border border-purple-200 dark:border-purple-800">
-                              <Lock className="w-2.5 h-2.5" />
-                              <span>Clone (Chỉ đọc)</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 shrink-0 whitespace-nowrap pt-0.5">
-                          {deck.computedWordCount} từ vựng
-                        </span>
+            deckGroupByCat ? (
+              /* GROUPED BY CATEGORY SUBSYSTEMS VIEW */
+              <div className="space-y-6 animate-fade-in">
+                {Object.entries(decksGroupedByCategory).map(([catName, catDecks]) => (
+                  <div key={catName} className="space-y-3 p-4 sm:p-5 rounded-3xl bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 ring-4 ring-indigo-500/20" />
+                        <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                          Phân hệ: {catName}
+                        </h3>
                       </div>
-
-                      {/* Title & Description */}
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug truncate">
-                        {deck.title}
-                      </h3>
-                      {deck.description && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                          {deck.description}
-                        </p>
-                      )}
-
-                      {(deck.authorName || deck.sourceName || deck.isReadOnly) && (
-                        <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-500 dark:text-slate-400">
-                          <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                            Nguồn: {deck.sourceName || (deck.isReadOnly ? 'Cộng đồng' : 'Cá nhân')}
-                          </span>
-                          {deck.authorName && (
-                            <span>• Tác giả: <strong className="text-slate-700 dark:text-slate-300">{deck.authorName}</strong></span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Progress Bar */}
-                      <div className="mt-4 space-y-1.5">
-                        <div className="flex justify-between text-[11px] font-bold text-slate-500">
-                          <span>Đã thuộc: {deck.masteredCount} từ</span>
-                          <span className="text-indigo-600 dark:text-indigo-400">{deck.percentMastered}%</span>
-                        </div>
-                        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500"
-                            style={{ width: `${deck.percentMastered}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {/* Updated Date */}
-                      <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                        Cập nhật: {new Date(deck.updatedAt || deck.createdAt).toLocaleDateString('vi-VN')}
-                      </p>
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                        {catDecks.length} kho từ vựng
+                      </span>
                     </div>
-
-                    {/* Action Controls */}
-                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1.5 flex-wrap">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDeckOrAction(deck);
-                          }}
-                          className="h-8 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors"
-                          aria-label="Xem và quản lý từ trong kho"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Xem từ</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDeckOrAction(deck, () => navigate(`/review?deckId=${encodeURIComponent(deck.id)}&topic=${encodeURIComponent(deck.title)}`));
-                          }}
-                          className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-colors"
-                          title="Ôn tập riêng kho này"
-                          aria-label="Ôn tập riêng kho này"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Ôn tập</span>
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {/* Download Deck Excel */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const deckWords = words.filter(
-                              (w) => w.deckId === deck.id || w.deckName === deck.title
-                            );
-                            exportWordsToExcelOrCsv(deckWords, `kho_${deck.title}`, 'xlsx');
-                          }}
-                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white transition inline-flex items-center justify-center cursor-pointer"
-                          title="Tải kho này dưới dạng Excel (.xlsx)"
-                          aria-label="Tải Excel"
-                        >
-                          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                        </button>
-
-
-
-                        {!deck.isReadOnly && (
-                          <button
-                            onClick={(e) => handleOpenEditDeck(deck, e)}
-                            className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-slate-700 text-slate-400 hover:text-indigo-600 transition inline-flex items-center justify-center cursor-pointer"
-                            title="Sửa thông tin kho"
-                            aria-label="Sửa thông tin kho"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {deck.isSyncedToCloud && !deck.isReadOnly && (
-                          <button
-                            onClick={(e) => handleUnlinkFromCloud(deck, e)}
-                            className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-slate-700 text-amber-600 transition inline-flex items-center justify-center cursor-pointer"
-                            title="Gỡ kho khỏi Cloud (Lưu về máy)"
-                            aria-label="Gỡ khỏi Cloud"
-                          >
-                            <CloudUpload className="w-3.5 h-3.5 rotate-180" />
-                          </button>
-                        )}
-
-                        <button
-                          onClick={(e) => handleOpenShareDeck(deck, e)}
-                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-slate-700 text-purple-600 transition inline-flex items-center justify-center cursor-pointer"
-                          title="Chia sẻ lên cộng đồng"
-                          aria-label="Chia sẻ lên cộng đồng"
-                        >
-                          <Share2 className="w-3.5 h-3.5 text-purple-600" />
-                        </button>
-
-                        <button
-                          onClick={(e) => handleUploadDeckToCloud(deck, e)}
-                          disabled={syncingDeckId === deck.id}
-                          className={`h-8 px-2.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer ${
-                            deck.isSyncedToCloud
-                              ? 'bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/80'
-                              : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80'
-                          }`}
-                          title={
-                            deck.isSyncedToCloud
-                              ? 'Kho đã đồng bộ lên Cloud (Bấm để đồng bộ lại nếu vừa sửa từ)'
-                              : 'Kho chưa đồng bộ - Nhấn để đẩy kho này lên Cloud'
-                          }
-                          aria-label={deck.isSyncedToCloud ? 'Đã đồng bộ' : 'Đồng bộ Cloud'}
-                        >
-                          {syncingDeckId === deck.id ? (
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          ) : deck.isSyncedToCloud ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          ) : (
-                            <CloudUpload className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                          )}
-                        </button>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeckToDelete(deck);
-                          }}
-                          className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-600 transition inline-flex items-center justify-center cursor-pointer"
-                          title="Xóa kho từ vựng này"
-                          aria-label="Xóa kho từ vựng này"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {catDecks.map((deck) => renderSingleDeckCard(deck))}
                     </div>
                   </div>
-                );
-              })}
-              {virtualDecksGrid.bottomSpacerHeight > 0 && (
-                <div style={{ height: `${virtualDecksGrid.bottomSpacerHeight}px` }} className="col-span-full" />
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              /* STANDARD FLAT VIRTUAL GRID VIEW */
+              <div ref={virtualDecksGrid.containerRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {virtualDecksGrid.topSpacerHeight > 0 && (
+                  <div style={{ height: `${virtualDecksGrid.topSpacerHeight}px` }} className="col-span-full" />
+                )}
+                {virtualDecksGrid.virtualItems.map(({ item: deck }) => renderSingleDeckCard(deck))}
+                {virtualDecksGrid.bottomSpacerHeight > 0 && (
+                  <div style={{ height: `${virtualDecksGrid.bottomSpacerHeight}px` }} className="col-span-full" />
+                )}
+              </div>
+            )
           )}
 
           {/* Virtual Windowing Indicator for Decks */}
@@ -3276,26 +3682,64 @@ export const MyWordBankPage: React.FC = () => {
                           ...subTopicsInSelectedDeck.map((t) => ({ value: t, label: `Chủ đề: ${t}` })),
                         ]}
                         size="sm"
-                        className="w-40 sm:w-48 h-9"
+                        className="w-36 sm:w-44 h-9"
                       />
                     </div>
                   )}
 
-                  {/* Sort Dropdown */}
-                  <div className="flex items-center h-9 shrink-0">
-                    <CustomDropdown
-                      value={deckWordSort}
-                      onChange={(val) => setDeckWordSort(val as any)}
-                      options={[
-                        { value: 'newest', label: 'Mới nhất' },
-                        { value: 'oldest', label: 'Cũ nhất' },
-                        { value: 'az', label: 'A → Z' },
-                        { value: 'za', label: 'Z → A' },
-                      ]}
-                      size="sm"
-                      className="w-32 sm:w-36 h-9"
-                    />
-                  </div>
+                    {/* Part of Speech Filter */}
+                    <div className="flex items-center h-9 shrink-0">
+                      <CustomDropdown
+                        value={deckWordPosFilter}
+                        onChange={(val) => setDeckWordPosFilter(val)}
+                        options={[
+                          { value: 'ALL', label: 'Loại từ: Tất cả' },
+                          { value: 'noun', label: 'Danh từ (n.)' },
+                          { value: 'verb', label: 'Động từ (v.)' },
+                          { value: 'adjective', label: 'Tính từ (adj.)' },
+                          { value: 'adverb', label: 'Trạng từ (adv.)' },
+                          { value: 'phrase', label: 'Cụm từ (phrase)' },
+                          { value: 'idiom', label: 'Thành ngữ (idiom)' },
+                        ]}
+                        size="sm"
+                        className="w-32 sm:w-36 h-9"
+                      />
+                    </div>
+
+                    {/* CEFR Level Filter */}
+                    <div className="flex items-center h-9 shrink-0">
+                      <CustomDropdown
+                        value={deckWordCefrFilter}
+                        onChange={(val) => setDeckWordCefrFilter(val)}
+                        options={[
+                          { value: 'ALL', label: 'Cấp độ: Tất cả' },
+                          { value: 'A1', label: 'A1' },
+                          { value: 'A2', label: 'A2' },
+                          { value: 'B1', label: 'B1' },
+                          { value: 'B2', label: 'B2' },
+                          { value: 'C1', label: 'C1' },
+                          { value: 'C2', label: 'C2' },
+                        ]}
+                        size="sm"
+                        className="w-28 sm:w-32 h-9"
+                      />
+                    </div>
+
+                    {/* Sort Dropdown */}
+                    <div className="flex items-center h-9 shrink-0">
+                      <CustomDropdown
+                        value={deckWordSort}
+                        onChange={(val) => setDeckWordSort(val as any)}
+                        options={[
+                          { value: 'newest', label: 'Mới nhất' },
+                          { value: 'oldest', label: 'Cũ nhất' },
+                          { value: 'az', label: 'A → Z' },
+                          { value: 'za', label: 'Z → A' },
+                        ]}
+                        size="sm"
+                        className="w-28 sm:w-32 h-9"
+                      />
+                    </div>
 
                   {/* View Mode Switcher (Dưới ô vs Danh sách) */}
                   <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
@@ -3401,47 +3845,76 @@ export const MyWordBankPage: React.FC = () => {
                     }}
                     className="btn-glass-secondary btn-glass-sm inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
                   >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Nhập file Excel/CSV</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : wordViewMode === 'list' ? (
-            /* =================================================================
-               LIST VIEW FOR WORDS INSIDE DECK (DANH SÁCH TỪ VỰNG)
-               ================================================================= */
-            <div className="overflow-hidden rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs backdrop-blur-xl" data-tour="wordbank-word-list">
-              <div ref={virtualDeckWordsTable.containerRef} className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
-                      <th className="py-3 px-4 w-10">
-                        {!selectedDeck.isReadOnly && (
-                          <button
-                            onClick={() => {
-                              if (selectedWordIds.length === filteredWordsInDeck.length) {
-                                setSelectedWordIds([]);
-                              } else {
-                                setSelectedWordIds(filteredWordsInDeck.map((w) => w.id));
-                              }
-                            }}
-                            className="p-0.5 text-slate-400 hover:text-indigo-600 transition"
-                          >
-                            {selectedWordIds.length > 0 && selectedWordIds.length === filteredWordsInDeck.length ? (
-                              <CheckSquare className="w-4 h-4 text-indigo-600" />
-                            ) : (
-                              <Square className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
+                    <FileSpreadsheet className="w                      <th
+                        onClick={() => handleToggleDeckWordSort('word')}
+                        className="py-3 px-4 cursor-pointer hover:text-indigo-600 transition select-none"
+                        title="Bấm để sắp xếp theo từ vựng"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Từ vựng & Phiên âm</span>
+                          {deckWordSortCol === 'word' ? (
+                            deckWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </div>
                       </th>
-                      <th className="py-3 px-2 w-10 text-center">Nghe</th>
-                      <th className="py-3 px-4">Từ vựng & Phiên âm</th>
-                      <th className="py-3 px-4">Nghĩa tiếng Việt</th>
-                      <th className="py-3 px-3">Chủ đề</th>
-                      <th className="py-3 px-3 text-center">Cấp độ</th>
-                      <th className="py-3 px-3 text-center">Trạng thái</th>
+                      <th
+                        onClick={() => handleToggleDeckWordSort('meaning')}
+                        className="py-3 px-4 cursor-pointer hover:text-indigo-600 transition select-none"
+                        title="Bấm để sắp xếp theo nghĩa tiếng Việt"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Nghĩa tiếng Việt</span>
+                          {deckWordSortCol === 'meaning' ? (
+                            deckWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleToggleDeckWordSort('topic')}
+                        className="py-3 px-3 cursor-pointer hover:text-indigo-600 transition select-none"
+                        title="Bấm để sắp xếp theo phân hệ / chủ đề"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Phân hệ / Chủ đề</span>
+                          {deckWordSortCol === 'topic' ? (
+                            deckWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleToggleDeckWordSort('cefr')}
+                        className="py-3 px-3 text-center cursor-pointer hover:text-indigo-600 transition select-none"
+                        title="Bấm để sắp xếp theo cấp độ"
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>Cấp độ</span>
+                          {deckWordSortCol === 'cefr' ? (
+                            deckWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        onClick={() => handleToggleDeckWordSort('status')}
+                        className="py-3 px-3 text-center cursor-pointer hover:text-indigo-600 transition select-none"
+                        title="Bấm để sắp xếp theo trạng thái"
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>Trạng thái</span>
+                          {deckWordSortCol === 'status' ? (
+                            deckWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-600" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-600" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </div>
+                      </th>
                       <th className="py-3 px-2 w-10 text-center">Thích</th>
                       <th className="py-3 px-4 text-right">Thao tác</th>
                     </tr>
@@ -3457,6 +3930,7 @@ export const MyWordBankPage: React.FC = () => {
                       const isFav = favoriteIds.includes(item.id) || item.isFavorite;
                       const realTopic = item.topic || item.vocabulary?.topic || 'General';
                       const cefrLevel = item.cefrLevel || item.vocabulary?.cefrLevel || 'B1';
+                      const pos = item.partOfSpeech || item.vocabulary?.partOfSpeech;
 
                       return (
                         <tr
@@ -3493,15 +3967,11 @@ export const MyWordBankPage: React.FC = () => {
                             </button>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex items-baseline gap-2">
+                            <div className="flex items-center gap-1.5">
                               <span className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">
                                 {item.word}
                               </span>
-                              {item.partOfSpeech && (
-                                <span className="text-[10px] text-slate-400 italic">
-                                  ({item.partOfSpeech})
-                                </span>
-                              )}
+                              {renderPosBadge(pos)}
                             </div>
                             {item.phonetic && (
                               <span className="text-xs text-sky-500 dark:text-sky-300 font-mono tracking-tight">
@@ -3520,18 +3990,19 @@ export const MyWordBankPage: React.FC = () => {
                             )}
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
-                            <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/50">
-                              {realTopic}
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50">
+                              <Tag className="w-3 h-3 text-indigo-500" />
+                              <span>{realTopic}</span>
                             </span>
                           </td>
                           <td className="py-3 px-3 text-center whitespace-nowrap">
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50">
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50">
                               {cefrLevel}
                             </span>
                           </td>
                           <td className="py-3 px-3 text-center whitespace-nowrap">
                             <span
-                              className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${
+                              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                                 item.status === 'MASTERED'
                                   ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50'
                                   : 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/50'
@@ -3830,13 +4301,32 @@ export const MyWordBankPage: React.FC = () => {
                   />
                 </div>
 
+                {/* Part of Speech Filter */}
+                <div className="flex items-center h-9">
+                  <CustomDropdown
+                    value={allWordPosFilter}
+                    onChange={(val) => setAllWordPosFilter(val)}
+                    options={[
+                      { value: 'ALL', label: 'Tất cả loại từ (POS)' },
+                      { value: 'noun', label: 'Danh từ (noun)' },
+                      { value: 'verb', label: 'Động từ (verb)' },
+                      { value: 'adj', label: 'Tính từ (adj)' },
+                      { value: 'adv', label: 'Phó từ (adv)' },
+                      { value: 'phr', label: 'Cụm từ (phrase)' },
+                    ]}
+                    size="sm"
+                    className="w-44 h-9"
+                  />
+                </div>
+
                 {/* Reset Filters Button */}
-                {(allWordStatusFilter !== 'ALL' || allWordTopicFilter !== 'ALL' || allWordCefrFilter !== 'ALL' || allWordSearch) && (
+                {(allWordStatusFilter !== 'ALL' || allWordTopicFilter !== 'ALL' || allWordCefrFilter !== 'ALL' || allWordPosFilter !== 'ALL' || allWordSearch) && (
                   <button
                     onClick={() => {
                       setAllWordStatusFilter('ALL');
                       setAllWordTopicFilter('ALL');
                       setAllWordCefrFilter('ALL');
+                      setAllWordPosFilter('ALL');
                       setAllWordSearch('');
                     }}
                     className="btn-glass-secondary btn-glass-sm"
@@ -3925,12 +4415,84 @@ export const MyWordBankPage: React.FC = () => {
                   <thead>
                     <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/75 dark:bg-slate-800/50 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
                       <th className="py-3 px-3 w-10 text-center">Nghe</th>
-                      <th className="py-3 px-4">Từ vựng & Phiên âm</th>
-                      <th className="py-3 px-4">Nghĩa tiếng Việt</th>
-                      <th className="py-3 px-3">Kho chứa</th>
-                      <th className="py-3 px-3">Chủ đề</th>
-                      <th className="py-3 px-3 text-center">Cấp độ</th>
-                      <th className="py-3 px-3 text-center">Trạng thái</th>
+                      <th 
+                        onClick={() => handleToggleAllWordSort('word')}
+                        className="py-3 px-4 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Từ vựng & Loại từ</span>
+                          {allWordSortCol === 'word' ? (
+                            allWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-500" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleToggleAllWordSort('meaning')}
+                        className="py-3 px-4 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Nghĩa tiếng Việt</span>
+                          {allWordSortCol === 'meaning' ? (
+                            allWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-500" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleToggleAllWordSort('deck')}
+                        className="py-3 px-3 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Kho chứa</span>
+                          {allWordSortCol === 'deck' ? (
+                            allWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-500" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleToggleAllWordSort('topic')}
+                        className="py-3 px-3 cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Chủ đề</span>
+                          {allWordSortCol === 'topic' ? (
+                            allWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-500" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleToggleAllWordSort('cefr')}
+                        className="py-3 px-3 text-center cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span>Cấp độ</span>
+                          {allWordSortCol === 'cefr' ? (
+                            allWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-500" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleToggleAllWordSort('status')}
+                        className="py-3 px-3 text-center cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400"
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span>Trạng thái</span>
+                          {allWordSortCol === 'status' ? (
+                            allWordSortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-indigo-500" /> : <ArrowDown className="w-3.5 h-3.5 text-indigo-500" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 opacity-60" />
+                          )}
+                        </div>
+                      </th>
                       <th className="py-3 px-2 w-10 text-center">Thích</th>
                       <th className="py-3 px-4 text-right">Thao tác</th>
                     </tr>
@@ -3961,18 +4523,14 @@ export const MyWordBankPage: React.FC = () => {
                             </button>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex items-baseline gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-black text-slate-900 dark:text-white text-sm">
                                 {item.word}
                               </span>
-                              {item.partOfSpeech && (
-                                <span className="text-[10px] text-slate-400 italic">
-                                  ({item.partOfSpeech})
-                                </span>
-                              )}
+                              {renderPosBadge(item.partOfSpeech)}
                             </div>
                             {item.phonetic && (
-                              <span className="text-[11px] text-sky-500 dark:text-sky-300 font-mono">
+                              <span className="text-[11px] text-sky-500 dark:text-sky-300 font-mono block mt-0.5">
                                 {item.phonetic}
                               </span>
                             )}
@@ -3993,8 +4551,9 @@ export const MyWordBankPage: React.FC = () => {
                             </span>
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
-                            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">
-                              {realTopic}
+                            <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 inline-flex items-center gap-1">
+                              <Tag className="w-2.5 h-2.5 opacity-60" />
+                              <span>{realTopic}</span>
                             </span>
                           </td>
                           <td className="py-3 px-3 text-center whitespace-nowrap">
@@ -4199,165 +4758,734 @@ export const MyWordBankPage: React.FC = () => {
           MODALS SECTION
           ============================================================================= */}
 
-      {/* 1. CREATE DECK MODAL */}
-      <ModalPortal isOpen={showCreateDeckModal} onClose={() => setShowCreateDeckModal(false)}>
-        <form
-          onSubmit={handleConfirmCreateDeck}
-          className="m-auto max-w-3xl w-full max-h-[92vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-6 sm:p-8 shadow-2xl animate-fade-in text-left overflow-hidden"
+      {/* 1. UNIFIED CREATE DECK & FILE IMPORT MODAL */}
+      <ModalPortal
+        isOpen={showCreateDeckModal || showImportModal}
+        onClose={() => {
+          setShowCreateDeckModal(false);
+          setShowImportModal(false);
+        }}
+      >
+        <div
+          className={`m-auto w-full max-h-[92vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-5 sm:p-7 shadow-2xl animate-fade-in text-left overflow-hidden ${
+            deckModalTab === 'file' ? 'max-w-5xl' : 'max-w-3xl'
+          }`}
         >
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/20 dark:from-indigo-950/80 dark:to-purple-950/80 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 shadow-sm">
-                <Folder className="w-6 h-6" />
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/20 dark:from-indigo-950/80 dark:to-purple-950/80 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 shadow-sm">
+                {deckModalTab === 'file' ? <FileSpreadsheet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> : <FolderPlus className="w-5 h-5" />}
               </div>
               <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                  Tạo Kho Từ Vựng Mới
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {deckModalTab === 'file' ? 'Nạp Kho Từ Bằng File Excel / CSV' : 'Tạo Kho Từ Vựng Mới'}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Thiết lập thông tin kho từ vựng cá nhân để lưu trữ, ôn tập theo lộ trình và chia sẻ
+                  {deckModalTab === 'file'
+                    ? 'Nhập hàng loạt từ vựng có cấu hình phân hệ và mật khẩu bảo vệ PIN'
+                    : 'Thiết lập thông tin kho từ vựng cá nhân, phân hệ và mật khẩu bảo vệ'}
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => setShowCreateDeckModal(false)}
+              onClick={() => {
+                setShowCreateDeckModal(false);
+                setShowImportModal(false);
+              }}
               className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
-              aria-label="Đóng cửa sổ tạo kho"
+              aria-label="Đóng cửa sổ"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-5 text-xs sm:text-sm flex-1 min-h-0 overflow-y-auto py-4 pr-1">
-            <div>
-              <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
-                Tên kho từ vựng <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={deckTitleInput}
-                onChange={(e) => setDeckTitleInput(e.target.value)}
-                placeholder="Ví dụ: TOEIC 600 Essential Words, IELTS Speaking Part 1, Business Email..."
-                className="w-full h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-xs sm:text-sm text-slate-900 dark:text-white transition placeholder:text-slate-400"
-              />
+          {/* Top Segmented Tab Switcher */}
+          <div className="pt-3 pb-1 shrink-0">
+            <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80">
+              <button
+                type="button"
+                onClick={() => setDeckModalTab('manual')}
+                className={`flex-1 py-2 px-3 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  deckModalTab === 'manual'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span>Tạo kho thủ công</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeckModalTab('file')}
+                className={`flex-1 py-2 px-3 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                  deckModalTab === 'file'
+                    ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Nạp từ file Excel / CSV</span>
+              </button>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
-                  Không gian học tập (Mặc định)
-                </label>
-                <div className="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-semibold text-xs text-slate-900 dark:text-white">
-                  <CountryFlag languageId={activeLanguage.id} size="sm" />
-                  <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
+          {/* TAB CONTENT */}
+          {deckModalTab === 'manual' ? (
+            /* =========================================================
+               TAB MANUAL CREATION
+               ========================================================= */
+            <form onSubmit={handleConfirmCreateDeck} className="flex-1 min-h-0 flex flex-col">
+              <div className="space-y-4 text-xs sm:text-sm flex-1 min-h-0 overflow-y-auto py-3 pr-1">
+                <div>
+                  <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
+                    Tên kho từ vựng <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={deckTitleInput}
+                    onChange={(e) => setDeckTitleInput(e.target.value)}
+                    placeholder="Ví dụ: TOEIC 600 Essential Words, IELTS Speaking Part 1, Business Email..."
+                    className="w-full h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-xs sm:text-sm text-slate-900 dark:text-white transition placeholder:text-slate-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-end">
+                  <div>
+                    <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
+                      Không gian học tập (Mặc định)
+                    </label>
+                    <div className="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-semibold text-xs text-slate-900 dark:text-white">
+                      <CountryFlag languageId={activeLanguage.id} size="sm" />
+                      <span>{activeLanguage.nativeName} ({activeLanguage.name})</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
+                      Phân hệ / Lĩnh vực
+                    </label>
+                    <CustomDropdown
+                      value={deckCatInput}
+                      onChange={(val) => setDeckCatInput(val)}
+                      options={allDeckCategories.map((c) => ({ value: c, label: c }))}
+                      searchable={true}
+                      searchPlaceholder="Tìm kiếm hoặc tạo danh mục mới..."
+                      creatable={true}
+                      createPlaceholder='Tạo danh mục mới: "{query}"'
+                      onCreateOption={handleCreateCategory}
+                      size="md"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm truncate">
+                      Cấp độ ({selectedDeckLangDef.nativeName})
+                    </label>
+                    <CustomDropdown
+                      value={deckCefrInput}
+                      onChange={(val) => setDeckCefrInput(val)}
+                      options={dynamicLevelOptions}
+                      size="md"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Lý do & mục tiêu */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
+                      <span>Lý do tạo kho & Mục tiêu học tập</span>
+                      <span className="text-[11px] font-normal text-slate-400">
+                        (Khuyên dùng để định hình lộ trình)
+                      </span>
+                    </label>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      {deckDescInput.length} ký tự
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={deckDescInput}
+                    onChange={(e) => setDeckDescInput(e.target.value)}
+                    placeholder={"Ví dụ:\n• Lý do: Chuẩn bị thi TOEIC đạt mốc 750+ vào tháng 11 để phục vụ công việc.\n• Mục tiêu: Nắm vững 30 từ vựng hợp đồng kinh tế và báo cáo tài chính mỗi tuần..."}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs sm:text-sm leading-relaxed text-slate-900 dark:text-white transition resize-y min-h-[90px] placeholder:text-slate-400"
+                  />
+                </div>
+
+                {/* Password Protection */}
+                <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-xs sm:text-sm">
+                      <Lock className="w-4 h-4 text-amber-500" />
+                      <span>Mật khẩu bảo mật kho (PIN) (Tùy chọn)</span>
+                    </label>
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">
+                      Bảo vệ riêng tư
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showDeckPassword ? 'text' : 'password'}
+                      value={deckPasswordInput}
+                      onChange={(e) => setDeckPasswordInput(e.target.value)}
+                      placeholder="Nhập mã PIN hoặc mật khẩu nếu muốn khóa kho..."
+                      className="w-full h-10 px-4 pr-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs sm:text-sm text-slate-900 dark:text-white transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDeckPassword(!showDeckPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                      title={showDeckPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    >
+                      {showDeckPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Nếu đặt mật khẩu, người dùng bắt buộc phải nhập đúng mã PIN để mở khóa và học kho từ này.
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
-                  Lĩnh vực / Danh mục
-                </label>
-                <CustomDropdown
-                  value={deckCatInput}
-                  onChange={(val) => setDeckCatInput(val)}
-                  options={allDeckCategories.map((c) => ({ value: c, label: c }))}
-                  searchable={true}
-                  searchPlaceholder="Tìm kiếm hoặc tạo danh mục mới..."
-                  creatable={true}
-                  createPlaceholder='Tạo danh mục mới: "{query}"'
-                  onCreateOption={handleCreateCategory}
-                  size="md"
-                  className="w-full"
-                />
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateDeckModal(false);
+                    setShowImportModal(false);
+                  }}
+                  disabled={creatingDeck}
+                  className="btn-glass-secondary btn-glass-sm !px-5"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingDeck || !deckTitleInput.trim()}
+                  className="btn-glass-purple btn-glass-sm !px-6 font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {creatingDeck ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Đang tạo kho...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>Xác nhận tạo kho</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* =========================================================
+               TAB FILE IMPORT (WITH EMBEDDED PASSWORD & METADATA CONFIG)
+               ========================================================= */
+            <div className="flex-1 min-h-0 flex flex-col space-y-3.5 py-3">
+              <div className="space-y-3 flex-1 min-h-0 overflow-y-auto pr-1">
+                {/* Configuration: Choose Mode (New Deck vs Existing Deck) */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Phương thức nạp:
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setImportDeckMode('new')}
+                          className={`btn-glass-sm !h-7 text-xs font-bold ${
+                            importDeckMode === 'new' ? 'btn-glass-primary' : 'btn-glass-secondary'
+                          }`}
+                        >
+                          Tạo kho mới từ file
+                        </button>
+                        {decks.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImportDeckMode('existing');
+                              if (!importTargetDeckName && decks.length > 0) {
+                                setImportTargetDeckName(decks[0].title);
+                              }
+                            }}
+                            className={`btn-glass-sm !h-7 text-xs font-bold ${
+                              importDeckMode === 'existing' ? 'btn-glass-primary' : 'btn-glass-secondary'
+                            }`}
+                          >
+                            Nạp vào kho có sẵn
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Template download buttons */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => downloadVocabularyTemplate('xlsx')}
+                        className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300 !h-7"
+                        title="Tải mẫu Excel chuẩn"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Mẫu .xlsx</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => downloadVocabularyTemplate('csv')}
+                        className="btn-glass-secondary btn-glass-sm text-indigo-600 dark:text-indigo-400 !h-7"
+                        title="Tải mẫu CSV chuẩn"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Mẫu .csv</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Fields if Creating New Deck via File */}
+                  {importDeckMode === 'new' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                      <div className="sm:col-span-2">
+                        <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1 text-[11px]">
+                          Tên kho từ vựng mới <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={deckTitleInput}
+                          onChange={(e) => setDeckTitleInput(e.target.value)}
+                          placeholder="Ví dụ: TOEIC 600 Essential Words..."
+                          className="w-full h-9 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-semibold text-xs text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1 text-[11px]">
+                          Phân hệ / Lĩnh vực
+                        </label>
+                        <CustomDropdown
+                          value={deckCatInput}
+                          onChange={(val) => setDeckCatInput(val)}
+                          options={allDeckCategories.map((c) => ({ value: c, label: c }))}
+                          searchable={true}
+                          creatable={true}
+                          onCreateOption={handleCreateCategory}
+                          size="sm"
+                          className="w-full h-9"
+                        />
+                      </div>
+
+                      {/* Password Protection input for new deck */}
+                      <div>
+                        <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1 text-[11px] flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-amber-500" />
+                            <span>Mật khẩu PIN</span>
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-normal">(Tùy chọn)</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showDeckPassword ? 'text' : 'password'}
+                            value={deckPasswordInput}
+                            onChange={(e) => setDeckPasswordInput(e.target.value)}
+                            placeholder="Mã PIN bảo vệ..."
+                            className="w-full h-9 px-2.5 pr-8 rounded-xl bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/80 font-medium text-xs text-slate-900 dark:text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowDeckPassword(!showDeckPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                          >
+                            {showDeckPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Existing Deck Selector + Password Prompt if protected */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                      <div>
+                        <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1 text-[11px]">
+                          Chọn kho từ có sẵn để nạp thêm:
+                        </label>
+                        <CustomDropdown
+                          value={importTargetDeckName}
+                          onChange={(val) => setImportTargetDeckName(val)}
+                          options={decks.map((d) => ({
+                            value: d.title,
+                            label: d.title,
+                            badge: d.hasPassword ? 'Khóa' : d.cefrLevel,
+                          }))}
+                          size="md"
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* Password Prompt if selected deck is locked */}
+                      {(() => {
+                        const targetDeck = decks.find((d) => d.title === importTargetDeckName);
+                        if (targetDeck && (targetDeck.hasPassword || targetDeck.isProtected)) {
+                          return (
+                            <div>
+                              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1 text-[11px] flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <Lock className="w-3 h-3" />
+                                <span>Kho này có mật khẩu — Nhập PIN để xác thực nạp từ:</span>
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showImportPass ? 'text' : 'password'}
+                                  value={importExistingDeckPass}
+                                  onChange={(e) => setImportExistingDeckPass(e.target.value)}
+                                  placeholder="Nhập mã PIN mở khóa kho..."
+                                  className="w-full h-10 px-3 pr-9 rounded-xl bg-white dark:bg-slate-900 border border-amber-400 font-semibold text-xs text-slate-900 dark:text-white"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowImportPass(!showImportPass)}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                                >
+                                  {showImportPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Dropzone for Excel / CSV */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-4 sm:p-5 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Upload className="w-6 h-6 mx-auto text-emerald-500 mb-1" />
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {selectedFile ? selectedFile.name : 'Bấm vào đây để chọn file Excel (.xlsx) hoặc CSV từ máy tính'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Hỗ trợ 7 cột chuẩn: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic • Tối đa 100MB
+                  </p>
+                </div>
+
+                {isParsing && (
+                  <div className="py-3 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Đang đọc và giải mã file...</span>
+                  </div>
+                )}
+
+                {parsingError && (
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{parsingError}</span>
+                  </div>
+                )}
+
+                {/* Staging Actions Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Từ chuẩn bị nạp:
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                      {parsedWords.length} từ
+                    </span>
+                    {parsedWords.length > 0 && (
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        (Hợp lệ: <strong className="text-emerald-600 dark:text-emerald-400">{parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length}</strong>)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddManualPreviewWord}
+                      className="btn-glass-primary btn-glass-sm inline-flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm từ thủ công</span>
+                    </button>
+                    {parsedWords.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearAllParsed}
+                        className="btn-glass-danger btn-glass-sm inline-flex items-center gap-1.5"
+                        title="Xóa toàn bộ danh sách tạm"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Xóa tất cả</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Parsed Interactive Staging Preview Table */}
+                {parsedWords.length > 0 ? (
+                  <div className="min-h-[160px] max-h-[300px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl shadow-inner bg-white dark:bg-slate-900/60">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-xs sticky top-0 font-bold text-slate-700 dark:text-slate-300 text-[11px] z-10">
+                        <tr>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 w-10 text-center">#</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[130px]">Từ vựng (Word) *</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[100px]">Phiên âm</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[95px]">Loại từ</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[170px]">Nghĩa tiếng Việt *</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[120px]">Chủ đề (Topic)</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[70px]">CEFR</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[180px]">Ví dụ / Câu mẫu</th>
+                          <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 w-24 text-center">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-800 dark:text-slate-200">
+                        {parsedWords.map((row, idx) => {
+                          const isEditing = editingParsedIdx === idx;
+                          const isValid = Boolean(row.word?.trim() && row.meaning?.trim());
+
+                          if (isEditing && editingParsedItem) {
+                            return (
+                              <tr key={idx} className="bg-indigo-50/50 dark:bg-indigo-950/40">
+                                <td className="p-2 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.word}
+                                    onChange={(e) =>
+                                      setEditingParsedItem({ ...editingParsedItem, word: e.target.value })
+                                    }
+                                    placeholder="word *"
+                                    className="w-full h-8 px-2 rounded-lg border border-indigo-300 dark:border-indigo-600 bg-white dark:bg-slate-900 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:outline-none"
+                                    autoFocus
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.phonetic || ''}
+                                    onChange={(e) =>
+                                      setEditingParsedItem({ ...editingParsedItem, phonetic: e.target.value })
+                                    }
+                                    placeholder="/.../"
+                                    className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono focus:outline-none"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <select
+                                    value={editingParsedItem.partOfSpeech || 'noun'}
+                                    onChange={(e) =>
+                                      setEditingParsedItem({ ...editingParsedItem, partOfSpeech: e.target.value })
+                                    }
+                                    className="w-full h-8 px-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs italic focus:outline-none"
+                                  >
+                                    <option value="noun">noun</option>
+                                    <option value="verb">verb</option>
+                                    <option value="adjective">adjective</option>
+                                    <option value="adverb">adverb</option>
+                                    <option value="preposition">preposition</option>
+                                    <option value="phrase">phrase</option>
+                                    <option value="idiom">idiom</option>
+                                  </select>
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.meaning}
+                                    onChange={(e) =>
+                                      setEditingParsedItem({ ...editingParsedItem, meaning: e.target.value })
+                                    }
+                                    placeholder="nghĩa tiếng Việt *"
+                                    className="w-full h-8 px-2 rounded-lg border border-indigo-300 dark:border-indigo-600 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-none"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.topic || 'General'}
+                                    onChange={(e) =>
+                                      setEditingParsedItem({ ...editingParsedItem, topic: e.target.value })
+                                    }
+                                    placeholder="Chủ đề..."
+                                    className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <select
+                                    value={editingParsedItem.cefrLevel || 'B1'}
+                                    onChange={(e) =>
+                                      setEditingParsedItem({ ...editingParsedItem, cefrLevel: e.target.value })
+                                    }
+                                    className="w-full h-8 px-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-none"
+                                  >
+                                    {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
+                                      <option key={lvl} value={lvl}>
+                                        {lvl}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.example || ''}
+                                    onChange={(e) =>
+                                      setEditingParsedItem({ ...editingParsedItem, example: e.target.value })
+                                    }
+                                    placeholder="Câu ví dụ..."
+                                    className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none"
+                                  />
+                                </td>
+                                <td className="p-2 text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveEditParsed(idx)}
+                                      className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition cursor-pointer"
+                                      title="Lưu dòng này"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelEditParsed}
+                                      className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 transition cursor-pointer"
+                                      title="Hủy chỉnh sửa"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return (
+                            <tr
+                              key={idx}
+                              className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40 ${
+                                !isValid ? 'bg-rose-50/40 dark:bg-rose-950/20' : ''
+                              }`}
+                            >
+                              <td className="p-2.5 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                              <td className="p-2.5 font-bold text-indigo-600 dark:text-indigo-400">
+                                {row.word || <span className="text-rose-500 italic font-normal">(Chưa có từ)</span>}
+                              </td>
+                              <td className="p-2.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                {row.phonetic || '-'}
+                              </td>
+                              <td className="p-2.5 italic text-slate-600 dark:text-slate-400">
+                                {row.partOfSpeech || 'noun'}
+                              </td>
+                              <td className="p-2.5 text-slate-800 dark:text-slate-200">
+                                {row.meaning || <span className="text-rose-500 italic font-normal">(Chưa có nghĩa)</span>}
+                              </td>
+                              <td className="p-2.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                                {row.topic || 'General'}
+                              </td>
+                              <td className="p-2.5">
+                                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                  {row.cefrLevel || 'B1'}
+                                </span>
+                              </td>
+                              <td className="p-2.5 text-slate-500 dark:text-slate-400 truncate max-w-[200px]" title={row.example || ''}>
+                                {row.example || '-'}
+                              </td>
+                              <td className="p-2.5 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditParsed(idx)}
+                                    className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition cursor-pointer"
+                                    title="Sửa từ vựng này"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteParsed(idx)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition cursor-pointer"
+                                    title="Xóa khỏi danh sách"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30 space-y-1.5">
+                    <FileSpreadsheet className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Chưa có dữ liệu từ vựng trong danh sách xem trước
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      Hãy chọn file Excel/CSV ở trên hoặc bấm &quot;Thêm từ thủ công&quot; để nhập trực tiếp.
+                    </p>
+                  </div>
+                )}
+
+                {importProgressMsg && (
+                  <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold text-center space-y-2 animate-in fade-in">
+                    <div className="flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
+                      <span>{importProgressMsg}</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-indigo-200/60 dark:bg-indigo-900/60 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 rounded-full animate-pulse w-full"></div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div>
-                <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm truncate">
-                  Cấp độ ({selectedDeckLangDef.nativeName})
-                </label>
-                <CustomDropdown
-                  value={deckCefrInput}
-                  onChange={(val) => setDeckCefrInput(val)}
-                  options={dynamicLevelOptions}
-                  size="md"
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            {/* LÝ DO TẠO KHO & MỤC TIÊU HỌC TẬP */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
-                  <span>Lý do tạo kho & Mô tả mục tiêu học tập</span>
-                  <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
-                    (Tối thiểu 4-5 dòng để định hình rõ lộ trình)
-                  </span>
-                </label>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                  {deckDescInput.length} ký tự
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                <span className="text-xs font-bold text-slate-500">
+                  Từ hợp lệ: <strong className="text-indigo-600">{parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length}</strong> từ
                 </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateDeckModal(false);
+                      setShowImportModal(false);
+                    }}
+                    className="btn-glass-secondary btn-glass-sm"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmBatchImport}
+                    disabled={isImporting || parsedWords.length === 0}
+                    className="btn-glass-emerald btn-glass-sm inline-flex items-center gap-1.5 font-bold"
+                  >
+                    {isImporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
+                    <span>{isImporting ? 'Đang nạp...' : 'Xác nhận nạp vào kho'}</span>
+                  </button>
+                </div>
               </div>
-              <textarea
-                rows={5}
-                value={deckDescInput}
-                onChange={(e) => setDeckDescInput(e.target.value)}
-                placeholder={"Ví dụ:\n• Lý do: Chuẩn bị thi TOEIC đạt mốc 750+ vào tháng 11 để phục vụ công việc.\n• Mục tiêu: Nắm vững 30 từ vựng hợp đồng kinh tế và báo cáo tài chính mỗi tuần.\n• Nguồn tài liệu: Trích xuất từ đề thi ETS 2024 và tài liệu thực tế tại văn phòng..."}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs sm:text-sm leading-relaxed text-slate-900 dark:text-white transition resize-y min-h-[140px] placeholder:text-slate-400 dark:placeholder:text-slate-600"
-              />
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
-                Mô tả chi tiết giúp bạn duy trì kỷ luật học tập và giúp bạn bè hiểu rõ giá trị khi bạn chia sẻ kho từ này.
-              </p>
             </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
-              <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 text-xs sm:text-sm">
-                <Lock className="w-4 h-4 text-amber-500" />
-                <span>Mật khẩu bảo mật kho (Tùy chọn)</span>
-              </label>
-              <input
-                type="password"
-                value={deckPasswordInput}
-                onChange={(e) => setDeckPasswordInput(e.target.value)}
-                placeholder="Nhập mã PIN hoặc mật khẩu nếu muốn bảo vệ quyền truy cập..."
-                className="w-full h-10 px-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs sm:text-sm text-slate-900 dark:text-white transition"
-              />
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Nếu đặt mật khẩu, người khác bắt buộc phải nhập đúng mã PIN để xem hoặc sao chép kho này khi chia sẻ công khai.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowCreateDeckModal(false)}
-              disabled={creatingDeck}
-              className="btn-glass-secondary btn-glass-sm !px-5"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={creatingDeck}
-              className="btn-glass-purple btn-glass-sm !px-6 font-bold flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              {creatingDeck ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Đang tạo kho...</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  <span>Xác nhận tạo kho</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
       </ModalPortal>
 
       {/* 2. EDIT DECK MODAL */}
@@ -5006,422 +6134,7 @@ export const MyWordBankPage: React.FC = () => {
         </div>
       </ModalPortal>
 
-      {/* 8. EXCEL / CSV IMPORT MODAL */}
-      <ModalPortal isOpen={showImportModal} onClose={() => setShowImportModal(false)}>
-        <div className="m-auto max-w-5xl w-full max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl animate-fade-in text-left overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                <FileSpreadsheet className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Nhập Dữ Liệu Từ Vựng từ Excel / CSV
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Tự động nhận diện 7 cột chuẩn: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowImportModal(false)}
-              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
-            {/* Options: Target Deck & Template Download */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Nạp vào Kho Từ Vựng nào?</label>
-                <div className="flex items-center gap-2">
-                  <CustomDropdown
-                    value={decks.length === 0 ? 'new' : importDeckMode}
-                    onChange={(val) => setImportDeckMode(val as any)}
-                    options={
-                      decks.length === 0
-                        ? [{ value: 'new', label: 'Tạo kho mới' }]
-                        : [
-                            { value: 'existing', label: 'Kho có sẵn' },
-                            { value: 'new', label: 'Tạo kho mới' },
-                          ]
-                    }
-                    size="md"
-                    className="w-36"
-                  />
-
-                  {importDeckMode === 'existing' && decks.length > 0 ? (
-                    <CustomDropdown
-                      value={importTargetDeckName}
-                      onChange={(val) => setImportTargetDeckName(val)}
-                      options={decks.map((d) => ({
-                        value: d.title,
-                        label: d.title,
-                        badge: d.cefrLevel,
-                      }))}
-                      size="md"
-                      className="flex-1"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={importTargetDeckName}
-                      onChange={(e) => setImportTargetDeckName(e.target.value)}
-                      placeholder={decks.length === 0 ? "Nhập tên kho mới cho các từ..." : "Nhập tên kho mới..."}
-                      className="flex-1 h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-xs text-slate-900 dark:text-white"
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-end justify-start sm:justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => downloadVocabularyTemplate('xlsx')}
-                  className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải mẫu .xlsx</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => downloadVocabularyTemplate('csv')}
-                  className="btn-glass-secondary btn-glass-sm text-indigo-600 dark:text-indigo-400"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải mẫu .csv</span>
-                </button>
-              </div>
-            </div>
-
-            {/* File Upload Drop Zone */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-5 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <Upload className="w-6 h-6 mx-auto text-slate-400 mb-1" />
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {selectedFile ? selectedFile.name : 'Bấm vào đây để chọn file Excel (.xlsx) hoặc CSV từ máy tính'}
-              </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Dung lượng tối đa 100MB • Tự động đọc và kiểm tra dữ liệu trước khi nạp</p>
-            </div>
-
-            {isParsing && (
-              <div className="py-4 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Đang đọc và giải mã file...</span>
-              </div>
-            )}
-
-            {parsingError && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium">
-                {parsingError}
-              </div>
-            )}
-
-            {/* Staging Actions Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Danh sách từ chuẩn bị nạp:
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                  {parsedWords.length} từ
-                </span>
-                {parsedWords.length > 0 && (
-                  <span className="text-[11px] text-slate-400 hidden sm:inline">
-                    (Hợp lệ: <strong className="text-emerald-600 dark:text-emerald-400">{parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length}</strong>)
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddManualPreviewWord}
-                  className="btn-glass-primary btn-glass-sm inline-flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm từ thủ công</span>
-                </button>
-                {parsedWords.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearAllParsed}
-                    className="btn-glass-danger btn-glass-sm inline-flex items-center gap-1.5"
-                    title="Xóa toàn bộ danh sách xem trước tạm thời"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Xóa tất cả</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Parsed Interactive Staging Preview Table */}
-            {parsedWords.length > 0 ? (
-              <div className="min-h-[200px] max-h-[380px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl shadow-inner bg-white dark:bg-slate-900/60">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-xs sticky top-0 font-bold text-slate-700 dark:text-slate-300 text-[11px] z-10">
-                    <tr>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 w-10 text-center">#</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[130px]">Từ vựng (Word) *</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[100px]">Phiên âm</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[95px]">Loại từ</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[170px]">Nghĩa tiếng Việt *</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[120px]">Chủ đề (Topic)</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[70px]">CEFR</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[180px]">Ví dụ / Câu mẫu</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 w-24 text-center">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-800 dark:text-slate-200">
-                    {parsedWords.map((row, idx) => {
-                      const isEditing = editingParsedIdx === idx;
-                      const isValid = Boolean(row.word?.trim() && row.meaning?.trim());
-
-                      if (isEditing && editingParsedItem) {
-                        return (
-                          <tr key={idx} className="bg-indigo-50/50 dark:bg-indigo-950/40">
-                            <td className="p-2 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.word}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, word: e.target.value })
-                                }
-                                placeholder="word *"
-                                className="w-full h-8 px-2 rounded-lg border border-indigo-300 dark:border-indigo-600 bg-white dark:bg-slate-900 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                                autoFocus
-                              />
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.phonetic || ''}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, phonetic: e.target.value })
-                                }
-                                placeholder="/.../"
-                                className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <select
-                                value={editingParsedItem.partOfSpeech || 'noun'}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, partOfSpeech: e.target.value })
-                                }
-                                className="w-full h-8 px-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs italic focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              >
-                                <option value="noun">noun</option>
-                                <option value="verb">verb</option>
-                                <option value="adjective">adjective</option>
-                                <option value="adverb">adverb</option>
-                                <option value="preposition">preposition</option>
-                                <option value="phrase">phrase</option>
-                                <option value="idiom">idiom</option>
-                              </select>
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.meaning}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, meaning: e.target.value })
-                                }
-                                placeholder="nghĩa tiếng Việt *"
-                                className="w-full h-8 px-2 rounded-lg border border-indigo-300 dark:border-indigo-600 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.topic || 'General'}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, topic: e.target.value })
-                                }
-                                placeholder="Chủ đề..."
-                                className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-emerald-600 dark:text-emerald-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <select
-                                value={editingParsedItem.cefrLevel || 'B1'}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, cefrLevel: e.target.value })
-                                }
-                                className="w-full h-8 px-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              >
-                                {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
-                                  <option key={lvl} value={lvl}>
-                                    {lvl}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.example || ''}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, example: e.target.value })
-                                }
-                                placeholder="Câu ví dụ..."
-                                className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveEditParsed(idx)}
-                                  className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition cursor-pointer"
-                                  title="Lưu dòng này"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={handleCancelEditParsed}
-                                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-                                  title="Hủy chỉnh sửa"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      }
-
-                      return (
-                        <tr
-                          key={idx}
-                          className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40 ${
-                            !isValid ? 'bg-rose-50/40 dark:bg-rose-950/20' : ''
-                          }`}
-                        >
-                          <td className="p-2.5 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
-                          <td className="p-2.5 font-bold text-indigo-600 dark:text-indigo-400">
-                            {row.word || <span className="text-rose-500 italic font-normal">(Chưa có từ)</span>}
-                          </td>
-                          <td className="p-2.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                            {row.phonetic || '-'}
-                          </td>
-                          <td className="p-2.5 italic text-slate-600 dark:text-slate-400">
-                            {row.partOfSpeech || 'noun'}
-                          </td>
-                          <td className="p-2.5 text-slate-800 dark:text-slate-200">
-                            {row.meaning || <span className="text-rose-500 italic font-normal">(Chưa có nghĩa)</span>}
-                          </td>
-                          <td className="p-2.5 font-semibold text-emerald-600 dark:text-emerald-400">
-                            {row.topic || 'General'}
-                          </td>
-                          <td className="p-2.5">
-                            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                              {row.cefrLevel || 'B1'}
-                            </span>
-                          </td>
-                          <td className="p-2.5 text-slate-500 dark:text-slate-400 truncate max-w-[200px]" title={row.example || ''}>
-                            {row.example || '-'}
-                          </td>
-                          <td className="p-2.5 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEditParsed(idx)}
-                                className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition cursor-pointer"
-                                title="Sửa từ vựng này"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteParsed(idx)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition cursor-pointer"
-                                title="Xóa khỏi danh sách xem trước"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30 space-y-2">
-                <FileSpreadsheet className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Chưa có dữ liệu từ vựng trong danh sách xem trước
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Hãy tải lên file Excel/CSV ở trên hoặc bấm &quot;Thêm từ thủ công&quot; để nhập trực tiếp.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleAddManualPreviewWord}
-                  className="btn-glass-primary btn-glass-sm inline-flex items-center gap-1.5 mt-2"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm từ thủ công vào danh sách</span>
-                </button>
-              </div>
-            )}
-
-            {importProgressMsg && (
-              <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold text-center space-y-2 animate-in fade-in">
-                <div className="flex items-center justify-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
-                  <span>{importProgressMsg}</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-indigo-200/60 dark:bg-indigo-900/60 overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 rounded-full animate-pulse w-full"></div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
-            <span className="text-xs font-bold text-slate-500">
-              Tổng số từ hợp lệ: <strong className="text-indigo-600">{parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length}</strong> từ
-            </span>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowImportModal(false)}
-                className="btn-glass-secondary btn-glass-sm"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmBatchImport}
-                disabled={isImporting || parsedWords.length === 0}
-                className="btn-glass-emerald btn-glass-sm inline-flex items-center gap-1.5"
-              >
-                {isImporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
-                <span>{isImporting ? 'Đang nạp...' : 'Xác nhận nạp vào kho'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </ModalPortal>
 
       {/* 9. SHARE DECK MODAL */}
       <ModalPortal isOpen={Boolean(shareModalDeck)} onClose={() => setShareModalDeck(null)}>

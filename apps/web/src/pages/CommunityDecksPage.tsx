@@ -24,10 +24,12 @@ import { useScrollLoad } from '../hooks/useScrollLoad';
 import { CommunityCommentSection } from '../components/community/CommunityCommentSection';
 import { AccessKeyManagementModal } from '../components/community/AccessKeyManagementModal';
 import { VerifyAccessKeyModal } from '../components/community/VerifyAccessKeyModal';
+import { confirmModal } from '../components/common/ConfirmDialog';
 import {
   Users,
   Copy,
   Plus,
+  Trash2,
   Search,
   BookOpen,
   Key,
@@ -99,10 +101,37 @@ export const CommunityDecksPage: React.FC = () => {
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<'clone' | 'open-bank' | 'like' | 'dislike' | 'export' | null>(null);
 
+  const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
+
+  const handleDeleteDeckAdmin = async (deck: any) => {
+    if (!deck) return;
+    const isMyDeck = Boolean(user && (deck.userId === user.id || deck.author?.id === user.id));
+    const ok = await confirmModal({
+      title: 'Xóa vĩnh viễn kho từ vựng',
+      message: `Bạn có chắc chắn muốn XÓA VĨNH VIỄN kho từ "${deck.title}"? Toàn bộ từ vựng và câu ví dụ sẽ bị xóa hoàn toàn khỏi cơ sở dữ liệu${isAdmin && !isMyDeck ? ' mà không cần thông qua chủ kho' : ''}!`,
+      type: 'danger',
+      confirmText: 'Xóa vĩnh viễn',
+      cancelText: 'Hủy bỏ',
+    });
+    if (!ok) return;
+
+    try {
+      await api.delete(`/community/decks/${deck.id}`);
+      if (selectedDeck && selectedDeck.id === deck.id) {
+        setSelectedDeck(null);
+      }
+      setDecks((prev) => prev.filter((d) => d.id !== deck.id));
+      setMyDecks((prev) => prev.filter((d) => d.id !== deck.id));
+      alert('Đã xóa vĩnh viễn kho từ vựng thành công.');
+    } catch (err: any) {
+      console.error('Delete deck error:', err);
+      alert(err?.response?.data?.message || 'Không thể xóa kho từ vựng.');
+    }
+  };
+
   const isDeckLocked = (d: any) => {
     if (!d) return false;
     const isOwner = Boolean(user && (d.userId === user.id || d.author?.id === user.id));
-    const isAdmin = Boolean(user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
     const isKeyUnlocked = sessionStorage.getItem(`vf_unlocked_VOCABULARY_${d.id}`) === 'true';
     const isProtected = Boolean(d.isProtected || d.hasPassword);
     return Boolean(isProtected && !isOwner && !isAdmin && !unlockedDeckIds[d.id] && !isKeyUnlocked);
@@ -1203,12 +1232,16 @@ export const CommunityDecksPage: React.FC = () => {
                               ? [{ value: 'verify_key', label: 'Mở khóa bằng Access Key', icon: Key }]
                               : []),
                             { value: 'export', label: 'Xuất file (Excel / CSV)', icon: Download },
+                            ...(isAdmin || isMyDeck
+                              ? [{ value: 'delete_admin', label: isMyDeck ? 'Xóa kho từ' : 'Xóa vĩnh viễn (Admin)', icon: Trash2 }]
+                              : []),
                           ]}
                           onSelect={(val) => {
                             if (val === 'clone') handleActionOnDeck(deck, 'clone');
                             else if (val === 'contact_owner') handleContactDeckOwner(deck);
                             else if (val === 'verify_key') setVerifyAccessKeyDeck(deck);
                             else if (val === 'export') handleActionOnDeck(deck, 'export');
+                            else if (val === 'delete_admin') handleDeleteDeckAdmin(deck);
                           }}
                           align="right"
                         />
@@ -1730,6 +1763,18 @@ export const CommunityDecksPage: React.FC = () => {
                       <Download className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Xuất file</span>
                     </button>
+
+                    {(isAdmin || isMyDeck) && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDeckAdmin(selectedDeck)}
+                        className="h-10 px-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 text-xs font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                        title={isAdmin && !isMyDeck ? "Xóa vĩnh viễn kho từ mà không cần thông qua chủ kho" : "Xóa kho từ của bạn"}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{isAdmin && !isMyDeck ? "Xóa vĩnh viễn (Admin)" : "Xóa kho"}</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* SOCIAL REACTIONS BAR: 👍 Like | 👎 Dislike | 💬 Comment | ↗ Share - UNIFORM h-8 */}

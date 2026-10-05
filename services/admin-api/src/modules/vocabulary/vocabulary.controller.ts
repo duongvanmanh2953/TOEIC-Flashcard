@@ -121,6 +121,15 @@ export class VocabularyController {
     return this.vocabularyService.updateVocabulary(id, body, adminId);
   }
 
+  @Delete('admin/clear-all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: Clear all vocabulary or by language' })
+  clearAll(@Query('languageId') languageId?: string, @CurrentUser('id') adminId?: string) {
+    return this.vocabularyService.clearAll(languageId, adminId);
+  }
+
   @Delete('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)

@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api, { extractApiList } from '../../lib/api';
 import { FilterSelect } from '../../components/ui/FilterSelect';
 import { useI18n } from '../../i18n';
@@ -66,6 +67,7 @@ export const AdminVocabularyPage: React.FC = () => {
   // Selection & Bulk Actions
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
 
   // Modals State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -106,9 +108,10 @@ export const AdminVocabularyPage: React.FC = () => {
       });
 
       const raw = res?.data?.data || res?.data || res;
+      const pagination = res?.data?.meta?.pagination || res?.meta?.pagination || raw?.pagination;
       const list = Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : [];
-      const total = raw?.total || list.length;
-      const pages = raw?.totalPages || Math.ceil(total / 15) || 1;
+      const total = Number(pagination?.total ?? raw?.total ?? list.length ?? 0);
+      const pages = Number(pagination?.totalPages ?? raw?.totalPages ?? Math.max(1, Math.ceil(total / 15)));
 
       // Calculate Quality Scores & Flags
       const enhanced = list.map((item: any) => {
@@ -140,12 +143,51 @@ export const AdminVocabularyPage: React.FC = () => {
     }
   }, [page, search, cefrFilter, posFilter, languageFilter]);
 
+  // Reset page to 1 when filters or search change
+  useEffect(() => {
+    setPage(1);
+  }, [search, cefrFilter, posFilter, languageFilter]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchVocabulary();
     }, 300);
     return () => clearTimeout(timer);
   }, [fetchVocabulary]);
+
+  const handleClearAll = async () => {
+    const langObj = SUPPORTED_LANGUAGES.find((l) => l.id === languageFilter);
+    const langName =
+      languageFilter !== 'ALL'
+        ? langObj
+          ? `${langObj.name} (${langObj.nativeName})`
+          : languageFilter
+        : 'TẤT CẢ ngôn ngữ';
+
+    const ok = await confirmModal({
+      title: 'Xóa Toàn Bộ Từ Vựng Hệ Thống',
+      message: `CẢNH BÁO NGUY HIỂM: Bạn có chắc chắn muốn xóa TOÀN BỘ từ vựng thuộc phạm vi [${langName}] khỏi từ điển hệ thống? Thao tác này sẽ xóa vĩnh viễn và không thể khôi phục!`,
+      type: 'danger',
+      confirmText: 'Xác Nhận Xóa Hết',
+      cancelText: 'Hủy Bỏ',
+    });
+    if (!ok) return;
+
+    setClearingAll(true);
+    try {
+      const params = languageFilter !== 'ALL' ? { languageId: languageFilter } : {};
+      const res: any = await api.delete('/vocabulary/admin/clear-all', { params });
+      showToast('success', res?.data?.message || 'Đã xóa toàn bộ từ vựng hệ thống thành công!');
+      setSelectedIds([]);
+      setPage(1);
+      fetchVocabulary();
+    } catch (err: any) {
+      console.error('Clear all error:', err);
+      showToast('error', err?.response?.data?.message || 'Không thể xóa từ vựng hệ thống.');
+    } finally {
+      setClearingAll(false);
+    }
+  };
 
   // Bulk selection toggles
   const handleSelectAll = (checked: boolean) => {
@@ -359,14 +401,38 @@ export const AdminVocabularyPage: React.FC = () => {
         </div>
       )}
 
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-3xl shadow-xs">
+      {/* Quick Switch to Decks Vault Banner */}
+      <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400">
-            <BookOpen className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+            <Layers className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <p className="text-xs font-bold text-indigo-300">
+              Bạn đang tìm kiếm Kho Từ Vựng / Bộ Thẻ (Decks) theo ngôn ngữ?
+            </p>
+            <p className="text-[11px] text-slate-400">
+              Trang này quản lý từ điển đơn lẻ Master. Để xem danh sách kho từ theo từng ngôn ngữ, kiểm duyệt hoặc xóa vĩnh viễn kho từ mà không cần chờ chủ kho, vui lòng mở Kho Từ Vựng.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/admin/shared-vocabulary"
+          className="h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0 shadow-md cursor-pointer w-full sm:w-auto"
+        >
+          <span>Mở Kho Từ Vựng (Decks)</span>
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {/* Header Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-4 sm:p-6 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-3xl shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 dark:text-emerald-400 shrink-0">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
               Quản Trị Từ Vựng Hệ Thống (Vocabulary Master Bank)
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -375,16 +441,26 @@ export const AdminVocabularyPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:flex items-center gap-2 sm:gap-2.5 w-full md:w-auto">
+          <button
+            onClick={handleClearAll}
+            disabled={clearingAll || totalCount === 0}
+            title="Xóa toàn bộ từ vựng hoặc theo ngôn ngữ đang lọc"
+            className="h-10 px-3.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-40 cursor-pointer w-full sm:w-auto shrink-0 shadow-xs"
+          >
+            <Trash2 className="w-4 h-4 shrink-0" />
+            <span>{clearingAll ? 'Đang xóa...' : 'Xóa Toàn Bộ'}</span>
+          </button>
+
           <button
             onClick={() => {
               setImportText('');
               setImportValidation(null);
               setShowImportModal(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700/60 transition shadow-xs"
+            className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700/60 transition shadow-xs w-full sm:w-auto shrink-0 cursor-pointer"
           >
-            <Upload className="w-3.5 h-3.5 text-indigo-400" />
+            <Upload className="w-4 h-4 text-indigo-400 shrink-0" />
             <span>Nạp CSV / JSON</span>
           </button>
 
@@ -401,52 +477,65 @@ export const AdminVocabularyPage: React.FC = () => {
               });
               setShowEditModal(true);
             }}
-            className="btn-glass-primary !py-2 !px-4 text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+            className="h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/20 transition w-full sm:w-auto shrink-0 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 shrink-0" />
             <span>Thêm Từ Mới</span>
           </button>
         </div>
       </div>
 
-      {/* Search & Custom Filter Bar (0 native select) */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 glass-card p-4 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xs">
-        <div className="relative flex-1">
+      {/* Search & Custom Filter Bar (All elements uniform h-10) */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 glass-card p-3.5 sm:p-4 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/60 rounded-2xl shadow-xs">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm từ vựng, định nghĩa hoặc phiên âm IPA..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
+            className="h-10 w-full pl-10 pr-4 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <FilterSelect
-            value={languageFilter}
-            onChange={(val) => setLanguageFilter(String(val))}
-            options={languageOptions}
-          />
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:items-center gap-2">
+          <div className="col-span-1 lg:w-auto">
+            <FilterSelect
+              size="sm"
+              className="w-full"
+              value={languageFilter}
+              onChange={(val) => setLanguageFilter(String(val))}
+              options={languageOptions}
+            />
+          </div>
 
-          <FilterSelect
-            value={cefrFilter}
-            onChange={(val) => setCefrFilter(String(val))}
-            options={cefrOptions}
-          />
+          <div className="col-span-1 lg:w-auto">
+            <FilterSelect
+              size="sm"
+              className="w-full"
+              value={cefrFilter}
+              onChange={(val) => setCefrFilter(String(val))}
+              options={cefrOptions}
+            />
+          </div>
 
-          <FilterSelect
-            value={posFilter}
-            onChange={(val) => setPosFilter(String(val))}
-            options={posOptions}
-          />
+          <div className="col-span-1 lg:w-auto">
+            <FilterSelect
+              size="sm"
+              className="w-full"
+              value={posFilter}
+              onChange={(val) => setPosFilter(String(val))}
+              options={posOptions}
+            />
+          </div>
 
           <button
             onClick={fetchVocabulary}
             title="Tải lại dữ liệu"
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition"
+            className="col-span-1 lg:w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
             <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
+            <span className="lg:hidden text-xs font-semibold">Tải lại</span>
           </button>
         </div>
       </div>
@@ -465,21 +554,21 @@ export const AdminVocabularyPage: React.FC = () => {
             <button
               onClick={() => handleBulkAction('ASSIGN_CEFR', 'B2')}
               disabled={bulkActionLoading}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition"
+              className="h-10 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition cursor-pointer"
             >
               Gán CEFR: B2
             </button>
             <button
               onClick={() => handleBulkAction('DELETE')}
               disabled={bulkActionLoading}
-              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1"
+              className="h-10 px-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
               <span>Xóa Hàng Loạt</span>
             </button>
             <button
               onClick={() => setSelectedIds([])}
-              className="px-2.5 py-1.5 rounded-xl text-slate-400 hover:text-white text-xs"
+              className="h-10 px-3 rounded-xl text-slate-400 hover:text-white text-xs font-semibold transition cursor-pointer"
             >
               Bỏ chọn
             </button>
@@ -655,28 +744,55 @@ export const AdminVocabularyPage: React.FC = () => {
         )}
 
         {/* Pagination Bar */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between text-xs text-slate-400">
-          <span>
-            Hiển thị trang <strong className="text-white">{page}</strong> trên{' '}
-            <strong className="text-white">{totalPages}</strong> ({totalCount.toLocaleString()} từ)
-          </span>
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-2 text-center sm:text-left">
+            <span>
+              Trang <strong className="text-slate-900 dark:text-white font-bold">{page}</strong> /{' '}
+              <strong className="text-slate-900 dark:text-white font-bold">{totalPages}</strong>
+            </span>
+            <span className="text-slate-400 dark:text-slate-600">•</span>
+            <span>
+              Tổng số: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{totalCount.toLocaleString()}</strong> từ
+            </span>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 w-full sm:w-auto justify-center flex-wrap">
+            <button
+              onClick={() => setPage(1)}
+              disabled={page <= 1}
+              title="Trang đầu"
+              className="h-10 px-3 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 disabled:opacity-30 disabled:pointer-events-none transition font-semibold cursor-pointer text-xs"
+            >
+              « Đầu
+            </button>
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 transition flex items-center gap-1"
+              title="Trang trước"
+              className="h-10 px-3.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 disabled:opacity-30 disabled:pointer-events-none transition flex items-center gap-1 font-semibold cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 shrink-0" />
               <span>Trước</span>
             </button>
+            <div className="h-10 px-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs select-none">
+              {page} / {totalPages}
+            </div>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 transition flex items-center gap-1"
+              title="Trang kế tiếp"
+              className="h-10 px-3.5 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 disabled:opacity-30 disabled:pointer-events-none transition flex items-center gap-1 font-semibold cursor-pointer"
             >
               <span>Sau</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 shrink-0" />
+            </button>
+            <button
+              onClick={() => setPage(totalPages)}
+              disabled={page >= totalPages}
+              title="Trang cuối"
+              className="h-10 px-3 rounded-xl bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 disabled:opacity-30 disabled:pointer-events-none transition font-semibold cursor-pointer text-xs"
+            >
+              Cuối »
             </button>
           </div>
         </div>

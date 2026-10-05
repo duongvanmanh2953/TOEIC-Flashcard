@@ -110,8 +110,8 @@ export function FilterSelect<T extends string | number>({
 
   const sizeClasses = {
     xs: 'py-1 px-2 text-[11px] rounded-lg min-h-[28px]',
-    sm: 'py-2 px-3 text-xs rounded-xl min-h-[38px]',
-    md: 'py-2.5 px-3.5 text-xs sm:text-sm rounded-xl min-h-[42px]',
+    sm: 'h-10 px-3 text-xs rounded-xl',
+    md: 'h-11 px-3.5 text-xs sm:text-sm rounded-xl',
   }[size];
 
   const renderIcon = (
@@ -139,7 +139,7 @@ export function FilterSelect<T extends string | number>({
         onClick={() => setIsOpen(!isOpen)}
         className={`${
           isFullWidth ? 'w-full justify-between' : ''
-        } flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer ${sizeClasses}`}
+        } h-full flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer ${sizeClasses}`}
       >
         <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
           {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 shrink-0')}
