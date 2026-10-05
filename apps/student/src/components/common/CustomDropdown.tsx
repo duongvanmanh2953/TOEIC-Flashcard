@@ -296,7 +296,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative ${className?.includes('w-full') ? 'w-full block' : 'inline-block min-w-[220px]'} text-left ${className}`}
+      className={`relative ${className?.includes('w-full') ? 'w-full block' : 'inline-block min-w-[32px]'} text-left ${className}`}
     >
       {/* Trigger Button */}
       {trigger ? (
@@ -348,9 +348,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
               </button>
             )}
             <ChevronDown
-              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                isOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : ''
-              }`}
+              className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-600 dark:text-indigo-400' : ''
+                }`}
             />
           </div>
         </button>
@@ -430,21 +429,19 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                         onSelect?.(option.value);
                         handleClose();
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 transition-colors ${
-                        isSelected
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 transition-colors ${isSelected
                           ? 'bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-500/20'
                           : isFocused
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                      }`}
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                        }`}
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {renderIcon(
                           option.icon,
-                          `w-4 h-4 shrink-0 ${
-                            isSelected
-                              ? 'text-indigo-600 dark:text-indigo-400'
-                              : 'text-slate-400'
+                          `w-4 h-4 shrink-0 ${isSelected
+                            ? 'text-indigo-600 dark:text-indigo-400'
+                            : 'text-slate-400'
                           }`
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
@@ -463,11 +460,10 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                       <div className="flex items-center gap-2 shrink-0 pr-0.5">
                         {option.badge !== undefined && (
                           <span
-                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
-                              isSelected
+                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${isSelected
                                 ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300'
                                 : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                            }`}
+                              }`}
                           >
                             {option.badge}
                           </span>
