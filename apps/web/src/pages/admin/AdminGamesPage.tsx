@@ -926,11 +926,10 @@ export const AdminGamesPage: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2">
         <button
           onClick={() => setActiveTab('games')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
-            activeTab === 'games'
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${activeTab === 'games'
               ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Gamepad2 className="w-3.5 h-3.5" />
           <span>Danh Mục Game ({games.length})</span>
@@ -938,11 +937,10 @@ export const AdminGamesPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('rooms')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
-            activeTab === 'rooms'
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${activeTab === 'rooms'
               ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Users className="w-3.5 h-3.5" />
           <span>Phòng Thi Đấu ({rooms.length})</span>
@@ -950,11 +948,10 @@ export const AdminGamesPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('questions')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
-            activeTab === 'questions'
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${activeTab === 'questions'
               ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <BookOpen className="w-3.5 h-3.5" />
           <span>Ngân Hàng Câu Hỏi ({questions.length})</span>
@@ -962,11 +959,10 @@ export const AdminGamesPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('exams')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'exams'
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer ${activeTab === 'exams'
               ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
               : 'text-slate-400 hover:text-slate-200'
-          }`}
+            }`}
         >
           <FileText className="w-3.5 h-3.5" />
           <span>Quản Trị Bộ Đề Thi ({exams.length})</span>
@@ -981,27 +977,27 @@ export const AdminGamesPage: React.FC = () => {
           activeTab === 'games'
             ? 'Tìm tựa game, mô tả...'
             : activeTab === 'rooms'
-            ? 'Tìm mã phòng, tên phòng...'
-            : activeTab === 'exams'
-            ? 'Tìm bộ đề thi, loại đề (TOEIC, IELTS...)...'
-            : 'Tìm câu hỏi...'
+              ? 'Tìm mã phòng, tên phòng...'
+              : activeTab === 'exams'
+                ? 'Tìm bộ đề thi, loại đề (TOEIC, IELTS...)...'
+                : 'Tìm câu hỏi...'
         }
         filters={[
           ...(activeTab === 'games'
             ? [
-                {
-                  key: 'category',
-                  label: 'Thể Loại',
-                  value: categoryFilter,
-                  options: [
-                    { value: 'ALL', label: 'Tất cả thể loại' },
-                    { value: 'ARENA', label: 'Đấu Trường 4 Kỹ Năng' },
-                    { value: 'VOCAB', label: 'Từ Vựng (Vocab)' },
-                    { value: 'LISTENING', label: 'Nghe Phản Xạ' },
-                  ],
-                  onChange: (val: any) => setCategoryFilter(val),
-                },
-              ]
+              {
+                key: 'category',
+                label: 'Thể Loại',
+                value: categoryFilter,
+                options: [
+                  { value: 'ALL', label: 'Tất cả thể loại' },
+                  { value: 'ARENA', label: 'Đấu Trường 4 Kỹ Năng' },
+                  { value: 'VOCAB', label: 'Từ Vựng (Vocab)' },
+                  { value: 'LISTENING', label: 'Nghe Phản Xạ' },
+                ],
+                onChange: (val: any) => setCategoryFilter(val),
+              },
+            ]
             : []),
           {
             key: 'status',
@@ -1010,15 +1006,15 @@ export const AdminGamesPage: React.FC = () => {
             options:
               activeTab === 'exams'
                 ? [
-                    { value: 'ALL', label: 'Tất cả trạng thái' },
-                    { value: 'PUBLISHED', label: 'Công Khai' },
-                    { value: 'DRAFT', label: 'Bản Nháp' },
-                  ]
+                  { value: 'ALL', label: 'Tất cả trạng thái' },
+                  { value: 'PUBLISHED', label: 'Công Khai' },
+                  { value: 'DRAFT', label: 'Bản Nháp' },
+                ]
                 : [
-                    { value: 'ALL', label: 'Tất cả trạng thái' },
-                    { value: 'ACTIVE', label: 'Đang Hoạt Động' },
-                    { value: 'INACTIVE', label: 'Đã Vô Hiệu Hóa' },
-                  ],
+                  { value: 'ALL', label: 'Tất cả trạng thái' },
+                  { value: 'ACTIVE', label: 'Đang Hoạt Động' },
+                  { value: 'INACTIVE', label: 'Đã Vô Hiệu Hóa' },
+                ],
             onChange: (val: any) => setStatusFilter(val),
           },
         ]}
@@ -1110,19 +1106,17 @@ export const AdminGamesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setExamLanguageFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-                  examLanguageFilter === 'ALL'
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${examLanguageFilter === 'ALL'
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                     : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
-                }`}
+                  }`}
               >
-                <span>🌐 Tất cả ngôn ngữ</span>
+                <span>Tất cả ngôn ngữ</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                    examLanguageFilter === 'ALL'
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${examLanguageFilter === 'ALL'
                       ? 'bg-white/20 text-white'
                       : 'bg-slate-900 text-slate-400'
-                  }`}
+                    }`}
                 >
                   {exams.length}
                 </span>
@@ -1136,20 +1130,18 @@ export const AdminGamesPage: React.FC = () => {
                     key={lang.id}
                     type="button"
                     onClick={() => setExamLanguageFilter(lang.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-                      isSelected
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${isSelected
                         ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                         : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
-                    }`}
+                      }`}
                   >
                     <CountryFlag languageId={lang.id} size="xs" />
                     <span>{lang.name}</span>
                     <span
-                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                        isSelected
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${isSelected
                           ? 'bg-white/20 text-white'
                           : 'bg-slate-900 text-slate-400'
-                      }`}
+                        }`}
                     >
                       {count}
                     </span>

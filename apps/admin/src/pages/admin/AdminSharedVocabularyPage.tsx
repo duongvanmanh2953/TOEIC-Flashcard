@@ -281,7 +281,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
   const languageSpaceOptions: DropdownOption[] = React.useMemo(() => [
     {
       value: 'ALL',
-      label: `🌐 Tất cả không gian ngôn ngữ (${baseDecks.length})`,
+      label: `Tất cả không gian ngôn ngữ (${baseDecks.length})`,
       badge: baseDecks.length,
       icon: '🌐',
       description: `Hiển thị toàn bộ ${baseDecks.length} kho từ vựng của mọi ngôn ngữ`,
@@ -416,22 +416,20 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setStatusFilter('ALL')}
-            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
-              statusFilter === 'ALL'
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${statusFilter === 'ALL'
                 ? 'bg-slate-800 border-indigo-500 text-white font-bold'
                 : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             <span className="text-xs">Tất cả ({deckList.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setOfficialFilter(officialFilter === 'OFFICIAL' ? 'ALL' : 'OFFICIAL')}
-            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
-              officialFilter === 'OFFICIAL'
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${officialFilter === 'OFFICIAL'
                 ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold'
                 : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/15'
-            }`}
+              }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-xs font-bold">{officialCount} Kho Chính App</span>
@@ -439,11 +437,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setStatusFilter(statusFilter === 'PENDING' ? 'ALL' : 'PENDING')}
-            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
-              statusFilter === 'PENDING'
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${statusFilter === 'PENDING'
                 ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-bold'
                 : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/15'
-            }`}
+              }`}
           >
             <Clock className="w-3.5 h-3.5 text-indigo-400" />
             <span className="text-xs font-bold">{pendingCount} Chờ Duyệt</span>
@@ -451,11 +448,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setStatusFilter(statusFilter === 'APPROVED' ? 'ALL' : 'APPROVED')}
-            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
-              statusFilter === 'APPROVED'
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${statusFilter === 'APPROVED'
                 ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
                 : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15'
-            }`}
+              }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-xs font-bold">{approvedCount} Đã Duyệt</span>
@@ -463,11 +459,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setStatusFilter(statusFilter === 'REJECTED' ? 'ALL' : 'REJECTED')}
-            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${
-              statusFilter === 'REJECTED'
+            className={`px-3 py-1.5 rounded-2xl border flex items-center gap-2 transition cursor-pointer ${statusFilter === 'REJECTED'
                 ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-bold'
                 : 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/15'
-            }`}
+              }`}
           >
             <XCircle className="w-3.5 h-3.5 text-rose-400" />
             <span className="text-xs font-bold">{rejectedCount} Bị Từ Chối</span>
@@ -870,26 +865,26 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                                   },
                                 ]
                                 : []),
-                                {
-                                  id: 'delete-deck',
-                                  label: 'Xóa vĩnh viễn kho từ',
-                                  variant: 'danger' as const,
-                                  icon: <Trash2 className="w-3.5 h-3.5 text-rose-400" />,
-                                  divider: true,
-                                  disabled: actionLoading,
-                                  onClick: () => handleDeleteDeck(deck),
+                              {
+                                id: 'delete-deck',
+                                label: 'Xóa vĩnh viễn kho từ',
+                                variant: 'danger' as const,
+                                icon: <Trash2 className="w-3.5 h-3.5 text-rose-400" />,
+                                divider: true,
+                                disabled: actionLoading,
+                                onClick: () => handleDeleteDeck(deck),
+                              },
+                              {
+                                id: 'copy-id',
+                                label: 'Sao chép ID bộ từ',
+                                divider: true,
+                                icon: <Sparkles className="w-3.5 h-3.5 text-slate-400" />,
+                                onClick: () => {
+                                  navigator.clipboard.writeText(deck.id);
+                                  showToast('success', 'Đã sao chép ID bộ từ');
                                 },
-                                {
-                                  id: 'copy-id',
-                                  label: 'Sao chép ID bộ từ',
-                                  divider: true,
-                                  icon: <Sparkles className="w-3.5 h-3.5 text-slate-400" />,
-                                  onClick: () => {
-                                    navigator.clipboard.writeText(deck.id);
-                                    showToast('success', 'Đã sao chép ID bộ từ');
-                                  },
-                                },
-                              ]}
+                              },
+                            ]}
                           />
                         </div>
                       </td>
@@ -934,17 +929,15 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             <div className="p-6 space-y-6 overflow-y-auto flex-1 text-xs">
               {/* Official Status Configuration Card */}
               <div
-                className={`p-4 rounded-2xl flex items-center justify-between gap-3 border ${
-                  selectedDeck.isOfficial
+                className={`p-4 rounded-2xl flex items-center justify-between gap-3 border ${selectedDeck.isOfficial
                     ? 'bg-amber-950/30 border-amber-500/40 text-amber-200'
                     : 'bg-slate-950/50 border-slate-800 text-slate-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2.5 rounded-xl shrink-0 ${
-                      selectedDeck.isOfficial ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400'
-                    }`}
+                    className={`p-2.5 rounded-xl shrink-0 ${selectedDeck.isOfficial ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400'
+                      }`}
                   >
                     <Sparkles className="w-5 h-5" />
                   </div>
@@ -963,11 +956,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                   type="button"
                   onClick={() => handleToggleOfficial(selectedDeck)}
                   disabled={actionLoading}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                    selectedDeck.isOfficial
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${selectedDeck.isOfficial
                       ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
                       : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md'
-                  }`}
+                    }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{selectedDeck.isOfficial ? 'Hủy Kho chính' : 'Đặt làm Kho chính'}</span>
@@ -1336,11 +1328,10 @@ export const AdminSharedVocabularyPage: React.FC = () => {
                     key={lang.id}
                     type="button"
                     onClick={() => setSelectedNewLang(lang.id)}
-                    className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition cursor-pointer ${
-                      selectedNewLang === lang.id
+                    className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition cursor-pointer ${selectedNewLang === lang.id
                         ? 'bg-indigo-600/20 border-indigo-500 text-white font-bold'
                         : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                    }`}
+                      }`}
                   >
                     <CountryFlag languageId={lang.id} size="sm" />
                     <div className="min-w-0">
