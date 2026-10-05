@@ -1915,7 +1915,10 @@ export class AdminService {
   }
 
   async toggleOfficialSharedDeck(deckId: string, isOfficial?: boolean, actorId?: string) {
-    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    const deck = await this.prisma.communityDeck.findUnique({
+      where: { id: deckId },
+      include: { words: true },
+    });
     if (!deck) throw new NotFoundException('Shared deck not found');
 
     const nextOfficial = isOfficial !== undefined ? Boolean(isOfficial) : !deck.isOfficial;
@@ -1928,6 +1931,13 @@ export class AdminService {
         _count: { select: { clones: true, words: true } },
       },
     });
+
+    // Auto-publish to canonical Vocabulary dictionary when designated as official
+    if (nextOfficial && deck.words && deck.words.length > 0) {
+      await this.publishDeckToMaster(deckId, actorId).catch((err) => {
+        this.logger.warn(`Could not auto-publish official deck ${deckId} to master: ${err}`);
+      });
+    }
 
     if (actorId) {
       try {
@@ -1949,18 +1959,33 @@ export class AdminService {
   }
 
   async updateSharedDeckLanguage(deckId: string, languageId: string, actorId?: string) {
-    const deck = await this.prisma.communityDeck.findUnique({ where: { id: deckId } });
+    const deck = await this.prisma.communityDeck.findUnique({
+      where: { id: deckId },
+      include: { words: true },
+    });
     if (!deck) throw new NotFoundException('Shared deck not found');
 
+    const newLang = languageId || 'en';
     const updated = await this.prisma.communityDeck.update({
       where: { id: deckId },
-      data: { languageId: languageId || 'en', updatedAt: new Date() },
+      data: { languageId: newLang, updatedAt: new Date() },
       include: {
         author: { select: { id: true, displayName: true, email: true } },
         words: true,
         _count: { select: { clones: true, words: true } },
       },
     });
+
+    // Sync language to Vocabulary if words were published
+    if (deck.words && deck.words.length > 0) {
+      const wordList = deck.words.map((w) => w.word.trim());
+      await this.prisma.vocabulary.updateMany({
+        where: { word: { in: wordList } },
+        data: { languageId: newLang },
+      }).catch((err) => {
+        this.logger.warn(`Could not sync language update to vocabulary: ${err}`);
+      });
+    }
 
     if (actorId) {
       try {
@@ -2062,6 +2087,25 @@ export class AdminService {
     });
     if (!deck) throw new NotFoundException('Deck not found');
 
+    // Auto-detect language if words contain specific scripts (e.g. Hangul, Kana, Hanzi)
+    let targetLanguageId = deck.languageId || 'en';
+    if (deck.words && deck.words.length > 0) {
+      const sampleText = deck.words.slice(0, 20).map((w) => w.word).join('');
+      if (/[\uac00-\ud7af]/.test(sampleText)) {
+        targetLanguageId = 'ko';
+      } else if (/[\u3040-\u30ff]/.test(sampleText)) {
+        targetLanguageId = 'ja';
+      } else if (/[\u4e00-\u9fff]/.test(sampleText) && targetLanguageId !== 'ja') {
+        targetLanguageId = 'zh';
+      }
+      if (deck.languageId !== targetLanguageId) {
+        await this.prisma.communityDeck.update({
+          where: { id: deckId },
+          data: { languageId: targetLanguageId },
+        }).catch(() => {});
+      }
+    }
+
     let publishedCount = 0;
     for (const w of deck.words) {
       const normalized = w.word.trim().toLowerCase();
@@ -2073,16 +2117,25 @@ export class AdminService {
             normalizedWord: normalized,
             definition: w.definition || w.meaning,
             phonetic: w.phonetic,
-            partOfSpeech: w.partOfSpeech || 'n.',
+            pronunciation: w.phonetic,
+            partOfSpeech: w.partOfSpeech || 'noun',
             cefrLevel: deck.cefrLevel,
-            languageId: deck.languageId || 'en',
+            languageId: targetLanguageId,
             difficulty: 3.0,
+            meanings: w.meaning ? {
+              create: [{ meaning: w.meaning }]
+            } : undefined,
+            examples: w.example ? {
+              create: [{ sentence: w.example, translation: w.exampleTranslation || '' }]
+            } : undefined,
           },
           update: {
             definition: w.definition || w.meaning,
             phonetic: w.phonetic || undefined,
+            pronunciation: w.phonetic || undefined,
             partOfSpeech: w.partOfSpeech || undefined,
-            languageId: deck.languageId || 'en',
+            languageId: targetLanguageId,
+            normalizedWord: normalized,
           },
         });
         publishedCount++;
@@ -2098,15 +2151,16 @@ export class AdminService {
           action: 'PUBLISH_DECK_TO_MASTER',
           targetType: 'COMMUNITY_DECK',
           targetId: deckId,
-          metadata: { deckTitle: deck.title, publishedCount },
+          metadata: { deckTitle: deck.title, publishedCount, languageId: targetLanguageId },
         },
       });
     }
 
     return {
       success: true,
-      message: `Đã xuất bản thành công ${publishedCount} từ vựng vào từ điển hệ thống!`,
+      message: `Đã xuất bản thành công ${publishedCount} từ vựng vào từ điển hệ thống (${targetLanguageId})!`,
       publishedCount,
+      languageId: targetLanguageId,
     };
   }
 

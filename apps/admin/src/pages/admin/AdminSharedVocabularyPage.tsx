@@ -145,7 +145,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       showToast(
         'success',
         nextOfficial
-          ? `⭐ Đã thiết lập "${deck.title}" làm KHO CHÍNH của app!`
+          ? `⭐ Đã thiết lập "${deck.title}" làm KHO CHÍNH và đồng bộ vào từ điển hệ thống!`
           : `Đã hủy thiết lập kho chính cho "${deck.title}".`,
       );
       if (selectedDeck && selectedDeck.id === deck.id) {

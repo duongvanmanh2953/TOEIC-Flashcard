@@ -27,7 +27,7 @@ import { useLearningContext } from '../contexts/LearningContext';
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
   const { isGuest } = useAuth();
-  const { activeLanguage } = useLearningContext();
+  const { activeLanguage, switchLanguage, availableLanguages } = useLearningContext();
   const [words, setWords] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -76,10 +76,10 @@ export const VocabularyExplorerPage: React.FC = () => {
 
       const cacheKey = `vocab_${activeLanguage.id}_p${targetPage}_${search}_${selectedCefr}_${selectedTopic}`;
 
-      // Check cache only for initial page 1 to allow 0ms start
+      // Check cache only for initial page 1 to allow 0ms start, but only if cached items exist
       if (targetPage === 1 && !append) {
         const cached = await idbGetCache(cacheKey);
-        if (cached?.items) {
+        if (cached?.items && Array.isArray(cached.items) && cached.items.length > 0) {
           setWords(cached.items);
           setTotalPages(cached.totalPages || 1);
           setTotalCount(cached.totalCount || cached.items.length);
@@ -211,6 +211,12 @@ export const VocabularyExplorerPage: React.FC = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    const cacheKey = `vocab_${activeLanguage.id}_p1_${search}_${selectedCefr}_${selectedTopic}`;
+    await idbSetCache(cacheKey, null, 0).catch(() => {});
+    fetchVocabPage(1, false);
+  };
+
   const itemsToRender = scrollMode === 'infinite' ? visibleItems : words;
 
   return (
@@ -218,20 +224,47 @@ export const VocabularyExplorerPage: React.FC = () => {
       {/* Header with Flashcard Study CTA */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-snug">
-              Thư viện Từ vựng TOEIC & CEFR
+              Thư viện Từ vựng {activeLanguage?.name ? `(${activeLanguage.name})` : ''}
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-brand-500/[0.12] text-brand-600 dark:text-brand-300 border border-brand-500/20">
-              {totalCount.toLocaleString('vi-VN')} từ
-            </span>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-500/[0.12] text-brand-600 dark:text-brand-300 border border-brand-500/20">
+              <CountryFlag countryCode={activeLanguage.countryCode || activeLanguage.id} className="w-3.5 h-2.5 rounded-xs" />
+              <span>{activeLanguage.name}</span>
+              <span>•</span>
+              <span>{totalCount.toLocaleString('vi-VN')} từ</span>
+            </div>
+            {/* Quick language selector */}
+            <div className="relative inline-block text-xs">
+              <select
+                value={activeLanguage.id}
+                onChange={(e) => switchLanguage(e.target.value)}
+                className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 font-semibold text-slate-700 dark:text-slate-300 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-500"
+                aria-label="Chọn không gian ngôn ngữ"
+              >
+                {availableLanguages.map((lang) => (
+                  <option key={lang.id} value={lang.id}>
+                    {lang.flag} {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <p className="text-xs text-slate-500">
             Kho dữ liệu chuẩn hóa phân tầng từ A2 đến C1, đồng bộ dữ liệu thật thời gian thực.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+          {/* Refresh Button */}
+          <button
+            onClick={handleRefresh}
+            title="Làm mới và xóa bộ nhớ đệm"
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
+          >
+            <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
           {/* Scroll Mode Switcher */}
           <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700 text-xs">
             <button
@@ -350,9 +383,36 @@ export const VocabularyExplorerPage: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
         </div>
       ) : words.length === 0 ? (
-        <div className="text-center py-20 text-slate-400 space-y-2">
-          <Layers className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700" />
-          <p className="text-base font-medium">Không tìm thấy từ vựng nào khớp với bộ lọc.</p>
+        <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-4 max-w-lg mx-auto shadow-xs">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+            <Layers className="w-7 h-7" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              Không có từ vựng nào trong không gian {activeLanguage.name} {activeLanguage.flag}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+              Bạn đang xem từ điển thuộc không gian ngôn ngữ <strong>{activeLanguage.name}</strong>.
+              Nếu bạn vừa thêm kho từ tiếng Hàn hoặc ngôn ngữ khác, hãy chọn đúng không gian ngôn ngữ để xem đầy đủ từ vựng.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <button
+              onClick={handleRefresh}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Tải lại dữ liệu</span>
+            </button>
+            {activeLanguage.id !== 'ko' && (
+              <button
+                onClick={() => switchLanguage('ko')}
+                className="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🇰🇷 Chuyển sang Tiếng Hàn (470 từ)</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

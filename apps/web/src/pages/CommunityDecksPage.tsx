@@ -830,7 +830,17 @@ export const CommunityDecksPage: React.FC = () => {
     }
 
     try {
-      const targetLangId = createDeckLang || activeLanguage.id;
+      let targetLangId = createDeckLang || activeLanguage.id;
+      // Auto-detect language if title or words have non-latin script and language is default English
+      const sampleText = (title + ' ' + finalWords.slice(0, 10).map((w: any) => w.word).join(' ')).trim();
+      if (/[\uac00-\ud7af]/.test(sampleText) && targetLangId === 'en') {
+        targetLangId = 'ko';
+      } else if (/[\u3040-\u30ff]/.test(sampleText) && targetLangId === 'en') {
+        targetLangId = 'ja';
+      } else if (/[\u4e00-\u9fff]/.test(sampleText) && targetLangId === 'en') {
+        targetLangId = 'zh';
+      }
+
       const res: any = await api.post('/community/decks', {
         title: title.trim(),
         description: description.trim(),
