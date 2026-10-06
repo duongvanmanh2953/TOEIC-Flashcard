@@ -329,7 +329,7 @@ export class AuthService {
     const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
     const accessExpiresInStr = isAdmin ? '1d' : '15d';
     const accessExpiresInSec = isAdmin ? 86400 : 15 * 86400; // 15 days in seconds
-    const refreshExpiresInStr = isAdmin ? '2d' : '15d'; // Keep 15-day policy
+    const refreshExpiresInStr = isAdmin ? '7d' : '15d'; // Keep 7-day policy for admin, 15d for users
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {

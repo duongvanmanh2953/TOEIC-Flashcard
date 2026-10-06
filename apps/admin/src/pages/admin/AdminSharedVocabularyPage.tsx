@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   BookOpen,
   Search,
@@ -128,12 +129,30 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     }
   }, [statusFilter, spaceFilter, officialFilter, search]);
 
+  const [searchParams] = useSearchParams();
+  const targetDeckId = searchParams.get('id') || searchParams.get('deckId');
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchDecks();
     }, 300);
     return () => clearTimeout(timer);
   }, [fetchDecks]);
+
+  useEffect(() => {
+    if (!targetDeckId) return;
+    const found = decks.find((d) => d.id === targetDeckId);
+    if (found) {
+      setSelectedDeck(found);
+    } else {
+      api.get(`/admin/shared-vocabulary/${targetDeckId}`).then((res: any) => {
+        const item = res?.data?.data || res?.data || res;
+        if (item?.id) {
+          setSelectedDeck(item);
+        }
+      }).catch(() => {});
+    }
+  }, [targetDeckId, decks]);
 
   const handleToggleOfficial = async (deck: SharedDeck) => {
     setActionLoading(true);

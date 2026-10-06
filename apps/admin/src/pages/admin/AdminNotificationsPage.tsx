@@ -210,23 +210,50 @@ export const AdminNotificationsPage: React.FC = () => {
 
   const handleOpenDestination = (alert: OperationalAlert) => {
     handleMarkRead(alert.id);
-    if (alert.route) {
-      navigate(alert.route);
+    const tType = (alert.targetType || alert.type || '').toUpperCase();
+    const tId = alert.targetId || '';
+
+    // If alert has a specific admin route (not circular /notifications)
+    if (
+      alert.route &&
+      alert.route !== '/notifications' &&
+      alert.route !== '/admin/notifications' &&
+      !alert.route.startsWith('/learn') &&
+      !alert.route.startsWith('/review')
+    ) {
+      const targetPath = alert.route.startsWith('/admin')
+        ? alert.route
+        : `/admin${alert.route.startsWith('/') ? '' : '/'}${alert.route}`;
+      navigate(targetPath);
       return;
     }
-    const tType = alert.targetType?.toUpperCase() || '';
-    if (tType.includes('CONV') || tType.includes('SUPPORT')) {
-      navigate('/admin/conversations');
-    } else if (tType.includes('FEEDBACK') || tType.includes('BUG')) {
-      navigate('/admin/feedback');
-    } else if (tType.includes('PAY') || tType.includes('BILL')) {
+
+    // Precise entity direct routing with query ID params
+    if (tType.includes('CONV') || tType.includes('SUPPORT') || tType.includes('TICKET')) {
+      navigate(tId ? `/admin/conversations?id=${tId}` : '/admin/conversations');
+    } else if (tType.includes('FEEDBACK') || tType.includes('BUG') || tType.includes('FEATURE')) {
+      navigate(tId ? `/admin/feedback?id=${tId}` : '/admin/feedback');
+    } else if (tType.includes('USER') || tType.includes('ACCOUNT')) {
+      navigate(tId ? `/admin/users?id=${tId}` : '/admin/users');
+    } else if (tType.includes('VOCAB') || tType.includes('DECK') || tType.includes('BANK')) {
+      navigate(tId ? `/admin/shared-vocabulary?id=${tId}` : '/admin/shared-vocabulary');
+    } else if (
+      tType.includes('PAY') ||
+      tType.includes('BILL') ||
+      tType.includes('ORDER') ||
+      tType.includes('SUBSCRIPTION')
+    ) {
       navigate('/admin/finance');
+    } else if (tType.includes('COMMUNITY') || tType.includes('MODERAT') || tType.includes('POST')) {
+      navigate('/admin/community-moderation');
     } else if (tType.includes('AI')) {
       navigate('/admin/ai');
-    } else if (tType.includes('USER')) {
-      navigate('/admin/users');
+    } else if (tType.includes('SECURITY') || tType.includes('RISK')) {
+      navigate('/admin/security');
+    } else if (tType.includes('SYSTEM')) {
+      navigate('/admin/system');
     } else {
-      navigate('/admin/dashboard');
+      navigate('/admin/overview');
     }
   };
 

@@ -73,9 +73,7 @@ export const AppShell: React.FC = () => {
   const isFullHeightPage =
     location.pathname.startsWith('/coach') ||
     location.pathname.startsWith('/ai-tutor') ||
-    location.pathname.startsWith('/notes') ||
-    location.pathname.startsWith('/community') ||
-    location.pathname.startsWith('/admin/community');
+    location.pathname.startsWith('/notes');
   const isFullHeightChat = isFullHeightPage;
 
   // Global Quick Note Modal State
@@ -981,7 +979,7 @@ export const AppShell: React.FC = () => {
           className={`flex-1 w-full min-h-0 ${
             isFullHeightPage
               ? 'flex flex-col overflow-hidden p-0 max-w-none h-full'
-              : 'max-w-[1680px] mx-auto p-3 sm:p-5 lg:p-6'
+              : 'max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8'
           }`}
         >
           <Outlet />

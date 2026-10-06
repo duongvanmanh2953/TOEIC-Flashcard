@@ -210,7 +210,26 @@ export const AdminSupportPage: React.FC = () => {
 
       setConversations(items);
 
-      if (!selectedConvIdRef.current && items.length > 0) {
+      const targetId = searchParams.get('id') || searchParams.get('conversationId');
+      if (targetId) {
+        const found = items.find((c: any) => c.id === targetId || c.ticketId === targetId);
+        if (found) {
+          setSelectedConv(found);
+          selectedConvIdRef.current = found.id;
+          fetchDetail(found.id);
+        } else {
+          // If not in current page, load directly from backend
+          api.get(`/support/admin/conversations/${targetId}`).then((res: any) => {
+            const detail = res?.data?.data || res?.data || res;
+            if (detail?.id) {
+              setConversations((prev) => [detail, ...prev.filter((c: any) => c.id !== detail.id)]);
+              setSelectedConv(detail);
+              selectedConvIdRef.current = detail.id;
+              fetchDetail(detail.id);
+            }
+          }).catch(() => {});
+        }
+      } else if (!selectedConvIdRef.current && items.length > 0) {
         setSelectedConv(items[0]);
         selectedConvIdRef.current = items[0].id;
         fetchDetail(items[0].id);

@@ -19,6 +19,7 @@ export interface LocalDeck {
   title: string;
   description?: string;
   category?: string;
+  certificateId?: string;
   cefrLevel?: string;
   words?: any[];
   wordCount?: number;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useTransition } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   MessageSquare,
   ThumbsUp,
@@ -187,7 +188,43 @@ export const AdminFeedbackPage: React.FC = () => {
       socket.off('admin_event:new', handleAdminEvent);
       socket.off('admin_badge_update', fetchFeedback);
     };
-  }, [fetchFeedback]);
+  const [searchParams] = useSearchParams();
+  const targetFeedbackId = searchParams.get('id') || searchParams.get('feedbackId');
+
+  // Auto-open feedback modal if targeted from notification direct link
+  useEffect(() => {
+    if (!targetFeedbackId) return;
+
+    // Check if in current list
+    const found = feedbacks.find((f) => f.id === targetFeedbackId);
+    if (found) {
+      setSelectedItem(found);
+      setReplyText(found.adminReply || '');
+      setInternalNotesText(found.adminNotes || '');
+      return;
+    }
+
+    // Otherwise fetch directly
+    const loadTarget = async () => {
+      try {
+        let res: any;
+        try {
+          res = await api.get(`/admin/feedback/${targetFeedbackId}`);
+        } catch {
+          res = await api.get(`/feedback/admin/${targetFeedbackId}`);
+        }
+        const item = res?.data?.data || res?.data || res;
+        if (item?.id) {
+          setSelectedItem(item);
+          setReplyText(item.adminReply || '');
+          setInternalNotesText(item.adminNotes || '');
+        }
+      } catch (e) {
+        console.warn('Could not load target feedback from URL', e);
+      }
+    };
+    loadTarget();
+  }, [targetFeedbackId, feedbacks]);
 
   // Status update mutation
   const handleUpdateStatus = async (id: string, newStatus: string) => {

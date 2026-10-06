@@ -22,7 +22,7 @@ import { ResetOptionsDto } from './dto/change-password.dto';
 
 export const DEVICE_LIMITS = {
   USER: 3,
-  ADMIN: 1,
+  ADMIN: 2,
 } as const;
 
 export interface DeviceMetadata {
@@ -105,17 +105,6 @@ export class DeviceSecurityService {
       }
 
       const isAdmin = role === Role.ADMIN || role === Role.SUPER_ADMIN;
-      if (isAdmin) {
-        // Enforce 1 device strictly for admin: revoke all other devices & sessions
-        await tx.userDevice.updateMany({
-          where: { userId, deviceId: { not: deviceId } },
-          data: { status: DeviceStatus.REVOKED, isAllowed: false },
-        });
-        await tx.userSession.updateMany({
-          where: { userId, deviceId: { not: deviceId } },
-          data: { status: SessionStatus.REVOKED },
-        });
-      }
 
       // 3. Count currently allowed & active devices
       const activeDevices = await tx.userDevice.findMany({
@@ -128,6 +117,24 @@ export class DeviceSecurityService {
 
       const activeCount = activeDevices.length;
       const isAlreadyAllowed = activeDevices.some((d) => d.deviceId === deviceId);
+
+      if (isAdmin && activeCount >= limit && !isAlreadyAllowed) {
+        // Enforce limit (2 devices): gracefully revoke only the OLDEST active device
+        const sorted = [...activeDevices].sort(
+          (a, b) => new Date(a.lastSeenAt || a.createdAt).getTime() - new Date(b.lastSeenAt || b.createdAt).getTime(),
+        );
+        const oldest = sorted[0];
+        if (oldest) {
+          await tx.userDevice.update({
+            where: { id: oldest.id },
+            data: { status: DeviceStatus.REVOKED, isAllowed: false },
+          });
+          await tx.userSession.updateMany({
+            where: { userId, deviceId: oldest.deviceId },
+            data: { status: SessionStatus.REVOKED },
+          });
+        }
+      }
 
       // Case A: Device already has an approved slot
       if (isAlreadyAllowed) {
