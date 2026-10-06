@@ -169,10 +169,7 @@ api.interceptors.response.use(
       const errMsg = error.response?.data?.message || '';
       if (
         typeof errMsg === 'string' &&
-        (errMsg.includes('đổi mật khẩu') ||
-          errMsg.includes('thu hồi') ||
-          errMsg.includes('đăng xuất') ||
-          errMsg.includes('hết hiệu lực'))
+        (errMsg.includes('đổi mật khẩu') || errMsg.includes('đăng xuất'))
       ) {
         localStorage.removeItem('vocabflow_access_token');
         localStorage.removeItem('vocabflow_refresh_token');

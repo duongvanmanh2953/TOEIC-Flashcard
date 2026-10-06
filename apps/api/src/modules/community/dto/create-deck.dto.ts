@@ -81,6 +81,11 @@ export class CreateDeckDto {
   @IsString()
   password?: string;
 
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  @IsString()
+  languageId?: string;
+
   @ApiProperty({ type: [CreateWordItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
@@ -142,6 +147,11 @@ export class UpdateDeckDto {
   @IsOptional()
   @IsEnum(ModerationStatus)
   status?: ModerationStatus;
+
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  @IsString()
+  languageId?: string;
 }
 
 export class UpdateWordItemDto {

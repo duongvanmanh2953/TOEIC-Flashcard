@@ -339,7 +339,7 @@ export const CommunityPostDetailPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="w-full max-w-7xl mx-auto py-16 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
       </div>
     );
@@ -347,7 +347,7 @@ export const CommunityPostDetailPage: React.FC = () => {
 
   if (isError || !post) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-50 dark:bg-slate-950 space-y-3">
+      <div className="w-full max-w-7xl mx-auto py-16 flex flex-col items-center justify-center p-6 text-center space-y-3">
         <AlertCircle className="w-12 h-12 text-rose-500" />
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Bài viết không tồn tại hoặc đã bị gỡ</h2>
         <button
@@ -361,10 +361,9 @@ export const CommunityPostDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-16">
       {/* Top Header / Breadcrumb */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-20 px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
           <button
             onClick={() => navigate('/community-knowledge')}
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
@@ -398,9 +397,7 @@ export const CommunityPostDetailPage: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <div className="space-y-6">
         {/* Main Post Article Card */}
         <article className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800/90 shadow-sm space-y-6">
           {/* Author & Topic */}

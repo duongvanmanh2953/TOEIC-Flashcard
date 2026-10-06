@@ -32,6 +32,7 @@ import api, { extractApiList } from '../../lib/api';
 import { useTranslation } from '../../i18n';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { getSocket } from '../../lib/socket';
+import { navigateToApp } from '../../lib/sso';
 
 export type AlertSeverity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AlertCategory =
@@ -221,9 +222,18 @@ export const AdminNotificationsPage: React.FC = () => {
       !alert.route.startsWith('/learn') &&
       !alert.route.startsWith('/review')
     ) {
-      const targetPath = alert.route.startsWith('/admin')
-        ? alert.route
-        : `/admin${alert.route.startsWith('/') ? '' : '/'}${alert.route}`;
+      let r = alert.route;
+      if (r.includes('/vocabulary?tab=moderation') || r.includes('tab=moderation')) {
+        navigate('/admin/shared-vocabulary?status=PENDING');
+        return;
+      }
+      if (r.startsWith('/word-bank') || r.startsWith('/community')) {
+        navigateToApp('student', r);
+        return;
+      }
+      const targetPath = r.startsWith('/admin')
+        ? r
+        : `/admin${r.startsWith('/') ? '' : '/'}${r}`;
       navigate(targetPath);
       return;
     }

@@ -199,7 +199,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
     } catch {
-      // Fallback to guest session quietly without any forced redirect
+      // Fallback to check refresh token before guest session
+    }
+
+    // Attempt token recovery via refresh token (from cross-app SSO handoff or cookie)
+    const refreshToken = localStorage.getItem('vocabflow_refresh_token');
+    if (refreshToken) {
+      try {
+        const refRes: any = await api.post('/auth/refresh', { refreshToken });
+        const newAccess = refRes?.data?.accessToken || refRes?.accessToken;
+        const newRefresh = refRes?.data?.refreshToken || refRes?.refreshToken;
+        if (newAccess) {
+          localStorage.setItem('vocabflow_access_token', newAccess);
+          if (newRefresh) {
+            localStorage.setItem('vocabflow_refresh_token', newRefresh);
+          }
+          const retryRes: any = await api.get('/auth/me', { _skipAuthRedirect: true } as any);
+          if (retryRes?.success && retryRes.data) {
+            setUser(normalizeUser({ ...retryRes.data, isAnonymous: false }));
+            setAuthState('AUTHENTICATED');
+            return;
+          }
+        }
+      } catch {
+        // Refresh failed, continue to guest
+      }
     }
 
     // Initialize Anonymous Guest Session if not authenticated

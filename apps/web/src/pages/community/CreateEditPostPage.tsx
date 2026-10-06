@@ -181,17 +181,16 @@ export const CreateEditPostPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-full flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="w-full max-w-7xl mx-auto py-16 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-y-auto pb-16">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-16">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-20 px-4 py-3 shrink-0">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
@@ -224,9 +223,7 @@ export const CreateEditPostPage: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-5 w-full">
+      <div className="space-y-5">
         {/* Document Parse Notice */}
         {docImportSuccess && (
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 text-emerald-700 dark:text-emerald-300 text-xs">

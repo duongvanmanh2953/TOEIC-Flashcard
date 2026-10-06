@@ -1593,6 +1593,7 @@ export const MyWordBankPage: React.FC = () => {
           description: deck.description,
           category: deck.category,
           cefrLevel: mapToCefrEquivalent(deck.cefrLevel),
+          languageId: deck.languageId || activeLanguage?.id || 'en',
           password: deck.password,
         });
       } else {
@@ -1602,6 +1603,7 @@ export const MyWordBankPage: React.FC = () => {
           description: deck.description,
           category: deck.category,
           cefrLevel: mapToCefrEquivalent(deck.cefrLevel),
+          languageId: deck.languageId || activeLanguage?.id || 'en',
           isPublic: true,
           password: deck.password,
           words: payloadWords,
@@ -1655,6 +1657,7 @@ export const MyWordBankPage: React.FC = () => {
         description: shareDescription.trim(),
         category: shareCategory,
         cefrLevel: mapToCefrEquivalent(shareModalDeck.cefrLevel),
+        languageId: shareModalDeck.languageId || activeLanguage?.id || 'en',
         isPublic: true,
         password: shareEnablePassword ? sharePassword.trim() : undefined,
         words: deckWords.map((w) => ({
@@ -2515,49 +2518,6 @@ export const MyWordBankPage: React.FC = () => {
                 </button>
               )}
 
-              {/* Nhập từ dropdown */}
-              {!selectedDeck.isReadOnly && (
-                <CustomDropdown
-                  trigger={
-                    <button
-                      type="button"
-                      className="btn-glass-secondary btn-glass-sm inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
-                      title="Nhập từ vựng vào kho này"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span>Nhập từ</span>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  }
-                  options={[
-                    {
-                      value: 'import_file',
-                      label: 'Nhập file Excel/CSV (.xlsx, .csv)',
-                      icon: <FileSpreadsheet className="w-4 h-4 text-emerald-600" />,
-                    },
-                    {
-                      value: 'download_template',
-                      label: 'Tải file mẫu Excel chuẩn',
-                      icon: <Download className="w-4 h-4 text-indigo-600" />,
-                    },
-                  ]}
-                  value=""
-                  onChange={(val) => {
-                    if (val === 'download_template') {
-                      downloadVocabularyTemplate();
-                    } else if (val === 'import_file') {
-                      setSelectedFile(null);
-                      setParsedWords([]);
-                      setParsingError(null);
-                      setImportDeckMode('existing');
-                      setImportTargetDeckName(selectedDeck.title);
-                      setShowImportModal(true);
-                    }
-                  }}
-                  size="sm"
-                />
-              )}
-
               {/* Hướng dẫn Tour button */}
               <button
                 type="button"
@@ -2706,7 +2666,7 @@ export const MyWordBankPage: React.FC = () => {
                 className="btn-glass-primary btn-glass-sm inline-flex items-center gap-1.5 font-bold shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span>Tạo kho mới</span>
+                <span>Thêm kho từ</span>
               </button>
 
               <button
@@ -2718,47 +2678,6 @@ export const MyWordBankPage: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 <span>Kho từ của App</span>
               </button>
-
-              {/* Nhập từ dropdown */}
-              <CustomDropdown
-                trigger={
-                  <button
-                    type="button"
-                    className="btn-glass-secondary btn-glass-sm inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
-                    title="Nhập danh sách từ vựng từ Excel/CSV"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Nhập file</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                }
-                options={[
-                  {
-                    value: 'import_file',
-                    label: 'Nhập từ file Excel/CSV (.xlsx, .csv)',
-                    icon: <FileSpreadsheet className="w-4 h-4 text-emerald-600" />,
-                  },
-                  {
-                    value: 'download_template',
-                    label: 'Tải file mẫu Excel chuẩn',
-                    icon: <Download className="w-4 h-4 text-indigo-600" />,
-                  },
-                ]}
-                value=""
-                onChange={(val) => {
-                  if (val === 'download_template') {
-                    downloadVocabularyTemplate();
-                  } else if (val === 'import_file') {
-                    setSelectedFile(null);
-                    setParsedWords([]);
-                    setParsingError(null);
-                    setImportDeckMode('new');
-                    setImportTargetDeckName('');
-                    setShowImportModal(true);
-                  }
-                }}
-                size="sm"
-              />
 
               {/* Hướng dẫn Tour button */}
               <button
@@ -2833,46 +2752,6 @@ export const MyWordBankPage: React.FC = () => {
                   <span>Thêm từ mới</span>
                 </button>
               )}
-
-              <CustomDropdown
-                trigger={
-                  <button
-                    type="button"
-                    className="btn-glass-secondary btn-glass-sm inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
-                    title="Nhập danh sách từ vựng"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Nhập file</span>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                }
-                options={[
-                  {
-                    value: 'import_file',
-                    label: 'Nhập từ file Excel/CSV (.xlsx, .csv)',
-                    icon: <FileSpreadsheet className="w-4 h-4 text-emerald-600" />,
-                  },
-                  {
-                    value: 'download_template',
-                    label: 'Tải file mẫu Excel chuẩn',
-                    icon: <Download className="w-4 h-4 text-indigo-600" />,
-                  },
-                ]}
-                value=""
-                onChange={(val) => {
-                  if (val === 'download_template') {
-                    downloadVocabularyTemplate();
-                  } else if (val === 'import_file') {
-                    setSelectedFile(null);
-                    setParsedWords([]);
-                    setParsingError(null);
-                    setImportDeckMode('existing');
-                    setImportTargetDeckName(decks[0]?.title || 'General');
-                    setShowImportModal(true);
-                  }
-                }}
-                size="sm"
-              />
 
               {/* Hướng dẫn Tour button */}
               <button
@@ -3879,20 +3758,7 @@ export const MyWordBankPage: React.FC = () => {
                     <Plus className="w-3.5 h-3.5" />
                     <span>Thêm từ mới</span>
                   </button>
-                  <button
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setParsedWords([]);
-                      setParsingError(null);
-                      setImportDeckMode('existing');
-                      setImportTargetDeckName(selectedDeck.title);
-                      setShowImportModal(true);
-                    }}
-                    className="btn-glass-secondary btn-glass-sm inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-200"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Nhập file Excel/CSV</span>
-                  </button>
+                  
                 </div>
               )}
             </div>

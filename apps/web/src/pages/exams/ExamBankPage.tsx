@@ -88,6 +88,7 @@ export const ExamBankPage: React.FC = () => {
 
   // Modern Upload Dropzone Modal state
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [createExamMode, setCreateExamMode] = useState<'upload' | 'manual'>('upload');
   const [dragOver, setDragOver] = useState(false);
   const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null);
 
@@ -541,7 +542,7 @@ export const ExamBankPage: React.FC = () => {
 
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 animate-fade-in">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-16">
       {/* Top Banner / Hero Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 p-6 sm:p-8 text-white shadow-xl border border-indigo-500/20">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -566,7 +567,8 @@ export const ExamBankPage: React.FC = () => {
                   promptLogin('Đăng nhập để tạo bộ đề mới');
                   return;
                 }
-                navigate('/exams/editor');
+                setCreateExamMode('upload');
+                setUploadModalOpen(true);
               }}
               className="h-10 px-4 rounded-xl btn-solid-primary text-xs flex items-center gap-2 font-bold cursor-pointer"
             >
@@ -780,18 +782,14 @@ export const ExamBankPage: React.FC = () => {
                       {activeTab === 'my-exams' && (
                         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                           <button
-                            onClick={() => navigate('/exams/editor')}
-                            className="btn-glass-primary text-xs !py-2 !px-4 inline-flex items-center gap-1.5"
+                            onClick={() => {
+                              setCreateExamMode('upload');
+                              setUploadModalOpen(true);
+                            }}
+                            className="btn-glass-primary text-xs !py-2 !px-4 inline-flex items-center gap-1.5 font-bold shadow-sm"
                           >
                             <Plus className="w-3.5 h-3.5" />
-                            <span>Tạo bộ đề mới</span>
-                          </button>
-                          <button
-                            onClick={() => setUploadModalOpen(true)}
-                            className="btn-glass-secondary text-xs !py-2 !px-4 inline-flex items-center gap-1.5"
-                          >
-                            <Upload className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>Tải tệp lên</span>
+                            <span>Tạo & Nhập bộ đề</span>
                           </button>
                         </div>
                       )}
@@ -1723,7 +1721,34 @@ export const ExamBankPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Drag and Drop Zone */}
+            {createExamMode === 'manual' ? (
+              <div className="p-6 rounded-2xl bg-indigo-50/50 dark:bg-slate-800/50 border border-indigo-200/60 dark:border-slate-700/60 text-center space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                    Soạn thảo đề thi trực quan
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+                    Thiết lập thời gian làm bài, cấu hình mật khẩu và nhập từng câu hỏi theo chuẩn quốc tế.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadModalOpen(false);
+                    navigate('/exams/editor');
+                  }}
+                  className="btn-glass-primary text-xs !py-2.5 !px-5 inline-flex items-center gap-2 font-bold"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Vào trình soạn thảo đề thi</span>
+                </button>
+              </div>
+            ) : (
+              <>
+              {/* Drag and Drop Zone */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -1870,7 +1895,9 @@ export const ExamBankPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+            </>
+          )}
+        </div>
         </ModalPortal>
       )}
 

@@ -211,7 +211,12 @@ export const AdminNotificationsPage: React.FC = () => {
   const handleOpenDestination = (alert: OperationalAlert) => {
     handleMarkRead(alert.id);
     if (alert.route) {
-      navigate(alert.route);
+      let r = alert.route;
+      if (r.includes('/vocabulary?tab=moderation') || r.includes('tab=moderation')) {
+        navigate('/admin/shared-vocabulary?status=PENDING');
+        return;
+      }
+      navigate(r);
       return;
     }
     const tType = alert.targetType?.toUpperCase() || '';

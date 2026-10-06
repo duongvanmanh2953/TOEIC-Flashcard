@@ -268,10 +268,9 @@ export const CommunityKnowledgeFeedPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-16">
       {/* Top Banner / Hero Header */}
-      <section className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 py-6 px-4">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/30">
@@ -333,10 +332,8 @@ export const CommunityKnowledgeFeedPage: React.FC = () => {
             </button>
           </div>
         </div>
-      </section>
-
       {/* Main Container: Topic Filter Bar & Feed */}
-      <main className="max-w-5xl w-full mx-auto px-4 py-6 flex-1 flex flex-col space-y-5">
+      <div className="space-y-5">
         {/* 1. Horizontal Topic Tabs Carousel */}
         <div className="tab-pill-container self-start overflow-x-auto pb-1 scrollbar-none flex-nowrap max-w-full">
           <button
@@ -579,7 +576,7 @@ export const CommunityKnowledgeFeedPage: React.FC = () => {
             )}
           />
         </div>
-      </main>
+      </div>
     </div>
   );
 };

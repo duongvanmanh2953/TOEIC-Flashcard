@@ -62,7 +62,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       }
     }
 
-    // For Admin: Admin only allowed 1 active device/token at any given time
+    // For Admin: allow up to 2 active devices
     if (user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN) {
       if (deviceId) {
         const activeAdminDevices = await this.prisma.userDevice.findMany({
@@ -71,9 +71,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           select: { deviceId: true },
         });
 
-        // If there's an active device and it doesn't match this request's device, reject
-        if (activeAdminDevices.length > 0 && activeAdminDevices[0].deviceId !== deviceId) {
-          throw new UnauthorizedException('Tài khoản Quản trị viên chỉ được phép đăng nhập trên 1 thiết bị duy nhất. Phiên làm việc trên máy này đã hết hiệu lực.');
+        // Allow if deviceId is already among active devices, or if fewer than 2 active devices exist
+        const isKnownDevice = activeAdminDevices.some((d) => d.deviceId === deviceId);
+        if (!isKnownDevice && activeAdminDevices.length >= 2) {
+          throw new UnauthorizedException('Tài khoản Quản trị viên chỉ được phép đăng nhập trên tối đa 2 thiết bị. Vui lòng quản lý thiết bị trong Cài đặt bảo mật.');
         }
       }
     }

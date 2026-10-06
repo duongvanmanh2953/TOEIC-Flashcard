@@ -187,7 +187,7 @@ export class AdminService {
             type: 'MODERATION',
             count: pendingDecksCount,
             title: `${pendingDecksCount} bộ thẻ cộng đồng chờ kiểm duyệt`,
-            route: '/admin/vocabulary?tab=moderation',
+            route: '/admin/shared-vocabulary?status=PENDING',
             severity: 'INFO',
           }]
         : []),
@@ -1951,6 +1951,10 @@ export class AdminService {
                     reason ? 'Góp ý từ quản trị viên: ' + reason : 'Vui lòng kiểm tra lại chất lượng ví dụ câu và định nghĩa.'
                   }`
                 : `Bộ từ vựng "${deck.title}" đã được quản trị viên thu hồi phê duyệt để tiếp tục xem xét.`,
+            data: {
+              route: `/word-bank/${deck.id}`,
+              deckId: deck.id,
+            },
           },
         });
       } catch (notifErr) {

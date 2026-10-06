@@ -187,7 +187,7 @@ export class AdminService {
             type: 'MODERATION',
             count: pendingDecksCount,
             title: `${pendingDecksCount} bộ thẻ cộng đồng chờ kiểm duyệt`,
-            route: '/admin/vocabulary?tab=moderation',
+            route: '/admin/shared-vocabulary?status=PENDING',
             severity: 'INFO',
           }]
         : []),

@@ -355,6 +355,7 @@ export class CommunityService {
           description: dto.description,
           category: dto.category || 'General',
           cefrLevel: dto.cefrLevel || CefrLevel.B2,
+          languageId: dto.languageId || 'en',
           isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
           isProtected,
           passwordHash,
@@ -387,6 +388,7 @@ export class CommunityService {
         description: dto.description,
         category: dto.category || 'General',
         cefrLevel: dto.cefrLevel || CefrLevel.B2,
+        languageId: dto.languageId || 'en',
         isPublic: dto.isPublic !== undefined ? dto.isPublic : true,
         isProtected,
         passwordHash,
@@ -754,6 +756,7 @@ export class CommunityService {
     if (dto.description !== undefined) data.description = dto.description?.trim();
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.cefrLevel !== undefined) data.cefrLevel = dto.cefrLevel;
+    if (dto.languageId !== undefined) data.languageId = dto.languageId;
     if (dto.isPublic !== undefined) data.isPublic = dto.isPublic;
     
     // Status management: Admin can set any status. Owner can re-submit (PENDING) or withdraw to private

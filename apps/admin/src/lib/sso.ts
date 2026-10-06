@@ -76,10 +76,17 @@ export function buildSsoUrl(app: SubApp, path = '/'): string {
       localStorage.getItem('vocabflow_refresh_token') ||
       sessionStorage.getItem('vocabflow_refresh_token');
 
+    const deviceId =
+      localStorage.getItem('vocabflow_device_id') ||
+      sessionStorage.getItem('vocabflow_device_id');
+
     if (token) {
       target.searchParams.set('sso_token', token);
       if (refresh) {
         target.searchParams.set('sso_refresh', refresh);
+      }
+      if (deviceId) {
+        target.searchParams.set('sso_device_id', deviceId);
       }
     }
   }
@@ -109,6 +116,11 @@ export function ingestSsoTokens(): boolean {
     const urlParams = new URLSearchParams(window.location.search);
     const ssoToken = urlParams.get('sso_token');
     const ssoRefresh = urlParams.get('sso_refresh');
+    const ssoDeviceId = urlParams.get('sso_device_id');
+
+    if (ssoDeviceId && !localStorage.getItem('vocabflow_device_id')) {
+      localStorage.setItem('vocabflow_device_id', ssoDeviceId);
+    }
 
     if (ssoToken) {
       localStorage.setItem('vocabflow_access_token', ssoToken);
@@ -119,6 +131,7 @@ export function ingestSsoTokens(): boolean {
       // Clean query parameters from address bar and history
       urlParams.delete('sso_token');
       urlParams.delete('sso_refresh');
+      urlParams.delete('sso_device_id');
       const newSearch = urlParams.toString();
       const cleanUrl =
         window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
