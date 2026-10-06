@@ -188,6 +188,8 @@ export const AdminFeedbackPage: React.FC = () => {
       socket.off('admin_event:new', handleAdminEvent);
       socket.off('admin_badge_update', fetchFeedback);
     };
+  }, [fetchFeedback]);
+
   const [searchParams] = useSearchParams();
   const targetFeedbackId = searchParams.get('id') || searchParams.get('feedbackId');
 
