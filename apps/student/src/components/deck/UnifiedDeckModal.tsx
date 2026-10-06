@@ -9,14 +9,13 @@ import {
   getDefaultCertificateForLanguage,
   getDefaultCategoryForLanguage,
   getDefaultLevelForLanguage,
-  mapToCefrEquivalent,
-  getCategoriesForLanguage,
 } from '../../config/languageStandards';
 import {
   downloadVocabularyTemplate,
   parseVocabularyFile,
   ParsedWordItem,
 } from '../../utils/excelTemplate';
+import { EditableVocabularyStagingTable } from './EditableVocabularyStagingTable';
 import {
   FolderPlus,
   Edit3,
@@ -29,14 +28,15 @@ import {
   EyeOff,
   Globe,
   Share2,
-  BookOpen,
   Check,
-  Trash2,
   Plus,
-  Sparkles,
   RefreshCw,
-  CheckCircle2,
   Layers,
+  Maximize2,
+  Minimize2,
+  FileCheck,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 
 export interface UnifiedDeckFormData {
@@ -87,6 +87,9 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Layout expansion state: allow expanding table to full width
+  const [isMaximized, setIsMaximized] = useState(false);
+
   // Form Fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -99,23 +102,27 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
 
-  // Word Source Tabs: 'personal_deck' | 'manual' | 'file'
+  // Word Source Tabs: 'file' | 'manual' | 'personal_deck'
   const hasPersonalDecksOption = Boolean(personalDecks && personalDecks.length > 0);
-  const [wordSourceTab, setWordSourceTab] = useState<'personal_deck' | 'manual' | 'file'>(
-    hasPersonalDecksOption ? 'personal_deck' : 'manual'
-  );
+  const [wordSourceTab, setWordSourceTab] = useState<'file' | 'manual' | 'personal_deck'>('file');
   const [selectedPersonalDeckId, setSelectedPersonalDeckId] = useState('');
 
   // Manual Words (Text input)
   const [manualWordsText, setManualWordsText] = useState('');
 
-  // File Upload State
+  // File Upload State & Progress
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedWords, setParsedWords] = useState<ParsedWordItem[]>([]);
   const [isParsing, setIsParsing] = useState(false);
+  const [parsingProgress, setParsingProgress] = useState<{
+    stepText: string;
+    percent: number;
+    fileName?: string;
+    fileSize?: string;
+  }>({ stepText: '', percent: 0 });
   const [parsingError, setParsingError] = useState<string | null>(null);
-  const [editingParsedIdx, setEditingParsedIdx] = useState<number | null>(null);
-  const [editingParsedItem, setEditingParsedItem] = useState<ParsedWordItem | null>(null);
+  const [parsingSuccessMsg, setParsingSuccessMsg] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Sync state on open / initialData change
   useEffect(() => {
@@ -130,7 +137,12 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
       setCefrLevel(initialData?.cefrLevel || getDefaultLevelForLanguage(initLang).name);
       setCategory(initialData?.category || getDefaultCategoryForLanguage(initLang));
 
-      setEnablePassword(Boolean(initialData?.hasPassword || (initialData?.password && initialData.password.trim().length > 0)));
+      setEnablePassword(
+        Boolean(
+          initialData?.hasPassword ||
+            (initialData?.password && initialData.password.trim().length > 0)
+        )
+      );
       setPassword(initialData?.password || '');
       setShowPassword(false);
       setIsPublic(initialData?.isPublic !== undefined ? initialData.isPublic : true);
@@ -145,14 +157,12 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
       setManualWordsText('');
       setSelectedFile(null);
       setParsingError(null);
-      setEditingParsedIdx(null);
-      setEditingParsedItem(null);
+      setParsingSuccessMsg(null);
+      setIsParsing(false);
+      setIsMaximized(false);
 
       if (hasPersonalDecksOption && personalDecks && personalDecks.length > 0) {
-        setWordSourceTab('personal_deck');
         setSelectedPersonalDeckId(initialData?.selectedPersonalDeckId || personalDecks[0].id);
-      } else {
-        setWordSourceTab('manual');
       }
     }
   }, [isOpen, initialData, hasPersonalDecksOption]);
@@ -185,38 +195,119 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
       if (d.password) setPassword(d.password);
     }
     if (Array.isArray(d.words) && d.words.length > 0) {
-      setParsedWords(
-        d.words.map((w: any) => ({
-          word: w.word,
-          phonetic: w.phonetic,
-          partOfSpeech: w.partOfSpeech || 'noun',
-          meaning: w.meaning || w.definition,
-          example: w.example,
-          exampleTranslation: w.exampleTranslation,
-          cefrLevel: w.cefrLevel || d.cefrLevel || 'B1',
-          topic: w.topic || d.category || 'General',
-        }))
-      );
+      const mapped = d.words.map((w: any) => ({
+        word: w.word,
+        phonetic: w.phonetic,
+        partOfSpeech: w.partOfSpeech || 'noun',
+        meaning: w.meaning || w.definition,
+        example: w.example,
+        exampleTranslation: w.exampleTranslation,
+        cefrLevel: w.cefrLevel || d.cefrLevel || 'B1',
+        topic: w.topic || d.category || 'General',
+      }));
+      setParsedWords(mapped);
+      setParsingSuccessMsg(`Đã nạp ${mapped.length} từ vựng từ kho "${d.title}"!`);
+      setTimeout(() => setParsingSuccessMsg(null), 4000);
     }
   };
 
-  // Handle File Upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Process File with Stepped Loading Feedback
+  const processFile = async (file: File) => {
     if (!file) return;
+
+    const validExts = ['.xlsx', '.xls', '.csv'];
+    const lowerName = file.name.toLowerCase();
+    const isSupported = validExts.some((ext) => lowerName.endsWith(ext));
+
+    if (!isSupported) {
+      setParsingError(
+        'Định dạng tệp không hợp lệ. Vui lòng chọn file Excel (.xlsx, .xls) hoặc CSV (.csv).'
+      );
+      return;
+    }
 
     setSelectedFile(file);
     setIsParsing(true);
     setParsingError(null);
+    setParsingSuccessMsg(null);
+
+    const sizeKb = Math.round(file.size / 1024);
+    const sizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
     try {
+      // Step 1: Reading file
+      setParsingProgress({
+        stepText: 'Đang mở và đọc cấu trúc tệp dữ liệu...',
+        percent: 25,
+        fileName: file.name,
+        fileSize: sizeText,
+      });
+      await new Promise((r) => setTimeout(r, 220));
+
+      // Step 2: Parsing & mapping columns
+      setParsingProgress((p) => ({
+        ...p,
+        stepText: 'Đang giải mã bảng tính & nhận diện cấu trúc cột theo chuẩn...',
+        percent: 60,
+      }));
+      await new Promise((r) => setTimeout(r, 260));
+
       const items = await parseVocabularyFile(file);
+
+      // Step 3: Validating items
+      setParsingProgress((p) => ({
+        ...p,
+        stepText: 'Đang kiểm tra và chuẩn hóa các trường thông tin từ vựng...',
+        percent: 90,
+      }));
+      await new Promise((r) => setTimeout(r, 200));
+
       setParsedWords(items);
+      setParsingProgress((p) => ({
+        ...p,
+        stepText: 'Hoàn tất trích xuất dữ liệu thành công!',
+        percent: 100,
+      }));
+
+      setParsingSuccessMsg(
+        `Đã đọc thành công ${items.length} từ vựng từ "${file.name}". Bạn có thể chỉnh sửa trực tiếp trên bảng hoặc xóa các từ không chuẩn.`
+      );
+      setTimeout(() => setParsingSuccessMsg(null), 5000);
     } catch (err: any) {
-      setParsingError(err?.message || 'Không thể giải mã file Excel/CSV này. Vui lòng kiểm tra lại định dạng cột.');
+      setParsingError(
+        err?.message ||
+          'Không thể giải mã file Excel/CSV này. Vui lòng kiểm tra lại định dạng tệp hoặc tải file mẫu để đối chiếu.'
+      );
       setParsedWords([]);
     } finally {
       setIsParsing(false);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
     }
   };
 
@@ -243,63 +334,16 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
       .filter((w) => Boolean(w.word));
   };
 
-  // Staging Row editing
-  const handleStartEditParsed = (idx: number) => {
-    setEditingParsedIdx(idx);
-    setEditingParsedItem({ ...parsedWords[idx] });
-  };
-
-  const handleSaveEditParsed = (idx: number) => {
-    if (!editingParsedItem) return;
-    if (!editingParsedItem.word?.trim()) {
-      alert('Vui lòng nhập từ vựng');
+  const handleConvertManualTextToTable = () => {
+    const list = parseManualLines();
+    if (list.length === 0) {
+      alert('Vui lòng nhập ít nhất 1 dòng từ vựng hợp lệ theo cú pháp.');
       return;
     }
-    const updated = [...parsedWords];
-    updated[idx] = {
-      ...editingParsedItem,
-      word: editingParsedItem.word.trim(),
-      meaning: editingParsedItem.meaning?.trim() || editingParsedItem.word.trim(),
-      phonetic: editingParsedItem.phonetic?.trim() || '',
-      example: editingParsedItem.example?.trim() || '',
-    };
-    setParsedWords(updated);
-    setEditingParsedIdx(null);
-    setEditingParsedItem(null);
-  };
-
-  const handleCancelEditParsed = () => {
-    if (editingParsedIdx !== null && (!editingParsedItem?.word?.trim() || !editingParsedItem?.meaning?.trim())) {
-      setParsedWords((prev) => prev.filter((_, i) => i !== editingParsedIdx));
-    }
-    setEditingParsedIdx(null);
-    setEditingParsedItem(null);
-  };
-
-  const handleAddNewParsedRow = () => {
-    const newRow: ParsedWordItem = {
-      word: '',
-      phonetic: '',
-      partOfSpeech: 'noun',
-      meaning: '',
-      example: '',
-      exampleTranslation: '',
-      cefrLevel: cefrLevel || 'B1',
-      topic: category || 'General',
-    };
-    setParsedWords((prev) => [newRow, ...prev]);
-    setEditingParsedIdx(0);
-    setEditingParsedItem(newRow);
-  };
-
-  const handleDeleteParsedRow = (idx: number) => {
-    if (editingParsedIdx === idx) {
-      setEditingParsedIdx(null);
-      setEditingParsedItem(null);
-    } else if (editingParsedIdx !== null && editingParsedIdx > idx) {
-      setEditingParsedIdx(editingParsedIdx - 1);
-    }
-    setParsedWords((prev) => prev.filter((_, i) => i !== idx));
+    setParsedWords((prev) => [...list, ...prev]);
+    setManualWordsText('');
+    setParsingSuccessMsg(`Đã thêm ${list.length} từ vựng vào bảng chỉnh sửa.`);
+    setTimeout(() => setParsingSuccessMsg(null), 4000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -310,14 +354,10 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
     }
 
     // Determine final words
-    let finalWords: ParsedWordItem[] = [];
-    if (wordSourceTab === 'file') {
-      finalWords = parsedWords;
-    } else if (wordSourceTab === 'manual') {
+    let finalWords: ParsedWordItem[] = [...parsedWords];
+    if (wordSourceTab === 'manual' && manualWordsText.trim()) {
       const manualList = parseManualLines();
-      finalWords = [...parsedWords, ...manualList];
-    } else if (wordSourceTab === 'personal_deck') {
-      finalWords = parsedWords;
+      finalWords = [...finalWords, ...manualList];
     }
 
     const payload: UnifiedDeckFormData = {
@@ -338,118 +378,185 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
     await onSubmit(payload);
   };
 
+  const validWordsCount = useMemo(
+    () => parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length,
+    [parsedWords]
+  );
+
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
       <form
         onSubmit={handleSubmit}
-        className="m-auto max-w-4xl w-full max-h-[92vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/90 p-5 sm:p-7 shadow-2xl animate-fade-in text-left overflow-hidden"
+        className="m-auto w-[96vw] max-w-7xl 2xl:max-w-[1550px] max-h-[95vh] h-[92vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 sm:p-6 shadow-2xl animate-fade-in text-left overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+        {/* Top Header */}
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/20 dark:from-indigo-950/80 dark:to-purple-950/80 border border-indigo-200/80 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 shadow-xs">
               {mode === 'create' ? <FolderPlus className="w-5 h-5" /> : <Edit3 className="w-5 h-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                  {titleText || (mode === 'create' ? 'Tạo & Đăng Tải Kho Từ Vựng' : 'Chỉnh Sửa Thông Tin Kho Từ Vựng')}
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  {titleText ||
+                    (mode === 'create'
+                      ? 'Tạo & Đăng Tải Kho Từ Vựng'
+                      : 'Chỉnh Sửa Thông Tin Kho Từ Vựng')}
                 </h3>
                 <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
                   <CountryFlag languageId={languageId} size="xs" />
                   <span>{langDef.name}</span>
                 </span>
+                {parsedWords.length > 0 && (
+                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                    {parsedWords.length} từ ({validWordsCount} hợp lệ)
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {subtitleText || 'Cấu hình chuẩn ngôn ngữ, nhập từ vựng và thiết lập bảo mật chia sẻ đồng bộ'}
+                {subtitleText ||
+                  'Cấu hình kho từ, nhập file Excel/CSV và chỉnh sửa trực tiếp trên bảng từ vựng trước khi lưu'}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
-            aria-label="Đóng cửa sổ"
-          >
-            <X className="w-4 h-4" />
-          </button>
+
+          <div className="flex items-center gap-1.5">
+            {/* Toggle Full-width / Split View */}
+            <button
+              type="button"
+              onClick={() => setIsMaximized(!isMaximized)}
+              className="btn-glass-secondary btn-glass-sm !py-1.5 text-xs text-slate-600 dark:text-slate-300 hidden md:flex items-center gap-1.5"
+              title={
+                isMaximized
+                  ? 'Thu gọn về chế độ 2 cột tiêu chuẩn'
+                  : 'Mở rộng toàn màn hình bảng từ vựng'
+              }
+            >
+              {isMaximized ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span>2 cột</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Mở rộng</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              aria-label="Đóng cửa sổ"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Scrollable Form Body */}
-        <div className="space-y-4 text-xs sm:text-sm flex-1 min-h-0 overflow-y-auto py-3.5 pr-1 chat-scrollbar">
-          {/* Deck Title */}
-          <div>
-            <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm">
-              Tên kho từ vựng <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ví dụ: Goethe B1 Từ Vựng Trọng Tâm, 600 Essential TOEIC Words, JLPT N3 Kaiwa..."
-              className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-xs sm:text-sm text-slate-900 dark:text-white transition placeholder:text-slate-400"
-            />
-          </div>
-
-          {/* Standard Language Fields (Ngôn ngữ, Chứng chỉ, Trình độ, Chủ đề) */}
-          <div className="p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Không gian ngôn ngữ & Chuẩn trình độ</span>
+        {/* Compact Strip when Maximized */}
+        {isMaximized && (
+          <div className="py-2 px-3 my-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-700 dark:text-slate-300">Kho từ:</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                {title || '(Chưa đặt tên kho)'}
               </span>
-              <span className="text-[11px] text-slate-400">
-                Tự động lưu và đồng bộ đúng ngôn ngữ lên Kho chung
+              <span className="text-slate-400">•</span>
+              <span className="text-slate-500">{langDef.name}</span>
+              <span className="text-slate-400">•</span>
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-semibold text-[10px]">
+                {cefrLevel}
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-semibold text-[10px]">
+                {category}
               </span>
             </div>
-
-            <DeckStandardFields
-              languageId={languageId}
-              allowLanguageChange={true}
-              onLanguageChange={(newLang) => {
-                setLanguageId(newLang);
-                const defCert = getDefaultCertificateForLanguage(newLang);
-                setCertificateId(defCert.id);
-                setCategory(getDefaultCategoryForLanguage(newLang));
-                setCefrLevel(getDefaultLevelForLanguage(newLang).name);
-              }}
-              certificateId={certificateId}
-              onCertificateChange={setCertificateId}
-              level={cefrLevel}
-              onLevelChange={setCefrLevel}
-              category={category}
-              onCategoryChange={setCategory}
-              customCategories={customCategories}
-              onAddCustomCategory={onAddCustomCategory}
-              gridCols={3}
-            />
+            <button
+              type="button"
+              onClick={() => setIsMaximized(false)}
+              className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold"
+            >
+              Chỉnh sửa thông tin kho từ ⚙️
+            </button>
           </div>
+        )}
 
-          {/* Description & Learning Goals */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="font-bold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1.5">
-                <span>Lý do tạo kho & Mục tiêu học tập</span>
-                <span className="text-[11px] font-normal text-slate-400">
-                  (Mô tả lộ trình, nhóm đối tượng hoặc nguồn tài liệu tham khảo)
-                </span>
+        {/* Main Content Area: Split 2 Columns on Desktop */}
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4 sm:gap-5 overflow-hidden py-2.5">
+          {/* LEFT COLUMN: Deck Metadata & Configuration */}
+          <div
+            className={`${
+              isMaximized ? 'hidden' : 'w-full lg:w-[380px] xl:w-[420px] shrink-0'
+            } flex flex-col gap-3.5 overflow-y-auto pr-1 chat-scrollbar text-xs`}
+          >
+            {/* 1. Deck Title */}
+            <div>
+              <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1 text-xs">
+                Tên kho từ vựng <span className="text-rose-500">*</span>
               </label>
-              <span className="text-[11px] text-slate-400">{description.length} ký tự</span>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ví dụ: 600 Essential TOEIC Words, HSK 4 Trọng Tâm..."
+                className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-xs text-slate-900 dark:text-white transition placeholder:text-slate-400"
+              />
             </div>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={"Ví dụ:\n• Lý do: Chuẩn bị thi chứng chỉ mục tiêu vào cuối năm.\n• Mục tiêu: Nắm vững 30 từ vựng chuyên ngành mỗi tuần.\n• Nguồn tài liệu: Trích xuất từ đề thi chính thức và thực tế..."}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs sm:text-sm leading-relaxed text-slate-900 dark:text-white transition resize-y min-h-[85px] placeholder:text-slate-400"
-            />
-          </div>
 
-          {/* Security & Public Sharing Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Password Protection */}
-            <div className="p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 space-y-2">
+            {/* 2. Standard Language Fields */}
+            <div className="p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Chuẩn ngôn ngữ & Trình độ</span>
+                </span>
+              </div>
+
+              <DeckStandardFields
+                languageId={languageId}
+                allowLanguageChange={true}
+                onLanguageChange={(newLang) => {
+                  setLanguageId(newLang);
+                  const defCert = getDefaultCertificateForLanguage(newLang);
+                  setCertificateId(defCert.id);
+                  setCategory(getDefaultCategoryForLanguage(newLang));
+                  setCefrLevel(getDefaultLevelForLanguage(newLang).name);
+                }}
+                certificateId={certificateId}
+                onCertificateChange={setCertificateId}
+                level={cefrLevel}
+                onLevelChange={setCefrLevel}
+                category={category}
+                onCategoryChange={setCategory}
+                customCategories={customCategories}
+                onAddCustomCategory={onAddCustomCategory}
+                gridCols={2}
+              />
+            </div>
+
+            {/* 3. Description & Goals */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+                  Mô tả kho từ & Mục tiêu học tập
+                </label>
+                <span className="text-[10px] text-slate-400">{description.length} ký tự</span>
+              </div>
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Mô tả lộ trình, nhóm đối tượng hoặc nguồn tài liệu tham khảo..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs leading-relaxed text-slate-900 dark:text-white transition resize-none placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* 4. Password Protection */}
+            <div className="p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
@@ -459,9 +566,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                       Mật khẩu bảo vệ kho
                     </span>
-                    <span className="text-[10px] text-slate-400">
-                      Yêu cầu mã PIN khi sao chép
-                    </span>
+                    <span className="text-[10px] text-slate-400">Yêu cầu mã PIN khi sao chép</span>
                   </div>
                 </div>
                 <ToggleSwitch
@@ -478,12 +583,12 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Nhập mã PIN hoặc mật khẩu..."
-                    className="w-full text-xs h-9 px-3 pr-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full text-xs h-8 px-3 pr-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
                   >
                     {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -491,8 +596,8 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
               )}
             </div>
 
-            {/* Share to Community / Cloud */}
-            <div className="p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-slate-800/50 border border-indigo-200/60 dark:border-slate-700/60 space-y-2">
+            {/* 5. Cloud & Community Sharing */}
+            <div className="p-3 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 space-y-1.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-500 shrink-0">
@@ -503,7 +608,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                       Đăng tải lên Kho chung (Cộng đồng)
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      Lưu trữ đám mây & gửi duyệt cộng đồng
+                      Đồng bộ Cloud & chia sẻ với mọi người
                     </span>
                   </div>
                 </div>
@@ -513,76 +618,268 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                   size="sm"
                 />
               </div>
-              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 leading-relaxed">
-                {isPublic
-                  ? `⭐ Kho sẽ được xuất bản vào Kho chung với mã ngôn ngữ [${languageId.toUpperCase()}].`
-                  : 'Kho được lưu ở chế độ riêng tư trên thiết bị của bạn.'}
-              </p>
+            </div>
+
+            {/* 6. Quick Word Count Summary Card */}
+            <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between text-xs mt-auto">
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">
+                  Từ vựng nạp vào:
+                </span>
+                <span className="text-base font-black text-slate-900 dark:text-white">
+                  {parsedWords.length} <span className="text-xs font-normal text-slate-400">từ</span>
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                  ✓ {validWordsCount} hợp lệ
+                </span>
+                {parsedWords.length - validWordsCount > 0 && (
+                  <span className="text-[10px] text-rose-500 font-semibold block">
+                    ⚠ {parsedWords.length - validWordsCount} cần hoàn thiện
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Word Source Tabs (Nhập từ vựng & File Import) */}
-          <div className="space-y-3 pt-2 border-t border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Nạp & Đóng góp từ vựng</span>
-                {parsedWords.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white">
-                    {parsedWords.length} từ
-                  </span>
-                )}
-              </span>
+          {/* RIGHT COLUMN: Word Sources & The Full Editable Staging Table */}
+          <div className="flex-1 min-w-0 flex flex-col gap-3 h-full overflow-hidden bg-slate-50/60 dark:bg-slate-900/40 rounded-2xl p-3 sm:p-4 border border-slate-200/70 dark:border-slate-800/70">
+            {/* Top Source Switcher Tabs & Download Templates */}
+            <div className="flex flex-wrap items-center justify-between gap-2 shrink-0 border-b border-slate-200/70 dark:border-slate-800/80 pb-3">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-800 rounded-xl border border-slate-300/60 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setWordSourceTab('file')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    wordSourceTab === 'file'
+                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Tệp Excel / CSV</span>
+                </button>
 
-              <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setWordSourceTab('manual')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    wordSourceTab === 'manual'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Nhập văn bản</span>
+                </button>
+
                 {hasPersonalDecksOption && (
                   <button
                     type="button"
                     onClick={() => setWordSourceTab('personal_deck')}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                       wordSourceTab === 'personal_deck'
                         ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    Chọn kho cá nhân
+                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Từ kho cá nhân</span>
                   </button>
                 )}
+              </div>
+
+              {/* Sample Templates Download Buttons */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-slate-400 hidden sm:inline">Mẫu dữ liệu:</span>
                 <button
                   type="button"
-                  onClick={() => setWordSourceTab('manual')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${
-                    wordSourceTab === 'manual'
-                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                  }`}
+                  onClick={() => downloadVocabularyTemplate('xlsx')}
+                  className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1 shadow-xs"
+                  title="Tải mẫu file Excel chuẩn .xlsx"
                 >
-                  Nhập thủ công
+                  <Download className="w-3 h-3 text-emerald-500" />
+                  <span>Mẫu .xlsx</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setWordSourceTab('file')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
-                    wordSourceTab === 'file'
-                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                  }`}
+                  onClick={() => downloadVocabularyTemplate('csv')}
+                  className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1 shadow-xs"
+                  title="Tải mẫu file CSV chuẩn .csv"
                 >
-                  <FileSpreadsheet className="w-3 h-3 text-emerald-500" />
-                  <span>Excel / CSV</span>
+                  <Download className="w-3 h-3 text-indigo-500" />
+                  <span>Mẫu .csv</span>
                 </button>
               </div>
             </div>
 
-            {/* TAB 1: Select from Personal Decks */}
+            {/* TAB 1: FILE IMPORT ZONE & LOADING ANIMATION */}
+            {wordSourceTab === 'file' && (
+              <div className="shrink-0 space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
+
+                {/* 1. LOADING CARD WHEN READING / PARSING FILE */}
+                {isParsing && (
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-emerald-500/10 border-2 border-indigo-400/50 dark:border-indigo-600/50 flex flex-col items-center justify-center text-center space-y-3 shadow-md animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md animate-bounce">
+                        <FileSpreadsheet className="w-5 h-5" />
+                      </div>
+                      <div className="text-left">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
+                          <span>Đang đọc và phân tích dữ liệu file...</span>
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {parsingProgress.fileName} ({parsingProgress.fileSize})
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Animated Progress Bar */}
+                    <div className="w-full max-w-md bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${parsingProgress.percent}%` }}
+                      />
+                    </div>
+
+                    <p className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+                      {parsingProgress.stepText}
+                    </p>
+                  </div>
+                )}
+
+                {/* 2. FILE UPLOAD DROPZONE (When not parsing) */}
+                {!isParsing && parsedWords.length === 0 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-2xl p-4 sm:p-5 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5 ${
+                      isDragging
+                        ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 shadow-inner'
+                        : 'border-slate-300 dark:border-slate-700 hover:border-emerald-500 bg-white/70 dark:bg-slate-800/40 hover:bg-emerald-50/20'
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <Upload className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {selectedFile
+                          ? `Đã chọn: ${selectedFile.name}`
+                          : 'Kéo thả hoặc bấm để chọn file Excel (.xlsx) / CSV từ máy tính'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Tự động đọc 7-8 cột: Word, Phonetic, PartOfSpeech, Meaning, Example, Translation, CEFR, Topic
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. COMPACT FILE SUMMARY BAR (When file already loaded with words) */}
+                {!isParsing && parsedWords.length > 0 && selectedFile && (
+                  <div className="py-2 px-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {selectedFile.name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 shrink-0">
+                        ({Math.round(selectedFile.size / 1024)} KB)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <Upload className="w-3 h-3 text-indigo-500" />
+                        <span>Đổi file khác</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success Notification */}
+                {parsingSuccessMsg && (
+                  <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{parsingSuccessMsg}</span>
+                  </div>
+                )}
+
+                {/* Error Notification */}
+                {parsingError && (
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-start gap-2 animate-fade-in">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-bold">Lỗi khi nạp file:</p>
+                      <p className="text-[11px] mt-0.5">{parsingError}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setParsingError(null)}
+                      className="text-rose-400 hover:text-rose-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: MANUAL TEXT INPUT */}
+            {wordSourceTab === 'manual' && (
+              <div className="shrink-0 space-y-2 p-3 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>
+                    Cú pháp mỗi dòng: <code>Từ vựng | Phiên âm | Loại từ | Nghĩa | Ví dụ | Dịch</code>
+                  </span>
+                  <span>Mỗi từ 1 dòng</span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={manualWordsText}
+                  onChange={(e) => setManualWordsText(e.target.value)}
+                  placeholder={
+                    'compromise | /ˈkɒmprəmaɪz/ | noun | sự thỏa hiệp | Both parties reached a compromise | Cả hai bên đã thỏa hiệp\nresilient | /rɪˈzɪliənt/ | adjective | kiên cường | The economy is resilient | Nền kinh tế kiên cường'
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-xs leading-relaxed text-slate-900 dark:text-white placeholder:text-slate-400"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleConvertManualTextToTable}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Nạp vào bảng từ vựng bên dưới</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: SELECT FROM PERSONAL DECK */}
             {wordSourceTab === 'personal_deck' && hasPersonalDecksOption && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 animate-fade-in">
+              <div className="shrink-0 p-3 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Chọn kho từ cá nhân của bạn:
+                  Chọn kho từ cá nhân của bạn để đóng góp lên cộng đồng:
                 </label>
                 {loadingPersonalDecks ? (
                   <div className="p-3 text-center text-xs text-slate-400 animate-pulse">
-                    Đang tải danh sách kho cá nhân...
+                    Đang tải danh sách kho từ...
                   </div>
                 ) : (
                   <CustomDropdown
@@ -590,7 +887,9 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                     onChange={(val) => handleSelectPersonalDeck(val)}
                     options={(personalDecks || []).map((d) => ({
                       value: d.id,
-                      label: `${d.title} (${d.wordCount || d.words?.length || 0} từ) • [${(d.languageId || 'en').toUpperCase()}]`,
+                      label: `${d.title} (${d.wordCount || d.words?.length || 0} từ) • [${(
+                        d.languageId || 'en'
+                      ).toUpperCase()}]`,
                       badge: d.category || 'General',
                     }))}
                     searchable={true}
@@ -602,277 +901,53 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
               </div>
             )}
 
-            {/* TAB 2: Manual Text Input */}
-            {wordSourceTab === 'manual' && (
-              <div className="space-y-2 animate-fade-in">
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                  <span>Cú pháp: <code>Từ vựng | Phiên âm | Loại từ | Nghĩa | Ví dụ | Dịch</code></span>
-                  <span>Mỗi từ 1 dòng</span>
-                </div>
-                <textarea
-                  rows={4}
-                  value={manualWordsText}
-                  onChange={(e) => setManualWordsText(e.target.value)}
-                  placeholder={"compromise | /ˈkɒmprəmaɪz/ | noun | sự thỏa hiệp | Both parties reached a compromise | Cả hai bên đã thỏa hiệp\nresilient | /rɪˈzɪliənt/ | adjective | kiên cường | The economy is resilient | Nền kinh tế kiên cường"}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 font-mono text-xs leading-relaxed text-slate-900 dark:text-white placeholder:text-slate-400"
-                />
-              </div>
-            )}
-
-            {/* TAB 3: Excel / CSV File Upload */}
-            {wordSourceTab === 'file' && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Tải mẫu file chuẩn để điền hàng loạt từ vựng:
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => downloadVocabularyTemplate('xlsx')}
-                      className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>Mẫu .xlsx</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => downloadVocabularyTemplate('csv')}
-                      className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>Mẫu .csv</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-4 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                  <Upload className="w-5 h-5 mx-auto text-slate-400 mb-1" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {selectedFile ? selectedFile.name : 'Chọn file Excel (.xlsx) hoặc CSV từ máy tính'}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    Nhận diện tự động 7 cột: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-0.5">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Hoặc tạo thủ công vào danh sách:</span>
-                  <button
-                    type="button"
-                    onClick={handleAddNewParsedRow}
-                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm từ vào danh sách</span>
-                  </button>
-                </div>
-
-                {isParsing && (
-                  <div className="py-2 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Đang giải mã và đọc file dữ liệu...</span>
-                  </div>
-                )}
-
-                {parsingError && (
-                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium">
-                    {parsingError}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Parsed Staging Preview Table */}
-            {parsedWords.length > 0 && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span>Danh sách từ chuẩn bị nạp ({parsedWords.length} từ)</span>
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleAddNewParsedRow}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800/60 transition cursor-pointer"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Thêm từ</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setParsedWords([]);
-                        setSelectedFile(null);
-                        setEditingParsedIdx(null);
-                        setEditingParsedItem(null);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
-                      className="text-[11px] text-rose-500 hover:underline cursor-pointer"
-                    >
-                      Xóa danh sách từ
-                    </button>
-                  </div>
-                </div>
-
-                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-[11px] border border-slate-200/80 dark:border-slate-700/80 rounded-xl bg-white dark:bg-slate-900/80">
-                  {parsedWords.map((row, idx) => {
-                    const isEditing = editingParsedIdx === idx;
-                    if (isEditing && editingParsedItem) {
-                      return (
-                        <div key={idx} className="p-3 bg-indigo-50/50 dark:bg-indigo-950/30 space-y-2 border-l-2 border-indigo-500">
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Từ vựng *</label>
-                              <input
-                                type="text"
-                                autoFocus
-                                value={editingParsedItem.word}
-                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, word: e.target.value })}
-                                placeholder="Word..."
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Phiên âm</label>
-                              <input
-                                type="text"
-                                value={editingParsedItem.phonetic || ''}
-                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, phonetic: e.target.value })}
-                                placeholder="/phonetic/"
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-indigo-600 dark:text-indigo-400"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Loại từ</label>
-                              <select
-                                value={editingParsedItem.partOfSpeech || 'noun'}
-                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, partOfSpeech: e.target.value })}
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
-                              >
-                                <option value="noun">Danh từ (noun)</option>
-                                <option value="verb">Động từ (verb)</option>
-                                <option value="adjective">Tính từ (adj)</option>
-                                <option value="adverb">Trạng từ (adv)</option>
-                                <option value="phrase">Cụm từ (phrase)</option>
-                                <option value="preposition">Giới từ (prep)</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Định nghĩa / Nghĩa tiếng Việt *</label>
-                              <input
-                                type="text"
-                                value={editingParsedItem.meaning}
-                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, meaning: e.target.value })}
-                                placeholder="Nghĩa của từ..."
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ minh họa</label>
-                              <input
-                                type="text"
-                                value={editingParsedItem.example || ''}
-                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, example: e.target.value })}
-                                placeholder="Example sentence..."
-                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-end gap-1.5 pt-1">
-                            <button
-                              type="button"
-                              onClick={handleCancelEditParsed}
-                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                            >
-                              Hủy
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveEditParsed(idx)}
-                              className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs"
-                            >
-                              <Check className="w-3 h-3" />
-                              <span>Lưu từ</span>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={idx} className="p-2 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">{idx + 1}</span>
-                          <span className="font-bold text-slate-900 dark:text-white truncate">{row.word}</span>
-                          {row.phonetic && <span className="text-[10px] text-indigo-500 font-mono truncate">{row.phonetic}</span>}
-                          <span className="text-slate-500 dark:text-slate-400 truncate">({row.meaning})</span>
-                          {row.partOfSpeech && (
-                            <span className="text-[9px] text-slate-400 font-mono italic">[{row.partOfSpeech}]</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-500">
-                            {row.cefrLevel || cefrLevel}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleStartEditParsed(idx)}
-                            className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
-                            title="Sửa từ này"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteParsedRow(idx)}
-                            className="p-1 text-slate-400 hover:text-rose-500 transition"
-                            title="Xóa từ này"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* THE EDITABLE VOCABULARY STAGING TABLE COMPONENT */}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <EditableVocabularyStagingTable
+                words={parsedWords}
+                onChangeWords={setParsedWords}
+                defaultCefrLevel={cefrLevel}
+                defaultTopic={category}
+                className="flex-1"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="btn-glass-secondary btn-glass-sm !px-5"
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-glass-primary btn-glass-sm !px-6 flex items-center gap-1.5"
-          >
-            {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-            <span>
-              {submitButtonText || (mode === 'create' ? 'Tạo Kho & Đăng Tải' : 'Lưu Thay Đổi')}
-            </span>
-          </button>
+        {/* Modal Bottom Footer Actions */}
+        <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-200/80 dark:border-slate-800 shrink-0">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {parsedWords.length > 0 ? (
+              <span>
+                Sẵn sàng lưu <strong className="text-emerald-600 font-bold">{validWordsCount}</strong> từ
+                vựng vào kho.
+              </span>
+            ) : (
+              <span>Kho từ chưa có từ vựng (Có thể bổ sung từ sau khi tạo kho).</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="btn-glass-secondary btn-glass-sm !px-4"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-glass-primary btn-glass-sm !px-6 flex items-center gap-1.5 shadow-md font-bold"
+            >
+              {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              <span>
+                {submitButtonText ||
+                  (mode === 'create' ? 'Tạo Kho Từ Vựng' : 'Lưu Thay Đổi')}
+              </span>
+            </button>
+          </div>
         </div>
       </form>
     </ModalPortal>
