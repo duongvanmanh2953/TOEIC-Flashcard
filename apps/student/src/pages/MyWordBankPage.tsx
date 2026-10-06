@@ -342,6 +342,7 @@ export const MyWordBankPage: React.FC = () => {
 
   // Word Modals State
   const [showAddWordModal, setShowAddWordModal] = useState(false);
+  const [addWordMode, setAddWordMode] = useState<'manual' | 'file'>('manual');
   const [showEditWordModal, setShowEditWordModal] = useState(false);
   const [wordToEdit, setWordToEdit] = useState<any | null>(null);
   const [wordFormWord, setWordFormWord] = useState('');
@@ -880,17 +881,18 @@ export const MyWordBankPage: React.FC = () => {
           updatedAt: Date.now(),
         };
 
-        const hasWords = formData.words && formData.words.length > 0;
-        const validWords = hasWords
-          ? formData.words!.filter((w) => w.word && w.word.trim() && w.meaning && w.meaning.trim())
-          : [];
+        if (formData.words !== undefined) {
+          const validWords = formData.words.filter((w) => w.word && w.word.trim() && w.meaning && w.meaning.trim());
+          const oldDeckWords = words.filter((w) => w.deckId === deckId || w.deckName === oldTitle);
+          if (oldDeckWords.length > 0) {
+            await idbDeleteWords(oldDeckWords.map((w) => w.id));
+          }
 
-        if (validWords.length > 0) {
           const itemsToSave = validWords.map((item, idx) => {
             const cleanW = item.word.trim().toLowerCase();
             const cleanM = item.meaning.trim();
             const realTopic = item.topic?.trim() || formData.category || 'General';
-            const id = `word_${cleanW.replace(/[^a-z0-9]/g, '_')}_${Date.now()}_${idx}`;
+            const id = (item as any).id || `word_${cleanW.replace(/[^a-z0-9]/g, '_')}_${Date.now()}_${idx}`;
 
             return {
               id,
@@ -924,9 +926,14 @@ export const MyWordBankPage: React.FC = () => {
             };
           });
 
-          await idbSaveWords(itemsToSave, currentUserId);
-          setWords((prev) => [...itemsToSave, ...prev]);
-          updates.wordCount = (deckToEdit?.wordCount || 0) + itemsToSave.length;
+          if (itemsToSave.length > 0) {
+            await idbSaveWords(itemsToSave, currentUserId);
+          }
+          setWords((prev) => [
+            ...prev.filter((w) => w.deckId !== deckId && w.deckName !== oldTitle),
+            ...itemsToSave,
+          ]);
+          updates.wordCount = itemsToSave.length;
         }
 
         await idbUpdateLocalDeck(deckId, updates);
@@ -1160,7 +1167,35 @@ export const MyWordBankPage: React.FC = () => {
     setDeckCefrInput(deck.cefrLevel || getDefaultLevelForLanguage(dLang).name);
     setDeckPasswordInput(deck.password || '');
     setDeckStatusInput(deck.status === 'APPROVED' ? 'APPROVED' : (deck.status === 'PENDING' ? 'PENDING' : 'PRIVATE'));
-    setShowEditDeckModal(true);
+
+    // Collect existing words in this deck to allow preview, edit, delete in the unified modal
+    const deckWords = words.filter((w) => w.deckId === deck.id || w.deckName === deck.title);
+    const mappedWords: ParsedWordItem[] = deckWords.map((w) => ({
+      word: w.word,
+      phonetic: w.phonetic || '',
+      partOfSpeech: w.partOfSpeech || 'noun',
+      meaning: w.meaning || (w as any).definition || '',
+      example: w.example || '',
+      exampleTranslation: (w as any).exampleTranslation || '',
+      cefrLevel: w.cefrLevel || deck.cefrLevel || 'B1',
+      topic: w.topic || deck.category || 'General',
+    }));
+
+    setUnifiedDeckModalMode('edit');
+    setUnifiedDeckInitialData({
+      id: deck.id,
+      title: deck.title,
+      description: deck.description || '',
+      languageId: dLang,
+      certificateId: deck.certificateId,
+      category: deck.category || getDefaultCategoryForLanguage(dLang),
+      cefrLevel: deck.cefrLevel || getDefaultLevelForLanguage(dLang).name,
+      isPublic: deck.isPublic !== undefined ? deck.isPublic : true,
+      hasPassword: Boolean(deck.isProtected || deck.hasPassword),
+      password: deck.password || '',
+      words: mappedWords,
+    });
+    setUnifiedDeckModalOpen(true);
   };
 
   const handleConfirmEditDeck = async (e: React.FormEvent) => {
@@ -1896,6 +1931,9 @@ export const MyWordBankPage: React.FC = () => {
 
   // Add Word to Deck
   const handleOpenAddWord = () => {
+    setAddWordMode('manual');
+    setParsedWords([]);
+    setSelectedFile(null);
     setWordFormWord('');
     setWordFormPhonetic('');
     setWordFormPos('noun');
@@ -1904,7 +1942,10 @@ export const MyWordBankPage: React.FC = () => {
     setWordFormExampleTrans('');
     setWordFormTopic(subTopicsInSelectedDeck[0] || 'General');
     setWordFormCefr('B1');
-    setWordFormTargetDeck(selectedDeck?.title || decks[0]?.title || 'General');
+    const targetDeck = selectedDeck?.title || decks[0]?.title || 'General';
+    setWordFormTargetDeck(targetDeck);
+    setImportTargetDeckName(targetDeck);
+    setImportDeckMode('existing');
     setShowAddWordModal(true);
   };
 
@@ -2355,6 +2396,7 @@ export const MyWordBankPage: React.FC = () => {
 
       setImportProgressMsg(null);
       setShowImportModal(false);
+      setShowAddWordModal(false);
       setSelectedFile(null);
       setParsedWords([]);
       setActionSuccessMsg(`Đã nạp thành công ${validWords.length} từ vựng vào kho "${targetDeckTitle}"!`);
@@ -4714,20 +4756,24 @@ export const MyWordBankPage: React.FC = () => {
         }}
       >
         <form
-          onSubmit={showEditWordModal ? handleConfirmEditWord : handleConfirmAddWord}
-          className="m-auto max-w-3xl w-full max-h-[92vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-6 sm:p-7 shadow-2xl animate-fade-in text-left overflow-hidden"
+          onSubmit={showEditWordModal ? handleConfirmEditWord : (addWordMode === 'file' ? (e) => { e.preventDefault(); handleConfirmBatchImport(); } : handleConfirmAddWord)}
+          className="m-auto max-w-4xl w-full max-h-[92vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-6 sm:p-7 shadow-2xl animate-fade-in text-left overflow-hidden"
         >
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                {showEditWordModal ? <Edit3 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                {showEditWordModal ? <Edit3 className="w-5 h-5" /> : (addWordMode === 'file' ? <FileSpreadsheet className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
               </div>
               <div>
                 <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  {showEditWordModal ? 'Chỉnh Sửa Từ Vựng' : 'Thêm Từ Vựng Mới'}
+                  {showEditWordModal ? 'Chỉnh Sửa Từ Vựng' : (addWordMode === 'file' ? 'Nạp Từ Vựng Từ File (Excel / CSV)' : 'Thêm Từ Vựng Mới')}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Nhập thông tin chi tiết của từ vựng, phiên âm, định nghĩa và ví dụ minh họa
+                  {showEditWordModal
+                    ? 'Chỉnh sửa chi tiết từ vựng, phiên âm và nghĩa'
+                    : (addWordMode === 'file'
+                      ? 'Tải file Excel/CSV, xem trước và chỉnh sửa danh sách trước khi nạp vào kho'
+                      : 'Nhập thông tin chi tiết của từ vựng, phiên âm, định nghĩa và ví dụ minh họa')}
                 </p>
               </div>
             </div>
@@ -4743,8 +4789,267 @@ export const MyWordBankPage: React.FC = () => {
             </button>
           </div>
 
+          {!showEditWordModal && (
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 my-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setAddWordMode('manual')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  addWordMode === 'manual'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                }`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Nhập thủ công</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddWordMode('file')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  addWordMode === 'file'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                }`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Nạp từ tệp (Excel / CSV)</span>
+              </button>
+            </div>
+          )}
+
           <div className="space-y-4 text-xs flex-1 min-h-0 overflow-y-auto py-3 pr-1">
-            {decks.length === 0 ? (
+            {/* Mode File Upload */}
+            {addWordMode === 'file' && !showEditWordModal ? (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">Kho từ mục tiêu:</span>
+                    <span className="text-indigo-600 dark:text-indigo-400 font-bold text-xs">{selectedDeck?.title || wordFormTargetDeck || 'General'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => downloadVocabularyTemplate('xlsx')}
+                      className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Mẫu .xlsx</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadVocabularyTemplate('csv')}
+                      className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Mẫu .csv</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-4 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Upload className="w-5 h-5 mx-auto text-slate-400 mb-1" />
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {selectedFile ? selectedFile.name : 'Chọn file Excel (.xlsx) hoặc CSV từ máy tính'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Nhận diện tự động 7 cột: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-0.5">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Hoặc nạp từng từ vào danh sách:</span>
+                  <button
+                    type="button"
+                    onClick={handleAddManualPreviewWord}
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm từ vào danh sách</span>
+                  </button>
+                </div>
+
+                {isParsing && (
+                  <div className="py-2 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Đang giải mã và đọc file dữ liệu...</span>
+                  </div>
+                )}
+
+                {parsingError && (
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium">
+                    {parsingError}
+                  </div>
+                )}
+
+                {/* Parsed Staging Preview Table */}
+                {parsedWords.length > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span>Danh sách từ chuẩn bị nạp ({parsedWords.length} từ)</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleAddManualPreviewWord}
+                          className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800/60 transition cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Thêm từ</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearAllParsed}
+                          className="text-[11px] text-rose-500 hover:underline cursor-pointer"
+                        >
+                          Xóa danh sách từ
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-[11px] border border-slate-200/80 dark:border-slate-700/80 rounded-xl bg-white dark:bg-slate-900/80">
+                      {parsedWords.map((row, idx) => {
+                        const isEditing = editingParsedIdx === idx;
+                        if (isEditing && editingParsedItem) {
+                          return (
+                            <div key={idx} className="p-3 bg-indigo-50/50 dark:bg-indigo-950/30 space-y-2 border-l-2 border-indigo-500">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Từ vựng *</label>
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editingParsedItem.word}
+                                    onChange={(e) => setEditingParsedItem({ ...editingParsedItem, word: e.target.value })}
+                                    placeholder="Word..."
+                                    className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Phiên âm</label>
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.phonetic || ''}
+                                    onChange={(e) => setEditingParsedItem({ ...editingParsedItem, phonetic: e.target.value })}
+                                    placeholder="/phonetic/"
+                                    className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-indigo-600 dark:text-indigo-400"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Loại từ</label>
+                                  <select
+                                    value={editingParsedItem.partOfSpeech || 'noun'}
+                                    onChange={(e) => setEditingParsedItem({ ...editingParsedItem, partOfSpeech: e.target.value })}
+                                    className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                                  >
+                                    <option value="noun">Danh từ (noun)</option>
+                                    <option value="verb">Động từ (verb)</option>
+                                    <option value="adjective">Tính từ (adj)</option>
+                                    <option value="adverb">Trạng từ (adv)</option>
+                                    <option value="phrase">Cụm từ (phrase)</option>
+                                    <option value="preposition">Giới từ (prep)</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Định nghĩa / Nghĩa tiếng Việt *</label>
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.meaning}
+                                    onChange={(e) => setEditingParsedItem({ ...editingParsedItem, meaning: e.target.value })}
+                                    placeholder="Nghĩa của từ..."
+                                    className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ minh họa</label>
+                                  <input
+                                    type="text"
+                                    value={editingParsedItem.example || ''}
+                                    onChange={(e) => setEditingParsedItem({ ...editingParsedItem, example: e.target.value })}
+                                    placeholder="Example sentence..."
+                                    className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-end gap-1.5 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEditParsed}
+                                  className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                >
+                                  Hủy
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEditParsed(idx)}
+                                  className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  <span>Lưu từ</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div key={idx} className="p-2 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">{idx + 1}</span>
+                              <span className="font-bold text-slate-900 dark:text-white truncate">{row.word}</span>
+                              {row.phonetic && <span className="text-[10px] text-indigo-500 font-mono truncate">{row.phonetic}</span>}
+                              <span className="text-slate-500 dark:text-slate-400 truncate">({row.meaning})</span>
+                              {row.partOfSpeech && (
+                                <span className="text-[9px] text-slate-400 font-mono italic">[{row.partOfSpeech}]</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-500">
+                                {row.cefrLevel || 'B1'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditParsed(idx)}
+                                className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                                title="Sửa từ này"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteParsed(idx)}
+                                className="p-1 text-slate-400 hover:text-rose-500 transition"
+                                title="Xóa từ này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Mode Manual Add / Edit */}
+            {(addWordMode === 'manual' || showEditWordModal) && (
+              <>
+                {decks.length === 0 ? (
               <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-200 text-center space-y-3 my-2">
                 <p className="font-bold text-base">Chưa có kho từ vựng nào!</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
@@ -4915,7 +5220,9 @@ export const MyWordBankPage: React.FC = () => {
                 className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
               />
             </div>
-          </div>
+          </>
+        )}
+      </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
             <button
@@ -4928,12 +5235,24 @@ export const MyWordBankPage: React.FC = () => {
             >
               Hủy
             </button>
-            <button
-              type="submit"
-              className="btn-glass-primary btn-glass-sm"
-            >
-              {showEditWordModal ? 'Lưu thay đổi' : 'Thêm từ vựng'}
-            </button>
+            {addWordMode === 'file' && !showEditWordModal ? (
+              <button
+                type="button"
+                onClick={handleConfirmBatchImport}
+                disabled={isImporting || parsedWords.length === 0}
+                className="btn-glass-primary btn-glass-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                {isImporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>{isImporting ? 'Đang nạp từ...' : `Nạp ${parsedWords.length} từ vào kho`}</span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="btn-glass-primary btn-glass-sm"
+              >
+                {showEditWordModal ? 'Lưu thay đổi' : 'Thêm từ vựng'}
+              </button>
+            )}
           </div>
         </form>
       </ModalPortal>

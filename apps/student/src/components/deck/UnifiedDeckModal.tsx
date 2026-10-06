@@ -251,14 +251,54 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
 
   const handleSaveEditParsed = (idx: number) => {
     if (!editingParsedItem) return;
+    if (!editingParsedItem.word?.trim()) {
+      alert('Vui lòng nhập từ vựng');
+      return;
+    }
     const updated = [...parsedWords];
-    updated[idx] = editingParsedItem;
+    updated[idx] = {
+      ...editingParsedItem,
+      word: editingParsedItem.word.trim(),
+      meaning: editingParsedItem.meaning?.trim() || editingParsedItem.word.trim(),
+      phonetic: editingParsedItem.phonetic?.trim() || '',
+      example: editingParsedItem.example?.trim() || '',
+    };
     setParsedWords(updated);
     setEditingParsedIdx(null);
     setEditingParsedItem(null);
   };
 
+  const handleCancelEditParsed = () => {
+    if (editingParsedIdx !== null && (!editingParsedItem?.word?.trim() || !editingParsedItem?.meaning?.trim())) {
+      setParsedWords((prev) => prev.filter((_, i) => i !== editingParsedIdx));
+    }
+    setEditingParsedIdx(null);
+    setEditingParsedItem(null);
+  };
+
+  const handleAddNewParsedRow = () => {
+    const newRow: ParsedWordItem = {
+      word: '',
+      phonetic: '',
+      partOfSpeech: 'noun',
+      meaning: '',
+      example: '',
+      exampleTranslation: '',
+      cefrLevel: cefrLevel || 'B1',
+      topic: category || 'General',
+    };
+    setParsedWords((prev) => [newRow, ...prev]);
+    setEditingParsedIdx(0);
+    setEditingParsedItem(newRow);
+  };
+
   const handleDeleteParsedRow = (idx: number) => {
+    if (editingParsedIdx === idx) {
+      setEditingParsedIdx(null);
+      setEditingParsedItem(null);
+    } else if (editingParsedIdx !== null && editingParsedIdx > idx) {
+      setEditingParsedIdx(editingParsedIdx - 1);
+    }
     setParsedWords((prev) => prev.filter((_, i) => i !== idx));
   };
 
@@ -626,6 +666,18 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                   </p>
                 </div>
 
+                <div className="flex items-center justify-between pt-0.5">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Hoặc tạo thủ công vào danh sách:</span>
+                  <button
+                    type="button"
+                    onClick={handleAddNewParsedRow}
+                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm từ vào danh sách</span>
+                  </button>
+                </div>
+
                 {isParsing && (
                   <div className="py-2 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -643,49 +695,158 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
 
             {/* Parsed Staging Preview Table */}
             {parsedWords.length > 0 && (
-              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-                <div className="flex items-center justify-between text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     <span>Danh sách từ chuẩn bị nạp ({parsedWords.length} từ)</span>
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setParsedWords([]);
-                      setSelectedFile(null);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                    }}
-                    className="text-[11px] text-rose-500 hover:underline cursor-pointer"
-                  >
-                    Xóa danh sách từ
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddNewParsedRow}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 font-bold text-[11px] flex items-center gap-1 border border-indigo-200/60 dark:border-indigo-800/60 transition cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Thêm từ</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setParsedWords([]);
+                        setSelectedFile(null);
+                        setEditingParsedIdx(null);
+                        setEditingParsedItem(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="text-[11px] text-rose-500 hover:underline cursor-pointer"
+                    >
+                      Xóa danh sách từ
+                    </button>
+                  </div>
                 </div>
 
-                <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-[11px] border border-slate-200/80 dark:border-slate-700/80 rounded-xl bg-white dark:bg-slate-900/80">
-                  {parsedWords.map((row, idx) => (
-                    <div key={idx} className="p-2 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">{idx + 1}</span>
-                        <span className="font-bold text-slate-900 dark:text-white truncate">{row.word}</span>
-                        {row.phonetic && <span className="text-[10px] text-indigo-500 font-mono truncate">{row.phonetic}</span>}
-                        <span className="text-slate-500 dark:text-slate-400 truncate">({row.meaning})</span>
+                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 text-[11px] border border-slate-200/80 dark:border-slate-700/80 rounded-xl bg-white dark:bg-slate-900/80">
+                  {parsedWords.map((row, idx) => {
+                    const isEditing = editingParsedIdx === idx;
+                    if (isEditing && editingParsedItem) {
+                      return (
+                        <div key={idx} className="p-3 bg-indigo-50/50 dark:bg-indigo-950/30 space-y-2 border-l-2 border-indigo-500">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Từ vựng *</label>
+                              <input
+                                type="text"
+                                autoFocus
+                                value={editingParsedItem.word}
+                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, word: e.target.value })}
+                                placeholder="Word..."
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Phiên âm</label>
+                              <input
+                                type="text"
+                                value={editingParsedItem.phonetic || ''}
+                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, phonetic: e.target.value })}
+                                placeholder="/phonetic/"
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-indigo-600 dark:text-indigo-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Loại từ</label>
+                              <select
+                                value={editingParsedItem.partOfSpeech || 'noun'}
+                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, partOfSpeech: e.target.value })}
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                              >
+                                <option value="noun">Danh từ (noun)</option>
+                                <option value="verb">Động từ (verb)</option>
+                                <option value="adjective">Tính từ (adj)</option>
+                                <option value="adverb">Trạng từ (adv)</option>
+                                <option value="phrase">Cụm từ (phrase)</option>
+                                <option value="preposition">Giới từ (prep)</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Định nghĩa / Nghĩa tiếng Việt *</label>
+                              <input
+                                type="text"
+                                value={editingParsedItem.meaning}
+                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, meaning: e.target.value })}
+                                placeholder="Nghĩa của từ..."
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-0.5">Ví dụ minh họa</label>
+                              <input
+                                type="text"
+                                value={editingParsedItem.example || ''}
+                                onChange={(e) => setEditingParsedItem({ ...editingParsedItem, example: e.target.value })}
+                                placeholder="Example sentence..."
+                                className="w-full px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-end gap-1.5 pt-1">
+                            <button
+                              type="button"
+                              onClick={handleCancelEditParsed}
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEditParsed(idx)}
+                              className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs"
+                            >
+                              <Check className="w-3 h-3" />
+                              <span>Lưu từ</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={idx} className="p-2 flex items-center justify-between gap-2 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="text-[10px] text-slate-400 font-mono w-5 shrink-0">{idx + 1}</span>
+                          <span className="font-bold text-slate-900 dark:text-white truncate">{row.word}</span>
+                          {row.phonetic && <span className="text-[10px] text-indigo-500 font-mono truncate">{row.phonetic}</span>}
+                          <span className="text-slate-500 dark:text-slate-400 truncate">({row.meaning})</span>
+                          {row.partOfSpeech && (
+                            <span className="text-[9px] text-slate-400 font-mono italic">[{row.partOfSpeech}]</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-500">
+                            {row.cefrLevel || cefrLevel}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditParsed(idx)}
+                            className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                            title="Sửa từ này"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteParsedRow(idx)}
+                            className="p-1 text-slate-400 hover:text-rose-500 transition"
+                            title="Xóa từ này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-500">
-                          {row.cefrLevel || cefrLevel}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteParsedRow(idx)}
-                          className="p-1 text-slate-400 hover:text-rose-500 transition"
-                          title="Xóa từ này"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

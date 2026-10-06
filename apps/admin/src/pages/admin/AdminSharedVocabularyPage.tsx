@@ -18,6 +18,7 @@ import {
   Check,
   X,
   FileText,
+  Edit3,
   Lock,
   Loader2,
   Trash2,
@@ -95,6 +96,72 @@ export const AdminSharedVocabularyPage: React.FC = () => {
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [mergeSourceDeckIds, setMergeSourceDeckIds] = useState<string[]>([]);
   const [messageToast, setMessageToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showEditDeckModal, setShowEditDeckModal] = useState(false);
+  const [deckToEdit, setDeckToEdit] = useState<SharedDeck | null>(null);
+  const [editDeckTitle, setEditDeckTitle] = useState('');
+  const [editDeckDesc, setEditDeckDesc] = useState('');
+  const [editDeckCategory, setEditDeckCategory] = useState('');
+  const [editDeckCefr, setEditDeckCefr] = useState('B1');
+  const [editDeckLang, setEditDeckLang] = useState('en');
+
+  const handleOpenEditSharedDeck = (deck: SharedDeck) => {
+    setDeckToEdit(deck);
+    setEditDeckTitle(deck.title);
+    setEditDeckDesc(deck.description || '');
+    setEditDeckCategory(deck.category || 'General');
+    setEditDeckCefr(deck.cefrLevel || 'B1');
+    setEditDeckLang(deck.languageId || 'en');
+    setShowEditDeckModal(true);
+  };
+
+  const handleSaveSharedDeck = async () => {
+    if (!deckToEdit || !editDeckTitle.trim()) return;
+    setActionLoading(true);
+    try {
+      await api.patch(`/community/decks/${deckToEdit.id}`, {
+        title: editDeckTitle.trim(),
+        description: editDeckDesc.trim(),
+        category: editDeckCategory,
+        cefrLevel: editDeckCefr,
+        languageId: editDeckLang,
+      });
+      showToast('success', `Đã cập nhật thông tin kho "${editDeckTitle}" thành công!`);
+      setDecks((prev) =>
+        prev.map((d) =>
+          d.id === deckToEdit.id
+            ? {
+                ...d,
+                title: editDeckTitle.trim(),
+                description: editDeckDesc.trim(),
+                category: editDeckCategory,
+                cefrLevel: editDeckCefr,
+                languageId: editDeckLang,
+              }
+            : d,
+        ),
+      );
+      if (selectedDeck?.id === deckToEdit.id) {
+        setSelectedDeck((prev) =>
+          prev
+            ? {
+                ...prev,
+                title: editDeckTitle.trim(),
+                description: editDeckDesc.trim(),
+                category: editDeckCategory,
+                cefrLevel: editDeckCefr,
+                languageId: editDeckLang,
+              }
+            : null,
+        );
+      }
+      setShowEditDeckModal(false);
+      setDeckToEdit(null);
+    } catch (err: any) {
+      showToast('error', 'Lỗi khi cập nhật kho: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleOpenMergeModal = (deckIds: string[]) => {
     if (!deckIds || deckIds.length === 0) return;
@@ -1429,6 +1496,102 @@ export const AdminSharedVocabularyPage: React.FC = () => {
               >
                 {actionLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>Lưu Thay Đổi</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* Edit Deck Modal for Admin */}
+      {showEditDeckModal && deckToEdit && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 text-left">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-white">Chỉnh Sửa Thông Tin Kho Từ Vựng</h3>
+              </div>
+              <button
+                onClick={() => setShowEditDeckModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="text-slate-300 font-bold block mb-1">Tên kho từ vựng *</label>
+                <input
+                  type="text"
+                  value={editDeckTitle}
+                  onChange={(e) => setEditDeckTitle(e.target.value)}
+                  placeholder="Tên kho..."
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold text-sm focus:border-indigo-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-300 font-bold block mb-1">Mô tả kho từ</label>
+                <textarea
+                  rows={2}
+                  value={editDeckDesc}
+                  onChange={(e) => setEditDeckDesc(e.target.value)}
+                  placeholder="Mô tả nội dung kho từ..."
+                  className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:border-indigo-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Ngôn ngữ</label>
+                  <FilterSelect
+                    value={editDeckLang}
+                    onChange={(val) => setEditDeckLang(val)}
+                    options={SUPPORTED_LANGUAGES.map((l) => ({ value: l.id, label: l.name }))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Cấp độ CEFR</label>
+                  <FilterSelect
+                    value={editDeckCefr}
+                    onChange={(val) => setEditDeckCefr(val)}
+                    options={['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => ({ value: lvl, label: lvl }))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-bold block mb-1">Chủ đề (Category)</label>
+                  <input
+                    type="text"
+                    value={editDeckCategory}
+                    onChange={(e) => setEditDeckCategory(e.target.value)}
+                    placeholder="General, Business..."
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white focus:border-indigo-500 focus:outline-hidden"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowEditDeckModal(false)}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSharedDeck}
+                disabled={actionLoading || !editDeckTitle.trim()}
+                className="btn-glass-primary !py-2 !px-5 text-xs font-bold shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+              >
+                {actionLoading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
               </button>
             </div>
           </div>
