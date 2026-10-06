@@ -16,6 +16,8 @@ import {
   ParsedWordItem,
 } from '../../utils/excelTemplate';
 import { EditableVocabularyStagingTable } from './EditableVocabularyStagingTable';
+import api from '../../lib/api';
+import { idbGetWords, idbGetDecks } from '../../lib/idb';
 import {
   FolderPlus,
   Edit3,
@@ -102,8 +104,51 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
 
-  // Word Source Tabs: 'file' | 'manual' | 'personal_deck'
-  const hasPersonalDecksOption = Boolean(personalDecks && personalDecks.length > 0);
+  // Personal Decks (Prop or Fallback to IDB)
+  const [internalPersonalDecks, setInternalPersonalDecks] = useState<any[]>(personalDecks || []);
+  const [fetchingDecks, setFetchingDecks] = useState(false);
+
+  useEffect(() => {
+    if (personalDecks && personalDecks.length > 0) {
+      setInternalPersonalDecks(personalDecks);
+    } else if (isOpen) {
+      let isMounted = true;
+      setFetchingDecks(true);
+      (async () => {
+        try {
+          const [idbDecks, idbWords] = await Promise.all([
+            idbGetDecks().catch(() => []),
+            idbGetWords().catch(() => []),
+          ]);
+          if (isMounted && Array.isArray(idbDecks) && idbDecks.length > 0) {
+            const enriched = idbDecks.map((d: any) => {
+              const matchedWords = (idbWords || []).filter(
+                (w: any) =>
+                  w.deckId === d.id ||
+                  (w.deckName && w.deckName.trim().toLowerCase() === d.title?.trim().toLowerCase())
+              );
+              return {
+                ...d,
+                assignedWords: matchedWords,
+                wordCount: matchedWords.length || d.wordCount || d.words?.length || 0,
+              };
+            });
+            setInternalPersonalDecks(enriched);
+          }
+        } catch (e) {
+          console.warn('Failed to load internal decks:', e);
+        } finally {
+          if (isMounted) setFetchingDecks(false);
+        }
+      })();
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [personalDecks, isOpen]);
+
+  const availablePersonalDecks = (personalDecks && personalDecks.length > 0) ? personalDecks : internalPersonalDecks;
+  const hasPersonalDecksOption = Boolean(availablePersonalDecks && availablePersonalDecks.length > 0);
   const [wordSourceTab, setWordSourceTab] = useState<'file' | 'manual' | 'personal_deck'>('file');
   const [selectedPersonalDeckId, setSelectedPersonalDeckId] = useState('');
 
@@ -161,18 +206,180 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
       setIsParsing(false);
       setIsMaximized(false);
 
-      if (hasPersonalDecksOption && personalDecks && personalDecks.length > 0) {
-        setSelectedPersonalDeckId(initialData?.selectedPersonalDeckId || personalDecks[0].id);
+      if (availablePersonalDecks.length > 0) {
+        setSelectedPersonalDeckId(initialData?.selectedPersonalDeckId || availablePersonalDecks[0].id);
       }
     }
-  }, [isOpen, initialData, hasPersonalDecksOption]);
+  }, [isOpen, initialData, availablePersonalDecks.length]);
 
   const langDef = useMemo(() => getLanguage(languageId), [languageId]);
 
-  // Handle Personal Deck Selection
-  const handleSelectPersonalDeck = (deckId: string) => {
+  // Helper to normalize any word object from local IDB, assignedWords, or server API
+  const normalizeDeckWord = (
+    w: any,
+    fallbackCefr = 'B1',
+    fallbackTopic = 'General'
+  ): ParsedWordItem => {
+    if (!w) return { word: '', meaning: '' };
+    if (typeof w === 'string') return { word: w.trim(), meaning: w.trim() };
+
+    const word = String(
+      w.word ||
+      w.term ||
+      w.vocab ||
+      w.headword ||
+      w.entry ||
+      w.title ||
+      w.vocabulary?.word ||
+      w.vocabulary?.term ||
+      w.vocabulary?.headword ||
+      ''
+    ).trim();
+
+    const phonetic = String(
+      w.phonetic ||
+      w.pronunciation ||
+      w.pinyin ||
+      w.ipa ||
+      w.furigana ||
+      w.romaji ||
+      w.vocabulary?.phonetic ||
+      w.vocabulary?.pronunciation ||
+      w.vocabulary?.pinyin ||
+      ''
+    ).trim();
+
+    const rawPos = String(
+      w.partOfSpeech ||
+      w.pos ||
+      w.type ||
+      w.vocabulary?.partOfSpeech ||
+      w.vocabulary?.pos ||
+      'noun'
+    ).toLowerCase().trim();
+
+    let partOfSpeech = 'noun';
+    if (rawPos.includes('động') || rawPos === 'verb' || rawPos === 'v') partOfSpeech = 'verb';
+    else if (rawPos.includes('tính') || rawPos === 'adjective' || rawPos === 'adj') partOfSpeech = 'adjective';
+    else if (rawPos.includes('trạng') || rawPos === 'adverb' || rawPos === 'adv') partOfSpeech = 'adverb';
+    else if (rawPos.includes('cụm') || rawPos === 'phrase') partOfSpeech = 'phrase';
+    else if (rawPos.includes('thành ngữ') || rawPos === 'idiom') partOfSpeech = 'idiom';
+    else if (rawPos.includes('giới') || rawPos === 'preposition' || rawPos === 'prep') partOfSpeech = 'preposition';
+    else if (rawPos.includes('liên') || rawPos === 'conjunction' || rawPos === 'conj') partOfSpeech = 'conjunction';
+    else if (rawPos.includes('đại') || rawPos === 'pronoun' || rawPos === 'pron') partOfSpeech = 'pronoun';
+    else if (rawPos.includes('thán') || rawPos === 'interjection' || rawPos === 'interj') partOfSpeech = 'interjection';
+    else if (rawPos.includes('khác') || rawPos === 'other') partOfSpeech = 'other';
+    else partOfSpeech = 'noun';
+
+    let meaning = '';
+    if (typeof w.meaning === 'string' && w.meaning.trim() && w.meaning !== '[object Object]') {
+      meaning = w.meaning.trim();
+    } else if (typeof w.definition === 'string' && w.definition.trim()) {
+      meaning = w.definition.trim();
+    } else if (typeof w.shortDefinition === 'string' && w.shortDefinition.trim()) {
+      meaning = w.shortDefinition.trim();
+    } else if (typeof w.translation === 'string' && w.translation.trim()) {
+      meaning = w.translation.trim();
+    } else if (typeof w.vietnamese === 'string' && w.vietnamese.trim()) {
+      meaning = w.vietnamese.trim();
+    } else if (typeof w.explanation === 'string' && w.explanation.trim()) {
+      meaning = w.explanation.trim();
+    } else if (typeof w.def === 'string' && w.def.trim()) {
+      meaning = w.def.trim();
+    } else if (typeof w.vocabulary?.shortDefinition === 'string' && w.vocabulary.shortDefinition.trim()) {
+      meaning = w.vocabulary.shortDefinition.trim();
+    } else if (typeof w.vocabulary?.definition === 'string' && w.vocabulary.definition.trim()) {
+      meaning = w.vocabulary.definition.trim();
+    } else if (typeof w.vocabulary?.meaning === 'string' && w.vocabulary.meaning.trim() && w.vocabulary.meaning !== '[object Object]') {
+      meaning = w.vocabulary.meaning.trim();
+    } else if (typeof w.vocabulary?.translation === 'string' && w.vocabulary.translation.trim()) {
+      meaning = w.vocabulary.translation.trim();
+    } else if (typeof w.vocabulary?.vietnamese === 'string' && w.vocabulary.vietnamese.trim()) {
+      meaning = w.vocabulary.vietnamese.trim();
+    } else if (Array.isArray(w.meanings) && w.meanings.length > 0) {
+      const m0 = w.meanings[0];
+      meaning = typeof m0 === 'string' ? m0 : (m0?.meaning || m0?.definition || m0?.vietnamese || m0?.translation || '');
+    } else if (Array.isArray(w.vocabulary?.meanings) && w.vocabulary.meanings.length > 0) {
+      const m0 = w.vocabulary.meanings[0];
+      meaning = typeof m0 === 'string' ? m0 : (m0?.meaning || m0?.definition || m0?.vietnamese || m0?.translation || '');
+    } else if (typeof w.meaning === 'object' && w.meaning !== null) {
+      meaning = w.meaning.meaning || w.meaning.definition || w.meaning.vi || w.meaning.text || '';
+    }
+
+    if (!meaning && word) {
+      meaning = word;
+    }
+
+    let example = '';
+    if (typeof w.example === 'string' && w.example.trim()) {
+      example = w.example.trim();
+    } else if (typeof w.sentence === 'string' && w.sentence.trim()) {
+      example = w.sentence.trim();
+    } else if (typeof w.vocabulary?.example === 'string' && w.vocabulary.example.trim()) {
+      example = w.vocabulary.example.trim();
+    } else if (typeof w.vocabulary?.sentence === 'string' && w.vocabulary.sentence.trim()) {
+      example = w.vocabulary.sentence.trim();
+    } else if (Array.isArray(w.examples) && w.examples.length > 0) {
+      const ex0 = w.examples[0];
+      example = typeof ex0 === 'string' ? ex0 : (ex0?.sentence || ex0?.example || '');
+    } else if (Array.isArray(w.vocabulary?.examples) && w.vocabulary.examples.length > 0) {
+      const ex0 = w.vocabulary.examples[0];
+      example = typeof ex0 === 'string' ? ex0 : (ex0?.sentence || ex0?.example || '');
+    }
+
+    let exampleTranslation = '';
+    if (typeof w.exampleTranslation === 'string' && w.exampleTranslation.trim()) {
+      exampleTranslation = w.exampleTranslation.trim();
+    } else if (typeof w.sentenceTranslation === 'string' && w.sentenceTranslation.trim()) {
+      exampleTranslation = w.sentenceTranslation.trim();
+    } else if (typeof w.vocabulary?.exampleTranslation === 'string' && w.vocabulary.exampleTranslation.trim()) {
+      exampleTranslation = w.vocabulary.exampleTranslation.trim();
+    } else if (typeof w.vocabulary?.sentenceTranslation === 'string' && w.vocabulary.sentenceTranslation.trim()) {
+      exampleTranslation = w.vocabulary.sentenceTranslation.trim();
+    } else if (Array.isArray(w.examples) && w.examples.length > 0) {
+      const ex0 = w.examples[0];
+      exampleTranslation = typeof ex0 === 'object' ? (ex0?.translation || ex0?.meaning || '') : '';
+    } else if (Array.isArray(w.vocabulary?.examples) && w.vocabulary.examples.length > 0) {
+      const ex0 = w.vocabulary.examples[0];
+      exampleTranslation = typeof ex0 === 'object' ? (ex0?.translation || ex0?.meaning || '') : '';
+    }
+
+    const cefrLevel = String(
+      w.cefrLevel ||
+      w.level ||
+      w.vocabulary?.cefrLevel ||
+      w.vocabulary?.level ||
+      fallbackCefr ||
+      'B1'
+    ).trim();
+
+    const topic = String(
+      w.topic ||
+      w.category ||
+      w.vocabulary?.topic ||
+      w.vocabulary?.category ||
+      fallbackTopic ||
+      'General'
+    ).trim();
+
+    return {
+      word,
+      phonetic: phonetic || undefined,
+      partOfSpeech,
+      meaning,
+      example: example || undefined,
+      exampleTranslation: exampleTranslation || undefined,
+      cefrLevel: cefrLevel || 'B1',
+      topic: topic || 'General',
+    };
+  };
+
+  // Handle Personal Deck Selection with complete async data fetching
+  const handleSelectPersonalDeck = async (deckId: string) => {
     setSelectedPersonalDeckId(deckId);
-    const d = personalDecks?.find((item) => item.id === deckId);
+    if (!deckId) return;
+
+    const d = availablePersonalDecks.find((item) => item.id === deckId);
     if (!d) return;
 
     if (!title || title === initialData?.title) {
@@ -194,20 +401,118 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
       setEnablePassword(true);
       if (d.password) setPassword(d.password);
     }
-    if (Array.isArray(d.words) && d.words.length > 0) {
-      const mapped = d.words.map((w: any) => ({
-        word: w.word,
-        phonetic: w.phonetic,
-        partOfSpeech: w.partOfSpeech || 'noun',
-        meaning: w.meaning || w.definition,
-        example: w.example,
-        exampleTranslation: w.exampleTranslation,
-        cefrLevel: w.cefrLevel || d.cefrLevel || 'B1',
-        topic: w.topic || d.category || 'General',
-      }));
-      setParsedWords(mapped);
-      setParsingSuccessMsg(`Đã nạp ${mapped.length} từ vựng từ kho "${d.title}"!`);
-      setTimeout(() => setParsingSuccessMsg(null), 4000);
+
+    setIsParsing(true);
+    setParsingProgress({
+      stepText: `Đang nạp từ vựng từ kho "${d.title}"...`,
+      percent: 30,
+    });
+    setParsingError(null);
+    setParsingSuccessMsg(null);
+
+    try {
+      let rawWords: any[] = [];
+
+      // 1. Check d.assignedWords (from MyWordBankPage computed list)
+      if (Array.isArray(d.assignedWords) && d.assignedWords.length > 0) {
+        rawWords = [...d.assignedWords];
+      }
+      // 2. Check d.words (embedded deck words array)
+      else if (Array.isArray(d.words) && d.words.length > 0 && typeof d.words[0] === 'object') {
+        rawWords = [...d.words];
+      }
+
+      const expectedCount = d.computedWordCount || d.wordCount || (Array.isArray(d.words) ? d.words.length : 0);
+
+      // 3. Search IndexedDB (STORE_VOCAB) to guarantee ALL words are found
+      if (rawWords.length === 0 || (expectedCount > 0 && rawWords.length < expectedCount)) {
+        setParsingProgress({
+          stepText: 'Đang tìm kiếm từ vựng trong bộ nhớ...',
+          percent: 60,
+        });
+        try {
+          const idbWords = await idbGetWords();
+          if (Array.isArray(idbWords) && idbWords.length > 0) {
+            const cleanServerId = d.id?.startsWith('cloned_') ? d.id.replace('cloned_', '') : d.id;
+            const targetDeckTitle = (d.title || '').trim().toLowerCase();
+
+            const matchedFromIdb = idbWords.filter((w: any) => {
+              if (!w) return false;
+              if (w.deckId && String(w.deckId) === String(d.id)) return true;
+              if (cleanServerId && w.deckId && String(w.deckId) === String(cleanServerId)) return true;
+              if (d.originDeckId && w.deckId && String(w.deckId) === String(d.originDeckId)) return true;
+              if (targetDeckTitle && w.deckName && w.deckName.trim().toLowerCase() === targetDeckTitle) return true;
+              if (Array.isArray(d.words) && d.words.includes(w.id)) return true;
+              return false;
+            });
+
+            // Combine without duplicate words
+            const wordMap = new Map<string, any>();
+            rawWords.forEach((item) => {
+              const key = item.id || (item.word || item.vocabulary?.word || '').trim().toLowerCase();
+              if (key) wordMap.set(key, item);
+            });
+            matchedFromIdb.forEach((item) => {
+              const key = item.id || (item.word || item.vocabulary?.word || '').trim().toLowerCase();
+              if (key && !wordMap.has(key)) wordMap.set(key, item);
+            });
+            rawWords = Array.from(wordMap.values());
+          }
+        } catch (idbErr) {
+          console.warn('IDB word query error:', idbErr);
+        }
+      }
+
+      // 4. If still empty or fewer than expected and deck has a server ID, fetch from cloud API
+      if ((rawWords.length === 0 || (expectedCount > 0 && rawWords.length < expectedCount)) && d.id && !d.id.startsWith('local_')) {
+        setParsingProgress({
+          stepText: 'Đang tải dữ liệu từ máy chủ...',
+          percent: 85,
+        });
+        try {
+          const cleanServerId = d.id.startsWith('cloned_') ? d.id.replace('cloned_', '') : d.id;
+          const res: any = await api.get(`/community/decks/${cleanServerId}`);
+          const fetchedWords =
+            res?.data?.words ||
+            res?.words ||
+            res?.data?.data?.words ||
+            res?.data?.assignedWords ||
+            res?.assignedWords ||
+            [];
+          if (Array.isArray(fetchedWords) && fetchedWords.length > 0) {
+            const wordMap = new Map<string, any>();
+            rawWords.forEach((item) => {
+              const key = item.id || (item.word || item.vocabulary?.word || '').trim().toLowerCase();
+              if (key) wordMap.set(key, item);
+            });
+            fetchedWords.forEach((item: any) => {
+              const key = item.id || (item.word || item.vocabulary?.word || '').trim().toLowerCase();
+              if (key && !wordMap.has(key)) wordMap.set(key, item);
+            });
+            rawWords = Array.from(wordMap.values());
+          }
+        } catch (apiErr) {
+          console.warn('API deck fetch error:', apiErr);
+        }
+      }
+
+      // Map and normalize all words cleanly
+      const mapped = rawWords
+        .map((w: any) => normalizeDeckWord(w, d.cefrLevel || 'B1', d.category || 'General'))
+        .filter((w: ParsedWordItem) => Boolean(w.word && w.word.trim()));
+
+      if (mapped.length > 0) {
+        setParsedWords(mapped);
+        setParsingSuccessMsg(`Đã nạp đầy đủ ${mapped.length} từ vựng từ kho "${d.title}"!`);
+        setTimeout(() => setParsingSuccessMsg(null), 5000);
+      } else {
+        setParsingError(`Kho "${d.title}" hiện chưa có dữ liệu từ vựng nào.`);
+      }
+    } catch (err: any) {
+      console.error('Lỗi khi nạp từ vựng từ kho:', err);
+      setParsingError(err?.message || 'Không thể tải từ vựng từ kho đã chọn.');
+    } finally {
+      setIsParsing(false);
     }
   };
 
@@ -371,7 +676,10 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
       hasPassword: enablePassword && password.trim().length > 0,
       password: enablePassword && password.trim().length > 0 ? password.trim() : undefined,
       isPublic,
-      words: finalWords,
+      words: finalWords.map((w) => ({
+        ...w,
+        meaning: (w.meaning && w.meaning.trim()) || w.word.trim(),
+      })),
       selectedPersonalDeckId: wordSourceTab === 'personal_deck' ? selectedPersonalDeckId : undefined,
     };
 
@@ -379,7 +687,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
   };
 
   const validWordsCount = useMemo(
-    () => parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length,
+    () => parsedWords.filter((w) => w.word?.trim()).length,
     [parsedWords]
   );
 
@@ -400,8 +708,8 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
                   {titleText ||
                     (mode === 'create'
-                      ? 'Tạo & Đăng Tải Kho Từ Vựng'
-                      : 'Chỉnh Sửa Thông Tin Kho Từ Vựng')}
+                      ? 'Tạo kho từ vựng'
+                      : 'Chỉnh sửa kho từ vựng')}
                 </h3>
                 <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
                   <CountryFlag languageId={languageId} size="xs" />
@@ -415,7 +723,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {subtitleText ||
-                  'Cấu hình kho từ, nhập file Excel/CSV và chỉnh sửa trực tiếp trên bảng từ vựng trước khi lưu'}
+                  'Cấu hình kho từ, nạp danh sách và chỉnh sửa trực tiếp trên bảng dữ liệu'}
               </p>
             </div>
           </div>
@@ -495,14 +803,14 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
             {/* 1. Deck Title */}
             <div>
               <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1 text-xs">
-                Tên kho từ vựng <span className="text-rose-500">*</span>
+                Tên kho từ <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ví dụ: 600 Essential TOEIC Words, HSK 4 Trọng Tâm..."
+                placeholder="Nhập tên kho từ..."
                 className="w-full h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-xs text-slate-900 dark:text-white transition placeholder:text-slate-400"
               />
             </div>
@@ -512,7 +820,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Chuẩn ngôn ngữ & Trình độ</span>
+                  <span>Ngôn ngữ & Trình độ</span>
                 </span>
               </div>
 
@@ -542,7 +850,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="font-bold text-slate-800 dark:text-slate-200 text-xs">
-                  Mô tả kho từ & Mục tiêu học tập
+                  Mô tả kho từ
                 </label>
                 <span className="text-[10px] text-slate-400">{description.length} ký tự</span>
               </div>
@@ -550,7 +858,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Mô tả lộ trình, nhóm đối tượng hoặc nguồn tài liệu tham khảo..."
+                placeholder="Mô tả ngắn gọn về kho từ..."
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-normal text-xs leading-relaxed text-slate-900 dark:text-white transition resize-none placeholder:text-slate-400"
               />
             </div>
@@ -564,9 +872,9 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                      Mật khẩu bảo vệ kho
+                      Mật khẩu bảo vệ
                     </span>
-                    <span className="text-[10px] text-slate-400">Yêu cầu mã PIN khi sao chép</span>
+                    <span className="text-[10px] text-slate-400">Yêu cầu mật khẩu khi truy cập</span>
                   </div>
                 </div>
                 <ToggleSwitch
@@ -582,7 +890,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Nhập mã PIN hoặc mật khẩu..."
+                    placeholder="Nhập mật khẩu..."
                     className="w-full text-xs h-8 px-3 pr-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                   />
                   <button
@@ -605,10 +913,10 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                      Đăng tải lên Kho chung (Cộng đồng)
+                      Chia sẻ cộng đồng
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      Đồng bộ Cloud & chia sẻ với mọi người
+                      Công khai để mọi người có thể học tập
                     </span>
                   </div>
                 </div>
@@ -671,7 +979,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                   }`}
                 >
                   <Plus className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Nhập văn bản</span>
+                  <span>Nhập thủ công</span>
                 </button>
 
                 {hasPersonalDecksOption && (
@@ -777,10 +1085,10 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                         {selectedFile
                           ? `Đã chọn: ${selectedFile.name}`
-                          : 'Kéo thả hoặc bấm để chọn file Excel (.xlsx) / CSV từ máy tính'}
+                          : 'Kéo thả hoặc bấm để chọn tệp Excel (.xlsx) / CSV'}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
-                        Tự động đọc 7-8 cột: Word, Phonetic, PartOfSpeech, Meaning, Example, Translation, CEFR, Topic
+                        Tự động đọc: Từ vựng, Phiên âm, Loại từ, Nghĩa, Ví dụ, Dịch ví dụ, Trình độ, Chủ đề
                       </p>
                     </div>
                   </div>
@@ -845,7 +1153,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
               <div className="shrink-0 space-y-2 p-3 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                   <span>
-                    Cú pháp mỗi dòng: <code>Từ vựng | Phiên âm | Loại từ | Nghĩa | Ví dụ | Dịch</code>
+                    Cú pháp mỗi dòng: <code>Từ vựng | Phiên âm | Loại từ | Nghĩa | Ví dụ | Dịch ví dụ</code>
                   </span>
                   <span>Mỗi từ 1 dòng</span>
                 </div>
@@ -865,7 +1173,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                     className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Nạp vào bảng từ vựng bên dưới</span>
+                    <span>Nạp vào bảng từ</span>
                   </button>
                 </div>
               </div>
@@ -875,9 +1183,9 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
             {wordSourceTab === 'personal_deck' && hasPersonalDecksOption && (
               <div className="shrink-0 p-3 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Chọn kho từ cá nhân của bạn để đóng góp lên cộng đồng:
+                  Chọn kho từ cá nhân:
                 </label>
-                {loadingPersonalDecks ? (
+                {loadingPersonalDecks || fetchingDecks ? (
                   <div className="p-3 text-center text-xs text-slate-400 animate-pulse">
                     Đang tải danh sách kho từ...
                   </div>
@@ -885,15 +1193,13 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
                   <CustomDropdown
                     value={selectedPersonalDeckId}
                     onChange={(val) => handleSelectPersonalDeck(val)}
-                    options={(personalDecks || []).map((d) => ({
+                    options={(availablePersonalDecks || []).map((d) => ({
                       value: d.id,
-                      label: `${d.title} (${d.wordCount || d.words?.length || 0} từ) • [${(
-                        d.languageId || 'en'
-                      ).toUpperCase()}]`,
+                      label: `${d.title} (${d.computedWordCount || d.wordCount || d.words?.length || d.assignedWords?.length || 0} từ)`,
                       badge: d.category || 'General',
                     }))}
                     searchable={true}
-                    placeholder="-- Chọn kho từ cá nhân --"
+                    placeholder="-- Chọn kho từ --"
                     size="md"
                     className="w-full"
                   />
@@ -944,7 +1250,7 @@ export const UnifiedDeckModal: React.FC<UnifiedDeckModalProps> = ({
               {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               <span>
                 {submitButtonText ||
-                  (mode === 'create' ? 'Tạo Kho Từ Vựng' : 'Lưu Thay Đổi')}
+                  (mode === 'create' ? 'Tạo kho từ' : 'Lưu thay đổi')}
               </span>
             </button>
           </div>

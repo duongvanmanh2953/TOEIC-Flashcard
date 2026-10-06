@@ -161,7 +161,7 @@ export const DeckStandardFields: React.FC<DeckStandardFieldsProps> = ({
         <div>
           <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Không gian học tập</span>
+            <span>Ngôn ngữ</span>
           </label>
           {allowLanguageChange && onLanguageChange ? (
             <CustomDropdown
@@ -169,7 +169,7 @@ export const DeckStandardFields: React.FC<DeckStandardFieldsProps> = ({
               onChange={(val) => onLanguageChange(val)}
               options={SUPPORTED_LANGUAGES.filter((l) => l.enabled).map((l) => ({
                 value: l.id,
-                label: `${l.nativeName} (${l.name})`,
+                label: l.name,
                 icon: <CountryFlag languageId={l.id} size="sm" />,
               }))}
               size="md"
@@ -178,9 +178,7 @@ export const DeckStandardFields: React.FC<DeckStandardFieldsProps> = ({
           ) : (
             <div className="flex items-center gap-2.5 h-10 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-semibold text-xs text-slate-900 dark:text-white">
               <CountryFlag languageId={languageId} size="sm" />
-              <span className="truncate">
-                {langDef.nativeName} ({langDef.name})
-              </span>
+              <span className="truncate">{langDef.name}</span>
             </div>
           )}
         </div>
@@ -189,7 +187,7 @@ export const DeckStandardFields: React.FC<DeckStandardFieldsProps> = ({
         <div>
           <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm flex items-center gap-1.5">
             <Award className="w-3.5 h-3.5 text-amber-500" />
-            <span>Chứng chỉ / Tiêu chuẩn</span>
+            <span>Chứng chỉ</span>
           </label>
           <CustomDropdown
             value={selectedCert?.id || certificates[0]?.id || 'general'}
@@ -204,7 +202,7 @@ export const DeckStandardFields: React.FC<DeckStandardFieldsProps> = ({
         <div>
           <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm truncate flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5 text-purple-500" />
-            <span>Cấp độ ({selectedCert?.name || langDef.nativeName})</span>
+            <span>Trình độ</span>
           </label>
           <CustomDropdown
             value={level}
@@ -219,16 +217,16 @@ export const DeckStandardFields: React.FC<DeckStandardFieldsProps> = ({
         <div className={gridCols === 3 ? 'sm:col-span-3' : ''}>
           <label className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5 text-xs sm:text-sm flex items-center gap-1.5">
             <Tag className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Lĩnh vực / Danh mục ({langDef.nativeName})</span>
+            <span>Chủ đề</span>
           </label>
           <CustomDropdown
             value={category}
             onChange={(val) => onCategoryChange(val)}
             options={categoryOptions}
             searchable={true}
-            searchPlaceholder="Tìm kiếm hoặc tạo danh mục mới..."
+            searchPlaceholder="Tìm hoặc tạo chủ đề..."
             creatable={true}
-            createPlaceholder='Tạo danh mục mới: "{query}"'
+            createPlaceholder='Tạo chủ đề: "{query}"'
             onCreateOption={handleCreateCategory}
             size="md"
             className="w-full"

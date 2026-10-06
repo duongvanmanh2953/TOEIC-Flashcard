@@ -748,7 +748,7 @@ export const MyWordBankPage: React.FC = () => {
         const newDeckId = `deck_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const hasWords = formData.words && formData.words.length > 0;
         const validWords = hasWords
-          ? formData.words!.filter((w) => w.word && w.word.trim() && w.meaning && w.meaning.trim())
+          ? formData.words!.filter((w) => w.word && w.word.trim())
           : [];
 
         const newDeck: LocalDeck = {
@@ -776,7 +776,7 @@ export const MyWordBankPage: React.FC = () => {
         if (validWords.length > 0) {
           const itemsToSave = validWords.map((item, idx) => {
             const cleanW = item.word.trim().toLowerCase();
-            const cleanM = item.meaning.trim();
+            const cleanM = (item.meaning && item.meaning.trim()) || item.word.trim();
             const realTopic = item.topic?.trim() || formData.category || 'General';
             const id = `word_${cleanW.replace(/[^a-z0-9]/g, '_')}_${Date.now()}_${idx}`;
 
@@ -883,7 +883,7 @@ export const MyWordBankPage: React.FC = () => {
         };
 
         if (formData.words !== undefined) {
-          const validWords = formData.words.filter((w) => w.word && w.word.trim() && w.meaning && w.meaning.trim());
+          const validWords = formData.words.filter((w) => w.word && w.word.trim());
           const oldDeckWords = words.filter((w) => w.deckId === deckId || w.deckName === oldTitle);
           if (oldDeckWords.length > 0) {
             await idbDeleteWords(oldDeckWords.map((w) => w.id));
@@ -891,7 +891,7 @@ export const MyWordBankPage: React.FC = () => {
 
           const itemsToSave = validWords.map((item, idx) => {
             const cleanW = item.word.trim().toLowerCase();
-            const cleanM = item.meaning.trim();
+            const cleanM = (item.meaning && item.meaning.trim()) || item.word.trim();
             const realTopic = item.topic?.trim() || formData.category || 'General';
             const id = (item as any).id || `word_${cleanW.replace(/[^a-z0-9]/g, '_')}_${Date.now()}_${idx}`;
 
@@ -4607,6 +4607,7 @@ export const MyWordBankPage: React.FC = () => {
         loading={unifiedDeckLoading}
         customCategories={customCategories}
         onAddCustomCategory={handleCreateCategory}
+        personalDecks={deckListWithStats}
       />
 
       {/* PASSWORD UNLOCK MODAL FOR PERSONAL / CLONED DECKS */}

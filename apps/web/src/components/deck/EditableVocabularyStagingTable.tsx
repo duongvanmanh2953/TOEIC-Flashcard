@@ -24,17 +24,17 @@ export interface EditableVocabularyStagingTableProps {
 }
 
 const POS_OPTIONS = [
-  { value: 'noun', label: 'noun (Danh từ)' },
-  { value: 'verb', label: 'verb (Động từ)' },
-  { value: 'adjective', label: 'adj (Tính từ)' },
-  { value: 'adverb', label: 'adv (Trạng từ)' },
-  { value: 'phrase', label: 'phrase (Cụm từ)' },
-  { value: 'idiom', label: 'idiom (Thành ngữ)' },
-  { value: 'preposition', label: 'prep (Giới từ)' },
-  { value: 'conjunction', label: 'conj (Liên từ)' },
-  { value: 'pronoun', label: 'pronoun (Đại từ)' },
-  { value: 'interjection', label: 'interj (Thán từ)' },
-  { value: 'other', label: 'other (Khác)' },
+  { value: 'noun', label: 'Danh từ' },
+  { value: 'verb', label: 'Động từ' },
+  { value: 'adjective', label: 'Tính từ' },
+  { value: 'adverb', label: 'Trạng từ' },
+  { value: 'phrase', label: 'Cụm từ' },
+  { value: 'idiom', label: 'Thành ngữ' },
+  { value: 'preposition', label: 'Giới từ' },
+  { value: 'conjunction', label: 'Liên từ' },
+  { value: 'pronoun', label: 'Đại từ' },
+  { value: 'interjection', label: 'Thán từ' },
+  { value: 'other', label: 'Khác' },
 ];
 
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -327,17 +327,17 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
             {/* Sticky Table Header */}
             <thead className="sticky top-0 z-10 bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold uppercase tracking-wider select-none shadow-xs">
               <tr>
-                <th className="py-2.5 px-2 text-center w-12">#</th>
+                <th className="py-2.5 px-2 text-center w-12">STT</th>
                 <th className="py-2.5 px-3 min-w-[150px] w-44">
                   Từ vựng <span className="text-rose-500">*</span>
                 </th>
                 <th className="py-2.5 px-3 min-w-[130px] w-36">Phiên âm</th>
-                <th className="py-2.5 px-3 min-w-[130px] w-36">Loại từ</th>
+                <th className="py-2.5 px-3 min-w-[120px] w-32">Loại từ</th>
                 <th className="py-2.5 px-3 min-w-[200px] flex-1">
-                  Nghĩa tiếng Việt <span className="text-rose-500">*</span>
+                  Nghĩa <span className="text-rose-500">*</span>
                 </th>
-                <th className="py-2.5 px-3 min-w-[210px] w-60">Ví dụ minh họa</th>
-                <th className="py-2.5 px-3 min-w-[190px] w-52">Dịch câu ví dụ</th>
+                <th className="py-2.5 px-3 min-w-[210px] w-60">Ví dụ</th>
+                <th className="py-2.5 px-3 min-w-[190px] w-52">Dịch ví dụ</th>
                 <th className="py-2.5 px-3 min-w-[90px] w-24">Trình độ</th>
                 <th className="py-2.5 px-3 min-w-[120px] w-32">Chủ đề</th>
                 <th className="py-2.5 px-2 text-center w-12">Xóa</th>
@@ -381,7 +381,7 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
                           onChange={(e) =>
                             handleCellChange(originalIndex, 'word', e.target.value)
                           }
-                          placeholder="Nhập từ..."
+                          placeholder="Từ vựng..."
                           className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-bold transition focus:outline-none focus:ring-2 ${
                             isWordMissing
                               ? 'bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-100 focus:ring-rose-400'
@@ -405,7 +405,7 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
                         onChange={(e) =>
                           handleCellChange(originalIndex, 'phonetic', e.target.value)
                         }
-                        placeholder="/ipa/"
+                        placeholder="Phiên âm..."
                         className="w-full px-2.5 py-1.5 rounded-lg text-xs font-mono text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                       />
                     </td>
@@ -436,7 +436,7 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
                           onChange={(e) =>
                             handleCellChange(originalIndex, 'meaning', e.target.value)
                           }
-                          placeholder="Nghĩa tiếng Việt..."
+                          placeholder="Nghĩa..."
                           className={`w-full px-2.5 py-1.5 rounded-lg text-xs transition focus:outline-none focus:ring-2 ${
                             isMeaningMissing
                               ? 'bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-100 focus:ring-rose-400'
@@ -445,7 +445,7 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
                         />
                         {isMeaningMissing && (
                           <span
-                            title="Thiếu nghĩa tiếng Việt"
+                            title="Thiếu nghĩa"
                             className="absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-rose-500 animate-pulse"
                           />
                         )}
@@ -460,7 +460,7 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
                         onChange={(e) =>
                           handleCellChange(originalIndex, 'example', e.target.value)
                         }
-                        placeholder="Câu ví dụ..."
+                        placeholder="Ví dụ..."
                         className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                       />
                     </td>
@@ -477,7 +477,7 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
                             e.target.value
                           )
                         }
-                        placeholder="Dịch câu ví dụ..."
+                        placeholder="Dịch ví dụ..."
                         className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                       />
                     </td>
@@ -507,7 +507,7 @@ export const EditableVocabularyStagingTable: React.FC<EditableVocabularyStagingT
                         onChange={(e) =>
                           handleCellChange(originalIndex, 'topic', e.target.value)
                         }
-                        placeholder={defaultTopic}
+                        placeholder="Chủ đề..."
                         className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
                       />
                     </td>
