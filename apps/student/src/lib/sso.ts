@@ -118,7 +118,7 @@ export function ingestSsoTokens(): boolean {
     const ssoRefresh = urlParams.get('sso_refresh');
     const ssoDeviceId = urlParams.get('sso_device_id');
 
-    if (ssoDeviceId && !localStorage.getItem('vocabflow_device_id')) {
+    if (ssoDeviceId) {
       localStorage.setItem('vocabflow_device_id', ssoDeviceId);
     }
 
@@ -146,6 +146,13 @@ export function ingestSsoTokens(): boolean {
   }
 
   return false;
+}
+
+// Immediately ingest tokens on module evaluation before React mounts
+if (typeof window !== 'undefined') {
+  try {
+    ingestSsoTokens();
+  } catch {}
 }
 
 // Multi-tab sync via BroadcastChannel

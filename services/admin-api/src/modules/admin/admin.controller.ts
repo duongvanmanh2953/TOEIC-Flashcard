@@ -384,6 +384,18 @@ export class AdminController {
     return this.adminService.testFirebaseConnection(dto);
   }
 
+  @Get('firebase/config')
+  @ApiOperation({ summary: 'Get current saved Firebase configuration' })
+  getFirebaseConfig() {
+    return this.adminService.getFirebaseConfig();
+  }
+
+  @Post('firebase/config')
+  @ApiOperation({ summary: 'Save and persist Firebase configuration for entire platform' })
+  saveFirebaseConfig(@Body() dto: any) {
+    return this.adminService.saveFirebaseConfig(dto);
+  }
+
   @Post('ai/test-connection')
   @ApiOperation({ summary: 'Real test AI provider connectivity, latency and quota' })
   testAiConnection(

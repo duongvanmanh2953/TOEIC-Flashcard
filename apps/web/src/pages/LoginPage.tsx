@@ -21,6 +21,13 @@ export const LoginPage: React.FC = () => {
   const { login, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired') === '1') {
+      setError('Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục học tập.');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

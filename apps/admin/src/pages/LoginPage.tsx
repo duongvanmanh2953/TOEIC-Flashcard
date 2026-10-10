@@ -28,6 +28,13 @@ export const LoginPage: React.FC = () => {
     }
   }, [user, isGuest, authLoading, navigate]);
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired') === '1') {
+      setError('Phiên làm việc quản trị của bạn đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -35,7 +42,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login({ email, password });
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       if (
         err?.code === 'DEVICE_LIMIT_EXCEEDED' ||

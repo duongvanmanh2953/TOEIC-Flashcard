@@ -208,34 +208,48 @@ api.interceptors.response.use(
             return api(originalRequest);
           }
         } catch {
-          // Token expired (15 days), revoked, or device logged in elsewhere
+          // Token expired, revoked, or invalid
           localStorage.removeItem('vocabflow_access_token');
           localStorage.removeItem('vocabflow_refresh_token');
+          sessionStorage.clear();
           if (typeof window !== 'undefined') {
             window.dispatchEvent(
               new CustomEvent('VOCABFLOW_TOAST', {
                 detail: {
                   type: 'warning',
-                  title: 'Phiên đăng nhập kết thúc',
-                  message: 'Phiên làm việc của bạn đã hết hạn (15 ngày) hoặc đạt giới hạn thiết bị.',
+                  title: 'Phiên đăng nhập đã hết hạn',
+                  message: 'Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại.',
                 },
               }),
             );
-            if (isStrictProtectedRoute(window.location.pathname)) {
+            if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
               setTimeout(() => {
-                window.location.href = '/login';
+                window.location.href = `/login?expired=1`;
               }, 400);
             }
           }
         }
       } else {
-        // Stale or missing token (e.g. guest or public browsing) - do NOT redirect unless on strict route
+        // Missing refresh token while accessing authenticated endpoint
+        const hadToken = Boolean(localStorage.getItem('vocabflow_access_token'));
         localStorage.removeItem('vocabflow_access_token');
         localStorage.removeItem('vocabflow_refresh_token');
-        if (typeof window !== 'undefined' && isStrictProtectedRoute(window.location.pathname)) {
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 400);
+        sessionStorage.clear();
+        if (typeof window !== 'undefined' && hadToken) {
+          window.dispatchEvent(
+            new CustomEvent('VOCABFLOW_TOAST', {
+              detail: {
+                type: 'warning',
+                title: 'Phiên đăng nhập đã hết hạn',
+                message: 'Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại.',
+              },
+            }),
+          );
+          if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+            setTimeout(() => {
+              window.location.href = `/login?expired=1`;
+            }, 400);
+          }
         }
       }
     }

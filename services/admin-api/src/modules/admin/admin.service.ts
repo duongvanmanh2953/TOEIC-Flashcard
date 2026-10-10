@@ -1137,6 +1137,152 @@ export class AdminService {
   }
 
   /**
+   * Get currently active Firebase configuration from DB, file, or environment
+   */
+  async getFirebaseConfig() {
+    try {
+      const configRecord = await this.prisma.systemConfig.findUnique({
+        where: { key: 'FIREBASE_CONFIG' },
+      });
+      if (configRecord?.value) {
+        return { success: true, data: JSON.parse(configRecord.value) };
+      }
+    } catch {}
+
+    const candidatePaths = [
+      path.resolve(process.cwd(), 'firebase.config.json'),
+      path.resolve(process.cwd(), '../../firebase.config.json'),
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        try {
+          const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (raw.apiKey) return { success: true, data: raw };
+        } catch {}
+      }
+    }
+
+    const envKey = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
+    const envProject = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+    if (envKey && envProject) {
+      return {
+        success: true,
+        data: {
+          apiKey: envKey,
+          authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || `${envProject}.firebaseapp.com`,
+          projectId: envProject,
+          storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || `${envProject}.appspot.com`,
+          messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+          appId: process.env.VITE_FIREBASE_APP_ID || '',
+          measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+        },
+      };
+    }
+
+    return { success: true, data: null };
+  }
+
+  /**
+   * Persist and activate Firebase OAuth client configuration across all system components
+   */
+  async saveFirebaseConfig(dto: {
+    apiKey: string;
+    authDomain?: string;
+    projectId: string;
+    storageBucket?: string;
+    messagingSenderId?: string;
+    appId?: string;
+    measurementId?: string;
+  }) {
+    if (!dto.apiKey || !dto.projectId) {
+      throw new BadRequestException('Vui lòng cung cấp ít nhất apiKey và projectId');
+    }
+
+    const cleaned = {
+      apiKey: dto.apiKey.trim(),
+      authDomain: dto.authDomain?.trim() || `${dto.projectId.trim()}.firebaseapp.com`,
+      projectId: dto.projectId.trim(),
+      storageBucket: dto.storageBucket?.trim() || `${dto.projectId.trim()}.appspot.com`,
+      messagingSenderId: dto.messagingSenderId?.trim() || '',
+      appId: dto.appId?.trim() || '',
+      measurementId: dto.measurementId?.trim() || '',
+    };
+
+    // 1. Persist to PostgreSQL SystemConfig
+    await this.prisma.systemConfig.upsert({
+      where: { key: 'FIREBASE_CONFIG' },
+      update: {
+        value: JSON.stringify(cleaned),
+        description: 'Active Firebase OAuth client credentials',
+        updatedAt: new Date(),
+      },
+      create: {
+        key: 'FIREBASE_CONFIG',
+        value: JSON.stringify(cleaned),
+        description: 'Active Firebase OAuth client credentials',
+      },
+    });
+
+    // 2. Persist to firebase.config.json files
+    const pathsToSave = [
+      path.resolve(process.cwd(), 'firebase.config.json'),
+      path.resolve(process.cwd(), '../../firebase.config.json'),
+      path.resolve('/home/duong/Downloads/TOEIC-Flashcard/firebase.config.json'),
+    ];
+    for (const p of pathsToSave) {
+      try {
+        fs.writeFileSync(p, JSON.stringify(cleaned, null, 2), 'utf8');
+      } catch {}
+    }
+
+    // 3. Update in-memory environment variables
+    process.env.VITE_FIREBASE_API_KEY = cleaned.apiKey;
+    process.env.FIREBASE_API_KEY = cleaned.apiKey;
+    process.env.VITE_FIREBASE_AUTH_DOMAIN = cleaned.authDomain;
+    process.env.VITE_FIREBASE_PROJECT_ID = cleaned.projectId;
+    process.env.FIREBASE_PROJECT_ID = cleaned.projectId;
+    process.env.VITE_FIREBASE_STORAGE_BUCKET = cleaned.storageBucket;
+    process.env.VITE_FIREBASE_MESSAGING_SENDER_ID = cleaned.messagingSenderId;
+    process.env.VITE_FIREBASE_APP_ID = cleaned.appId;
+    process.env.VITE_FIREBASE_MEASUREMENT_ID = cleaned.measurementId;
+
+    // 4. Update .env file
+    try {
+      const envPaths = [
+        path.resolve(process.cwd(), '../../.env'),
+        path.resolve('/home/duong/Downloads/TOEIC-Flashcard/.env'),
+      ];
+      for (const envPath of envPaths) {
+        if (fs.existsSync(envPath)) {
+          let envContent = fs.readFileSync(envPath, 'utf8');
+          const replaceOrAppend = (key: string, val: string) => {
+            const regex = new RegExp(`^${key}=.*$`, 'm');
+            if (regex.test(envContent)) {
+              envContent = envContent.replace(regex, `${key}=${val}`);
+            } else {
+              envContent += `\n${key}=${val}`;
+            }
+          };
+          replaceOrAppend('VITE_FIREBASE_API_KEY', cleaned.apiKey);
+          replaceOrAppend('VITE_FIREBASE_AUTH_DOMAIN', cleaned.authDomain);
+          replaceOrAppend('VITE_FIREBASE_PROJECT_ID', cleaned.projectId);
+          replaceOrAppend('VITE_FIREBASE_STORAGE_BUCKET', cleaned.storageBucket);
+          replaceOrAppend('VITE_FIREBASE_MESSAGING_SENDER_ID', cleaned.messagingSenderId);
+          replaceOrAppend('VITE_FIREBASE_APP_ID', cleaned.appId);
+          replaceOrAppend('VITE_FIREBASE_MEASUREMENT_ID', cleaned.measurementId);
+          fs.writeFileSync(envPath, envContent, 'utf8');
+        }
+      }
+    } catch {}
+
+    return {
+      success: true,
+      message: 'Cấu hình Firebase OAuth đã được lưu và kích hoạt trên toàn hệ thống.',
+      data: cleaned,
+    };
+  }
+
+  /**
    * Real Test Connection for AI Providers (Google Gemini & OpenAI)
    */
   async testAiConnection(dto: { provider?: string; model?: string; apiKey?: string }) {
@@ -1315,6 +1461,14 @@ export class AdminService {
       case 'FIREBASE': {
         let apiKey = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
         let projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+        try {
+          const cfg = await this.prisma.systemConfig.findUnique({ where: { key: 'FIREBASE_CONFIG' } });
+          if (cfg?.value) {
+            const parsed = JSON.parse(cfg.value);
+            if (parsed.apiKey) apiKey = parsed.apiKey;
+            if (parsed.projectId) projectId = parsed.projectId;
+          }
+        } catch (_) {}
         const configPath = path.resolve(process.cwd(), 'firebase.config.json');
         if (fs.existsSync(configPath)) {
           try {

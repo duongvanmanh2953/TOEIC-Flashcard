@@ -261,5 +261,12 @@ export class AuthController {
     this.clearAuthCookies(res);
     return this.authService.changePassword(userId, dto);
   }
+
+  @Public()
+  @Get('firebase-config')
+  @ApiOperation({ summary: 'Get active public Firebase client configuration' })
+  async getFirebaseConfig() {
+    return this.authService.getFirebaseConfig();
+  }
 }
 

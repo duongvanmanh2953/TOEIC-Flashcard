@@ -247,7 +247,7 @@ export const AdminSettingsPage: React.FC = () => {
       allowRegistration: true,
     },
     branding: {
-      logoUrl: '/favicon.ico',
+      logoUrl: '/vocabflow-logo-256.png',
       accentColor: 'indigo',
       defaultDarkMode: true,
     },

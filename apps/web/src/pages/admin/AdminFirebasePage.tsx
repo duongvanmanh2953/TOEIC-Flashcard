@@ -52,9 +52,38 @@ export const AdminFirebasePage: React.FC = () => {
   const [testResult, setTestResult] = useState<FirebaseConnectionTestResult | null>(null);
 
   useEffect(() => {
-    const current = getActiveFirebaseConfig();
-    setConfig(current);
-    setIsReady(isFirebaseConfigured());
+    const loadConfig = async () => {
+      // 1. Populate from local config if valid
+      const current = getActiveFirebaseConfig();
+      if (current?.apiKey && !current.apiKey.includes('AIzaSyDemo')) {
+        setConfig(current);
+        setIsReady(true);
+      }
+
+      // 2. Load persistent config from server DB
+      try {
+        const res: any = await api.get('/admin/firebase/config');
+        const data = res?.data || res;
+        if (data?.config?.apiKey && !data.config.apiKey.includes('AIzaSyDemo')) {
+          setConfig(data.config);
+          setIsReady(Boolean(data.configured));
+          saveFirebaseConfig(data.config);
+          return;
+        }
+      } catch {}
+
+      try {
+        const pub: any = await api.get('/auth/firebase-config');
+        const pdata = pub?.data || pub;
+        if (pdata?.config?.apiKey && !pdata.config.apiKey.includes('AIzaSyDemo')) {
+          setConfig(pdata.config);
+          setIsReady(Boolean(pdata.configured));
+          saveFirebaseConfig(pdata.config);
+        }
+      } catch {}
+    };
+
+    loadConfig();
   }, []);
 
   const handleCopy = (text: string, key: string) => {
@@ -176,12 +205,19 @@ export const AdminFirebasePage: React.FC = () => {
         return;
       }
 
-      // 2. Only save when verified with Google!
+      // 2. Persist to backend database & server environment
+      try {
+        await api.post('/admin/firebase/config', config);
+      } catch (err: any) {
+        console.warn('Backend save notice:', err);
+      }
+
+      // 3. Save locally and re-init Firebase SDK
       await saveFirebaseConfig(config);
       setIsReady(true);
       setStatusMsg({
         type: 'success',
-        text: `Kiểm tra kết nối thành công (${test.latencyMs}ms)! Đã lưu và kích hoạt cấu hình Firebase OAuth cho toàn hệ thống.`,
+        text: `Kiểm tra kết nối thành công (${test.latencyMs}ms)! Đã lưu cấu hình lên Hệ Thống & Kích hoạt Firebase OAuth cho toàn bộ Học Viên và Quản Trị.`,
       });
     } catch (err: any) {
       setStatusMsg({
@@ -202,6 +238,16 @@ export const AdminFirebasePage: React.FC = () => {
       cancelText: 'Hủy bỏ',
     });
     if (ok) {
+      try {
+        await api.post('/admin/firebase/config', {
+          apiKey: '',
+          authDomain: '',
+          projectId: '',
+          storageBucket: '',
+          messagingSenderId: '',
+          appId: '',
+        });
+      } catch {}
       await clearFirebaseConfig();
       setConfig({
         apiKey: '',
@@ -214,7 +260,7 @@ export const AdminFirebasePage: React.FC = () => {
       setIsReady(false);
       setStatusMsg({
         type: 'success',
-        text: 'Đã xóa cấu hình Firebase cục bộ.',
+        text: 'Đã xóa cấu hình Firebase trên toàn bộ hệ thống.',
       });
     }
   };

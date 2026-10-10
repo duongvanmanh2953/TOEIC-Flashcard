@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
+import { navigateToApp } from '../../lib/sso';
 
 export const AdminLayout: React.FC = () => {
   const { user, theme, toggleTheme, logout } = useAuth();
@@ -419,7 +420,7 @@ export const AdminLayout: React.FC = () => {
           <button
             onClick={() => {
               setSidebarOpen(false);
-              navigate('/dashboard');
+              navigateToApp('student', '/dashboard');
             }}
             className={`rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center border border-slate-200 dark:border-slate-700/60 ${sidebarCollapsed ? 'w-9 h-9 mx-auto justify-center p-0' : 'w-full py-2 px-3 justify-between'
               }`}

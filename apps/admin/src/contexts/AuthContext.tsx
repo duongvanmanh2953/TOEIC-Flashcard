@@ -6,12 +6,13 @@ import {
   signInWithFacebook,
   getOrCreateAnonymousUid,
   isFirebaseConfigured as checkFirebaseConfigured,
+  fetchRemoteFirebaseConfig,
 } from '../lib/firebase';
 import { FirebaseConfigModal } from '../components/auth/FirebaseConfigModal';
 import { idbClearAllUserData } from '../lib/idb';
 import { ingestSsoTokens, broadcastAuthChange, subscribeAuthChange } from '../lib/sso';
 
-export type AuthState = 'AUTH_LOADING' | 'GUEST' | 'AUTHENTICATED' | 'AUTH_ERROR';
+export type AuthState = 'AUTH_LOADING' | 'GUEST' | 'AUTHENTICATED' | 'AUTH_ERROR' | 'UNAUTHENTICATED';
 
 export interface User {
   id: string;
@@ -189,6 +190,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
+    const hadTokens = Boolean(
+      localStorage.getItem('vocabflow_access_token') ||
+      localStorage.getItem('vocabflow_refresh_token')
+    );
+
     try {
       const res: any = await api.get('/auth/me', { _skipAuthRedirect: true } as any);
       if (res?.success && res.data) {
@@ -200,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
     } catch {
-      // Fallback to check refresh token before guest session
+      // Fallback to check refresh token
     }
 
     // Attempt token recovery via refresh token (from cross-app SSO handoff or cookie)
@@ -223,38 +229,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch {
-        // Refresh failed, continue to guest
+        // Refresh failed
       }
     }
 
-    // Initialize Anonymous Guest Session if not authenticated
-    const anon = await signInAnonymously().catch(() => null);
-    const anonUid = anon?.uid || getOrCreateAnonymousUid();
-    setUser({
-      id: anonUid,
-      email: null,
-      displayName: anon?.displayName || 'Khách Khám Phá',
-      role: 'GUEST',
-      isAnonymous: true,
-      profile: {
-        englishLevel: 'B1',
-        targetLevel: 'B2',
-        dailyGoal: 20,
-      },
-      streak: {
-        currentStreak: 0,
-        longestStreak: 0,
-      },
-      xp: {
-        totalXP: 0,
-        currentLevel: 1,
-      },
-    });
-    setAuthState('GUEST');
+    // Admin portal requires authenticated admin session: logout and redirect to login
+    localStorage.removeItem('vocabflow_access_token');
+    localStorage.removeItem('vocabflow_refresh_token');
+    sessionStorage.clear();
+    setUser(null);
+    setAuthState('UNAUTHENTICATED');
+    broadcastAuthChange({ type: 'LOGOUT' });
+
+    if (typeof window !== 'undefined') {
+      if (hadTokens) {
+        window.dispatchEvent(
+          new CustomEvent('VOCABFLOW_TOAST', {
+            detail: {
+              type: 'warning',
+              title: 'Phiên làm việc hết hạn',
+              message: 'Phiên đăng nhập quản trị đã hết hạn. Vui lòng đăng nhập lại.',
+            },
+          }),
+        );
+      }
+      const path = window.location.pathname;
+      if (!path.includes('/login')) {
+        setTimeout(() => {
+          window.location.href = hadTokens ? `/login?expired=1` : `/login`;
+        }, 300);
+      }
+    }
   };
 
   // Restore session on app load (supports cross-app SSO handoff, localStorage, and cookie SSO)
   useEffect(() => {
+    // 0. Pre-fetch remote Firebase configuration from backend
+    fetchRemoteFirebaseConfig().then((cfg) => {
+      if (cfg) setIsConfigured(true);
+    }).catch(() => {});
+
     // 1. Ingest SSO tokens from URL if arriving from another sub-app (Student/Kid)
     ingestSsoTokens();
 
@@ -265,9 +279,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = subscribeAuthChange((payload) => {
       if (payload?.type === 'LOGOUT') {
         setUser(null);
-        setAuthState('GUEST');
+        setAuthState('UNAUTHENTICATED');
         localStorage.removeItem('vocabflow_access_token');
         localStorage.removeItem('vocabflow_refresh_token');
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       } else if (payload?.type === 'LOGIN' || payload?.type === 'SSO_INGESTED') {
         refreshProfile().catch(() => {});
       }

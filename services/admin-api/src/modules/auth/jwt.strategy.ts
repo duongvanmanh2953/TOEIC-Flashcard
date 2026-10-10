@@ -54,27 +54,40 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (deviceId) {
       const device = await this.prisma.userDevice.findUnique({
         where: { userId_deviceId: { userId: user.id, deviceId: String(deviceId) } },
-        select: { status: true, isAllowed: true },
+        select: { id: true, status: true, isAllowed: true },
       });
 
-      if (device && (!device.isAllowed || device.status === DeviceStatus.REVOKED || device.status === DeviceStatus.BLOCKED)) {
-        throw new UnauthorizedException('Phiên đăng nhập trên thiết bị này đã bị thu hồi hoặc đăng xuất từ nơi khác.');
+      if (device && device.status === DeviceStatus.BLOCKED) {
+        throw new UnauthorizedException('Thiết bị này đã bị chặn truy cập vào hệ thống.');
+      }
+
+      // If device was previously rotated to REVOKED, re-activate it since user has a valid unexpired JWT
+      if (device && (device.status === DeviceStatus.REVOKED || !device.isAllowed)) {
+        await this.prisma.userDevice.update({
+          where: { id: device.id },
+          data: { status: DeviceStatus.ACTIVE, isAllowed: true, lastSeenAt: new Date() },
+        }).catch(() => {});
       }
     }
 
-    // For Admin: allow up to 2 active devices
+    // For Admin: allow up to 2 active devices; gracefully rotate oldest if exceeding
     if (user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN) {
       if (deviceId) {
         const activeAdminDevices = await this.prisma.userDevice.findMany({
           where: { userId: user.id, status: DeviceStatus.ACTIVE, isAllowed: true },
           orderBy: { lastSeenAt: 'desc' },
-          select: { deviceId: true },
+          select: { id: true, deviceId: true },
         });
 
-        // Allow if deviceId is already among active devices, or if fewer than 2 active devices exist
         const isKnownDevice = activeAdminDevices.some((d) => d.deviceId === deviceId);
         if (!isKnownDevice && activeAdminDevices.length >= 2) {
-          throw new UnauthorizedException('Tài khoản Quản trị viên chỉ được phép đăng nhập trên tối đa 2 thiết bị. Vui lòng quản lý thiết bị trong Cài đặt bảo mật.');
+          const oldest = activeAdminDevices[activeAdminDevices.length - 1];
+          if (oldest) {
+            await this.prisma.userDevice.update({
+              where: { id: oldest.id },
+              data: { status: DeviceStatus.REVOKED, isAllowed: false },
+            }).catch(() => {});
+          }
         }
       }
     }

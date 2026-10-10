@@ -23,6 +23,8 @@ import * as crypto from 'crypto';
 import { CefrLevel, Role, SubscriptionTier, SessionStatus, DeviceStatus } from '@prisma/client';
 import { DeviceSecurityService, DeviceMetadata } from './device-security.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class AuthService {
@@ -612,4 +614,60 @@ export class AuthService {
       requireReLogin: true,
     };
   }
+
+  /**
+   * Get active public Firebase OAuth client credentials
+   * Checks SystemConfig DB, then firebase.config.json, then env variables.
+   */
+  async getFirebaseConfig() {
+    try {
+      const configRecord = await this.prisma.systemConfig.findUnique({
+        where: { key: 'FIREBASE_CONFIG' },
+      });
+      if (configRecord?.value) {
+        const parsed = JSON.parse(configRecord.value);
+        if (parsed.apiKey && parsed.projectId) {
+          return { configured: true, config: parsed };
+        }
+      }
+    } catch {}
+
+    const candidatePaths = [
+      path.resolve(process.cwd(), 'firebase.config.json'),
+      path.resolve(process.cwd(), '../../firebase.config.json'),
+    ];
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        try {
+          const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (raw.apiKey && raw.projectId) {
+            return { configured: true, config: raw };
+          }
+        } catch {}
+      }
+    }
+
+    const envKey = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
+    const envProject = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+    if (envKey && envProject) {
+      return {
+        configured: true,
+        config: {
+          apiKey: envKey,
+          authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || `${envProject}.firebaseapp.com`,
+          projectId: envProject,
+          storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || `${envProject}.appspot.com`,
+          messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+          appId: process.env.VITE_FIREBASE_APP_ID || '',
+          measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+        },
+      };
+    }
+
+    return {
+      configured: false,
+      config: null,
+    };
+  }
 }
+

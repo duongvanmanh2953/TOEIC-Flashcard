@@ -6,12 +6,13 @@ import {
   signInWithFacebook,
   getOrCreateAnonymousUid,
   isFirebaseConfigured as checkFirebaseConfigured,
+  fetchRemoteFirebaseConfig,
 } from '../lib/firebase';
 import { FirebaseConfigModal } from '../components/auth/FirebaseConfigModal';
 import { idbClearAllUserData } from '../lib/idb';
 import { ingestSsoTokens, broadcastAuthChange, subscribeAuthChange } from '../lib/sso';
 
-export type AuthState = 'AUTH_LOADING' | 'GUEST' | 'AUTHENTICATED' | 'AUTH_ERROR';
+export type AuthState = 'AUTH_LOADING' | 'GUEST' | 'AUTHENTICATED' | 'AUTH_ERROR' | 'UNAUTHENTICATED';
 
 export interface User {
   id: string;
@@ -189,6 +190,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
+    const hadTokens = Boolean(
+      localStorage.getItem('vocabflow_access_token') ||
+      localStorage.getItem('vocabflow_refresh_token')
+    );
+
     try {
       const res: any = await api.get('/auth/me', { _skipAuthRedirect: true } as any);
       if (res?.success && res.data) {
@@ -223,11 +229,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch {
-        // Refresh failed, continue to guest
+        // Refresh failed
       }
     }
 
-    // Initialize Anonymous Guest Session if not authenticated
+    // If user held tokens but session expired or is invalid, logout and push to login!
+    if (hadTokens) {
+      localStorage.removeItem('vocabflow_access_token');
+      localStorage.removeItem('vocabflow_refresh_token');
+      sessionStorage.clear();
+      setUser(null);
+      setAuthState('UNAUTHENTICATED');
+      broadcastAuthChange({ type: 'LOGOUT' });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('VOCABFLOW_TOAST', {
+            detail: {
+              type: 'warning',
+              title: 'Phiên đăng nhập đã hết hạn',
+              message: 'Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại.',
+            },
+          }),
+        );
+        const path = window.location.pathname;
+        if (!path.includes('/login') && !path.includes('/register')) {
+          setTimeout(() => {
+            window.location.href = `/login?expired=1`;
+          }, 300);
+        }
+      }
+      return;
+    }
+
+    // Initialize Anonymous Guest Session ONLY for first-time visitors with no tokens
     const anon = await signInAnonymously().catch(() => null);
     const anonUid = anon?.uid || getOrCreateAnonymousUid();
     setUser({
@@ -255,6 +290,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Restore session on app load (supports cross-app SSO handoff, localStorage, and cookie SSO)
   useEffect(() => {
+    // 0. Pre-fetch remote Firebase configuration from backend
+    fetchRemoteFirebaseConfig().then((cfg) => {
+      if (cfg) setIsConfigured(true);
+    }).catch(() => {});
+
     // 1. Ingest SSO tokens from URL if arriving from another sub-app (Admin/Kid)
     ingestSsoTokens();
 

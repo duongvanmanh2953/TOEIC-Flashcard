@@ -239,6 +239,14 @@ export class HealthController {
     // 8. Firebase Authentication Service
     let firebaseKey = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
     let firebaseProj = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+    try {
+      const fbConfig = await this.prisma.systemConfig.findUnique({ where: { key: 'FIREBASE_CONFIG' } });
+      if (fbConfig?.value) {
+        const parsed = JSON.parse(fbConfig.value);
+        if (parsed.apiKey) firebaseKey = parsed.apiKey;
+        if (parsed.projectId) firebaseProj = parsed.projectId;
+      }
+    } catch (_) {}
     const configPath = path.resolve(process.cwd(), 'firebase.config.json');
     if (fs.existsSync(configPath)) {
       try {

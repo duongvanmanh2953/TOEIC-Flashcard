@@ -8,6 +8,7 @@ import {
   signInAnonymously as firebaseSignInAnonymously,
   User as FirebaseUser,
 } from 'firebase/auth';
+import api from './api';
 
 /**
  * Firebase Authentication Client for VocabFlow
@@ -72,19 +73,51 @@ export function getActiveFirebaseConfig(): FirebaseClientConfig {
 }
 
 /**
- * Check if custom Firebase credentials are fully configured by user
+ * Check if custom Firebase credentials are fully configured by user or remote backend
  */
 export function isFirebaseConfigured(): boolean {
   const stored = getStoredFirebaseConfig();
-  if (stored?.apiKey && stored?.projectId) return true;
+  if (
+    stored?.apiKey &&
+    stored?.projectId &&
+    !stored.apiKey.includes('AIzaSyDemo') &&
+    !stored.apiKey.includes('YourFirebaseApiKey')
+  ) {
+    return true;
+  }
 
   const envKey = import.meta.env.VITE_FIREBASE_API_KEY;
   return Boolean(
     envKey &&
     envKey !== 'undefined' &&
     envKey.length > 10 &&
-    !envKey.includes('YourFirebaseApiKey')
+    !envKey.includes('YourFirebaseApiKey') &&
+    !envKey.includes('AIzaSyDemo')
   );
+}
+
+/**
+ * Fetch remote Firebase config from the backend API (/auth/firebase-config)
+ * and update local cache and Firebase app instance.
+ */
+export async function fetchRemoteFirebaseConfig(): Promise<FirebaseClientConfig | null> {
+  try {
+    const res: any = await api.get('/auth/firebase-config', { _skipAuthRedirect: true } as any);
+    const payload = res?.data?.data !== undefined ? res.data.data : res?.data !== undefined ? res.data : res;
+    const cfg = payload?.config || payload;
+    if (
+      cfg?.apiKey &&
+      cfg?.projectId &&
+      !cfg.apiKey.includes('AIzaSyDemo') &&
+      !cfg.apiKey.includes('YourFirebaseApiKey')
+    ) {
+      await saveFirebaseConfig(cfg);
+      return cfg;
+    }
+  } catch (err) {
+    // Silent fallback
+  }
+  return null;
 }
 
 export interface FirebaseConnectionTestResult {
@@ -378,6 +411,15 @@ export async function signInAnonymously(): Promise<FirebaseUserToken> {
  * Throws error if Firebase has not been configured so caller can show configuration modal.
  */
 export async function signInWithGoogle(): Promise<FirebaseUserToken> {
+  if (!isFirebaseConfigured()) {
+    await fetchRemoteFirebaseConfig().catch(() => null);
+  }
+  if (!isFirebaseConfigured()) {
+    throw new Error(
+      'Hệ thống chưa được thiết lập Firebase OAuth hoặc khóa API Key chưa hợp lệ. Vui lòng cấu hình Firebase trong trang Quản Trị Hệ Thống.'
+    );
+  }
+
   const firebaseAuth = getFirebaseAuth();
 
   try {
@@ -411,6 +453,15 @@ export async function signInWithGoogle(): Promise<FirebaseUserToken> {
  * Sign in with Facebook (REAL Firebase SDK with FacebookAuthProvider & signInWithPopup)
  */
 export async function signInWithFacebook(): Promise<FirebaseUserToken> {
+  if (!isFirebaseConfigured()) {
+    await fetchRemoteFirebaseConfig().catch(() => null);
+  }
+  if (!isFirebaseConfigured()) {
+    throw new Error(
+      'Hệ thống chưa được thiết lập Firebase OAuth hoặc khóa API Key chưa hợp lệ. Vui lòng cấu hình Firebase trong trang Quản Trị Hệ Thống.'
+    );
+  }
+
   const firebaseAuth = getFirebaseAuth();
 
   try {

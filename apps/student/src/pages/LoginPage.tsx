@@ -28,6 +28,13 @@ export const LoginPage: React.FC = () => {
     }
   }, [user, isGuest, authLoading, navigate]);
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired') === '1') {
+      setError('Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục học tập.');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

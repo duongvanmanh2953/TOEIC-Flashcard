@@ -59,6 +59,7 @@ import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
 import { VocabFlowLogo } from '@vocabflow/shared';
+import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 
 export const AppShell: React.FC = () => {
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
@@ -945,14 +946,18 @@ export const AppShell: React.FC = () => {
             </NavLink>
 
             {isAdmin && (
-              <NavLink
-                to="/admin"
+              <a
+                href={buildSsoUrl('admin')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToApp('admin');
+                }}
                 title="Admin Center"
                 className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center gap-1.5 transition shadow-xs"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
                 <span className="hidden xl:inline">🛠 Admin Center</span>
-              </NavLink>
+              </a>
             )}
 
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 xl:mx-1" />
@@ -1154,7 +1159,7 @@ export const AppShell: React.FC = () => {
             <button
               onClick={() => {
                 setProfileModalOpen(false);
-                navigate('/admin');
+                navigateToApp('admin');
               }}
               className="w-full mb-3 py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-amber-500/25 transition shadow-xs"
             >
