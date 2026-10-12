@@ -39,10 +39,7 @@ export const VocabFlowLogo: React.FC<VocabFlowLogoProps> = ({
         const img = e.currentTarget as HTMLImageElement;
         if (!img.dataset.triedOriginal) {
           img.dataset.triedOriginal = 'true';
-          img.src = '/vocabflow-logo.png';
-        } else if (!img.dataset.triedAssets) {
-          img.dataset.triedAssets = 'true';
-          img.src = '/assets/vocabflow-logo.png';
+          img.src = '/vocabflow-logo.svg';
         }
       }}
     />
