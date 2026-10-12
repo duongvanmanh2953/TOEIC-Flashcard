@@ -327,7 +327,13 @@ export class UsageService {
     quotaMap.deepAnalytics = quotaMap.DEEP_ANALYTICS;
     quotaMap.pronunciation = quotaMap.PRONUNCIATION;
     quotaMap.messages = quotaMap.MESSAGES;
-    quotaMap.accessKeys = quotaMap.ACCESS_KEYS;
+    // Attach token estimations for AI Tutor
+    if (quotaMap.aiTutor) {
+      const remaining = quotaMap.aiTutor.remaining;
+      const limit = quotaMap.aiTutor.limit;
+      quotaMap.aiTutor.approxTokensRemaining = limit === -1 ? 9999999 : Math.max(0, remaining * 1500);
+      quotaMap.aiTutor.approxTokensLimit = limit === -1 ? 9999999 : limit * 1500;
+    }
 
     return quotaMap;
   }

@@ -271,13 +271,55 @@ export class AIService {
       };
     }
 
-    // 1. Fetch Learner Profile, Weak Words, and Conversation History Context
-    const [profile, weakWords, recentInteractions] = await Promise.all([
+    // 1. Fetch Comprehensive Learner Profile, FSRS Memory Metrics & History Context
+    const [
+      user,
+      profile,
+      userStreak,
+      atRiskVocabs,
+      slowReviewEvents,
+      confusionPairs,
+      recentInteractions,
+    ] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { displayName: true, username: true },
+      }),
       this.prisma.userProfile.findUnique({ where: { userId } }),
+      this.prisma.userStreak.findUnique({
+        where: { userId },
+        select: { currentStreak: true },
+      }),
       this.prisma.userVocabulary.findMany({
-        where: { userId, OR: [{ masteryScore: { lt: 50 } }, { isHard: true }] },
+        where: {
+          userId,
+          OR: [{ slipRisk: { gt: 0.35 } }, { isHard: true }, { masteryScore: { lt: 50 } }],
+        },
+        include: {
+          vocabulary: {
+            select: {
+              word: true,
+              shortDefinition: true,
+              meanings: { take: 1, select: { meaning: true } },
+            },
+          },
+        },
+        orderBy: [{ slipRisk: 'desc' }, { masteryScore: 'asc' }],
+        take: 6,
+      }),
+      this.prisma.reviewEvent.findMany({
+        where: { userId, responseTimeMs: { gt: 4000 } },
         include: { vocabulary: { select: { word: true } } },
-        take: 5,
+        orderBy: { reviewedAt: 'desc' },
+        take: 4,
+      }),
+      this.prisma.vocabularyConfusionPair.findMany({
+        where: { userId },
+        include: {
+          word1: { select: { word: true } },
+          word2: { select: { word: true } },
+        },
+        take: 3,
       }),
       this.prisma.aIInteraction.findMany({
         where: { userId },
@@ -287,8 +329,27 @@ export class AIService {
       }),
     ]);
 
+    const learnerName = user?.displayName || user?.username || 'Học viên';
     const userCefr = profile?.englishLevel || CefrLevel.B1;
-    const weakWordList = weakWords.map((w) => w.vocabulary.word);
+    const targetCefr = profile?.targetLevel || 'C1';
+    const primaryGoal = profile?.learningGoal || profile?.primaryGoal || 'TOEIC & Business Communication';
+    const streakDays = userStreak?.currentStreak || 1;
+
+    const atRiskWords = atRiskVocabs.map((w) => ({
+      word: w.vocabulary.word,
+      slipRisk: w.slipRisk || 0.4,
+      meaning: w.vocabulary.meanings?.[0]?.meaning || w.vocabulary.shortDefinition || undefined,
+    }));
+
+    const slowRecallWords = slowReviewEvents.map((e) => ({
+      word: e.vocabulary.word,
+      latencySec: Math.round((e.responseTimeMs || 4000) / 1000),
+    }));
+
+    const formattedConfusionPairs = confusionPairs.map((p) => ({
+      word1: p.word1.word,
+      word2: p.word2.word,
+    }));
 
     // Build context history string for continuous conversation
     const historyText = recentInteractions
@@ -297,12 +358,14 @@ export class AIService {
       .map((item) => `Học viên: "${item.input.slice(0, 150)}"\nGia sư: "${item.output.slice(0, 200)}..."`)
       .join('\n\n');
 
-    // 2. Semantic Search: Find relevant knowledge context
-    const contextResults = await this.semanticSearch(contextWord || userQuery, 3);
-    const contextTerms = contextResults.map((v) => `${v.word} (${v.shortDefinition})`).join(', ');
+    // 2. Enhanced Semantic Search & RAG Knowledge Context
+    const contextResults = await this.semanticSearch(contextWord || cleanQuery, 4);
+    const ragKnowledge = contextResults.map(
+      (v) => `${v.word.toUpperCase()} [${v.cefrLevel || 'B1'}]: ${v.shortDefinition || v.definition || ''}`
+    );
 
     // Detect if user query is in Vietnamese or foreign language
-    const isVietnameseQuery = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(userQuery);
+    const isVietnameseQuery = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(cleanQuery);
 
     const langNames: Record<string, string> = {
       en: 'English',
@@ -319,42 +382,20 @@ export class AIService {
     };
     const currentLangName = langNames[targetLang] || 'English';
 
-    // 3. AI Task Router: Build pedagogical prompt with bilingual matching & context history
-    const prompt = `You are VocabFlow AI Personal ${currentLangName} Tutor (An empathetic, expert bilingual language coach).
-Target Language: ${currentLangName}.
-Learner Level: ${userCefr}.
-Learner Weak Words: [${weakWordList.join(', ')}].
-Knowledge Graph Context: [${contextTerms}].
-
-Conversation History (Context link with past interactions):
-${historyText || 'Chưa có lịch sử hội thoại trước đó.'}
-
-Current Learner Query: "${userQuery}"
-
-CRITICAL INSTRUCTIONS FOR RESPONSE:
-1. DYNAMIC BILINGUAL LANGUAGE MATCHING:
-   - If the learner query is in Vietnamese (or mixed), explain concepts, nuances, and rules in clear, encouraging Vietnamese, while teaching ${currentLangName} words, phrases, and examples.
-   - If the learner query is in ${currentLangName}, reply in ${currentLangName}, BUT ALWAYS include Vietnamese translations for key vocabulary, collocations, and example sentences so learners at CEFR ${userCefr} fully understand.
-   - Link response naturally to previous context in history if relevant.
-
-2. TARGET LANGUAGE GREETING:
-   - If the learner query is a greeting (e.g. "hi", "hello", "xin chào", "chào", "bonjour", "hallo", "konnichiwa", "ni hao", "hola", "annyeong", etc.), ALWAYS greet back in ${currentLangName} first (e.g. German 'Hallo!', Japanese 'こんにちは！', Chinese '你好！', French 'Bonjour !', Spanish '¡Hola!', Korean '안녕하세요!', English 'Hello!'), followed by supportive Vietnamese guidance.
-
-3. MANDATORY PEDAGOGICAL STRUCTURE (Strict Markdown format):
-   ### 💡 [Tiêu đề phản hồi / Lời chào ngắn gọn phù hợp câu hỏi]
-
-   1. 📌 **Giải thích & Ngữ cảnh (Explanation):**
-      [Giải thích trực diện, dễ hiểu, phân tích bản chất từ/câu hỏi calibrated cho CEFR ${userCefr}]
-
-   2. 🌐 🇻🇳 **Ví dụ thực tế song ngữ (Bilingual Examples):**
-      🌐 *"${currentLangName} sentence example"*
-      🇻🇳 *"Dịch nghĩa tiếng Việt tự nhiên"*
-
-   3. 🔗 **Từ vựng & Cấu trúc liên quan (Related Vocabulary/Phrases):**
-      - **Vocabulary/Collocation**: Dịch nghĩa + cách dùng thực tế
-
-   4. 🎯 **Thử thách phản xạ (Active Recall Check):**
-      [Đặt 1 câu hỏi tương tác ngắn dạng trắc nghiệm A/B/C hoặc điền từ để người học đáp lại]`;
+    // 3. Ultra-Personalized Pedagogical Prompt Construction via PromptService
+    const prompt = this.promptService.buildPersonalizedTutorPrompt(cleanQuery, {
+      userName: learnerName,
+      cefrLevel: userCefr,
+      targetLevel: targetCefr,
+      primaryGoal,
+      streakDays,
+      atRiskWords,
+      slowRecallWords,
+      confusionPairs: formattedConfusionPairs,
+      ragContext: ragKnowledge,
+      conversationHistory: historyText,
+      targetLangName: currentLangName,
+    });
 
     // 4. Model Invocation (LLM with Gemini Fallback or Knowledge Fallback)
     let responseText = '';
@@ -370,8 +411,9 @@ CRITICAL INSTRUCTIONS FOR RESPONSE:
 
     if (!responseText) {
       // High-grade dynamic pedagogical response generated by VocabFlow Knowledge Engine
-      const targetTerm = contextResults[0]?.word || contextWord || userQuery.split(' ')[0] || 'vocabulary';
+      const targetTerm = contextResults[0]?.word || contextWord || cleanQuery.split(' ')[0] || 'vocabulary';
       const targetMeaning = contextResults[0]?.shortDefinition || 'ngữ nghĩa liên quan';
+      const opportunisticAtRisk = atRiskWords[0]?.word;
 
       const langFlags: Record<string, string> = {
         de: '🇩🇪',
@@ -385,24 +427,28 @@ CRITICAL INSTRUCTIONS FOR RESPONSE:
       const flag = langFlags[targetLang] || '🌐';
 
       const offlineGreetings: Record<string, string> = {
-        de: 'Hallo! Als dein KI-Coach für Deutsch begleite ich dich gerne. (Chào bạn! Tôi là gia sư AI Tiếng Đức của bạn).',
-        ja: 'こんにちは！あなたのAI専属日本語チューターとして、喜んでお手伝いします。(Chào bạn! Tôi là gia sư AI Tiếng Nhật của bạn).',
-        zh: '你好！作为你的专属中文AI导师，我很乐意为你解答。(Chào bạn! Tôi là gia sư AI Tiếng Trung của bạn).',
-        fr: 'Bonjour ! En tant que votre tuteur IA pour le français, je suis ravi de vous guider. (Chào bạn! Tôi là gia sư AI Tiếng Pháp của bạn).',
-        es: '¡Hola! Como tu tutor de IA para español, me alegra acompañarte. (Chào bạn! Tôi là gia sư AI Tiếng Tây Ban Nha của bạn).',
-        ko: '안녕하세요! 당신의 전담 한국어 AI 튜터로서 기쁘게 도와드리겠습니다. (Chào bạn! Tôi là gia sư AI Tiếng Hàn của bạn).',
-        en: 'Hello! I am your VocabFlow AI English Tutor, ready to assist your learning journey. (Chào bạn! Tôi là gia sư VocabFlow AI Tiếng Anh đồng hành cùng bạn).',
+        de: `Hallo ${learnerName}! Als dein KI-Coach für Deutsch begleite ich dich gerne. (Chào ${learnerName}! Tôi là gia sư AI Tiếng Đức đồng hành cùng bạn).`,
+        ja: `こんにちは、${learnerName}さん！あなたのAI専属日本語チューターとして、喜んでお手伝いします。(Chào ${learnerName}! Tôi là gia sư AI Tiếng Nhật của bạn).`,
+        zh: `你好，${learnerName}！作为你的专属中文AI导师，我很乐意为你解答。(Chào ${learnerName}! Tôi là gia sư AI Tiếng Trung của bạn).`,
+        fr: `Bonjour ${learnerName} ! En tant que votre tuteur IA pour le français, je suis ravi de vous guider. (Chào ${learnerName}! Tôi là gia sư AI Tiếng Pháp của bạn).`,
+        es: `¡Hola ${learnerName}! Como tu tutor de IA para español, me alegra acompañarte. (Chào ${learnerName}! Tôi là gia sư AI Tiếng Tây Ban Nha của bạn).`,
+        ko: `안녕하세요 ${learnerName}님! 당신의 전담 한국어 AI 튜터로서 기쁘게 도와드리겠습니다. (Chào ${learnerName}! Tôi là gia sư AI Tiếng Hàn của bạn).`,
+        en: `Hello ${learnerName}! I am your VocabFlow Dedicated AI English Tutor, here to coach your ${primaryGoal} journey! (Chào ${learnerName}! Tôi là gia sư VocabFlow AI đồng hành cùng bạn trên chặng đường chinh phục ${primaryGoal}).`,
       };
       const greetingHeader = offlineGreetings[targetLang] || offlineGreetings.en;
 
+      const memoryRescueTip = opportunisticAtRisk
+        ? `\n\n💡 *Gợi ý phục hồi trí nhớ FSRS:* Hệ thống nhận thấy từ **"${opportunisticAtRisk}"** của bạn đang có nguy cơ quên. Hãy thử kết hợp dùng từ này khi đặt câu hôm nay nhé!`
+        : '';
+
       if (isVietnameseQuery) {
-        responseText = `### 💡 Hướng dẫn từ Gia sư VocabFlow AI ${currentLangName} (Trình độ: **${userCefr}**)
+        responseText = `### 💡 Hướng dẫn từ Gia sư Riêng VocabFlow AI cho ${learnerName} (Level: **${userCefr}** | Mục tiêu: **${primaryGoal}**)
 
-${greetingHeader}
+${greetingHeader}${memoryRescueTip}
 
-1. 📌 **Giải thích & Ngữ cảnh:**
-   Về câu hỏi **"${userQuery}"**, khái niệm chính liên quan là **${targetTerm.toUpperCase()}** (*${targetMeaning}*).
-   Ở trình độ **${userCefr}**, bạn nên chú trọng cách phối hợp từ (Collocation) và sắc thái giao tiếp tự nhiên thay vì dịch từng chữ.
+1. 📌 **Giải thích & Ngữ cảnh (Core Explanation):**
+   Về câu hỏi **"${cleanQuery}"**, khái niệm trọng tâm cần lưu ý là **${targetTerm.toUpperCase()}** (*${targetMeaning}*).
+   Ở trình độ **${userCefr}**, bạn nên chú trọng cách phối hợp từ (Collocation) và sắc thái giao tiếp tự nhiên trong bài thi ${primaryGoal} thay vì dịch từng chữ.
 
 2. ${flag} 🇻🇳 **Ví dụ thực tế song ngữ:**
    ${flag} *"Our team agreed to **${targetTerm}** the key objectives to ensure long-term success."*
@@ -412,7 +458,7 @@ ${greetingHeader}
    - **Reach a consensus**: Đạt được sự đồng thuận trong đàm phán.
    - **In good faith**: Thiện chí (e.g. *negotiate in good faith*).
 
-4. 🎯 **Thử thách phản xạ (Active Recall Check):**
+4. 🎯 **Thử thách phản xạ nhanh (Active Recall Check):**
    Nếu muốn nói *"Chúng tôi đàm phán trên tinh thần thiện chí"*, đáp án nào đúng nhất?
    - A) negotiate in good faith
    - B) make in good faith
@@ -420,7 +466,7 @@ ${greetingHeader}
 
 Bạn hãy chọn A, B hoặc C để kiểm tra phản xạ nhé!`;
       } else {
-        responseText = `### 💡 VocabFlow AI ${currentLangName} Tutor Guide (Level: **${userCefr}**)
+        responseText = `### 💡 VocabFlow AI ${currentLangName} Tutor Guide for ${learnerName} (Level: **${userCefr}** | Goal: **${primaryGoal}**)
 
 ${greetingHeader}
 
@@ -688,30 +734,8 @@ Reply with your answer A, B, or C to test your recall!`;
   }
 
   async tutorChat(message: string, userId: string, contextWord?: string, language: string = 'en') {
-    // 1. Fetch user memory profile & weak words
-    const userProfile = await this.prisma.userProfile.findUnique({
-      where: { userId },
-      select: { primaryGoal: true, secondaryGoal: true, englishLevel: true },
-    });
-
-    const weakVocabs = await this.prisma.userVocabulary.findMany({
-      where: {
-        userId,
-        OR: [{ slipRisk: { gt: 0.4 } }, { productionScore: { lt: 0.45 } }],
-      },
-      take: 5,
-      include: { vocabulary: { select: { word: true } } },
-    });
-
-    const goal = userProfile?.primaryGoal || 'TOEIC & Business Communication';
-    const weakWordList = weakVocabs.map((v) => v.vocabulary.word);
-
-    let enrichedQuery = message;
-    if (weakWordList.length > 0) {
-      enrichedQuery += `\n[Tutor Context: Learner goal is "${goal}". Current weak words needing active practice: ${weakWordList.join(', ')}. Naturally encourage using these words.]`;
-    }
-
-    return this.pipelineQuery(userId, enrichedQuery, contextWord, language);
+    // tutorChat directly leverages the enhanced 1-on-1 personalized pipeline
+    return this.pipelineQuery(userId, message, contextWord, language);
   }
 
   /**
@@ -755,12 +779,19 @@ Reply with your answer A, B, or C to test your recall!`;
     for (const uv of trackedVocabs) {
       usedNaturally.push(uv.vocabulary.word);
 
-      // Boost production score in closed learning loop
+      // Boost production score & reduce slipRisk in closed learning loop
       const updatedProd = Math.min(1.0, (uv.productionScore || 0.2) + 0.15);
+      const updatedSlipRisk = Math.max(0.0, (uv.slipRisk || 0.5) - 0.25);
+      const updatedRecall = Math.min(1.0, (uv.recallScore || 0.3) + 0.1);
+
       await this.prisma.userVocabulary.update({
         where: { id: uv.id },
         data: {
           productionScore: updatedProd,
+          slipRisk: updatedSlipRisk,
+          recallScore: updatedRecall,
+          repetitionCount: { increment: 1 },
+          lastReviewedAt: new Date(),
           lastReviewMode: 'CONVERSATION',
         },
       });

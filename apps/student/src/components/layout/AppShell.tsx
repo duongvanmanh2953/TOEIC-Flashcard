@@ -206,7 +206,82 @@ export const AppShell: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  const [supportTab, setSupportTab] = useState<'quick' | 'chat'>('chat');
+  const [supportTab, setSupportTab] = useState<'tutor' | 'chat' | 'quick'>('tutor');
+
+  // Mini AI Tutor in Floating Widget State
+  const [tutorInput, setTutorInput] = useState('');
+  const [tutorMessages, setTutorMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content: 'Xin chào! Tôi là Gia sư AI cá nhân của bạn. Bạn muốn tra cứu sắc thái từ, giải thích ngữ pháp hay luyện phản xạ gì hôm nay?',
+    },
+  ]);
+  const [tutorLoading, setTutorLoading] = useState(false);
+  const [tutorQuota, setTutorQuota] = useState<{ remaining: number; limit: number } | null>(null);
+  const tutorMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  const fetchTutorQuota = async () => {
+    try {
+      const endpoint = !user || user.isAnonymous ? '/subscriptions/guest-quotas' : '/subscriptions/my-quotas';
+      const res: any = await api.get(endpoint);
+      const data = res.data || res;
+      if (data?.aiTutor) {
+        setTutorQuota({
+          remaining: data.aiTutor.remaining,
+          limit: data.aiTutor.limit,
+        });
+      }
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    if (supportModalOpen && supportTab === 'tutor') {
+      fetchTutorQuota();
+    }
+  }, [supportModalOpen, supportTab]);
+
+  useEffect(() => {
+    if (supportTab === 'tutor') {
+      tutorMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [tutorMessages, tutorLoading, supportTab]);
+
+  const handleSendTutorMessage = async (promptText?: string) => {
+    const text = promptText || tutorInput;
+    if (!text.trim() || tutorLoading) return;
+
+    const userMsg = { id: Date.now().toString(), role: 'user' as const, content: text };
+    setTutorMessages((prev) => [...prev, userMsg]);
+    if (!promptText) setTutorInput('');
+    setTutorLoading(true);
+
+    try {
+      const res: any = await api.post('/ai/tutor', {
+        message: text,
+        language: activeLanguage?.id || 'en',
+      });
+      const data = res.data || res;
+      const aiMsg = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant' as const,
+        content: data?.reply || 'Tôi đã tiếp nhận câu hỏi của bạn.',
+      };
+      setTutorMessages((prev) => [...prev, aiMsg]);
+      setTutorQuota((prev) => (prev ? { ...prev, remaining: Math.max(0, prev.remaining - 1) } : null));
+    } catch (err: any) {
+      setTutorMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant' as const,
+          content: 'Không thể kết nối với Gia sư AI lúc này. Vui lòng thử lại sau giây lát!',
+        },
+      ]);
+    } finally {
+      setTutorLoading(false);
+    }
+  };
 
   // Vertical-only Draggable CSKH Support Button State (Docked to right margin)
   const [btnPosY, setBtnPosY] = useState<number | null>(null);
@@ -1219,15 +1294,15 @@ export const AppShell: React.FC = () => {
         >
           <button
             onClick={handleSupportBtnClick}
-            className="group relative h-10 rounded-l-2xl rounded-r-none bg-slate-900/95 hover:bg-slate-900 backdrop-blur-2xl border-y border-l border-r-0 border-cyan-500/40 hover:border-cyan-400/80 flex items-center justify-end p-1 transition-all duration-300 active:scale-95 text-white max-w-[42px] hover:max-w-[220px] overflow-hidden"
-            aria-label="Trung tâm Chăm sóc khách hàng CSKH"
-            title="Kéo trượt dọc mép phải màn hình • Rê chuột để xem chi tiết & mở Chat"
+            className="group relative h-10 rounded-l-2xl rounded-r-none bg-slate-900/95 hover:bg-slate-900 backdrop-blur-2xl border-y border-l border-r-0 border-indigo-500/50 hover:border-indigo-400/80 flex items-center justify-end p-1 transition-all duration-300 active:scale-95 text-white max-w-[42px] hover:max-w-[240px] overflow-hidden shadow-xl"
+            aria-label="Gia sư AI & Chăm sóc khách hàng"
+            title="Kéo trượt dọc mép phải màn hình • Rê chuột để mở Gia sư AI & CSKH"
           >
             {/* Expanding Label & Status (Hidden by default, slides out smoothly on hover to the left) */}
-            <div className="flex flex-col text-left leading-none opacity-0 group-hover:opacity-100 max-w-0 group-hover:max-w-[160px] overflow-hidden whitespace-nowrap transition-all duration-300 px-0 group-hover:px-2.5 shrink-0 pointer-events-none group-hover:pointer-events-auto">
+            <div className="flex flex-col text-left leading-none opacity-0 group-hover:opacity-100 max-w-0 group-hover:max-w-[180px] overflow-hidden whitespace-nowrap transition-all duration-300 px-0 group-hover:px-2.5 shrink-0 pointer-events-none group-hover:pointer-events-auto">
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-extrabold text-white tracking-wide group-hover:text-cyan-200 transition-colors whitespace-nowrap">
-                  Hỗ trợ CSKH
+                <span className="text-[11px] font-extrabold text-white tracking-wide group-hover:text-indigo-200 transition-colors whitespace-nowrap">
+                  Gia sư AI & CSKH
                 </span>
                 {unreadSupportCount > 0 && (
                   <span className="text-[9px] font-bold text-white bg-rose-500 px-1.5 py-0.2 rounded-full animate-pulse">
@@ -1235,18 +1310,18 @@ export const AppShell: React.FC = () => {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1 mt-1 text-[9px] text-cyan-300/90 font-medium whitespace-nowrap">
+              <div className="flex items-center gap-1 mt-1 text-[9px] text-indigo-300/90 font-medium whitespace-nowrap">
                 <span className="relative flex h-1.5 w-1.5 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
                 </span>
-                <span>24/7 Trực tuyến</span>
+                <span>24/7 Sẵn sàng hỗ trợ</span>
               </div>
             </div>
 
-            {/* Glowing Headphone Icon (Docked snuggly against right edge) */}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500/30 to-indigo-500/40 border border-cyan-400/60 flex items-center justify-center text-cyan-300 group-hover:text-cyan-100 transition-colors relative shrink-0">
-              <Headphones className="w-4 h-4 text-cyan-300 group-hover:scale-110 transition-transform" />
+            {/* Glowing Icon (Docked snuggly against right edge) */}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500/40 via-purple-500/40 to-cyan-500/30 border border-indigo-400/60 flex items-center justify-center text-indigo-200 group-hover:text-white transition-colors relative shrink-0">
+              <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300 group-hover:scale-110 transition-transform" />
               {unreadSupportCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
               )}
@@ -1255,7 +1330,7 @@ export const AppShell: React.FC = () => {
         </div>
       )}
 
-      {/* Customer Support Floating Chat Widget (Hidden for Admin) */}
+      {/* Customer Support & Mini AI Tutor Floating Widget (Hidden for Admin) */}
       {supportModalOpen && !isAdmin && (
         <>
           {/* Backdrop to dismiss when clicking outside */}
@@ -1269,7 +1344,7 @@ export const AppShell: React.FC = () => {
             style={
               typeof window !== 'undefined' && window.innerWidth >= 640
                 ? {
-                  top: btnPosY ? `${Math.min(window.innerHeight - 500, Math.max(20, btnPosY - 220))}px` : undefined,
+                  top: btnPosY ? `${Math.min(window.innerHeight - 520, Math.max(20, btnPosY - 240))}px` : undefined,
                   bottom: btnPosY ? undefined : '80px',
                   right: '16px',
                 }
@@ -1278,21 +1353,29 @@ export const AppShell: React.FC = () => {
             className="fixed inset-x-2 bottom-2 sm:bottom-auto sm:inset-x-auto sm:right-4 z-50 animate-scale-up"
           >
             <div
-              className="w-full sm:w-[350px] rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-slate-700/80 p-3.5 space-y-2.5 flex flex-col h-[75vh] max-h-[540px] sm:h-auto sm:max-h-[480px] overflow-hidden text-slate-100 shadow-2xl"
+              className="w-full sm:w-[370px] rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-slate-700/80 p-3.5 space-y-2.5 flex flex-col h-[78vh] max-h-[560px] sm:h-auto sm:max-h-[520px] overflow-hidden text-slate-100 shadow-2xl"
             >
-              {/* Header with Title & Online status */}
+              {/* Header with Title & Status calibrated to current tab */}
               <div className="flex items-center justify-between pb-2 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold border border-indigo-500/30">
-                    <Headphones className="w-4 h-4 text-indigo-400" />
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold border ${
+                    supportTab === 'tutor'
+                      ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                      : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                  }`}>
+                    {supportTab === 'tutor' ? (
+                      <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
+                    ) : (
+                      <Headphones className="w-4 h-4 text-cyan-400" />
+                    )}
                   </div>
                   <div>
                     <h4 className="text-xs font-black text-white leading-snug">
-                      VocabFlow CSKH 24/7
+                      {supportTab === 'tutor' ? 'Gia Sư AI 1-on-1' : 'VocabFlow CSKH 24/7'}
                     </h4>
                     <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span>Đang trực tuyến</span>
+                      <span>{supportTab === 'tutor' ? 'Sẵn sàng giải đáp ngữ cảnh' : 'Trực tuyến 24/7'}</span>
                     </div>
                   </div>
                 </div>
@@ -1307,34 +1390,166 @@ export const AppShell: React.FC = () => {
                 </div>
               </div>
 
-              {/* Support Navigation Tabs */}
-              <div className="grid grid-cols-2 p-0.5 rounded-xl bg-slate-800/90 text-[11px] font-bold border border-slate-700/70 shrink-0">
+              {/* Support & AI Navigation Tabs (3 Tabs) */}
+              <div className="grid grid-cols-3 p-0.5 rounded-xl bg-slate-800/90 text-[11px] font-bold border border-slate-700/70 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSupportTab('tutor')}
+                  className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                    supportTab === 'tutor'
+                      ? 'bg-indigo-600 text-white shadow-xs border border-indigo-400/40'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300" />
+                  <span>Gia sư AI</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setSupportTab('chat')}
-                  className={`py-1 rounded-lg transition flex items-center justify-center gap-1.5 ${supportTab === 'chat'
-                    ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
-                    : 'text-slate-400 hover:text-white'
-                    }`}
+                  className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                    supportTab === 'chat'
+                      ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span>Chat trực tiếp</span>
+                  <MessageCircle className="w-3 h-3" />
+                  <span>CSKH</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSupportTab('quick')}
-                  className={`py-1 rounded-lg transition flex items-center justify-center gap-1.5 ${supportTab === 'quick'
-                    ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
-                    : 'text-slate-400 hover:text-white'
-                    }`}
+                  className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                    supportTab === 'quick'
+                      ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
                 >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>Kênh liên hệ</span>
+                  <Zap className="w-3 h-3" />
+                  <span>Liên hệ</span>
                 </button>
               </div>
 
+              {/* Tab 0: Mini AI Tutor Chat Pane */}
+              {supportTab === 'tutor' && (
+                <div className="flex-1 flex flex-col min-h-0 space-y-2">
+                  {/* Quota and Fullscreen shortcut */}
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-[11px] shrink-0">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="font-semibold text-slate-200 truncate">
+                        {isPro ? 'Gói Pro: Không giới hạn' : `Còn: ${tutorQuota?.remaining ?? 10} lượt (~${((tutorQuota?.remaining ?? 10) * 1500).toLocaleString()} tok)`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSupportModalOpen(false);
+                        navigate('/ai-tutor');
+                      }}
+                      className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-0.5 text-[10px] hover:underline shrink-0"
+                    >
+                      <span>Mở lớn</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Messages Area */}
+                  <div className="flex-1 min-h-[160px] sm:h-56 bg-slate-950/60 rounded-xl p-2.5 overflow-y-auto space-y-2.5 text-xs border border-slate-800/80">
+                    {tutorMessages.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {m.role === 'assistant' && (
+                          <div className="w-5 h-5 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">
+                            AI
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[85%] p-2 rounded-xl text-xs leading-relaxed ${
+                            m.role === 'user'
+                              ? 'bg-indigo-600 text-white rounded-tr-none'
+                              : 'bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700/60 whitespace-pre-wrap'
+                          }`}
+                        >
+                          {m.content}
+                        </div>
+                      </div>
+                    ))}
+                    {tutorLoading && (
+                      <div className="flex items-center gap-2 text-indigo-400 text-xs">
+                        <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                        <span>Gia sư AI đang phân tích...</span>
+                      </div>
+                    )}
+                    <div ref={tutorMessagesEndRef} />
+                  </div>
+
+                  {/* Quick Preset Buttons with Token Estimates */}
+                  <div className="flex items-center gap-1 overflow-x-auto py-0.5 shrink-0 no-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => handleSendTutorMessage('Hãy đố tôi 1 câu hỏi phản xạ từ vựng')}
+                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-medium whitespace-nowrap flex items-center gap-1 border border-slate-700 shrink-0"
+                    >
+                      <span>🎯 Đố 1 câu</span>
+                      <span className="text-[9px] text-cyan-400 font-mono">~420t</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendTutorMessage('Cho tôi 1 ví dụ câu giao tiếp thực tế')}
+                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-medium whitespace-nowrap flex items-center gap-1 border border-slate-700 shrink-0"
+                    >
+                      <span>💡 Ví dụ</span>
+                      <span className="text-[9px] text-amber-400 font-mono">~380t</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendTutorMessage('So sánh cặp từ dễ nhầm lẫn trong TOEIC')}
+                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-medium whitespace-nowrap flex items-center gap-1 border border-slate-700 shrink-0"
+                    >
+                      <span>⚖️ So sánh</span>
+                      <span className="text-[9px] text-purple-400 font-mono">~520t</span>
+                    </button>
+                  </div>
+
+                  {/* Real-time Token Cost Estimate beneath typing */}
+                  {tutorInput.trim() && (
+                    <div className="px-2 py-0.5 rounded-lg bg-indigo-950/40 border border-indigo-800/40 text-[10px] text-indigo-300 flex items-center justify-between shrink-0">
+                      <span>Ước tính: ~{Math.min(1500, Math.ceil(tutorInput.length / 3) + 780)} tokens</span>
+                      <span>1 lượt hỏi</span>
+                    </div>
+                  )}
+
+                  {/* Tutor Input Box */}
+                  <div className="pt-1 border-t border-slate-800 flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="text"
+                      value={tutorInput}
+                      onChange={(e) => setTutorInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSendTutorMessage();
+                      }}
+                      disabled={tutorLoading}
+                      placeholder="Hỏi Gia sư AI bất cứ điều gì..."
+                      className="flex-1 px-3 py-2 sm:py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-sm sm:text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSendTutorMessage()}
+                      disabled={!tutorInput.trim() || tutorLoading}
+                      className="p-2 sm:p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white shrink-0 transition"
+                      aria-label="Gửi câu hỏi cho Gia sư AI"
+                    >
+                      <Send className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${tutorLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Tab 1: Realtime Support Chat */}
-              {supportTab === 'chat' ? (
+              {supportTab === 'chat' && (
                 <div className="flex-1 flex flex-col min-h-0 space-y-2">
                   {/* Virtualized Messages Scroll Area with Dynamic Height */}
                   <div className="flex-1 min-h-[160px] sm:h-56 bg-slate-950/50 rounded-xl overflow-hidden text-xs relative border border-slate-800/80">
@@ -1388,8 +1603,10 @@ export const AppShell: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              ) : (
-                /* Tab 2: Quick Links / Facebook / FAQ */
+              )}
+
+              {/* Tab 2: Quick Links / Facebook / FAQ */}
+              {supportTab === 'quick' && (
                 <div className="space-y-3 pt-1">
                   <p className="text-xs text-slate-300 leading-relaxed">
                     Bạn có thể liên hệ trực tiếp tới fanpage Facebook chính thức của VocabFlow hoặc tra cứu các thắc mắc thông dụng.
