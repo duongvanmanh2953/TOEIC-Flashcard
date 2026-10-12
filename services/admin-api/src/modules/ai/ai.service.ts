@@ -249,25 +249,49 @@ export class AIService {
     const cachedHit = await this.findCachedInteraction(cleanQuery);
     if (cachedHit) {
       this.logger.log(`[SmartCache HIT] Query: "${cleanQuery}" -> Served from DB cache, saved tokens!`);
-      const today = new Date().toISOString().slice(0, 10);
-      try {
-        await this.prisma.entitlementUsage.upsert({
-          where: { userId_date: { userId, date: today } },
-          update: { aiUsageCount: { increment: 1 } },
-          create: { userId, date: today, aiUsageCount: 1 },
-        });
-      } catch (_) { }
+      const citations = await this.findCommunityKnowledgeCitations(cleanQuery);
 
       return {
         interactionId: cachedHit.id,
         evaluationId: null,
-        provider: 'vocabflow-smart-cache (⚡ Tiết kiệm Token)',
+        provider: 'vocabflow-smart-cache (⚡ Kho Tri Thức 0 Token)',
         userCefr: 'B1',
         reply: cachedHit.output,
         semanticContext: [],
         vocabularyCard: null,
+        citations,
         isCached: true,
+        tokensCost: 0,
         tokensSaved: cachedHit.tokenUsage || 1850,
+      };
+    }
+
+    // 0.1 Check Curated Common Questions (Pre-compiled 0 Token FAQ Bank)
+    const curated = this.findCuratedCommonQuestion(cleanQuery, targetLang);
+    if (curated) {
+      this.logger.log(`[CuratedKB HIT] Query: "${cleanQuery}" -> Served from curated knowledge bank, 0 token!`);
+      const citations = await this.findCommunityKnowledgeCitations(cleanQuery);
+
+      let fullReply = curated.reply;
+      if (citations.length > 0) {
+        fullReply += `\n\n---\n📚 **Bài viết dẫn chứng từ Kho tri thức cộng đồng:**\n` +
+          citations.map((c) => `- 📖 **[${c.title}](${c.url})** *(bởi ${c.authorName} • ❤️ ${c.likeCount})*\n  > ${c.summary}`).join('\n');
+      }
+
+      return {
+        interactionId: 'curated_' + Date.now(),
+        evaluationId: null,
+        provider: 'vocabflow-curated-kb (⚡ Kho Tri Thức 0 Token)',
+        userCefr: 'B1',
+        reply: fullReply,
+        semanticContext: [],
+        vocabularyCard: (curated as any).vocabularyCard || null,
+        comparisonCard: (curated as any).comparisonCard || null,
+        quizCard: (curated as any).quizCard || null,
+        citations,
+        isCached: true,
+        tokensCost: 0,
+        tokensSaved: curated.tokensSaved || 1400,
       };
     }
 
@@ -527,6 +551,12 @@ Reply with your answer A, B, or C to test your recall!`;
       create: { userId, date: today, aiUsageCount: 1 },
     });
 
+    const citations = await this.findCommunityKnowledgeCitations(cleanQuery);
+    if (citations.length > 0 && !responseText.includes('Kho tri thức cộng đồng')) {
+      responseText += `\n\n---\n📚 **Bài viết dẫn chứng từ Kho tri thức cộng đồng:**\n` +
+        citations.map((c) => `- 📖 **[${c.title}](${c.url})** *(bởi ${c.authorName} • ❤️ ${c.likeCount})*\n  > ${c.summary}`).join('\n');
+    }
+
     return {
       interactionId: interaction.id,
       evaluationId: evaluation.id,
@@ -544,6 +574,7 @@ Reply with your answer A, B, or C to test your recall!`;
           pronunciation: contextResults[0].pronunciation,
         }
         : null,
+      citations,
     };
   }
 
@@ -634,6 +665,200 @@ Reply with your answer A, B, or C to test your recall!`;
       this.logger.warn(`findCachedInteraction check failed: ${err.message}`);
     }
     return null;
+  }
+
+  /**
+   * High-Efficiency Curated Common Questions (Kho tri thức tối ưu 0 Token)
+   */
+  findCuratedCommonQuestion(query: string, targetLang: string = 'en') {
+    const q = query.toLowerCase().trim();
+
+    // 1. Reflex Quiz / Đố câu hỏi
+    if (q.includes('đố') || q.includes('quiz') || q.includes('phản xạ')) {
+      return {
+        reply: `### 🎯 Câu Hỏi Phản Xạ Từ Vựng TOEIC (Kho Tri Thức ⚡ 0 Token)
+
+Hãy thử sức ngay với câu hỏi trắc nghiệm dưới đây:
+
+**Đề bài:** *"The board of directors reached an agreement to __________ additional funding for the marketing initiative."*
+
+- **A)** allocate *(phân bổ)*
+- **B)** fluctuate *(dao động)*
+- **C)** accommodate *(cung cấp chỗ ở/đáp ứng)*
+- **D)** anticipate *(dự đoán)*
+
+💡 **Gợi ý phân tích:**
+- Cấu trúc: *to allocate funds/resources for sth* mang nghĩa cấp phát/phân bổ nguồn ngân sách cho một dự án cụ thể.
+- *Đáp án chính xác là **A**.*`,
+        quizCard: {
+          question: 'The board of directors reached an agreement to __________ additional funding for the marketing initiative.',
+          options: ['allocate', 'fluctuate', 'accommodate', 'anticipate'],
+          correctAnswer: 'allocate',
+          explanation: '"allocate" (v) mang nghĩa phân bổ tài nguyên/ngân sách cho một mục tiêu cụ thể, rất phổ biến trong Part 5 TOEIC.',
+        },
+        tokensSaved: 1420,
+      };
+    }
+
+    // 2. Real-world Example / Ví dụ thực tế
+    if (q.includes('ví dụ') || q.includes('giao tiếp') || q.includes('câu thực tế')) {
+      return {
+        reply: `### 💡 Ví Dụ Giao Tiếp Thực Tế Nơi Công Sở (Kho Tri Thức ⚡ 0 Token)
+
+Dưới đây là mẫu câu đàm phán và trao đổi chuyên nghiệp chuẩn thương mại:
+
+🇬🇧 *"In order to **reach a consensus**, our team proposes adjusting the implementation timeline to ensure product quality."*  
+🇻🇳 *(Để đạt được sự đồng thuận chung, đội ngũ chúng tôi đề xuất điều chỉnh mốc thời gian triển khai nhằm đảm bảo chất lượng sản phẩm.)*
+
+📌 **Collocation quan trọng:**
+- **Reach a consensus**: Đạt được sự đồng thuận
+- **Adjust the timeline**: Điều chỉnh tiến độ
+- **Ensure quality**: Đảm bảo chất lượng`,
+        vocabularyCard: {
+          word: 'consensus',
+          cefrLevel: 'B2',
+          partOfSpeech: 'noun',
+          definition: 'A general agreement about something among a group of people.',
+          meaningVi: 'Sự đồng thuận, nhất trí chung',
+          pronunciation: '/kənˈsensəs/',
+        },
+        tokensSaved: 1250,
+      };
+    }
+
+    // 3. Comparison / So sánh cặp từ dễ nhầm lẫn
+    if (q.includes('so sánh') || q.includes('nhầm lẫn') || q.includes('economic') || q.includes('affect')) {
+      return {
+        reply: `### ⚖️ Phân Tích Cặp Từ Dễ Nhầm Lẫn Trong TOEIC (Kho Tri Thức ⚡ 0 Token)
+
+**So sánh: "Economic" vs. "Economical"**
+
+1. 📌 **Economic (adj) - /ˌiːkəˈnɒmɪk/:**
+   - Thuộc về kinh tế vĩ mô, tình hình tài chính của một quốc gia hay doanh nghiệp.
+   - *Ví dụ:* *"The government announced a new **economic** policy to curb inflation."* *(Chính phủ công bố chính sách kinh tế mới nhằm kiềm chế lạm phát.)*
+
+2. 📌 **Economical (adj) - /ˌiːkəˈnɒmɪkl/:**
+   - Tiết kiệm, không lãng phí tiền bạc hoặc nhiên liệu.
+   - *Ví dụ:* *"Small electric vehicles are very **economical** to run in congested cities."* *(Xe điện nhỏ rất tiết kiệm chi phí vận hành ở đô thị đông đúc.)*
+
+💡 **Mẹo ghi nhớ nhanh:** Chữ **-al** trong *economical* giống như **"saving ALL"** (tiết kiệm chi tiêu).`,
+        comparisonCard: {
+          wordA: 'economic',
+          wordB: 'economical',
+          diffExplanation: '"economic" liên quan đến nền kinh tế tổng thể, trong khi "economical" mang nghĩa tiết kiệm tiền của, nhiên liệu.',
+          exampleA: 'The new economic reforms boosted foreign investment.',
+          exampleB: 'This fuel-efficient car is very economical for long commutes.',
+        },
+        tokensSaved: 1560,
+      };
+    }
+
+    // 4. Learning Strategy / Lộ trình 600 từ TOEIC
+    if (q.includes('lộ trình') || q.includes('phương pháp') || q.includes('600 từ') || q.includes('kinh nghiệm')) {
+      return {
+        reply: `### 📚 Chiến Lược Chinh Phục 600 Từ Vựng TOEIC Hiệu Quả (Kho Tri Thức ⚡ 0 Token)
+
+Để ghi nhớ bền vững mà không bị quên sau 1 tuần, hãy áp dụng chu trình 4 bước đã được tối ưu hóa trong VocabFlow:
+
+1. 🔄 **Ôn tập ngắt quãng (Spaced Repetition - FSRS):**
+   - Luôn hoàn thành danh sách ôn tập hàng ngày đúng khung giờ (hệ thống tự động canh thời điểm trí nhớ rơi xuống 85% để nhắc ôn).
+2. 🔗 **Học theo Collocation & Ngữ Cảnh:**
+   - Không học từ đơn lẻ (ví dụ thay vì chỉ học từ *negotiate*, hãy học cụm *negotiate a contract*).
+3. ⚡ **Tập phản xạ bằng câu đố ngắn (Active Recall):**
+   - Nhìn nghĩa tiếng Việt hoặc câu khuyết từ để tự suy nghĩ từ vựng trước khi lật thẻ.
+4. 🚑 **Xử lý triệt để danh sách "Memory Rescue":**
+   - Dành 5 phút mỗi sáng giải quyết các từ có nguy cơ quên (*slipRisk cao*) trong mục Ôn tập thông minh.`,
+        tokensSaved: 1380,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Trích xuất bài viết & tài liệu dẫn chứng từ Kho Tri Thức Cộng Đồng
+   */
+  async findCommunityKnowledgeCitations(query: string, limit: number = 2) {
+    try {
+      const rawTokens = query
+        .toLowerCase()
+        .replace(/[?!.,;:_~`'"“”()]/g, ' ')
+        .split(/\s+/)
+        .filter(
+          (t) =>
+            t.length >= 3 &&
+            !['hãy', 'cho', 'tôi', 'câu', 'hỏi', 'với', 'trong', 'được', 'này', 'what', 'with', 'from'].includes(t),
+        );
+
+      if (rawTokens.length === 0) return [];
+
+      const posts = await this.prisma.communityPost.findMany({
+        where: {
+          status: 'APPROVED',
+          OR: [
+            ...rawTokens.slice(0, 5).map((t) => ({ title: { contains: t, mode: 'insensitive' as const } })),
+            ...rawTokens.slice(0, 5).map((t) => ({ summary: { contains: t, mode: 'insensitive' as const } })),
+            ...rawTokens.slice(0, 5).map((t) => ({ tags: { has: t } })),
+          ],
+        },
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          tags: true,
+          likeCount: true,
+          author: {
+            select: {
+              displayName: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: [{ likeCount: 'desc' }, { createdAt: 'desc' }],
+        take: limit,
+      });
+
+      if (posts.length > 0) {
+        return posts.map((p) => ({
+          id: p.id,
+          title: p.title,
+          summary: p.summary ? p.summary.slice(0, 160) : 'Bài viết chia sẻ kiến thức hữu ích từ cộng đồng học viên VocabFlow.',
+          authorName: p.author?.displayName || p.author?.username || 'Cộng đồng VocabFlow',
+          likeCount: p.likeCount || 0,
+          tags: p.tags || [],
+          url: `/community?post=${p.id}`,
+        }));
+      }
+
+      // Fallback search in CommunityDeck
+      const decks = await this.prisma.communityDeck.findMany({
+        where: {
+          isPublic: true,
+          OR: rawTokens.slice(0, 4).map((t) => ({ title: { contains: t, mode: 'insensitive' as const } })),
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          likesCount: true,
+          creator: { select: { displayName: true, username: true } },
+        },
+        take: limit,
+      });
+
+      return decks.map((d) => ({
+        id: d.id,
+        title: `Bộ thẻ: ${d.title}`,
+        summary: d.description ? d.description.slice(0, 160) : 'Bộ thẻ từ vựng cộng đồng được chia sẻ trên VocabFlow.',
+        authorName: d.creator?.displayName || d.creator?.username || 'Tác giả cộng đồng',
+        likeCount: d.likesCount || 0,
+        tags: ['Deck', 'TOEIC'],
+        url: `/community?deck=${d.id}`,
+      }));
+    } catch (err: any) {
+      this.logger.warn(`findCommunityKnowledgeCitations error: ${err.message}`);
+      return [];
+    }
   }
 
   /**

@@ -58,8 +58,8 @@ import { VirtualChatPane } from '../chat/VirtualChatPane';
 import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
-import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { VocabFlowLogo } from '@vocabflow/shared';
+import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 
 export const AppShell: React.FC = () => {
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
@@ -210,7 +210,15 @@ export const AppShell: React.FC = () => {
 
   // Mini AI Tutor in Floating Widget State
   const [tutorInput, setTutorInput] = useState('');
-  const [tutorMessages, setTutorMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([
+  const [tutorMessages, setTutorMessages] = useState<
+    Array<{
+      id: string;
+      role: 'user' | 'assistant';
+      content: string;
+      citations?: any[];
+      isCached?: boolean;
+    }>
+  >([
     {
       id: 'welcome',
       role: 'assistant',
@@ -266,9 +274,14 @@ export const AppShell: React.FC = () => {
         id: (Date.now() + 1).toString(),
         role: 'assistant' as const,
         content: data?.reply || 'Tôi đã tiếp nhận câu hỏi của bạn.',
+        citations: data?.citations || [],
+        isCached: data?.isCached || false,
       };
       setTutorMessages((prev) => [...prev, aiMsg]);
-      setTutorQuota((prev) => (prev ? { ...prev, remaining: Math.max(0, prev.remaining - 1) } : null));
+      // Only deduct quota if not served from zero-token knowledge cache
+      if (!data?.isCached) {
+        setTutorQuota((prev) => (prev ? { ...prev, remaining: Math.max(0, prev.remaining - 1) } : null));
+      }
     } catch (err: any) {
       setTutorMessages((prev) => [
         ...prev,
@@ -498,11 +511,10 @@ export const AppShell: React.FC = () => {
             title: 'TIẾNG ANH CHO BÉ',
             items: [
               {
-                to: 'https://kid.vocalflow.site',
+                to: '/kids',
                 label: 'Học cùng bé',
                 icon: Baby,
                 badge: 'NEW',
-                external: true,
               },
             ],
           },
@@ -559,7 +571,7 @@ export const AppShell: React.FC = () => {
         { to: '/notifications', label: 'Thông báo', icon: Bell },
         { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
         { to: '/settings', label: t('nav.settings', 'Cài đặt'), icon: Settings },
-        ...(isAdmin ? [{ to: buildSsoUrl('admin'), label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true, external: true }] : []),
+        ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
       ],
     },
   ];
@@ -589,7 +601,7 @@ export const AppShell: React.FC = () => {
               onClick={() => navigate('/dashboard')}
               title="VocabFlow Smart Adaptive English"
             >
-              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-105 transition-transform duration-200" />
+              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200" />
               <div className="min-w-0 flex-1 truncate">
                 <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
                   VocabFlow
@@ -621,67 +633,40 @@ export const AppShell: React.FC = () => {
                 {section.title}
               </p>
               <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const isExt = (item as any).external;
-                  const itemContent = (
-                    <>
-                      <div className="flex items-center gap-2.5 flex-1 truncate mr-1.5 min-w-0">
-                        <item.icon className="w-4 h-4 shrink-0" />
-                        <span className="truncate">{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        (item as any).isUnlock ? (
-                          /* Liquid Glass Gold Badge */
-                          <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0">
-                            <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
-                            <span>MỞ KHÓA</span>
-                          </span>
-                        ) : (
-                          <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
-                            {item.badge}
-                          </span>
-                        )
-                      )}
-                    </>
-                  );
-
-                  if (isExt) {
-                    return (
-                      <a
-                        key={item.to}
-                        href={item.to}
-                        onClick={(e) => {
-                          if ((item as any).admin) {
-                            e.preventDefault();
-                            navigateToApp('admin');
-                          }
-                        }}
-                        className="flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200"
-                      >
-                        {itemContent}
-                      </a>
-                    );
-                  }
-
-                  return (
-                    <NavLink
-                      key={item.to}
-                      to={item.to}
-                      className={({ isActive }) =>
-                        `flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 ${isActive
-                          ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
-                          : (item as any).admin
-                            ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
-                            : item.highlight
-                              ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
-                        }`
-                      }
-                    >
-                      {itemContent}
-                    </NavLink>
-                  );
-                })}
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `flex items-center justify-between rounded-xl text-xs font-semibold transition-all duration-150 min-w-0 px-3 py-2 ${isActive
+                        ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm'
+                        : (item as any).admin
+                          ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                          : item.highlight
+                            ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`
+                    }
+                  >
+                    <div className="flex items-center gap-2.5 flex-1 truncate mr-1.5 min-w-0">
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      (item as any).isUnlock ? (
+                        /* Liquid Glass Gold Badge */
+                        <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0">
+                          <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                          <span>MỞ KHÓA</span>
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
+                          {item.badge}
+                        </span>
+                      )
+                    )}
+                  </NavLink>
+                ))}
               </div>
             </div>
           ))}
@@ -781,51 +766,35 @@ export const AppShell: React.FC = () => {
 
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightPage ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
-        {/* Mobile Header — Sticky fixed at top */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
-          <div className="flex items-center gap-2">
-            <div onClick={() => navigate('/dashboard')} className="cursor-pointer flex items-center gap-2 group shrink-0" title="VocabFlow"><VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" /><span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span></div>
+        {/* Mobile Header — Clean, compact, never overflows or stretches */}
+        <header className="lg:hidden flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <div
+              onClick={() => navigate('/dashboard')}
+              className="cursor-pointer flex items-center gap-2 group shrink-0"
+              title="VocabFlow"
+            >
+              <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
+              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span>
+            </div>
           </div>
+
           <div className="flex items-center gap-1.5 shrink-0">
             <NotificationBell />
             <button
-              onClick={() => {
-                if (!user || user.isAnonymous) {
-                  promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
-                  return;
-                }
-                setQuickNoteOpen(true);
-              }}
-              title="Ghi chép nhanh"
-              className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => {
-                if (!user || user.isAnonymous) {
-                  promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
-                  return;
-                }
-                setChatDrawerOpen(true);
-              }}
-              title="Tin nhắn học tập"
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <MessageSquare className="w-4 h-4 text-indigo-500" />
-            </button>
-            <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ml-1"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              aria-label="Menu điều hướng"
+              title="Menu điều hướng & Công cụ"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </header>
 
         {/* Mobile Menu Overlay Drawer — FIXED OVERLAY, NEVER SCROLLS WITH PAGE */}
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-x-0 top-[57px] bottom-0 z-40 flex flex-col">
+          <div className="lg:hidden fixed inset-x-0 top-[53px] bottom-0 z-40 flex flex-col">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-xs"
@@ -834,59 +803,128 @@ export const AppShell: React.FC = () => {
             />
             {/* Drawer Menu Content */}
             <div
-              className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3 max-h-[80vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200"
+              className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3.5 max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Mobile Drawer Top Actions */}
-              <div className="flex flex-col gap-3 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <LanguageSwitcher variant="compact" />
+              {/* 1. Mobile Sidebar Top: User Profile & Streak */}
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+                <div
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setProfileModalOpen(true);
+                  }}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                      {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="min-w-0 truncate">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {user?.displayName || user?.email?.split('@')[0] || 'Learner'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {user?.email || 'Học viên'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="shrink-0">
-                    <NotificationBell />
+                  <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                </div>
+
+                {/* User Streak Pill */}
+                <div className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between min-w-0">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs min-w-0 truncate">
+                    <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
+                    <span className="truncate">{activeProfile.currentStreak || 0} Day Streak</span>
                   </div>
-                  <button onClick={toggleTheme} className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                    {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                  </button>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-extrabold shrink-0 border border-amber-500/30">
+                    {activeProfile.level}
+                  </span>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      if (!user || user.isAnonymous) { promptLogin('Đăng nhập để sử dụng ghi chép'); return; }
-                      setQuickNoteOpen(true);
-                    }}
-                    className="flex items-center justify-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <BookOpen className="w-4 h-4 text-indigo-500" />
-                    Ghi chép
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      if (!user || user.isAnonymous) { promptLogin('Đăng nhập để sử dụng tin nhắn'); return; }
-                      setChatDrawerOpen(true);
-                    }}
-                    className="flex items-center justify-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <MessageSquare className="w-4 h-4 text-indigo-500" />
-                    Tin nhắn
-                  </button>
-                </div>
-                
-                {!isPro && (
-                  <button
-                    onClick={() => navigate('/upgrade')}
-                    className="w-full relative overflow-hidden px-3 py-2.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:border-amber-300 transition-all group"
-                  >
-                    <Crown className="w-4 h-4 text-amber-500 dark:text-amber-300 fill-amber-400" />
-                    <span>Mở khóa Pro</span>
-                  </button>
-                )}
               </div>
 
+              {/* Language Space Selector */}
+              <div className="flex justify-center bg-slate-50 dark:bg-slate-800/60 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+                <LanguageSwitcher variant="header" />
+              </div>
+
+              {/* 2. Upgrade / Account Status Banner (Moved from header) */}
+              <div
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/upgrade');
+                }}
+                className="relative p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 hover:border-amber-400/80 cursor-pointer transition flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
+                    <Crown className="w-4 h-4 text-amber-500 fill-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-wider leading-none">
+                      {isPro ? 'VocabFlow Pro VIP' : 'Nâng cấp tài khoản'}
+                    </p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+                      {isPro ? 'Đã kích hoạt toàn bộ đặc quyền' : 'Mở khóa kho từ & AI không giới hạn'}
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2 py-1 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-wide shrink-0">
+                  {isPro ? 'VIP PRO' : 'Mở khóa'}
+                </span>
+              </div>
+
+              {/* 3. Mobile Header Actions Bar (Now nicely tucked in sidebar) */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (!user || user.isAnonymous) {
+                      promptLogin('Đăng nhập để sử dụng ghi chép nhanh');
+                      return;
+                    }
+                    setQuickNoteOpen(true);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-800 transition text-center"
+                >
+                  <BookOpen className="w-4 h-4 text-indigo-500 mb-1" />
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Ghi chép</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (!user || user.isAnonymous) {
+                      promptLogin('Đăng nhập để sử dụng tính năng nhắn tin');
+                      return;
+                    }
+                    setChatDrawerOpen(true);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-800 transition text-center"
+                >
+                  <MessageSquare className="w-4 h-4 text-indigo-500 mb-1" />
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Tin nhắn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-center"
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="w-4 h-4 text-amber-400 mb-1" />
+                  ) : (
+                    <Moon className="w-4 h-4 text-indigo-500 mb-1" />
+                  )}
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    {theme === 'dark' ? 'Sáng' : 'Tối'}
+                  </span>
+                </button>
+              </div>
+
+              {/* 4. Navigation Menu Sections */}
               {navSections.map((section) => (
                 <div key={section.title} className="space-y-1">
                   <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -927,7 +965,7 @@ export const AppShell: React.FC = () => {
                 </div>
               ))}
 
-              {/* ONLY Show Logout If Authenticated; Show Login If Guest */}
+              {/* 5. ONLY Show Logout If Authenticated; Show Login If Guest */}
               {user?.isAnonymous || !user ? (
                 <button
                   onClick={() => {
@@ -956,7 +994,7 @@ export const AppShell: React.FC = () => {
         <header className="hidden lg:flex items-center justify-between px-4 lg:px-6 xl:px-8 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
           <div className="flex items-center gap-3 shrink-0">
             {/* Multi-Language Switcher */}
-            <LanguageSwitcher variant="compact" />
+            <LanguageSwitcher variant="header" />
             <span className="hidden xl:inline text-xs font-semibold text-slate-400 dark:text-slate-500">
               •
             </span>
@@ -1344,7 +1382,7 @@ export const AppShell: React.FC = () => {
             style={
               typeof window !== 'undefined' && window.innerWidth >= 640
                 ? {
-                  top: btnPosY ? `${Math.min(window.innerHeight - 520, Math.max(20, btnPosY - 240))}px` : undefined,
+                  top: btnPosY ? `${Math.min(window.innerHeight - 560, Math.max(20, btnPosY - 280))}px` : undefined,
                   bottom: btnPosY ? undefined : '80px',
                   right: '16px',
                 }
@@ -1353,12 +1391,12 @@ export const AppShell: React.FC = () => {
             className="fixed inset-x-2 bottom-2 sm:bottom-auto sm:inset-x-auto sm:right-4 z-50 animate-scale-up"
           >
             <div
-              className="w-full sm:w-[370px] rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-slate-700/80 p-3.5 space-y-2.5 flex flex-col h-[78vh] max-h-[560px] sm:h-auto sm:max-h-[520px] overflow-hidden text-slate-100 shadow-2xl"
+              className="w-full sm:w-[490px] md:w-[540px] rounded-3xl bg-slate-900/95 backdrop-blur-2xl border border-slate-700/80 p-4 space-y-2.5 flex flex-col h-[85vh] max-h-[690px] sm:h-[630px] sm:max-h-[630px] overflow-hidden text-slate-100 shadow-2xl"
             >
               {/* Header with Title & Status calibrated to current tab */}
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800 shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold border ${
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold border ${
                     supportTab === 'tutor'
                       ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
                       : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
@@ -1370,62 +1408,62 @@ export const AppShell: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-white leading-snug">
-                      {supportTab === 'tutor' ? 'Gia Sư AI 1-on-1' : 'VocabFlow CSKH 24/7'}
+                    <h4 className="text-sm font-black text-white leading-snug">
+                      {supportTab === 'tutor' ? 'Gia Sư AI Cá Nhân 1-on-1' : 'VocabFlow CSKH 24/7'}
                     </h4>
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span>{supportTab === 'tutor' ? 'Sẵn sàng giải đáp ngữ cảnh' : 'Trực tuyến 24/7'}</span>
+                      <span>{supportTab === 'tutor' ? 'Hỗ trợ giải đáp ngữ cảnh & Dẫn chứng cộng đồng' : 'Trực tuyến 24/7'}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setSupportModalOpen(false)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
                     aria-label="Đóng"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               {/* Support & AI Navigation Tabs (3 Tabs) */}
-              <div className="grid grid-cols-3 p-0.5 rounded-xl bg-slate-800/90 text-[11px] font-bold border border-slate-700/70 shrink-0">
+              <div className="grid grid-cols-3 p-1 rounded-2xl bg-slate-800/90 text-xs font-bold border border-slate-700/70 shrink-0">
                 <button
                   type="button"
                   onClick={() => setSupportTab('tutor')}
-                  className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                  className={`py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
                     supportTab === 'tutor'
                       ? 'bg-indigo-600 text-white shadow-xs border border-indigo-400/40'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
                   <span>Gia sư AI</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSupportTab('chat')}
-                  className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                  className={`py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
                     supportTab === 'chat'
                       ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <MessageCircle className="w-3 h-3" />
+                  <MessageCircle className="w-3.5 h-3.5" />
                   <span>CSKH</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSupportTab('quick')}
-                  className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                  className={`py-1.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
                     supportTab === 'quick'
                       ? 'bg-slate-700 text-cyan-300 shadow-xs border border-cyan-400/30'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Zap className="w-3 h-3" />
+                  <Zap className="w-3.5 h-3.5" />
                   <span>Liên hệ</span>
                 </button>
               </div>
@@ -1434,7 +1472,7 @@ export const AppShell: React.FC = () => {
               {supportTab === 'tutor' && (
                 <div className="flex-1 flex flex-col min-h-0 space-y-2">
                   {/* Quota and Fullscreen shortcut */}
-                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-[11px] shrink-0">
+                  <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-[11px] shrink-0">
                     <div className="flex items-center gap-1.5 truncate">
                       <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       <span className="font-semibold text-slate-200 truncate">
@@ -1447,76 +1485,133 @@ export const AppShell: React.FC = () => {
                         setSupportModalOpen(false);
                         navigate('/ai-tutor');
                       }}
-                      className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-0.5 text-[10px] hover:underline shrink-0"
+                      className="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 text-[11px] hover:underline shrink-0"
                     >
-                      <span>Mở lớn</span>
+                      <span>Mở giao diện lớn</span>
                       <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
 
-                  {/* Messages Area */}
-                  <div className="flex-1 min-h-[160px] sm:h-56 bg-slate-950/60 rounded-xl p-2.5 overflow-y-auto space-y-2.5 text-xs border border-slate-800/80">
+                  {/* Messages Area (Spacious & with Citations) */}
+                  <div className="flex-1 min-h-[180px] sm:h-64 bg-slate-950/60 rounded-2xl p-3 overflow-y-auto space-y-3 text-xs border border-slate-800/80">
                     {tutorMessages.map((m) => (
                       <div
                         key={m.id}
-                        className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex gap-2.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         {m.role === 'assistant' && (
-                          <div className="w-5 h-5 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5">
+                          <div className="w-6 h-6 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 shadow-xs">
                             AI
                           </div>
                         )}
                         <div
-                          className={`max-w-[85%] p-2 rounded-xl text-xs leading-relaxed ${
+                          className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed space-y-2 ${
                             m.role === 'user'
                               ? 'bg-indigo-600 text-white rounded-tr-none'
                               : 'bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700/60 whitespace-pre-wrap'
                           }`}
                         >
-                          {m.content}
+                          {m.isCached && (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                              <span>⚡ Kho Tri Thức: Tiết kiệm 100% token</span>
+                            </div>
+                          )}
+                          <div>{m.content}</div>
+
+                          {/* Community Knowledge Citations Card */}
+                          {m.citations && m.citations.length > 0 && (
+                            <div className="mt-2.5 p-2.5 rounded-xl bg-indigo-950/80 border border-indigo-500/40 space-y-1.5 not-prose">
+                              <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-indigo-300">
+                                <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                <span>Bài viết dẫn chứng từ Kho Tri Thức Cộng Đồng:</span>
+                              </div>
+                              <div className="space-y-1.5">
+                                {m.citations.map((c: any) => (
+                                  <a
+                                    key={c.id}
+                                    href={c.url || `/community?post=${c.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block p-2 rounded-lg bg-slate-900/90 hover:bg-slate-900 border border-slate-700/80 hover:border-indigo-400 transition group"
+                                  >
+                                    <div className="flex items-center justify-between gap-1 text-xs font-bold text-white group-hover:text-indigo-300 transition-colors">
+                                      <span className="truncate">{c.title}</span>
+                                      <span className="text-[10px] text-rose-400 shrink-0">❤️ {c.likeCount}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                                      {c.summary}
+                                    </p>
+                                    <div className="flex items-center justify-between mt-1 text-[9px] text-slate-400">
+                                      <span>Tác giả: {c.authorName}</span>
+                                      <span className="text-indigo-400 font-bold group-hover:underline flex items-center gap-0.5">
+                                        Đọc bài viết <ChevronRight className="w-2.5 h-2.5" />
+                                      </span>
+                                    </div>
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                     {tutorLoading && (
-                      <div className="flex items-center gap-2 text-indigo-400 text-xs">
+                      <div className="flex items-center gap-2 text-indigo-400 text-xs py-1">
                         <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                        <span>Gia sư AI đang phân tích...</span>
+                        <span>Gia sư AI đang trích xuất kho tri thức...</span>
                       </div>
                     )}
                     <div ref={tutorMessagesEndRef} />
                   </div>
 
-                  {/* Quick Preset Buttons with Token Estimates */}
-                  <div className="flex items-center gap-1 overflow-x-auto py-0.5 shrink-0 no-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => handleSendTutorMessage('Hãy đố tôi 1 câu hỏi phản xạ từ vựng')}
-                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-medium whitespace-nowrap flex items-center gap-1 border border-slate-700 shrink-0"
-                    >
-                      <span>🎯 Đố 1 câu</span>
-                      <span className="text-[9px] text-cyan-400 font-mono">~420t</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSendTutorMessage('Cho tôi 1 ví dụ câu giao tiếp thực tế')}
-                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-medium whitespace-nowrap flex items-center gap-1 border border-slate-700 shrink-0"
-                    >
-                      <span>💡 Ví dụ</span>
-                      <span className="text-[9px] text-amber-400 font-mono">~380t</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSendTutorMessage('So sánh cặp từ dễ nhầm lẫn trong TOEIC')}
-                      className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-medium whitespace-nowrap flex items-center gap-1 border border-slate-700 shrink-0"
-                    >
-                      <span>⚖️ So sánh</span>
-                      <span className="text-[9px] text-purple-400 font-mono">~520t</span>
-                    </button>
+                  {/* Prominent Curated Suggestions Section (Kho tri thức ⚡ 0 Token) */}
+                  <div className="space-y-1 shrink-0 pt-0.5">
+                    <div className="flex items-center justify-between text-[10px] text-indigo-300 font-semibold px-0.5">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>Gợi ý câu hỏi phổ biến (Kho tri thức ⚡ 0 Token):</span>
+                      </span>
+                      <span className="text-[9px] text-emerald-400 font-mono">Tiết kiệm 100% token</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-20 overflow-y-auto pr-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleSendTutorMessage('Hãy đố tôi 1 câu hỏi phản xạ từ vựng')}
+                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
+                      >
+                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">🎯 Đố 1 câu phản xạ TOEIC</span>
+                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendTutorMessage('Cho tôi 1 ví dụ câu giao tiếp thực tế')}
+                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
+                      >
+                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">💡 Ví dụ giao tiếp công sở</span>
+                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendTutorMessage('So sánh cặp từ dễ nhầm lẫn trong TOEIC')}
+                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
+                      >
+                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">⚖️ So sánh Economic vs Economical</span>
+                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSendTutorMessage('Lộ trình học 600 từ vựng TOEIC hiệu quả')}
+                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
+                      >
+                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">📚 Chiến lược học 600 từ TOEIC</span>
+                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Real-time Token Cost Estimate beneath typing */}
                   {tutorInput.trim() && (
-                    <div className="px-2 py-0.5 rounded-lg bg-indigo-950/40 border border-indigo-800/40 text-[10px] text-indigo-300 flex items-center justify-between shrink-0">
+                    <div className="px-2.5 py-1 rounded-xl bg-indigo-950/50 border border-indigo-800/50 text-[10px] text-indigo-300 flex items-center justify-between shrink-0">
                       <span>Ước tính: ~{Math.min(1500, Math.ceil(tutorInput.length / 3) + 780)} tokens</span>
                       <span>1 lượt hỏi</span>
                     </div>
@@ -1532,17 +1627,17 @@ export const AppShell: React.FC = () => {
                         if (e.key === 'Enter') handleSendTutorMessage();
                       }}
                       disabled={tutorLoading}
-                      placeholder="Hỏi Gia sư AI bất cứ điều gì..."
-                      className="flex-1 px-3 py-2 sm:py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-sm sm:text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+                      placeholder="Hỏi Gia sư AI hoặc chọn gợi ý kho tri thức 0 token..."
+                      className="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                     />
                     <button
                       type="button"
                       onClick={() => handleSendTutorMessage()}
                       disabled={!tutorInput.trim() || tutorLoading}
-                      className="p-2 sm:p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white shrink-0 transition"
+                      className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white shrink-0 transition"
                       aria-label="Gửi câu hỏi cho Gia sư AI"
                     >
-                      <Send className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${tutorLoading ? 'animate-spin' : ''}`} />
+                      <Send className={`w-3.5 h-3.5 ${tutorLoading ? 'animate-spin' : ''}`} />
                     </button>
                   </div>
                 </div>

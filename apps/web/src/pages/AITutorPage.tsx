@@ -58,6 +58,16 @@ interface QuizCardData {
   explanation: string;
 }
 
+interface CommunityCitation {
+  id: string;
+  title: string;
+  summary: string;
+  authorName: string;
+  likeCount: number;
+  tags?: string[];
+  url?: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -65,6 +75,9 @@ interface Message {
   vocabularyCard?: VocabularyCardData | null;
   comparisonCard?: ComparisonCardData | null;
   quizCard?: QuizCardData | null;
+  citations?: CommunityCitation[] | null;
+  isCached?: boolean;
+  tokensSaved?: number;
   createdAt: Date;
 }
 
@@ -223,6 +236,9 @@ export const AITutorPage: React.FC = () => {
         vocabularyCard: data?.vocabularyCard || null,
         comparisonCard: compCard,
         quizCard: quizCard,
+        citations: data?.citations || null,
+        isCached: data?.isCached || false,
+        tokensSaved: data?.tokensSaved || 0,
         createdAt: new Date(),
       };
 
@@ -667,6 +683,45 @@ export const AITutorPage: React.FC = () => {
                       </div>
                     </GlassCard>
                   )}
+
+                  {/* 4. Structured Community Knowledge Citations Card */}
+                  {msg.citations && msg.citations.length > 0 && (
+                    <GlassCard className="p-4 border border-indigo-500/30 shadow-md space-y-2.5 bg-white/95 dark:bg-slate-900/95">
+                      <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-wider">
+                        <BookOpen className="w-4 h-4" />
+                        <span>Bài Viết Dẫn Chứng Từ Kho Tri Thức Cộng Đồng</span>
+                      </div>
+                      <div className="space-y-2">
+                        {msg.citations.map((c) => (
+                          <a
+                            key={c.id}
+                            href={c.url || `/community?post=${c.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 border border-slate-200/60 dark:border-slate-700/60 hover:border-indigo-500/50 transition group"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {c.title}
+                              </h4>
+                              <span className="text-[11px] text-rose-500 font-bold shrink-0">
+                                ❤️ {c.likeCount} lượt thích
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                              {c.summary}
+                            </p>
+                            <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400">
+                              <span>Tác giả: <strong className="text-slate-700 dark:text-slate-300">{c.authorName}</strong></span>
+                              <span className="text-indigo-600 dark:text-indigo-400 font-bold group-hover:underline flex items-center gap-1">
+                                Đọc bài viết đầy đủ <ChevronRight className="w-3 h-3" />
+                              </span>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </GlassCard>
+                  )}
                 </div>
               </div>
             ))}
@@ -688,6 +743,45 @@ export const AITutorPage: React.FC = () => {
 
           {/* Bottom Composer with Real-time Token Cost Estimator */}
           <div className="shrink-0 pt-2 space-y-1.5">
+            {/* Curated Suggestion Chips (Kho tri thức ⚡ 0 Token) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar">
+              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 shrink-0 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>Gợi ý 0 Token:</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => handleSendMessage('Hãy đố tôi 1 câu hỏi phản xạ từ vựng', 'quiz')}
+                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
+              >
+                <span>🎯 Đố 1 câu phản xạ</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage('Cho tôi 1 ví dụ câu giao tiếp thực tế')}
+                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
+              >
+                <span>💡 Ví dụ giao tiếp</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage('So sánh cặp từ dễ nhầm lẫn trong TOEIC', 'compare')}
+                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
+              >
+                <span>⚖️ So sánh Economic vs Economical</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSendMessage('Lộ trình học 600 từ vựng TOEIC hiệu quả')}
+                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
+              >
+                <span>📚 Chiến lược 600 từ TOEIC</span>
+                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
+              </button>
+            </div>
             {input.trim() && (
               <div className="flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] animate-fade-in">
                 <span className="flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400">
