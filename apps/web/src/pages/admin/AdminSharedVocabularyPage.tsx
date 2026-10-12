@@ -214,10 +214,12 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           ? `⭐ Đã thiết lập "${deck.title}" làm KHO CHÍNH và đồng bộ vào từ điển hệ thống!`
           : `Đã hủy thiết lập kho chính cho "${deck.title}".`,
       );
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deck.id ? { ...d, isOfficial: nextOfficial } : d))
+      );
       if (selectedDeck && selectedDeck.id === deck.id) {
         setSelectedDeck((prev) => (prev ? { ...prev, isOfficial: nextOfficial } : null));
       }
-      fetchDecks();
     } catch (err: any) {
       console.error('Toggle official error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể cập nhật trạng thái kho chính.');
@@ -236,10 +238,12 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       showToast('success', `Đã chuyển bộ từ sang không gian ngôn ngữ: ${langObj?.name || newLangId}`);
       setShowChangeLangModal(false);
       setDeckToChangeLang(null);
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deckId ? { ...d, languageId: newLangId } : d))
+      );
       if (selectedDeck && selectedDeck.id === deckId) {
         setSelectedDeck((prev) => (prev ? { ...prev, languageId: newLangId } : null));
       }
-      fetchDecks();
     } catch (err: any) {
       console.error('Update deck language error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể chuyển đổi không gian ngôn ngữ.');
@@ -276,23 +280,21 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       setTargetDeckForAction(null);
       setRejectReason('');
 
-      // If drawer is open on this deck, update its status
+      const newStatus =
+        action === 'APPROVE'
+          ? 'APPROVED'
+          : action === 'REJECT'
+            ? 'REJECTED'
+            : 'PENDING';
+
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deck.id ? { ...d, status: newStatus } : d))
+      );
       if (selectedDeck && selectedDeck.id === deck.id) {
         setSelectedDeck((prev) =>
-          prev
-            ? {
-              ...prev,
-              status:
-                action === 'APPROVE'
-                  ? 'APPROVED'
-                  : action === 'REJECT'
-                    ? 'REJECTED'
-                    : 'PENDING',
-            }
-            : null,
+          prev ? { ...prev, status: newStatus } : null
         );
       }
-      fetchDecks();
     } catch (err: any) {
       console.error('Moderation error:', err);
       showToast('error', err?.response?.data?.message || err?.message || 'Có lỗi khi xử lý kiểm duyệt.');
@@ -382,11 +384,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
         await idbDeleteLocalDeck((target as any).originDeckId).catch(() => {});
       }
       showToast('success', `Đã xóa vĩnh viễn kho từ "${target.title}" thành công.`);
+      setDecks((prev) => prev.filter((d) => d.id !== target.id));
       if (selectedDeck && selectedDeck.id === target.id) {
         setSelectedDeck(null);
       }
       setSelectedIds((prev) => prev.filter((id) => id !== target.id));
-      fetchDecks();
     } catch (err: any) {
       console.error('Delete deck error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể xóa kho từ vựng.');
@@ -414,8 +416,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       // Xóa hàng loạt khỏi IndexedDB nếu có trên máy
       await idbDeleteLocalDecks(selectedIds).catch(() => {});
       showToast('success', `Đã xóa vĩnh viễn ${selectedIds.length} kho từ vựng.`);
+      setDecks((prev) => prev.filter((d) => !selectedIds.includes(d.id)));
+      if (selectedDeck && selectedIds.includes(selectedDeck.id)) {
+        setSelectedDeck(null);
+      }
       setSelectedIds([]);
-      fetchDecks();
     } catch (err: any) {
       console.error('Bulk delete error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể xóa hàng loạt kho từ.');

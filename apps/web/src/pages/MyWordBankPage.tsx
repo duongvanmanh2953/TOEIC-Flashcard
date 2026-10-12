@@ -990,6 +990,9 @@ export const MyWordBankPage: React.FC = () => {
               if (res?.id) {
                 await idbUpdateLocalDeck(deckId, { isSyncedToCloud: true });
                 setDecks((prev) => prev.map((d) => (d.id === deckId ? { ...d, isSyncedToCloud: true } : d)));
+                if (selectedDeck?.id === deckId) {
+                  setSelectedDeck((prev) => (prev ? { ...prev, isSyncedToCloud: true } : null));
+                }
               }
             }
           } catch (err) {
@@ -1688,7 +1691,7 @@ export const MyWordBankPage: React.FC = () => {
         (w) => w.deckId === shareModalDeck.id || (w.deckName && w.deckName === shareModalDeck.title)
       );
 
-      await api.post('/community/decks', {
+      const res: any = await api.post('/community/decks', {
         title: shareTitle.trim(),
         description: shareDescription.trim(),
         category: shareCategory,
@@ -1706,6 +1709,34 @@ export const MyWordBankPage: React.FC = () => {
           cefrLevel: mapToCefrEquivalent(w.cefrLevel || shareModalDeck.cefrLevel),
         })),
       });
+
+      const serverDeckId = res?.data?.id || res?.id || shareModalDeck.id;
+      const oldId = shareModalDeck.id;
+      const updatedDeck: LocalDeck = {
+        ...shareModalDeck,
+        id: serverDeckId,
+        title: shareTitle.trim(),
+        description: shareDescription.trim(),
+        category: shareCategory,
+        isSyncedToCloud: true,
+        updatedAt: Date.now(),
+      };
+
+      if (serverDeckId !== oldId) {
+        await idbDeleteLocalDeck(oldId);
+        const wordsToUpdate = words.filter((w) => w.deckId === oldId);
+        if (wordsToUpdate.length > 0) {
+          const updatedWords = wordsToUpdate.map((w) => ({ ...w, deckId: serverDeckId }));
+          await idbSaveWords(updatedWords);
+          setWords((prev) => prev.map((w) => (w.deckId === oldId ? { ...w, deckId: serverDeckId } : w)));
+        }
+      }
+
+      await idbSaveLocalDeck(updatedDeck);
+      setDecks((prev) => prev.map((d) => (d.id === oldId ? updatedDeck : d)));
+      if (selectedDeck?.id === oldId) {
+        setSelectedDeck(updatedDeck);
+      }
 
       setActionSuccessMsg('Đã xuất bản kho từ vựng lên Cộng đồng thành công!');
       setTimeout(() => {
@@ -1731,31 +1762,34 @@ export const MyWordBankPage: React.FC = () => {
         ]
       : []),
     ...(!deck.isReadOnly
-      ? [
-          {
-            value: 'cloud_sync',
-            label: deck.isSyncedToCloud
-              ? syncingDeckId === deck.id
-                ? 'Đang đồng bộ...'
-                : 'Đồng bộ lại lên Cloud'
-              : 'Đưa kho lên Cloud',
-            icon:
-              syncingDeckId === deck.id ? (
-                <RefreshCw className="w-4 h-4 animate-spin text-indigo-500" />
-              ) : (
-                <CloudUpload className="w-4 h-4 text-indigo-500" />
-              ),
-          },
-        ]
-      : []),
-    ...(deck.isSyncedToCloud && !deck.isReadOnly
-      ? [
-          {
-            value: 'unlink_cloud',
-            label: 'Gỡ kho khỏi Cloud (Lưu về máy)',
-            icon: <CloudUpload className="w-4 h-4 rotate-180 text-amber-500" />,
-          },
-        ]
+      ? deck.isSyncedToCloud
+        ? [
+            {
+              value: 'cloud_sync',
+              label:
+                syncingDeckId === deck.id
+                  ? 'Đang cập nhật...'
+                  : 'Cập nhật lại lên Cộng đồng',
+              icon:
+                syncingDeckId === deck.id ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-indigo-500" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 text-indigo-500" />
+                ),
+            },
+            {
+              value: 'unlink_cloud',
+              label: 'Gỡ khỏi kho cộng đồng (Lưu về máy)',
+              icon: <CloudUpload className="w-4 h-4 rotate-180 text-amber-500" />,
+            },
+          ]
+        : [
+            {
+              value: 'share',
+              label: 'Chia sẻ lên cộng đồng (Lưu lên Cloud)',
+              icon: <Share2 className="w-4 h-4 text-purple-600" />,
+            },
+          ]
       : []),
     {
       value: 'export_xlsx',
@@ -1767,15 +1801,6 @@ export const MyWordBankPage: React.FC = () => {
       label: 'Tải file CSV (.csv)',
       icon: <Download className="w-4 h-4 text-blue-600" />,
     },
-    ...(!deck.isReadOnly
-      ? [
-          {
-            value: 'share',
-            label: 'Chia sẻ lên cộng đồng',
-            icon: <Share2 className="w-4 h-4 text-purple-600" />,
-          },
-        ]
-      : []),
     ...(!deck.isReadOnly
       ? [
           {
@@ -2585,11 +2610,37 @@ export const MyWordBankPage: React.FC = () => {
                   </button>
                 }
                 options={[
-                  {
-                    value: 'sync_cloud',
-                    label: selectedDeck.isSyncedToCloud ? 'Đã lưu trên Cloud (Bấm để đồng bộ)' : 'Lưu kho lên Cloud',
-                    icon: <CloudUpload className="w-4 h-4 text-indigo-500" />,
-                  },
+                  ...(!selectedDeck.isReadOnly
+                    ? selectedDeck.isSyncedToCloud
+                      ? [
+                          {
+                            value: 'sync_cloud',
+                            label:
+                              syncingDeckId === selectedDeck.id
+                                ? 'Đang cập nhật...'
+                                : 'Cập nhật lại lên Cộng đồng',
+                            icon: (
+                              <RefreshCw
+                                className={`w-4 h-4 text-indigo-500 ${
+                                  syncingDeckId === selectedDeck.id ? 'animate-spin' : ''
+                                }`}
+                              />
+                            ),
+                          },
+                          {
+                            value: 'unlink_cloud',
+                            label: 'Gỡ khỏi kho cộng đồng (Lưu về máy)',
+                            icon: <CloudUpload className="w-4 h-4 rotate-180 text-amber-500" />,
+                          },
+                        ]
+                      : [
+                          {
+                            value: 'share_deck',
+                            label: 'Chia sẻ lên cộng đồng (Lưu lên Cloud)',
+                            icon: <Share2 className="w-4 h-4 text-indigo-500" />,
+                          },
+                        ]
+                    : []),
                   ...(wordsInSelectedDeck.length > 0
                     ? [
                         {
@@ -2612,11 +2663,6 @@ export const MyWordBankPage: React.FC = () => {
                           icon: <Edit3 className="w-4 h-4 text-slate-500" />,
                         },
                         {
-                          value: 'share_deck',
-                          label: 'Chia sẻ lên cộng đồng',
-                          icon: <Share2 className="w-4 h-4 text-indigo-500" />,
-                        },
-                        {
                           value: 'delete_deck',
                           label: 'Xóa kho này',
                           icon: <Trash2 className="w-4 h-4 text-rose-500" />,
@@ -2628,6 +2674,8 @@ export const MyWordBankPage: React.FC = () => {
                 onChange={(action) => {
                   if (action === 'sync_cloud') {
                     handleUploadDeckToCloud(selectedDeck);
+                  } else if (action === 'unlink_cloud') {
+                    handleUnlinkFromCloud(selectedDeck);
                   } else if (action === 'export_xlsx') {
                     exportWordsToExcelOrCsv(wordsInSelectedDeck, `kho_${selectedDeck.title}`, 'xlsx');
                   } else if (action === 'export_csv') {

@@ -223,12 +223,14 @@ export const AdminPlansPage: React.FC = () => {
 
       if (editingPlan) {
         await api.patch(`/admin/plans/${editingPlan.id}`, payload);
+        setPlans((prev) => prev.map((p) => (p.id === editingPlan.id ? { ...p, ...payload } : p)));
       } else {
-        await api.post('/admin/plans', payload);
+        const res: any = await api.post('/admin/plans', payload);
+        const newPlan = res?.data?.data || res?.data || { ...payload, id: `plan_${Date.now()}` };
+        setPlans((prev) => [...prev, newPlan]);
       }
 
       setModalOpen(false);
-      fetchPlans();
     } catch (err: any) {
       setFormError(err.response?.data?.message || err.message || 'Lỗi khi lưu thông tin gói cước');
     } finally {
@@ -248,7 +250,7 @@ export const AdminPlansPage: React.FC = () => {
 
     try {
       await api.delete(`/admin/plans/${plan.id}`);
-      fetchPlans();
+      setPlans((prev) => prev.filter((p) => p.id !== plan.id));
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message;
       if (err.response?.status === 400 && msg.includes('Archive')) {
@@ -265,7 +267,7 @@ export const AdminPlansPage: React.FC = () => {
       await api.patch(`/admin/plans/${planId}/archive`, {});
       setArchiveModalOpen(false);
       setBlockedPlan(null);
-      fetchPlans();
+      setPlans((prev) => prev.map((p) => (p.id === planId ? { ...p, status: 'ARCHIVED' } : p)));
     } catch (err: any) {
       alert(err.response?.data?.message || err.message || 'Lỗi khi lưu trữ gói');
     }
@@ -275,7 +277,7 @@ export const AdminPlansPage: React.FC = () => {
     const nextStatus = plan.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
       await api.patch(`/admin/plans/${plan.id}`, { status: nextStatus });
-      fetchPlans();
+      setPlans((prev) => prev.map((p) => (p.id === plan.id ? { ...p, status: nextStatus } : p)));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Không thể cập nhật trạng thái');
     }

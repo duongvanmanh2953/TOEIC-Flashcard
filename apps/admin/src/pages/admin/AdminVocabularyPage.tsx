@@ -214,8 +214,23 @@ export const AdminVocabularyPage: React.FC = () => {
         value,
       });
       showToast('success', `Đã thực hiện thao tác trên ${selectedIds.length} mục từ.`);
+      if (action === 'delete') {
+        setItems((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
+        setTotalCount((prev) => Math.max(0, prev - selectedIds.length));
+      } else if (action === 'setCefr') {
+        setItems((prev) =>
+          prev.map((item) => (selectedIds.includes(item.id) ? { ...item, cefr: value, cefrLevel: value } : item))
+        );
+      } else if (action === 'setPos') {
+        setItems((prev) =>
+          prev.map((item) => (selectedIds.includes(item.id) ? { ...item, partOfSpeech: value } : item))
+        );
+      } else if (action === 'setLanguage') {
+        setItems((prev) =>
+          prev.map((item) => (selectedIds.includes(item.id) ? { ...item, languageId: value } : item))
+        );
+      }
       setSelectedIds([]);
-      fetchVocabulary();
     } catch (err: any) {
       console.error('Bulk action error:', err);
       showToast('error', err?.response?.data?.message || 'Có lỗi khi thao tác hàng loạt.');
@@ -236,13 +251,18 @@ export const AdminVocabularyPage: React.FC = () => {
       if (editingItem.id) {
         await api.patch(`/vocabulary/admin/${editingItem.id}`, editingItem);
         showToast('success', `Đã cập nhật từ vựng "${editingItem.word}"!`);
+        setItems((prev) =>
+          prev.map((item) => (item.id === editingItem.id ? { ...item, ...editingItem } : item))
+        );
       } else {
-        await api.post('/vocabulary/admin', editingItem);
+        const res: any = await api.post('/vocabulary/admin', editingItem);
         showToast('success', `Đã thêm từ vựng mới "${editingItem.word}"!`);
+        const createdItem = res?.data?.data || res?.data || editingItem;
+        setItems((prev) => [createdItem, ...prev]);
+        setTotalCount((prev) => prev + 1);
       }
       setShowEditModal(false);
       setEditingItem(null);
-      fetchVocabulary();
     } catch (err: any) {
       console.error('Save error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể lưu từ vựng.');
@@ -264,7 +284,8 @@ export const AdminVocabularyPage: React.FC = () => {
     try {
       await api.delete(`/vocabulary/admin/${id}`);
       showToast('success', `Đã xóa từ vựng "${word}".`);
-      fetchVocabulary();
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      setTotalCount((prev) => Math.max(0, prev - 1));
     } catch (err: any) {
       console.error('Delete error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể xóa từ vựng.');

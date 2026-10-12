@@ -164,7 +164,7 @@ export const AdminSecurityPage: React.FC = () => {
       });
       setActionSuccessMsg('Đã phê duyệt và kích hoạt thiết bị thành công.');
       setTimeout(() => setActionSuccessMsg(null), 3500);
-      await fetchRiskEvents();
+      setRiskEvents((prev) => prev.map((ev) => (ev.id === eventId ? { ...ev, status: 'RESOLVED' } : ev)));
       if (selectedEvent?.id === eventId) setSelectedEvent(null);
     } catch (err: any) {
       setActionErrorMsg(err?.response?.data?.message || 'Thao tác phê duyệt thất bại.');
@@ -182,7 +182,7 @@ export const AdminSecurityPage: React.FC = () => {
       });
       setActionSuccessMsg('Đã chặn thiết bị và hủy các phiên liên quan.');
       setTimeout(() => setActionSuccessMsg(null), 3500);
-      await fetchRiskEvents();
+      setRiskEvents((prev) => prev.map((ev) => (ev.id === eventId ? { ...ev, status: 'BLOCKED' } : ev)));
       if (selectedEvent?.id === eventId) setSelectedEvent(null);
     } catch (err: any) {
       setActionErrorMsg(err?.response?.data?.message || 'Thao tác chặn thiết bị thất bại.');
@@ -200,7 +200,7 @@ export const AdminSecurityPage: React.FC = () => {
       });
       setActionSuccessMsg('Đã bỏ qua sự kiện rủi ro.');
       setTimeout(() => setActionSuccessMsg(null), 3500);
-      await fetchRiskEvents();
+      setRiskEvents((prev) => prev.map((ev) => (ev.id === eventId ? { ...ev, status: 'EXEMPTED' } : ev)));
       if (selectedEvent?.id === eventId) setSelectedEvent(null);
     } catch (err: any) {
       setActionErrorMsg(err?.response?.data?.message || 'Thao tác thất bại.');
@@ -221,7 +221,7 @@ export const AdminSecurityPage: React.FC = () => {
       });
       setActionSuccessMsg('Đã khóa tài khoản người dùng và thu hồi tất cả phiên làm việc.');
       setTimeout(() => setActionSuccessMsg(null), 3500);
-      await fetchRiskEvents();
+      setRiskEvents((prev) => prev.map((ev) => (ev.id === eventId ? { ...ev, status: 'BLOCKED' } : ev)));
       if (selectedEvent?.id === eventId) setSelectedEvent(null);
     } catch (err: any) {
       setActionErrorMsg(err?.response?.data?.message || 'Không thể khóa tài khoản.');

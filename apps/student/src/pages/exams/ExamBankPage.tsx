@@ -201,21 +201,6 @@ export const ExamBankPage: React.FC = () => {
     fetchExams();
   }, [activeTab, examType, level, sortBy]);
 
-  // Adapt recommended exam type when active learning space changes
-  useEffect(() => {
-    if (activeLanguage.id === 'ko') {
-      setExamType('TOPIK');
-    } else if (activeLanguage.id === 'ja') {
-      setExamType('JLPT');
-    } else if (activeLanguage.id === 'zh') {
-      setExamType('HSK');
-    } else if (activeLanguage.id === 'vi') {
-      setExamType('THPT');
-    } else {
-      setExamType('ALL');
-    }
-  }, [activeLanguage.id]);
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchExams();
@@ -303,8 +288,8 @@ export const ExamBankPage: React.FC = () => {
       setExams((prev) => prev.map(updateFn));
       setDetailModalExam((prev: any) => (prev && prev.id === examId ? updateFn(prev) : prev));
 
-      if (activeTab === 'saved') {
-        fetchExams();
+      if (activeTab === 'saved' && !data.saved) {
+        setExams((prev) => prev.filter((e) => e.id !== examId));
       }
     } catch (err) {
       console.error('Save error:', err);
@@ -425,7 +410,6 @@ export const ExamBankPage: React.FC = () => {
       if (detailModalExam && detailModalExam.id === examId) {
         setDetailModalExam((prev: any) => ({ ...prev, isCloned: true }));
       }
-      fetchExams();
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Không thể sao chép đề thi.');
     }
@@ -442,7 +426,7 @@ export const ExamBankPage: React.FC = () => {
     if (!ok) return;
     try {
       await api.delete(`/exams/${examId}`);
-      fetchExams();
+      setExams((prev) => prev.filter((e) => e.id !== examId));
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Không thể xóa đề thi.');
     }
@@ -453,7 +437,9 @@ export const ExamBankPage: React.FC = () => {
     try {
       await api.post(`/exams/${examId}/submit-review`);
       alert('Đã gửi bộ đề lên hệ thống kiểm duyệt thành công!');
-      fetchExams();
+      setExams((prev) =>
+        prev.map((e) => (e.id === examId ? { ...e, status: 'PENDING_REVIEW' } : e))
+      );
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Không thể gửi duyệt bộ đề.');
     }
@@ -463,7 +449,11 @@ export const ExamBankPage: React.FC = () => {
     try {
       await api.post(`/exams/${examId}/approve`);
       alert('Đã duyệt và xuất bản bộ đề lên cộng đồng!');
-      fetchExams();
+      setExams((prev) =>
+        prev.map((e) =>
+          e.id === examId ? { ...e, status: 'APPROVED', isPublished: true } : e
+        )
+      );
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Không thể duyệt bộ đề.');
     }
@@ -475,7 +465,9 @@ export const ExamBankPage: React.FC = () => {
     try {
       await api.post(`/exams/${examId}/reject`, { reason });
       alert('Đã từ chối duyệt bộ đề.');
-      fetchExams();
+      setExams((prev) =>
+        prev.map((e) => (e.id === examId ? { ...e, status: 'REJECTED' } : e))
+      );
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Không thể từ chối bộ đề.');
     }

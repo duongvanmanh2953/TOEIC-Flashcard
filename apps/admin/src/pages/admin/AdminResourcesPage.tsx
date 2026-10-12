@@ -228,12 +228,17 @@ export const AdminResourcesPage: React.FC = () => {
 
       if (activeResource) {
         await api.patch(`/admin/resources/${activeResource.id}`, payload);
+        setResources((prev) =>
+          prev.map((r) => (r.id === activeResource.id ? { ...r, ...payload } : r))
+        );
       } else {
-        await api.post('/admin/resources', payload);
+        const res: any = await api.post('/admin/resources', payload);
+        const created = res?.data?.data || res?.data || { ...payload, id: `res_${Date.now()}` };
+        setResources((prev) => [created, ...prev]);
+        setPagination((prev) => ({ ...prev, total: prev.total + 1 }));
       }
 
       setEditorOpen(false);
-      fetchResources();
     } catch (err: any) {
       setFormError(err.response?.data?.message || err.message || 'Lỗi khi lưu tài nguyên học tập');
     } finally {
@@ -253,7 +258,8 @@ export const AdminResourcesPage: React.FC = () => {
 
     try {
       await api.delete(`/admin/resources/${res.id}`);
-      fetchResources();
+      setResources((prev) => prev.filter((r) => r.id !== res.id));
+      setPagination((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi khi xóa tài nguyên');
     }
@@ -262,7 +268,9 @@ export const AdminResourcesPage: React.FC = () => {
   const handleStatusChange = async (res: LearningResource, newStatus: string) => {
     try {
       await api.patch(`/admin/resources/${res.id}/status`, { status: newStatus });
-      fetchResources();
+      setResources((prev) =>
+        prev.map((r) => (r.id === res.id ? { ...r, status: newStatus as any } : r))
+      );
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi khi cập nhật trạng thái');
     }

@@ -32,7 +32,6 @@ import api, { extractApiList } from '../../lib/api';
 import { useTranslation } from '../../i18n';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { getSocket } from '../../lib/socket';
-import { navigateToApp } from '../../lib/sso';
 
 export type AlertSeverity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type AlertCategory =
@@ -211,59 +210,28 @@ export const AdminNotificationsPage: React.FC = () => {
 
   const handleOpenDestination = (alert: OperationalAlert) => {
     handleMarkRead(alert.id);
-    const tType = (alert.targetType || alert.type || '').toUpperCase();
-    const tId = alert.targetId || '';
-
-    // If alert has a specific admin route (not circular /notifications)
-    if (
-      alert.route &&
-      alert.route !== '/notifications' &&
-      alert.route !== '/admin/notifications' &&
-      !alert.route.startsWith('/learn') &&
-      !alert.route.startsWith('/review')
-    ) {
+    if (alert.route) {
       let r = alert.route;
       if (r.includes('/vocabulary?tab=moderation') || r.includes('tab=moderation')) {
         navigate('/admin/shared-vocabulary?status=PENDING');
         return;
       }
-      if (r.startsWith('/word-bank') || r.startsWith('/community')) {
-        navigateToApp('student', r);
-        return;
-      }
-      const targetPath = r.startsWith('/admin')
-        ? r
-        : `/admin${r.startsWith('/') ? '' : '/'}${r}`;
-      navigate(targetPath);
+      navigate(r);
       return;
     }
-
-    // Precise entity direct routing with query ID params
-    if (tType.includes('CONV') || tType.includes('SUPPORT') || tType.includes('TICKET')) {
-      navigate(tId ? `/admin/conversations?id=${tId}` : '/admin/conversations');
-    } else if (tType.includes('FEEDBACK') || tType.includes('BUG') || tType.includes('FEATURE')) {
-      navigate(tId ? `/admin/feedback?id=${tId}` : '/admin/feedback');
-    } else if (tType.includes('USER') || tType.includes('ACCOUNT')) {
-      navigate(tId ? `/admin/users?id=${tId}` : '/admin/users');
-    } else if (tType.includes('VOCAB') || tType.includes('DECK') || tType.includes('BANK')) {
-      navigate(tId ? `/admin/shared-vocabulary?id=${tId}` : '/admin/shared-vocabulary');
-    } else if (
-      tType.includes('PAY') ||
-      tType.includes('BILL') ||
-      tType.includes('ORDER') ||
-      tType.includes('SUBSCRIPTION')
-    ) {
+    const tType = alert.targetType?.toUpperCase() || '';
+    if (tType.includes('CONV') || tType.includes('SUPPORT')) {
+      navigate('/admin/conversations');
+    } else if (tType.includes('FEEDBACK') || tType.includes('BUG')) {
+      navigate('/admin/feedback');
+    } else if (tType.includes('PAY') || tType.includes('BILL')) {
       navigate('/admin/finance');
-    } else if (tType.includes('COMMUNITY') || tType.includes('MODERAT') || tType.includes('POST')) {
-      navigate('/admin/community-moderation');
     } else if (tType.includes('AI')) {
       navigate('/admin/ai');
-    } else if (tType.includes('SECURITY') || tType.includes('RISK')) {
-      navigate('/admin/security');
-    } else if (tType.includes('SYSTEM')) {
-      navigate('/admin/system');
+    } else if (tType.includes('USER')) {
+      navigate('/admin/users');
     } else {
-      navigate('/admin/overview');
+      navigate('/admin/dashboard');
     }
   };
 
@@ -284,12 +252,20 @@ export const AdminNotificationsPage: React.FC = () => {
       });
 
       setSuccessMsg('Đã phát sóng thông báo thành công tới các học viên mục tiêu!');
+      const newAnnouncement: OperationalAnnouncement = {
+        id: `bc_${Date.now()}`,
+        title: broadcastTitle,
+        message: broadcastContent,
+        createdAt: new Date().toISOString(),
+        author: 'Admin',
+        type: broadcastType,
+        targetAudience,
+      };
+      setAnnouncements((prev) => [newAnnouncement, ...prev]);
       setBroadcastTitle('');
       setBroadcastContent('');
       setActionUrl('');
       setShowBroadcastModal(false);
-      fetchAnnouncements();
-      fetchAlerts();
     } catch (err) {
       console.error('Failed to send broadcast:', err);
     } finally {

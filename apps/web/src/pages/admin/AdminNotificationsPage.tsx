@@ -252,12 +252,20 @@ export const AdminNotificationsPage: React.FC = () => {
       });
 
       setSuccessMsg('Đã phát sóng thông báo thành công tới các học viên mục tiêu!');
+      const newAnnouncement: OperationalAnnouncement = {
+        id: `bc_${Date.now()}`,
+        title: broadcastTitle,
+        message: broadcastContent,
+        createdAt: new Date().toISOString(),
+        author: 'Admin',
+        type: broadcastType,
+        targetAudience,
+      };
+      setAnnouncements((prev) => [newAnnouncement, ...prev]);
       setBroadcastTitle('');
       setBroadcastContent('');
       setActionUrl('');
       setShowBroadcastModal(false);
-      fetchAnnouncements();
-      fetchAlerts();
     } catch (err) {
       console.error('Failed to send broadcast:', err);
     } finally {

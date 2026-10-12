@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import {
   BookOpen,
   Search,
@@ -31,7 +30,6 @@ import { confirmModal } from '../../components/common/ConfirmDialog';
 import { useI18n } from '../../i18n';
 import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
-import { SearchableSelect, DropdownOption } from '../../components/common/SearchableSelect';
 import { idbDeleteLocalDeck, idbDeleteLocalDecks } from '../../lib/idb';
 import { AdminMergeDecksModal } from '../../components/admin/AdminMergeDecksModal';
 
@@ -196,30 +194,12 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     }
   }, [statusFilter, spaceFilter, officialFilter, search]);
 
-  const [searchParams] = useSearchParams();
-  const targetDeckId = searchParams.get('id') || searchParams.get('deckId');
-
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchDecks();
     }, 300);
     return () => clearTimeout(timer);
   }, [fetchDecks]);
-
-  useEffect(() => {
-    if (!targetDeckId) return;
-    const found = decks.find((d) => d.id === targetDeckId);
-    if (found) {
-      setSelectedDeck(found);
-    } else {
-      api.get(`/admin/shared-vocabulary/${targetDeckId}`).then((res: any) => {
-        const item = res?.data?.data || res?.data || res;
-        if (item?.id) {
-          setSelectedDeck(item);
-        }
-      }).catch(() => {});
-    }
-  }, [targetDeckId, decks]);
 
   const handleToggleOfficial = async (deck: SharedDeck) => {
     setActionLoading(true);
@@ -234,10 +214,12 @@ export const AdminSharedVocabularyPage: React.FC = () => {
           ? `⭐ Đã thiết lập "${deck.title}" làm KHO CHÍNH và đồng bộ vào từ điển hệ thống!`
           : `Đã hủy thiết lập kho chính cho "${deck.title}".`,
       );
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deck.id ? { ...d, isOfficial: nextOfficial } : d))
+      );
       if (selectedDeck && selectedDeck.id === deck.id) {
         setSelectedDeck((prev) => (prev ? { ...prev, isOfficial: nextOfficial } : null));
       }
-      fetchDecks();
     } catch (err: any) {
       console.error('Toggle official error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể cập nhật trạng thái kho chính.');
@@ -256,10 +238,12 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       showToast('success', `Đã chuyển bộ từ sang không gian ngôn ngữ: ${langObj?.name || newLangId}`);
       setShowChangeLangModal(false);
       setDeckToChangeLang(null);
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deckId ? { ...d, languageId: newLangId } : d))
+      );
       if (selectedDeck && selectedDeck.id === deckId) {
         setSelectedDeck((prev) => (prev ? { ...prev, languageId: newLangId } : null));
       }
-      fetchDecks();
     } catch (err: any) {
       console.error('Update deck language error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể chuyển đổi không gian ngôn ngữ.');
@@ -296,23 +280,21 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       setTargetDeckForAction(null);
       setRejectReason('');
 
-      // If drawer is open on this deck, update its status
+      const newStatus =
+        action === 'APPROVE'
+          ? 'APPROVED'
+          : action === 'REJECT'
+            ? 'REJECTED'
+            : 'PENDING';
+
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deck.id ? { ...d, status: newStatus } : d))
+      );
       if (selectedDeck && selectedDeck.id === deck.id) {
         setSelectedDeck((prev) =>
-          prev
-            ? {
-              ...prev,
-              status:
-                action === 'APPROVE'
-                  ? 'APPROVED'
-                  : action === 'REJECT'
-                    ? 'REJECTED'
-                    : 'PENDING',
-            }
-            : null,
+          prev ? { ...prev, status: newStatus } : null
         );
       }
-      fetchDecks();
     } catch (err: any) {
       console.error('Moderation error:', err);
       showToast('error', err?.response?.data?.message || err?.message || 'Có lỗi khi xử lý kiểm duyệt.');
@@ -374,26 +356,6 @@ export const AdminSharedVocabularyPage: React.FC = () => {
     return map;
   }, [baseDecks]);
 
-  const languageSpaceOptions: DropdownOption[] = React.useMemo(() => [
-    {
-      value: 'ALL',
-      label: `Tất cả không gian ngôn ngữ (${baseDecks.length})`,
-      badge: baseDecks.length,
-      icon: '🌐',
-      description: `Hiển thị toàn bộ ${baseDecks.length} kho từ vựng của mọi ngôn ngữ`,
-    },
-    ...SUPPORTED_LANGUAGES.map((lang) => {
-      const count = languageCounts[lang.id] || 0;
-      return {
-        value: lang.id,
-        label: `${lang.name} (${lang.nativeName})`,
-        badge: count,
-        icon: <CountryFlag languageId={lang.id} size="xs" />,
-        description: `Ngôn ngữ: ${lang.name} • ${count} kho từ`,
-      };
-    }),
-  ], [baseDecks.length, languageCounts]);
-
   const pendingCount = deckList.filter((d) => d.status === 'PENDING').length;
   const approvedCount = deckList.filter((d) => d.status === 'APPROVED').length;
   const rejectedCount = deckList.filter((d) => d.status === 'REJECTED').length;
@@ -422,11 +384,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
         await idbDeleteLocalDeck((target as any).originDeckId).catch(() => {});
       }
       showToast('success', `Đã xóa vĩnh viễn kho từ "${target.title}" thành công.`);
+      setDecks((prev) => prev.filter((d) => d.id !== target.id));
       if (selectedDeck && selectedDeck.id === target.id) {
         setSelectedDeck(null);
       }
       setSelectedIds((prev) => prev.filter((id) => id !== target.id));
-      fetchDecks();
     } catch (err: any) {
       console.error('Delete deck error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể xóa kho từ vựng.');
@@ -454,8 +416,11 @@ export const AdminSharedVocabularyPage: React.FC = () => {
       // Xóa hàng loạt khỏi IndexedDB nếu có trên máy
       await idbDeleteLocalDecks(selectedIds).catch(() => {});
       showToast('success', `Đã xóa vĩnh viễn ${selectedIds.length} kho từ vựng.`);
+      setDecks((prev) => prev.filter((d) => !selectedIds.includes(d.id)));
+      if (selectedDeck && selectedIds.includes(selectedDeck.id)) {
+        setSelectedDeck(null);
+      }
       setSelectedIds([]);
-      fetchDecks();
     } catch (err: any) {
       console.error('Bulk delete error:', err);
       showToast('error', err?.response?.data?.message || 'Không thể xóa hàng loạt kho từ.');
@@ -573,32 +538,56 @@ export const AdminSharedVocabularyPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Prominent Language Bar - Searchable Dropdown */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-            <Globe className="w-4 h-4" />
+      {/* Prominent Language Bar - Hiển Thị Hết Ra Theo Ngôn Ngữ */}
+      <div className="glass-card p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-sm">
+        <div className="flex items-center justify-between gap-2 mb-2 px-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+            <Globe className="w-4 h-4 text-indigo-400" />
+            <span>Phân Loại Kho Từ Theo Ngôn Ngữ Học (Language Spaces)</span>
           </div>
-          <div>
-            <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              Phân Loại Kho Từ Theo Ngôn Ngữ Học (Language Spaces)
-            </h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Chọn hoặc tìm kiếm không gian ngôn ngữ để lọc và quản lý danh sách bộ từ
-            </p>
-          </div>
+          <span className="text-[11px] text-slate-400">
+            Hiển thị toàn bộ kho từ theo từng ngôn ngữ học
+          </span>
         </div>
 
-        <div className="w-full sm:w-96 shrink-0">
-          <SearchableSelect
-            value={spaceFilter}
-            onChange={(val) => setSpaceFilter(String(val))}
-            options={languageSpaceOptions}
-            placeholder="Chọn không gian ngôn ngữ..."
-            searchPlaceholder="Tìm kiếm ngôn ngữ (Anh, Hàn, Nhật, Trung...)..."
-            size="md"
-            className="w-full"
-          />
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setSpaceFilter('ALL')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${spaceFilter === 'ALL'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+              }`}
+          >
+            <span>Tất cả ngôn ngữ</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${spaceFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+              }`}>
+              {baseDecks.length}
+            </span>
+          </button>
+
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const count = languageCounts[lang.id] || 0;
+            const isSelected = spaceFilter === lang.id;
+            return (
+              <button
+                key={lang.id}
+                type="button"
+                onClick={() => setSpaceFilter(lang.id)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer ${isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+                  }`}
+              >
+                <CountryFlag languageId={lang.id} size="xs" />
+                <span>{lang.name}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+                  }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -653,7 +642,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm theo tiêu đề bộ từ, người đóng góp, hoặc email..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition h-10 min-h-[40px]"
+              className="w-full pl-10 pr-4 py-2 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition min-h-[38px]"
             />
           </div>
 
@@ -698,7 +687,7 @@ export const AdminSharedVocabularyPage: React.FC = () => {
             <button
               onClick={fetchDecks}
               title="Làm mới danh sách"
-              className="w-full h-10 min-h-[40px] flex items-center justify-center rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
+              className="w-full h-[38px] flex items-center justify-center rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition cursor-pointer"
             >
               <RotateCcw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-400' : ''}`} />
             </button>
