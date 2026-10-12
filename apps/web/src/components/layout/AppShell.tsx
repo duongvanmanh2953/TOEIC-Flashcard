@@ -60,6 +60,7 @@ import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
 import { VocabFlowLogo } from '@vocabflow/shared';
 import { navigateToApp, buildSsoUrl } from '../../lib/sso';
+import { RichAIMessageRenderer } from '../ai/RichAIMessageRenderer';
 
 export const AppShell: React.FC = () => {
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
@@ -217,6 +218,7 @@ export const AppShell: React.FC = () => {
       content: string;
       citations?: any[];
       isCached?: boolean;
+      provider?: string;
     }>
   >([
     {
@@ -228,6 +230,51 @@ export const AppShell: React.FC = () => {
   const [tutorLoading, setTutorLoading] = useState(false);
   const [tutorQuota, setTutorQuota] = useState<{ remaining: number; limit: number } | null>(null);
   const tutorMessagesEndRef = useRef<HTMLDivElement>(null);
+
+  interface ChatSuggestion {
+    id: string;
+    title: string;
+    category: string;
+    hasCache: boolean;
+    tokensCost?: number;
+    estimatedTokens?: number;
+    tokenBadge?: string;
+  }
+  const [tutorSuggestions, setTutorSuggestions] = useState<ChatSuggestion[]>([]);
+  const [showTutorSuggestions, setShowTutorSuggestions] = useState(false);
+  const [searchingSuggestions, setSearchingSuggestions] = useState(false);
+
+  // Debounced search for similar DB questions & vocabulary suggestions as user types
+  useEffect(() => {
+    const trimmed = tutorInput.trim();
+    if (!trimmed) {
+      setTutorSuggestions([]);
+      setShowTutorSuggestions(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setSearchingSuggestions(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get(`/ai/suggestions?q=${encodeURIComponent(trimmed)}`);
+        const list = res.data?.data || res.data || [];
+        if (!isCancelled && Array.isArray(list)) {
+          setTutorSuggestions(list);
+          setShowTutorSuggestions(list.length > 0);
+        }
+      } catch (_) {
+        if (!isCancelled) setTutorSuggestions([]);
+      } finally {
+        if (!isCancelled) setSearchingSuggestions(false);
+      }
+    }, 250);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tutorInput]);
 
   const fetchTutorQuota = async () => {
     try {
@@ -259,9 +306,10 @@ export const AppShell: React.FC = () => {
     const text = promptText || tutorInput;
     if (!text.trim() || tutorLoading) return;
 
+    setShowTutorSuggestions(false);
     const userMsg = { id: Date.now().toString(), role: 'user' as const, content: text };
     setTutorMessages((prev) => [...prev, userMsg]);
-    if (!promptText) setTutorInput('');
+    setTutorInput('');
     setTutorLoading(true);
 
     try {
@@ -276,6 +324,7 @@ export const AppShell: React.FC = () => {
         content: data?.reply || 'Tôi đã tiếp nhận câu hỏi của bạn.',
         citations: data?.citations || [],
         isCached: data?.isCached || false,
+        provider: data?.provider,
       };
       setTutorMessages((prev) => [...prev, aiMsg]);
       // Only deduct quota if not served from zero-token knowledge cache
@@ -1508,49 +1557,20 @@ export const AppShell: React.FC = () => {
                           className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed space-y-2 ${
                             m.role === 'user'
                               ? 'bg-indigo-600 text-white rounded-tr-none'
-                              : 'bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700/60 whitespace-pre-wrap'
+                              : 'bg-slate-900 text-slate-100 rounded-tl-none border border-slate-700/60'
                           }`}
                         >
-                          {m.isCached && (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
-                              <span>⚡ Kho Tri Thức: Tiết kiệm 100% token</span>
-                            </div>
-                          )}
-                          <div>{m.content}</div>
-
-                          {/* Community Knowledge Citations Card */}
-                          {m.citations && m.citations.length > 0 && (
-                            <div className="mt-2.5 p-2.5 rounded-xl bg-indigo-950/80 border border-indigo-500/40 space-y-1.5 not-prose">
-                              <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-indigo-300">
-                                <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                                <span>Bài viết dẫn chứng từ Kho Tri Thức Cộng Đồng:</span>
-                              </div>
-                              <div className="space-y-1.5">
-                                {m.citations.map((c: any) => (
-                                  <a
-                                    key={c.id}
-                                    href={c.url || `/community?post=${c.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block p-2 rounded-lg bg-slate-900/90 hover:bg-slate-900 border border-slate-700/80 hover:border-indigo-400 transition group"
-                                  >
-                                    <div className="flex items-center justify-between gap-1 text-xs font-bold text-white group-hover:text-indigo-300 transition-colors">
-                                      <span className="truncate">{c.title}</span>
-                                      <span className="text-[10px] text-rose-400 shrink-0">❤️ {c.likeCount}</span>
-                                    </div>
-                                    <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                                      {c.summary}
-                                    </p>
-                                    <div className="flex items-center justify-between mt-1 text-[9px] text-slate-400">
-                                      <span>Tác giả: {c.authorName}</span>
-                                      <span className="text-indigo-400 font-bold group-hover:underline flex items-center gap-0.5">
-                                        Đọc bài viết <ChevronRight className="w-2.5 h-2.5" />
-                                      </span>
-                                    </div>
-                                  </a>
-                                ))}
-                              </div>
-                            </div>
+                          {m.role === 'assistant' ? (
+                            <RichAIMessageRenderer
+                              content={m.content}
+                              provider={(m as any).provider}
+                              isCompact={true}
+                              isCached={m.isCached}
+                              citations={m.citations}
+                              onSelectQuizOption={(opt) => handleSendTutorMessage(opt)}
+                            />
+                          ) : (
+                            <p className="whitespace-pre-wrap">{m.content}</p>
                           )}
                         </div>
                       </div>
@@ -1564,50 +1584,58 @@ export const AppShell: React.FC = () => {
                     <div ref={tutorMessagesEndRef} />
                   </div>
 
-                  {/* Prominent Curated Suggestions Section (Kho tri thức ⚡ 0 Token) */}
-                  <div className="space-y-1 shrink-0 pt-0.5">
-                    <div className="flex items-center justify-between text-[10px] text-indigo-300 font-semibold px-0.5">
-                      <span className="flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-300" />
-                        <span>Gợi ý câu hỏi phổ biến (Kho tri thức ⚡ 0 Token):</span>
-                      </span>
-                      <span className="text-[9px] text-emerald-400 font-mono">Tiết kiệm 100% token</span>
+                  {/* Real-time DB Question & Vocabulary Suggestions Popup (Only shown when user types) */}
+                  {tutorInput.trim() && showTutorSuggestions && tutorSuggestions.length > 0 && (
+                    <div className="p-2 rounded-xl bg-slate-900/95 border border-indigo-500/40 shadow-2xl space-y-1 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                      <div className="flex items-center justify-between px-1.5 py-0.5 text-[10px] font-bold border-b border-slate-800 text-indigo-300">
+                        <span className="flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          <span>Gợi ý câu hỏi tương tự từ thư viện DB:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowTutorSuggestions(false)}
+                          className="p-0.5 text-slate-400 hover:text-white cursor-pointer"
+                          title="Đóng gợi ý"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="max-h-36 overflow-y-auto space-y-1 divide-y divide-slate-800/80 pr-0.5">
+                        {tutorSuggestions.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setShowTutorSuggestions(false);
+                              handleSendTutorMessage(item.title);
+                            }}
+                            className="w-full text-left p-1.5 rounded-lg hover:bg-slate-800/90 flex items-center justify-between gap-2 transition group cursor-pointer"
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {item.hasCache ? (
+                                <Zap className="w-3 h-3 text-amber-400 shrink-0 fill-amber-400" />
+                              ) : (
+                                <BookOpen className="w-3 h-3 text-indigo-400 shrink-0" />
+                              )}
+                              <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">
+                                {item.title}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 flex items-center gap-0.5 ${
+                                item.hasCache
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                              }`}
+                            >
+                              {item.tokenBadge || (item.hasCache ? '⚡ 0 tok (Kho tri thức)' : '~1.2k tok')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5 max-h-20 overflow-y-auto pr-0.5">
-                      <button
-                        type="button"
-                        onClick={() => handleSendTutorMessage('Hãy đố tôi 1 câu hỏi phản xạ từ vựng')}
-                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
-                      >
-                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">🎯 Đố 1 câu phản xạ TOEIC</span>
-                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSendTutorMessage('Cho tôi 1 ví dụ câu giao tiếp thực tế')}
-                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
-                      >
-                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">💡 Ví dụ giao tiếp công sở</span>
-                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSendTutorMessage('So sánh cặp từ dễ nhầm lẫn trong TOEIC')}
-                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
-                      >
-                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">⚖️ So sánh Economic vs Economical</span>
-                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSendTutorMessage('Lộ trình học 600 từ vựng TOEIC hiệu quả')}
-                        className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 text-left border border-slate-700/80 hover:border-indigo-500/60 transition group flex flex-col justify-between"
-                      >
-                        <span className="text-[11px] font-medium text-slate-200 group-hover:text-white truncate">📚 Chiến lược học 600 từ TOEIC</span>
-                        <span className="text-[9px] text-emerald-400 font-mono mt-0.5">⚡ 0 tok (Kho tri thức)</span>
-                      </button>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Real-time Token Cost Estimate beneath typing */}
                   {tutorInput.trim() && (
@@ -1624,15 +1652,21 @@ export const AppShell: React.FC = () => {
                       value={tutorInput}
                       onChange={(e) => setTutorInput(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSendTutorMessage();
+                        if (e.key === 'Enter') {
+                          setShowTutorSuggestions(false);
+                          handleSendTutorMessage();
+                        }
                       }}
                       disabled={tutorLoading}
-                      placeholder="Hỏi Gia sư AI hoặc chọn gợi ý kho tri thức 0 token..."
+                      placeholder="Nhập câu hỏi để tìm trong thư viện hoặc hỏi Gia sư AI..."
                       className="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                     />
                     <button
                       type="button"
-                      onClick={() => handleSendTutorMessage()}
+                      onClick={() => {
+                        setShowTutorSuggestions(false);
+                        handleSendTutorMessage();
+                      }}
                       disabled={!tutorInput.trim() || tutorLoading}
                       className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white shrink-0 transition"
                       aria-label="Gửi câu hỏi cho Gia sư AI"

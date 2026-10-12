@@ -864,14 +864,22 @@ Dưới đây là mẫu câu đàm phán và trao đổi chuyên nghiệp chuẩ
   /**
    * Autocomplete & Query Suggestion Generator:
    * Returns saved queries with instant answers (0 API tokens spent)
-   * and high-yield TOEIC vocabulary / grammar prompts.
+   * and high-yield TOEIC vocabulary / grammar prompts from DB.
    */
   async getChatSuggestions(query: string = '') {
     const trimmed = (query || '').trim();
-    const suggestions: Array<{ id: string; title: string; category: string; hasCache: boolean }> = [];
+    const suggestions: Array<{
+      id: string;
+      title: string;
+      category: string;
+      hasCache: boolean;
+      tokensCost: number;
+      estimatedTokens: number;
+      tokenBadge: string;
+    }> = [];
 
     try {
-      // 1. Search cached user interactions from DB
+      // 1. Search cached user interactions from DB (0 Token)
       const interactions = await this.prisma.aIInteraction.findMany({
         where: trimmed
           ? { input: { contains: trimmed, mode: 'insensitive' }, output: { not: '' } }
@@ -888,8 +896,11 @@ Dưới đây là mẫu câu đàm phán và trao đổi chuyên nghiệp chuẩ
           suggestions.push({
             id: `cache-${item.id}`,
             title: clean,
-            category: '⚡ Đã có câu trả lời (0 Token)',
+            category: 'Kho tri thức',
             hasCache: true,
+            tokensCost: 0,
+            estimatedTokens: 0,
+            tokenBadge: '⚡ 0 Token (Kho tri thức)',
           });
         }
       }
@@ -900,6 +911,7 @@ Dưới đây là mẫu câu đàm phán và trao đổi chuyên nghiệp chuẩ
           where: {
             OR: [
               { word: { startsWith: trimmed, mode: 'insensitive' } },
+              { word: { contains: trimmed, mode: 'insensitive' } },
               { definition: { contains: trimmed, mode: 'insensitive' } },
               { shortDefinition: { contains: trimmed, mode: 'insensitive' } },
               { meanings: { some: { meaning: { contains: trimmed, mode: 'insensitive' } } } },
@@ -911,43 +923,51 @@ Dưới đây là mẫu câu đàm phán và trao đổi chuyên nghiệp chuẩ
             shortDefinition: true,
             meanings: { select: { meaning: true }, take: 1 },
           },
-          take: 3,
+          take: 4,
         });
 
         for (const v of vocabs) {
           const def = v.meanings[0]?.meaning || v.shortDefinition;
           const title = def ? `Giải thích từ "${v.word}" (${def}) và cách dùng trong TOEIC` : `Giải thích từ "${v.word}" và câu ví dụ`;
           if (!suggestions.some((s) => s.title.toLowerCase() === title.toLowerCase())) {
+            const isCached = suggestions.some((s) => s.hasCache && s.title.toLowerCase().includes(v.word.toLowerCase()));
             suggestions.push({
               id: `vocab-${v.id}`,
               title,
               category: 'Từ vựng TOEIC',
-              hasCache: suggestions.some((s) => s.hasCache && s.title.toLowerCase().includes(v.word.toLowerCase())),
+              hasCache: isCached,
+              tokensCost: isCached ? 0 : 1,
+              estimatedTokens: isCached ? 0 : 1200,
+              tokenBadge: isCached ? '⚡ 0 Token (Kho tri thức)' : '~1.2k tokens (Hỏi mới)',
             });
           }
         }
       }
 
-      // 3. Default high-yield curated questions when user input is empty or few suggestions
+      // 3. Default high-yield curated questions when user input matches or suggestions few
       const defaultCurated = [
         { title: 'Phân biệt "will" và "be going to" trong giao tiếp', category: 'Ngữ pháp' },
         { title: 'Giải thích từ "accommodate" và các collocation thường gặp', category: 'Từ vựng TOEIC' },
         { title: 'Cấu trúc "used to" vs "be used to" vs "get used to"', category: 'Cấu trúc câu' },
         { title: 'Cách luyện phản xạ nói tiếng Anh tự nhiên không dịch nhẩm', category: 'Phản xạ giao tiếp' },
         { title: '5 collocation kinh điển với "make" và "do" trong công sở', category: 'Collocation' },
+        { title: 'Lộ trình học 600 từ vựng TOEIC hiệu quả nhất', category: 'Lộ trình TOEIC' },
+        { title: 'So sánh cặp từ Economic vs Economical trong đề thi TOEIC', category: 'So sánh từ' },
+        { title: 'Các bẫy Part 5 TOEIC thường gặp và mẹo tránh', category: 'Mẹo thi TOEIC' },
       ];
 
-      if (suggestions.length < 5) {
-        for (const [idx, item] of defaultCurated.entries()) {
-          if (!trimmed || item.title.toLowerCase().includes(trimmed.toLowerCase())) {
-            if (!suggestions.some((s) => s.title.toLowerCase() === item.title.toLowerCase())) {
-              suggestions.push({
-                id: `default-${idx}`,
-                title: item.title,
-                category: item.category,
-                hasCache: true,
-              });
-            }
+      for (const [idx, item] of defaultCurated.entries()) {
+        if (!trimmed || item.title.toLowerCase().includes(trimmed.toLowerCase())) {
+          if (!suggestions.some((s) => s.title.toLowerCase() === item.title.toLowerCase())) {
+            suggestions.push({
+              id: `default-${idx}`,
+              title: item.title,
+              category: item.category,
+              hasCache: true,
+              tokensCost: 0,
+              estimatedTokens: 0,
+              tokenBadge: '⚡ 0 Token (Kho tri thức)',
+            });
           }
         }
       }

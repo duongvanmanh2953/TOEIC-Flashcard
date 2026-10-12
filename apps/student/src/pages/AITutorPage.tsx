@@ -31,6 +31,8 @@ import {
   LockOpen,
   Lightbulb,
   Scale,
+  Zap,
+  X,
 } from 'lucide-react';
 
 interface VocabularyCardData {
@@ -108,6 +110,46 @@ export const AITutorPage: React.FC = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [addedWord, setAddedWord] = useState<string | null>(null);
+
+  interface ChatSuggestion {
+    id: string;
+    title: string;
+    category: string;
+    hasCache: boolean;
+    tokensCost?: number;
+    estimatedTokens?: number;
+    tokenBadge?: string;
+  }
+  const [inputSuggestions, setInputSuggestions] = useState<ChatSuggestion[]>([]);
+  const [showInputSuggestions, setShowInputSuggestions] = useState(false);
+
+  useEffect(() => {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      setInputSuggestions([]);
+      setShowInputSuggestions(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get(`/ai/suggestions?q=${encodeURIComponent(trimmed)}`);
+        const list = res.data?.data || res.data || [];
+        if (!isCancelled && Array.isArray(list)) {
+          setInputSuggestions(list);
+          setShowInputSuggestions(list.length > 0);
+        }
+      } catch (_) {
+        if (!isCancelled) setInputSuggestions([]);
+      }
+    }, 250);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [input]);
 
   // Instant Test from Text state
   const [pasteText, setPasteText] = useState('');
@@ -526,12 +568,17 @@ export const AITutorPage: React.FC = () => {
                 >
                   {/* Prose Content */}
                   {msg.role === 'assistant' ? (
-                    <div className="glass-panel p-4 rounded-2xl rounded-tl-none text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed space-y-2 border border-slate-200/80 dark:border-slate-800/80">
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <div className="space-y-3">
+                      <RichAIMessageRenderer
+                        content={msg.content}
+                        provider={(msg as any).provider}
+                        onSelectQuizOption={(opt) => handleSendMessage(opt)}
+                      />
 
                       {/* Quick Action Buttons Directly Under Message with Token Estimates */}
                       <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap gap-1.5">
                         <button
+                          type="button"
                           onClick={() => handleSendMessage('Hãy đố tôi 1 câu hỏi phản xạ từ vựng', 'quiz')}
                           className="px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold transition flex items-center gap-1.5 border border-indigo-200/50 dark:border-indigo-800/40"
                         >
@@ -539,6 +586,7 @@ export const AITutorPage: React.FC = () => {
                           <span className="px-1.5 py-0.2 rounded-md bg-indigo-600/10 text-[9px] font-mono text-indigo-500">~420 tok</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleSendMessage('Cho tôi ví dụ câu dễ hơn trong môi trường làm việc')}
                           className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-700/60"
                         >
@@ -547,6 +595,7 @@ export const AITutorPage: React.FC = () => {
                           <span className="px-1.5 py-0.2 rounded-md bg-slate-200 dark:bg-slate-700 text-[9px] font-mono text-slate-500">~380 tok</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleSendMessage('So sánh sự khác nhau giữa các từ dễ nhầm lẫn liên quan', 'compare')}
                           className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-[11px] font-bold transition flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-700/60"
                         >
@@ -557,10 +606,7 @@ export const AITutorPage: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <RichAIMessageRenderer
-                      content={msg.content}
-                      onSelectQuizOption={(opt) => handleSendMessage(opt)}
-                    />
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
                   )}
 
                   {/* 1. Structured Vocabulary Card */}
@@ -798,9 +844,63 @@ export const AITutorPage: React.FC = () => {
               </div>
             )}
 
+            {/* Real-time DB Question & Vocabulary Suggestions */}
+            {showInputSuggestions && inputSuggestions.length > 0 && input.trim() && (
+              <div className="p-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-indigo-100 dark:border-slate-800 shadow-xl space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="flex items-center justify-between px-2 py-1 text-[11px] font-bold border-b border-slate-100 dark:border-slate-800">
+                  <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                    <span>Gợi ý câu hỏi tương tự từ thư viện DB:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowInputSuggestions(false)}
+                    className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1 divide-y divide-slate-100/60 dark:divide-slate-800/60">
+                  {inputSuggestions.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setInput(item.title);
+                        setShowInputSuggestions(false);
+                        handleSendMessage(item.title);
+                      }}
+                      className="w-full text-left p-2 rounded-xl hover:bg-indigo-50/80 dark:hover:bg-slate-800/80 flex items-center justify-between gap-2 transition group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {item.hasCache ? (
+                          <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0 fill-amber-400" />
+                        ) : (
+                          <BookOpen className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        )}
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 truncate">
+                          {item.title}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1 ${
+                          item.hasCache
+                            ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
+                            : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20'
+                        }`}
+                      >
+                        {item.tokenBadge || (item.hasCache ? '⚡ 0 tok (Kho tri thức)' : '~1.2k tok')}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
+                setShowInputSuggestions(false);
                 handleSendMessage();
               }}
               className="glass-panel p-2 rounded-2xl flex items-center gap-2 border border-slate-200/80 dark:border-slate-800/80 shadow-sm"
