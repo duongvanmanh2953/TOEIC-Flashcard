@@ -840,8 +840,8 @@ Dưới đây là mẫu câu đàm phán và trao đổi chuyên nghiệp chuẩ
           id: true,
           title: true,
           description: true,
-          likesCount: true,
-          creator: { select: { displayName: true, username: true } },
+          likeCount: true,
+          author: { select: { displayName: true, username: true } },
         },
         take: limit,
       });
@@ -850,8 +850,8 @@ Dưới đây là mẫu câu đàm phán và trao đổi chuyên nghiệp chuẩ
         id: d.id,
         title: `Bộ thẻ: ${d.title}`,
         summary: d.description ? d.description.slice(0, 160) : 'Bộ thẻ từ vựng cộng đồng được chia sẻ trên VocabFlow.',
-        authorName: d.creator?.displayName || d.creator?.username || 'Tác giả cộng đồng',
-        likeCount: d.likesCount || 0,
+        authorName: d.author?.displayName || d.author?.username || 'Tác giả cộng đồng',
+        likeCount: d.likeCount || 0,
         tags: ['Deck', 'TOEIC'],
         url: `/community?deck=${d.id}`,
       }));
