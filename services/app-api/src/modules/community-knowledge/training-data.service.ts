@@ -96,7 +96,7 @@ export class TrainingDataService {
           {
             role: 'system',
             content:
-              'You are LexiMind AI, an elite English education and linguistic knowledge tutor specializing in TOEIC, grammar, nuanced vocabulary, and natural usage.',
+              'You are VocabFlow AI, an elite English education and linguistic knowledge tutor specializing in TOEIC, grammar, nuanced vocabulary, and natural usage.',
           },
           {
             role: 'user',

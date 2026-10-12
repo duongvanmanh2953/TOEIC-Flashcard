@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
-      POSTGRES_DB: ${POSTGRES_DB:-leximind_db}
+      POSTGRES_DB: ${POSTGRES_DB:-vocabflow_db}
     ports:
       - '127.0.0.1:5432:5432'
     volumes:
@@ -65,7 +65,7 @@ services:
       PORT: 4000
       APP_URL: ${STUDENT_API_URL:-https://app-api.vocalflow.site}
       CLIENT_URL: ${STUDENT_CLIENT_URL:-https://app.vocalflow.site}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/vocabflow_db?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       REDIS_KEY_PREFIX: "app:"
       ASSETS_BASE_URL: ${ASSETS_URL:-https://assets.vocalflow.site}
@@ -91,7 +91,7 @@ services:
       PORT: 4100
       APP_URL: ${KID_API_URL:-https://kid-api.vocalflow.site}
       CLIENT_URL: ${KID_CLIENT_URL:-https://kid.vocalflow.site}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/vocabflow_db?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       REDIS_KEY_PREFIX: "kid:"
       ASSETS_BASE_URL: ${ASSETS_URL:-https://assets.vocalflow.site}
@@ -119,7 +119,7 @@ services:
       PORT: 4200
       APP_URL: ${ADMIN_API_URL:-https://admin-api.vocalflow.site}
       CLIENT_URL: ${ADMIN_CLIENT_URL:-https://admin.vocalflow.site}
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/leximind_db?schema=public}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/vocabflow_db?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       REDIS_KEY_PREFIX: "admin:"
       ASSETS_BASE_URL: ${ASSETS_URL:-https://assets.vocalflow.site}

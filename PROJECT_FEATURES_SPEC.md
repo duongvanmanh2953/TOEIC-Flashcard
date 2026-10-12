@@ -1,4 +1,4 @@
-# 📘 VOCABFLOW / LEXIMIND AI – TÀI LIỆU TOÀN DIỆN VỀ KIẾN TRÚC & TÍNH NĂNG HỆ THỐNG
+# 📘 VOCABFLOW AI – TÀI LIỆU TOÀN DIỆN VỀ KIẾN TRÚC & TÍNH NĂNG HỆ THỐNG
 > **Dành cho:** AI Assistant (Context Loading), Lập trình viên mới (Onboarding) và Quản trị viên hệ thống.  
 > **Phiên bản:** `4.2.0 (Full-Stack Production Ready)`  
 > **Mục tiêu:** Cung cấp bản đặc tả kiến trúc, luồng nghiệp vụ (Business Rules), hệ thống Database Schema, danh mục API Endpoints và hướng dẫn vận hành toàn diện nhất của dự án.
@@ -9,7 +9,7 @@
 1. [Tổng Quan & Tech Stack](#1-tổng-quan--tech-stack)
 2. [Cấu Trúc Thư Mục Toàn Dự Án](#2-cấu-trúc-thư-mục-toàn-dự-án)
 3. [Hệ Thống Bảo Mật & Quản Lý Thiết Bị (Device Security)](#3-hệ-thống-bảo-mật--quản-lý-thiết-bị-device-security)
-4. [LexiMind™ AI – Động Cơ Trí Nhớ 5 Chiều (Cognitive 5D Engine)](#4-leximind-ai--động-cơ-trí-nhớ-5-chiều-cognitive-5d-engine)
+4. [VocabFlow AI – Động Cơ Trí Nhớ 5 Chiều (Cognitive 5D Engine)](#4-vocabflow-ai--động-cơ-trí-nhớ-5-chiều-cognitive-5d-engine)
 5. [Thuật Toán Lặp Lại Ngắt Quãng FSRS (Spaced Repetition)](#5-thuật-toán-lặp-lại-ngắt-quãng-fsrs-spaced-repetition)
 6. [Hệ Thống Luyện Thi TOEIC Chuẩn Quốc Tế](#6-hệ-thống-luyện-thi-toeic-chuẩn-quốc-tế)
 7. [AI Tutor, Roleplay & Luyện Âm Chuẩn](#7-ai-tutor-roleplay--luyện-âm-chuẩn)
@@ -24,7 +24,7 @@
 
 ## 1. TỔNG QUAN & TECH STACK
 
-VocabFlow / LexiMind AI là nền tảng học từ vựng, luyện thi chứng chỉ (TOEIC) và rèn luyện kỹ năng ngôn ngữ tích hợp AI thông minh.
+VocabFlow AI là nền tảng học từ vựng, luyện thi chứng chỉ (TOEIC) và rèn luyện kỹ năng ngôn ngữ tích hợp AI thông minh.
 
 * **Frontend (`apps/web`)**:
   * **Framework**: React 18, Vite 5, TypeScript.
@@ -74,7 +74,7 @@ ToeicFlashCard/
 │       │   │   ├── admin/             # UI Quản trị viên (RBAC, Audit, Settings)
 │       │   │   ├── common/            # GlassCard, ModalPortal, ConfirmDialog
 │       │   │   ├── flashcard/         # Thẻ học đa chiều 3D Flip
-│       │   │   ├── leximind/          # (và vocabflow/) X-Ray, Capture, Diagnostic, Queue
+│       │   │   ├── vocabflow/         # X-Ray, Capture, Diagnostic, Queue
 │       │   │   ├── language/          # Bộ chọn ngôn ngữ, Quốc kỳ
 │       │   │   └── layout/            # AppShell, Navbar, Sidebar
 │       │   ├── contexts/              # AuthContext, LearningContext
@@ -133,9 +133,9 @@ ToeicFlashCard/
 
 ---
 
-## 4. LEXIMIND™ AI – ĐỘNG CƠ TRÍ NHỚ 5 CHIỀU (COGNITIVE 5D ENGINE)
+## 4. VOCABFLOW AI – ĐỘNG CƠ TRÍ NHỚ 5 CHIỀU (COGNITIVE 5D ENGINE)
 
-LexiMind™ giải quyết triệt để vấn đề lớn nhất của người học ngoại ngữ: **"Nhận ra từ khi đọc bài thi nhưng không thể mở miệng nói hay tự viết thành câu"** (Khoảng cách giữa Trí nhớ Thụ động - Passive và Trí nhớ Chủ động - Active).
+VocabFlow AI giải quyết triệt để vấn đề lớn nhất của người học ngoại ngữ: **"Nhận ra từ khi đọc bài thi nhưng không thể mở miệng nói hay tự viết thành câu"** (Khoảng cách giữa Trí nhớ Thụ động - Passive và Trí nhớ Chủ động - Active).
 
 ### 4.1. Mô Hình Nhận Thức 5 Chiều (Cognitive 5D Scores: 0 - 100%)
 Mỗi từ vựng được theo dõi độc lập qua 5 chỉ số:
@@ -330,7 +330,7 @@ Hệ thống được thiết kế mở rộng đa ngôn ngữ (`apps/web/src/co
 * `POST /security/device-logout/request-otp`: Yêu cầu mã OTP qua Email để đăng xuất thiết bị khác.
 * `POST /security/device-logout/verify-otp`: Xác thực mã OTP và thu hồi thiết bị.
 
-### 🧠 2. Động cơ Trí nhớ LexiMind™ (`/api/v1/vocabulary`)
+### 🧠 2. Động cơ Trí nhớ VocabFlow AI (`/api/v1/vocabulary`)
 * `GET /vocabulary/x-ray`: Quét toàn diện phổ chất lượng trí nhớ và 5 chiều nhận thức.
 * `GET /vocabulary/:id/diagnostic`: Chẩn đoán nguyên nhân hay quên và lấy Word Journey Timeline.
 * `POST /vocabulary/capture/analyze`: Phân tích bài đọc tiếng Anh, lọc từ đã biết, bóc tách nghĩa ngữ cảnh.

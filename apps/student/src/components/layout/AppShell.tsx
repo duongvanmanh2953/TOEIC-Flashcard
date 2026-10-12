@@ -46,6 +46,7 @@ import {
   GraduationCap,
   Zap,
   StickyNote,
+  User,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
@@ -224,7 +225,7 @@ export const AppShell: React.FC = () => {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Xin chào! Tôi là Gia sư AI cá nhân của bạn. Bạn muốn tra cứu sắc thái từ, giải thích ngữ pháp hay luyện phản xạ gì hôm nay?',
+      content: 'Xin chào! Tôi là Gia sư VocabFlow AI của bạn. Bạn muốn tra cứu sắc thái từ, giải thích ngữ pháp hay luyện phản xạ gì hôm nay?',
     },
   ]);
   const [tutorLoading, setTutorLoading] = useState(false);
@@ -1428,38 +1429,36 @@ export const AppShell: React.FC = () => {
           />
 
           <div
-            style={
-              typeof window !== 'undefined' && window.innerWidth >= 640
-                ? {
-                  top: btnPosY ? `${Math.min(window.innerHeight - 560, Math.max(20, btnPosY - 280))}px` : undefined,
-                  bottom: btnPosY ? undefined : '80px',
-                  right: '16px',
-                }
-                : undefined
-            }
-            className="fixed inset-x-2 bottom-2 sm:bottom-auto sm:inset-x-auto sm:right-4 z-50 animate-scale-up"
+            className="fixed inset-x-2 bottom-2 sm:inset-x-auto sm:right-6 sm:bottom-6 z-50 animate-scale-up"
           >
             <div
-              className="w-full sm:w-[490px] md:w-[540px] rounded-3xl bg-slate-900/95 backdrop-blur-2xl border border-slate-700/80 p-4 space-y-2.5 flex flex-col h-[85vh] max-h-[690px] sm:h-[630px] sm:max-h-[630px] overflow-hidden text-slate-100 shadow-2xl"
+              className="w-full sm:w-[520px] md:w-[560px] rounded-3xl bg-slate-900/98 backdrop-blur-2xl border border-slate-700/80 p-3.5 sm:p-4 space-y-2.5 flex flex-col h-[88vh] max-h-[850px] min-h-[520px] overflow-hidden text-slate-100 shadow-2xl"
             >
               {/* Header with Title & Status calibrated to current tab */}
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold border ${
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold border shadow-md transition-all ${
                     supportTab === 'tutor'
-                      ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
-                      : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+                      ? 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white border-indigo-400/40 shadow-indigo-600/30'
+                      : 'bg-gradient-to-tr from-cyan-600 to-blue-600 text-white border-cyan-400/40 shadow-cyan-600/30'
                   }`}>
                     {supportTab === 'tutor' ? (
-                      <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
+                      <Sparkles className="w-4.5 h-4.5 text-amber-300 fill-amber-300" />
                     ) : (
-                      <Headphones className="w-4 h-4 text-cyan-400" />
+                      <Headphones className="w-4.5 h-4.5 text-white" />
                     )}
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-white leading-snug">
-                      {supportTab === 'tutor' ? 'Gia Sư AI Cá Nhân 1-on-1' : 'VocabFlow CSKH 24/7'}
-                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-sm font-black text-white leading-snug tracking-tight">
+                        {supportTab === 'tutor' ? 'Gia Sư VocabFlow AI' : 'VocabFlow CSKH 24/7'}
+                      </h4>
+                      {supportTab === 'tutor' && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] font-black uppercase tracking-wider">
+                          1-on-1
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                       <span>{supportTab === 'tutor' ? 'Hỗ trợ giải đáp ngữ cảnh & Dẫn chứng cộng đồng' : 'Trực tuyến 24/7'}</span>
@@ -1542,25 +1541,38 @@ export const AppShell: React.FC = () => {
                   </div>
 
                   {/* Messages Area (Spacious & with Citations) */}
-                  <div className="flex-1 min-h-[180px] sm:h-64 bg-slate-950/60 rounded-2xl p-3 overflow-y-auto space-y-3 text-xs border border-slate-800/80">
+                  <div className="flex-1 min-h-0 bg-slate-950/60 rounded-2xl p-3 sm:p-3.5 overflow-y-auto space-y-3.5 text-xs border border-slate-800/80">
                     {tutorMessages.map((m) => (
                       <div
                         key={m.id}
-                        className={`flex gap-2.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        className={`flex gap-2.5 ${m.role === 'user' ? 'justify-end items-end' : 'justify-start items-start'}`}
                       >
                         {m.role === 'assistant' && (
-                          <div className="w-6 h-6 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold mt-0.5 shadow-xs">
-                            AI
+                          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30 border border-indigo-400/30 mt-0.5">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
                           </div>
                         )}
                         <div
-                          className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed space-y-2 ${
+                          className={`max-w-[86%] p-3 sm:p-3.5 rounded-2xl text-xs leading-relaxed space-y-1.5 shadow-md ${
                             m.role === 'user'
-                              ? 'bg-indigo-600 text-white rounded-tr-none'
-                              : 'bg-slate-900 text-slate-100 rounded-tl-none border border-slate-700/60'
+                              ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-tr-xs shadow-indigo-950/40 border border-indigo-500/30'
+                              : 'bg-slate-900/95 text-slate-100 rounded-tl-xs border border-slate-800'
                           }`}
                         >
-                          {m.role === 'assistant' ? (
+                          {m.role === 'user' ? (
+                            <div>
+                              <div className="flex items-center justify-between gap-3 text-[10px] text-indigo-200/80 pb-1 mb-1 border-b border-indigo-500/30 font-medium">
+                                <span className="font-bold flex items-center gap-1">
+                                  <User className="w-3 h-3 text-indigo-300" />
+                                  <span>{user?.displayName || 'Bạn'}</span>
+                                </span>
+                                <span className="text-[9px] opacity-75">
+                                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                            </div>
+                          ) : (
                             <RichAIMessageRenderer
                               content={m.content}
                               provider={(m as any).provider}
@@ -1569,10 +1581,13 @@ export const AppShell: React.FC = () => {
                               citations={m.citations}
                               onSelectQuizOption={(opt) => handleSendTutorMessage(opt)}
                             />
-                          ) : (
-                            <p className="whitespace-pre-wrap">{m.content}</p>
                           )}
                         </div>
+                        {m.role === 'user' && (
+                          <div className="w-7 h-7 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 flex items-center justify-center shrink-0 text-xs font-bold shadow-xs mt-0.5">
+                            {user?.displayName ? user.displayName.slice(0, 1).toUpperCase() : <User className="w-3.5 h-3.5 text-slate-400" />}
+                          </div>
+                        )}
                       </div>
                     ))}
                     {tutorLoading && (
@@ -1681,7 +1696,7 @@ export const AppShell: React.FC = () => {
               {supportTab === 'chat' && (
                 <div className="flex-1 flex flex-col min-h-0 space-y-2">
                   {/* Virtualized Messages Scroll Area with Dynamic Height */}
-                  <div className="flex-1 min-h-[160px] sm:h-56 bg-slate-950/50 rounded-xl overflow-hidden text-xs relative border border-slate-800/80">
+                  <div className="flex-1 min-h-0 bg-slate-950/50 rounded-xl overflow-hidden text-xs relative border border-slate-800/80">
                     <VirtualChatPane
                       conversationId={activeConv?.id || 'new_chat'}
                       rawMessages={supportMessages}

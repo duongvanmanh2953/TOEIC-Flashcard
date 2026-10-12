@@ -204,17 +204,21 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
           </button>
         </div>
       ) : (
-        /* Compact Mode Mini Pill */
-        <div className="flex items-center justify-between gap-2 pb-1.5 mb-1 border-b border-slate-700/60 text-[11px]">
+        /* Compact Mode Header Bar - Always balanced and never blank */
+        <div className="flex items-center justify-between gap-2 pb-1.5 mb-2 border-b border-slate-700/60 text-[11px]">
           <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-bold text-indigo-300 flex items-center gap-1 text-[11px] shrink-0">
+              <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300" />
+              <span>VocabFlow AI</span>
+            </span>
             {isCached && (
-              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-emerald-400 fill-emerald-400" />
-                <span>⚡ Kho Tri Thức: 0 Token</span>
+              <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 flex items-center gap-0.5 truncate">
+                <Zap className="w-2.5 h-2.5 text-emerald-400 fill-emerald-400 shrink-0" />
+                <span>0 tok (Kho tri thức)</span>
               </span>
             )}
             {cefrLevel && (
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase shrink-0">
                 {cefrLevel}
               </span>
             )}
@@ -223,10 +227,10 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
             type="button"
             onClick={handlePlayBilingual}
             disabled={isPlayingAudio}
-            className="p-1 rounded-lg hover:bg-slate-700/80 text-slate-300 hover:text-white transition flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+            className="px-2 py-0.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 text-[10px] font-bold border border-slate-700/60 shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
             title="Đọc câu trả lời bằng giọng Brian bản xứ"
           >
-            <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'animate-pulse text-amber-400' : ''}`} />
+            <Volume2 className={`w-3 h-3 ${isPlayingAudio ? 'animate-pulse text-amber-400' : 'text-indigo-400'}`} />
             <span>{isPlayingAudio ? 'Đang đọc...' : 'Nghe'}</span>
           </button>
         </div>

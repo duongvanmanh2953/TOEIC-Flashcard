@@ -436,7 +436,7 @@ export class CommunityKnowledgeController {
 
     if (res) {
       res.setHeader('Content-Type', 'application/x-jsonlines');
-      res.setHeader('Content-Disposition', 'attachment; filename="leximind_training_dataset.jsonl"');
+      res.setHeader('Content-Disposition', 'attachment; filename="vocabflow_training_dataset.jsonl"');
       return res.status(HttpStatus.OK).send(jsonl);
     }
 

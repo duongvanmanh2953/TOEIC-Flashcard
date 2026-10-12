@@ -282,7 +282,7 @@ export const AdminCommunityModerationPage: React.FC = () => {
             Kiểm Duyệt Bài Viết & Dữ Liệu Huấn Luyện AI
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Duyệt các bài chia sẻ từ vựng, ngữ pháp tiếng Anh và xuất dữ liệu sạch chuẩn JSONL cho LexiMind AI.
+            Duyệt các bài chia sẻ từ vựng, ngữ pháp tiếng Anh và xuất dữ liệu sạch chuẩn JSONL cho VocabFlow AI.
           </p>
         </div>
 
@@ -442,7 +442,7 @@ export const AdminCommunityModerationPage: React.FC = () => {
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
                     }`}
-                    title="Bật/tắt đưa bài viết vào tập dữ liệu huấn luyện AI LexiMind"
+                    title="Bật/tắt đưa bài viết vào tập dữ liệu huấn luyện VocabFlow AI"
                   >
                     <BrainCircuit className="w-3 h-3" />
                     <span>{item.isTrainingEligible ? 'Đủ đ/k AI Training' : 'Loại khỏi AI'}</span>
