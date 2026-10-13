@@ -14,17 +14,13 @@ export default defineConfig({
       },
     },
   },
-  optimizeDeps: {
-    exclude: ['mammoth', 'pdfjs-dist', 'pdfjs-dist/legacy/build/pdf.mjs'],
-  },
   build: {
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
-      external: ['mammoth', 'pdfjs-dist/legacy/build/pdf.mjs'],
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('three')) return 'vendor-three';
+            if (id.includes('mammoth') || id.includes('pdfjs-dist')) return 'vendor-docs';
             if (id.includes('xlsx')) return 'vendor-xlsx';
             if (id.includes('firebase')) return 'vendor-firebase';
             if (id.includes('lucide-react')) return 'vendor-icons';

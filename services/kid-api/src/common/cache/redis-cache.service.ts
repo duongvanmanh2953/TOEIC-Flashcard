@@ -78,6 +78,8 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
     return null;
   }
 
+  private static readonly MAX_FALLBACK_ENTRIES = 2000;
+
   async set(key: string, value: any, ttlSeconds: number = 3600): Promise<void> {
     const serialized = JSON.stringify(value);
 
@@ -90,7 +92,23 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // Fallback to in-memory
+    // Fallback to bounded in-memory cache to prevent memory leaks
+    if (this.inMemoryFallback.size >= RedisCacheService.MAX_FALLBACK_ENTRIES) {
+      const now = Date.now();
+      for (const [k, v] of this.inMemoryFallback.entries()) {
+        if (v.expiresAt <= now) {
+          this.inMemoryFallback.delete(k);
+        }
+      }
+      if (this.inMemoryFallback.size >= RedisCacheService.MAX_FALLBACK_ENTRIES) {
+        let evictCount = Math.floor(RedisCacheService.MAX_FALLBACK_ENTRIES * 0.2);
+        for (const k of this.inMemoryFallback.keys()) {
+          this.inMemoryFallback.delete(k);
+          if (--evictCount <= 0) break;
+        }
+      }
+    }
+
     this.inMemoryFallback.set(key, {
       value: serialized,
       expiresAt: Date.now() + ttlSeconds * 1000,
@@ -111,10 +129,33 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
   async delPattern(pattern: string): Promise<void> {
     if (this.isConnected && this.client) {
       try {
-        const keys = await this.client.keys(pattern);
-        if (keys.length > 0) {
-          await this.client.del(...keys);
-        }
+        const stream = this.client.scanStream({ match: pattern, count: 100 });
+        const pipeline = this.client.pipeline();
+        let pendingDeletes = 0;
+
+        await new Promise<void>((resolve, reject) => {
+          stream.on('data', (keys: string[]) => {
+            if (keys && keys.length > 0) {
+              for (const k of keys) {
+                pipeline.del(k);
+                pendingDeletes++;
+              }
+              if (pendingDeletes >= 500) {
+                pipeline.exec().catch(() => {});
+                pendingDeletes = 0;
+              }
+            }
+          });
+          stream.on('end', async () => {
+            if (pendingDeletes > 0) {
+              await pipeline.exec().catch(() => {});
+            }
+            resolve();
+          });
+          stream.on('error', (err) => {
+            reject(err);
+          });
+        });
       } catch (err: any) {
         this.logger.warn(`Redis delPattern error for pattern ${pattern}: ${err.message}`);
       }

@@ -207,7 +207,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: always
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-eyJhIjoiODZjYmRiMDBlMGUxMTY4ZmUxOGYzMGE3ODIzOTlkNjUiLCJ0IjoiNzRiMDZkYjAtODRjMS00ZGNhLWI5NTAtYTk1NTBkOGM0MTBmIiwicyI6Ik0yWmxaV0ZoTjJVdE9HVmtOeTAwTkROaUxUazFOakF0T1RnNU5qRm1NMlF3Tm1WayJ9}
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

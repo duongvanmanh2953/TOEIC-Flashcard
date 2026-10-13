@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   LanguageDefinition,
   SUPPORTED_LANGUAGES,
@@ -446,7 +446,7 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   /**
    * Polyglot aggregate statistics
    */
-  const getLanguageStats = () => {
+  const getLanguageStats = useCallback(() => {
     const profiles = Object.values(learningProfiles);
     const totalWords = profiles.reduce((acc, p) => acc + (p.wordsLearned || 0), 0);
     const totalXP = profiles.reduce((acc, p) => acc + (p.xp || 0), 0);
@@ -458,26 +458,43 @@ export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       activeLanguageWords: activeProfile.wordsLearned,
       activeLanguageStreak: activeProfile.currentStreak,
     };
-  };
+  }, [learningProfiles, activeProfile.wordsLearned, activeProfile.currentStreak]);
+
+  const contextValue = useMemo<LearningContextType>(
+    () => ({
+      activeLanguage,
+      activeProfile,
+      userLanguages,
+      learningProfiles,
+      availableLanguages,
+      isSwitching,
+      switchLanguage,
+      addLanguage,
+      resetLanguage,
+      removeLanguage,
+      updateActiveProfile,
+      recordStudyActivity,
+      getLanguageStats,
+    }),
+    [
+      activeLanguage,
+      activeProfile,
+      userLanguages,
+      learningProfiles,
+      availableLanguages,
+      isSwitching,
+      switchLanguage,
+      addLanguage,
+      resetLanguage,
+      removeLanguage,
+      updateActiveProfile,
+      recordStudyActivity,
+      getLanguageStats,
+    ],
+  );
 
   return (
-    <LearningContext.Provider
-      value={{
-        activeLanguage,
-        activeProfile,
-        userLanguages,
-        learningProfiles,
-        availableLanguages,
-        isSwitching,
-        switchLanguage,
-        addLanguage,
-        resetLanguage,
-        removeLanguage,
-        updateActiveProfile,
-        recordStudyActivity,
-        getLanguageStats,
-      }}
-    >
+    <LearningContext.Provider value={contextValue}>
       {children}
     </LearningContext.Provider>
   );

@@ -41,6 +41,14 @@ export const VocabularyExplorerPage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [scrollMode, setScrollMode] = useState<'infinite' | 'paged'>('infinite');
   const [selectedWord, setSelectedWord] = useState<any | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Clean up abort controller on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   // Virtual batching on current words list
   const { visibleItems, sentinelRef, displayCount } = useScrollLoad({
@@ -71,15 +79,18 @@ export const VocabularyExplorerPage: React.FC = () => {
         setLoadingMore(true);
       } else {
         setLoading(true);
+        abortControllerRef.current?.abort();
+        abortControllerRef.current = new AbortController();
       }
       setLoadError(null);
+      const currentSignal = abortControllerRef.current?.signal;
 
       const cacheKey = `vocab_${activeLanguage.id}_p${targetPage}_${search}_${selectedCefr}_${selectedTopic}`;
 
       // Check cache only for initial page 1 to allow 0ms start
       if (targetPage === 1 && !append) {
         const cached = await idbGetCache(cacheKey);
-        if (cached?.items) {
+        if (cached?.items && !currentSignal?.aborted) {
           setWords(cached.items);
           setTotalPages(cached.totalPages || 1);
           setTotalCount(cached.totalCount || cached.items.length);
@@ -93,7 +104,9 @@ export const VocabularyExplorerPage: React.FC = () => {
         if (selectedCefr) params.cefrLevel = selectedCefr;
         if (selectedTopic) params.topic = selectedTopic;
 
-        const res: any = await api.get('/vocabulary', { params });
+        const res: any = await api.get('/vocabulary', { params, signal: currentSignal });
+        if (currentSignal?.aborted) return;
+
         if (res?.success) {
           const guestFavs: string[] = JSON.parse(
             localStorage.getItem('vocabflow_guest_favorites') || '[]'
@@ -128,11 +141,16 @@ export const VocabularyExplorerPage: React.FC = () => {
           setLoadError(res?.message || 'Không thể tải danh sách từ vựng.');
         }
       } catch (err: any) {
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED' || err?.name === 'AbortError') {
+          return;
+        }
         console.error('Failed to load vocabulary', err);
         setLoadError(err?.response?.data?.message || 'Lỗi kết nối máy chủ khi tải từ vựng.');
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (!currentSignal?.aborted) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [search, selectedCefr, selectedTopic, activeLanguage.id]

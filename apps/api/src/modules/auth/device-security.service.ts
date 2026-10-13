@@ -597,9 +597,12 @@ export class DeviceSecurityService {
       return existing.keypassHash;
     }
 
-    // Default keypass seed
-    const defaultMasterKey = process.env.SERVER_MASTER_PASSWORD || 'vocabflow2026';
-    const keypassHash = await bcrypt.hash(defaultMasterKey, 10);
+    // Require explicit SERVER_MASTER_PASSWORD from server environment
+    const defaultMasterKey = process.env.SERVER_MASTER_PASSWORD;
+    if (!defaultMasterKey || defaultMasterKey.trim().length < 8) {
+      throw new BadRequestException('Mã khóa bảo mật hệ thống (SERVER_MASTER_PASSWORD) chưa được cấu hình hoặc ngắn hơn 8 ký tự.');
+    }
+    const keypassHash = await bcrypt.hash(defaultMasterKey.trim(), 10);
 
     const created = await this.prisma.adminSecurity.create({
       data: {

@@ -21,6 +21,8 @@ out/
 .env.production.local
 *.pem
 *.key
+infra/cloudflared/*.json
+!infra/cloudflared/*.example.json
 
 # IDEs & Editors
 .vscode/

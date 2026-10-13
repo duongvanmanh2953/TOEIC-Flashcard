@@ -1,22 +1,31 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LearningProvider } from './contexts/LearningContext';
 import { I18nProvider } from './i18n';
 import { KidsLayout } from './components/KidsLayout';
-import { KidsHomePage } from './pages/KidsHomePage';
-import { KidsJourneyPage } from './pages/KidsJourneyPage';
-import { KidsLessonPage } from './pages/KidsLessonPage';
-import { KidsGamesPage } from './pages/KidsGamesPage';
-import { KidsMyWorldPage } from './pages/KidsMyWorldPage';
-import { KidsParentDashboardPage } from './pages/KidsParentDashboardPage';
-import { KidsFlashcardsPage } from './pages/KidsFlashcardsPage';
+
+// Kid App Pages (Lazy-loaded)
+const KidsHomePage = React.lazy(() => import('./pages/KidsHomePage').then((m) => ({ default: m.KidsHomePage })));
+const KidsJourneyPage = React.lazy(() => import('./pages/KidsJourneyPage').then((m) => ({ default: m.KidsJourneyPage })));
+const KidsLessonPage = React.lazy(() => import('./pages/KidsLessonPage').then((m) => ({ default: m.KidsLessonPage })));
+const KidsGamesPage = React.lazy(() => import('./pages/KidsGamesPage').then((m) => ({ default: m.KidsGamesPage })));
+const KidsMyWorldPage = React.lazy(() => import('./pages/KidsMyWorldPage').then((m) => ({ default: m.KidsMyWorldPage })));
+const KidsParentDashboardPage = React.lazy(() => import('./pages/KidsParentDashboardPage').then((m) => ({ default: m.KidsParentDashboardPage })));
+const KidsFlashcardsPage = React.lazy(() => import('./pages/KidsFlashcardsPage').then((m) => ({ default: m.KidsFlashcardsPage })));
+
+const KidLoadingFallback: React.FC = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+  </div>
+);
 
 export const App: React.FC = () => {
   return (
     <I18nProvider>
       <LearningProvider>
         <BrowserRouter>
-          <Routes>
+          <Suspense fallback={<KidLoadingFallback />}>
+            <Routes>
             {/* Primary Routes */}
             <Route path="/" element={<KidsLayout />}>
               <Route index element={<KidsHomePage />} />
@@ -66,7 +75,8 @@ export const App: React.FC = () => {
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </BrowserRouter>
+        </Suspense>
+      </BrowserRouter>
       </LearningProvider>
     </I18nProvider>
   );

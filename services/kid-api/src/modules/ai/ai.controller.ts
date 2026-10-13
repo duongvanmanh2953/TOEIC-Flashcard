@@ -1,10 +1,12 @@
-import { Controller, Post, Get, Body, Query, UseGuards, Res } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards, Res, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { AIService } from './ai.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+
+const ttsRateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 @ApiTags('AI Vocabulary Assistant')
 @Controller('ai')
@@ -32,12 +34,38 @@ export class AIController {
     @Query('text') text: string,
     @Query('lang') lang: string = 'auto',
     @Query('voice') voice: string = 'brian',
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
       const clean = (text || '').trim();
       if (!clean) {
         return res.status(400).send('Text is required');
+      }
+
+      if (clean.length > 300) {
+        return res.status(400).send('Văn bản vượt quá độ dài tối đa 300 ký tự cho phát âm công khai.');
+      }
+
+      // IP-based Rate Limiter: max 30 requests per minute per IP
+      const clientIp =
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        req.ip ||
+        '127.0.0.1';
+      const now = Date.now();
+      const ipRecord = ttsRateLimitMap.get(clientIp);
+      if (ipRecord && ipRecord.resetAt > now) {
+        if (ipRecord.count >= 30) {
+          return res.status(429).send('Tần suất yêu cầu phát âm vượt quá giới hạn (30 req/phút). Vui lòng thử lại sau.');
+        }
+        ipRecord.count += 1;
+      } else {
+        if (ttsRateLimitMap.size > 1000) {
+          for (const [k, v] of ttsRateLimitMap.entries()) {
+            if (v.resetAt <= now) ttsRateLimitMap.delete(k);
+          }
+        }
+        ttsRateLimitMap.set(clientIp, { count: 1, resetAt: now + 60000 });
       }
 
       // 1. High-Fidelity Microsoft Edge Neural Multilingual Male Voice (+25% Fast Speed)
@@ -66,34 +94,7 @@ export class AIController {
         console.warn('Edge Neural TTS streaming error, falling back:', edgeErr);
       }
 
-      // 2. If OpenAI API key is available, use OpenAI TTS with 'onyx' male voice at 1.14x speed
-      const openaiKey = process.env.OPENAI_API_KEY?.trim();
-      if (openaiKey) {
-        try {
-          const openAiRes = await fetch('https://api.openai.com/v1/audio/speech', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${openaiKey}`,
-            },
-            body: JSON.stringify({
-              model: 'tts-1',
-              voice: 'onyx',
-              input: clean,
-              speed: 1.14,
-            }),
-          });
-
-          if (openAiRes.ok) {
-            res.setHeader('Content-Type', 'audio/mpeg');
-            res.setHeader('Cache-Control', 'public, max-age=86400');
-            const arrayBuffer = await openAiRes.arrayBuffer();
-            return res.send(Buffer.from(arrayBuffer));
-          }
-        } catch (_) {}
-      }
-
-      // 3. Fallback to Google TTS
+      // 2. Fallback to Google TTS (Free & Fast)
       const targetLang = lang.toLowerCase().startsWith('en') ? 'en' : 'vi';
       const googleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(clean)}&tl=${targetLang}&client=tw-ob`;
 

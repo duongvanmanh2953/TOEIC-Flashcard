@@ -44,22 +44,22 @@ export class ReviewsService {
 
     // 3. Fetch New Words not yet in UserVocabulary (remaining slots)
     excludedIds.push(...weakUserVocabs.map((uv) => uv.vocabularyId));
-    const userVocabIds = (
-      await this.prisma.userVocabulary.findMany({
-        where: { userId },
-        select: { vocabularyId: true },
-      })
-    ).map((v) => v.vocabularyId);
 
     const neededSlots = limit - (dueUserVocabs.length + weakUserVocabs.length);
-    const newVocabs = await this.prisma.vocabulary.findMany({
-      where: {
-        id: { notIn: [...userVocabIds, ...excludedIds] },
-      },
-      include: { meanings: true, examples: true },
-      take: Math.max(0, neededSlots),
-      orderBy: { frequencyRank: 'asc' },
-    });
+    const newVocabs =
+      neededSlots > 0
+        ? await this.prisma.vocabulary.findMany({
+            where: {
+              userVocabularies: {
+                none: { userId },
+              },
+              ...(excludedIds.length > 0 ? { id: { notIn: excludedIds } } : {}),
+            },
+            include: { meanings: true, examples: true },
+            take: neededSlots,
+            orderBy: { frequencyRank: 'asc' },
+          })
+        : [];
 
     // Combine candidate vocabulary items
     const allCandidates = [
@@ -184,12 +184,16 @@ export class ReviewsService {
         meaningTarget.includes(cleanUser) ||
         cleanUser.includes(cleanTarget));
 
-    // Get current UserVocabulary
-    let userVocab = await this.prisma.userVocabulary.findUnique({
-      where: {
-        userId_vocabularyId: { userId, vocabularyId: dto.vocabularyId },
-      },
-    });
+    // Pre-fetch UserVocabulary, XP, and Streak records in parallel OUTSIDE the transaction
+    const [userVocab, currentXPRecord, streakRecord] = await Promise.all([
+      this.prisma.userVocabulary.findUnique({
+        where: {
+          userId_vocabularyId: { userId, vocabularyId: dto.vocabularyId },
+        },
+      }),
+      this.prisma.userXP.findUnique({ where: { userId } }),
+      this.prisma.userStreak.findUnique({ where: { userId } }),
+    ]);
 
     const currentStability = userVocab?.stability || 1.0;
     const currentDifficulty = userVocab?.difficultyEstimate || vocab.difficulty || 3.0;
@@ -208,18 +212,32 @@ export class ReviewsService {
       repetitionCount,
     });
 
-    // Atomic Transaction: update userVocab, create reviewEvent, update XP and Streak
+    // Pre-calculate XP and Streak outside of transaction lock
+    const newTotalXP = (currentXPRecord?.totalXP || 0) + evalResult.xpEarned;
+    const newLevel = Math.floor(Math.sqrt(newTotalXP / 50)) + 1;
+
+    let currentStreak = streakRecord?.currentStreak || 0;
+    let longestStreak = streakRecord?.longestStreak || 0;
+    const today = new Date().toDateString();
+    const lastStudy = streakRecord?.lastStudyDate ? new Date(streakRecord.lastStudyDate).toDateString() : null;
+    const shouldUpdateStreak = lastStudy !== today;
+    if (shouldUpdateStreak) {
+      currentStreak += 1;
+      if (currentStreak > longestStreak) longestStreak = currentStreak;
+    }
+
+    const currentRecall = userVocab?.activeRecallScore || 0.0;
+    const currentProd = userVocab?.productionScore || 0.0;
+    const currentSlip = userVocab?.slipRisk || 0.0;
+
+    const newRecall = Math.min(1.0, Math.max(0.0, currentRecall + (isCorrect ? 0.2 : -0.15)));
+    const newProd = isCorrect && dto.answer && dto.answer.length > 2 ? Math.min(1.0, currentProd + 0.25) : currentProd;
+    const newSlip = !isCorrect ? Math.min(1.0, currentSlip + 0.4) : Math.max(0.0, currentSlip - 0.3);
+
+    // Fast Write-Only Transaction: minimizes connection hold time
     const result = await this.prisma.$transaction(async (tx) => {
       // 1. Upsert UserVocabulary
-        const currentRecall = userVocab?.activeRecallScore || 0.0;
-        const currentProd = userVocab?.productionScore || 0.0;
-        const currentSlip = userVocab?.slipRisk || 0.0;
-
-        const newRecall = Math.min(1.0, Math.max(0.0, currentRecall + (isCorrect ? 0.2 : -0.15)));
-        const newProd = isCorrect && dto.answer && dto.answer.length > 2 ? Math.min(1.0, currentProd + 0.25) : currentProd;
-        const newSlip = !isCorrect ? Math.min(1.0, currentSlip + 0.4) : Math.max(0.0, currentSlip - 0.3);
-
-        const updatedVocab = await tx.userVocabulary.upsert({
+      const updatedVocab = await tx.userVocabulary.upsert({
         where: {
           userId_vocabularyId: { userId, vocabularyId: dto.vocabularyId },
         },
@@ -262,7 +280,7 @@ export class ReviewsService {
       });
 
       // 2. Log ReviewEvent
-      const event = await tx.reviewEvent.create({
+      await tx.reviewEvent.create({
         data: {
           userId,
           vocabularyId: dto.vocabularyId,
@@ -277,26 +295,14 @@ export class ReviewsService {
       });
 
       // 3. Update XP & Level
-      const currentXPRecord = await tx.userXP.findUnique({ where: { userId } });
-      const newTotalXP = (currentXPRecord?.totalXP || 0) + evalResult.xpEarned;
-      const newLevel = Math.floor(Math.sqrt(newTotalXP / 50)) + 1;
-
       await tx.userXP.upsert({
         where: { userId },
         update: { totalXP: newTotalXP, currentLevel: newLevel },
         create: { userId, totalXP: newTotalXP, currentLevel: newLevel },
       });
 
-      // 4. Update Streak
-      const streakRecord = await tx.userStreak.findUnique({ where: { userId } });
-      let currentStreak = streakRecord?.currentStreak || 0;
-      let longestStreak = streakRecord?.longestStreak || 0;
-      const today = new Date().toDateString();
-      const lastStudy = streakRecord?.lastStudyDate ? new Date(streakRecord.lastStudyDate).toDateString() : null;
-
-      if (lastStudy !== today) {
-        currentStreak += 1;
-        if (currentStreak > longestStreak) longestStreak = currentStreak;
+      // 4. Update Streak (if study date changed)
+      if (shouldUpdateStreak) {
         await tx.userStreak.upsert({
           where: { userId },
           update: { currentStreak, longestStreak, lastStudyDate: new Date() },

@@ -61,7 +61,7 @@ async function parseDocx(file: File): Promise<string> {
 
   let mammothModule: any = null;
   try {
-    const mod = await import(/* @vite-ignore */ 'mammoth');
+    const mod = await import('mammoth');
     mammothModule = mod.default || mod;
   } catch {
     throw new Error('Thư viện đọc Word (.docx) chưa khả dụng trên môi trường này.');
@@ -105,7 +105,7 @@ async function parsePdf(file: File): Promise<string> {
   try {
     let pdfjsLib: any = null;
     try {
-      pdfjsLib = await import(/* @vite-ignore */ 'pdfjs-dist/legacy/build/pdf.mjs');
+      pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
     } catch {
       throw new Error('Thư viện đọc PDF chưa khả dụng trên môi trường này.');
     }

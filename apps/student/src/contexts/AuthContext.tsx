@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import api from '../lib/api';
 import {
   signInAnonymously,
@@ -440,32 +440,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const contextValue = useMemo<AuthContextType>(
+    () => ({
+      user,
+      loading: authState === 'AUTH_LOADING',
+      authState,
+      isGuest: authState === 'GUEST' || (user?.isAnonymous ?? false),
+      theme,
+      loginPromptOpen,
+      loginPromptReason,
+      firebaseConfigModalOpen,
+      isFirebaseConfigured: isConfigured,
+      openFirebaseConfigModal,
+      closeFirebaseConfigModal,
+      toggleTheme,
+      promptLogin,
+      closeLoginPrompt,
+      login,
+      register,
+      loginWithGoogle,
+      loginWithFacebook,
+      logout,
+      refreshProfile,
+      migrateGuestData,
+    }),
+    [
+      user,
+      authState,
+      theme,
+      loginPromptOpen,
+      loginPromptReason,
+      firebaseConfigModalOpen,
+      isConfigured,
+    ],
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading: authState === 'AUTH_LOADING',
-        authState,
-        isGuest: authState === 'GUEST' || (user?.isAnonymous ?? false),
-        theme,
-        loginPromptOpen,
-        loginPromptReason,
-        firebaseConfigModalOpen,
-        isFirebaseConfigured: isConfigured,
-        openFirebaseConfigModal,
-        closeFirebaseConfigModal,
-        toggleTheme,
-        promptLogin,
-        closeLoginPrompt,
-        login,
-        register,
-        loginWithGoogle,
-        loginWithFacebook,
-        logout,
-        refreshProfile,
-        migrateGuestData,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
       <FirebaseConfigModal
         isOpen={firebaseConfigModalOpen}

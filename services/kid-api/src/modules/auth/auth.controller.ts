@@ -200,20 +200,25 @@ export class AuthController {
     return result;
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
   @Post('migrate-guest')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Migrate guest offline favorites, custom words, and quiz history to authenticated user' })
   migrateGuest(
+    @CurrentUser('id') currentUserId: string,
     @Body()
     body: {
-      targetUserId: string;
+      targetUserId?: string;
       favorites?: string[];
       customWords?: any[];
       reviews?: any[];
     },
   ) {
-    return this.authService.migrateGuestData(body);
+    return this.authService.migrateGuestData({
+      ...body,
+      targetUserId: currentUserId,
+    });
   }
 
   @Public()
