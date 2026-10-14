@@ -247,26 +247,23 @@ export const ListenFindGame: React.FC<ListenFindGameProps> = ({
               <div
                 key={opt.id}
                 onClick={() => handleSelectOption(opt)}
-                className={`group relative w-full max-w-[190px] flex flex-col items-center cursor-pointer select-none rounded-[28px] transition-all duration-300 ${
+                className={`group relative w-full max-w-[220px] flex flex-col items-center cursor-pointer select-none rounded-[18px] transition-all duration-200 ${
                   isSuccess
-                    ? 'scale-110 -translate-y-4 z-30 drop-shadow-[0_20px_35px_rgba(16,185,129,0.45)]'
+                    ? 'scale-105 -translate-y-2 z-30 drop-shadow-[0_16px_28px_rgba(16,185,129,0.4)]'
                     : isError
                     ? 'animate-shake'
-                    : 'hover:-translate-y-2 hover:scale-[1.03] active:translate-y-0 active:scale-95'
+                    : 'hover:-translate-y-1.5 hover:scale-[1.02] active:translate-y-0 active:scale-95'
                 }`}
               >
-                {/* 3D Toy Tile Surface */}
+                {/* 3D Toy Tile Surface (High contrast, sharp radius, enlarged frame) */}
                 <div
-                  className={`relative w-full h-[200px] sm:h-[220px] rounded-[26px] p-3 flex flex-col items-center justify-between transition-all duration-300 overflow-hidden border-3 shadow-lg ${
+                  className={`relative w-full h-[220px] sm:h-[240px] rounded-[18px] p-3.5 flex flex-col items-center justify-between transition-all duration-200 overflow-hidden border-2 border-b-6 ${
                     isSuccess
-                      ? 'bg-gradient-to-b from-[#ECFDF5] via-white to-[#D1FAE5] border-emerald-500 ring-4 ring-emerald-300/80 shadow-emerald-400/30'
+                      ? 'bg-emerald-50 border-emerald-700 border-b-emerald-900 ring-4 ring-emerald-400 shadow-md'
                       : isError
-                      ? 'bg-gradient-to-b from-rose-50 to-white border-rose-400 ring-4 ring-rose-200'
-                      : 'bg-gradient-to-b from-white via-[#FCFBF7] to-[#F5F2EA] border-slate-200/90 hover:border-emerald-300 hover:shadow-xl'
+                      ? 'bg-rose-50 border-rose-700 border-b-rose-900 ring-4 ring-rose-300'
+                      : 'bg-white border-slate-900 border-b-slate-900 shadow-[3px_4px_0px_#0f172a] hover:shadow-[4px_6px_0px_#0f172a]'
                   }`}
-                  style={{
-                    borderBottomWidth: isSuccess ? '5px' : '6px',
-                  }}
                 >
                   {/* Top Header: Number Badge & Status */}
                   <div className="w-full flex items-center justify-between">

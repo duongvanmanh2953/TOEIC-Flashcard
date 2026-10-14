@@ -38,10 +38,10 @@ export const GameCard: React.FC<GameCardProps> = memo(({
           onSelect(game.id);
         }
       }}
-      className={`group relative h-full flex flex-col rounded-[26px] bg-white transition-all duration-200 ease-out cursor-pointer select-none overflow-hidden border-3 border-b-6 ${
+      className={`group relative h-full flex flex-col rounded-[18px] bg-white transition-all duration-200 ease-out cursor-pointer select-none overflow-hidden border-2 border-slate-900 border-b-6 shadow-[3px_4px_0px_#0f172a] hover:shadow-[4px_7px_0px_#0f172a] hover:-translate-y-1 ${
         isSelected
-          ? 'border-indigo-400 border-b-indigo-600 ring-4 ring-indigo-300/40 shadow-xl -translate-y-1.5'
-          : 'border-slate-200/90 border-b-slate-300 hover:border-indigo-300 hover:border-b-indigo-400 shadow-[0_8px_20px_-4px_rgba(45,55,72,0.08)] hover:shadow-[0_18px_32px_-4px_rgba(99,102,241,0.18)] hover:-translate-y-1.5'
+          ? 'border-indigo-600 border-b-indigo-900 ring-4 ring-indigo-400/50'
+          : 'hover:border-slate-950'
       }`}
     >
       {/* ========================================================= */}

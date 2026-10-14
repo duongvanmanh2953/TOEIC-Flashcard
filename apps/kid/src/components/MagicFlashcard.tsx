@@ -42,10 +42,10 @@ export const MagicFlashcard: React.FC<MagicFlashcardProps> = memo(({
         {/* FRONT: ULTRA-CLEAN "MAGIC ANIMAL LEARNING CARDS" VISUAL          */}
         {/* =============================================================== */}
         <div
-          className={`kids-flip-front w-full h-full rounded-[20px] bg-gradient-to-b ${theme.bgGradient} p-5 sm:p-6 flex flex-col justify-between items-center text-center text-white overflow-hidden shadow-[0_16px_36px_-6px_rgba(20,40,70,0.22),0_4px_12px_rgba(0,0,0,0.08)] border-2 border-white/35`}
+          className={`kids-flip-front w-full h-full rounded-[18px] bg-gradient-to-b ${theme.bgGradient} p-5 sm:p-7 flex flex-col justify-between items-center text-center text-white overflow-hidden shadow-[4px_6px_0px_#0f172a] border-3 border-slate-900`}
         >
           {/* Ambient Botanical & Sparkle Background Accents */}
-          <div className="absolute inset-0 pointer-events-none opacity-30 overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none opacity-25 overflow-hidden">
             <div className="absolute -top-12 -left-12 w-40 h-40 bg-white/20 rounded-full blur-xl" />
             <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-white/20 rounded-full blur-xl" />
             <Sparkles className="absolute top-4 right-12 w-4 h-4 text-white/60 animate-pulse" />
@@ -107,11 +107,11 @@ export const MagicFlashcard: React.FC<MagicFlashcardProps> = memo(({
         {/* BACK: MEANING, FULL PHRASE & BILINGUAL SPEECH                   */}
         {/* =============================================================== */}
         <div
-          className="kids-flip-back w-full h-full rounded-[20px] bg-white p-5 sm:p-6 flex flex-col justify-between items-center text-center text-slate-800 overflow-hidden shadow-[0_16px_36px_-6px_rgba(20,40,70,0.18)] border-2 border-slate-200"
+          className="kids-flip-back w-full h-full rounded-[18px] bg-white p-5 sm:p-7 flex flex-col justify-between items-center text-center text-slate-900 overflow-hidden shadow-[4px_6px_0px_#0f172a] border-3 border-slate-900"
         >
           {/* Top Bar: Meaning Pill & Flip Back CTA */}
           <div className="w-full flex items-center justify-between">
-            <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-black">
+            <span className="px-3 py-1 rounded-lg bg-emerald-100 text-emerald-950 border-2 border-slate-900 text-xs font-black shadow-2xs">
               {card.categoryVi}
             </span>
 

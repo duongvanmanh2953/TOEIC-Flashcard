@@ -68,20 +68,17 @@ export const GameCard: React.FC<GameCardProps> = memo(({
       onClick={handleClick}
       role="button"
       tabIndex={0}
-      className={`relative p-3.5 sm:p-5 flex flex-col items-center justify-between select-none cursor-pointer transition-all duration-200 ease-out touch-manipulation overflow-hidden ${aspectClass} ${stateStyles} ${className}`}
+      className={`relative p-4 sm:p-5 flex flex-col items-center justify-between select-none cursor-pointer transition-all duration-200 ease-out touch-manipulation overflow-hidden ${aspectClass} ${stateStyles} ${className}`}
       style={{ willChange: 'transform' }}
     >
-      {/* Soft Radial 3D Halo Glow */}
-      <div className="toy-card-halo" />
-
       {/* State Badge Icon (Top-Right) */}
       {state === 'correct' && (
-        <div className="absolute top-2.5 right-2.5 z-20 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg border-2 border-white animate-scaleUp">
+        <div className="absolute top-2.5 right-2.5 z-20 w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md border-2 border-slate-900 animate-scaleUp">
           <CheckCircle2 className="w-5 h-5 stroke-[3]" />
         </div>
       )}
       {state === 'wrong' && (
-        <div className="absolute top-2.5 right-2.5 z-20 w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg border-2 border-white animate-scaleUp">
+        <div className="absolute top-2.5 right-2.5 z-20 w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md border-2 border-slate-900 animate-scaleUp">
           <XCircle className="w-5 h-5 stroke-[3]" />
         </div>
       )}
@@ -94,7 +91,7 @@ export const GameCard: React.FC<GameCardProps> = memo(({
             alt={imageAlt}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-contain filter drop-shadow-[0_12px_20px_rgba(0,0,0,0.16)] transition-transform duration-300 group-hover:scale-105 pointer-events-none"
+            className="w-full h-full object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.22)] transition-transform duration-200 group-hover:scale-105 pointer-events-none"
           />
         ) : (
           image
@@ -102,16 +99,16 @@ export const GameCard: React.FC<GameCardProps> = memo(({
         {children}
       </div>
 
-      {/* Tactile Typography Label with Pill Frame */}
+      {/* High Contrast Typography Label with Solid Border */}
       {(title || subtitle) && (
-        <div className="relative z-10 w-full text-center pt-2 mt-1 border-t border-slate-200/80 shrink-0">
+        <div className="relative z-10 w-full text-center pt-2.5 mt-1 border-t-2 border-slate-900 shrink-0 bg-slate-50/70 -mx-4 -mb-4 px-4 py-2">
           {title && (
-            <h3 className="text-base sm:text-lg font-black text-slate-800 capitalize tracking-tight leading-tight truncate drop-shadow-xs">
+            <h3 className="text-base sm:text-lg font-black text-slate-950 capitalize tracking-tight leading-tight truncate">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-xs sm:text-sm font-bold text-slate-600 truncate mt-0.5">
+            <p className="text-xs sm:text-sm font-black text-slate-700 truncate mt-0.5">
               {subtitle}
             </p>
           )}

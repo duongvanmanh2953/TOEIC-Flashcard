@@ -28,6 +28,7 @@ import {
   Shuffle,
   Heart,
 } from 'lucide-react';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 interface CategoryOption {
   id: string;
@@ -256,53 +257,54 @@ export const KidsFlashcardsPage: React.FC = () => {
       </header>
 
       {/* ========================================================================= */}
-      {/* 2. DEDICATED CATEGORY BAR (ORGANIZED, CENTERED, CLEAN)                   */}
+      {/* 2. DEDICATED CATEGORY SELECT (COMPACT, HIGH CONTRAST, ZERO OVERCROWD)    */}
       {/* ========================================================================= */}
-      <div className="flex-shrink-0 w-full max-w-4xl mx-auto px-4 py-1.5 flex items-center justify-center gap-2 overflow-x-auto scrollbar-none">
-        {CATEGORY_TABS.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
+      <div className="flex-shrink-0 w-full max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+            Chủ đề thẻ:
+          </span>
+          <CustomSelect
+            value={selectedCategory}
+            onChange={(val) => {
+              soundManager.playClick();
+              setSelectedCategory(val);
+              setCurrentIndex(0);
+              setIsFlipped(false);
+              if (swiperRef.current) {
+                swiperRef.current.slideTo(0);
+              }
+            }}
+            options={CATEGORY_TABS.map((cat) => ({
+              value: cat.id,
+              label: cat.label,
+              icon: cat.icon,
+            }))}
+            size="sm"
+            className="w-52 sm:w-60"
+          />
+        </div>
 
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => {
-                soundManager.playClick();
-                setSelectedCategory(cat.id);
-                setCurrentIndex(0);
-                setIsFlipped(false);
-                if (swiperRef.current) {
-                  swiperRef.current.slideTo(0);
-                }
-              }}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-black text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all duration-200 active:scale-95 border ${
-                isSelected
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200/90 hover:bg-slate-50 shadow-2xs'
-              }`}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          );
-        })}
+        <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 bg-white px-3 py-1.5 rounded-xl border-2 border-slate-900 shadow-2xs">
+          <span>{filteredDeck.length} thẻ</span>
+        </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. CARD STAGE (CENTERED, PASTEL TABLE TINT, ZERO SCREEN-SHIFT)            */}
+      {/* 3. CARD STAGE (LARGER, HIGH CONTRAST, ZERO OVER-ROUNDED BUBBLES)          */}
       {/* ========================================================================= */}
-      <main className="flex-1 min-h-0 w-full px-3 sm:px-6 py-1 flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-[820px] h-full max-h-[calc(100dvh-150px)] rounded-[28px] sm:rounded-[36px] kids-bright-game-table flex flex-col items-center justify-center p-3 sm:p-5 relative overflow-hidden">
+      <main className="flex-1 min-h-0 w-full px-3 sm:px-6 py-2 flex items-center justify-center overflow-hidden">
+        <div className="w-full max-w-[900px] h-full max-h-[calc(100dvh-150px)] rounded-[20px] bg-white border-3 border-slate-900 shadow-[4px_6px_0px_#0f172a] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
           {/* Subtle Ambient Decorative Sparkles */}
-          <div className="absolute inset-0 pointer-events-none opacity-30">
+          <div className="absolute inset-0 pointer-events-none opacity-20">
             <div className="absolute top-8 left-12 w-2 h-2 rounded-full bg-amber-400 blur-2xs" />
             <div className="absolute top-14 right-16 w-3 h-3 rounded-full bg-sky-300 blur-2xs" />
             <div className="absolute bottom-10 left-16 w-2.5 h-2.5 rounded-full bg-emerald-400 blur-2xs" />
             <div className="absolute bottom-12 right-20 w-2 h-2 rounded-full bg-rose-300 blur-2xs" />
           </div>
 
-          {/* SWIPER CONTAINER WITH EFFECT="CARDS" (FLUID 60FPS SWIPING, ZERO JUMP-BACK) */}
-          <div className="relative flex items-center justify-center w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[380px]">
+          {/* SWIPER CONTAINER WITH EFFECT="CARDS" (LARGER FOR PRESCHOOL/ELEMENTARY KIDS) */}
+          <div className="relative flex items-center justify-center w-full max-w-[340px] sm:max-w-[420px] lg:max-w-[460px] h-[440px] sm:h-[500px]">
             {filteredDeck.length === 0 ? (
               <div className="text-center py-16 space-y-2 text-slate-400">
                 <Heart className="w-10 h-10 mx-auto text-slate-300" />

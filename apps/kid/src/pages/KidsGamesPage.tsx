@@ -16,6 +16,7 @@ import {
 } from '../data/games/gamesRegistry';
 import { GameCard } from '../components/GameCard';
 import { GameErrorBoundary, GameLoading } from '../components/kid-game';
+import { CustomSelect, CustomSelectOption } from '../components/common/CustomSelect';
 
 // LAZY-LOADED KID GAMES (Code-split so opening Kid app does NOT bundle 20+ games)
 const ListenFindGame = React.lazy(() => import('../games/listen-find/ListenFindGame').then(m => ({ default: m.ListenFindGame })));
@@ -320,37 +321,39 @@ export const KidsGamesPage: React.FC = () => {
       </section>
 
       {/* ================================================================ */}
-      {/* 3. CATEGORY PILLS (COMPACT, CLEAR NAVIGATION)                    */}
+      {/* 3. CATEGORY SELECT (COMPACT, CUSTOM DESIGNED, ZERO SPRAWL)       */}
       {/* ================================================================ */}
       <section className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat.id;
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-100 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0px_#0f172a]">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-slate-950 uppercase tracking-wider">
+              Chủ đề trò chơi:
+            </span>
+            <CustomSelect
+              value={selectedCategory}
+              onChange={(val) => {
+                soundManager.playPop();
+                setSelectedCategory(val as GameCategoryFilter);
+              }}
+              options={CATEGORIES.map((c) => ({
+                value: c.id,
+                label: c.label,
+                badge: c.id === 'all' ? KIDS_GAMES_REGISTRY.length : KIDS_GAMES_REGISTRY.filter((g) => g.category === c.id).length,
+              }))}
+              size="sm"
+              className="w-48 sm:w-56"
+            />
+          </div>
 
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  soundManager.playPop();
-                  setSelectedCategory(cat.id);
-                }}
-                className={`px-4 py-2 rounded-xl font-black text-xs sm:text-sm cursor-pointer select-none transition-all duration-180 active:scale-95 border ${
-                  isSelected
-                    ? 'bg-amber-400 text-amber-950 border-amber-400 shadow-sm'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200/80 shadow-2xs'
-                }`}
-              >
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
+          <span className="text-xs font-black text-slate-700 bg-white px-3 py-1.5 rounded-lg border-2 border-slate-900 shadow-2xs self-start sm:self-auto">
+            Hiển thị {filteredGames.length} trò chơi
+          </span>
         </div>
 
         {/* ============================================================== */}
-        {/* 4. GAME TILES GRID (2 COLS MOBILE, 3-4 COLS DESKTOP, GAP 18-24)*/}
+        {/* 4. GAME TILES GRID (HIGH CONTRAST, LARGER REFINED CARDS)       */}
         {/* ============================================================== */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 items-stretch pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7 items-stretch pt-1">
           {filteredGames.map((game) => (
             <GameCard
               key={game.id}
