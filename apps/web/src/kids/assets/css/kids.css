@@ -1,8 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ==========================================================================
    KIDS MODULE - DESIGN SYSTEM TOKENS & PLAYFUL STYLES
    ========================================================================== */
 
 :root {
+  /* =========================================================================
+     SUNNY MEADOW V2.0 - NATURE & PASTEL COLOR TOKENS (KidRequired.md Spec)
+     ========================================================================= */
+  --sky-morning: #D8F3FF;
+  --sky-stream: #4CC9F0;
+  --sky-deep: #0077B6;
+  --meadow-fresh: #80ED99;
+  --meadow-main: #57CC99;
+  --meadow-shadow: #22577A;
+  --sun-butter: #FFFDF5;
+  --sun-gold: #FFD166;
+  --sun-amber: #D99B00;
+  --berry-coral: #FF758F;
+  --berry-shadow: #C9184A;
+  --lavender-magic: #C77DFF;
+  --ink-charcoal: #1E293B;
+  --ink-soft: #475569;
+  --font-display: 'Baloo 2', cursive, sans-serif;
+  --font-body: 'Quicksand', sans-serif;
+
   --kids-primary: #3C9FE8;
   --kids-primary-hover: #258cd6;
   --kids-sky: #78CFF5;
@@ -18,10 +42,10 @@
   --kids-cloud: #F7FBFF;
   --kids-secondary: #52C7A0;
   --kids-accent: #FF7F73;
-  --kids-background: #F7FBFF;
+  --kids-background: #FFFDF5;
   --kids-surface: #ffffff;
-  --kids-text: #17345B;
-  --kids-text-muted: #64748B;
+  --kids-text: #1E293B;
+  --kids-text-muted: #475569;
   --kids-success: #55C98A;
   --kids-warning: #FFD866;
   --kids-error: #FF6F7D;
@@ -33,11 +57,157 @@
   --kids-radius-xl: 24px;
   --kids-radius-full: 9999px;
 
-  /* Touch target standard for young children */
-  --kids-min-touch: 48px;
+  /* Child Ergonomics standard (KidRequired.md: min 68px for functions, 96px for items) */
+  --kids-min-touch: 68px;
+  --kids-min-item-touch: 96px;
 
-  /* Kids Dark Mode Semantic Text Token - Dark high-contrast slate readable on white/light surfaces */
+  /* Kids Dark Mode Semantic Text Token */
   --kids-dark-muted-text: #334155;
+}
+
+/* Sunny Meadow Typography */
+.font-display {
+  font-family: 'Baloo 2', cursive, sans-serif;
+}
+.font-body {
+  font-family: 'Quicksand', sans-serif;
+}
+
+/* ==========================================================================
+   SUNNY MEADOW V2.0 - TACTILE 3D CLAYMORPHISM (KidRequired.md Section 2.3)
+   ========================================================================== */
+.meadow-clay-card {
+  background: #FFFDF5;
+  border: 4px solid #FFFFFF;
+  border-radius: 36px;
+  box-shadow: 
+    0 16px 32px -8px rgba(34, 87, 122, 0.14),
+    0 8px 0 #CBD5E1,
+    inset 0 3px 6px rgba(255, 255, 255, 0.9);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.meadow-clay-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 20px 36px -8px rgba(34, 87, 122, 0.18),
+    0 10px 0 #CBD5E1,
+    inset 0 3px 6px rgba(255, 255, 255, 0.9);
+}
+
+.meadow-clay-card:active {
+  transform: translateY(4px);
+  box-shadow: 
+    0 6px 16px -4px rgba(34, 87, 122, 0.14),
+    0 2px 0 #CBD5E1,
+    inset 0 2px 4px rgba(255, 255, 255, 0.9);
+}
+
+/* Chuẩn Nút Bấm Đồ Chơi 3D Đàn Hồi (Toy Push Button) */
+.toy-btn {
+  position: relative;
+  min-height: 68px;
+  min-width: 68px;
+  padding: 14px 28px;
+  border-radius: 26px;
+  font-family: 'Baloo 2', cursive, sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease;
+}
+
+.toy-btn-green {
+  background: linear-gradient(180deg, #80ED99 0%, #57CC99 100%);
+  color: #0F3D3E;
+  box-shadow: 0 7px 0 #2D8A61, 0 12px 20px rgba(87, 204, 153, 0.35), inset 0 3px 4px rgba(255, 255, 255, 0.7);
+}
+.toy-btn-green:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 0 #2D8A61, 0 16px 24px rgba(87, 204, 153, 0.45), inset 0 3px 4px rgba(255, 255, 255, 0.8);
+}
+.toy-btn-green:active {
+  transform: translateY(5px) scale(0.98);
+  box-shadow: 0 2px 0 #2D8A61, 0 4px 8px rgba(87, 204, 153, 0.25);
+}
+
+.toy-btn-amber {
+  background: linear-gradient(180deg, #FFE066 0%, #FFD166 100%);
+  color: #78350F;
+  box-shadow: 0 7px 0 #D99B00, 0 12px 20px rgba(255, 209, 102, 0.35), inset 0 3px 4px rgba(255, 255, 255, 0.7);
+}
+.toy-btn-amber:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 0 #D99B00, 0 16px 24px rgba(255, 209, 102, 0.45), inset 0 3px 4px rgba(255, 255, 255, 0.8);
+}
+.toy-btn-amber:active {
+  transform: translateY(5px) scale(0.98);
+  box-shadow: 0 2px 0 #D99B00, 0 4px 8px rgba(255, 209, 102, 0.25);
+}
+
+.toy-btn-coral {
+  background: linear-gradient(180deg, #FFA0B2 0%, #FF758F 100%);
+  color: #4C0519;
+  box-shadow: 0 7px 0 #C9184A, 0 12px 20px rgba(255, 117, 143, 0.35), inset 0 3px 4px rgba(255, 255, 255, 0.7);
+}
+.toy-btn-coral:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 0 #C9184A, 0 16px 24px rgba(255, 117, 143, 0.45), inset 0 3px 4px rgba(255, 255, 255, 0.8);
+}
+.toy-btn-coral:active {
+  transform: translateY(5px) scale(0.98);
+  box-shadow: 0 2px 0 #C9184A, 0 4px 8px rgba(255, 117, 143, 0.25);
+}
+
+.toy-btn-sky {
+  background: linear-gradient(180deg, #A0E7FF 0%, #4CC9F0 100%);
+  color: #082F49;
+  box-shadow: 0 7px 0 #0077B6, 0 12px 20px rgba(76, 201, 240, 0.35), inset 0 3px 4px rgba(255, 255, 255, 0.7);
+}
+.toy-btn-sky:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 0 #0077B6, 0 16px 24px rgba(76, 201, 240, 0.45), inset 0 3px 4px rgba(255, 255, 255, 0.8);
+}
+.toy-btn-sky:active {
+  transform: translateY(5px) scale(0.98);
+  box-shadow: 0 2px 0 #0077B6, 0 4px 8px rgba(76, 201, 240, 0.25);
+}
+
+.toy-btn-purple {
+  background: linear-gradient(180deg, #E0AAFF 0%, #C77DFF 100%);
+  color: #3B0764;
+  box-shadow: 0 7px 0 #7B2CBF, 0 12px 20px rgba(199, 125, 255, 0.35), inset 0 3px 4px rgba(255, 255, 255, 0.7);
+}
+.toy-btn-purple:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 0 #7B2CBF, 0 16px 24px rgba(199, 125, 255, 0.45), inset 0 3px 4px rgba(255, 255, 255, 0.8);
+}
+.toy-btn-purple:active {
+  transform: translateY(5px) scale(0.98);
+  box-shadow: 0 2px 0 #7B2CBF, 0 4px 8px rgba(199, 125, 255, 0.25);
+}
+
+/* Gentle Elastic Wobble Animation (Zero-punishment feedback) */
+@keyframes gentleWobble {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-8px) rotate(-4deg); }
+  50% { transform: translateX(8px) rotate(4deg); }
+  75% { transform: translateX(-4px) rotate(-2deg); }
+}
+.wobble-hint {
+  animation: gentleWobble 0.45s ease-in-out;
+}
+
+/* Dual Eye-Care Warm Amber Filter */
+body.eye-care-active {
+  filter: sepia(16%) saturate(92%) brightness(97%) !important;
 }
 
 /* Fallback definition for border-3 */

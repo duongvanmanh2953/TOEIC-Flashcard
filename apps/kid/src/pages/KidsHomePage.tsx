@@ -1,586 +1,252 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { soundManager } from '../services/sound/KidsSoundManager';
-import { celebrationManager } from '../services/celebration/CelebrationManager';
-import { voiceService } from '../services/voice/voiceService';
-import {
-  ViviHeroAdventureScene,
-  ViviSleepingCloudScene,
-  IllustrationBeachCrab,
-  IllustrationRestaurantPlate,
-  IllustrationGrammarBus,
-  IllustrationPandaBamboo,
-  IllustrationHotAirBalloon,
-} from '../assets/illustrations/KidsViviUniverse';
-import {
-  Play,
-  Volume2,
-  BookOpen,
-  Headphones,
-  ClipboardList,
-  Star,
-  ChevronRight,
-  ArrowRight,
-  CheckCircle2,
-  Mic,
-  Sparkles,
-} from 'lucide-react';
-import { kidAsset } from '../utils/kidAsset';
-import { BrightFoxActivityCards } from '../components/BrightFoxActivityCards';
-import { BrightFoxHeroHeader } from '../components/BrightFoxHeroHeader';
+import { MeadowAudioEngine } from '../services/audio/MeadowAudioEngine';
+import { meadowStore, MeadowState, INITIAL_STICKERS } from '../core/meadowStateStore';
+import { SUNNY_MEADOW_GAMES } from '../games/sunny-meadow/sunnyMeadowRegistry';
+import StickerBookModal from '../components/StickerBookModal';
 
 export const KidsHomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [state, setState] = useState<MeadowState>(() => meadowStore.getState());
   const [playingWord, setPlayingWord] = useState<string | null>(null);
+  const [stickerModalOpen, setStickerModalOpen] = useState(false);
+
+  useEffect(() => {
+    const unsub = meadowStore.subscribe((s) => setState(s));
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     // Gentle audio greeting once per session
-    const alreadyGreeted = sessionStorage.getItem('kids_home_greeted');
+    const alreadyGreeted = sessionStorage.getItem('sunny_meadow_greeted');
     if (!alreadyGreeted) {
-      sessionStorage.setItem('kids_home_greeted', 'true');
+      sessionStorage.setItem('sunny_meadow_greeted', 'true');
       const timer = setTimeout(() => {
-        celebrationManager.greetChild();
-      }, 500);
+        MeadowAudioEngine.playWoodTap('G5');
+        MeadowAudioEngine.speak(
+          'Hello, little friend! Welcome to Sunny Meadow English! Let us play and learn together!',
+          { rate: 0.85, pitch: 1.18 }
+        );
+      }, 700);
       return () => clearTimeout(timer);
     }
   }, []);
 
-  const handleStartLearn = () => {
-    soundManager.playPop();
-    navigate('/kids/flashcards');
-  };
-
-  const handleSignClick = (destination: string) => {
-    soundManager.playPop();
-    switch (destination) {
-      case 'words':
-        navigate('/kids/flashcards');
-        break;
-      case 'listening':
-        navigate('/kids/games?game=listen_find');
-        break;
-      case 'speaking':
-        navigate('/kids/games?game=speak_unlock');
-        break;
-      case 'test':
-        navigate('/kids/games');
-        break;
-      default:
-        navigate('/kids/flashcards');
-    }
-  };
-
-  const handleSpeakTopWord = (word: string, meaning: string, e: React.MouseEvent) => {
+  const handleSpeakWord = (word: string, meaning: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    soundManager.playDing();
+    MeadowAudioEngine.playWoodTap('C5');
     setPlayingWord(word);
-    voiceService.speakWord(word, {
-      onEnd: () => {
-        setPlayingWord(null);
-      },
-      onError: () => {
-        setPlayingWord(null);
-      },
+    MeadowAudioEngine.speak(`${word}! ${meaning}!`, {
+      rate: 0.85,
+      pitch: 1.15,
+      onEnd: () => setPlayingWord(null),
     });
   };
 
-  // Top daily vocabulary items with audio
-  const topDailyWords = [
-    { rank: 1, word: 'happy', phonetic: '/ˈhæpi/', meaning: 'vui vẻ', color: 'bg-amber-400' },
-    { rank: 2, word: 'school', phonetic: '/skuːl/', meaning: 'trường học', color: 'bg-indigo-400' },
-    { rank: 3, word: 'friend', phonetic: '/frend/', meaning: 'bạn bè', color: 'bg-rose-400' },
-    { rank: 4, word: 'book', phonetic: '/bʊk/', meaning: 'quyển sách', color: 'bg-emerald-400' },
-    { rank: 5, word: 'tree', phonetic: '/triː/', meaning: 'cái cây', color: 'bg-sky-400' },
+  const handleLaunchGame = (gameId: string) => {
+    MeadowAudioEngine.playWoodTap('G5');
+    navigate(`/games?game=${gameId}`);
+  };
+
+  const dailyWords = [
+    { word: 'apple', meaning: 'quả táo đỏ', symbol: '#svg-item-apple', color: 'bg-rose-100 text-rose-800' },
+    { word: 'carrot', meaning: 'củ cà rốt', symbol: '#svg-item-carrot', color: 'bg-amber-100 text-amber-900' },
+    { word: 'strawberry', meaning: 'dâu tây ngọt', symbol: '#svg-item-strawberry', color: 'bg-pink-100 text-pink-900' },
+    { word: 'banana', meaning: 'quả chuối vàng', symbol: '#svg-item-banana', color: 'bg-yellow-100 text-yellow-900' },
+    { word: 'mushroom', meaning: 'cây nấm rừng', symbol: '#svg-red-mushroom', color: 'bg-red-100 text-red-900' },
   ];
 
+  const unlockedStickersCount = state.stickers.length;
+
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-5 lg:p-6 flex flex-col lg:flex-row items-stretch gap-4 sm:gap-5 select-none animate-fadeIn">
+    <div className="w-full max-w-6xl mx-auto flex flex-col space-y-6 sm:space-y-8 select-none animate-fadeIn pb-16 px-3 sm:px-4">
       {/* ===================================================================== */}
-      {/* LEFT & CENTER MAIN LEARNING STREAM (Flex-1)                           */}
+      {/* 1. LARGE HERO CLAY CARD: SUNNY MEADOW EXPEDITION                     */}
       {/* ===================================================================== */}
-      <div className="flex-1 min-w-0 w-full flex flex-col space-y-4 sm:space-y-5">
-        {/* 1. LARGE HERO BANNER: "Cùng khám phá thế giới từ vựng!" */}
-        <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-sky-200/80 via-sky-100/90 to-emerald-100/70 backdrop-blur-xl border border-white/90 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-5">
-          {/* Subtle clouds background */}
-          <div className="absolute top-3 left-10 w-24 h-12 bg-white/60 rounded-full blur-xs pointer-events-none" />
-          <div className="absolute bottom-4 left-1/3 w-36 h-14 bg-white/40 rounded-full blur-xs pointer-events-none" />
+      <section className="meadow-clay-card p-6 sm:p-8 lg:p-10 bg-gradient-to-r from-[#D8F3FF] via-[#FFFDF5] to-[#80ED99]/40 border-4 border-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Soft floating nature particles */}
+        <div className="absolute top-3 left-10 text-2xl animate-bounce">🍃</div>
+        <div className="absolute bottom-4 left-1/3 text-xl animate-pulse">✨</div>
+        <div className="absolute top-4 right-1/4 text-2xl animate-pulse">🦋</div>
 
-          {/* Left Text Block */}
-          <div className="relative z-10 max-w-md space-y-2 text-left">
-            <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-[#17345B] tracking-tight leading-snug">
-              Cùng khám phá<br />thế giới từ vựng!
-            </h1>
-            <p className="text-sm sm:text-base font-bold text-[#64748B] pt-1">
-              Mỗi ngày một từ mới, tiến bộ từng chút một!
-            </p>
-
-            <div className="pt-3">
-              <button
-                onClick={handleStartLearn}
-                className="px-7 py-3 rounded-full bg-gradient-to-r from-[#FFD866] to-[#F59E0B] hover:brightness-105 text-[#431407] font-black text-sm sm:text-base shadow-md active:scale-95 flex items-center gap-2.5 cursor-pointer transition-all"
-              >
-                <div className="w-6 h-6 rounded-full bg-white/40 flex items-center justify-center">
-                  <Play className="w-3.5 h-3.5 fill-[#431407] text-[#431407] ml-0.5" />
-                </div>
-                <span>Bắt đầu học</span>
-              </button>
-            </div>
+        {/* Hero Text */}
+        <div className="relative z-10 max-w-lg space-y-3 text-center md:text-left">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-xs font-extrabold uppercase tracking-wider text-emerald-800 font-display shadow-2xs border border-emerald-200">
+            <span>🦊 Khu Rừng Học Tiếng Anh Cho Bé (V2.0)</span>
           </div>
 
-          {/* Right Cropped Asset (Vivi Fox with Backpack & Wooden Signpost) */}
-          <div className="w-full md:w-[300px] lg:w-[340px] h-[200px] sm:h-[220px] relative shrink-0 flex items-center justify-center">
-            <img
-              src={kidAsset('/kid/ui/hero-mascot-signpost.png')}
-              alt="Vivi and wooden signpost"
-              className="w-full h-full object-contain drop-shadow-md rounded-2xl cursor-pointer hover:scale-102 transition-transform"
-              onClick={handleStartLearn}
-              onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png'; }}
-            />
-            {/* Interactive signpost click areas aligned directly with the 4 wooden arrows */}
-            <div className="absolute right-1 sm:right-2 top-3 bottom-4 w-28 sm:w-32 flex flex-col justify-between py-1 z-20 pointer-events-auto">
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleSignClick('words'); }}
-                title="Words • Học từ vựng"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
-              />
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleSignClick('listening'); }}
-                title="Listening • Luyện nghe"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
-              />
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleSignClick('speaking'); }}
-                title="Speaking • Luyện nói"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
-              />
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleSignClick('test'); }}
-                title="Test • Trò chơi vui nhộn"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
-              />
-            </div>
-          </div>
-        </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-[#1E293B] font-display tracking-tight leading-tight">
+            Cùng Cáo Sunny Khám Phá Rừng Xanh!
+          </h1>
 
-        {/* ===================================================================== */}
-        {/* BRIGHTFOX 4 CORE ACTIVITY CARDS (NUMBERS • READING • PUZZLES • DRAWING) */}
-        {/* ===================================================================== */}
-        <BrightFoxActivityCards />
+          <p className="text-sm sm:text-base font-semibold text-[#475569] font-body leading-relaxed">
+            Học tiếng Anh tự nhiên qua 5 trò chơi sinh thái: đút quả picnic, pha màu hồ sen, bắt đom đóm chữ cái và thổi gió phép thuật!
+          </p>
 
-        {/* 2. QUICK ACCESS DESTINATION TILES */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
-          {/* Card 1: Học từ vựng */}
-          <div
-            onClick={() => {
-              soundManager.playPop();
-              navigate('/kids/flashcards');
-            }}
-            className="p-4 sm:p-5 rounded-3xl bg-sky-50/85 backdrop-blur-xl border border-sky-200/90 hover:border-sky-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
-                Học từ vựng
-              </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
-                Flashcard thông minh, ghi nhớ lâu hơn
-              </p>
-            </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-sky-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
+          <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4">
+            <button
+              onClick={() => handleLaunchGame('hungry_picnic')}
+              className="toy-btn toy-btn-green px-8 py-3 text-lg"
+            >
+              <span>🧺 Bắt Đầu Chơi Ngay ▶</span>
+            </button>
 
-          {/* Card 2: Luyện nghe nói */}
-          <div
-            onClick={() => {
-              soundManager.playPop();
-              navigate('/kids/world');
-            }}
-            className="p-4 sm:p-5 rounded-3xl bg-purple-50/85 backdrop-blur-xl border border-purple-200/90 hover:border-purple-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
-              <Headphones className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
-                Luyện nghe nói
-              </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
-                Nghe chuẩn – Nói hay cùng AI
-              </p>
-            </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-purple-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-
-          {/* Card 3: Trò chơi vui nhộn */}
-          <div
-            onClick={() => {
-              soundManager.playPop();
-              navigate('/kids/games');
-            }}
-            className="p-4 sm:p-5 rounded-3xl bg-emerald-50/85 backdrop-blur-xl border border-emerald-200/90 hover:border-emerald-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <ClipboardList className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
-                Trò chơi vui nhộn
-              </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
-                Làm quen dạng bài TOEIC, thật tự tin
-              </p>
-            </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-emerald-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-
-          {/* Card 4: Tiến độ học tập */}
-          <div
-            onClick={() => {
-              soundManager.playPop();
-              navigate('/kids/parent');
-            }}
-            className="p-4 sm:p-5 rounded-3xl bg-amber-50/85 backdrop-blur-xl border border-amber-200/90 hover:border-amber-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
-              <Star className="w-5 h-5 fill-current" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
-                Tiến độ học tập
-              </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
-                Xem kết quả, nhận huy hiệu
-              </p>
-            </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-amber-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-        </div>
-
-        {/* 3. SECTION "BÀI HỌC GỢI Ý CHO BẠN" */}
-        <div className="space-y-4 bg-white/80 backdrop-blur-xl p-4 sm:p-5 rounded-3xl shadow-xs border border-white/90">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-black text-[#17345B] flex items-center gap-2">
-              <span className="text-emerald-500">🌱</span>
-              <span>Bài học gợi ý cho bạn</span>
-            </h2>
             <button
               onClick={() => {
-                soundManager.playPop();
-                navigate('/kids/journey');
+                MeadowAudioEngine.playWoodTap('C5');
+                setStickerModalOpen(true);
               }}
-              className="text-xs font-black text-sky-600 hover:text-sky-700 flex items-center gap-1 cursor-pointer"
+              className="toy-btn toy-btn-amber px-6 py-3 text-base"
             >
-              <span>Xem tất cả</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span>📖 Sổ Nhãn Dán ({unlockedStickersCount}/12)</span>
             </button>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            {/* Lesson 1: Beach */}
-            <div
-              onClick={() => {
-                soundManager.playPop();
-                navigate('/kids/flashcards');
-              }}
-              className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
-            >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
-                <img
-                  src={kidAsset('/kid/lessons/lesson-beach-crab.png')}
-                  alt="At the Beach"
-                  className="w-full h-full object-cover rounded-xl"
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png'; }}
-                />
-                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
-                  12 từ
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-black text-[#17345B]">Từ vựng theo chủ đề</p>
-                <p className="text-[11px] font-bold text-slate-500">At the Beach</p>
-                <div className="flex items-center gap-1 pt-1 text-amber-400 text-xs">
-                  ★ ★ ★
-                </div>
-              </div>
-            </div>
-
-            {/* Lesson 2: Restaurant */}
-            <div
-              onClick={() => {
-                soundManager.playPop();
-                navigate('/kids/world');
-              }}
-              className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
-            >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
-                <img
-                  src={kidAsset('/kid/lessons/lesson-restaurant-food.png')}
-                  alt="At the Restaurant"
-                  className="w-full h-full object-cover rounded-xl"
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-celebrate.png'; }}
-                />
-                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
-                  8 bài
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-black text-[#17345B]">Giao tiếp hàng ngày</p>
-                <p className="text-[11px] font-bold text-slate-500">At the Restaurant</p>
-                <div className="flex items-center gap-1 pt-1 text-amber-400 text-xs">
-                  ★ ★ ★
-                </div>
-              </div>
-            </div>
-
-            {/* Lesson 3: Grammar Bus */}
-            <div
-              onClick={() => {
-                soundManager.playPop();
-                navigate('/kids/games');
-              }}
-              className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
-            >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
-                <img
-                  src={kidAsset('/kid/lessons/lesson-grammar-bus.png')}
-                  alt="Present Simple"
-                  className="w-full h-full object-cover rounded-xl"
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-running.png'; }}
-                />
-                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
-                  10 bài
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-black text-[#17345B]">Ngữ pháp vui</p>
-                <p className="text-[11px] font-bold text-slate-500">Present Simple</p>
-                <div className="flex items-center gap-1 pt-1 text-amber-400 text-xs">
-                  ★ ★ ★
-                </div>
-              </div>
-            </div>
-
-            {/* Lesson 4: Animals */}
-            <div
-              onClick={() => {
-                soundManager.playPop();
-                navigate('/kids/games?game=word_builder');
-              }}
-              className="bg-white p-3.5 rounded-3xl border border-slate-200/90 hover:border-sky-300 hover:shadow-sm transition-all cursor-pointer space-y-2.5"
-            >
-              <div className="h-28 w-full rounded-2xl overflow-hidden relative bg-white">
-                <img
-                  src={kidAsset('/kid/lessons/lesson-animals-panda.png')}
-                  alt="Animals"
-                  className="w-full h-full object-cover rounded-xl"
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/kid/animals/panda.png'; }}
-                />
-                <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-[10px] font-black text-slate-700 shadow-2xs">
-                  6 bài
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-black text-[#17345B]">Nghe hiểu</p>
-                <p className="text-[11px] font-bold text-slate-500">Animals</p>
-                <div className="flex items-center gap-1 pt-1 text-amber-400 text-xs">
-                  ★ ★ ★
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* 4. BOTTOM MOTIVATION CALLOUT BANNER WITH BALLOON */}
-        <div className="p-4 sm:p-4.5 rounded-2xl bg-gradient-to-r from-sky-100/95 via-white/85 to-emerald-50/95 backdrop-blur-xl border border-white/90 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            {/* Crisp Colorful Hot Air Balloon */}
-            <div className="w-12 h-14 shrink-0 flex items-center justify-center animate-bounce-subtle drop-shadow-sm">
-              <svg viewBox="0 0 60 74" className="w-full h-full">
-                <defs>
-                  <linearGradient id="kidBalloonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#f59e0b" />
-                    <stop offset="50%" stopColor="#ef4444" />
-                    <stop offset="100%" stopColor="#ec4899" />
-                  </linearGradient>
-                </defs>
-                <path d="M 30 2 C 14 2 4 16 4 32 C 4 44 18 54 24 60 L 36 60 C 42 54 56 44 56 32 C 56 16 46 2 30 2 Z" fill="url(#kidBalloonGrad)" />
-                <path d="M 30 2 C 22 2 16 16 16 32 C 16 44 24 57 26 60 L 34 60 C 36 57 44 44 44 32 C 44 16 38 2 30 2 Z" fill="#fbbf24" opacity="0.85" />
-                <path d="M 30 2 C 26 2 24 16 24 32 C 24 44 28 58 29 60 L 31 60 C 32 58 36 44 36 32 C 36 16 34 2 30 2 Z" fill="#38bdf8" opacity="0.9" />
-                <line x1="24" y1="60" x2="26" y2="67" stroke="#b45309" strokeWidth="1.5" />
-                <line x1="36" y1="60" x2="34" y2="67" stroke="#b45309" strokeWidth="1.5" />
-                <line x1="30" y1="60" x2="30" y2="67" stroke="#b45309" strokeWidth="1" />
-                <rect x="24" y="67" width="12" height="7" rx="2" fill="#d97706" stroke="#92400e" strokeWidth="1" />
-              </svg>
-            </div>
-            <div className="text-left">
-              <h3 className="text-sm sm:text-base font-black text-[#17345B]">
-                Bạn đã sẵn sàng cho thử thách tiếp theo chưa?
-              </h3>
-              <p className="text-xs font-bold text-[#64748B] mt-0.5">
-                Hoàn thành 5 bài học để nhận huy hiệu hôm nay!
-              </p>
-            </div>
+        {/* Mascot Hero Mascot: Sunny the Fox + Chubby Bunny */}
+        <div
+          onClick={() => {
+            MeadowAudioEngine.playWoodTap('G5');
+            MeadowAudioEngine.speak('I am Sunny the Fox! Let us learn English and have fun in the meadow!');
+          }}
+          className="relative w-52 h-52 sm:w-64 sm:h-64 flex items-center justify-center shrink-0 cursor-pointer group"
+          title="Chạm vào bạn Cáo Sunny"
+        >
+          <div className="w-full h-full rounded-full bg-white/70 p-4 shadow-lg border-4 border-amber-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <svg className="w-full h-full drop-shadow-md">
+              <use href="#svg-sunny-fox"></use>
+            </svg>
           </div>
+          {/* Mini speech balloon */}
+          <div className="absolute -top-2 right-2 bg-white px-3.5 py-1.5 rounded-2xl border-2 border-emerald-300 shadow-md font-display font-extrabold text-emerald-800 text-xs sm:text-sm animate-bounce">
+            "Hello, Friend!" 🍎
+          </div>
+        </div>
+      </section>
 
+      {/* ===================================================================== */}
+      {/* 2. 5 NEXT-GEN PLAYABLE ECOLOGICAL MINI-GAMES CARDS                   */}
+      {/* ===================================================================== */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] font-display">
+              5 Trò Chơi Tương Tác Sinh Thái Mới
+            </h2>
+            <p className="text-xs sm:text-sm font-semibold text-slate-500 font-body">
+              Chạm và tương tác nhân quả trực quan — Bé chưa biết chữ vẫn chơi mê say!
+            </p>
+          </div>
           <button
-            onClick={() => {
-              soundManager.playPop();
-              navigate('/kids/journey');
-            }}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-[#3C9FE8] hover:bg-[#258cd6] text-white font-black text-xs sm:text-sm shadow-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer transition-all shrink-0"
+            onClick={() => navigate('/games')}
+            className="text-sm font-extrabold text-emerald-700 hover:text-emerald-800 font-display flex items-center gap-1 cursor-pointer"
           >
-            <span>Bắt đầu ngay</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>Xem tất cả</span>
+            <span>→</span>
           </button>
         </div>
-      </div>
 
-      {/* ===================================================================== */}
-      {/* RIGHT COMPANION / PROGRESS PANEL (w-full lg:w-72 xl:w-80 shrink-0)    */}
-      {/* ===================================================================== */}
-      <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col space-y-4">
-        {/* CARD 1 (PRIORITY #1 AT TOP): TOP TỪ VỰNG HÔM NAY */}
-        <div className="p-4 sm:p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-xs space-y-3 text-left">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black text-[#17345B] flex items-center gap-1.5">
-              <span>⭐</span>
-              <span>Top từ vựng hôm nay</span>
-            </h3>
-            <button
-              onClick={() => {
-                soundManager.playPop();
-                navigate('/kids/flashcards');
-              }}
-              className="text-xs font-black text-sky-600 hover:text-sky-700 flex items-center gap-0.5 cursor-pointer"
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {SUNNY_MEADOW_GAMES.map((game) => (
+            <div
+              key={game.id}
+              onClick={() => handleLaunchGame(game.id)}
+              className="meadow-clay-card p-6 flex flex-col justify-between hover:scale-[1.02] active:scale-[0.98] cursor-pointer transition-all duration-200 bg-white group border-2 border-white hover:border-amber-300 min-h-[260px]"
             >
-              <span>Xem tất cả</span>
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {topDailyWords.map((item) => (
-              <div
-                key={item.word}
-                onClick={(e) => handleSpeakTopWord(item.word, item.meaning, e)}
-                className="flex items-center justify-between p-2 rounded-2xl bg-white/60 hover:bg-sky-50/80 border border-slate-100 hover:border-sky-200 transition-all cursor-pointer group shadow-2xs"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-6 h-6 rounded-full ${item.color} text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs`}>
-                    {item.rank}
-                  </div>
-                  <div>
-                    <p className="text-xs font-black text-slate-900 leading-tight">
-                      {item.word}
-                    </p>
-                    <p className="text-[10px] font-bold text-slate-500">
-                      {item.phonetic} • {item.meaning}
-                    </p>
-                  </div>
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 font-display">
+                    {game.badge}
+                  </span>
+                  <span className="text-xs font-extrabold text-amber-800 font-display flex items-center gap-1">
+                    <svg className="w-4 h-4"><use href="#svg-star-badge"></use></svg>
+                    <span>+{game.starsAwarded} Sao</span>
+                  </span>
                 </div>
 
+                <div className="w-20 h-20 mx-auto my-2 flex items-center justify-center rounded-2xl bg-[#FFFDF5] border border-amber-100 group-hover:scale-110 transition-transform">
+                  <svg className="w-14 h-14 drop-shadow-xs">
+                    <use href={game.svgIcon}></use>
+                  </svg>
+                </div>
+
+                <h3 className="text-lg font-extrabold text-[#1E293B] font-display text-center mt-1 group-hover:text-emerald-700 transition-colors">
+                  {game.titleVi}
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 font-body text-center mt-1 leading-snug">
+                  {game.descriptionVi}
+                </p>
+              </div>
+
+              <div className="pt-3 mt-2 border-t border-slate-100 flex justify-center">
                 <button
                   type="button"
-                  title="Nghe phát âm"
-                  className={`p-1.5 rounded-full ${
-                    playingWord === item.word
-                      ? 'bg-sky-500 text-white scale-110 shadow-xs'
-                      : 'text-sky-500 hover:bg-sky-100'
-                  } transition-all`}
+                  className="toy-btn toy-btn-green !min-h-[42px] !py-1 !px-5 text-sm w-full"
                 >
-                  <Volume2 className="w-4 h-4" />
+                  Vào Chơi Ngay ▶
                 </button>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
+      </section>
 
-        {/* CARD 2: THÀNH TÍCH HÔM NAY */}
-        <div className="p-4 sm:p-5 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-xs space-y-3.5 text-left">
-          <h3 className="text-sm font-black text-[#17345B]">
-            Thành tích hôm nay
-          </h3>
-
-          <div className="space-y-3">
-            {/* Task 1: Hoàn thành bài học */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="flex items-center gap-2 text-slate-800">
-                  <div className="w-5 h-5 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center">
-                    <Star className="w-3 h-3 fill-current" />
-                  </div>
-                  <span>Hoàn thành bài học</span>
-                </span>
-                <span className="text-sky-700">3 / 5</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#3C9FE8] h-full rounded-full w-[60%]" />
-              </div>
+      {/* ===================================================================== */}
+      {/* 3. DAILY MEADOW VOCABULARY TRAY (TAP-TO-SPEAK WITH MARIMBA / KALIMBA) */}
+      {/* ===================================================================== */}
+      <section className="meadow-clay-card p-6 sm:p-8 bg-[#FFFDF5] border-4 border-white shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-display">
+              🔊
             </div>
-
-            {/* Task 2: Từ vựng mới */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="flex items-center gap-2 text-slate-800">
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                    <CheckCircle2 className="w-3 h-3" />
-                  </div>
-                  <span>Từ vựng mới</span>
-                </span>
-                <span className="text-emerald-700">12 từ</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#52C7A0] h-full rounded-full w-[80%]" />
-              </div>
-            </div>
-
-            {/* Task 3: Luyện nói */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs font-black">
-                <span className="flex items-center gap-2 text-slate-800">
-                  <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
-                    <Mic className="w-3 h-3" />
-                  </div>
-                  <span>Luyện nói</span>
-                </span>
-                <span className="text-purple-700">1 / 3</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#B8A4F5] h-full rounded-full w-[33%]" />
-              </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] font-display">
+                Từ Vựng Tự Nhiên Hôm Nay (Tap-to-Speak)
+              </h2>
+              <p className="text-xs font-semibold text-slate-500 font-body">
+                Bé chạm vào từng quả và vật phẩm để nghe phát âm tiếng Anh chuẩn nhé!
+              </p>
             </div>
           </div>
         </div>
 
-        {/* CARD 3: COMPANION CLOUD CARD (SLEEPING MASCOT) */}
-        <div className="p-4 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-xs flex flex-col items-center text-center space-y-2">
-          <p className="text-xs font-bold text-slate-700 leading-snug px-2">
-            Học mỗi ngày để trở thành phiên bản tốt hơn của chính mình! <span className="text-rose-500">❤️</span>
-          </p>
-          <div className="w-full h-24 flex items-center justify-center overflow-hidden rounded-2xl">
-            <img
-              src={kidAsset('/kid/ui/cloud-sleeping-fox.png')}
-              alt="Sleeping Vivi"
-              className="w-full h-full object-contain drop-shadow-xs"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-sleep.png'; }}
-            />
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-1">
+          {dailyWords.map((item) => (
+            <button
+              key={item.word}
+              type="button"
+              onClick={(e) => handleSpeakWord(item.word, item.meaning, e)}
+              className={`meadow-clay-card p-4 flex flex-col items-center justify-center text-center gap-2 cursor-pointer transition-all active:scale-95 min-h-[140px] bg-white hover:border-amber-300 ${
+                playingWord === item.word ? 'ring-4 ring-amber-400 scale-105' : 'hover:scale-105'
+              }`}
+            >
+              <div className="w-16 h-16 flex items-center justify-center">
+                <svg className="w-full h-full drop-shadow-sm">
+                  <use href={item.symbol}></use>
+                </svg>
+              </div>
+
+              <div>
+                <p className="font-display font-extrabold text-[#1E293B] text-lg leading-tight uppercase">
+                  {item.word}
+                </p>
+                <p className="font-body text-xs font-bold text-slate-500 mt-0.5">
+                  {item.meaning}
+                </p>
+              </div>
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
+
+      {/* ===================================================================== */}
+      {/* 4. STICKER BOOK MODAL                                                 */}
+      {/* ===================================================================== */}
+      <StickerBookModal
+        isOpen={stickerModalOpen}
+        onClose={() => setStickerModalOpen(false)}
+      />
     </div>
   );
 };

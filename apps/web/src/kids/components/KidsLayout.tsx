@@ -1,38 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import {
-  KidsHomeIcon,
-  KidsMapIcon,
-  KidsGameIcon,
-  KidsIslandIcon,
-  KidsStarIcon,
-} from '../assets/icons/KidsIcons';
 import { curriculumProgress, KidProgressState } from '../curriculum/curriculumProgress';
 import { kidsSound } from '../services/sound/KidsSoundManager';
 import { kidsAudioManager } from '../services/audio/KidsAudioManager';
 import { voiceService } from '../services/voice/voiceService';
-import { KidsParentPinModal } from './KidsParentPinModal';
-import { KidsHeaderStatCard } from './KidsHeaderStatCard';
 import { KidsSoundToggle } from './KidsSoundToggle';
 import { useLearningContext } from '../../contexts/LearningContext';
 import { isKidSupportedLanguage } from '../../config/languages';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { kidAsset } from '../utils/kidAsset';
+
+// Sunny Meadow V2.0 Core Architecture (KidRequired.md Spec)
+import SunnyMeadowSvgVault from '../assets/illustrations/SunnyMeadowSvgVault';
+import SleepyFoxCurtain from './SleepyFoxCurtain';
+import eyeCareGuard from '../core/eyeCareGuard';
+import ParentalMathGateModal from './ParentalMathGateModal';
+import StickerBookModal from './StickerBookModal';
+import meadowStore, { MeadowState } from '../core/meadowStateStore';
+import MeadowAudioEngine from '../services/audio/MeadowAudioEngine';
+
 import {
   Flame,
-  Sparkles,
   Star,
-  Volume2,
-  VolumeX,
   ShieldCheck,
   BookOpen,
   Menu,
   X,
   ChevronRight,
-  Compass,
   Smile,
-  Trophy,
-  Baby,
   Globe,
   Home,
   Headphones,
@@ -43,8 +38,8 @@ import {
   GraduationCap,
   LogOut,
   Sun,
+  Eye,
 } from 'lucide-react';
-import { ViviReadingCompanion } from '../assets/illustrations/KidsViviUniverse';
 
 export const KidsLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -55,19 +50,25 @@ export const KidsLayout: React.FC = () => {
   const [progress, setProgress] = useState<KidProgressState>(() =>
     curriculumProgress.getState()
   );
+  const [meadowState, setMeadowState] = useState<MeadowState>(() =>
+    meadowStore.getState()
+  );
   const [soundOn, setSoundOn] = useState(() => kidsSound.isEnabled() || kidsAudioManager.isMusicEnabled());
   const [parentModalOpen, setParentModalOpen] = useState(false);
   const [pendingParentRoute, setPendingParentRoute] = useState<string>('/kids/parent');
   const [parentModalTitle, setParentModalTitle] = useState<string>('Khu Vực Phụ Huynh');
-  const [parentModalDesc, setParentModalDesc] = useState<string>('Nhấn và giữ nút tròn bên dưới để mở khóa.');
+  const [parentModalDesc, setParentModalDesc] = useState<string>('Vui lòng giải phép tính nhanh bên dưới để xác thực người lớn:');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sleepyCurtainOpen, setSleepyCurtainOpen] = useState(false);
+  const [stickerModalOpen, setStickerModalOpen] = useState(false);
 
   // Immediately cancel any previous page voice narration whenever route changes
   useEffect(() => {
     voiceService.stop();
+    MeadowAudioEngine.cancelSpeech();
   }, [location.pathname]);
 
-  // Sync progress state
+  // Sync curriculum progress & meadow store
   useEffect(() => {
     if (curriculumProgress && typeof curriculumProgress.subscribe === 'function') {
       const unsub = curriculumProgress.subscribe((newState) => {
@@ -77,22 +78,17 @@ export const KidsLayout: React.FC = () => {
     }
   }, []);
 
-  // Ensure global world ambient music starts softly on interaction if enabled
   useEffect(() => {
-    kidsAudioManager.startWorldMusic('world');
-    return () => {
-      kidsAudioManager.stopAll();
-      voiceService.stop();
-    };
+    const unsub = meadowStore.subscribe((s) => setMeadowState(s));
+    return () => unsub();
   }, []);
 
-  // Update sound state from storage or listener
+  // Hook 20-20-20 Sleepy Fox Curtain
   useEffect(() => {
-    const handleSoundToggle = () => {
-      setSoundOn(kidsSound.isEnabled() || kidsAudioManager.isMusicEnabled());
-    };
-    window.addEventListener('storage', handleSoundToggle);
-    return () => window.removeEventListener('storage', handleSoundToggle);
+    const unsub = eyeCareGuard.onRestRequired(() => {
+      setSleepyCurtainOpen(true);
+    });
+    return () => unsub();
   }, []);
 
   // Scroll to top and close mobile menu on route change
@@ -101,93 +97,88 @@ export const KidsLayout: React.FC = () => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const handleToggleSound = () => {
-    const nextSound = kidsSound.toggleSound();
-    const nextMusic = kidsAudioManager.toggleMusic();
-    setSoundOn(nextSound || nextMusic);
-  };
-
   const handleOpenParentGate = (targetRoute: string, customTitle?: string, customDesc?: string) => {
-    kidsSound.play('pop');
+    MeadowAudioEngine.playWoodTap('D4');
     setPendingParentRoute(targetRoute);
-    setParentModalTitle(customTitle || (targetRoute === '/dashboard' ? 'Trở Về Màn Học Viên' : 'Khu Vực Phụ Huynh'));
-    setParentModalDesc(customDesc || (targetRoute === '/dashboard' ? 'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.' : 'Nhấn và giữ nút tròn bên dưới để mở khóa.'));
+    setParentModalTitle(customTitle || (targetRoute.includes('dashboard') ? 'Trở Về Màn Học Viên' : 'Khu Vực Phụ Huynh'));
+    setParentModalDesc(customDesc || 'Vui lòng giải phép tính nhanh bên dưới để xác thực người lớn:');
     setParentModalOpen(true);
   };
 
   const handleParentVerified = () => {
-    kidsSound.play('celebration');
+    MeadowAudioEngine.playMagicalSuccess();
     setParentModalOpen(false);
-    navigate(pendingParentRoute);
+    if (pendingParentRoute.startsWith('http://') || pendingParentRoute.startsWith('https://')) {
+      window.location.href = pendingParentRoute;
+    } else {
+      navigate(pendingParentRoute);
+    }
   };
 
   const navItems = [
     {
-      to: '/kids',
-      label: 'Trang chủ',
+      to: '/',
+      label: 'Đồng cỏ xanh',
       icon: Home,
       exact: true,
     },
     {
-      to: '/kids/flashcards',
+      to: '/games',
+      label: '5 Trò chơi sinh thái',
+      icon: ClipboardList,
+    },
+    {
+      to: '/flashcards',
       label: 'Học từ vựng',
       icon: BookOpen,
     },
     {
-      to: '/kids/world',
+      to: '/world',
       label: 'Luyện nghe nói',
       icon: Headphones,
     },
     {
-      to: '/kids/games',
-      label: 'Trò chơi vui nhộn',
-      icon: ClipboardList,
-    },
-    {
-      to: '/kids/journey',
-      label: 'Thư viện',
+      to: '/journey',
+      label: 'Thư viện bài học',
       icon: Layers,
     },
     {
-      to: '/kids/parent',
-      label: 'Kết quả học tập',
+      to: '/parent',
+      label: 'Khu vực phụ huynh',
       icon: Users,
     },
   ];
 
-  const isLessonMode = location.pathname.startsWith('/kids/lesson');
-  const isGamePlayingMode = location.pathname === '/kids/games' && new URLSearchParams(location.search).has('game');
+  const isLessonMode = location.pathname.includes('/lesson');
+  const isGamePlayingMode = location.pathname.includes('/games') && new URLSearchParams(location.search).has('game');
   const isFlashcardsMode =
-    location.pathname.startsWith('/kids/flashcards') ||
-    location.pathname.startsWith('/kids/vocabulary');
+    location.pathname.includes('/flashcards') ||
+    location.pathname.includes('/vocabulary');
   const isFocusMode = isLessonMode || isGamePlayingMode || isFlashcardsMode;
 
   const renderSidebarContent = (isDrawer: boolean) => (
-    <div className="h-full flex flex-col justify-between overflow-hidden bg-white">
+    <div className="h-full flex flex-col justify-between overflow-hidden bg-[#FFFDF5]">
       {/* 1. Header: Brand Logo & Title */}
-      <div className="p-4 sm:p-5 border-b border-sky-100/70 flex items-center justify-between bg-white shrink-0">
+      <div className="p-4 sm:p-5 border-b border-amber-200/60 flex items-center justify-between bg-white shrink-0">
         <div
           onClick={() => {
-            kidsSound.play('pop');
-            navigate('/kids');
+            MeadowAudioEngine.playWoodTap('G5');
+            navigate('/');
             if (isDrawer) setMobileMenuOpen(false);
           }}
           className="flex items-center gap-3 cursor-pointer group select-none"
         >
-          <div className="w-11 h-11 rounded-2xl bg-amber-50 p-1 border border-amber-200 shadow-2xs shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform overflow-hidden">
-            <img
-              src={kidAsset('/kid/ui/vocalflow-fox-logo.png')}
-              alt="VocalFlow Kid"
-              className="w-full h-full object-contain"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png'; }}
-            />
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 p-1 border-2 border-amber-300 shadow-2xs shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform overflow-hidden">
+            <svg className="w-full h-full drop-shadow-xs">
+              <use href="#svg-sunny-fox"></use>
+            </svg>
           </div>
           <div>
-            <h2 className="font-black text-xl leading-tight text-[#ea580c] tracking-tight">
-              VocalFlow
+            <h2 className="font-extrabold text-xl leading-tight text-[#1E293B] font-display tracking-tight">
+              Sunny Meadow
             </h2>
-            <p className="text-[11px] font-bold text-slate-500">
-              Học tiếng Anh - Nói tự tin
+            <p className="text-[11px] font-bold text-emerald-700 font-body">
+              Khu rừng tiếng Anh V2.0
             </p>
           </div>
         </div>
@@ -219,13 +210,13 @@ export const KidsLayout: React.FC = () => {
               key={item.to}
               to={item.to}
               onClick={() => {
-                kidsSound.play('pop');
+                MeadowAudioEngine.playWoodTap('C5');
                 if (isDrawer) setMobileMenuOpen(false);
               }}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl font-black text-sm transition-all duration-300 cursor-pointer select-none min-h-[46px] ${
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl font-display font-extrabold text-sm transition-all duration-300 cursor-pointer select-none min-h-[48px] ${
                 isActive
-                  ? 'bg-amber-50 text-amber-950 shadow-xs border border-amber-200/80 transform translate-x-1'
-                  : 'bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                  ? 'bg-amber-100/90 text-amber-950 shadow-xs border-2 border-amber-300 transform translate-x-1'
+                  : 'bg-transparent text-slate-700 hover:bg-amber-50 hover:text-slate-900 border border-transparent'
               }`}
             >
               <div
@@ -237,40 +228,36 @@ export const KidsLayout: React.FC = () => {
               </div>
               <span className="truncate">{item.label}</span>
               {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <div className="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </NavLink>
           );
         })}
       </div>
 
-      {/* 3. Bottom Companion Mascot: Fox with Headphones reading book */}
-      <div className="p-4 border-t border-sky-100/70 bg-[#F7FBFF]/60 flex flex-col items-center justify-center space-y-2 shrink-0 select-none">
-        <div className="relative flex flex-col items-center">
-          {/* Speech Tag */}
-          <div className="mb-1.5 px-3 py-1 rounded-2xl bg-white border border-rose-200 shadow-2xs text-[11px] font-black text-slate-800 text-center flex items-center gap-1 animate-pulse">
-            <span>Cố lên nhé, con làm được!</span>
-            <span className="text-rose-500">❤️</span>
-          </div>
-          {/* Real 3D Reading Fox */}
-          <img
-            src={kidAsset('/kid/mascot/vivi-reading-headphones.png')}
-            alt="Vivi bạn đồng hành"
-            className="w-32 h-36 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-md cursor-pointer"
-            onClick={() => kidsSound.play('celebration')}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/kid/mascot/vivi-study.png';
-            }}
-          />
-        </div>
-
+      {/* 3. Bottom Companion Mascot: Sunny Fox with Sticker Book shortcut */}
+      <div className="p-4 border-t border-amber-200/60 bg-[#FFFDF5] flex flex-col items-center justify-center space-y-2.5 shrink-0 select-none">
+        {/* Sticker Book Button */}
         <button
           type="button"
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
-            handleOpenParentGate('/kids/parent');
+            MeadowAudioEngine.playWoodTap('C5');
+            setStickerModalOpen(true);
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 font-extrabold text-xs transition cursor-pointer shadow-2xs active:scale-98 font-display"
+        >
+          <span>📖 Sổ Nhãn Dán ({meadowState.stickers.length}/12)</span>
+        </button>
+
+        {/* Parental Area */}
+        <button
+          type="button"
+          onClick={() => {
+            if (isDrawer) setMobileMenuOpen(false);
+            handleOpenParentGate('/parent');
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98 font-body"
         >
           <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
           <span>Khu vực phụ huynh</span>
@@ -281,12 +268,12 @@ export const KidsLayout: React.FC = () => {
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
             handleOpenParentGate(
-              '/dashboard',
+              'https://app.vocalflow.site/dashboard',
               'Trở Về Màn Học Viên',
-              'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
+              'Vui lòng giải phép tính nhanh bên dưới để xác thực và trở về giao diện người lớn.'
             );
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-200/70 bg-rose-50/60 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer shadow-2xs active:scale-98 font-body"
           title="Thoát chế độ bé & trở về màn học viên"
         >
           <GraduationCap className="w-3.5 h-3.5 text-rose-600" />
@@ -302,150 +289,158 @@ export const KidsLayout: React.FC = () => {
         isFocusMode
           ? 'h-screen h-[100dvh] max-h-[100dvh] w-screen max-w-full overflow-hidden p-0 m-0'
           : 'min-h-screen min-h-[100dvh] pb-24 lg:pb-6 overflow-x-hidden'
-      } bg-[#F8FBFE] text-slate-900 font-sans select-none flex flex-col relative`}
+      } bg-[#FFFDF5] text-[#1E293B] font-body select-none flex flex-col relative`}
     >
-      {/* Global World Background */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-sky-50">
-        <img
-          src={kidAsset('/kid/backgrounds/overall-bg.png')}
-          className="absolute inset-0 w-full h-full object-cover"
-          alt="World Background"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-        />
-        {/* Soft frosted glass veil to soften background clutter */}
-        <div className="absolute inset-0 bg-sky-50/45 backdrop-blur-[3px] pointer-events-none" />
-      </div>
+      {/* 0. Centralized Single SVG Sprite Vault (Directive 5) */}
+      <SunnyMeadowSvgVault />
 
-      {/* ========================================================================= */}
-      {/* 1. DESKTOP PERMANENT SIDEBAR (Pinned on lg screens, 1024px+)              */}
-      {/* ========================================================================= */}
+      {/* Global Background (Soft Meadow Pastel Gradient) */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-gradient-to-b from-[#D8F3FF] via-[#FFFDF5] to-[#80ED99]/30" />
+
+      {/* 1. Desktop Permanent Sidebar */}
       {!isFocusMode && (
-        <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 w-64 xl:w-72 z-40 bg-white/95 backdrop-blur-xl border-r border-sky-100 shadow-xs">
+        <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 w-64 xl:w-72 z-40 bg-[#FFFDF5] border-r border-amber-200/70 shadow-xs">
           {renderSidebarContent(false)}
         </aside>
       )}
 
-      {/* ========================================================================= */}
-      {/* 2. MOBILE / TABLET SLIDE-IN DRAWER (<lg screens)                          */}
-      {/* ========================================================================= */}
+      {/* 2. Mobile Drawer */}
       {!isFocusMode && (
         <>
-          {/* Overlay Backdrop */}
           {mobileMenuOpen && (
             <div
-              className="lg:hidden fixed inset-0 z-50 bg-slate-900/30 backdrop-blur-xs transition-opacity duration-300 animate-fadeIn"
+              className="lg:hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 animate-fadeIn"
               onClick={() => setMobileMenuOpen(false)}
             />
           )}
 
-          {/* Drawer Panel */}
           <aside
-            className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 sm:w-80 max-w-[85vw] bg-white border-r border-sky-100 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-              }`}
+            className={`lg:hidden fixed inset-y-0 left-0 z-50 w-72 sm:w-80 max-w-[85vw] bg-[#FFFDF5] border-r border-amber-200/70 flex flex-col justify-between shadow-2xl transition-transform duration-300 ease-out ${
+              mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
           >
             {renderSidebarContent(true)}
           </aside>
         </>
       )}
 
-      {/* Floating Sound Toggle in Focus Mode */}
+      {/* Focus Mode floating controls */}
       {isFocusMode && (
-        <div className="fixed top-3.5 right-3.5 z-50">
+        <div className="fixed top-3.5 right-3.5 z-50 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              MeadowAudioEngine.playWoodTap('C5');
+              meadowStore.toggleEyeCare();
+            }}
+            title="Bảo vệ thị giác (Bộ lọc ấm dịu mắt)"
+            className={`p-2 rounded-2xl border-2 transition-all cursor-pointer shadow-sm ${
+              meadowState.eyeCareActive
+                ? 'bg-amber-400 text-amber-950 border-amber-500'
+                : 'bg-white text-slate-700 border-slate-200'
+            }`}
+          >
+            <Eye className="w-5 h-5" />
+          </button>
           <KidsSoundToggle variant="compact" />
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 3. MAIN CONTENT AREA (Offset by sidebar width on desktop)                 */}
-      {/* ========================================================================= */}
+      {/* 3. Main Content Area */}
       <div className={`flex-1 flex flex-col min-w-0 ${!isFocusMode ? 'lg:pl-64 xl:pl-72' : 'h-screen h-[100dvh] max-h-[100dvh] overflow-hidden'}`}>
-        {/* Top Header HUD (Pixel-perfect matching prototype) */}
+        {/* Top Header HUD */}
         {!isFocusMode && (
-          <header className="sticky top-0 z-30 bg-[#F7FBFF]/90 backdrop-blur-xl border-b border-sky-100/70 px-4 sm:px-6 lg:px-8 py-3 shadow-2xs">
+          <header className="sticky top-0 z-30 bg-[#FFFDF5]/90 backdrop-blur-xl border-b border-amber-200/70 px-4 sm:px-6 lg:px-8 py-3 shadow-2xs">
             <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-3">
-              {/* Left: Child Profile Greeting */}
+              {/* Left: Greeting */}
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="lg:hidden h-10 w-10 rounded-2xl bg-sky-500 text-white flex items-center justify-center shrink-0 cursor-pointer shadow-xs active:scale-95"
-                  aria-label="Mở Menu Khám Phá"
+                  className="lg:hidden h-10 w-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 cursor-pointer shadow-xs active:scale-95"
+                  aria-label="Mở Menu"
                 >
                   <Menu className="w-5 h-5" />
                 </button>
 
-                <div className="relative">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 p-0.5 shadow-xs shrink-0 flex items-center justify-center">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                      <Smile className="w-5 h-5 text-amber-700" />
-                    </div>
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                <div
+                  onClick={() => {
+                    MeadowAudioEngine.playWoodTap('G5');
+                    MeadowAudioEngine.speak('Hello! Sunny the Fox is happy to see you!');
+                  }}
+                  className="w-11 h-11 rounded-2xl bg-amber-100 border-2 border-amber-300 p-0.5 shadow-2xs shrink-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                >
+                  <svg className="w-full h-full drop-shadow-xs">
+                    <use href="#svg-sunny-fox"></use>
+                  </svg>
                 </div>
 
                 <div>
-                  <h1 className="text-base sm:text-lg font-black text-[#17345B] tracking-tight leading-tight">
-                    Xin chào, Bé!
+                  <h1 className="text-base sm:text-lg font-extrabold text-[#1E293B] font-display tracking-tight leading-tight">
+                    Xin chào, Nhà Thám Hiểm Nhí!
                   </h1>
-                  <p className="text-xs font-semibold text-[#64748B] flex items-center gap-1">
-                    <span>Hôm nay mình học thêm một chút nữa nhé!</span>
+                  <p className="text-xs font-semibold text-[#475569] flex items-center gap-1 font-body">
+                    <span>Hôm nay chúng mình cùng khám phá đồng cỏ nhé!</span>
                     <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-400 inline shrink-0" />
                   </p>
                 </div>
               </div>
 
-              {/* Right: Return to Learner + Streak HUD + Settings Gear + Profile Circle */}
+              {/* Right: Controls & Badges */}
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* Return to Learner Dashboard Button */}
+                {/* Eye-Care Warm Amber Filter Toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    MeadowAudioEngine.playWoodTap('C5');
+                    meadowStore.toggleEyeCare();
+                  }}
+                  title={meadowState.eyeCareActive ? 'Tắt bộ lọc dịu mắt' : 'Bật bộ lọc dịu mắt (Bảo vệ thị giác)'}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border-2 text-xs font-extrabold font-display transition-all cursor-pointer active:scale-95 ${
+                    meadowState.eyeCareActive
+                      ? 'bg-amber-400 text-amber-950 border-amber-500 shadow-xs'
+                      : 'bg-white hover:bg-amber-50 text-slate-700 border-amber-200 shadow-2xs'
+                  }`}
+                >
+                  <Eye className="w-4 h-4 text-amber-800" />
+                  <span className="hidden sm:inline">Dịu mắt</span>
+                </button>
+
+                {/* Stars HUD */}
+                <div
+                  onClick={() => {
+                    MeadowAudioEngine.playWoodTap('C6');
+                    setStickerModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white border-2 border-amber-300 text-xs font-extrabold text-amber-950 font-display shadow-2xs cursor-pointer hover:bg-amber-50 active:scale-95"
+                >
+                  <svg className="w-4 h-4"><use href="#svg-star-badge"></use></svg>
+                  <span>{meadowState.totalStars} Sao</span>
+                </div>
+
+                {/* Streak HUD */}
+                <div className="flex items-center gap-1.5 px-3.5 py-1.5 sm:py-2 rounded-full bg-white border-2 border-rose-200 text-xs font-extrabold text-rose-900 font-display shadow-2xs">
+                  <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
+                  <span>{progress.streakDays || 3} ngày</span>
+                </div>
+
+                {/* Return to Learner */}
                 <button
                   type="button"
                   onClick={() =>
                     handleOpenParentGate(
-                      '/dashboard',
+                      'https://app.vocalflow.site/dashboard',
                       'Trở Về Màn Học Viên',
-                      'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
+                      'Vui lòng giải phép tính nhanh bên dưới để xác thực và trở về giao diện người lớn.'
                     )
                   }
-                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white hover:bg-rose-50 border border-slate-200/90 hover:border-rose-300 text-xs font-black text-slate-700 hover:text-rose-600 shadow-2xs cursor-pointer transition-all active:scale-95 group"
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white hover:bg-rose-50 border border-slate-200 text-xs font-extrabold text-slate-700 hover:text-rose-600 shadow-2xs cursor-pointer transition-all active:scale-95 font-body"
                   title="Thoát chế độ bé & trở về màn học viên"
                 >
-                  <GraduationCap className="w-4 h-4 text-indigo-600 group-hover:text-rose-600 transition-colors" />
+                  <GraduationCap className="w-4 h-4 text-indigo-600" />
                   <span className="hidden sm:inline">Về màn học viên</span>
-                  <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500 transition-colors" />
+                  <LogOut className="w-3.5 h-3.5 text-slate-400" />
                 </button>
-
-                {/* Streak Pill */}
-                <button
-                  onClick={() => {
-                    kidsSound.play('sparkle');
-                    handleOpenParentGate('/kids/parent');
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white hover:bg-amber-50/70 border border-slate-200/90 text-xs font-black text-slate-800 shadow-2xs cursor-pointer transition-all active:scale-95"
-                >
-                  <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
-                  <span className="hidden sm:inline">Chuỗi học tập</span>
-                  <span className="text-orange-600 font-black">{progress.streakDays || 12} ngày</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-
-                {/* Settings Gear */}
-                <button
-                  onClick={() => handleOpenParentGate('/kids/parent')}
-                  title="Cài đặt dành cho phụ huynh"
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200/90 text-slate-600 flex items-center justify-center cursor-pointer shadow-2xs transition-all active:scale-95"
-                >
-                  <Settings className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                </button>
-
-                {/* Profile Circle Avatar */}
-                <div
-                  onClick={() => handleOpenParentGate('/kids/parent')}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 p-0.5 shadow-2xs cursor-pointer active:scale-95 flex items-center justify-center"
-                >
-                  <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center text-sm font-black text-sky-700">
-                    Bé
-                  </div>
-                </div>
               </div>
             </div>
           </header>
@@ -463,11 +458,9 @@ export const KidsLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 3. TABLET & MOBILE BOTTOM NAVIGATION (Quick shortcuts)                    */}
-      {/* ========================================================================= */}
+      {/* Tablet & Mobile Bottom Navigation */}
       {!isFocusMode && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 px-2 py-1.5 shadow-lg">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FFFDF5]/95 backdrop-blur-xl border-t border-amber-200 px-2 py-1.5 shadow-lg">
           <div className="w-full max-w-md sm:max-w-xl mx-auto flex items-center justify-around">
             {navItems.map((item) => {
               const isActive =
@@ -479,13 +472,13 @@ export const KidsLayout: React.FC = () => {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-300 min-h-[48px] min-w-[56px] ${
+                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-300 min-h-[48px] min-w-[56px] font-display ${
                     isActive
-                      ? 'bg-amber-50 text-amber-950 font-black shadow-xs border border-amber-200/80 -translate-y-0.5'
+                      ? 'bg-amber-200 text-amber-950 font-extrabold shadow-xs border-2 border-amber-300 -translate-y-0.5'
                       : 'bg-transparent text-slate-600 font-bold hover:text-slate-900 border-transparent'
                   }`}
                 >
-                  <item.icon size={20} className={isActive ? 'text-amber-600' : 'text-slate-500'} />
+                  <item.icon size={20} className={isActive ? 'text-amber-800' : 'text-slate-500'} />
                   <span className="text-[10px] mt-0.5 leading-tight">{item.label}</span>
                 </NavLink>
               );
@@ -494,8 +487,8 @@ export const KidsLayout: React.FC = () => {
         </nav>
       )}
 
-      {/* Parent Pin Verification Gate */}
-      <KidsParentPinModal
+      {/* Parental Math Gate (Directive 7 & Child Guardrails) */}
+      <ParentalMathGateModal
         isOpen={parentModalOpen}
         onClose={() => setParentModalOpen(false)}
         onSuccess={handleParentVerified}
@@ -503,42 +496,39 @@ export const KidsLayout: React.FC = () => {
         description={parentModalDesc}
       />
 
+      {/* 20-20-20 Sleepy Fox Curtain (Directive 2.4) */}
+      <SleepyFoxCurtain
+        isOpen={sleepyCurtainOpen}
+        onDismiss={() => setSleepyCurtainOpen(false)}
+      />
+
+      {/* Sticker Album Modal */}
+      <StickerBookModal
+        isOpen={stickerModalOpen}
+        onClose={() => setStickerModalOpen(false)}
+      />
+
       {/* Unsupported Language Switch Prompt Overlay */}
       {!isSupported && (
-        <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 select-none">
-          <div className="kids-modal bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border-2 border-amber-400 shadow-2xl text-center space-y-4 animate-scale-up my-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="meadow-clay-card bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border-4 border-amber-400 shadow-2xl text-center space-y-4">
             <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto text-2xl font-black shadow-inner">
               👶 🌟
             </div>
-            <h3 className="text-xl font-black text-slate-950">
-              Chương trình Kid Mode hiện tối ưu cho Tiếng Anh
+            <h3 className="text-xl font-extrabold text-[#1E293B] font-display">
+              Chương trình Sunny Meadow hiện tối ưu cho Tiếng Anh
             </h3>
-            <p className="text-xs text-slate-700 leading-relaxed flex items-center justify-center flex-wrap gap-1">
-              <span>Bạn đang chọn không gian ngôn ngữ</span>
-              <strong className="flex items-center gap-1">
-                {activeLanguage.name} <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
-              </strong>.
-              <span>Vui lòng chuyển sang</span>
-              <strong className="flex items-center gap-1">
-                Tiếng Anh <CountryFlag languageId="en" countryCode="GB" size="xs" />
-              </strong>
-              <span>để đồng hành cùng bé trong thế giới trò chơi tương tác!</span>
+            <p className="text-xs text-slate-700 leading-relaxed font-body">
+              Vui lòng chuyển sang <strong>Tiếng Anh</strong> để cùng Cáo Sunny bước vào 5 trò chơi sinh thái tương tác!
             </p>
             <div className="pt-2 flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={() => switchLanguage('en')}
-                className="w-full py-3 px-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs sm:text-sm transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="toy-btn toy-btn-green w-full !min-h-[50px] text-sm"
               >
                 <Globe className="w-4 h-4" />
                 <span>Chuyển sang Tiếng Anh & Bắt đầu</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard')}
-                className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition cursor-pointer"
-              >
-                Quay lại Dashboard
               </button>
             </div>
           </div>
