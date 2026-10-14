@@ -20,6 +20,8 @@ import meadowStore, { MeadowState } from '../core/meadowStateStore';
 import MeadowAudioEngine from '../services/audio/MeadowAudioEngine';
 import { SunnySoundFX } from '../services/audio/SunnySoundFX';
 import { BilingualVoiceEngine } from '../services/audio/BilingualVoiceEngine';
+import { SunnyAudioEngine } from '../services/audio/SunnyAudioEngine';
+import AudioSettingsModal from './AudioSettingsModal';
 
 import {
   Flame,
@@ -64,10 +66,12 @@ export const KidsLayout: React.FC = () => {
   const [sleepyCurtainOpen, setSleepyCurtainOpen] = useState(false);
   const [stickerModalOpen, setStickerModalOpen] = useState(false);
   const [bgmActive, setBgmActive] = useState(false);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
   const handleToggleBgm = () => {
-    const active = SunnySoundFX.toggleAmbientBGM();
-    setBgmActive(active);
+    const active = SunnyAudioEngine.isBGMEnabled();
+    SunnyAudioEngine.setBGMEnabled(!active);
+    setBgmActive(!active);
   };
 
   // Immediately cancel any previous page voice narration whenever route changes
@@ -293,6 +297,7 @@ export const KidsLayout: React.FC = () => {
 
   return (
     <div
+      id="app-main-layout"
       className={`kids-layout ${
         isFocusMode
           ? 'h-screen h-[100dvh] max-h-[100dvh] w-screen max-w-full overflow-hidden p-0 m-0'
@@ -419,7 +424,7 @@ export const KidsLayout: React.FC = () => {
                   type="button"
                   onClick={handleToggleBgm}
                   title={bgmActive ? 'Tắt nhạc nền Kalimba' : 'Bật nhạc nền Kalimba thiên nhiên êm dịu'}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border-2 text-xs font-extrabold font-display transition-all cursor-pointer active:scale-95 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border-2 text-xs font-black font-display transition-all cursor-pointer active:scale-95 ${
                     bgmActive
                       ? 'bg-emerald-400 text-emerald-950 border-emerald-500 shadow-xs'
                       : 'bg-white hover:bg-emerald-50 text-slate-700 border-emerald-200 shadow-2xs'
@@ -427,6 +432,20 @@ export const KidsLayout: React.FC = () => {
                 >
                   <span className="text-sm">🎵</span>
                   <span className="hidden sm:inline">{bgmActive ? 'Kalimba: Bật' : 'Nhạc nền'}</span>
+                </button>
+
+                {/* Audio Settings Modal Trigger (Fix Bug #3) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    SunnyAudioEngine.playClick();
+                    setAudioSettingsOpen(true);
+                  }}
+                  title="Cài đặt âm thanh & giọng đọc Cáo Sunny"
+                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border-2 text-xs font-black font-display transition-all cursor-pointer active:scale-95 bg-white hover:bg-sky-50 text-slate-700 border-sky-300 shadow-2xs"
+                >
+                  <span>⚙️</span>
+                  <span className="hidden sm:inline">Cài đặt</span>
                 </button>
 
                 {/* Stars HUD */}
@@ -529,6 +548,12 @@ export const KidsLayout: React.FC = () => {
       <StickerBookModal
         isOpen={stickerModalOpen}
         onClose={() => setStickerModalOpen(false)}
+      />
+
+      {/* Audio Settings Modal (Fix Bug #3 & Bug #4) */}
+      <AudioSettingsModal
+        isOpen={audioSettingsOpen}
+        onClose={() => setAudioSettingsOpen(false)}
       />
 
       {/* Unsupported Language Switch Prompt Overlay */}

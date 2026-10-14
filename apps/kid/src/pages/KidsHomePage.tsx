@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SunnySoundFX } from '../services/audio/SunnySoundFX';
 import { BilingualVoiceEngine } from '../services/audio/BilingualVoiceEngine';
+import { SunnyAudioEngine } from '../services/audio/SunnyAudioEngine';
 import { meadowStore, MeadowState } from '../core/meadowStateStore';
 import { SUNNY_MEADOW_GAMES } from '../games/sunny-meadow/sunnyMeadowRegistry';
 import StickerBookModal from '../components/StickerBookModal';
@@ -35,23 +36,23 @@ export const KidsHomePage: React.FC = () => {
 
   const handleSpeakWord = (word: string, meaning: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    SunnySoundFX.playButtonClick();
+    SunnyAudioEngine.playClick();
     setPlayingWord(word);
-    BilingualVoiceEngine.speakBilingual(meaning, word);
+    SunnyAudioEngine.speakBilingual(meaning, word);
     setTimeout(() => setPlayingWord(null), 1200);
   };
 
   const handleLaunchGame = (gameId: string) => {
-    SunnySoundFX.playButtonClick();
+    SunnyAudioEngine.playClick();
     navigate(`/games?game=${gameId}`);
   };
 
   const dailyWords = [
-    { word: 'apple', meaning: 'Quả táo đỏ', symbol: '#svg-item-apple' },
-    { word: 'carrot', meaning: 'Củ cà rốt', symbol: '#svg-item-carrot' },
-    { word: 'strawberry', meaning: 'Dâu tây ngọt', symbol: '#svg-item-strawberry' },
-    { word: 'banana', meaning: 'Quả chuối vàng', symbol: '#svg-item-banana' },
-    { word: 'grape', meaning: 'Chùm nho tím', symbol: '#svg-item-grape' },
+    { word: 'apple', meaning: 'Quả táo đỏ', symbol: '#svg-apple' },
+    { word: 'banana', meaning: 'Quả chuối vàng', symbol: '#svg-banana' },
+    { word: 'strawberry', meaning: 'Dâu tây đỏ', symbol: '#svg-strawberry' },
+    { word: 'orange', meaning: 'Quả cam ngọt', symbol: '#svg-orange' },
+    { word: 'cat', meaning: 'Con mèo cam', symbol: '#svg-cat' },
   ];
 
   const unlockedStickersCount = state.stickers.length;

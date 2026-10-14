@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SunnySoundFX } from '../services/audio/SunnySoundFX';
-import { BilingualVoiceEngine } from '../services/audio/BilingualVoiceEngine';
+import { SunnyAudioEngine } from '../services/audio/SunnyAudioEngine';
 import { meadowStore } from '../core/meadowStateStore';
 
 interface VictoryCelebrationModalProps {
@@ -17,7 +16,6 @@ interface VictoryCelebrationModalProps {
 export const VictoryCelebrationModal: React.FC<VictoryCelebrationModalProps> = ({
   isOpen,
   errorsCount,
-  gameTitle,
   currentLevel,
   totalLevels,
   onReplay,
@@ -25,9 +23,7 @@ export const VictoryCelebrationModal: React.FC<VictoryCelebrationModalProps> = (
   onExit,
 }) => {
   const [revealedStars, setRevealedStars] = useState<number>(0);
-  const [fireworksActive, setFireworksActive] = useState<boolean>(false);
 
-  // Calculate Stars:
   // 0-1 mistakes => 3 stars
   // 2-3 mistakes => 2 stars
   // >=4 mistakes => 1 star
@@ -35,58 +31,65 @@ export const VictoryCelebrationModal: React.FC<VictoryCelebrationModalProps> = (
 
   const victoryText =
     earnedStars === 3
-      ? { vi: 'Xuất sắc quá bé ơi! Cáo Sunny khen bé!', en: 'Amazing! Three golden stars!' }
+      ? {
+          vi: 'Xuất sắc quá bé ơi! Bé đạt được 3 Ông Sao vàng lấp lánh!',
+          en: 'Amazing job! You got three shiny stars!',
+        }
       : earnedStars === 2
-      ? { vi: 'Bé làm tốt lắm! Cố gắng chút nữa nhé!', en: 'Great job! Two stars for you!' }
-      : { vi: 'Bé rất kiên trì, hãy cố gắng lên nhé!', en: 'Good try! Keep it up!' };
+      ? {
+          vi: 'Bé làm tốt lắm! Bé đạt được 2 Ông Sao vàng rực rỡ!',
+          en: 'Great job! Two shiny golden stars for you!',
+        }
+      : {
+          vi: 'Bé rất kiên trì, hãy tiếp tục cố gắng cùng Cáo Sunny nhé!',
+          en: 'Good try! Keep it up with Sunny the Fox!',
+        };
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
       setRevealedStars(0);
-      setFireworksActive(false);
-      return;
+
+      SunnyAudioEngine.playCorrect();
+      SunnyAudioEngine.playFireworkBurst();
+      meadowStore.addStars(earnedStars * 5);
+
+      // Staggered star award sounds & reveal
+      const timer1 = window.setTimeout(() => {
+        setRevealedStars(1);
+        SunnyAudioEngine.playStarAward(1);
+      }, 350);
+
+      let timer2: number | undefined;
+      if (earnedStars >= 2) {
+        timer2 = window.setTimeout(() => {
+          setRevealedStars(2);
+          SunnyAudioEngine.playStarAward(2);
+        }, 700);
+      }
+
+      let timer3: number | undefined;
+      if (earnedStars >= 3) {
+        timer3 = window.setTimeout(() => {
+          setRevealedStars(3);
+          SunnyAudioEngine.playStarAward(3);
+        }, 1050);
+      }
+
+      const timerVoice = window.setTimeout(() => {
+        SunnyAudioEngine.speakBilingual(victoryText.vi, victoryText.en);
+      }, 1200);
+
+      return () => {
+        clearTimeout(timer1);
+        if (timer2) clearTimeout(timer2);
+        if (timer3) clearTimeout(timer3);
+        clearTimeout(timerVoice);
+        document.body.classList.remove('modal-open');
+      };
+    } else {
+      document.body.classList.remove('modal-open');
     }
-
-    setFireworksActive(true);
-    SunnySoundFX.playVictoryFanfare();
-    SunnySoundFX.playFireworkBurst();
-
-    // Reward stars in meadowStore
-    meadowStore.addStars(earnedStars * 5);
-
-    // Staggered star pops every 350ms
-    const timer1 = setTimeout(() => {
-      setRevealedStars(1);
-      SunnySoundFX.playStarAward(1);
-    }, 350);
-
-    let timer2: number | undefined;
-    if (earnedStars >= 2) {
-      timer2 = window.setTimeout(() => {
-        setRevealedStars(2);
-        SunnySoundFX.playStarAward(2);
-      }, 700);
-    }
-
-    let timer3: number | undefined;
-    if (earnedStars >= 3) {
-      timer3 = window.setTimeout(() => {
-        setRevealedStars(3);
-        SunnySoundFX.playStarAward(3);
-      }, 1050);
-    }
-
-    // Voice announcement
-    const timerVoice = setTimeout(() => {
-      BilingualVoiceEngine.speakBilingual(victoryText.vi, victoryText.en);
-    }, 1200);
-
-    return () => {
-      clearTimeout(timer1);
-      if (timer2) clearTimeout(timer2);
-      if (timer3) clearTimeout(timer3);
-      clearTimeout(timerVoice);
-    };
   }, [isOpen, errorsCount]);
 
   if (!isOpen) return null;
@@ -94,125 +97,151 @@ export const VictoryCelebrationModal: React.FC<VictoryCelebrationModalProps> = (
   const hasNextLevel = currentLevel < totalLevels && Boolean(onNextLevel);
 
   return (
-    <div className="fixed inset-0 z-[9990] flex items-center justify-center p-4 bg-[#0F172A]/70 backdrop-blur-md animate-fadeIn select-none">
-      {/* Background Animated Fireworks Sparks */}
-      {fireworksActive && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          <div className="absolute top-12 left-1/4 w-32 h-32 animate-bounce-subtle text-amber-300 opacity-90">
-            <svg className="w-full h-full"><use href="#svg-firework"></use></svg>
-          </div>
-          <div className="absolute top-20 right-1/4 w-36 h-36 animate-pulse text-rose-400 opacity-90">
-            <svg className="w-full h-full"><use href="#svg-firework"></use></svg>
-          </div>
-          <div className="absolute bottom-20 left-16 w-28 h-28 animate-spin-slow text-emerald-400 opacity-80">
-            <svg className="w-full h-full"><use href="#svg-firework"></use></svg>
-          </div>
-          <div className="absolute bottom-24 right-20 w-32 h-32 animate-bounce text-sky-400 opacity-80">
-            <svg className="w-full h-full"><use href="#svg-firework"></use></svg>
-          </div>
-        </div>
-      )}
-
-      {/* Main Card */}
-      <div className="meadow-clay-card max-w-lg w-full p-6 sm:p-8 text-center bg-[#FFFFFF] border-4 border-[#BAE6FD] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] relative z-10 overflow-hidden">
-        {/* Sunny the Fox Celebration Avatar */}
-        <div className="w-32 h-32 mx-auto mb-2 relative flex items-center justify-center">
-          <div className="absolute inset-0 bg-amber-200/50 rounded-full blur-xl animate-pulse" />
-          <svg className="w-full h-full relative z-10 animate-bounce">
-            <use href="#svg-sunny-fox"></use>
-          </svg>
+    <div
+      id="victory-modal"
+      className="fullscreen-modal-overlay active"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="victory-modal-card animate-scaleUp relative w-full max-w-[520px] bg-white border-[6px] border-[#FACC15] rounded-[40px] px-7 pt-9 pb-8 text-center shadow-2xl select-none z-10"
+        style={{ borderBottom: '12px solid #CA8A04' }}
+      >
+        {/* Banner Title */}
+        <div
+          id="victory-banner-title"
+          className="inline-block bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-white font-display text-xl sm:text-2xl font-black py-2 px-7 rounded-full border-4 border-[#FEF08A] -mt-14 mb-4 shadow-md tracking-wide"
+        >
+          🎉 HOÀN THÀNH MÀN CHƠI!
         </div>
 
-        {/* Level & Game Title Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-50 border border-emerald-300 font-display font-extrabold text-emerald-800 text-xs mb-2 shadow-2xs">
-          <span>🎉 {gameTitle}</span>
-          <span>•</span>
-          <span>Màn {currentLevel} / {totalLevels}</span>
+        {/* 3 Stars Arch (Vòng cung 3 Ông Sao) */}
+        <div className="victory-stars-row flex items-end justify-center gap-3.5 my-2.5 mb-5 h-[115px]">
+          {/* Star 1 */}
+          <div
+            id="win-star-1"
+            className="star-slot transition-all duration-300"
+            style={{
+              width: '84px',
+              height: '84px',
+              transform: 'rotate(-12deg)',
+            }}
+          >
+            <svg
+              width="84"
+              height="84"
+              className={`w-full h-full ${
+                revealedStars >= 1
+                  ? 'animate-scaleUp drop-shadow-[0_6px_12px_rgba(250,204,21,0.65)]'
+                  : 'opacity-50'
+              }`}
+            >
+              <use href={revealedStars >= 1 ? '#svg-star-gold' : '#svg-star-empty'}></use>
+            </svg>
+          </div>
+
+          {/* Star 2 (Center, Higher & Bigger) */}
+          <div
+            id="win-star-2"
+            className="star-slot transition-all duration-300 mb-3.5"
+            style={{
+              width: '104px',
+              height: '104px',
+            }}
+          >
+            <svg
+              width="104"
+              height="104"
+              className={`w-full h-full ${
+                revealedStars >= 2
+                  ? 'animate-scaleUp drop-shadow-[0_8px_16px_rgba(250,204,21,0.75)]'
+                  : 'opacity-50'
+              }`}
+            >
+              <use href={revealedStars >= 2 ? '#svg-star-gold' : '#svg-star-empty'}></use>
+            </svg>
+          </div>
+
+          {/* Star 3 */}
+          <div
+            id="win-star-3"
+            className="star-slot transition-all duration-300"
+            style={{
+              width: '84px',
+              height: '84px',
+              transform: 'rotate(12deg)',
+            }}
+          >
+            <svg
+              width="84"
+              height="84"
+              className={`w-full h-full ${
+                revealedStars >= 3
+                  ? 'animate-scaleUp drop-shadow-[0_6px_12px_rgba(250,204,21,0.65)]'
+                  : 'opacity-50'
+              }`}
+            >
+              <use href={revealedStars >= 3 ? '#svg-star-gold' : '#svg-star-empty'}></use>
+            </svg>
+          </div>
         </div>
 
-        {/* Title */}
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] font-display mb-1">
-          {earnedStars === 3 ? 'Xuất Sắc Quá Bé Ơi! 🌟' : earnedStars === 2 ? 'Làm Tốt Lắm Bé Ơi! 👏' : 'Bé Đã Hoàn Thành Màn Chơi! 💪'}
-        </h2>
-
-        {/* Bilingual Subtitle */}
-        <p className="text-sm font-bold text-[#0F172A] font-display">
-          {victoryText.vi}
-        </p>
-        <p className="text-xs font-semibold text-slate-500 font-body mb-5">
-          "{victoryText.en}" (Số lỗi: {errorsCount})
-        </p>
-
-        {/* 3 Stars Display (Staggered Animation) */}
-        <div className="flex items-center justify-center gap-4 sm:gap-6 my-4 py-2 bg-[#F0F9FF] rounded-3xl border-2 border-[#BAE6FD]">
-          {[1, 2, 3].map((starIndex) => {
-            const isEarned = starIndex <= earnedStars;
-            const isShown = starIndex <= revealedStars;
-            return (
-              <div
-                key={starIndex}
-                className={`w-16 h-16 sm:w-20 sm:h-20 transition-all duration-300 transform ${
-                  isShown ? 'scale-110 animate-pop-sparkle' : 'scale-90 opacity-40'
-                }`}
-              >
-                <svg className="w-full h-full drop-shadow-md">
-                  <use href={isShown && isEarned ? '#svg-star-gold' : '#svg-star-empty'}></use>
-                </svg>
-              </div>
-            );
-          })}
+        {/* Mascot Cáo Sunny Gốc + Lời khen song ngữ */}
+        <div className="bg-[#FFFBEB] border-3 border-[#FDE68A] rounded-[24px] p-3.5 sm:p-4 flex items-center gap-4 mb-6 text-left shadow-xs">
+          <div className="w-[76px] h-[76px] shrink-0">
+            <svg className="w-full h-full drop-shadow-sm">
+              <use href="#svg-sunny-fox"></use>
+            </svg>
+          </div>
+          <div>
+            <div id="victory-msg-vi" className="text-base sm:text-lg font-black text-[#0F172A] leading-snug font-display">
+              {victoryText.vi}
+            </div>
+            <div id="victory-msg-en" className="text-xs sm:text-sm font-bold text-[#EA580C] mt-1 font-body">
+              "{victoryText.en}"
+            </div>
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+        {/* Buttons: Replay & Next Level */}
+        <div className="flex gap-3 sm:gap-4 justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              SunnyAudioEngine.playClick();
+              onReplay();
+            }}
+            className="flex-1 py-3.5 sm:py-4 px-4 rounded-[22px] border-3 border-[#7DD3FC] bg-[#E0F2FE] hover:bg-[#BAE6FD] text-[#0369A1] text-base sm:text-lg font-black cursor-pointer transition-transform active:scale-95 font-display"
+            style={{ borderBottom: '7px solid #0284C7' }}
+          >
+            🔄 Chơi lại
+          </button>
+
           {hasNextLevel ? (
             <button
               type="button"
               onClick={() => {
-                SunnySoundFX.playButtonClick();
+                SunnyAudioEngine.playClick();
                 if (onNextLevel) onNextLevel();
               }}
-              className="toy-btn toy-btn-green w-full !min-h-[56px] text-lg font-display order-1 sm:order-2"
+              className="flex-[1.4] py-3.5 sm:py-4 px-5 rounded-[22px] border-3 border-[#86EFAC] bg-[#22C55E] hover:bg-emerald-600 text-white text-base sm:text-lg font-black cursor-pointer transition-transform active:scale-95 font-display shadow-md"
+              style={{ borderBottom: '7px solid #15803D' }}
             >
-              <span>⏭️ Màn Tiếp Theo</span>
+              ⏭️ Màn tiếp theo
             </button>
           ) : (
             <button
               type="button"
               onClick={() => {
-                SunnySoundFX.playButtonClick();
+                SunnyAudioEngine.playClick();
                 onExit();
               }}
-              className="toy-btn toy-btn-green w-full !min-h-[56px] text-lg font-display order-1 sm:order-2"
+              className="flex-[1.4] py-3.5 sm:py-4 px-5 rounded-[22px] border-3 border-[#86EFAC] bg-[#22C55E] hover:bg-emerald-600 text-white text-base sm:text-lg font-black cursor-pointer transition-transform active:scale-95 font-display shadow-md"
+              style={{ borderBottom: '7px solid #15803D' }}
             >
-              <span>🏆 Hoàn Thành Tất Cả</span>
+              🌟 Về Danh Sách
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={() => {
-              SunnySoundFX.playButtonClick();
-              onReplay();
-            }}
-            className="toy-btn toy-btn-amber w-full !min-h-[56px] text-base font-display order-2 sm:order-1"
-          >
-            <span>🔄 Chơi Lại</span>
-          </button>
-        </div>
-
-        {/* Return Button */}
-        <div className="mt-3 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              SunnySoundFX.playButtonClick();
-              onExit();
-            }}
-            className="text-xs font-bold text-slate-500 hover:text-slate-800 font-body underline cursor-pointer"
-          >
-            ← Về danh sách trò chơi
-          </button>
         </div>
       </div>
     </div>

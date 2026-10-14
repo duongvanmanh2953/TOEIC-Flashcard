@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SunnySoundFX } from '../../services/audio/SunnySoundFX';
-import { BilingualVoiceEngine } from '../../services/audio/BilingualVoiceEngine';
+import { SunnyAudioEngine } from '../../services/audio/SunnyAudioEngine';
 import SunnyBilingualGuide from '../../components/SunnyBilingualGuide';
 import VictoryCelebrationModal from '../../components/VictoryCelebrationModal';
 import { meadowStore } from '../../core/meadowStateStore';
@@ -13,7 +12,6 @@ interface Game1Props {
 interface MemoryCard {
   uniqueId: string;
   pairKey: string;
-  type: 'image' | 'word';
   wordEn: string;
   wordVi: string;
   svgSymbol: string;
@@ -21,13 +19,13 @@ interface MemoryCard {
   isMatched: boolean;
 }
 
-const ALL_PAIRS = [
-  { key: 'apple', wordEn: 'Apple', wordVi: 'Quả táo đỏ', symbol: '#svg-item-apple' },
-  { key: 'strawberry', wordEn: 'Strawberry', wordVi: 'Dâu tây ngọt', symbol: '#svg-item-strawberry' },
-  { key: 'carrot', wordEn: 'Carrot', wordVi: 'Củ cà rốt', symbol: '#svg-item-carrot' },
-  { key: 'banana', wordEn: 'Banana', wordVi: 'Quả chuối vàng', symbol: '#svg-item-banana' },
-  { key: 'mushroom', wordEn: 'Mushroom', wordVi: 'Cây nấm đỏ', symbol: '#svg-red-mushroom' },
-  { key: 'grape', wordEn: 'Grape', wordVi: 'Chùm nho tím', symbol: '#svg-item-grape' },
+const ALL_CARDS_DATA = [
+  { key: 'apple', wordEn: 'Apple', wordVi: 'Quả táo đỏ', symbol: '#svg-apple' },
+  { key: 'banana', wordEn: 'Banana', wordVi: 'Quả chuối vàng', symbol: '#svg-banana' },
+  { key: 'strawberry', wordEn: 'Strawberry', wordVi: 'Quả dâu tây', symbol: '#svg-strawberry' },
+  { key: 'orange', wordEn: 'Orange', wordVi: 'Quả cam', symbol: '#svg-orange' },
+  { key: 'cat', wordEn: 'Cat', wordVi: 'Con mèo cam', symbol: '#svg-cat' },
+  { key: 'dog', wordEn: 'Dog', wordVi: 'Con chó cún', symbol: '#svg-dog' },
 ];
 
 export const Game1_SunnyMemoryFlip: React.FC<Game1Props> = ({ onExit, onComplete }) => {
@@ -43,22 +41,20 @@ export const Game1_SunnyMemoryFlip: React.FC<Game1Props> = ({ onExit, onComplete
 
   const currentPairCount = level === 1 ? 4 : 6;
 
-  // Initialize Cards for current level
   useEffect(() => {
     initLevel(level);
   }, [level]);
 
   const initLevel = (lvl: number) => {
     const pairCount = lvl === 1 ? 4 : 6;
-    const selectedPairs = ALL_PAIRS.slice(0, pairCount);
+    const selected = ALL_CARDS_DATA.slice(0, pairCount);
     const deck: MemoryCard[] = [];
 
-    selectedPairs.forEach((item, idx) => {
-      // 1 Card for Image
+    selected.forEach((item, idx) => {
+      // Card A: Both Image SVG + Word Label (Fix Bug #1)
       deck.push({
-        uniqueId: `${item.key}_img_${idx}`,
+        uniqueId: `${item.key}_a_${idx}`,
         pairKey: item.key,
-        type: 'image',
         wordEn: item.wordEn,
         wordVi: item.wordVi,
         svgSymbol: item.symbol,
@@ -66,11 +62,10 @@ export const Game1_SunnyMemoryFlip: React.FC<Game1Props> = ({ onExit, onComplete
         isMatched: false,
       });
 
-      // 1 Card for Word
+      // Card B: Both Image SVG + Word Label (Fix Bug #1)
       deck.push({
-        uniqueId: `${item.key}_txt_${idx}`,
+        uniqueId: `${item.key}_b_${idx}`,
         pairKey: item.key,
-        type: 'word',
         wordEn: item.wordEn,
         wordVi: item.wordVi,
         svgSymbol: item.symbol,
@@ -79,7 +74,6 @@ export const Game1_SunnyMemoryFlip: React.FC<Game1Props> = ({ onExit, onComplete
       });
     });
 
-    // Shuffle deck
     const shuffled = deck.sort(() => Math.random() - 0.5);
     setCards(shuffled);
     setSelectedCards([]);
@@ -92,175 +86,165 @@ export const Game1_SunnyMemoryFlip: React.FC<Game1Props> = ({ onExit, onComplete
   const handleCardClick = (card: MemoryCard) => {
     if (isEvaluating || card.isFlipped || card.isMatched || selectedCards.length >= 2) return;
 
-    // Flip audio & speak word
-    SunnySoundFX.playCardFlip();
-    BilingualVoiceEngine.speakEnglish(card.wordEn);
+    SunnyAudioEngine.playFlip();
+    SunnyAudioEngine.speakEnglish(card.wordEn);
 
     const updatedCards = cards.map((c) =>
       c.uniqueId === card.uniqueId ? { ...c, isFlipped: true } : c
     );
     setCards(updatedCards);
 
-    const newSelected = [...selectedCards, card];
-    setSelectedCards(newSelected);
+    const nextSelected = [...selectedCards, card];
+    setSelectedCards(nextSelected);
 
-    if (newSelected.length === 2) {
+    if (nextSelected.length === 2) {
       setIsEvaluating(true);
-      const [first, second] = newSelected;
+      const [first, second] = nextSelected;
 
-      if (first.pairKey === second.pairKey && first.uniqueId !== second.uniqueId) {
-        // MATCH!
+      if (first.pairKey === second.pairKey) {
+        // MATCHED!
         setTimeout(() => {
-          SunnySoundFX.playCorrect();
-          BilingualVoiceEngine.speakVietnamese(`Đúng rồi bé ơi! ${first.wordEn}!`);
-
-          const matchedCards = updatedCards.map((c) =>
-            c.pairKey === first.pairKey ? { ...c, isMatched: true, isFlipped: true } : c
+          SunnyAudioEngine.playCorrect();
+          const matchedList = updatedCards.map((c) =>
+            c.pairKey === first.pairKey ? { ...c, isMatched: true } : c
           );
-          setCards(matchedCards);
+          setCards(matchedList);
           setSelectedCards([]);
           setIsEvaluating(false);
 
-          const nextMatched = matchedPairs + 1;
-          setMatchedPairs(nextMatched);
+          const nextCount = matchedPairs + 1;
+          setMatchedPairs(nextCount);
 
-          if (nextMatched >= currentPairCount) {
-            // Level cleared!
+          if (nextCount >= currentPairCount) {
+            // Level victory!
             setTimeout(() => {
               setShowVictory(true);
-              meadowStore.recordGameRound('hungryPicnic', 20); // Sync stars
-              if (onComplete && level >= totalLevels) onComplete();
+              if (onComplete) onComplete();
             }, 600);
           }
-        }, 500);
+        }, 550);
       } else {
-        // WRONG! (Zero punishment: soft bounce, wobble, and flip back)
+        // NOT MATCHED
         setTimeout(() => {
-          SunnySoundFX.playWrong();
+          SunnyAudioEngine.playWrong();
           setErrorsCount((prev) => prev + 1);
 
           setTimeout(() => {
-            const resetCards = updatedCards.map((c) =>
+            const resetList = updatedCards.map((c) =>
               c.uniqueId === first.uniqueId || c.uniqueId === second.uniqueId
                 ? { ...c, isFlipped: false }
                 : c
             );
-            setCards(resetCards);
+            setCards(resetList);
             setSelectedCards([]);
             setIsEvaluating(false);
-          }, 600);
+          }, 650);
         }, 600);
       }
     }
   };
 
-  const viPrompt =
-    level === 1
-      ? 'Bé ơi, hãy lật tìm 4 cặp thẻ bài hình ảnh và từ vựng giống nhau nhé!'
-      : 'Thử thách nâng cao: Bé hãy lật tìm 6 cặp thẻ bài trong khu rừng nhé!';
-  const enPrompt = 'Find and match all the pairs!';
+  const handleReplay = () => {
+    initLevel(level);
+  };
+
+  const handleNextLevel = () => {
+    if (level < totalLevels) {
+      setLevel((prev) => prev + 1);
+    }
+  };
+
+  const viPrompt = `Bé hãy lật tìm 2 thẻ bài có hình và từ vựng giống nhau nhé!`;
+  const enPrompt = `Find the matching pairs of cards!`;
 
   return (
-    <div className="game-stage-wrapper select-none animate-fadeIn pb-12">
-      {/* 1. Header Navigation */}
-      <div className="w-full flex items-center justify-between mb-4 px-2">
+    <div className="game-viewport select-none animate-fadeIn">
+      {/* 1. Header Navigation Bar */}
+      <div className="w-full max-w-[920px] flex items-center justify-between pb-2 border-b border-[#BAE6FD]">
         <button
           type="button"
           onClick={() => {
-            SunnySoundFX.playButtonClick();
+            SunnyAudioEngine.playClick();
             onExit();
           }}
-          className="toy-btn toy-btn-amber !min-h-[48px] !py-2 !px-4 text-sm"
+          className="toy-btn bg-white hover:bg-slate-50 text-[#0F172A] border-2 border-[#CBD5E1] px-4 py-2 text-sm font-bold flex items-center gap-2 shadow-xs"
         >
-          ← Trở Về Khu Rừng
+          <span>← Thoát Game</span>
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="px-4 py-1.5 rounded-2xl bg-amber-100 border-2 border-amber-300 font-display font-extrabold text-amber-900 text-sm flex items-center gap-2 shadow-2xs">
-            <svg className="w-5 h-5"><use href="#svg-star-gold"></use></svg>
-            <span>Màn {level} / {totalLevels}</span>
-          </div>
-
-          <div className="px-3.5 py-1.5 rounded-2xl bg-rose-50 border-2 border-rose-200 font-display font-extrabold text-rose-800 text-xs shadow-2xs">
-            Số lỗi: {errorsCount}
-          </div>
+          <span className="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black font-display border border-emerald-300">
+            Cấp Độ {level} / {totalLevels}
+          </span>
+          <span className="px-3.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black font-display border border-amber-300">
+            Đã ghép: {matchedPairs} / {currentPairCount} cặp
+          </span>
+          <span className="px-3.5 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-black font-display border border-rose-300">
+            Lỗi: {errorsCount}
+          </span>
         </div>
       </div>
 
-      {/* 2. Anti-Cramped Game Canvas Card */}
-      <div className="game-canvas-card">
-        {/* Mascot Bilingual Guide Bar */}
-        <SunnyBilingualGuide
-          viPrompt={viPrompt}
-          enPrompt={enPrompt}
-          badgeTitle="Game 1 • Lật Thẻ Trí Nhớ Rừng Xanh"
-          extraRightSlot={
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 font-display font-extrabold text-emerald-800 text-xs">
-              <span>Cặp ghép:</span>
-              <span className="text-base text-emerald-600">{matchedPairs} / {currentPairCount}</span>
-            </div>
-          }
-        />
+      {/* 2. Bilingual Guide Bar with Sunny the Fox Mascot */}
+      <SunnyBilingualGuide
+        viPrompt={viPrompt}
+        enPrompt={enPrompt}
+        badgeTitle="Lật Thẻ Trí Nhớ Rừng Xanh"
+        extraRightSlot={
+          <div className="flex items-center gap-2 bg-amber-50 px-3 py-1 rounded-xl border border-amber-300">
+            <span className="text-xs font-extrabold text-amber-900">Ghép:</span>
+            <span className="text-sm font-black text-amber-950 font-display">
+              {matchedPairs}/{currentPairCount}
+            </span>
+          </div>
+        }
+      />
 
-        {/* 3. 3D Memory Card Grid */}
-        <div
-          className={`grid gap-3 sm:gap-4 md:gap-5 mx-auto max-w-3xl ${
-            level === 1
-              ? 'grid-cols-2 sm:grid-cols-4'
-              : 'grid-cols-3 sm:grid-cols-4'
-          }`}
-        >
+      {/* 3. Central Stage Card (Fix Bug #5: Centered Stage Architecture) */}
+      <div className="game-board-stage">
+        {/* Memory Grid: 4 columns desktop, 3 columns mobile */}
+        <div className="memory-grid">
           {cards.map((card) => {
+            const isRevealed = card.isFlipped || card.isMatched;
             return (
               <div
                 key={card.uniqueId}
                 onClick={() => handleCardClick(card)}
-                className={`card-perspective h-36 sm:h-44 md:h-48 cursor-pointer active:scale-95 transition-transform ${
-                  card.isMatched ? 'pointer-events-none' : ''
-                }`}
+                className="card-perspective cursor-pointer"
+                style={{ width: '140px', height: '176px' }}
               >
-                <div
-                  className={`card-flip-inner w-full h-full ${
-                    card.isFlipped ? 'is-flipped' : ''
-                  }`}
-                >
-                  {/* Card Back (Vân lá thiên nhiên #svg-card-back-leaf) */}
-                  <div className="card-face card-face-back meadow-clay-card flex items-center justify-center bg-[#FFFBEB] border-4 border-amber-300 shadow-sm hover:border-amber-400">
-                    <svg className="w-full h-full p-2">
-                      <use href="#svg-card-back-leaf"></use>
+                <div className={`card-flip-inner ${isRevealed ? 'is-flipped' : ''}`}>
+                  {/* Card Back Face: Green Meadow Leaves Texture (#svg-card-back) */}
+                  <div className="card-face card-face-back flex items-center justify-center bg-white rounded-[24px] shadow-sm">
+                    <svg className="w-full h-full">
+                      <use href="#svg-card-back"></use>
                     </svg>
                   </div>
 
-                  {/* Card Front (Face Revealed) */}
+                  {/* Card Front Face: Strict [Image SVG + Word Label] Combo (Fix Bug #1) */}
                   <div
-                    className={`card-face card-face-front meadow-clay-card flex flex-col items-center justify-center p-3 sm:p-4 text-center border-4 shadow-md ${
+                    className={`card-face card-face-front word-card-item ${
                       card.isMatched
-                        ? 'border-[#16A34A] bg-[#DCFCE7] ring-4 ring-emerald-300/80 animate-pulse'
-                        : 'border-[#BAE6FD] bg-[#FFFFFF]'
+                        ? 'border-[#22C55E] ring-4 ring-emerald-300 bg-[#F0FDF4]'
+                        : 'border-[#BAE6FD]'
                     }`}
                   >
-                    {card.type === 'image' ? (
-                      <div className="flex flex-col items-center justify-center w-full h-full">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-                          <svg className="w-full h-full drop-shadow-sm">
-                            <use href={card.svgSymbol}></use>
-                          </svg>
-                        </div>
-                        <span className="mt-1 text-xs font-extrabold text-slate-400 font-display">
-                          {card.wordVi}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center w-full h-full space-y-1">
-                        <span className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] font-display uppercase tracking-wider">
-                          {card.wordEn}
-                        </span>
-                        <span className="text-xs sm:text-sm font-bold text-emerald-700 font-display">
-                          {card.wordVi}
-                        </span>
-                        <span className="text-xl">🔊</span>
-                      </div>
-                    )}
+                    {/* SVG Illustration */}
+                    <div className="card-illust-svg flex items-center justify-center mt-1">
+                      <svg className="w-full h-full drop-shadow-xs">
+                        <use href={card.svgSymbol}></use>
+                      </svg>
+                    </div>
+
+                    {/* Word English Label */}
+                    <div className="card-word-en">
+                      {card.wordEn}
+                    </div>
+
+                    {/* Vietnamese Subtitle */}
+                    <div className="card-word-vi pb-1">
+                      {card.wordVi}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -276,8 +260,8 @@ export const Game1_SunnyMemoryFlip: React.FC<Game1Props> = ({ onExit, onComplete
         gameTitle="Lật Thẻ Trí Nhớ Rừng Xanh"
         currentLevel={level}
         totalLevels={totalLevels}
-        onReplay={() => initLevel(level)}
-        onNextLevel={level < totalLevels ? () => setLevel(level + 1) : undefined}
+        onReplay={handleReplay}
+        onNextLevel={handleNextLevel}
         onExit={onExit}
       />
     </div>

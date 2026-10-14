@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SunnySoundFX } from '../services/audio/SunnySoundFX';
+import { SunnyAudioEngine } from '../services/audio/SunnyAudioEngine';
 import { meadowStore, MeadowState } from '../core/meadowStateStore';
 import { SUNNY_MEADOW_GAMES, SunnyGameItem } from '../games/sunny-meadow/sunnyMeadowRegistry';
 
 import Game1_SunnyMemoryFlip from '../games/sunny-meadow/Game1_SunnyMemoryFlip';
-import Game2_HungryFoxPicnic from '../games/sunny-meadow/Game2_HungryFoxPicnic';
-import Game3_ColorSplashPond from '../games/sunny-meadow/Game3_ColorSplashPond';
-import Game4_FireflyPhonics from '../games/sunny-meadow/Game4_FireflyPhonics';
-import Game5_MagicVoiceWindmill from '../games/sunny-meadow/Game5_MagicVoiceWindmill';
+import Game2_PictureWordMatch from '../games/sunny-meadow/Game2_PictureWordMatch';
+import Game3_HungryFoxPicnic from '../games/sunny-meadow/Game3_HungryFoxPicnic';
+import Game4_SpellingBlocks from '../games/sunny-meadow/Game4_SpellingBlocks';
 
 export const KidsGamesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,14 +30,14 @@ export const KidsGamesPage: React.FC = () => {
   }, [gameParam]);
 
   const handleLaunchGame = (id: SunnyGameItem['id']) => {
-    SunnySoundFX.playButtonClick();
+    SunnyAudioEngine.playClick();
     setActiveGameId(id);
     setSearchParams({ game: id });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleExitGame = () => {
-    SunnySoundFX.playButtonClick();
+    SunnyAudioEngine.playClick();
     setActiveGameId(null);
     setSearchParams({});
   };
@@ -47,45 +46,42 @@ export const KidsGamesPage: React.FC = () => {
   if (activeGameId === 'sunny_memory_flip') {
     return <Game1_SunnyMemoryFlip onExit={handleExitGame} />;
   }
+  if (activeGameId === 'picture_word_match') {
+    return <Game2_PictureWordMatch onExit={handleExitGame} />;
+  }
   if (activeGameId === 'hungry_fox_picnic') {
-    return <Game2_HungryFoxPicnic onExit={handleExitGame} />;
+    return <Game3_HungryFoxPicnic onExit={handleExitGame} />;
   }
-  if (activeGameId === 'color_splash_pond') {
-    return <Game3_ColorSplashPond onExit={handleExitGame} />;
-  }
-  if (activeGameId === 'firefly_phonics') {
-    return <Game4_FireflyPhonics onExit={handleExitGame} />;
-  }
-  if (activeGameId === 'magic_voice_windmill') {
-    return <Game5_MagicVoiceWindmill onExit={handleExitGame} />;
+  if (activeGameId === 'woodland_spelling') {
+    return <Game4_SpellingBlocks onExit={handleExitGame} />;
   }
 
-  // Otherwise render the 5 Next-Gen Games Catalog
+  // Otherwise render the Games Catalog
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col space-y-8 select-none animate-fadeIn pb-16 px-3 sm:px-4">
       {/* 1. Header with Stars counter */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-b border-amber-200/60 pb-5">
         <div>
-          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-3.5 py-1 rounded-full font-display">
-            🌿 Sunny Meadow English V3.0
+          <span className="text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-3.5 py-1 rounded-full font-display border border-emerald-300">
+            🌿 Sunny Meadow English V4.0
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] font-display mt-1.5 tracking-tight">
-            5 Trò Chơi Tương Tác Sinh Thái
+          <h1 className="text-3xl sm:text-4xl font-black text-[#0F172A] font-display mt-1.5 tracking-tight">
+            Trò Chơi Tương Tác Sân Khấu Căn Giữa
           </h1>
           <p className="text-xs sm:text-sm font-semibold text-[#475569] font-body mt-1">
-            Mascot Cáo Sunny đồng hành song ngữ — Lật thẻ 3D, đút quả dã ngoại, pha màu và thổi cối xay gió!
+            Không tràn chữ, 100% thẻ bài có hình ảnh SVG minh họa sinh động cùng Cáo Sunny!
           </p>
         </div>
 
         {/* Child Stars & Streaks HUD */}
         <div className="flex items-center gap-3 self-start sm:self-auto">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-50 border-2 border-amber-200 text-amber-950 font-display font-extrabold text-sm shadow-xs">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 font-display font-black text-sm shadow-xs">
             <svg className="w-6 h-6">
               <use href="#svg-star-gold"></use>
             </svg>
             <span>{state.totalStars} Sao Vàng</span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-900 font-display font-extrabold text-sm shadow-xs">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-rose-50 border-2 border-rose-200 text-rose-900 font-display font-black text-sm shadow-xs">
             <span className="text-xl">🔥</span>
             <span>{state.streakDays} Ngày</span>
           </div>
@@ -96,16 +92,16 @@ export const KidsGamesPage: React.FC = () => {
       <section className="meadow-clay-card p-6 sm:p-8 lg:p-10 bg-gradient-to-br from-[#FFF8EE] via-[#FFF3DF] to-[#FFEBD0] border-4 border-amber-200 relative overflow-hidden">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="max-w-xl space-y-4 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white text-xs font-extrabold uppercase tracking-wider text-amber-900 font-display shadow-2xs border border-amber-300">
-              <span>⭐ Trò Chơi Nổi Bật: Lật Thẻ 3D</span>
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-white text-xs font-black uppercase tracking-wider text-amber-900 font-display shadow-2xs border border-amber-300">
+              <span>⭐ Trò Chơi Nổi Bật: Lật Thẻ Rừng Xanh</span>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0F172A] font-display leading-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#0F172A] font-display leading-tight">
               Lật Thẻ Trí Nhớ Rừng Xanh
             </h2>
 
             <p className="text-sm sm:text-base font-semibold text-[#475569] font-body leading-relaxed">
-              Cáo Sunny thách thức trí nhớ của bé! Hãy lật mở các thẻ bài vân lá 3D, lắng nghe phát âm tiếng Anh chuẩn và tìm các cặp hình ảnh quả táo, dâu tây, cà rốt tương ứng nhé!
+              Lưới thẻ bài căn giữa hoàn hảo, mặt trước kết hợp cả [Hình SVG + Chữ viết] giúp bé vừa học vừa nhớ lâu, tuyệt đối không bị tràn viền!
             </p>
 
             <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4">
@@ -117,54 +113,52 @@ export const KidsGamesPage: React.FC = () => {
                 <span>🎴 Chơi Lật Thẻ Ngay →</span>
               </button>
 
-              <span className="text-xs font-extrabold text-amber-900 bg-white px-3.5 py-2 rounded-xl border border-amber-200 font-display shadow-2xs">
+              <span className="text-xs font-black text-amber-900 bg-white px-3.5 py-2 rounded-xl border border-amber-200 font-display shadow-2xs">
                 ⭐ Thưởng +15 Sao & Đánh giá 3 Sao
               </span>
             </div>
           </div>
 
-          {/* Hero Art with Sunny the Fox & 3D Card Leaf */}
+          {/* Hero Art with Sunny Fox & 3D Card Leaf */}
           <div className="relative w-48 h-48 sm:w-60 sm:h-60 flex items-center justify-center shrink-0">
             <div className="w-full h-full rounded-3xl bg-white/80 p-3 shadow-md border-2 border-amber-200 flex items-center justify-center">
               <svg className="w-36 h-36 animate-bounce-subtle">
                 <use href="#svg-sunny-fox"></use>
               </svg>
             </div>
-            {/* Overlay mini card */}
             <div className="absolute -bottom-2 -right-2 w-16 h-20 shadow-lg rounded-xl overflow-hidden">
               <svg className="w-full h-full">
-                <use href="#svg-card-back-leaf"></use>
+                <use href="#svg-card-back"></use>
               </svg>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. The 5 Next-Gen Games Grid */}
+      {/* 3. The 4 Games Grid */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-[#0F172A] font-display">
+          <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] font-display">
             Chọn Thế Giới Nhập Vai Của Bé
           </h2>
           <span className="text-xs font-bold text-slate-500 font-body">
-            5 / 5 trò chơi sinh thái đã sẵn sàng
+            4 / 4 trò chơi sinh thái V4.0 sẵn sàng
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {SUNNY_MEADOW_GAMES.map((game, idx) => (
             <div
               key={game.id}
               onClick={() => handleLaunchGame(game.id)}
               className="meadow-clay-card p-6 flex flex-col justify-between hover:scale-[1.02] active:scale-[0.98] cursor-pointer transition-all duration-200 bg-white group border-2 border-[#BAE6FD] hover:border-amber-400 min-h-[310px] shadow-sm hover:shadow-md"
             >
-              {/* Card Top: Badge & SVG Icon */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 font-display">
+                  <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 font-display">
                     {game.badge}
                   </span>
-                  <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-display font-extrabold text-sm flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-display font-black text-sm flex items-center justify-center">
                     #{idx + 1}
                   </div>
                 </div>
@@ -176,7 +170,7 @@ export const KidsGamesPage: React.FC = () => {
                   </svg>
                 </div>
 
-                <h3 className="text-xl font-extrabold text-[#0F172A] font-display mt-2 group-hover:text-emerald-700 transition-colors text-center">
+                <h3 className="text-lg font-black text-[#0F172A] font-display mt-2 group-hover:text-emerald-700 transition-colors text-center">
                   {game.titleVi}
                 </h3>
                 <p className="text-xs font-bold text-emerald-800 font-display text-center mt-0.5">
@@ -189,7 +183,7 @@ export const KidsGamesPage: React.FC = () => {
 
               {/* Card Bottom Button */}
               <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs font-extrabold text-amber-800 font-display flex items-center gap-1">
+                <span className="text-xs font-black text-amber-800 font-display flex items-center gap-1">
                   <svg className="w-4 h-4">
                     <use href="#svg-star-gold"></use>
                   </svg>
