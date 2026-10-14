@@ -10,62 +10,67 @@ export interface VocabularyItem {
   phonetic: string;
   viMeaning: string;
   category: string;
+  /** Learning stage: sprout (beginner), plant (intermediate), tree (mastered) */
   stage?: "sprout" | "plant" | "tree";
+  /** Difficulty level: 1 = Easy (3-4yr), 2 = Medium (4-5yr), 3 = Hard (5-7yr) */
+  difficulty?: 1 | 2 | 3;
   phrase: string;
   sentence: string;
   emoji?: string;
+  /** Path to 3D kawaii image in /kid/ public assets (e.g. '/kid/animals/cat.png') */
+  imagePath?: string;
 }
 
 export const COMPREHENSIVE_VOCABULARY: VocabularyItem[] = [
   // === ANIMALS (15) ===
-  { id: "vocab_cat", word: "cat", phonetic: "/kaet/", viMeaning: "Con meo", category: "animals", stage: "tree", phrase: "a cute cat", sentence: "The cat is sleeping on the mat.", emoji: "\u{1F431}" },
-  { id: "vocab_dog", word: "dog", phonetic: "/dog/", viMeaning: "Con cho", category: "animals", stage: "tree", phrase: "a friendly dog", sentence: "The dog wags its tail happily.", emoji: "\u{1F436}" },
-  { id: "vocab_rabbit", word: "rabbit", phonetic: "/rab.it/", viMeaning: "Con tho", category: "animals", stage: "plant", phrase: "a white rabbit", sentence: "The rabbit loves eating carrots.", emoji: "\u{1F430}" },
-  { id: "vocab_lion", word: "lion", phonetic: "/lai.en/", viMeaning: "Su tu", category: "animals", stage: "tree", phrase: "the brave lion", sentence: "The lion is the king of the jungle.", emoji: "\u{1F981}" },
-  { id: "vocab_elephant", word: "elephant", phonetic: "/el.i.fent/", viMeaning: "Con voi", category: "animals", stage: "plant", phrase: "a big elephant", sentence: "The elephant has a long trunk.", emoji: "\u{1F418}" },
-  { id: "vocab_bear", word: "bear", phonetic: "/beer/", viMeaning: "Con gau", category: "animals", stage: "sprout", phrase: "a brown bear", sentence: "The bear likes eating sweet honey.", emoji: "\u{1F43B}" },
-  { id: "vocab_monkey", word: "monkey", phonetic: "/mung.ki/", viMeaning: "Con khi", category: "animals", stage: "plant", phrase: "a clever monkey", sentence: "The monkey climbs the tall tree.", emoji: "\u{1F435}" },
-  { id: "vocab_frog", word: "frog", phonetic: "/frog/", viMeaning: "Con ech", category: "animals", stage: "sprout", phrase: "a green frog", sentence: "The green frog hops across the pond.", emoji: "\u{1F438}" },
-  { id: "vocab_bird", word: "bird", phonetic: "/berd/", viMeaning: "Con chim", category: "animals", stage: "tree", phrase: "a singing bird", sentence: "The little bird sings in the morning.", emoji: "\u{1F426}" },
-  { id: "vocab_duck", word: "duck", phonetic: "/duk/", viMeaning: "Con vit", category: "animals", stage: "sprout", phrase: "a yellow duck", sentence: "The duck swims across the river.", emoji: "\u{1F986}" },
-  { id: "vocab_fish", word: "fish", phonetic: "/fish/", viMeaning: "Con ca", category: "animals", stage: "tree", phrase: "a goldfish", sentence: "The goldfish swims in clear water.", emoji: "\u{1F41F}" },
-  { id: "vocab_turtle", word: "turtle", phonetic: "/ter.tel/", viMeaning: "Con rua", category: "animals", stage: "plant", phrase: "a slow turtle", sentence: "The turtle walks very slowly.", emoji: "\u{1F422}" },
-  { id: "vocab_butterfly", word: "butterfly", phonetic: "/but.e.flai/", viMeaning: "Con buom", category: "animals", stage: "plant", phrase: "a colorful butterfly", sentence: "The butterfly flies around the flowers.", emoji: "\u{1F98B}" },
-  { id: "vocab_horse", word: "horse", phonetic: "/hors/", viMeaning: "Con ngua", category: "animals", stage: "plant", phrase: "a fast horse", sentence: "The horse runs fast in the field.", emoji: "\u{1F434}" },
-  { id: "vocab_pig", word: "pig", phonetic: "/pig/", viMeaning: "Con heo", category: "animals", stage: "sprout", phrase: "a pink pig", sentence: "The little pig plays in the mud.", emoji: "\u{1F437}" },
+  { id: "vocab_cat", word: "cat", phonetic: "/kaet/", viMeaning: "Con mèo", category: "animals", stage: "tree", difficulty: 1, phrase: "a cute cat", sentence: "The cat is sleeping on the mat.", emoji: "\u{1F431}", imagePath: "/kid/animals/cat.png" },
+  { id: "vocab_dog", word: "dog", phonetic: "/dog/", viMeaning: "Con chó", category: "animals", stage: "tree", difficulty: 1, phrase: "a friendly dog", sentence: "The dog wags its tail happily.", emoji: "\u{1F436}", imagePath: "/kid/animals/dog.png" },
+  { id: "vocab_rabbit", word: "rabbit", phonetic: "/rab.it/", viMeaning: "Con thỏ", category: "animals", stage: "plant", difficulty: 2, phrase: "a white rabbit", sentence: "The rabbit loves eating carrots.", emoji: "\u{1F430}", imagePath: "/kid/animals/rabbit.png" },
+  { id: "vocab_lion", word: "lion", phonetic: "/lai.en/", viMeaning: "Sư tử", category: "animals", stage: "tree", difficulty: 1, phrase: "the brave lion", sentence: "The lion is the king of the jungle.", emoji: "\u{1F981}", imagePath: "/kid/animals/lion.png" },
+  { id: "vocab_elephant", word: "elephant", phonetic: "/el.i.fent/", viMeaning: "Con voi", category: "animals", stage: "plant", difficulty: 2, phrase: "a big elephant", sentence: "The elephant has a long trunk.", emoji: "\u{1F418}", imagePath: "/kid/animals/elephant.png" },
+  { id: "vocab_bear", word: "bear", phonetic: "/beer/", viMeaning: "Con gấu", category: "animals", stage: "sprout", difficulty: 1, phrase: "a brown bear", sentence: "The bear likes eating sweet honey.", emoji: "\u{1F43B}", imagePath: "/kid/animals/bear.png" },
+  { id: "vocab_monkey", word: "monkey", phonetic: "/mung.ki/", viMeaning: "Con khỉ", category: "animals", stage: "plant", difficulty: 2, phrase: "a clever monkey", sentence: "The monkey climbs the tall tree.", emoji: "\u{1F435}", imagePath: "/kid/animals/monkey.png" },
+  { id: "vocab_frog", word: "frog", phonetic: "/frog/", viMeaning: "Con ếch", category: "animals", stage: "sprout", difficulty: 1, phrase: "a green frog", sentence: "The green frog hops across the pond.", emoji: "\u{1F438}", imagePath: "/kid/animals/frog.png" },
+  { id: "vocab_bird", word: "bird", phonetic: "/berd/", viMeaning: "Con chim", category: "animals", stage: "tree", difficulty: 1, phrase: "a singing bird", sentence: "The little bird sings in the morning.", emoji: "\u{1F426}", imagePath: "/kid/animals/bird.png" },
+  { id: "vocab_duck", word: "duck", phonetic: "/duk/", viMeaning: "Con vịt", category: "animals", stage: "sprout", difficulty: 1, phrase: "a yellow duck", sentence: "The duck swims across the river.", emoji: "\u{1F986}", imagePath: "/kid/animals/bird.png" },
+  { id: "vocab_fish", word: "fish", phonetic: "/fish/", viMeaning: "Con cá", category: "animals", stage: "tree", difficulty: 1, phrase: "a goldfish", sentence: "The goldfish swims in clear water.", emoji: "\u{1F41F}", imagePath: "/kid/animals/dolphin.png" },
+  { id: "vocab_turtle", word: "turtle", phonetic: "/ter.tel/", viMeaning: "Con rùa", category: "animals", stage: "plant", difficulty: 2, phrase: "a slow turtle", sentence: "The turtle walks very slowly.", emoji: "\u{1F422}", imagePath: "/kid/animals/turtle.png" },
+  { id: "vocab_butterfly", word: "butterfly", phonetic: "/but.e.flai/", viMeaning: "Con bướm", category: "animals", stage: "plant", difficulty: 2, phrase: "a colorful butterfly", sentence: "The butterfly flies around the flowers.", emoji: "\u{1F98B}", imagePath: "/kid/animals/butterfly.png" },
+  { id: "vocab_horse", word: "horse", phonetic: "/hors/", viMeaning: "Con ngựa", category: "animals", stage: "plant", difficulty: 2, phrase: "a fast horse", sentence: "The horse runs fast in the field.", emoji: "\u{1F434}", imagePath: "/kid/animals/zebra.png" },
+  { id: "vocab_pig", word: "pig", phonetic: "/pig/", viMeaning: "Con heo", category: "animals", stage: "sprout", difficulty: 1, phrase: "a pink pig", sentence: "The little pig plays in the mud.", emoji: "\u{1F437}", imagePath: "/kid/animals/panda.png" },
 
   // === FRUITS & FOOD (15) ===
-  { id: "vocab_apple", word: "apple", phonetic: "/ap.el/", viMeaning: "Qua tao", category: "fruits", stage: "tree", phrase: "a sweet red apple", sentence: "An apple a day keeps the doctor away.", emoji: "\u{1F34E}" },
-  { id: "vocab_banana", word: "banana", phonetic: "/ba.na.na/", viMeaning: "Qua chuoi", category: "fruits", stage: "tree", phrase: "a yellow banana", sentence: "The monkey is eating a sweet banana.", emoji: "\u{1F34C}" },
-  { id: "vocab_orange", word: "orange", phonetic: "/or.inj/", viMeaning: "Qua cam", category: "fruits", stage: "tree", phrase: "a juicy orange", sentence: "I drink fresh orange juice every morning.", emoji: "\u{1F34A}" },
-  { id: "vocab_grape", word: "grape", phonetic: "/greip/", viMeaning: "Qua nho", category: "fruits", stage: "plant", phrase: "purple grapes", sentence: "The grapes are sweet and delicious.", emoji: "\u{1F347}" },
-  { id: "vocab_watermelon", word: "watermelon", phonetic: "/wo.ter.mel.en/", viMeaning: "Qua dua hau", category: "fruits", stage: "plant", phrase: "a big watermelon", sentence: "We eat watermelon on hot summer days.", emoji: "\u{1F349}" },
-  { id: "vocab_strawberry", word: "strawberry", phonetic: "/stro.ber.i/", viMeaning: "Qua dau tay", category: "fruits", stage: "tree", phrase: "sweet red strawberry", sentence: "The strawberry cake tastes wonderful.", emoji: "\u{1F353}" },
-  { id: "vocab_pizza", word: "pizza", phonetic: "/peet.sa/", viMeaning: "Banh pizza", category: "fruits", stage: "plant", phrase: "delicious cheese pizza", sentence: "We share a hot pizza for dinner.", emoji: "\u{1F355}" },
-  { id: "vocab_burger", word: "burger", phonetic: "/ber.ger/", viMeaning: "Banh kep burger", category: "fruits", stage: "sprout", phrase: "a tasty burger", sentence: "He enjoys a burger with fresh lettuce.", emoji: "\u{1F354}" },
-  { id: "vocab_milk", word: "milk", phonetic: "/milk/", viMeaning: "Sua tuoi", category: "fruits", stage: "tree", phrase: "a glass of fresh milk", sentence: "Drink warm milk before sleeping.", emoji: "\u{1F95B}" },
-  { id: "vocab_bread", word: "bread", phonetic: "/bred/", viMeaning: "Banh mi", category: "fruits", stage: "sprout", phrase: "crispy warm bread", sentence: "I eat bread and butter for breakfast.", emoji: "\u{1F35E}" },
-  { id: "vocab_carrot", word: "carrot", phonetic: "/kar.et/", viMeaning: "Cu ca rot", category: "fruits", stage: "plant", phrase: "a crunchy orange carrot", sentence: "Rabbits love eating fresh carrots.", emoji: "\u{1F955}" },
-  { id: "vocab_cookie", word: "cookie", phonetic: "/kuk.i/", viMeaning: "Banh quy", category: "fruits", stage: "sprout", phrase: "chocolate chip cookie", sentence: "Grandma baked sweet cookies today.", emoji: "\u{1F36A}" },
-  { id: "vocab_rice", word: "rice", phonetic: "/rais/", viMeaning: "Com / Gao", category: "fruits", stage: "tree", phrase: "a bowl of rice", sentence: "We eat rice with chicken for lunch.", emoji: "\u{1F35A}" },
-  { id: "vocab_egg", word: "egg", phonetic: "/eg/", viMeaning: "Qua trung", category: "fruits", stage: "sprout", phrase: "a boiled egg", sentence: "Mom cooks eggs for breakfast every day.", emoji: "\u{1F95A}" },
-  { id: "vocab_water", word: "water", phonetic: "/wo.ter/", viMeaning: "Nuoc", category: "fruits", stage: "tree", phrase: "a cup of water", sentence: "Please drink more water every day.", emoji: "\u{1F4A7}" },
+  { id: "vocab_apple", word: "apple", phonetic: "/ap.el/", viMeaning: "Quả táo", category: "fruits", stage: "tree", difficulty: 1, phrase: "a sweet red apple", sentence: "An apple a day keeps the doctor away.", emoji: "\u{1F34E}", imagePath: "/kid/food/apple.jpg" },
+  { id: "vocab_banana", word: "banana", phonetic: "/ba.na.na/", viMeaning: "Quả chuối", category: "fruits", stage: "tree", difficulty: 1, phrase: "a yellow banana", sentence: "The monkey is eating a sweet banana.", emoji: "\u{1F34C}", imagePath: "/kid/food/banana.jpg" },
+  { id: "vocab_orange", word: "orange", phonetic: "/or.inj/", viMeaning: "Quả cam", category: "fruits", stage: "tree", difficulty: 1, phrase: "a juicy orange", sentence: "I drink fresh orange juice every morning.", emoji: "\u{1F34A}" },
+  { id: "vocab_grape", word: "grape", phonetic: "/greip/", viMeaning: "Quả nho", category: "fruits", stage: "plant", difficulty: 2, phrase: "purple grapes", sentence: "The grapes are sweet and delicious.", emoji: "\u{1F347}" },
+  { id: "vocab_watermelon", word: "watermelon", phonetic: "/wo.ter.mel.en/", viMeaning: "Quả dưa hấu", category: "fruits", stage: "plant", difficulty: 2, phrase: "a big watermelon", sentence: "We eat watermelon on hot summer days.", emoji: "\u{1F349}" },
+  { id: "vocab_strawberry", word: "strawberry", phonetic: "/stro.ber.i/", viMeaning: "Quả dâu tây", category: "fruits", stage: "tree", difficulty: 2, phrase: "sweet red strawberry", sentence: "The strawberry cake tastes wonderful.", emoji: "\u{1F353}" },
+  { id: "vocab_pizza", word: "pizza", phonetic: "/peet.sa/", viMeaning: "Bánh pizza", category: "fruits", stage: "plant", difficulty: 1, phrase: "delicious cheese pizza", sentence: "We share a hot pizza for dinner.", emoji: "\u{1F355}", imagePath: "/kid/food/pizza.jpg" },
+  { id: "vocab_burger", word: "burger", phonetic: "/ber.ger/", viMeaning: "Bánh kẹp burger", category: "fruits", stage: "sprout", difficulty: 1, phrase: "a tasty burger", sentence: "He enjoys a burger with fresh lettuce.", emoji: "\u{1F354}", imagePath: "/kid/food/burger.jpg" },
+  { id: "vocab_milk", word: "milk", phonetic: "/milk/", viMeaning: "Sữa tươi", category: "fruits", stage: "tree", difficulty: 1, phrase: "a glass of fresh milk", sentence: "Drink warm milk before sleeping.", emoji: "\u{1F95B}", imagePath: "/kid/food/milk.jpg" },
+  { id: "vocab_bread", word: "bread", phonetic: "/bred/", viMeaning: "Bánh mì", category: "fruits", stage: "sprout", difficulty: 1, phrase: "crispy warm bread", sentence: "I eat bread and butter for breakfast.", emoji: "\u{1F35E}", imagePath: "/kid/food/bread.jpg" },
+  { id: "vocab_carrot", word: "carrot", phonetic: "/kar.et/", viMeaning: "Củ cà rốt", category: "fruits", stage: "plant", difficulty: 2, phrase: "a crunchy orange carrot", sentence: "Rabbits love eating fresh carrots.", emoji: "\u{1F955}", imagePath: "/kid/food/carrot.jpg" },
+  { id: "vocab_cookie", word: "cookie", phonetic: "/kuk.i/", viMeaning: "Bánh quy", category: "fruits", stage: "sprout", difficulty: 1, phrase: "chocolate chip cookie", sentence: "Grandma baked sweet cookies today.", emoji: "\u{1F36A}" },
+  { id: "vocab_rice", word: "rice", phonetic: "/rais/", viMeaning: "Cơm / Gạo", category: "fruits", stage: "tree", difficulty: 1, phrase: "a bowl of rice", sentence: "We eat rice with chicken for lunch.", emoji: "\u{1F35A}" },
+  { id: "vocab_egg", word: "egg", phonetic: "/eg/", viMeaning: "Quả trứng", category: "fruits", stage: "sprout", difficulty: 1, phrase: "a boiled egg", sentence: "Mom cooks eggs for breakfast every day.", emoji: "\u{1F95A}" },
+  { id: "vocab_water", word: "water", phonetic: "/wo.ter/", viMeaning: "Nước", category: "fruits", stage: "tree", difficulty: 1, phrase: "a cup of water", sentence: "Please drink more water every day.", emoji: "\u{1F4A7}" },
 
   // === TRANSPORT (10) ===
-  { id: "vocab_car", word: "car", phonetic: "/kar/", viMeaning: "Xe o to", category: "transport", stage: "tree", phrase: "a shiny red car", sentence: "My dad drives a red car to work.", emoji: "\u{1F697}" },
-  { id: "vocab_bus", word: "bus", phonetic: "/bus/", viMeaning: "Xe buyt", category: "transport", stage: "tree", phrase: "the yellow school bus", sentence: "Children ride the bus to school.", emoji: "\u{1F68C}" },
-  { id: "vocab_train", word: "train", phonetic: "/trein/", viMeaning: "Tau hoa", category: "transport", stage: "plant", phrase: "a long fast train", sentence: "The train moves smoothly along the rails.", emoji: "\u{1F682}" },
-  { id: "vocab_rocket", word: "rocket", phonetic: "/rok.it/", viMeaning: "Ten lua vu tru", category: "transport", stage: "tree", phrase: "a powerful space rocket", sentence: "The rocket flies high into the stars.", emoji: "\u{1F680}" },
-  { id: "vocab_airplane", word: "airplane", phonetic: "/er.plein/", viMeaning: "May bay", category: "transport", stage: "plant", phrase: "a silver airplane", sentence: "The airplane soars above white clouds.", emoji: "\u{2708}\u{FE0F}" },
-  { id: "vocab_boat", word: "boat", phonetic: "/bout/", viMeaning: "Con thuyen", category: "transport", stage: "sprout", phrase: "a small sailboat", sentence: "The boat sails on the calm blue sea.", emoji: "\u{26F5}" },
-  { id: "vocab_bicycle", word: "bicycle", phonetic: "/bai.si.kel/", viMeaning: "Xe dap", category: "transport", stage: "tree", phrase: "ride my bicycle", sentence: "I ride my bicycle in the green park.", emoji: "\u{1F6B2}" },
-  { id: "vocab_helicopter", word: "helicopter", phonetic: "/hel.i.kop.ter/", viMeaning: "Truc thang", category: "transport", stage: "plant", phrase: "a flying helicopter", sentence: "The helicopter flies over the city.", emoji: "\u{1F681}" },
-  { id: "vocab_motorcycle", word: "motorcycle", phonetic: "/mo.te.sai.kel/", viMeaning: "Xe may", category: "transport", stage: "plant", phrase: "a fast motorcycle", sentence: "Dad rides a motorcycle to the market.", emoji: "\u{1F3CD}\u{FE0F}" },
-  { id: "vocab_ship", word: "ship", phonetic: "/ship/", viMeaning: "Tau thuy", category: "transport", stage: "sprout", phrase: "a big cruise ship", sentence: "The ship sails across the ocean.", emoji: "\u{1F6A2}" },
+  { id: "vocab_car", word: "car", phonetic: "/kar/", viMeaning: "Xe ô tô", category: "transport", stage: "tree", difficulty: 1, phrase: "a shiny red car", sentence: "My dad drives a red car to work.", emoji: "\u{1F697}", imagePath: "/kid/transport/car.jpg" },
+  { id: "vocab_bus", word: "bus", phonetic: "/bus/", viMeaning: "Xe buýt", category: "transport", stage: "tree", difficulty: 1, phrase: "the yellow school bus", sentence: "Children ride the bus to school.", emoji: "\u{1F68C}", imagePath: "/kid/transport/bus.jpg" },
+  { id: "vocab_train", word: "train", phonetic: "/trein/", viMeaning: "Tàu hỏa", category: "transport", stage: "plant", difficulty: 2, phrase: "a long fast train", sentence: "The train moves smoothly along the rails.", emoji: "\u{1F682}", imagePath: "/kid/transport/train.jpg" },
+  { id: "vocab_rocket", word: "rocket", phonetic: "/rok.it/", viMeaning: "Tên lửa vũ trụ", category: "transport", stage: "tree", difficulty: 2, phrase: "a powerful space rocket", sentence: "The rocket flies high into the stars.", emoji: "\u{1F680}", imagePath: "/kid/transport/rocket.jpg" },
+  { id: "vocab_airplane", word: "airplane", phonetic: "/er.plein/", viMeaning: "Máy bay", category: "transport", stage: "plant", difficulty: 2, phrase: "a silver airplane", sentence: "The airplane soars above white clouds.", emoji: "\u{2708}\u{FE0F}" },
+  { id: "vocab_boat", word: "boat", phonetic: "/bout/", viMeaning: "Con thuyền", category: "transport", stage: "sprout", difficulty: 1, phrase: "a small sailboat", sentence: "The boat sails on the calm blue sea.", emoji: "\u{26F5}" },
+  { id: "vocab_bicycle", word: "bicycle", phonetic: "/bai.si.kel/", viMeaning: "Xe đạp", category: "transport", stage: "tree", difficulty: 2, phrase: "ride my bicycle", sentence: "I ride my bicycle in the green park.", emoji: "\u{1F6B2}" },
+  { id: "vocab_helicopter", word: "helicopter", phonetic: "/hel.i.kop.ter/", viMeaning: "Trực thăng", category: "transport", stage: "plant", difficulty: 3, phrase: "a flying helicopter", sentence: "The helicopter flies over the city.", emoji: "\u{1F681}" },
+  { id: "vocab_motorcycle", word: "motorcycle", phonetic: "/mo.te.sai.kel/", viMeaning: "Xe máy", category: "transport", stage: "plant", difficulty: 3, phrase: "a fast motorcycle", sentence: "Dad rides a motorcycle to the market.", emoji: "\u{1F3CD}\u{FE0F}" },
+  { id: "vocab_ship", word: "ship", phonetic: "/ship/", viMeaning: "Tàu thủy", category: "transport", stage: "sprout", difficulty: 1, phrase: "a big cruise ship", sentence: "The ship sails across the ocean.", emoji: "\u{1F6A2}" },
 
   // === SCHOOL (10) ===
-  { id: "vocab_book", word: "book", phonetic: "/buk/", viMeaning: "Quyen sach", category: "school", stage: "tree", phrase: "an interesting picture book", sentence: "I open the book and read a story.", emoji: "\u{1F4D6}" },
-  { id: "vocab_pencil", word: "pencil", phonetic: "/pen.sel/", viMeaning: "But chi", category: "school", stage: "tree", phrase: "a sharp pencil", sentence: "Draw a sunny picture with your pencil.", emoji: "\u{270F}\u{FE0F}" },
+  { id: "vocab_book", word: "book", phonetic: "/buk/", viMeaning: "Quyển sách", category: "school", stage: "tree", difficulty: 1, phrase: "an interesting picture book", sentence: "I open the book and read a story.", emoji: "\u{1F4D6}", imagePath: "/kid/school/book.jpg" },
+  { id: "vocab_pencil", word: "pencil", phonetic: "/pen.sel/", viMeaning: "Bút chì", category: "school", stage: "tree", difficulty: 1, phrase: "a sharp pencil", sentence: "Draw a sunny picture with your pencil.", emoji: "\u{270F}\u{FE0F}" },
   { id: "vocab_clock", word: "clock", phonetic: "/klok/", viMeaning: "Dong ho", category: "school", stage: "plant", phrase: "the round wall clock", sentence: "The clock shows seven in the morning.", emoji: "\u{23F0}" },
   { id: "vocab_bag", word: "bag", phonetic: "/bag/", viMeaning: "Cap sach", category: "school", stage: "sprout", phrase: "a school bag", sentence: "I put my books in my school bag.", emoji: "\u{1F392}" },
   { id: "vocab_ruler", word: "ruler", phonetic: "/ru.ler/", viMeaning: "Thuoc ke", category: "school", stage: "plant", phrase: "a long ruler", sentence: "I use a ruler to draw straight lines.", emoji: "\u{1F4CF}" },

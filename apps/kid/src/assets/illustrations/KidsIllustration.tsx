@@ -105,6 +105,31 @@ const KID_PHOTO_ASSETS: Record<string, string> = {
   'badge-streak': '/kid/rewards/badge-streak.png',
   'badge-word-master': '/kid/rewards/badge-word-master.png',
   'badge-challenge': '/kid/rewards/badge-challenge.png',
+  // Food & Dishes (3D kawaii generated images)
+  apple: '/kid/food/apple.jpg',
+  banana: '/kid/food/banana.jpg',
+  pizza: '/kid/food/pizza.jpg',
+  burger: '/kid/food/burger.jpg',
+  hamburger: '/kid/food/burger.jpg',
+  milk: '/kid/food/milk.jpg',
+  bread: '/kid/food/bread.jpg',
+  carrot: '/kid/food/carrot.jpg',
+  strawberry: '/kid/food/apple.jpg', // fallback to apple until dedicated asset
+  cookie: '/kid/food/bread.jpg',     // fallback to bread until dedicated asset
+  'ice-cream': '/kid/food/milk.jpg', // fallback to milk until dedicated asset
+  // Transport & Vehicles (3D kawaii generated images)
+  car: '/kid/transport/car.jpg',
+  bus: '/kid/transport/bus.jpg',
+  train: '/kid/transport/train.jpg',
+  rocket: '/kid/transport/rocket.jpg',
+  airplane: '/kid/transport/rocket.jpg', // fallback to rocket until dedicated asset
+  boat: '/kid/transport/train.jpg',      // fallback to train until dedicated asset
+  bicycle: '/kid/transport/car.jpg',     // fallback to car until dedicated asset
+  // School & Nature (3D kawaii generated images)
+  book: '/kid/school/book.jpg',
+  pencil: '/kid/school/book.jpg',  // fallback to book until dedicated asset
+  sun: '/kid/mascot/vivi-celebrate.png',
+  cloud: '/kid/mascot/vivi-thinking.png',
   // Character & Greetings
   hello: '/kid/mascot/vivi-wave.png',
   wave: '/kid/mascot/vivi-wave.png',

@@ -33,6 +33,7 @@ export const KidsLessonPage: React.FC = () => {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
   const [weakWords, setWeakWords] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [earnedStars, setEarnedStars] = useState(3);
@@ -63,6 +64,7 @@ export const KidsLessonPage: React.FC = () => {
       newCorrect += 1;
       setCorrectCount(newCorrect);
     } else {
+      setErrorCount(prev => prev + 1);
       const targetWord = currentActivity?.targetWord;
       if (targetWord && !weakWords.includes(targetWord)) {
         setWeakWords(prev => [...prev, targetWord]);
@@ -79,9 +81,11 @@ export const KidsLessonPage: React.FC = () => {
 
   const finishLesson = (finalCorrect: number) => {
     const accuracy = Math.round((finalCorrect / activities.length) * 100);
+    // Star calculation based on error count: 0-1 errors = 3★, 2-3 = 2★, 4+ = 1★
+    const currentErrors = activities.length - finalCorrect;
     let stars = 1;
-    if (accuracy >= 85) stars = 3;
-    else if (accuracy >= 60) stars = 2;
+    if (currentErrors <= 1) stars = 3;
+    else if (currentErrors <= 3) stars = 2;
 
     const xp = stars * 25 + 25;
     setEarnedStars(stars);
@@ -114,6 +118,7 @@ export const KidsLessonPage: React.FC = () => {
   const handlePlayAgain = () => {
     setCurrentStep(0);
     setCorrectCount(0);
+    setErrorCount(0);
     setWeakWords([]);
     setIsCompleted(false);
   };
@@ -216,11 +221,13 @@ export const KidsLessonPage: React.FC = () => {
         }}
       />
 
-      {/* Completion Modal */}
+      {/* Victory Celebration Modal with Fireworks & Star Animation */}
       <KidsRewardModal
         isOpen={isCompleted}
         stars={earnedStars}
+        errorCount={errorCount}
         xpEarned={earnedXp}
+        scorePercent={Math.round((correctCount / activities.length) * 100)}
         nextLessonTitle={nextLesson ? nextLesson.title : undefined}
         onNext={handleNextLesson}
         onReplay={handlePlayAgain}
