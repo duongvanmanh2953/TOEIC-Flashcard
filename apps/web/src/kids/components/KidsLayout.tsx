@@ -18,6 +18,8 @@ import ParentalMathGateModal from './ParentalMathGateModal';
 import StickerBookModal from './StickerBookModal';
 import meadowStore, { MeadowState } from '../core/meadowStateStore';
 import MeadowAudioEngine from '../services/audio/MeadowAudioEngine';
+import { SunnySoundFX } from '../services/audio/SunnySoundFX';
+import { BilingualVoiceEngine } from '../services/audio/BilingualVoiceEngine';
 
 import {
   Flame,
@@ -61,6 +63,12 @@ export const KidsLayout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sleepyCurtainOpen, setSleepyCurtainOpen] = useState(false);
   const [stickerModalOpen, setStickerModalOpen] = useState(false);
+  const [bgmActive, setBgmActive] = useState(false);
+
+  const handleToggleBgm = () => {
+    const active = SunnySoundFX.toggleAmbientBGM();
+    setBgmActive(active);
+  };
 
   // Immediately cancel any previous page voice narration whenever route changes
   useEffect(() => {
@@ -406,15 +414,30 @@ export const KidsLayout: React.FC = () => {
                   <span className="hidden sm:inline">Dịu mắt</span>
                 </button>
 
+                {/* Kalimba Ambient BGM Toggle */}
+                <button
+                  type="button"
+                  onClick={handleToggleBgm}
+                  title={bgmActive ? 'Tắt nhạc nền Kalimba' : 'Bật nhạc nền Kalimba thiên nhiên êm dịu'}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full border-2 text-xs font-extrabold font-display transition-all cursor-pointer active:scale-95 ${
+                    bgmActive
+                      ? 'bg-emerald-400 text-emerald-950 border-emerald-500 shadow-xs'
+                      : 'bg-white hover:bg-emerald-50 text-slate-700 border-emerald-200 shadow-2xs'
+                  }`}
+                >
+                  <span className="text-sm">🎵</span>
+                  <span className="hidden sm:inline">{bgmActive ? 'Kalimba: Bật' : 'Nhạc nền'}</span>
+                </button>
+
                 {/* Stars HUD */}
                 <div
                   onClick={() => {
-                    MeadowAudioEngine.playWoodTap('C6');
+                    SunnySoundFX.playButtonClick();
                     setStickerModalOpen(true);
                   }}
                   className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white border-2 border-amber-300 text-xs font-extrabold text-amber-950 font-display shadow-2xs cursor-pointer hover:bg-amber-50 active:scale-95"
                 >
-                  <svg className="w-4 h-4"><use href="#svg-star-badge"></use></svg>
+                  <svg className="w-4 h-4"><use href="#svg-star-gold"></use></svg>
                   <span>{meadowState.totalStars} Sao</span>
                 </div>
 

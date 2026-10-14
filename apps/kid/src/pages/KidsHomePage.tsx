@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MeadowAudioEngine } from '../services/audio/MeadowAudioEngine';
-import { meadowStore, MeadowState, INITIAL_STICKERS } from '../core/meadowStateStore';
+import { SunnySoundFX } from '../services/audio/SunnySoundFX';
+import { BilingualVoiceEngine } from '../services/audio/BilingualVoiceEngine';
+import { meadowStore, MeadowState } from '../core/meadowStateStore';
 import { SUNNY_MEADOW_GAMES } from '../games/sunny-meadow/sunnyMeadowRegistry';
 import StickerBookModal from '../components/StickerBookModal';
 
@@ -17,15 +18,15 @@ export const KidsHomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Gentle audio greeting once per session
+    // Gentle bilingual greeting once per session
     const alreadyGreeted = sessionStorage.getItem('sunny_meadow_greeted');
     if (!alreadyGreeted) {
       sessionStorage.setItem('sunny_meadow_greeted', 'true');
       const timer = setTimeout(() => {
-        MeadowAudioEngine.playWoodTap('G5');
-        MeadowAudioEngine.speak(
-          'Hello, little friend! Welcome to Sunny Meadow English! Let us play and learn together!',
-          { rate: 0.85, pitch: 1.18 }
+        SunnySoundFX.playStarAward(1);
+        BilingualVoiceEngine.speakBilingual(
+          'Xin chào bé yêu! Chào mừng bé đến với Sunny Meadow English! Cùng Cáo Sunny học tiếng Anh thật vui nhé!',
+          'Hello little friend! Welcome to Sunny Meadow English! Let us learn and have fun together!'
         );
       }, 700);
       return () => clearTimeout(timer);
@@ -34,26 +35,23 @@ export const KidsHomePage: React.FC = () => {
 
   const handleSpeakWord = (word: string, meaning: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    MeadowAudioEngine.playWoodTap('C5');
+    SunnySoundFX.playButtonClick();
     setPlayingWord(word);
-    MeadowAudioEngine.speak(`${word}! ${meaning}!`, {
-      rate: 0.85,
-      pitch: 1.15,
-      onEnd: () => setPlayingWord(null),
-    });
+    BilingualVoiceEngine.speakBilingual(meaning, word);
+    setTimeout(() => setPlayingWord(null), 1200);
   };
 
   const handleLaunchGame = (gameId: string) => {
-    MeadowAudioEngine.playWoodTap('G5');
+    SunnySoundFX.playButtonClick();
     navigate(`/games?game=${gameId}`);
   };
 
   const dailyWords = [
-    { word: 'apple', meaning: 'quả táo đỏ', symbol: '#svg-item-apple', color: 'bg-rose-100 text-rose-800' },
-    { word: 'carrot', meaning: 'củ cà rốt', symbol: '#svg-item-carrot', color: 'bg-amber-100 text-amber-900' },
-    { word: 'strawberry', meaning: 'dâu tây ngọt', symbol: '#svg-item-strawberry', color: 'bg-pink-100 text-pink-900' },
-    { word: 'banana', meaning: 'quả chuối vàng', symbol: '#svg-item-banana', color: 'bg-yellow-100 text-yellow-900' },
-    { word: 'mushroom', meaning: 'cây nấm rừng', symbol: '#svg-red-mushroom', color: 'bg-red-100 text-red-900' },
+    { word: 'apple', meaning: 'Quả táo đỏ', symbol: '#svg-item-apple' },
+    { word: 'carrot', meaning: 'Củ cà rốt', symbol: '#svg-item-carrot' },
+    { word: 'strawberry', meaning: 'Dâu tây ngọt', symbol: '#svg-item-strawberry' },
+    { word: 'banana', meaning: 'Quả chuối vàng', symbol: '#svg-item-banana' },
+    { word: 'grape', meaning: 'Chùm nho tím', symbol: '#svg-item-grape' },
   ];
 
   const unlockedStickersCount = state.stickers.length;
@@ -72,28 +70,28 @@ export const KidsHomePage: React.FC = () => {
         {/* Hero Text */}
         <div className="relative z-10 max-w-lg space-y-3 text-center md:text-left">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-xs font-extrabold uppercase tracking-wider text-emerald-800 font-display shadow-2xs border border-emerald-200">
-            <span>🦊 Khu Rừng Học Tiếng Anh Cho Bé (V2.0)</span>
+            <span>🦊 Khu Rừng Học Tiếng Anh Cho Bé (V3.0)</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-[#1E293B] font-display tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-[#0F172A] font-display tracking-tight leading-tight">
             Cùng Cáo Sunny Khám Phá Rừng Xanh!
           </h1>
 
           <p className="text-sm sm:text-base font-semibold text-[#475569] font-body leading-relaxed">
-            Học tiếng Anh tự nhiên qua 5 trò chơi sinh thái: đút quả picnic, pha màu hồ sen, bắt đom đóm chữ cái và thổi gió phép thuật!
+            Học tiếng Anh tự nhiên qua 5 trò chơi sinh thái: lật thẻ 3D, đút quả picnic, pha màu hồ sen, bắt đom đóm chữ cái và thổi cối xay gió!
           </p>
 
           <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4">
             <button
-              onClick={() => handleLaunchGame('hungry_picnic')}
+              onClick={() => handleLaunchGame('sunny_memory_flip')}
               className="toy-btn toy-btn-green px-8 py-3 text-lg"
             >
-              <span>🧺 Bắt Đầu Chơi Ngay ▶</span>
+              <span>🎴 Khám Phá Trò Chơi Ngay ▶</span>
             </button>
 
             <button
               onClick={() => {
-                MeadowAudioEngine.playWoodTap('C5');
+                SunnySoundFX.playButtonClick();
                 setStickerModalOpen(true);
               }}
               className="toy-btn toy-btn-amber px-6 py-3 text-base"
@@ -103,38 +101,41 @@ export const KidsHomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Mascot Hero Mascot: Sunny the Fox + Chubby Bunny */}
+        {/* Mascot Hero: Sunny the Fox */}
         <div
           onClick={() => {
-            MeadowAudioEngine.playWoodTap('G5');
-            MeadowAudioEngine.speak('I am Sunny the Fox! Let us learn English and have fun in the meadow!');
+            SunnySoundFX.playButtonClick();
+            BilingualVoiceEngine.speakBilingual(
+              'Xin chào bé! Tớ là Cáo Sunny! Cùng tớ khám phá rừng xanh và học tiếng Anh thật vui nhé!',
+              'Hello little friend! I am Sunny the Fox! Let us play and learn English together!'
+            );
           }}
           className="relative w-52 h-52 sm:w-64 sm:h-64 flex items-center justify-center shrink-0 cursor-pointer group"
-          title="Chạm vào bạn Cáo Sunny"
+          title="Chạm vào bạn Cáo Sunny để nghe giọng nói"
         >
-          <div className="w-full h-full rounded-full bg-white/70 p-4 shadow-lg border-4 border-amber-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="w-full h-full rounded-full bg-white/80 p-4 shadow-lg border-4 border-amber-300 flex items-center justify-center group-hover:scale-105 transition-transform">
             <svg className="w-full h-full drop-shadow-md">
               <use href="#svg-sunny-fox"></use>
             </svg>
           </div>
           {/* Mini speech balloon */}
-          <div className="absolute -top-2 right-2 bg-white px-3.5 py-1.5 rounded-2xl border-2 border-emerald-300 shadow-md font-display font-extrabold text-emerald-800 text-xs sm:text-sm animate-bounce">
-            "Hello, Friend!" 🍎
+          <div className="absolute -top-2 right-2 bg-white px-3.5 py-1.5 rounded-2xl border-2 border-emerald-400 shadow-md font-display font-extrabold text-emerald-800 text-xs sm:text-sm animate-bounce">
+            "Hello, Friend!" 🦊
           </div>
         </div>
       </section>
 
       {/* ===================================================================== */}
-      {/* 2. 5 NEXT-GEN PLAYABLE ECOLOGICAL MINI-GAMES CARDS                   */}
+      {/* 2. 5 PLAYABLE ECOLOGICAL MINI-GAMES CARDS                            */}
       {/* ===================================================================== */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] font-display">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] font-display">
               5 Trò Chơi Tương Tác Sinh Thái Mới
             </h2>
             <p className="text-xs sm:text-sm font-semibold text-slate-500 font-body">
-              Chạm và tương tác nhân quả trực quan — Bé chưa biết chữ vẫn chơi mê say!
+              Chạm và tương tác trực quan — Cáo Sunny hướng dẫn song ngữ Việt - Anh ấm áp!
             </p>
           </div>
           <button
@@ -151,7 +152,7 @@ export const KidsHomePage: React.FC = () => {
             <div
               key={game.id}
               onClick={() => handleLaunchGame(game.id)}
-              className="meadow-clay-card p-6 flex flex-col justify-between hover:scale-[1.02] active:scale-[0.98] cursor-pointer transition-all duration-200 bg-white group border-2 border-white hover:border-amber-300 min-h-[260px]"
+              className="meadow-clay-card p-6 flex flex-col justify-between hover:scale-[1.02] active:scale-[0.98] cursor-pointer transition-all duration-200 bg-white group border-2 border-[#BAE6FD] hover:border-amber-400 min-h-[260px] shadow-sm hover:shadow-md"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -159,7 +160,9 @@ export const KidsHomePage: React.FC = () => {
                     {game.badge}
                   </span>
                   <span className="text-xs font-extrabold text-amber-800 font-display flex items-center gap-1">
-                    <svg className="w-4 h-4"><use href="#svg-star-badge"></use></svg>
+                    <svg className="w-4 h-4">
+                      <use href="#svg-star-gold"></use>
+                    </svg>
                     <span>+{game.starsAwarded} Sao</span>
                   </span>
                 </div>
@@ -170,7 +173,7 @@ export const KidsHomePage: React.FC = () => {
                   </svg>
                 </div>
 
-                <h3 className="text-lg font-extrabold text-[#1E293B] font-display text-center mt-1 group-hover:text-emerald-700 transition-colors">
+                <h3 className="text-lg font-extrabold text-[#0F172A] font-display text-center mt-1 group-hover:text-emerald-700 transition-colors">
                   {game.titleVi}
                 </h3>
                 <p className="text-xs font-semibold text-slate-500 font-body text-center mt-1 leading-snug">
@@ -192,7 +195,7 @@ export const KidsHomePage: React.FC = () => {
       </section>
 
       {/* ===================================================================== */}
-      {/* 3. DAILY MEADOW VOCABULARY TRAY (TAP-TO-SPEAK WITH MARIMBA / KALIMBA) */}
+      {/* 3. DAILY MEADOW VOCABULARY TRAY (TAP-TO-SPEAK)                       */}
       {/* ===================================================================== */}
       <section className="meadow-clay-card p-6 sm:p-8 bg-[#FFFDF5] border-4 border-white shadow-sm space-y-4">
         <div className="flex items-center justify-between">
@@ -201,7 +204,7 @@ export const KidsHomePage: React.FC = () => {
               🔊
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] font-display">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0F172A] font-display">
                 Từ Vựng Tự Nhiên Hôm Nay (Tap-to-Speak)
               </h2>
               <p className="text-xs font-semibold text-slate-500 font-body">
@@ -228,7 +231,7 @@ export const KidsHomePage: React.FC = () => {
               </div>
 
               <div>
-                <p className="font-display font-extrabold text-[#1E293B] text-lg leading-tight uppercase">
+                <p className="font-display font-extrabold text-[#0F172A] text-lg leading-tight uppercase">
                   {item.word}
                 </p>
                 <p className="font-body text-xs font-bold text-slate-500 mt-0.5">
