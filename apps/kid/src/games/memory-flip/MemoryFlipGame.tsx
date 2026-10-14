@@ -90,15 +90,8 @@ const GameCardItem = memo<GameCardItemProps>(({ card, onCardClick, onVoiceClick,
           {/* Inner Golden Tonal Rim */}
           <div className="absolute inset-1.5 rounded-[14px] sm:rounded-[20px] border border-amber-300/30 pointer-events-none" />
 
-          {/* Top Logo Monogram */}
-          <div className="relative z-10 px-2 py-0.5 rounded-full bg-black/45 backdrop-blur-xs text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-amber-300 border border-amber-300/30">
-            VOCALFLOW
-          </div>
-
-          {/* Center Brand Emblem */}
-          <div className="relative z-10 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-amber-300/40 p-0 flex items-center justify-center shadow-md overflow-hidden">
-            <VocabFlowLogo size="sm" className="w-full h-full object-contain rounded-xl drop-shadow-sm" />
-          </div>
+          {/* Spacer */}
+          <div className="h-2" />
 
           {/* Bottom Flip Indicator */}
           <div className="relative z-10 px-2.5 py-0.5 sm:py-1 rounded-full bg-amber-400 text-amber-950 font-black text-[9px] sm:text-[10px] tracking-wide shadow-xs flex items-center gap-1">

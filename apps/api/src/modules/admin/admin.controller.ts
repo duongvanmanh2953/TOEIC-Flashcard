@@ -717,5 +717,51 @@ export class AdminController {
   ) {
     return this.adminService.updateResourceStatus(id, status, actorId);
   }
+
+  // =========================================================================
+  // KID ZONE ENDPOINTS (API RIÊNG CHO TRẺ EM & QUẢN TRỊ ADMIN)
+  // =========================================================================
+  @Get('kid/categories')
+  @ApiOperation({ summary: 'Lấy danh sách chủ đề học tập cho bé' })
+  getKidCategories() {
+    return this.adminService.getKidCategories();
+  }
+
+  @Post('kid/categories')
+  @ApiOperation({ summary: 'Tạo chủ đề học tập mới cho bé' })
+  createKidCategory(@Body() dto: any) {
+    return this.adminService.createKidCategory(dto);
+  }
+
+  @Get('kid/words')
+  @ApiOperation({ summary: 'Lấy toàn bộ từ vựng & flashcard trong kho của bé' })
+  getKidWords() {
+    return this.adminService.getKidWords();
+  }
+
+  @Post('kid/words')
+  @ApiOperation({ summary: 'Thêm thẻ từ vựng mới cho bé' })
+  createKidWord(@Body() dto: any) {
+    return this.adminService.createKidWord(dto);
+  }
+
+  @Patch('kid/words/:id')
+  @ApiOperation({ summary: 'Cập nhật từ vựng cho bé' })
+  updateKidWord(@Param('id') id: string, @Body() dto: any) {
+    return this.adminService.updateKidWord(id, dto);
+  }
+
+  @Delete('kid/words/:id')
+  @ApiOperation({ summary: 'Xóa thẻ từ vựng khỏi kho của bé' })
+  deleteKidWord(@Param('id') id: string) {
+    return this.adminService.deleteKidWord(id);
+  }
+
+  @Post('kid/words/bulk-delete')
+  @ApiOperation({ summary: 'Xóa hàng loạt thẻ từ vựng đã chọn' })
+  bulkDeleteKidWords(@Body('ids') ids: string[]) {
+    return this.adminService.bulkDeleteKidWords(ids);
+  }
 }
+
 

@@ -3118,5 +3118,139 @@ You are leading the digital transformation initiative. The backend API team info
 
     return updated;
   }
+
+  // =========================================================================
+  // KID ZONE VOCABULARY & FLASHCARD MANAGEMENT API
+  // Dedicated endpoints for Kids English Learning Content
+  // =========================================================================
+  private getKidStoragePath(): string {
+    const dataDir = path.resolve(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    return path.join(dataDir, 'kid_vocabulary.json');
+  }
+
+  private loadKidData(): { categories: any[]; words: any[] } {
+    const filePath = this.getKidStoragePath();
+    if (fs.existsSync(filePath)) {
+      try {
+        const raw = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(raw);
+      } catch (err) {
+        this.logger.error('Failed reading kid vocabulary storage', err);
+      }
+    }
+
+    // Default initial seeded data
+    return {
+      categories: [
+        { id: 'animals', nameVi: 'Động Vật', nameEn: 'Animals', illustration: 'lion', icon: '🦁', color: '#d97706', bgColor: 'bg-amber-50', accentGradient: 'from-amber-400 to-orange-500' },
+        { id: 'fruits', nameVi: 'Trái Cây & Ẩm Thực', nameEn: 'Fruits & Food', illustration: 'apple', icon: '🍎', color: '#e11d48', bgColor: 'bg-rose-50', accentGradient: 'from-rose-400 to-pink-500' },
+        { id: 'transport', nameVi: 'Phương Tiện Giao Thông', nameEn: 'Vehicles & Transport', illustration: 'rocket', icon: '🚀', color: '#7c3aed', bgColor: 'bg-purple-50', accentGradient: 'from-purple-400 to-indigo-600' },
+        { id: 'school', nameVi: 'Trường Học & Dụng Cụ', nameEn: 'School & Stationery', illustration: 'book', icon: '📚', color: '#2563eb', bgColor: 'bg-blue-50', accentGradient: 'from-blue-400 to-indigo-500' },
+      ],
+      words: [
+        { id: 'vocab_cat', word: 'cat', phonetic: '/kæt/', viMeaning: 'Con mèo', category: 'animals', stage: 'tree', phrase: 'a cute cat', sentence: 'The cat is sleeping on the mat.', imageUrl: '/kid/animals/cat.png', emoji: '🐱', isFlashcard: true },
+        { id: 'vocab_dog', word: 'dog', phonetic: '/dɒɡ/', viMeaning: 'Con chó', category: 'animals', stage: 'tree', phrase: 'a friendly dog', sentence: 'The dog wags its tail happily.', imageUrl: '/kid/animals/dog.png', emoji: '🐶', isFlashcard: true },
+        { id: 'vocab_lion', word: 'lion', phonetic: '/ˈlaɪ.ən/', viMeaning: 'Sư tử', category: 'animals', stage: 'tree', phrase: 'the brave lion', sentence: 'The lion is the king of the jungle.', imageUrl: '/kid/animals/lion.png', emoji: '🦁', isFlashcard: true },
+        { id: 'vocab_apple', word: 'apple', phonetic: '/ˈæp.əl/', viMeaning: 'Quả táo', category: 'fruits', stage: 'tree', phrase: 'a sweet red apple', sentence: 'An apple a day keeps the doctor away.', imageUrl: '/kid/food/apple.jpg', emoji: '🍎', isFlashcard: true },
+        { id: 'vocab_car', word: 'car', phonetic: '/kɑːr/', viMeaning: 'Xe ô tô', category: 'transport', stage: 'tree', phrase: 'a shiny red car', sentence: 'My dad drives a red car to work.', imageUrl: '/kid/transport/car.jpg', emoji: '🚗', isFlashcard: true },
+        { id: 'vocab_book', word: 'book', phonetic: '/bʊk/', viMeaning: 'Quyển sách', category: 'school', stage: 'tree', phrase: 'an interesting picture book', sentence: 'I open the book and read a story.', imageUrl: '/kid/school/book.jpg', emoji: '📖', isFlashcard: true },
+      ],
+    };
+  }
+
+  private saveKidData(data: { categories: any[]; words: any[] }): void {
+    const filePath = this.getKidStoragePath();
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    } catch (err) {
+      this.logger.error('Failed writing kid vocabulary storage', err);
+    }
+  }
+
+  async getKidCategories() {
+    const data = this.loadKidData();
+    return { success: true, data: data.categories };
+  }
+
+  async createKidCategory(dto: any) {
+    const data = this.loadKidData();
+    const newCat = {
+      id: dto.id || dto.nameEn?.toLowerCase().replace(/\s+/g, '_') || `cat_${Date.now()}`,
+      nameVi: dto.nameVi || 'Chủ đề mới',
+      nameEn: dto.nameEn || 'New Category',
+      illustration: dto.illustration || 'star',
+      icon: dto.icon || '📁',
+      color: dto.color || '#4f46e5',
+      bgColor: 'bg-indigo-50',
+      accentGradient: 'from-indigo-400 to-blue-500',
+    };
+    data.categories.push(newCat);
+    this.saveKidData(data);
+    return { success: true, data: newCat };
+  }
+
+  async getKidWords() {
+    const data = this.loadKidData();
+    return { success: true, data: data.words };
+  }
+
+  async createKidWord(dto: any) {
+    const data = this.loadKidData();
+    const newWord = {
+      id: dto.id || `kid_${dto.word}_${Date.now()}`,
+      word: dto.word,
+      letter: dto.letter || dto.word?.[0]?.toUpperCase(),
+      phonetic: dto.phonetic || '',
+      viMeaning: dto.viMeaning || '',
+      category: dto.category || 'animals',
+      stage: dto.stage || 'plant',
+      phrase: dto.phrase || '',
+      sentence: dto.sentence || '',
+      sentenceVi: dto.sentenceVi || '',
+      imageUrl: dto.imageUrl || '',
+      audioUrl: dto.audioUrl || '',
+      emoji: dto.emoji || '✨',
+      theme: dto.theme || 'coral',
+      isFlashcard: dto.isFlashcard ?? true,
+      createdAt: new Date().toISOString(),
+    };
+    data.words.unshift(newWord);
+    this.saveKidData(data);
+    return { success: true, data: newWord };
+  }
+
+  async updateKidWord(id: string, dto: any) {
+    const data = this.loadKidData();
+    const idx = data.words.findIndex((w: any) => w.id === id);
+    if (idx === -1) {
+      throw new NotFoundException(`Kid word ${id} not found`);
+    }
+    data.words[idx] = {
+      ...data.words[idx],
+      ...dto,
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveKidData(data);
+    return { success: true, data: data.words[idx] };
+  }
+
+  async deleteKidWord(id: string) {
+    const data = this.loadKidData();
+    data.words = data.words.filter((w: any) => w.id !== id);
+    this.saveKidData(data);
+    return { success: true, message: `Kid word ${id} deleted` };
+  }
+
+  async bulkDeleteKidWords(ids: string[]) {
+    const data = this.loadKidData();
+    const idSet = new Set(ids);
+    data.words = data.words.filter((w: any) => !idSet.has(w.id));
+    this.saveKidData(data);
+    return { success: true, count: ids.length };
+  }
 }
+
 

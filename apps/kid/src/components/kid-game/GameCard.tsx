@@ -43,16 +43,16 @@ export const GameCard: React.FC<GameCardProps> = memo(({
     }
   };
 
-  // State-specific styling
+  // State-specific styling using the new 3D Claymorphism system
   const stateStyles = {
     idle:
-      'bg-white border-2 border-slate-200/90 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.08),0_4px_10px_rgba(0,0,0,0.03)] hover:-translate-y-1.5 hover:shadow-[0_16px_32px_-4px_rgba(0,0,0,0.14)] active:translate-y-0 active:scale-95',
+      'toy-game-card',
     selected:
-      'bg-amber-50 border-3 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.35)] -translate-y-1',
+      'toy-game-card is-selected',
     correct:
-      'bg-emerald-50 border-3 border-emerald-500 shadow-[0_0_24px_rgba(16,185,129,0.4)] scale-102 pointer-events-none animate-[pulse_1.5s_ease-in-out]',
+      'toy-game-card is-correct animate-[pulse_1.5s_ease-in-out]',
     wrong:
-      'bg-rose-50 border-3 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.35)] animate-[shake_0.4s_ease-in-out]',
+      'toy-game-card is-wrong',
     disabled:
       'bg-slate-100 border-2 border-slate-200 opacity-50 cursor-not-allowed pointer-events-none shadow-none',
   }[state];
@@ -68,30 +68,33 @@ export const GameCard: React.FC<GameCardProps> = memo(({
       onClick={handleClick}
       role="button"
       tabIndex={0}
-      className={`relative rounded-[22px] sm:rounded-[26px] p-3 sm:p-4 flex flex-col items-center justify-between select-none cursor-pointer transition-all duration-200 ease-out touch-manipulation overflow-hidden ${aspectClass} ${stateStyles} ${className}`}
+      className={`relative p-3.5 sm:p-5 flex flex-col items-center justify-between select-none cursor-pointer transition-all duration-200 ease-out touch-manipulation overflow-hidden ${aspectClass} ${stateStyles} ${className}`}
       style={{ willChange: 'transform' }}
     >
+      {/* Soft Radial 3D Halo Glow */}
+      <div className="toy-card-halo" />
+
       {/* State Badge Icon (Top-Right) */}
       {state === 'correct' && (
-        <div className="absolute top-2.5 right-2.5 z-20 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md animate-scaleUp">
-          <CheckCircle2 className="w-4 h-4 stroke-[3]" />
+        <div className="absolute top-2.5 right-2.5 z-20 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg border-2 border-white animate-scaleUp">
+          <CheckCircle2 className="w-5 h-5 stroke-[3]" />
         </div>
       )}
       {state === 'wrong' && (
-        <div className="absolute top-2.5 right-2.5 z-20 w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-md animate-scaleUp">
-          <XCircle className="w-4 h-4 stroke-[3]" />
+        <div className="absolute top-2.5 right-2.5 z-20 w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg border-2 border-white animate-scaleUp">
+          <XCircle className="w-5 h-5 stroke-[3]" />
         </div>
       )}
 
-      {/* Main Image Area */}
-      <div className="relative w-full flex-1 flex items-center justify-center p-2 min-h-0">
+      {/* Main 3D Kawaii Image Area */}
+      <div className="relative z-10 w-full flex-1 flex items-center justify-center p-2 min-h-0">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={imageAlt}
             loading="lazy"
             decoding="async"
-            className="w-full h-full object-contain filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.12)] transition-transform duration-200 group-hover:scale-105 pointer-events-none"
+            className="w-full h-full object-contain filter drop-shadow-[0_12px_20px_rgba(0,0,0,0.16)] transition-transform duration-300 group-hover:scale-105 pointer-events-none"
           />
         ) : (
           image
@@ -99,16 +102,16 @@ export const GameCard: React.FC<GameCardProps> = memo(({
         {children}
       </div>
 
-      {/* Typography Label */}
+      {/* Tactile Typography Label with Pill Frame */}
       {(title || subtitle) && (
-        <div className="w-full text-center pt-2 border-t border-slate-100 shrink-0">
+        <div className="relative z-10 w-full text-center pt-2 mt-1 border-t border-slate-200/80 shrink-0">
           {title && (
-            <h3 className="text-base sm:text-lg font-black text-slate-900 capitalize tracking-tight leading-tight truncate">
+            <h3 className="text-base sm:text-lg font-black text-slate-800 capitalize tracking-tight leading-tight truncate drop-shadow-xs">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-xs sm:text-sm font-bold text-slate-500 truncate mt-0.5">
+            <p className="text-xs sm:text-sm font-bold text-slate-600 truncate mt-0.5">
               {subtitle}
             </p>
           )}

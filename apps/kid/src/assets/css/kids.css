@@ -1363,4 +1363,177 @@ body.eye-care-active {
   filter: sepia(16%) saturate(92%) brightness(97%);
   transition: filter 0.5s ease;
 }
+
+/* ==========================================================================
+   REVOLUTIONARY 3D CLAY CARD SYSTEM FOR GAMES
+   Ultra tactile porcelain clay body • Pillow bevel • Multi-layered 3D shadow
+   Zero ugly flat cards: every card looks like a glossy designer toy
+   ========================================================================== */
+
+.toy-game-card {
+  position: relative;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 60%, #F1F5F9 100%);
+  border-radius: 28px;
+  border: 3px solid #E2E8F0;
+  border-bottom: 7px solid #CBD5E1;
+  box-shadow:
+    0 12px 28px -6px rgba(15, 23, 42, 0.12),
+    0 6px 14px -3px rgba(15, 23, 42, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.03);
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.toy-game-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: #93C5FD;
+  border-bottom-color: #60A5FA;
+  box-shadow:
+    0 20px 36px -8px rgba(59, 130, 246, 0.25),
+    0 8px 16px -4px rgba(59, 130, 246, 0.15),
+    inset 0 2px 4px rgba(255, 255, 255, 1);
+}
+
+.toy-game-card:active {
+  transform: translateY(2px) scale(0.98);
+  border-bottom-width: 3px;
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.1),
+    inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Selected state (Warm amber glow) */
+.toy-game-card.is-selected {
+  background: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%);
+  border-color: #FBBF24;
+  border-bottom: 7px solid #D97706;
+  box-shadow:
+    0 16px 32px -6px rgba(245, 158, 11, 0.35),
+    0 0 0 4px rgba(251, 191, 36, 0.35),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9);
+  transform: translateY(-3px) scale(1.03);
+}
+
+/* Correct state (Emerald celebration) */
+.toy-game-card.is-correct {
+  background: linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%);
+  border-color: #34D399;
+  border-bottom: 7px solid #059669;
+  box-shadow:
+    0 18px 36px -6px rgba(16, 185, 129, 0.4),
+    0 0 0 5px rgba(52, 211, 153, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 1);
+  transform: translateY(-4px) scale(1.05);
+  pointer-events: none;
+}
+
+/* Wrong state (Gentle coral shake, no punishment) */
+.toy-game-card.is-wrong {
+  background: linear-gradient(180deg, #FFF1F2 0%, #FFE4E6 100%);
+  border-color: #FB7185;
+  border-bottom: 7px solid #E11D48;
+  animation: gentleWobble 0.45s ease-in-out;
+}
+
+/* Inner Halo & Illustration Float */
+.toy-card-halo {
+  position: absolute;
+  inset: 10px;
+  border-radius: 20px;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.9) 0%, rgba(241, 245, 249, 0.4) 100%);
+  pointer-events: none;
+}
+
+.toy-card-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: 900;
+  font-size: 13px;
+  background: linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%);
+  color: #334155;
+  border: 2px solid #CBD5E1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE SYSTEM (AGENTS.MD SPEC)
+   - Min touch targets: 68px buttons, 96px game items, 20px spacing
+   - Landscape rotation lock prompt for iPad / Phone
+   - Zero horizontal overflow
+   - Safe area inset padding for notched devices
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  /* Phone portrait adjustments */
+  .kid-touch-btn {
+    min-height: 56px !important;
+    min-width: 56px !important;
+    font-size: 14px !important;
+  }
+
+  .toy-game-card {
+    border-radius: 22px;
+    border-bottom-width: 5px;
+    padding: 10px !important;
+  }
+
+  .game-stage-wrapper {
+    padding: 8px !important;
+    min-height: calc(100dvh - 90px) !important;
+  }
+
+  /* Compact grid on narrow screens */
+  .kid-game-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  /* Safe bottom padding for floating navigation bars */
+  .kid-mobile-safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 72px) !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Tablet adjustments (iPad, iPad Pro, Android tablets) */
+  .kid-touch-btn {
+    min-height: 64px !important;
+    font-size: 16px !important;
+  }
+
+  .toy-game-card {
+    border-radius: 26px;
+    border-bottom-width: 6px;
+  }
+
+  .kid-game-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .game-stage-wrapper {
+    padding: 16px !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  /* Phone landscape mode (Ultra compact vertical) */
+  .game-stage-wrapper {
+    padding: 6px 12px !important;
+    min-height: 100dvh !important;
+  }
+
+  .toy-game-card {
+    border-bottom-width: 4px;
+    max-height: 150px;
+  }
+}
+
 

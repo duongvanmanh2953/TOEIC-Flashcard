@@ -46,30 +46,23 @@ const WORD_IMAGE_MAP: Record<string, string> = {
   whale: '/kid/animals/whale.png',
   bee: '/kid/animals/bee.png',
 
-  // Food & Fruits (Generated 3D kawaii JPGs)
+  // Food & Fruits (Verified 3D kawaii JPGs)
   apple: '/kid/food/apple.jpg',
   banana: '/kid/food/banana.jpg',
   pizza: '/kid/food/pizza.jpg',
   burger: '/kid/food/burger.jpg',
-  hamburger: '/kid/food/burger.jpg',
   milk: '/kid/food/milk.jpg',
   bread: '/kid/food/bread.jpg',
   carrot: '/kid/food/carrot.jpg',
-  strawberry: '/kid/food/apple.jpg',
-  cookie: '/kid/food/bread.jpg',
 
-  // Transport (Generated 3D kawaii JPGs)
+  // Transport (Verified 3D kawaii JPGs)
   car: '/kid/transport/car.jpg',
   bus: '/kid/transport/bus.jpg',
   train: '/kid/transport/train.jpg',
   rocket: '/kid/transport/rocket.jpg',
-  airplane: '/kid/transport/rocket.jpg',
-  boat: '/kid/transport/train.jpg',
-  bicycle: '/kid/transport/car.jpg',
 
   // School
   book: '/kid/school/book.jpg',
-  pencil: '/kid/school/book.jpg',
 
   // Rewards / Mascot
   star: '/kid/rewards/star.png',

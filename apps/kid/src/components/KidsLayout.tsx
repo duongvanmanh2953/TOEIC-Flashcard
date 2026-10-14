@@ -471,8 +471,8 @@ export const KidsLayout: React.FC = () => {
       {/* 3. TABLET & MOBILE BOTTOM NAVIGATION (Quick shortcuts)                    */}
       {/* ========================================================================= */}
       {!isFocusMode && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 px-2 py-1.5 shadow-lg">
-          <div className="w-full max-w-md sm:max-w-xl mx-auto flex items-center justify-around">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-3 py-2 shadow-2xl kid-mobile-safe-bottom">
+          <div className="w-full max-w-md sm:max-w-xl mx-auto flex items-center justify-around gap-1">
             {navItems.map((item) => {
               const isActive =
                 item.exact
@@ -483,14 +483,14 @@ export const KidsLayout: React.FC = () => {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-300 min-h-[48px] min-w-[56px] ${
+                  className={`flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-all duration-200 min-h-[58px] min-w-[62px] active:scale-95 touch-manipulation cursor-pointer ${
                     isActive
-                      ? 'bg-amber-50 text-amber-950 font-black shadow-xs border border-amber-200/80 -translate-y-0.5'
-                      : 'bg-transparent text-slate-600 font-bold hover:text-slate-900 border-transparent'
+                      ? 'bg-amber-100/90 text-amber-950 font-black shadow-sm border-2 border-amber-300 -translate-y-1'
+                      : 'bg-transparent text-slate-600 font-bold hover:text-slate-900 border-2 border-transparent'
                   }`}
                 >
-                  <item.icon size={20} className={isActive ? 'text-amber-600' : 'text-slate-500'} />
-                  <span className="text-[10px] mt-0.5 leading-tight">{item.label}</span>
+                  <item.icon size={22} className={isActive ? 'text-amber-600 stroke-[2.5]' : 'text-slate-500'} />
+                  <span className="text-[11px] font-black mt-1 leading-tight tracking-tight">{item.label}</span>
                 </NavLink>
               );
             })}
