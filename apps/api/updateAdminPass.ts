@@ -56,7 +56,11 @@ function promptPassword(query: string): Promise<string> {
 }
 
 async function main() {
-  const masterPass = process.env.SERVER_MASTER_PASSWORD || 'vocabflow2026';
+  const masterPass = process.env.SERVER_MASTER_PASSWORD;
+  if (!masterPass) {
+    console.error('❌ Lỗi bảo mật: Biến môi trường SERVER_MASTER_PASSWORD chưa được thiết lập trên máy chủ.');
+    process.exit(1);
+  }
   const inputPass = await promptPassword('🔑 Nhập mật khẩu máy chủ (Master Password) để tiếp tục: ');
 
   if (inputPass !== masterPass) {

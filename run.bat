@@ -24,9 +24,7 @@ echo  * Frontend Web:    http://localhost:3000
 echo  * Backend API:     http://localhost:4000/api/v1
 echo  * Swagger API Doc: http://localhost:4000/api/docs
 echo.
-echo  Tai khoan thu nghiem:
-echo    - Email: learner@vocabflow.ai
-echo    - Pass:  password123
+echo  * Luu y: Vui long tao tai khoan moi tren giao dien Web de bat dau hoc tap.
 echo ===================================================
 echo.
 echo Dang mo trinh duyet...

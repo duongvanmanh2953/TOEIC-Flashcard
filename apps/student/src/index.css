@@ -157,17 +157,22 @@
   }
 
   /* ==========================================================================
-     STRICT NO BOX-SHADOW ENFORCEMENT ACROSS ENTIRE PROJECT
-     - Tuyệt đối KHÔNG có bất kỳ box-shadow nào trong toàn bộ dự án
-     - Vô hiệu hóa triệt để mọi Tailwind shadow-* và CSS box-shadow
+     SUBTLE MODERN ELEVATION SYSTEM (frontend-design standard)
+     - Thay thế lệnh xóa bóng đổ cực đoan bằng hệ thống Elevation phân tầng tinh tế
+     - Cho phép Modals, Popovers, Cards có chiều sâu thị giác sang trọng
      ========================================================================== */
-  *,
-  *::before,
-  *::after {
-    box-shadow: none !important;
-    -webkit-box-shadow: none !important;
-    --tw-shadow: 0 0 #0000 !important;
-    --tw-shadow-colored: 0 0 #0000 !important;
+  [role="dialog"],
+  .modal-overlay > div,
+  .dropdown-menu,
+  [data-elevation="high"] {
+    box-shadow: 0 20px 35px -8px rgba(15, 23, 42, 0.12), 0 10px 15px -6px rgba(15, 23, 42, 0.05);
+  }
+
+  .dark [role="dialog"],
+  .dark .modal-overlay > div,
+  .dark .dropdown-menu,
+  .dark [data-elevation="high"] {
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 
   body {

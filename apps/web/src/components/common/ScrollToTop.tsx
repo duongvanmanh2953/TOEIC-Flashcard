@@ -25,15 +25,20 @@ export const ScrollToTop: React.FC = () => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
 
-    // 3. Reset internal page containers
+    // 3. Reset internal page content containers (strictly excluding sidebar navigation)
     const containers = document.querySelectorAll(
-      'main, [data-scroll-container="true"], .overflow-y-auto'
+      'main, [data-scroll-container="main"], .overflow-y-auto'
     );
     containers.forEach((el) => {
-      // Don't reset fixed aside navigation drawers or their scrollable children
-      if (!el.closest('aside')) {
-        el.scrollTop = 0;
+      // Never reset fixed aside navigation drawers or containers explicitly marked as sidebar
+      if (
+        el.closest('aside') ||
+        el.closest('[data-sidebar-scroll="true"]') ||
+        el.getAttribute('data-scroll-container') === 'sidebar'
+      ) {
+        return;
       }
+      el.scrollTop = 0;
     });
   }, [pathname, search]);
 

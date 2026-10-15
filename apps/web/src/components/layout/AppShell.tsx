@@ -62,6 +62,7 @@ import { QuickNoteModal } from '../notes/QuickNoteModal';
 import { VocabFlowLogo } from '@vocabflow/shared';
 import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { RichAIMessageRenderer } from '../ai/RichAIMessageRenderer';
+import { usePersistentScroll } from '../../hooks/usePersistentScroll';
 
 export const AppShell: React.FC = () => {
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
@@ -96,6 +97,10 @@ export const AppShell: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  // Persistent Sidebar Scroll Management (VOCALFLOW_SPECIFICATION Section 4 via usePersistentScroll hook)
+  const { scrollRef: sidebarNavScrollRef, handleScroll: handleSidebarScroll } =
+    usePersistentScroll<HTMLDivElement>('vocabflow_sidebar_scroll', 100);
 
   // Community E2EE Chat Drawer State
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
@@ -676,7 +681,13 @@ export const AppShell: React.FC = () => {
         </div>
 
         {/* 2. SCROLLABLE MIDDLE: ONLY navigation links scroll */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pr-1 space-y-3.5">
+        <div
+          ref={sidebarNavScrollRef}
+          data-sidebar-scroll="true"
+          data-scroll-container="sidebar"
+          onScroll={handleSidebarScroll}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pr-1 space-y-3.5"
+        >
           {navSections.map((section) => (
             <div key={section.title} className="space-y-1">
               <p className="px-2.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
