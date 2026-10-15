@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { GlassCard } from '../components/common/GlassCard';
 import { PaymentCheckoutModal } from '../components/payment/PaymentCheckoutModal';
@@ -642,6 +643,23 @@ export const SubscriptionUpgradePage: React.FC = () => {
             Cam Kết Minh Bạch & Bảo Mật Thanh Toán VietQR 24/7:
           </strong>
           Gói cước có chu kỳ rõ ràng theo tháng hoặc năm, <strong>không cam kết vĩnh viễn phi thực tế</strong>. Hệ thống sử dụng cổng xác nhận chuyển khoản tức thì chuẩn NAPAS 24/7. Bạn chỉ cần quét mã QR trên bất kỳ App Ngân Hàng nào, hệ thống tự động ghi nhận và cấp quyền tài khoản ngay khi giao dịch thành công.
+          <div className="flex flex-wrap items-center gap-3 pt-2 font-medium">
+            <Link to="/payment-policy" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
+              Chính sách thanh toán
+            </Link>
+            <span>•</span>
+            <Link to="/delivery-refund-policy" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
+              Giao nhận & hoàn trả
+            </Link>
+            <span>•</span>
+            <Link to="/complaint-resolution" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
+              Giải quyết khiếu nại
+            </Link>
+            <span>•</span>
+            <Link to="/terms-of-service" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
+              Điều khoản dịch vụ
+            </Link>
+          </div>
         </div>
       </div>
 

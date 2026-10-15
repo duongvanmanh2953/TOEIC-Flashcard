@@ -1194,7 +1194,7 @@ export const MyWordBankPage: React.FC = () => {
       certificateId: deck.certificateId,
       category: deck.category || getDefaultCategoryForLanguage(dLang),
       cefrLevel: deck.cefrLevel || getDefaultLevelForLanguage(dLang).name,
-      isPublic: deck.isPublic !== undefined ? deck.isPublic : true,
+      isPublic: (deck as any).isPublic !== undefined ? (deck as any).isPublic : true,
       hasPassword: Boolean(deck.isProtected || deck.hasPassword),
       password: deck.password || '',
       words: mappedWords,

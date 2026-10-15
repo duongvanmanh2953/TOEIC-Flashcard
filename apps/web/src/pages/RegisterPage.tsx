@@ -105,6 +105,18 @@ export const RegisterPage: React.FC = () => {
               </>
             )}
           </button>
+
+          <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 mt-2 leading-tight">
+            Bằng việc đăng ký, bạn xác nhận đồng ý với{' '}
+            <Link to="/terms-of-service" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
+              Điều khoản dịch vụ
+            </Link>{' '}
+            và{' '}
+            <Link to="/privacy-policy" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
+              Chính sách bảo mật
+            </Link>{' '}
+            của VocabFlow.
+          </p>
         </form>
 
         {/* OR Divider */}

@@ -230,9 +230,16 @@ export const LoginPage: React.FC = () => {
           <Link to="/register" className="font-bold text-brand-600 dark:text-brand-400 hover:underline">
             Đăng ký ngay
           </Link>
+          <div className="flex items-center justify-center gap-3 mt-3 text-[11px] text-slate-400">
+            <Link to="/terms-of-service" className="hover:text-slate-600 dark:hover:text-slate-300">
+              Điều khoản dịch vụ
+            </Link>
+            <span>•</span>
+            <Link to="/privacy-policy" className="hover:text-slate-600 dark:hover:text-slate-300">
+              Chính sách bảo mật
+            </Link>
+          </div>
         </div>
-
-
       </div>
 
       <ForgotPasswordModal

@@ -43,6 +43,13 @@ import { MyPostsPage } from './pages/community/MyPostsPage';
 import { SavedPostsPage } from './pages/community/SavedPostsPage';
 import { AdminCommunityModerationPage } from './pages/admin/AdminCommunityModerationPage';
 
+// Mandatory E-Commerce Legal Policy Pages (Ministry of Industry and Trade Compliance)
+import { PrivacyPolicyPage } from './pages/policies/PrivacyPolicyPage';
+import { PaymentPolicyPage } from './pages/policies/PaymentPolicyPage';
+import { DeliveryRefundPolicyPage } from './pages/policies/DeliveryRefundPolicyPage';
+import { ComplaintResolutionPage } from './pages/policies/ComplaintResolutionPage';
+import { TermsOfServicePage } from './pages/policies/TermsOfServicePage';
+
 // Admin Command Center Layout & Pages
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
@@ -172,6 +179,20 @@ export const App: React.FC = () => {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+              {/* Mandatory Legal Policy Pages (Public, No Login Required) */}
+              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/payment-policy" element={<PaymentPolicyPage />} />
+              <Route path="/delivery-refund-policy" element={<DeliveryRefundPolicyPage />} />
+              <Route path="/complaint-resolution" element={<ComplaintResolutionPage />} />
+
+              {/* Vietnamese URL Aliases */}
+              <Route path="/dieu-khoan-dich-vu" element={<Navigate to="/terms-of-service" replace />} />
+              <Route path="/chinh-sach-bao-mat" element={<Navigate to="/privacy-policy" replace />} />
+              <Route path="/chinh-sach-thanh-toan" element={<Navigate to="/payment-policy" replace />} />
+              <Route path="/chinh-sach-giao-nhan-hoan-tra" element={<Navigate to="/delivery-refund-policy" replace />} />
+              <Route path="/giai-quyet-khieu-nai" element={<Navigate to="/complaint-resolution" replace />} />
 
               {/* User Learning Application Shell */}
               <Route
