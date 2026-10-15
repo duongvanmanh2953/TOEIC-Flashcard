@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from '../i18n';
 import { useLearningContext } from '../contexts/LearningContext';
@@ -31,6 +32,7 @@ import {
   FastForward,
   BookOpen,
   Shield,
+  ShieldCheck,
   Download,
   Smartphone,
   Key,
@@ -1540,6 +1542,89 @@ export const SettingsPage: React.FC = () => {
             </div>
           </GlassCard>
         )}
+
+        {/* ========================================================================= */}
+        {/* LEGAL & POLICIES SECTION                                                 */}
+        {/* ========================================================================= */}
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                  Chính Sách & Quy Định Pháp Lý
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Minh bạch thông tin theo quy định của Bộ Công Thương Việt Nam
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            <Link
+              to="/terms-of-service"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition group flex items-center justify-between"
+            >
+              <span className="font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                Điều khoản dịch vụ
+              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+            </Link>
+
+            <Link
+              to="/privacy-policy"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition group flex items-center justify-between"
+            >
+              <span className="font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                Chính sách bảo mật
+              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+            </Link>
+
+            <Link
+              to="/payment-policy"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition group flex items-center justify-between"
+            >
+              <span className="font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                Chính sách thanh toán
+              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+            </Link>
+
+            <Link
+              to="/delivery-refund-policy"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition group flex items-center justify-between"
+            >
+              <span className="font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                Giao nhận & hoàn trả
+              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+            </Link>
+
+            <Link
+              to="/complaint-resolution"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition group flex items-center justify-between"
+            >
+              <span className="font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                Giải quyết khiếu nại
+              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+            </Link>
+
+            <Link
+              to="/feedback"
+              className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 transition group flex items-center justify-between"
+            >
+              <span className="font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                Gửi phản hồi / Hỗ trợ
+              </span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+            </Link>
+          </div>
+        </GlassCard>
       </div>
 
       {/* ========================================================================= */}

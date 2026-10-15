@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { LiquidBackground } from '../components/common/LiquidBackground';
 import { VocabFlowLogo } from '@vocabflow/shared';
+import { Footer } from '../components/layout/Footer';
 
 export const LandingPage: React.FC = () => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -408,17 +409,8 @@ export const LandingPage: React.FC = () => {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="py-8 border-t border-slate-200/60 dark:border-slate-800/80 bg-white/40 dark:bg-slate-950/40 backdrop-blur-md text-center text-xs text-slate-500 dark:text-slate-400">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <VocabFlowLogo size="xs" alt="Logo" className="w-5 h-5" />
-            <span className="font-bold text-slate-700 dark:text-slate-300">VocabFlow</span>
-            <span>— Advanced Spaced Repetition Platform</span>
-          </div>
-          <p>© 2026 VocabFlow. All rights reserved.</p>
-        </div>
-      </footer>
+      {/* Unified Comprehensive Legal & Policies Footer */}
+      <Footer />
     </div>
   );
 };

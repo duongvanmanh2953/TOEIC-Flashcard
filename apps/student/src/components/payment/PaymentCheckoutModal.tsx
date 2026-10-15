@@ -546,6 +546,15 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
               />
               <span>Cần trợ giúp thanh toán? Chat qua Facebook</span>
             </a>
+            <div className="hidden md:flex items-center gap-2 text-[11px] text-slate-400">
+              <a href="/payment-policy" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-indigo-600 dark:hover:text-indigo-400">
+                Chính sách thanh toán
+              </a>
+              <span>•</span>
+              <a href="/delivery-refund-policy" target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-indigo-600 dark:hover:text-indigo-400">
+                Hoàn tiền
+              </a>
+            </div>
           </div>
           <button
             type="button"

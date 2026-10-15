@@ -49,6 +49,13 @@ const RealtimeGameRoomPage = React.lazy(() => import('./pages/games/RealtimeGame
 const WordMatchGame = React.lazy(() => import('./pages/games/WordMatchGame').then((m) => ({ default: m.WordMatchGame })));
 const WordScrambleGame = React.lazy(() => import('./pages/games/WordScrambleGame').then((m) => ({ default: m.WordScrambleGame })));
 
+// Mandatory E-Commerce Legal Policy Pages (Ministry of Industry and Trade Compliance)
+import { PrivacyPolicyPage } from './pages/policies/PrivacyPolicyPage';
+import { PaymentPolicyPage } from './pages/policies/PaymentPolicyPage';
+import { DeliveryRefundPolicyPage } from './pages/policies/DeliveryRefundPolicyPage';
+import { ComplaintResolutionPage } from './pages/policies/ComplaintResolutionPage';
+import { TermsOfServicePage } from './pages/policies/TermsOfServicePage';
+
 const PageLoadingFallback: React.FC = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -141,6 +148,20 @@ export const App: React.FC = () => {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+                {/* Mandatory Legal Policy Pages (Public, No Login Required) */}
+                <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/payment-policy" element={<PaymentPolicyPage />} />
+                <Route path="/delivery-refund-policy" element={<DeliveryRefundPolicyPage />} />
+                <Route path="/complaint-resolution" element={<ComplaintResolutionPage />} />
+
+                {/* Vietnamese URL Aliases */}
+                <Route path="/dieu-khoan-dich-vu" element={<Navigate to="/terms-of-service" replace />} />
+                <Route path="/chinh-sach-bao-mat" element={<Navigate to="/privacy-policy" replace />} />
+                <Route path="/chinh-sach-thanh-toan" element={<Navigate to="/payment-policy" replace />} />
+                <Route path="/chinh-sach-giao-nhan-hoan-tra" element={<Navigate to="/delivery-refund-policy" replace />} />
+                <Route path="/giai-quyet-khieu-nai" element={<Navigate to="/complaint-resolution" replace />} />
 
                 {/* Student Learning Application Shell */}
                 <Route
