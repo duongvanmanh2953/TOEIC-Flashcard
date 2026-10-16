@@ -48,8 +48,8 @@
     --card-border-hover: rgba(9, 13, 22, 0.45);
     --glass-border: rgba(9, 13, 22, 0.22);
     --glass-border-hover: rgba(9, 13, 22, 0.45);
-    --glass-shadow: none;
-    --glass-shadow-hover: none;
+    --glass-shadow: 0 8px 30px -4px rgba(15, 23, 42, 0.06), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+    --glass-shadow-hover: 0 16px 36px -6px rgba(15, 23, 42, 0.12), 0 6px 14px -3px rgba(15, 23, 42, 0.05);
   }
 
   .dark {
@@ -89,8 +89,8 @@
     --card-border-hover: rgba(255, 255, 255, 0.35);
     --glass-border: #7676766b;
     --glass-border-hover: rgba(255, 255, 255, 0.35);
-    --glass-shadow: none;
-    --glass-shadow-hover: none;
+    --glass-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --glass-shadow-hover: 0 16px 36px -6px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
     border-color: #7676766b;
   }
 
@@ -251,14 +251,18 @@
   margin-right: 0 !important;
 }
 
-/* Glass Material Panels & Cards — Viền theo màu chữ chính sắc nét */
+/* Glass Material Panels & Cards — Subtle modern elevation */
 .glass-panel {
   background: var(--surface-1);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1.5px solid var(--card-border) !important;
-  box-shadow: none !important;
-  transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .glass-panel {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
 }
 
 .glass-panel:hover {
@@ -272,13 +276,22 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1.5px solid var(--card-border) !important;
-  box-shadow: none !important;
-  transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .glass-panel-interactive {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
 }
 
 .glass-panel-interactive:hover {
   border-color: var(--card-border-hover) !important;
   transform: translateY(-2px);
+  box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.08);
+}
+
+.dark .glass-panel-interactive:hover {
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.5);
 }
 
 /* ==========================================================================

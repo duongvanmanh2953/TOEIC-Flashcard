@@ -49,8 +49,8 @@
     --card-border-hover: rgba(9, 13, 22, 0.45);
     --glass-border: rgba(9, 13, 22, 0.22);
     --glass-border-hover: rgba(9, 13, 22, 0.45);
-    --glass-shadow: none;
-    --glass-shadow-hover: none;
+    --glass-shadow: 0 8px 30px -4px rgba(15, 23, 42, 0.06), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+    --glass-shadow-hover: 0 16px 36px -6px rgba(15, 23, 42, 0.12), 0 6px 14px -3px rgba(15, 23, 42, 0.05);
   }
 
   .dark {
@@ -90,8 +90,8 @@
     --card-border-hover: rgba(255, 255, 255, 0.35);
     --glass-border: #7676766b;
     --glass-border-hover: rgba(255, 255, 255, 0.35);
-    --glass-shadow: none;
-    --glass-shadow-hover: none;
+    --glass-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --glass-shadow-hover: 0 16px 36px -6px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
     border-color: #7676766b;
   }
 
@@ -477,7 +477,7 @@ a.card-brand-effect {
   border: 1.5px solid rgba(245, 158, 11, 0.45) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: none !important;
+  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.2) !important;
   transform: none !important;
 }
 
@@ -488,7 +488,7 @@ a.card-brand-effect {
 
 .podium-gold:hover {
   border-color: rgba(245, 158, 11, 0.75) !important;
-  box-shadow: none !important;
+  box-shadow: 0 14px 32px -4px rgba(245, 158, 11, 0.35) !important;
   transform: none !important;
 }
 
@@ -497,7 +497,7 @@ a.card-brand-effect {
   border: 1.5px solid rgba(203, 213, 225, 0.45) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: none !important;
+  box-shadow: 0 8px 24px -4px rgba(148, 163, 184, 0.2) !important;
   transform: none !important;
 }
 
@@ -508,7 +508,7 @@ a.card-brand-effect {
 
 .podium-silver:hover {
   border-color: rgba(203, 213, 225, 0.75) !important;
-  box-shadow: none !important;
+  box-shadow: 0 14px 32px -4px rgba(148, 163, 184, 0.35) !important;
   transform: none !important;
 }
 
@@ -517,7 +517,7 @@ a.card-brand-effect {
   border: 1.5px solid rgba(217, 119, 6, 0.4) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: none !important;
+  box-shadow: 0 8px 24px -4px rgba(217, 119, 6, 0.2) !important;
   transform: none !important;
 }
 
@@ -528,21 +528,21 @@ a.card-brand-effect {
 
 .podium-bronze:hover {
   border-color: rgba(217, 119, 6, 0.7) !important;
-  box-shadow: none !important;
+  box-shadow: 0 14px 32px -4px rgba(217, 119, 6, 0.35) !important;
   transform: none !important;
 }
 
 .liquid-glass-card:hover {
   transform: none !important;
   border-color: rgba(99, 102, 241, 0.45);
-  box-shadow: none !important;
+  box-shadow: var(--glass-shadow-hover);
   opacity: 1 !important;
 }
 
 .dark .liquid-glass-card:hover {
   transform: none !important;
   border-color: rgba(129, 140, 248, 0.45);
-  box-shadow: none !important;
+  box-shadow: 0 20px 35px -6px rgba(0, 0, 0, 0.6);
   opacity: 1 !important;
 }
 
@@ -1214,7 +1214,7 @@ a.card-brand-effect {
 
 .glass-panel-interactive:hover {
   border-color: var(--glass-border-hover);
-  box-shadow: none !important;
+  box-shadow: var(--glass-shadow-hover);
   transform: translateY(-2px);
 }
 

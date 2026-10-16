@@ -273,21 +273,21 @@ export const RealtimeGameRoomPage: React.FC = () => {
       )}
 
       {/* 1. Game Header & Latency Telemetry */}
-      <div className="flex items-center justify-between p-4 rounded-2xl bg-white border-2 border-slate-200 shadow-xs">
+      <div className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-900/90 border-2 border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-indigo-600/30">
             <Gamepad2 className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-black text-base text-slate-900 truncate max-w-[200px] sm:max-w-md">
+              <h1 className="font-black text-base text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-md">
                 {roomTitle}
               </h1>
-              <span className="tabular-nums text-xs font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="tabular-nums text-xs font-bold px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                 #{roomCode}
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-semibold">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
               Vòng {currentRound} / {totalRounds} • {players.length} người chơi
             </p>
           </div>
@@ -295,7 +295,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           {/* Latency Meter */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-xs tabular-nums font-bold text-slate-700">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs tabular-nums font-bold text-slate-700 dark:text-slate-300 border border-transparent dark:border-slate-700">
             <span
               className={`w-2 h-2 rounded-full ${
                 latency < 80
@@ -311,7 +311,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
           {/* Leave Button */}
           <button
             onClick={() => navigate('/games')}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            className="text-xs font-bold px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           >
             Thoát
           </button>

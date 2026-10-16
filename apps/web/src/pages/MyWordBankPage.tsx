@@ -95,6 +95,9 @@ import { DeckCardItem } from '../components/deck/DeckCardItem';
 import { DeckTableRowItem } from '../components/deck/DeckTableRowItem';
 import { WordTableRowItem } from '../components/deck/WordTableRowItem';
 import { WordCardItem } from '../components/deck/WordCardItem';
+import { WordFormModal } from '../components/deck/WordFormModal';
+import { WordImportModal } from '../components/deck/WordImportModal';
+import { WordBankConfirmModals } from '../components/deck/WordBankConfirmModals';
 import {
   getLanguageStandard,
   getCertificatesForLanguage,
@@ -4148,1092 +4151,132 @@ export const MyWordBankPage: React.FC = () => {
         personalDecks={deckListWithStats}
       />
 
-      {/* PASSWORD UNLOCK MODAL FOR PERSONAL / CLONED DECKS */}
-      <ModalPortal isOpen={Boolean(deckToUnlock)} onClose={() => setDeckToUnlock(null)}>
-        {deckToUnlock && (
-          <form
-            onSubmit={handleUnlockPersonalDeckSubmit}
-            className="m-auto max-w-md w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-6 shadow-2xl animate-fade-in text-left"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-sm">
-                <Lock className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                  Kho từ vựng được bảo vệ
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Nhập mật khẩu / PIN để mở khóa kho &quot;{deckToUnlock.title}&quot;
-                </p>
-              </div>
-            </div>
-
-            {deckUnlockError && (
-              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{deckUnlockError}</span>
-              </div>
-            )}
-
-            <div>
-              <label className="font-bold text-slate-800 dark:text-slate-200 block mb-2 text-xs sm:text-sm">
-                Mật khẩu mở khóa <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="password"
-                required
-                autoFocus
-                value={deckUnlockInput}
-                onChange={(e) => setDeckUnlockInput(e.target.value)}
-                placeholder="Nhập mã PIN hoặc mật khẩu..."
-                className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-semibold text-sm text-slate-900 dark:text-white transition"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeckToUnlock(null)}
-                className="btn-glass-secondary btn-glass-sm !px-5"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                disabled={deckUnlocking || !deckUnlockInput.trim()}
-                className="btn-glass-primary btn-glass-sm !px-6 font-bold disabled:opacity-50"
-              >
-                {deckUnlocking ? 'Đang kiểm tra...' : 'Mở khóa'}
-              </button>
-            </div>
-          </form>
-        )}
-      </ModalPortal>
-
-      {/* 3. DELETE SINGLE DECK CONFIRMATION MODAL */}
-      <ModalPortal isOpen={Boolean(deckToDelete)} onClose={() => setDeckToDelete(null)}>
-        {deckToDelete && (
-          <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
-            <div className="flex items-center gap-3.5 text-rose-600">
-              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Kho Từ Vựng?</h3>
-                <p className="text-xs text-slate-500">Hành động này không thể hoàn tác.</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Bạn có chắc chắn muốn xóa kho từ <strong className="text-indigo-600 dark:text-indigo-400">{deckToDelete.title}</strong> không? Toàn bộ từ vựng thuộc kho này sẽ bị xóa khỏi bộ nhớ và dữ liệu cá nhân của bạn.
-            </p>
-
-            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setDeckToDelete(null)}
-                className="btn-glass-secondary btn-glass-sm"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteDeck}
-                disabled={deletingDecks}
-                className="btn-glass-danger btn-glass-sm"
-              >
-                {deletingDecks ? 'Đang xóa...' : 'Xác nhận xóa kho'}
-              </button>
-            </div>
-          </div>
-        )}
-      </ModalPortal>
-
-      {/* 4. BULK DELETE DECKS MODAL */}
-      <ModalPortal isOpen={showBulkDeleteDecksModal} onClose={() => setShowBulkDeleteDecksModal(false)}>
-        <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
-          <div className="flex items-center gap-3.5 text-rose-600">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Nhiều Kho Từ Vựng?</h3>
-              <p className="text-xs text-slate-500">Đã chọn {selectedDeckIds.length} kho từ vựng.</p>
-            </div>
-          </div>
-
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Bạn có chắc chắn muốn xóa <strong className="text-rose-600 font-bold">{selectedDeckIds.length} kho từ vựng đã chọn</strong>? Toàn bộ từ vựng thuộc các kho này cũng sẽ bị xóa vĩnh viễn.
-          </p>
-
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => setShowBulkDeleteDecksModal(false)}
-              className="btn-glass-secondary btn-glass-sm"
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmBulkDeleteDecks}
-              disabled={deletingDecks}
-              className="btn-glass-danger btn-glass-sm"
-            >
-              {deletingDecks ? 'Đang xóa...' : 'Xác nhận xóa các kho'}
-            </button>
-          </div>
-        </div>
-      </ModalPortal>
+      {/* Deck Confirmation Modals (Unlock, Delete, Bulk Delete) are delegated to WordBankConfirmModals below */}
 
       {/* 5. ADD / EDIT WORD MODAL */}
-      <ModalPortal
+      <WordFormModal
         isOpen={showAddWordModal || showEditWordModal}
         onClose={() => {
           setShowAddWordModal(false);
           setShowEditWordModal(false);
         }}
-      >
-        <form
-          onSubmit={showEditWordModal ? handleConfirmEditWord : (addWordMode === 'file' ? (e) => { e.preventDefault(); handleConfirmBatchImport(); } : handleConfirmAddWord)}
-          className={`m-auto ${addWordMode === 'file' && !showEditWordModal ? 'max-w-7xl w-[96vw]' : 'max-w-4xl w-full'} max-h-[94vh] flex flex-col rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-5 sm:p-7 shadow-2xl animate-fade-in text-left overflow-hidden`}
-        >
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                {showEditWordModal ? <Edit3 className="w-5 h-5" /> : (addWordMode === 'file' ? <FileSpreadsheet className="w-5 h-5" /> : <Plus className="w-5 h-5" />)}
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  {showEditWordModal ? 'Chỉnh Sửa Từ Vựng' : (addWordMode === 'file' ? 'Nạp Từ Vựng Từ File (Excel / CSV)' : 'Thêm Từ Vựng Mới')}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {showEditWordModal
-                    ? 'Chỉnh sửa chi tiết từ vựng, phiên âm và nghĩa'
-                    : (addWordMode === 'file'
-                      ? 'Tải file Excel/CSV, xem trước và chỉnh sửa danh sách trước khi nạp vào kho'
-                      : 'Nhập thông tin chi tiết của từ vựng, phiên âm, định nghĩa và ví dụ minh họa')}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddWordModal(false);
-                setShowEditWordModal(false);
-              }}
-              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {!showEditWordModal && (
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 my-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setAddWordMode('manual')}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  addWordMode === 'manual'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                }`}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Nhập thủ công</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAddWordMode('file')}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  addWordMode === 'file'
-                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-300 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
-                }`}
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Nạp từ tệp (Excel / CSV)</span>
-              </button>
-            </div>
-          )}
-
-          <div className="space-y-4 text-xs flex-1 min-h-0 overflow-y-auto py-3 pr-1">
-            {/* Mode File Upload */}
-            {addWordMode === 'file' && !showEditWordModal ? (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                  <div>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">Kho từ mục tiêu:</span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-bold text-xs">{selectedDeck?.title || wordFormTargetDeck || 'General'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => downloadVocabularyTemplate('xlsx')}
-                      className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>Mẫu .xlsx</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => downloadVocabularyTemplate('csv')}
-                      className="btn-glass-secondary btn-glass-sm !py-1 text-[11px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>Mẫu .csv</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-4 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                  <Upload className="w-5 h-5 mx-auto text-slate-400 mb-1" />
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {selectedFile ? selectedFile.name : 'Chọn file Excel (.xlsx) hoặc CSV từ máy tính'}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    Nhận diện tự động 7 cột: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-0.5">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Hoặc nạp từng từ vào danh sách:</span>
-                  <button
-                    type="button"
-                    onClick={handleAddManualPreviewWord}
-                    className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Thêm từ vào danh sách</span>
-                  </button>
-                </div>
-
-                {isParsing && (
-                  <div className="py-2 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Đang giải mã và đọc file dữ liệu...</span>
-                  </div>
-                )}
-
-                {parsingError && (
-                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium">
-                    {parsingError}
-                  </div>
-                )}
-
-                {/* Parsed Staging Preview Table with Direct In-Place Cell Editing */}
-                {parsedWords.length > 0 && (
-                  <div className="pt-2">
-                    <EditableVocabularyStagingTable
-                      words={parsedWords}
-                      onChangeWords={setParsedWords}
-                      defaultCefrLevel={wordFormCefr}
-                      defaultTopic={wordFormTopic || 'General'}
-                    />
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            {/* Mode Manual Add / Edit */}
-            {(addWordMode === 'manual' || showEditWordModal) && (
-              <>
-                {decks.length === 0 ? (
-              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-200 text-center space-y-3 my-2">
-                <p className="font-bold text-base">Chưa có kho từ vựng nào!</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                  Để thêm từ vựng, trước tiên bạn cần tạo ít nhất một kho từ để lưu trữ và quản lý từ vựng của bạn.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddWordModal(false);
-                    handleOpenCreateDeck();
-                  }}
-                  className="btn-glass-purple btn-glass-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Tạo kho từ vựng ngay</span>
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Row 1: Word & Phonetic */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Từ vựng ({wordModalLang.name}) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={wordFormWord}
-                      onChange={(e) => setWordFormWord(e.target.value)}
-                      placeholder="Ví dụ: agreement"
-                      className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-bold text-sm text-slate-900 dark:text-white transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Phiên âm IPA
-                    </label>
-                    <input
-                      type="text"
-                      value={wordFormPhonetic}
-                      onChange={(e) => setWordFormPhonetic(e.target.value)}
-                      placeholder="/əˈɡriː.mənt/"
-                      className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-mono text-xs text-indigo-600 dark:text-indigo-400 transition"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2: Meaning & Part of Speech */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Nghĩa tiếng Việt <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={wordFormMeaning}
-                      onChange={(e) => setWordFormMeaning(e.target.value)}
-                      placeholder="sự thỏa thuận, hợp đồng..."
-                      className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Loại từ
-                    </label>
-                    <CustomDropdown
-                      value={wordFormPos}
-                      onChange={(val) => setWordFormPos(val)}
-                      options={[
-                        { value: 'noun', label: 'Danh từ (noun)', badge: 'n' },
-                        { value: 'verb', label: 'Động từ (verb)', badge: 'v' },
-                        { value: 'adjective', label: 'Tính từ (adjective)', badge: 'adj' },
-                        { value: 'adverb', label: 'Trạng từ (adverb)', badge: 'adv' },
-                        { value: 'preposition', label: 'Giới từ (preposition)', badge: 'prep' },
-                      ]}
-                      size="md"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 3: Real Topic & Target Deck */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Chủ đề thực tế của từ (Topic) <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={wordFormTopic}
-                      onChange={(e) => setWordFormTopic(e.target.value)}
-                      placeholder="Ví dụ: Contracts, Marketing, Travel, Finance..."
-                      className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Lưu ý: Đây là chủ đề thực tế của từ (như Hợp đồng, Du lịch...), không phải tên kho.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Kho từ vựng chứa
-                    </label>
-                    <CustomDropdown
-                      value={wordFormTargetDeck}
-                      onChange={(val) => setWordFormTargetDeck(val)}
-                      options={decks.map((d) => ({
-                        value: d.title,
-                        label: `Kho: ${d.title}`,
-                        badge: d.cefrLevel,
-                      }))}
-                      size="md"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 4: Level */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                      Cấp độ ({activeLanguage.nativeName})
-                    </label>
-                    <CustomDropdown
-                      value={wordFormCefr}
-                      onChange={(val) => setWordFormCefr(val)}
-                      options={(activeLanguage.supportedLevels || ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']).map((lvl) => ({
-                        value: lvl,
-                        label: `${lvl} — Trình độ ${lvl}`,
-                        badge: lvl,
-                      }))}
-                      size="md"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Examples */}
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                Câu ví dụ ({wordModalLang.name})
-              </label>
-              <textarea
-                rows={2}
-                value={wordFormExample}
-                onChange={(e) => setWordFormExample(e.target.value)}
-                placeholder="They reached an agreement after a lengthy negotiation."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5 text-xs">
-                Dịch câu ví dụ
-              </label>
-              <input
-                type="text"
-                value={wordFormExampleTrans}
-                onChange={(e) => setWordFormExampleTrans(e.target.value)}
-                placeholder="Họ đã đạt được thỏa thuận sau một cuộc đàm phán kéo dài."
-                className="w-full h-10 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-medium text-xs text-slate-900 dark:text-white transition"
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddWordModal(false);
-                setShowEditWordModal(false);
-              }}
-              className="btn-glass-secondary btn-glass-sm"
-            >
-              Hủy
-            </button>
-            {addWordMode === 'file' && !showEditWordModal ? (
-              <button
-                type="button"
-                onClick={handleConfirmBatchImport}
-                disabled={isImporting || parsedWords.length === 0}
-                className="btn-glass-primary btn-glass-sm flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-              >
-                {isImporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                <span>{isImporting ? 'Đang nạp từ...' : `Nạp ${parsedWords.length} từ vào kho`}</span>
-              </button>
-            ) : (
-              <button
-                type="submit"
-                className="btn-glass-primary btn-glass-sm"
-              >
-                {showEditWordModal ? 'Lưu thay đổi' : 'Thêm từ vựng'}
-              </button>
-            )}
-          </div>
-        </form>
-      </ModalPortal>
-
-      {/* 6. DELETE SINGLE WORD MODAL */}
-      <ModalPortal isOpen={Boolean(wordToDelete)} onClose={() => setWordToDelete(null)}>
-        {wordToDelete && (
-          <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
-            <div className="flex items-center gap-3.5 text-rose-600">
-              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
-                <Trash2 className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Từ Vựng?</h3>
-                <p className="text-xs text-slate-500">Từ vựng: "{wordToDelete.word}"</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Bạn có chắc chắn muốn xóa từ vựng <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{wordToDelete.word}</strong> ({wordToDelete.meaning}) không?
-            </p>
-
-            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setWordToDelete(null)}
-                className="btn-glass-secondary btn-glass-sm"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteWord}
-                disabled={deletingWords}
-                className="btn-glass-danger btn-glass-sm"
-              >
-                {deletingWords ? 'Đang xóa...' : 'Xác nhận xóa'}
-              </button>
-            </div>
-          </div>
-        )}
-      </ModalPortal>
-
-      {/* 7. BULK DELETE WORDS MODAL */}
-      <ModalPortal isOpen={showBulkDeleteWordsModal} onClose={() => setShowBulkDeleteWordsModal(false)}>
-        <div className="m-auto max-w-lg w-full rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-700/80 p-7 space-y-5 shadow-2xl animate-fade-in text-left">
-          <div className="flex items-center gap-3.5 text-rose-600">
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 flex items-center justify-center shrink-0">
-              <Trash2 className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">Xóa Nhiều Từ Vựng?</h3>
-              <p className="text-xs text-slate-500">Đã chọn {selectedWordIds.length} từ vựng.</p>
-            </div>
-          </div>
-
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Bạn có chắc chắn muốn xóa <strong className="text-rose-600 font-bold">{selectedWordIds.length} từ vựng đã chọn</strong> khỏi kho từ?
-          </p>
-
-          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => setShowBulkDeleteWordsModal(false)}
-              className="btn-glass-secondary btn-glass-sm"
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmBulkDeleteWords}
-              disabled={deletingWords}
-              className="btn-glass-danger btn-glass-sm"
-            >
-              {deletingWords ? 'Đang xóa...' : 'Xác nhận xóa các từ'}
-            </button>
-          </div>
-        </div>
-      </ModalPortal>
+        showEditWordModal={showEditWordModal}
+        addWordMode={addWordMode}
+        setAddWordMode={setAddWordMode}
+        onSubmit={
+          showEditWordModal
+            ? handleConfirmEditWord
+            : addWordMode === 'file'
+            ? (e) => {
+                e.preventDefault();
+                handleConfirmBatchImport();
+              }
+            : handleConfirmAddWord
+        }
+        selectedDeck={selectedDeck}
+        wordFormTargetDeck={wordFormTargetDeck}
+        setWordFormTargetDeck={setWordFormTargetDeck}
+        decks={decks}
+        handleOpenCreateDeck={handleOpenCreateDeck}
+        wordModalLang={wordModalLang}
+        wordFormWord={wordFormWord}
+        setWordFormWord={setWordFormWord}
+        wordFormPhonetic={wordFormPhonetic}
+        setWordFormPhonetic={setWordFormPhonetic}
+        wordFormMeaning={wordFormMeaning}
+        setWordFormMeaning={setWordFormMeaning}
+        wordFormPos={wordFormPos}
+        setWordFormPos={setWordFormPos}
+        wordFormTopic={wordFormTopic}
+        setWordFormTopic={setWordFormTopic}
+        wordFormCefr={wordFormCefr}
+        setWordFormCefr={setWordFormCefr}
+        activeLanguage={activeLanguage}
+        wordFormExample={wordFormExample}
+        setWordFormExample={setWordFormExample}
+        wordFormExampleTrans={wordFormExampleTrans}
+        setWordFormExampleTrans={setWordFormExampleTrans}
+        downloadVocabularyTemplate={downloadVocabularyTemplate}
+        fileInputRef={fileInputRef}
+        handleFileUpload={handleFileUpload}
+        selectedFile={selectedFile}
+        handleAddManualPreviewWord={handleAddManualPreviewWord}
+        isParsing={isParsing}
+        parsingError={parsingError}
+        parsedWords={parsedWords}
+        setParsedWords={setParsedWords}
+        handleConfirmBatchImport={handleConfirmBatchImport}
+        isImporting={isImporting}
+      />
 
       {/* 8. EXCEL / CSV IMPORT MODAL */}
-      <ModalPortal isOpen={showImportModal} onClose={() => setShowImportModal(false)}>
-        <div className="m-auto max-w-5xl w-full max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl animate-fade-in text-left overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
-                <FileSpreadsheet className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Nhập Dữ Liệu Từ Vựng từ Excel / CSV
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Tự động nhận diện 7 cột chuẩn: Word, Phonetic, PartOfSpeech, Meaning, Example, CEFR, Topic.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowImportModal(false)}
-              className="btn-glass-secondary btn-glass-icon text-slate-400 hover:text-slate-700 dark:hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+      <WordImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        decks={decks}
+        importDeckMode={importDeckMode}
+        setImportDeckMode={setImportDeckMode}
+        importTargetDeckName={importTargetDeckName}
+        setImportTargetDeckName={setImportTargetDeckName}
+        importNewDeckLang={importNewDeckLang}
+        setImportNewDeckLang={setImportNewDeckLang}
+        importNewDeckCert={importNewDeckCert}
+        setImportNewDeckCert={setImportNewDeckCert}
+        importNewDeckLevel={importNewDeckLevel}
+        setImportNewDeckLevel={setImportNewDeckLevel}
+        importNewDeckCategory={importNewDeckCategory}
+        setImportNewDeckCategory={setImportNewDeckCategory}
+        customCategories={customCategories}
+        onAddCustomCategory={handleCreateCategory}
+        selectedFile={selectedFile}
+        fileInputRef={fileInputRef}
+        handleFileUpload={handleFileUpload}
+        isParsing={isParsing}
+        parsingError={parsingError}
+        parsedWords={parsedWords}
+        setParsedWords={setParsedWords}
+        handleAddManualPreviewWord={handleAddManualPreviewWord}
+        handleClearAllParsed={handleClearAllParsed}
+        editingParsedIdx={editingParsedIdx}
+        setEditingParsedIdx={setEditingParsedIdx}
+        editingParsedItem={editingParsedItem}
+        setEditingParsedItem={setEditingParsedItem}
+        handleSaveParsedEdit={handleSaveParsedEdit}
+        handleDeleteParsedWord={handleDeleteParsedWord}
+        importProgressMsg={importProgressMsg}
+        isImporting={isImporting}
+        handleConfirmBatchImport={handleConfirmBatchImport}
+        downloadVocabularyTemplate={downloadVocabularyTemplate}
+      />
 
-          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
-            {/* Options: Target Deck & Template Download */}
-            <div className="space-y-3 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Nạp vào Kho Từ Vựng nào?
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <CustomDropdown
-                      value={decks.length === 0 ? 'new' : importDeckMode}
-                      onChange={(val) => setImportDeckMode(val as any)}
-                      options={
-                        decks.length === 0
-                          ? [{ value: 'new', label: 'Tạo kho mới' }]
-                          : [
-                              { value: 'existing', label: 'Kho có sẵn' },
-                              { value: 'new', label: 'Tạo kho mới' },
-                            ]
-                      }
-                      size="md"
-                      className="w-36"
-                    />
-
-                    {importDeckMode === 'existing' && decks.length > 0 ? (
-                      <CustomDropdown
-                        value={importTargetDeckName}
-                        onChange={(val) => setImportTargetDeckName(val)}
-                        options={decks.map((d) => ({
-                          value: d.title,
-                          label: d.title,
-                          badge: d.cefrLevel,
-                        }))}
-                        size="md"
-                        className="flex-1"
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={importTargetDeckName}
-                        onChange={(e) => setImportTargetDeckName(e.target.value)}
-                        placeholder={decks.length === 0 ? 'Nhập tên kho mới cho các từ...' : 'Nhập tên kho mới...'}
-                        className="flex-1 h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-medium text-xs text-slate-900 dark:text-white"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-start sm:justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => downloadVocabularyTemplate('xlsx')}
-                    className="btn-glass-secondary btn-glass-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Tải mẫu .xlsx</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadVocabularyTemplate('csv')}
-                    className="btn-glass-secondary btn-glass-sm text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Tải mẫu .csv</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Dynamic language, certificate, level, category when creating a new deck */}
-              {importDeckMode === 'new' && (
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-700/60 mt-3">
-                  <DeckStandardFields
-                    languageId={importNewDeckLang}
-                    allowLanguageChange={true}
-                    onLanguageChange={(newLang) => {
-                      setImportNewDeckLang(newLang);
-                      const defCert = getDefaultCertificateForLanguage(newLang);
-                      setImportNewDeckCert(defCert.id);
-                      setImportNewDeckCategory(getDefaultCategoryForLanguage(newLang));
-                      setImportNewDeckLevel(getDefaultLevelForLanguage(newLang).name);
-                    }}
-                    certificateId={importNewDeckCert}
-                    onCertificateChange={setImportNewDeckCert}
-                    level={importNewDeckLevel}
-                    onLevelChange={setImportNewDeckLevel}
-                    category={importNewDeckCategory}
-                    onCategoryChange={setImportNewDeckCategory}
-                    customCategories={customCategories}
-                    onAddCustomCategory={handleCreateCategory}
-                    gridCols={3}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* File Upload Drop Zone */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 rounded-2xl p-5 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <Upload className="w-6 h-6 mx-auto text-slate-400 mb-1" />
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {selectedFile ? selectedFile.name : 'Bấm vào đây để chọn file Excel (.xlsx) hoặc CSV từ máy tính'}
-              </p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Dung lượng tối đa 100MB • Tự động đọc và kiểm tra dữ liệu trước khi nạp</p>
-            </div>
-
-            {isParsing && (
-              <div className="py-4 text-center text-xs text-indigo-600 font-bold flex items-center justify-center gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Đang đọc và giải mã file...</span>
-              </div>
-            )}
-
-            {parsingError && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-medium">
-                {parsingError}
-              </div>
-            )}
-
-            {/* Staging Actions Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Danh sách từ chuẩn bị nạp:
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                  {parsedWords.length} từ
-                </span>
-                {parsedWords.length > 0 && (
-                  <span className="text-[11px] text-slate-400 hidden sm:inline">
-                    (Hợp lệ: <strong className="text-emerald-600 dark:text-emerald-400">{parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length}</strong>)
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddManualPreviewWord}
-                  className="btn-glass-primary btn-glass-sm inline-flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm từ thủ công</span>
-                </button>
-                {parsedWords.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearAllParsed}
-                    className="btn-glass-danger btn-glass-sm inline-flex items-center gap-1.5"
-                    title="Xóa toàn bộ danh sách xem trước tạm thời"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Xóa tất cả</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Parsed Interactive Staging Preview Table */}
-            {parsedWords.length > 0 ? (
-              <div className="min-h-[200px] max-h-[380px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl shadow-inner bg-white dark:bg-slate-900/60">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-xs sticky top-0 font-bold text-slate-700 dark:text-slate-300 text-[11px] z-10">
-                    <tr>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 w-10 text-center">#</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[130px]">Từ vựng (Word) *</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[100px]">Phiên âm</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[95px]">Loại từ</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[170px]">Nghĩa tiếng Việt *</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[120px]">Chủ đề (Topic)</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[70px]">CEFR</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 min-w-[180px]">Ví dụ / Câu mẫu</th>
-                      <th className="p-2.5 border-b border-slate-200 dark:border-slate-800 w-24 text-center">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-800 dark:text-slate-200">
-                    {parsedWords.map((row, idx) => {
-                      const isEditing = editingParsedIdx === idx;
-                      const isValid = Boolean(row.word?.trim() && row.meaning?.trim());
-
-                      if (isEditing && editingParsedItem) {
-                        return (
-                          <tr key={idx} className="bg-indigo-50/50 dark:bg-indigo-950/40">
-                            <td className="p-2 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.word}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, word: e.target.value })
-                                }
-                                placeholder="word *"
-                                className="w-full h-8 px-2 rounded-lg border border-indigo-300 dark:border-indigo-600 bg-white dark:bg-slate-900 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                                autoFocus
-                              />
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.phonetic || ''}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, phonetic: e.target.value })
-                                }
-                                placeholder="/.../"
-                                className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <select
-                                value={editingParsedItem.partOfSpeech || 'noun'}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, partOfSpeech: e.target.value })
-                                }
-                                className="w-full h-8 px-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs italic focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              >
-                                <option value="noun">noun</option>
-                                <option value="verb">verb</option>
-                                <option value="adjective">adjective</option>
-                                <option value="adverb">adverb</option>
-                                <option value="preposition">preposition</option>
-                                <option value="phrase">phrase</option>
-                                <option value="idiom">idiom</option>
-                              </select>
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.meaning}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, meaning: e.target.value })
-                                }
-                                placeholder="nghĩa tiếng Việt *"
-                                className="w-full h-8 px-2 rounded-lg border border-indigo-300 dark:border-indigo-600 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.topic || 'General'}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, topic: e.target.value })
-                                }
-                                placeholder="Chủ đề..."
-                                className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-emerald-600 dark:text-emerald-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <select
-                                value={editingParsedItem.cefrLevel || 'B1'}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, cefrLevel: e.target.value })
-                                }
-                                className="w-full h-8 px-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              >
-                                {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
-                                  <option key={lvl} value={lvl}>
-                                    {lvl}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="p-2">
-                              <input
-                                type="text"
-                                value={editingParsedItem.example || ''}
-                                onChange={(e) =>
-                                  setEditingParsedItem({ ...editingParsedItem, example: e.target.value })
-                                }
-                                placeholder="Câu ví dụ..."
-                                className="w-full h-8 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </td>
-                            <td className="p-2 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveEditParsed(idx)}
-                                  className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition cursor-pointer"
-                                  title="Lưu dòng này"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={handleCancelEditParsed}
-                                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
-                                  title="Hủy chỉnh sửa"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      }
-
-                      return (
-                        <tr
-                          key={idx}
-                          className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40 ${
-                            !isValid ? 'bg-rose-50/40 dark:bg-rose-950/20' : ''
-                          }`}
-                        >
-                          <td className="p-2.5 text-center text-slate-400 font-mono text-[11px]">{idx + 1}</td>
-                          <td className="p-2.5 font-bold text-indigo-600 dark:text-indigo-400">
-                            {row.word || <span className="text-rose-500 italic font-normal">(Chưa có từ)</span>}
-                          </td>
-                          <td className="p-2.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                            {row.phonetic || '-'}
-                          </td>
-                          <td className="p-2.5 italic text-slate-600 dark:text-slate-400">
-                            {row.partOfSpeech || 'noun'}
-                          </td>
-                          <td className="p-2.5 text-slate-800 dark:text-slate-200">
-                            {row.meaning || <span className="text-rose-500 italic font-normal">(Chưa có nghĩa)</span>}
-                          </td>
-                          <td className="p-2.5 font-semibold text-emerald-600 dark:text-emerald-400">
-                            {row.topic || 'General'}
-                          </td>
-                          <td className="p-2.5">
-                            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                              {row.cefrLevel || 'B1'}
-                            </span>
-                          </td>
-                          <td className="p-2.5 text-slate-500 dark:text-slate-400 truncate max-w-[200px]" title={row.example || ''}>
-                            {row.example || '-'}
-                          </td>
-                          <td className="p-2.5 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleStartEditParsed(idx)}
-                                className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 transition cursor-pointer"
-                                title="Sửa từ vựng này"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteParsed(idx)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition cursor-pointer"
-                                title="Xóa khỏi danh sách xem trước"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30 space-y-2">
-                <FileSpreadsheet className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  Chưa có dữ liệu từ vựng trong danh sách xem trước
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Hãy tải lên file Excel/CSV ở trên hoặc bấm &quot;Thêm từ thủ công&quot; để nhập trực tiếp.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleAddManualPreviewWord}
-                  className="btn-glass-primary btn-glass-sm inline-flex items-center gap-1.5 mt-2"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm từ thủ công vào danh sách</span>
-                </button>
-              </div>
-            )}
-
-            {importProgressMsg && (
-              <div className="p-3 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold text-center space-y-2 animate-in fade-in">
-                <div className="flex items-center justify-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
-                  <span>{importProgressMsg}</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-indigo-200/60 dark:bg-indigo-900/60 overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500 rounded-full animate-pulse w-full"></div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
-            <span className="text-xs font-bold text-slate-500">
-              Tổng số từ hợp lệ: <strong className="text-indigo-600">{parsedWords.filter((w) => w.word?.trim() && w.meaning?.trim()).length}</strong> từ
-            </span>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowImportModal(false)}
-                className="btn-glass-secondary btn-glass-sm"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmBatchImport}
-                disabled={isImporting || parsedWords.length === 0}
-                className="btn-glass-emerald btn-glass-sm inline-flex items-center gap-1.5"
-              >
-                {isImporting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
-                <span>{isImporting ? 'Đang nạp...' : 'Xác nhận nạp vào kho'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </ModalPortal>
-
-      {/* 9. Share Deck Modal is now handled by UnifiedDeckModal */}
-
-      {/* 10. VIP UPGRADE MODAL */}
-      <ModalPortal isOpen={showVipModal} onClose={() => setShowVipModal(false)}>
-        <div className="m-auto max-w-lg w-full rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 space-y-6 shadow-2xl animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
-              <Crown className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-                Mở Khóa Lưu Trữ & Đồng Bộ Cloud
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Lưu trữ từ vựng không giới hạn, đồng bộ đa thiết bị tự động.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3 p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/60 text-xs text-slate-700 dark:text-slate-300">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>Đồng bộ tức thì mọi từ vựng giữa PC, Laptop và Điện thoại.</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>Sao lưu dữ liệu an toàn vĩnh viễn trên máy chủ đám mây.</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>Không giới hạn số lượng kho từ và từ vựng import.</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-            <button
-              onClick={() => {
-                setShowVipModal(false);
-                window.location.href = '/upgrade';
-              }}
-              className="w-full px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-bold text-xs sm:text-sm shadow-lg hover:opacity-95 transition flex items-center justify-center gap-2"
-            >
-              <Crown className="w-4 h-4 text-amber-200" />
-              <span>Nâng Cấp VIP Ngay</span>
-            </button>
-            <button
-              onClick={() => setShowVipModal(false)}
-              className="w-full sm:w-auto px-4 py-3 rounded-2xl text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition"
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      </ModalPortal>
+      {/* 9. CONFIRMATION, DELETION & VIP UPGRADE MODALS */}
+      <WordBankConfirmModals
+        deckToUnlock={deckToUnlock}
+        onCloseUnlock={() => setDeckToUnlock(null)}
+        deckUnlockInput={deckUnlockInput}
+        setDeckUnlockInput={setDeckUnlockInput}
+        deckUnlockError={deckUnlockError}
+        onUnlockSubmit={handleUnlockPersonalDeckSubmit}
+        deckUnlocking={deckUnlocking}
+        deckToDelete={deckToDelete}
+        onCloseDeleteDeck={() => setDeckToDelete(null)}
+        onConfirmDeleteDeck={handleConfirmDeleteDeck}
+        deletingDecks={deletingDecks}
+        showBulkDeleteDecksModal={showBulkDeleteDecksModal}
+        onCloseBulkDeleteDecks={() => setShowBulkDeleteDecksModal(false)}
+        onConfirmBulkDeleteDecks={handleConfirmBulkDeleteDecks}
+        selectedDeckCount={selectedDeckIds.length}
+        wordToDelete={wordToDelete as any}
+        onCloseDeleteWord={() => setWordToDelete(null)}
+        onConfirmDeleteWord={handleConfirmDeleteWord}
+        deletingWords={deletingWords}
+        showBulkDeleteWordsModal={showBulkDeleteWordsModal}
+        onCloseBulkDeleteWords={() => setShowBulkDeleteWordsModal(false)}
+        onConfirmBulkDeleteWords={handleConfirmBulkDeleteWords}
+        selectedWordCount={selectedWordIds.length}
+        showVipModal={showVipModal}
+        onCloseVipModal={() => setShowVipModal(false)}
+      />
 
       {/* Guided Interactive Intro Tour for New Users */}
       <WordBankTour isOpen={showTour} onClose={() => setShowTour(false)} />

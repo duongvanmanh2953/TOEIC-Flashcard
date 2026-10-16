@@ -2,7 +2,7 @@ FROM node:20-slim AS builder
 WORKDIR /app
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY services/kid-api/package*.json ./
-RUN npm install
+RUN npm install --no-audit
 COPY services/kid-api ./
 RUN npx prisma generate
 RUN npm run build

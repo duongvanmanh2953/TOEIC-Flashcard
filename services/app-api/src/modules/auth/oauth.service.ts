@@ -67,7 +67,7 @@ export class OAuthService {
 
     const email = profile.email.toLowerCase();
 
-    const user = await this.prisma.user.findUnique({
+    let user = await this.prisma.user.findUnique({
       where: { email },
       include: { profile: true, streak: true, xp: true },
     });

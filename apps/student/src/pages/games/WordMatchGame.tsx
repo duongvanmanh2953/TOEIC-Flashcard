@@ -164,18 +164,18 @@ export const WordMatchGame: React.FC = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/games')}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 shadow-2xs text-xs font-black transition cursor-pointer"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900/90 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 shadow-2xs text-xs font-black transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Về Sảnh Đấu</span>
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-black shadow-2xs">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-black shadow-2xs">
             <Timer className="w-3.5 h-3.5" />
             <span>{formatTime(time)}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-black shadow-2xs">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-black shadow-2xs">
             <Trophy className="w-3.5 h-3.5 text-amber-500" />
             <span>{score} pts</span>
           </div>
@@ -189,7 +189,7 @@ export const WordMatchGame: React.FC = () => {
 
         <button
           onClick={initGame}
-          className="p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           title="Chơi lại ván mới"
         >
           <RotateCcw className="w-4 h-4" />

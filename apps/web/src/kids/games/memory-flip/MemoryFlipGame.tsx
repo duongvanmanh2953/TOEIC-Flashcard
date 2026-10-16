@@ -63,7 +63,7 @@ const GameCardItem = memo<GameCardItemProps>(({ card, onCardClick, onVoiceClick,
       role="button"
       tabIndex={card.isRemoved ? -1 : 0}
       aria-label={card.isFlipped ? card.item.word : 'Lá bài úp'}
-      className={`kids-flip-card w-20 sm:w-28 md:w-32 lg:w-36 h-28 sm:h-38 md:h-44 lg:h-48 max-h-[22vh] aspect-[3/4] relative select-none cursor-pointer transition-all duration-200 ${
+      className={`kids-flip-card w-24 sm:w-32 md:w-36 lg:w-40 h-32 sm:h-44 md:h-50 lg:h-56 max-h-[26vh] aspect-[3/4] relative select-none cursor-pointer transition-all duration-200 ${
         card.isRemoved
           ? 'opacity-0 scale-95 pointer-events-none'
           : card.isMatched
@@ -77,35 +77,17 @@ const GameCardItem = memo<GameCardItemProps>(({ card, onCardClick, onVoiceClick,
         }`}
       >
         {/* ========================================================= */}
-        {/* CARD BACK: Velvet Indigo with Golden Accent Rim          */}
+        {/* CARD BACK: Pure Ornate Magic Card Face - Clean Edge-to-Edge */}
         {/* ========================================================= */}
         <div
-          className="kids-flip-front rounded-[18px] sm:rounded-[26px] overflow-hidden ring-1 ring-amber-400/40 shadow-[0_12px_24px_rgba(0,0,0,0.55)] flex flex-col items-center justify-between p-2.5 sm:p-3.5"
+          className="kids-flip-front w-full h-full rounded-[18px] sm:rounded-[26px] overflow-hidden ring-1 ring-amber-400/40 shadow-[0_12px_24px_rgba(0,0,0,0.55)] bg-slate-900"
           style={{
             backgroundImage: `url(${CARD_BACK_IMAGE})`,
-            backgroundSize: 'cover',
+            backgroundSize: '100% 100%',
             backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
           }}
-        >
-          {/* Inner Golden Tonal Rim */}
-          <div className="absolute inset-1.5 rounded-[14px] sm:rounded-[20px] border border-amber-300/30 pointer-events-none" />
-
-          {/* Top Logo Monogram */}
-          <div className="relative z-10 px-2 py-0.5 rounded-full bg-black/45 backdrop-blur-xs text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-amber-300 border border-amber-300/30">
-            VOCALFLOW
-          </div>
-
-          {/* Center Brand Emblem */}
-          <div className="relative z-10 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-white/10 backdrop-blur-xs border border-amber-300/40 p-0 flex items-center justify-center shadow-md overflow-hidden">
-            <VocabFlowLogo size="sm" className="w-full h-full object-contain rounded-xl drop-shadow-sm" />
-          </div>
-
-          {/* Bottom Flip Indicator */}
-          <div className="relative z-10 px-2.5 py-0.5 sm:py-1 rounded-full bg-amber-400 text-amber-950 font-black text-[9px] sm:text-[10px] tracking-wide shadow-xs flex items-center gap-1">
-            <RotateCw className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-            <span>LẬT THẺ</span>
-          </div>
-        </div>
+        />
 
         {/* ========================================================= */}
         {/* CARD FRONT: Pearl Porcelain Surface with Tonal Rim       */}

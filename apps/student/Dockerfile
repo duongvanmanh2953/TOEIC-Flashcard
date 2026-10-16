@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/shared/package*.json ./packages/shared/
 COPY apps/student/package*.json ./apps/student/
-RUN npm install --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+RUN npm install --no-audit --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 COPY packages/shared ./packages/shared
 COPY apps/student ./apps/student
 

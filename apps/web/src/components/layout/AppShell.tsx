@@ -632,12 +632,11 @@ export const AppShell: React.FC = () => {
   ];
 
   const mobileBottomItems = [
-    { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
-    { to: '/games', label: 'Games', icon: Gamepad2 },
-    { to: '/coach', label: 'Coach', icon: Mic },
-    { to: '/leaderboard', label: 'BXH', icon: Trophy },
-    { to: '/review', label: 'Review', icon: Sparkles },
-    { to: '/word-bank', label: 'Saved', icon: Bookmark },
+    { to: '/dashboard', label: 'Trang chủ', icon: LayoutDashboard },
+    { to: '/word-bank', label: 'Kho từ', icon: BookOpen },
+    { to: '/review', label: 'Ôn tập', icon: Sparkles },
+    { to: '/games', label: 'Trò chơi', icon: Gamepad2 },
+    { to: '/coach', label: 'Gia sư AI', icon: Mic },
   ];
 
   return (
@@ -1153,31 +1152,35 @@ export const AppShell: React.FC = () => {
           className={`flex-1 w-full min-h-0 ${
             isFullHeightPage
               ? 'flex flex-col overflow-hidden p-0 max-w-none h-full'
-              : 'max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8'
+              : 'max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8'
           }`}
         >
           <Outlet />
         </main>
 
         {/* Mobile Thumb-Reach Bottom Navigation Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-around py-2 px-1 shadow-lg">
+        <nav
+          aria-label="Điều hướng di động"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200/80 dark:border-slate-800/80 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.4)] flex items-center justify-around"
+        >
           {mobileBottomItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all ${isActive
-                  ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                `flex flex-col items-center justify-center min-h-[48px] min-w-[56px] py-1 px-2 rounded-2xl transition-all duration-200 touch-manipulation active:scale-95 ${
+                  isActive
+                    ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50/80 dark:bg-indigo-950/50 shadow-xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`
               }
             >
-              <item.icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className="text-[10.5px] leading-tight font-medium tracking-tight mt-0.5">{item.label}</span>
             </NavLink>
           ))}
-        </div>
+        </nav>
       </div>
 
       {/* User Profile & Guidance Modal — ModalPortal to document.body */}

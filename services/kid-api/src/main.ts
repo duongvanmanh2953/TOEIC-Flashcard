@@ -99,7 +99,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`🚀 VocabFlow Kid API running on: http://localhost:${port}/api/v1`);
   logger.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
 }
