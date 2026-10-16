@@ -124,19 +124,30 @@ export const DashboardPage: React.FC = () => {
     { level: 'C1', count: 0, percent: 0, color: 'bg-rose-500' },
   ];
 
+  const isPro = isProUser(user) || quotas?.isPro || quotas?.tier === 'PRO';
+  const effectiveTier = isPro ? 'PRO' : (quotas?.tier || 'FREE');
+
   return (
     <div className="w-full space-y-5 animate-fade-in">
       {/* 1. Hero / Today's Plan — High Contrast Translucent Card (Compact & Focused) */}
-      <GlassCard variant="liquid" className="p-4 sm:p-5 md:p-6 relative overflow-hidden bg-white/95 dark:bg-slate-900/95 border border-indigo-500/25 dark:border-indigo-500/30 shadow-lg rounded-2xl">
+      <GlassCard variant="liquid" className="p-4 sm:p-5 md:p-6 relative overflow-hidden bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl">
         <div className="max-w-3xl relative z-10 space-y-2.5">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
             <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
             <span>Không gian {activeLanguage.name} ({activeLanguage.nativeName}) • Trình độ {activeProfile.level}</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-snug tracking-tight">
-            {timeGreeting}, {user?.displayName || 'Learner'} 👋
-          </h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-snug tracking-tight">
+              {timeGreeting}, {user?.displayName || 'Learner'} 👋
+            </h1>
+            {isPro && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/20 via-amber-300/15 to-yellow-400/20 border border-amber-400/50 text-amber-700 dark:text-amber-300 text-xs font-black shadow-xs">
+                <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                <span>HỘI VIÊN PRO VIP</span>
+              </span>
+            )}
+          </div>
 
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
             Hôm nay bạn có{' '}
@@ -251,56 +262,84 @@ export const DashboardPage: React.FC = () => {
         </GlassCard>
       )}
 
-      {/* Next Best Action Spotlight with Liquid Glass Aesthetic */}
+      {/* Next Best Action Card — Cohesive, Human-Crafted Learning Recommendation */}
       {showSpotlight && (
-        <GlassCard
-          variant="liquid"
-          className="p-5 sm:p-6 rounded-2xl border-2 border-indigo-500/40 dark:border-indigo-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-indigo-500/10 relative pr-12 animate-fade-in bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl overflow-hidden group"
-        >
-          {/* Subtle liquid specular reflection */}
-          <div className="absolute -top-12 -left-12 w-48 h-48 bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-transparent rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
-          <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-gradient-to-tl from-cyan-500/15 via-emerald-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
-
+        <div className="relative rounded-2xl p-5 sm:p-6 border border-indigo-200/90 dark:border-indigo-800/60 bg-gradient-to-r from-indigo-50/70 via-white to-amber-50/40 dark:from-indigo-950/40 dark:via-slate-900/95 dark:to-amber-950/20 shadow-sm hover:shadow-md transition-shadow">
           <button
             onClick={dismissSpotlight}
-            className="absolute top-2.5 right-2.5 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 transition-colors z-10"
+            className="absolute top-3.5 right-3.5 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition z-10 cursor-pointer"
             title="Ẩn thông báo này"
           >
             <X className="w-4 h-4" />
           </button>
 
-          <div className="flex items-start sm:items-center gap-3.5 relative z-10">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/35 border border-white/20">
-              <Target className="w-6 h-6 animate-pulse" />
-            </div>
-            <div className="space-y-1">
-              {/* Taller, prominent liquid glass tag */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 dark:bg-indigo-500/25 border border-indigo-500/35 text-indigo-700 dark:text-indigo-300 text-xs font-black uppercase tracking-wider shadow-xs">
-                <Target className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                <span>Next Best Action • Khuyến Nghị Trí Não</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pr-6 sm:pr-8">
+            <div className="flex items-start sm:items-center gap-3.5 sm:gap-4">
+              {/* Crest Icon with Count Badge */}
+              <div className="relative w-12 h-12 rounded-xl bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                <BrainCircuit className="w-6 h-6" />
+                {reviewDue > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-sm">
+                    {reviewDue}
+                  </span>
+                )}
               </div>
-              <p className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-snug">
-                {reviewDue > 0
-                  ? `${reviewDue} từ vựng đã chạm ngưỡng quên (SRS Retrievability < 75%)`
-                  : 'Mục tiêu ngày đã sẵn sàng: Củng cố 10 từ vựng cốt lõi TOEIC'}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                {reviewDue > 0
-                  ? 'Ôn tập ngay để khóa kiến thức vào trí nhớ dài hạn (Long-term Memory Retention).'
-                  : 'Hoàn thành phiên học hàng ngày để duy trì chuỗi Streak và nhận XP thưởng.'}
-              </p>
-            </div>
-          </div>
 
-          {/* High-Contrast Interactive CTA Button */}
-          <button
-            onClick={() => navigate('/review')}
-            className="relative z-10 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-indigo-600/40 hover:shadow-indigo-600/60 hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shrink-0 border border-indigo-400/40 cursor-pointer self-start sm:self-auto"
-          >
-            <span>Khởi động ngay</span>
-            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-          </button>
-        </GlassCard>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-0.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/50">
+                    Gợi ý ôn tập thông minh • FSRS v5
+                  </span>
+                  {reviewDue > 0 && (
+                    <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                      Sắp quên
+                    </span>
+                  )}
+                </div>
+
+                {reviewDue > 0 ? (
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                    <span className="text-rose-600 dark:text-rose-400 font-extrabold">{reviewDue} từ vựng</span> đã chạm ngưỡng cần củng cố (SRS Retrievability &lt; 75%)
+                  </h3>
+                ) : (
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                    Bộ nhớ hoàn hảo: Bạn đã hoàn thành toàn bộ từ vựng cần ôn hôm nay
+                  </h3>
+                )}
+
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
+                  {reviewDue > 0
+                    ? 'Thuật toán FSRS ước tính các từ này đang ở thời điểm vàng để kích hoạt trí nhớ dài hạn. Ôn tập 3 phút ngay bây giờ để khôi phục 100% phản xạ.'
+                    : 'Hãy tiếp tục khám phá thêm từ vựng mới hoặc tham gia trò chơi để tích lũy XP.'}
+                </p>
+
+                {reviewDue > 0 && (
+                  <div className="pt-1 flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                      Ước tính: ~3 phút
+                    </span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <Target className="w-3.5 h-3.5 text-emerald-500" />
+                      Mục tiêu: Đạt 90%+ trí nhớ dài hạn
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Clean, High-Contrast Action Button */}
+            <button
+              onClick={() => navigate('/review')}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer self-start sm:self-auto"
+            >
+              <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+              <span>{reviewDue > 0 ? `Ôn tập ${reviewDue} từ này` : 'Luyện tập thêm'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Memory Rescue Slipping Words Alert Widget */}
@@ -319,18 +358,29 @@ export const DashboardPage: React.FC = () => {
         const effectiveTier = isPro ? 'PRO' : (quotas?.tier || 'FREE');
 
         return (
-          <GlassCard className="p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3 bg-white/90 dark:bg-slate-900/90">
+          <GlassCard className={`p-4 sm:p-5 shadow-sm space-y-3 rounded-2xl ${
+            isPro
+              ? 'border border-amber-400/50 dark:border-amber-400/30 bg-gradient-to-r from-amber-500/[0.04] via-white to-amber-500/[0.02] dark:from-amber-950/25 dark:via-slate-900/95 dark:to-amber-950/15'
+              : 'border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90'
+          }`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2.5">
               <div className="flex items-center gap-2.5">
-                <PremiumBadge tier={effectiveTier} />
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  {isPro ? 'Gói VocabFlow Pro (Đang kích hoạt)' : effectiveTier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Tài khoản Miễn Phí'}
+                {isPro ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 text-xs font-black shadow-sm">
+                    <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                    <span>VOCABFLOW PRO VIP</span>
+                  </span>
+                ) : (
+                  <PremiumBadge tier={effectiveTier} />
+                )}
+                <span className={`text-xs font-semibold ${isPro ? 'text-amber-700 dark:text-amber-300 font-bold' : 'text-slate-600 dark:text-slate-300'}`}>
+                  {isPro ? 'Đặc quyền học tập tối đa: Trợ lý AI v5 & Ôn tập không giới hạn' : effectiveTier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Tài khoản Miễn Phí'}
                 </span>
               </div>
               {!isPro && effectiveTier === 'FREE' && (
                 <button
                   onClick={() => navigate('/upgrade')}
-                  className="relative overflow-hidden text-xs font-black text-amber-900 dark:text-amber-100 flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 hover:border-amber-300 hover:scale-105 transition group"
+                  className="btn-gold-glowing relative overflow-hidden text-xs font-black flex items-center gap-2 self-start sm:self-auto px-4 py-2 rounded-xl cursor-pointer group"
                 >
                   <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
                   <span>Mở khóa toàn bộ tính năng Pro</span>
@@ -372,84 +422,94 @@ export const DashboardPage: React.FC = () => {
         );
       })()}
 
-      {/* 2. Key Metrics Row — 4 Rich Feature Cards with Distinct Liquid Glass Palettes */}
+      {/* 2. Key Metrics Row — Synchronized Card System */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Daily Goal Card (Indigo / Violet Theme) */}
-        <div className="liquid-glass-card card-metric-indigo p-5 rounded-3xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-              {t('dashboard.dailyGoal', 'Mục tiêu ngày')}
-            </span>
-            <div className="p-2 rounded-xl bg-indigo-500 text-white">
-              <Target className="w-4 h-4" />
+        {/* 1. Daily Goal Card */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('dashboard.dailyGoal', 'Mục tiêu ngày')}
+              </span>
+              <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                <Target className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">
+                {completedToday}
+              </span>
+              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">/ {dailyGoal} từ</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">
-              {completedToday}
-            </span>
-            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">/ {dailyGoal} từ</span>
+          <div className="mt-3">
+            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                style={{ width: `${goalPercent}%` }}
+              />
+            </div>
+            <span className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1.5 block font-bold">{goalPercent}% hoàn thành</span>
           </div>
-          <div className="mt-3 h-2 rounded-full bg-indigo-100 dark:bg-slate-800 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full transition-all duration-300"
-              style={{ width: `${goalPercent}%` }}
-            />
-          </div>
-          <span className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-2 block font-extrabold">{goalPercent}% hoàn thành</span>
         </div>
 
-        {/* 2. Streak Card (Warm Amber / Flame Theme) */}
-        <div className="liquid-glass-card card-metric-amber p-5 rounded-3xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              {t('dashboard.streak', 'Chuỗi liên tiếp')}
-            </span>
-            <div className="p-2 rounded-xl bg-amber-500 text-white animate-pulse">
-              <Flame className="w-4 h-4 fill-white" />
+        {/* 2. Streak Card */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('dashboard.streak', 'Chuỗi liên tiếp')}
+              </span>
+              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                <Flame className="w-4 h-4 fill-amber-500" />
+              </div>
             </div>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
+              {data?.streak?.currentStreak || 0} <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">ngày</span>
+            </p>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
-            {data?.streak?.currentStreak || 0} <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">ngày</span>
-          </p>
-          <p className="text-xs text-amber-700 dark:text-amber-300 mt-3 font-semibold">
-            Kỷ lục cao nhất: <strong className="font-black text-amber-800 dark:text-amber-200">{data?.streak?.longestStreak || 0} ngày</strong>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
+            Kỷ lục cao nhất: <strong className="font-bold text-slate-700 dark:text-slate-200">{data?.streak?.longestStreak || 0} ngày</strong>
           </p>
         </div>
 
-        {/* 3. Total Mastered (Emerald / Mint Crystal Theme) */}
-        <div className="liquid-glass-card card-metric-emerald p-5 rounded-3xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              {t('dashboard.totalWords', 'Từ đã thành thạo')}
-            </span>
-            <div className="p-2 rounded-xl bg-emerald-500 text-white">
-              <Award className="w-4 h-4" />
+        {/* 3. Total Mastered */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('dashboard.totalWords', 'Từ đã thành thạo')}
+              </span>
+              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                <Award className="w-4 h-4" />
+              </div>
             </div>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
+              {data?.masteredCount || 0} <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">từ</span>
+            </p>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
-            {data?.masteredCount || 0} <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">từ</span>
-          </p>
-          <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-3 font-semibold">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
             Độ bền trí nhớ SRS &gt; 85%
           </p>
         </div>
 
-        {/* 4. Learning Level & XP (Sky / Cyan Theme) */}
-        <div className="liquid-glass-card card-metric-cyan p-5 rounded-3xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
-              {t('dashboard.level', 'Cấp độ & XP')}
-            </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500 text-white">
-              CEFR {data?.profile?.englishLevel || 'B1'}
-            </span>
+        {/* 4. Learning Level & XP */}
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('dashboard.level', 'Cấp độ & XP')}
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
+                CEFR {data?.profile?.englishLevel || 'B1'}
+              </span>
+            </div>
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
+              Lvl {user?.xp?.currentLevel || 1}
+            </p>
           </div>
-          <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
-            Lvl {user?.xp?.currentLevel || 1}
-          </p>
-          <p className="text-xs text-cyan-700 dark:text-cyan-300 mt-3 font-semibold">
-            <strong className="font-black text-cyan-800 dark:text-cyan-200">{user?.xp?.totalXP || 0} XP</strong> tích lũy
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
+            <strong className="font-bold text-slate-700 dark:text-slate-200">{user?.xp?.totalXP || 0} XP</strong> tích lũy
           </p>
         </div>
       </div>
@@ -459,7 +519,7 @@ export const DashboardPage: React.FC = () => {
         {/* Weekly Retention & Review Activity Chart (Violet / Indigo Accent) */}
         <GlassCard
           variant="liquid"
-          className="lg:col-span-2 p-5 md:p-6 bg-gradient-to-br from-indigo-500/[0.04] via-white/90 to-transparent dark:from-indigo-950/30 dark:via-slate-900/90 dark:to-transparent border border-indigo-400/30 dark:border-indigo-500/25 shadow-md"
+          className="lg:col-span-2 p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/95 shadow-sm"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
             <div>
@@ -527,7 +587,7 @@ export const DashboardPage: React.FC = () => {
         {/* CEFR Level Mastery Distribution Chart (Purple / Magenta Accent) */}
         <GlassCard
           variant="liquid"
-          className="p-5 md:p-6 bg-gradient-to-br from-purple-500/[0.05] via-white/90 to-transparent dark:from-purple-950/35 dark:via-slate-900/90 dark:to-transparent border border-purple-400/30 dark:border-purple-500/25 shadow-md flex flex-col justify-between"
+          className="p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/95 shadow-sm flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -580,7 +640,7 @@ export const DashboardPage: React.FC = () => {
         {/* Today's Learning Plan Checklist */}
         <GlassCard
           variant="liquid"
-          className="lg:col-span-2 p-5 md:p-6 bg-gradient-to-br from-indigo-500/[0.03] via-white/90 to-transparent dark:from-indigo-950/20 dark:via-slate-900/90 dark:to-transparent border border-slate-200/80 dark:border-slate-800/80 shadow-md"
+          className="lg:col-span-2 p-5 md:p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/95 shadow-sm"
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 leading-snug">

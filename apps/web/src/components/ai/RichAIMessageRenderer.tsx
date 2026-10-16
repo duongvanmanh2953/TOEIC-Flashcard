@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
+import { VocabFlowLogo } from '@vocabflow/shared';
 import {
   Volume2,
+  Globe,
+  Languages,
+  Copy,
+  Check,
   Sparkles,
   BookOpen,
   HelpCircle,
@@ -22,6 +27,7 @@ export interface RichAIMessageRendererProps {
   className?: string;
   isCompact?: boolean;
   isCached?: boolean;
+  hideActions?: boolean;
   citations?: Array<{
     id?: string;
     title?: string;
@@ -39,9 +45,17 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
   className = '',
   isCompact = false,
   isCached = false,
+  hideActions = false,
   citations = [],
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const handleCopyContent = () => {
+    navigator.clipboard?.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   const [playingSentenceIdx, setPlayingSentenceIdx] = useState<number | null>(null);
   const { activeLanguage } = useLearningContext();
   const effectiveTargetLocale = activeLanguage?.speechLocale || 'en-US';
@@ -147,95 +161,6 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
         isCompact ? 'space-y-2 text-xs' : 'space-y-3.5 text-xs sm:text-sm'
       } ${className}`}
     >
-      {/* 1. Header Banner (Rendered in Full Mode or Mini Header in Compact Mode) */}
-      {!isCompact ? (
-        <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white shadow-md">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-black text-xs sm:text-sm tracking-wide">VocabFlow AI Tutor</span>
-                {cefrLevel && (
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 uppercase tracking-wider shadow-xs">
-                    Level {cefrLevel}
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-0.5 flex items-center gap-1.5">
-                {isCached || provider?.includes('cache') ? (
-                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/70 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-emerald-400 shrink-0 fill-emerald-400" />
-                    <span>Kho Dữ Liệu Thông Minh (0 Token)</span>
-                  </span>
-                ) : isGemini ? (
-                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-400/40 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
-                    <span>Gemini 1.5 Flash AI</span>
-                  </span>
-                ) : isOpenAI ? (
-                  <span className="text-[10px] font-bold text-sky-300 bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-400/40 flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-sky-400 shrink-0" />
-                    <span>OpenAI GPT-4o</span>
-                  </span>
-                ) : isOfflineFallback ? (
-                  <span className="text-[10px] font-bold text-amber-200 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-400/40 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                    <span>VocabFlow Offline Knowledge Engine</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] opacity-85 font-medium">Trợ Lý Ngôn Ngữ Thông Minh 24/7</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handlePlayBilingual}
-            disabled={isPlayingAudio}
-            className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-xs font-extrabold flex items-center gap-1.5 border border-white/30 shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
-            title="Đọc toàn bộ câu trả lời bằng giọng Nam Brian chuẩn bản xứ"
-          >
-            <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'animate-pulse text-amber-300' : ''}`} />
-            <span>{isPlayingAudio ? 'Đang đọc...' : 'Nghe câu trả lời'}</span>
-          </button>
-        </div>
-      ) : (
-        /* Compact Mode Header Bar - Always balanced and never blank */
-        <div className="flex items-center justify-between gap-2 pb-1.5 mb-2 border-b border-slate-700/60 text-[11px]">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-bold text-indigo-300 flex items-center gap-1 text-[11px] shrink-0">
-              <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300" />
-              <span>VocabFlow AI</span>
-            </span>
-            {isCached && (
-              <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 flex items-center gap-0.5 truncate">
-                <Zap className="w-2.5 h-2.5 text-emerald-400 fill-emerald-400 shrink-0" />
-                <span>0 tok (Kho tri thức)</span>
-              </span>
-            )}
-            {cefrLevel && (
-              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase shrink-0">
-                {cefrLevel}
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handlePlayBilingual}
-            disabled={isPlayingAudio}
-            className="px-2 py-0.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 text-[10px] font-bold border border-slate-700/60 shadow-xs cursor-pointer disabled:opacity-50 shrink-0"
-            title="Đọc câu trả lời bằng giọng Brian bản xứ"
-          >
-            <Volume2 className={`w-3 h-3 ${isPlayingAudio ? 'animate-pulse text-amber-400' : 'text-indigo-400'}`} />
-            <span>{isPlayingAudio ? 'Đang đọc...' : 'Nghe'}</span>
-          </button>
-        </div>
-      )}
-
       {/* 2. Structured Body Content */}
       <div
         className={`${
@@ -382,6 +307,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
 
           // 2.5 Vietnamese Translation Line (🇻🇳 or VI:)
           if (trimmed.includes('🇻🇳') || trimmed.startsWith('VI:')) {
+            if (!showTranslation) return null;
             const cleanVi = trimmed
               .replace(/^[🇻🇳\s*"'“VI:]+|[*\s"'”]+$/g, '')
               .replace(/^🇻🇳\s*/, '')
@@ -514,6 +440,32 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
           );
         })}
       </div>
+
+      {!hideActions && (
+        <div className="flex items-center gap-1.5 mt-2 pt-1 border-t border-slate-100/60 dark:border-slate-800/60 not-prose">
+          <button
+            type="button"
+            onClick={handlePlayBilingual}
+            disabled={isPlayingAudio}
+            className="p-1.5 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors cursor-pointer"
+            title="Phát âm (Đọc to)"
+          >
+            <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'animate-pulse text-amber-500' : ''}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTranslation(!showTranslation)}
+            className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+              showTranslation
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-900/40'
+                : 'text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'
+            }`}
+            title="Dịch sang tiếng Việt"
+          >
+            <Globe className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* 3. Citations & Community Posts (if any) */}
       {citations && citations.length > 0 && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, isProUser } from '../../contexts/AuthContext';
 import { useTranslation } from '../../i18n';
+import { useDynamicDocumentTitle } from '../../hooks/useDynamicDocumentTitle';
 import { LiquidBackground } from '../common/LiquidBackground';
 import { ModalPortal } from '../common/ModalPortal';
 import {
@@ -64,6 +65,7 @@ import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { RichAIMessageRenderer } from '../ai/RichAIMessageRenderer';
 
 export const AppShell: React.FC = () => {
+  useDynamicDocumentTitle();
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
   const { t } = useTranslation();
@@ -398,6 +400,10 @@ export const AppShell: React.FC = () => {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('vocabflow:unread-messages', { detail: unreadSupportCount }));
+  }, [unreadSupportCount]);
   const modalMessagesRef = useRef<HTMLDivElement>(null);
 
   // Auto-fetch latest user ticket and messages
@@ -704,10 +710,14 @@ export const AppShell: React.FC = () => {
                     </div>
                     {item.badge && (
                       (item as any).isUnlock ? (
-                        /* Liquid Glass Gold Badge */
                         <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0">
-                          <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                          <Crown className="w-2.5 h-2.5 text-amber-600 dark:text-amber-300 fill-amber-500" />
                           <span>MỞ KHÓA</span>
+                        </span>
+                      ) : item.badge === 'PRO' ? (
+                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 rounded-md border border-amber-300 shadow-sm flex items-center gap-1">
+                          <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
+                          <span>PRO VIP</span>
                         </span>
                       ) : (
                         <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
@@ -745,40 +755,52 @@ export const AppShell: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Account Tier Card — Redesigned with Liquid Glass Gold */}
+              {/* Account Tier Card — Luxury Obsidian & Gold for PRO */}
               <div
                 onClick={() => navigate('/upgrade')}
-                className="relative p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 dark:border-amber-400/30 hover:border-amber-400/80 cursor-pointer transition-all duration-300 group overflow-hidden"
+                className={`relative p-2.5 rounded-2xl cursor-pointer transition-all duration-300 group overflow-hidden ${
+                  isPro
+                    ? 'bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-400/60 shadow-md shadow-amber-500/10'
+                    : 'bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 dark:border-amber-400/30 hover:border-amber-400/80'
+                }`}
                 title="Xem chi tiết gói tài khoản hoặc nâng cấp"
               >
                 {/* Specular Liquid Sheen Reflection */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
 
                 <div className="flex items-center justify-between min-w-0 relative z-10">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
-                      <Crown className="w-4 h-4 text-amber-500 dark:text-amber-300 fill-amber-400" />
+                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                      isPro
+                        ? 'bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 shadow-sm'
+                        : 'bg-amber-500/20 border border-amber-400/40 text-amber-500'
+                    }`}>
+                      <Crown className={`w-4 h-4 ${isPro ? 'text-slate-950 fill-slate-950' : 'text-amber-600 dark:text-amber-300 fill-amber-400'}`} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-wider leading-none">
-                        Gói tài khoản
+                      <p className={`text-[9px] font-black uppercase tracking-wider leading-none ${isPro ? 'text-amber-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        {isPro ? 'Đặc quyền thành viên' : 'Gói tài khoản'}
                       </p>
-                      <p className="text-[11px] font-extrabold text-slate-800 dark:text-slate-100 truncate leading-tight mt-0.5">
+                      <p className={`text-[11px] font-extrabold truncate leading-tight mt-0.5 ${isPro ? 'text-amber-100 font-black' : 'text-slate-800 dark:text-slate-100'}`}>
                         {isPro ? 'VocabFlow Pro VIP' : (user?.subscription?.tier || 'Gói Miễn Phí')}
                       </p>
                     </div>
                   </div>
 
-                  {/* Liquid Glass Gold Action Pill */}
-                  <span className="relative px-2 py-1 rounded-xl bg-gradient-to-b from-amber-300/30 via-yellow-400/20 to-amber-500/30 hover:from-amber-300/45 hover:to-amber-500/45 border border-amber-400/60 dark:border-amber-400/50 text-amber-900 dark:text-amber-100 text-[10px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0 group-hover:scale-105 transition-transform duration-200">
+                  {/* Gold Action Pill */}
+                  <span className={`relative px-2 py-1 rounded-xl text-[10px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0 group-hover:scale-105 transition-transform duration-200 ${
+                    isPro
+                      ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-sm font-black'
+                      : 'bg-amber-400/20 border border-amber-400/60 text-amber-900 dark:text-amber-200 font-bold'
+                  }`}>
                     {isPro ? (
                       <>
-                        <Crown className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                        <span>PRO</span>
+                        <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
+                        <span>VIP</span>
                       </>
                     ) : (
                       <>
-                        <LockOpen className="w-2.5 h-2.5 text-amber-600 dark:text-amber-300" />
+                        <LockOpen className="w-2.5 h-2.5 text-amber-700 dark:text-amber-300" />
                         <span>Mở khóa</span>
                       </>
                     )}
@@ -1243,7 +1265,7 @@ export const AppShell: React.FC = () => {
                     setProfileModalOpen(false);
                     navigate('/upgrade');
                   }}
-                  className="btn-glass-primary text-xs !py-1.5 !px-3.5 shadow-sm"
+                  className="btn-gold-glowing text-xs !py-1.5 !px-3.5 shadow-sm"
                 >
                   Nâng cấp gói
                 </button>
@@ -1407,11 +1429,11 @@ export const AppShell: React.FC = () => {
               </div>
             </div>
 
-            {/* Glowing Icon (Docked snuggly against right edge) */}
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500/40 via-purple-500/40 to-cyan-500/30 border border-indigo-400/60 flex items-center justify-center text-indigo-200 group-hover:text-white transition-colors relative shrink-0">
-              <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300 group-hover:scale-110 transition-transform" />
+            {/* Logo trực tiếp, không padding, không viền bo */}
+            <div className="relative shrink-0 flex items-center justify-center w-7 h-7">
+              <VocabFlowLogo size="xs" showContainer={false} className="w-6 h-6 object-contain group-hover:scale-110 transition-transform" />
               {unreadSupportCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-900 animate-pulse" />
               )}
             </div>
           </button>
@@ -1437,17 +1459,13 @@ export const AppShell: React.FC = () => {
               {/* Header with Title & Status calibrated to current tab */}
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold border shadow-md transition-all ${
-                    supportTab === 'tutor'
-                      ? 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 text-white border-indigo-400/40 shadow-indigo-600/30'
-                      : 'bg-gradient-to-tr from-cyan-600 to-blue-600 text-white border-cyan-400/40 shadow-cyan-600/30'
-                  }`}>
-                    {supportTab === 'tutor' ? (
-                      <Sparkles className="w-4.5 h-4.5 text-amber-300 fill-amber-300" />
-                    ) : (
-                      <Headphones className="w-4.5 h-4.5 text-white" />
-                    )}
-                  </div>
+                  {supportTab === 'tutor' ? (
+                    <VocabFlowLogo size="md" showContainer={false} className="w-8 h-8 object-contain shrink-0" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                      <Headphones className="w-4 h-4 text-white" />
+                    </div>
+                  )}
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-sm font-black text-white leading-snug tracking-tight">
@@ -1548,10 +1566,11 @@ export const AppShell: React.FC = () => {
                         className={`flex gap-2.5 ${m.role === 'user' ? 'justify-end items-end' : 'justify-start items-start'}`}
                       >
                         {m.role === 'assistant' && (
-                          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30 border border-indigo-400/30 mt-0.5">
-                            <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                          <div className="shrink-0 mt-1">
+                            <VocabFlowLogo size="xs" showContainer={false} className="w-6 h-6 object-contain select-none" />
                           </div>
                         )}
+                        
                         <div
                           className={`max-w-[86%] p-3 sm:p-3.5 rounded-2xl text-xs leading-relaxed space-y-1.5 shadow-md ${
                             m.role === 'user'

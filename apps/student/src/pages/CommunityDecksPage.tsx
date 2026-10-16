@@ -1052,19 +1052,25 @@ export const CommunityDecksPage: React.FC = () => {
       {mainTab === 'community' && (
         <>
           {/* Sub-filter Category Switcher */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex p-1 rounded-2xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 shadow-xs flex-wrap sm:flex-nowrap gap-1">
             <button
               type="button"
               onClick={() => setVaultCategory('ALL')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 vaultCategory === 'ALL'
-                  ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700/60'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/40'
               }`}
             >
-              <Globe className="w-3.5 h-3.5" />
+              <Globe className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Tất cả kho từ</span>
-              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-slate-500/20">{decks.length}</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors ${
+                vaultCategory === 'ALL'
+                  ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                  : 'bg-slate-200/60 text-slate-600 dark:bg-slate-700/60 dark:text-slate-400'
+              }`}>
+                {decks.length}
+              </span>
             </button>
 
             <button
@@ -1072,13 +1078,17 @@ export const CommunityDecksPage: React.FC = () => {
               onClick={() => setVaultCategory('OFFICIAL')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 vaultCategory === 'OFFICIAL'
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
-                  : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700/60'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/40'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>⭐ Kho chính của App</span>
-              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-amber-500/20">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
+              <span>Kho chính thức</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors ${
+                vaultCategory === 'OFFICIAL'
+                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                  : 'bg-slate-200/60 text-slate-600 dark:bg-slate-700/60 dark:text-slate-400'
+              }`}>
                 {decks.filter((d) => d.isOfficial).length}
               </span>
             </button>
@@ -1088,13 +1098,17 @@ export const CommunityDecksPage: React.FC = () => {
               onClick={() => setVaultCategory('COMMUNITY')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 vaultCategory === 'COMMUNITY'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700/60'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/40'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
-              <span>👥 Đóng góp cộng đồng</span>
-              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-slate-500/20">
+              <Users className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Đóng góp cộng đồng</span>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors ${
+                vaultCategory === 'COMMUNITY'
+                  ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300'
+                  : 'bg-slate-200/60 text-slate-600 dark:bg-slate-700/60 dark:text-slate-400'
+              }`}>
                 {decks.filter((d) => !d.isOfficial).length}
               </span>
             </button>

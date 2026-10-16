@@ -2294,3 +2294,41 @@ a.card-brand-effect {
   border-color: rgba(16, 185, 129, 0.4);
   color: #6ee7b7;
 }
+
+/* ==========================================================================
+   NÚT VÀNG HOÀNG KIM SIÊU SÁNG (ULTRA GOLD GLOWING BUTTON)
+   - Áp dụng cho các nút "Nâng cấp gói", "Mở khóa Pro", "VIP"
+   - Gradient vàng kim hoàng gia, tương phản cao, icon sắc nét không bị che
+   ========================================================================== */
+.btn-gold-glowing {
+  background: linear-gradient(135deg, #f59e0b 0%, #fde047 45%, #eab308 65%, #d97706 100%) !important;
+  color: #451a03 !important;
+  font-weight: 900 !important;
+  border: 1.5px solid #fef08a !important;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-gold-glowing svg {
+  color: #451a03 !important;
+  fill: #78350f !important;
+  stroke: #451a03 !important;
+  stroke-width: 2.2px !important;
+}
+
+.btn-gold-glowing:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #fef08a 45%, #f59e0b 100%) !important;
+  box-shadow: 0 6px 22px rgba(245, 158, 11, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transform: scale(1.02) translateY(-1px) !important;
+}
+
+.btn-gold-glowing:hover svg {
+  color: #291002 !important;
+  fill: #451a03 !important;
+  stroke: #291002 !important;
+}
+
+.btn-gold-glowing:active {
+  transform: scale(0.97) !important;
+}

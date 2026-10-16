@@ -43,6 +43,7 @@ import {
   LocalDeck,
 } from '../lib/idb';
 import { WordDiagnosticModal } from '../components/vocabflow/WordDiagnosticModal';
+import { VictoryStarModal } from '@vocabflow/shared';
 
 export interface ReviewQueueItem {
   vocabularyId: string;
@@ -906,33 +907,26 @@ export const ReviewSessionPage: React.FC = () => {
     );
   }
 
-  // No words view
+  // All cards reviewed - Celebratory Victory Modal
   if (!currentItem) {
     return (
-      <div className="max-w-md mx-auto text-center py-16 space-y-4">
-        <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 text-2xl mx-auto flex items-center justify-center shadow-sm">
-          <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="lg" />
-        </div>
-        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-          Không còn từ vựng {activeLanguage.nativeName} ({activeLanguage.name}) cần ôn lúc này!
-        </h3>
-        <p className="text-xs text-slate-500 max-w-sm mx-auto">
-          Tất cả các thẻ trong không gian học tập này đã được củng cố và chưa đến hạn chu kỳ FSRS tiếp theo. Bạn có thể ôn lại tất cả hoặc thêm từ vựng mới.
-        </p>
-        <div className="flex justify-center gap-2 pt-2">
-          <button
-            onClick={() => setSelectedTopic('ALL')}
-            className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-xs hover:bg-indigo-700 transition"
-          >
-            Ôn tất cả từ ({activeLanguage.name})
-          </button>
-          <button
-            onClick={() => navigate('/word-bank')}
-            className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition"
-          >
-            Về Kho Từ Vựng
-          </button>
-        </div>
+      <div className="py-12">
+        <VictoryStarModal
+          isOpen={true}
+          title="HOÀN THÀNH PHIÊN ÔN TẬP SRS"
+          subtitle={`Bạn đã củng cố toàn bộ từ vựng ${activeLanguage?.name || 'tiếng Anh'} đến hạn ôn tập hôm nay vào trí nhớ dài hạn.`}
+          stars={3}
+          xpEarned={50}
+          stats={[
+            { label: 'Từ đã ôn', value: `${items.length} từ` },
+            { label: 'Ngôn ngữ', value: activeLanguage?.name || 'TOEIC' },
+            { label: 'Độ bền SRS', value: '> 85%' },
+          ]}
+          onPlayAgain={() => setSelectedTopic('ALL')}
+          onContinue={() => navigate('/word-bank')}
+          playAgainText="Ôn Thêm Từ Khác"
+          continueText="Về Kho Từ Vựng"
+        />
       </div>
     );
   }
@@ -968,7 +962,7 @@ export const ReviewSessionPage: React.FC = () => {
       )}
 
       {/* Top Controls: Mode Switcher & Topic Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
         {/* Mode Switcher */}
         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 self-start">
           <button

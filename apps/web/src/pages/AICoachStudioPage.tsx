@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { CustomSelect, SelectOption } from '../components/ui/CustomSelect';
 import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
+import { VocabFlowLogo } from '@vocabflow/shared';
 import { confirmModal } from '../components/common/ConfirmDialog';
 import {
   Mic,
@@ -983,7 +984,7 @@ export const AICoachStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 flex-1 overflow-hidden space-y-1.5 sm:space-y-2.5">
+    <div className="p-4 flex flex-col h-full min-h-0 flex-1 overflow-hidden space-y-1.5 sm:space-y-2.5">
       {/* Top Product Header (Compact & Streamlined with Dismiss X Button - Hidden on mobile to maximize chat space) */}
       {showHeroBanner ? (
         <div className="hidden md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden pr-12 animate-fade-in shrink-0">
@@ -1328,9 +1329,7 @@ export const AICoachStudioPage: React.FC = () => {
                 </button>
 
                 <div className="relative shrink-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-rose-500 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
-                  </div>
+                  <VocabFlowLogo size="md" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl shadow-md shadow-indigo-500/20" />
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 animate-pulse" title="AI Coach Sẵn Sàng" />
                 </div>
 
@@ -1419,8 +1418,8 @@ export const AICoachStudioPage: React.FC = () => {
                   className={`flex items-start gap-2.5 sm:gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-rose-500 flex items-center justify-center text-white shrink-0 shadow-md">
-                      <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <div className="shrink-0 mt-0.5">
+                      <VocabFlowLogo size="xs" showContainer={false} className="w-7 h-7 sm:w-8 sm:h-8 object-contain select-none" />
                     </div>
                   )}
                   {msg.role === 'user' ? (
@@ -1438,6 +1437,7 @@ export const AICoachStudioPage: React.FC = () => {
                       <RichAIMessageRenderer
                         content={msg.content}
                         provider={(msg as any).provider}
+                        hideActions={true}
                         onSelectQuizOption={(opt) => handleSendMessage(opt)}
                       />
                       {translatedMessages[msg.id] && (

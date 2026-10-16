@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api/v1',
+  timeout: 12000,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -38,6 +39,31 @@ export function isStrictProtectedRoute(pathname: string): boolean {
   return strictRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'));
 }
 
+
+// Fast In-Memory Cache (SWR) for instantaneous page transitions and zero-lag rendering
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const getMemoryCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 25000; // 25s TTL
+
+function shouldCacheEndpoint(url?: string): boolean {
+  if (!url) return false;
+  // Cache read-only dashboards, languages, stats, quotas, and deck catalogs
+  return (
+    url.startsWith('/dashboard') ||
+    url.startsWith('/subscriptions') ||
+    url.startsWith('/languages') ||
+    url.startsWith('/community/decks') ||
+    url.startsWith('/profiles')
+  );
+}
+
+export function clearApiMemoryCache() {
+  getMemoryCache.clear();
+}
+
 let activeRequestsCount = 0;
 let activeMutationsCount = 0;
 
@@ -67,7 +93,10 @@ function notifyApiLoading(delta: number, config?: any) {
 
 // Request interceptor: Attach JWT token, persistent deviceId & dev logging
 api.interceptors.request.use((config) => {
-  notifyApiLoading(1, config);
+  const isSilentBackground = config?.skipGlobalLoader || config?.url?.includes('/unread-count');
+  if (!isSilentBackground) {
+    notifyApiLoading(1, config);
+  }
 
   const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('vocabflow_access_token');
   if (token && config.headers) {
@@ -92,7 +121,10 @@ api.interceptors.request.use((config) => {
 // Response interceptor: Auto Refresh Token on 401 & dev logging
 api.interceptors.response.use(
   (response) => {
-    notifyApiLoading(-1, response.config);
+    const isSilentBackground = response.config?.skipGlobalLoader || response.config?.url?.includes('/unread-count');
+    if (!isSilentBackground) {
+      notifyApiLoading(-1, response.config);
+    }
 
     if (import.meta.env.DEV) {
       console.debug(`[HTTP RES] ${response.status} ${response.config.url}`, response.data);
@@ -127,7 +159,10 @@ api.interceptors.response.use(
     return response.data;
   },
   async (error) => {
-    notifyApiLoading(-1, error.config);
+    const isSilentBackground = error.config?.skipGlobalLoader || error.config?.url?.includes('/unread-count');
+    if (!isSilentBackground) {
+      notifyApiLoading(-1, error.config);
+    }
 
     if (import.meta.env.DEV) {
       console.warn(`[HTTP ERR] ${error.response?.status || 'FAIL'} ${error.config?.url}`, error.response?.data || error.message);

@@ -130,7 +130,7 @@ export const QuotaMeter: React.FC<QuotaMeterProps> = ({
               <button
                 type="button"
                 onClick={handleUpgrade}
-                className="px-2.5 py-0.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] shadow-sm transition flex items-center gap-1"
+                className="btn-gold-glowing !px-2.5 !py-0.5 text-[10px] font-extrabold shadow-sm transition flex items-center gap-1"
               >
                 <Crown className="w-2.5 h-2.5 fill-white" />
                 <span>{t('quota.upgradeNow', 'Nâng cấp ngay')}</span>

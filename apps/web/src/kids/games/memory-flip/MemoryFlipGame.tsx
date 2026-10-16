@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { VocabFlowLogo, VictoryStarModal } from '@vocabflow/shared';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 import { kidAsset } from '../../utils/kidAsset';
@@ -450,45 +450,22 @@ export const MemoryFlipGame: React.FC<MemoryFlipGameProps> = ({
             ))}
           </div>
 
-          {/* Victory Modal between rounds */}
-          {isRoundComplete && (
-            <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 text-center animate-fadeIn select-none">
-              <div className="p-6 sm:p-8 rounded-[28px] bg-white border-2 border-amber-300 shadow-2xl max-w-sm w-full my-auto flex flex-col items-center space-y-3.5 animate-scaleUp">
-                <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
-                  <Trophy className="w-8 h-8 text-amber-500" />
-                </div>
-
-                <div className="space-y-1">
-                  <h2 className="text-xl font-black text-slate-900">
-                    Hoàn Thành Vòng {round}!
-                  </h2>
-                  <p className="text-xs font-semibold text-slate-500">
-                    Bé đã tìm đúng tất cả {totalPairsCount} cặp thẻ với {moves} lượt lật.
-                  </p>
-                </div>
-
-                <div className="w-full grid grid-cols-2 gap-2.5 py-1">
-                  <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/60 text-center">
-                    <span className="text-[10px] font-bold text-amber-800 block">Điểm số</span>
-                    <span className="text-lg font-black text-amber-600">+{score}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-sky-50/80 border border-sky-200/60 text-center">
-                    <span className="text-[10px] font-bold text-sky-800 block">Số lượt</span>
-                    <span className="text-lg font-black text-sky-600">{moves} lượt</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleNextOrFinish}
-                  className="w-full py-3 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs sm:text-sm shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                >
-                  <span>{round < MAX_ROUNDS ? 'Sang Vòng Tiếp Theo' : 'Hoàn Thành Trò Chơi'}</span>
-                  <Check className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          {/* 1-2-3 Stars Celebratory Victory Modal for Kids */}
+          <VictoryStarModal
+            isOpen={isRoundComplete}
+            variant="kid"
+            title={`HOÀN THÀNH VÒNG ${round}!`}
+            subtitle={`Bé đã tìm đúng tất cả ${totalPairsCount} cặp thẻ thông minh!`}
+            stars={moves <= totalPairsCount * 2 ? 3 : moves <= totalPairsCount * 3 ? 2 : 1}
+            xpEarned={score}
+            stats={[
+              { label: 'Điểm Số', value: `+${score}` },
+              { label: 'Số Lượt Lật', value: `${moves} lượt` },
+              { label: 'Cặp Thẻ', value: `${totalPairsCount} cặp` },
+            ]}
+            onContinue={handleNextOrFinish}
+            continueText={round < MAX_ROUNDS ? 'Sang Vòng Tiếp Theo 🚀' : 'Nhận Thưởng Hoàn Thành 🏆'}
+          />
         </div>
       </div>
     </GameShell>

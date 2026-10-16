@@ -507,8 +507,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 <button
                   onClick={() => setCheckoutTier(plan.tier)}
                   className={`w-full mt-6 py-3.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 active:scale-[0.98] ${
-                    isPlanPro
-                      ? 'relative overflow-hidden bg-amber-400/25 dark:bg-amber-400/20 backdrop-blur-xl border border-amber-400/70 hover:border-amber-300 text-amber-950 dark:text-amber-100 group'
+                    isPlanPro ? 'btn-gold-glowing group'
                       : 'bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-500 hover:from-brand-700 hover:to-indigo-700 text-white'
                   }`}
                 >

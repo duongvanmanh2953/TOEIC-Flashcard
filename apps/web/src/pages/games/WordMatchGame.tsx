@@ -7,6 +7,7 @@ import {
 import api from '../../lib/api';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 import { CountryFlag } from '../../components/language/CountryFlag';
+import { VocabFlowLogo, VictoryStarModal } from '@vocabflow/shared';
 
 interface MatchCard {
   id: string;
@@ -210,49 +211,69 @@ export const WordMatchGame: React.FC = () => {
         </p>
       </div>
 
-      {/* Cards Grid */}
+      {/* Cards Grid - 3/4 Aspect Ratio & Crisp Unrounded Card Styling */}
       {loading ? (
-        <div className="h-64 flex items-center justify-center">
+        <div className="h-72 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 max-w-4xl mx-auto">
           {cards.map((card) => {
+            const isWord = card.type === 'WORD';
             return (
               <button
                 key={card.id}
                 onClick={() => handleCardClick(card)}
                 disabled={card.isMatched || card.isFlipped}
-                className={`h-28 sm:h-32 p-3 rounded-2xl font-bold transition-all duration-300 flex flex-col items-center justify-center text-center relative border shadow-sm ${
+                className={`aspect-[3/4] w-full rounded-none p-3.5 sm:p-4.5 font-bold transition-all duration-200 flex flex-col items-center justify-between text-center relative border select-none cursor-pointer ${
                   card.isMatched
-                    ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 scale-95 opacity-80 pointer-events-none'
+                    ? 'card-gold-glimmer text-emerald-300 font-black shadow-lg scale-95 pointer-events-none'
                     : card.isFlipped
-                    ? card.type === 'WORD'
-                      ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/25 scale-102'
-                      : 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-500/25 scale-102'
-                    : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:scale-102'
+                    ? isWord
+                      ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/25 scale-[1.02]'
+                      : 'bg-purple-700 text-white border-purple-400 shadow-lg shadow-purple-600/25 scale-[1.02]'
+                    : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-indigo-500/60 dark:hover:border-indigo-400/60 hover:-translate-y-1 shadow-sm'
                 }`}
               >
                 {card.isFlipped || card.isMatched ? (
                   <>
-                    <span className="text-xs opacity-75 uppercase tracking-wider mb-1 font-semibold flex items-center gap-1">
-                      <CountryFlag languageId={card.type === 'WORD' ? 'en' : 'vi'} size="xs" />
-                      <span>{card.type === 'WORD' ? 'Tiếng Anh' : 'Tiếng Việt'}</span>
-                    </span>
-                    <span className="text-sm sm:text-base line-clamp-2 px-1">
-                      {card.content}
-                    </span>
-                    {card.isMatched && (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute top-2 right-2" />
-                    )}
+                    <div className="w-full flex items-center justify-between text-[11px] opacity-80 uppercase tracking-wider font-semibold border-b border-white/15 dark:border-white/10 pb-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <CountryFlag languageId={isWord ? 'en' : 'vi'} size="xs" />
+                        <span>{isWord ? 'Tiếng Anh' : 'Tiếng Việt'}</span>
+                      </span>
+                      {card.isMatched && (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      )}
+                    </div>
+                    <div className="my-auto px-1 py-2">
+                      <span className="text-base sm:text-lg md:text-xl font-black leading-snug line-clamp-3 block">
+                        {card.content}
+                      </span>
+                    </div>
+                    <div className="text-[10px] opacity-60 tracking-wider uppercase font-semibold">
+                      VocabFlow
+                    </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-1.5 opacity-60">
-                    <span className="text-2xl">🃏</span>
-                    <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400">
-                      Lật Thẻ
-                    </span>
-                  </div>
+                  <>
+                    {/* Geometric inner border frame for authentic poker/flashcard aesthetic */}
+                    <div className="absolute inset-2 border border-slate-200/90 dark:border-slate-800 pointer-events-none" />
+                    <div className="w-full text-right text-[10px] text-slate-400 font-bold opacity-60">
+                      VF
+                    </div>
+                    <div className="my-auto flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800/90 flex items-center justify-center p-2 border border-slate-200/80 dark:border-slate-700">
+                        <VocabFlowLogo size="xs" showContainer={false} className="w-6 h-6 object-contain" />
+                      </div>
+                      <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500">
+                        Lật Thẻ
+                      </span>
+                    </div>
+                    <div className="w-full text-left text-[10px] text-slate-400 font-bold opacity-60">
+                      VF
+                    </div>
+                  </>
                 )}
               </button>
             );
@@ -260,34 +281,22 @@ export const WordMatchGame: React.FC = () => {
         </div>
       )}
 
-      {/* Completion Modal */}
-      {isCompleted && (
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-900 text-white text-center space-y-4 shadow-2xl border border-indigo-500/30 animate-scale-up">
-          <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center border border-amber-400/30">
-            <Award className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-black">🎉 XUẤT SẮC! HOÀN THÀNH WORD MATCH</h2>
-          <p className="text-sm text-slate-300 max-w-md mx-auto">
-            Bạn đã ghép đúng toàn bộ 6 cặp từ vựng trong thời gian{' '}
-            <span className="font-bold text-amber-400">{formatTime(time)}</span> với số điểm{' '}
-            <span className="font-bold text-amber-400">{score} điểm</span> (Combo tối đa: {maxCombo}x)!
-          </p>
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <button
-              onClick={initGame}
-              className="btn-glass-primary !py-2.5 !px-6 !rounded-xl text-xs font-black"
-            >
-              Chơi Ván Mới Ngay
-            </button>
-            <button
-              onClick={() => navigate('/games')}
-              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition"
-            >
-              Về Sảnh Đấu
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 1-2-3 Stars Celebration Victory Modal */}
+      <VictoryStarModal
+        isOpen={isCompleted}
+        title="CHIẾN THẮNG WORD MATCH"
+        stars={time <= 25 ? 3 : time <= 45 ? 2 : 1}
+        xpEarned={time <= 25 ? 60 : time <= 45 ? 40 : 25}
+        stats={[
+          { label: 'Thời Gian', value: formatTime(time) },
+          { label: 'Điểm Số', value: `${score} pts` },
+          { label: 'Combo Max', value: `${maxCombo}x` },
+        ]}
+        onPlayAgain={initGame}
+        onContinue={() => navigate('/games')}
+        playAgainText="Chơi Ván Mới Ngay"
+        continueText="Về Sảnh Đấu"
+      />
     </div>
   );
 };

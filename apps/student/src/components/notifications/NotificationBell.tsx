@@ -26,7 +26,9 @@ export const NotificationBell: React.FC = () => {
     try {
       const res = await api.get('/notifications/unread-count');
       const payload = res.data?.data || res.data || {};
-      setUnreadCount(payload.unreadCount ?? payload.count ?? 0);
+      const c = payload.unreadCount ?? payload.count ?? 0;
+      setUnreadCount(c);
+      window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: c }));
     } catch {
       // Ignore if unauthenticated
     }
@@ -58,7 +60,11 @@ export const NotificationBell: React.FC = () => {
     // Realtime WebSocket notification listener
     const socket = getSocket();
     const onNewNotif = (notif: any) => {
-      setUnreadCount((c) => c + 1);
+      setUnreadCount((c) => {
+        const next = c + 1;
+        window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: next }));
+        return next;
+      });
       const normalized = {
         ...notif,
         message: notif.body || notif.message || '',
@@ -99,7 +105,11 @@ export const NotificationBell: React.FC = () => {
       setRecentNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
-      setUnreadCount((c) => Math.max(0, c - 1));
+      setUnreadCount((c) => {
+        const next = Math.max(0, c - 1);
+        window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: next }));
+        return next;
+      });
     } catch (err) {
       console.error(err);
     }
@@ -110,6 +120,7 @@ export const NotificationBell: React.FC = () => {
       await api.post('/notifications/mark-all-read');
       setRecentNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
+      window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: 0 }));
     } catch (err) {
       console.error(err);
     }

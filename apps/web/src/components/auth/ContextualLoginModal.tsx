@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ModalPortal } from '../common/ModalPortal';
-import { X, Sparkles, Heart, Bookmark, Brain, CheckCircle2 } from 'lucide-react';
+import { VocabFlowLogo } from '@vocabflow/shared';
+import { X, CheckCircle2 } from 'lucide-react';
 
 export const ContextualLoginModal: React.FC = () => {
   const navigate = useNavigate();
@@ -52,14 +53,8 @@ export const ContextualLoginModal: React.FC = () => {
 
         {/* Icon & Heading */}
         <div className="text-center space-y-3 pt-2">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center shadow-xs border border-indigo-500/20">
-            {loginPromptReason.toLowerCase().includes('favorite') || loginPromptReason.toLowerCase().includes('yêu thích') ? (
-              <Heart className="w-7 h-7 fill-rose-500 text-rose-500 animate-pulse" />
-            ) : loginPromptReason.toLowerCase().includes('kho') || loginPromptReason.toLowerCase().includes('bank') ? (
-              <Bookmark className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-            ) : (
-              <Sparkles className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-            )}
+          <div className="mx-auto flex items-center justify-center">
+            <VocabFlowLogo size="xl" className="w-14 h-14 shadow-lg shadow-indigo-500/20" />
           </div>
 
           <div>

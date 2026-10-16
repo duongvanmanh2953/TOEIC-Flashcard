@@ -6,6 +6,7 @@ import { SpeechButton } from '../components/common/SpeechButton';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
+import { VocabFlowLogo } from '@vocabflow/shared';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { useTranslation } from '../i18n';
 import { useAuth, isProUser } from '../contexts/AuthContext';
@@ -425,17 +426,20 @@ export const AITutorPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-fade-in flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] overflow-hidden">
+    <div className="max-w-4xl mx-auto space-y-4 animate-fade-in flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] overflow-hidden px-3 sm:px-5 md:px-6 py-2">
       {/* Top Header & Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 shrink-0">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1 border border-indigo-500/20">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Vocabulary Tutor 24/7</span>
+        <div className="flex items-center gap-3">
+          <VocabFlowLogo size="md" className="w-10 h-10 shadow-md shadow-indigo-500/20 shrink-0" />
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-0.5 border border-indigo-500/20">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Gia Sư VocabFlow AI 24/7</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-snug">
+              Gia Sư Trí Tuệ Nhân Tạo & Luyện Tập Ngữ Cảnh
+            </h2>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-snug">
-            Gia Sư Trí Tuệ Nhân Tạo & Luyện Tập Ngữ Cảnh
-          </h2>
         </div>
 
         {/* Tab Switcher */}
@@ -534,7 +538,7 @@ export const AITutorPage: React.FC = () => {
           </div>
           <button
             onClick={() => navigate('/subscription')}
-            className="btn-glass-primary !py-1 !px-3 text-xs shrink-0"
+            className="btn-gold-glowing !py-1 !px-3 text-xs shrink-0"
           >
             Nâng cấp ngay
           </button>
@@ -545,25 +549,26 @@ export const AITutorPage: React.FC = () => {
           TAB 1: INTERACTIVE AI CHAT WITH STRUCTURED CARDS
           ========================================================================= */}
       {activeTab === 'chat' && (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-5 shadow-sm overflow-hidden">
           {/* Messages Scroll Area */}
-          <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-2">
+          <div className="flex-1 overflow-y-auto space-y-4 px-2 sm:px-4 py-3">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end items-end' : 'justify-start items-start'}`}
               >
                 {msg.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                    <Sparkles className="w-4 h-4 fill-white" />
+                  <div className="shrink-0 mt-1">
+                    <VocabFlowLogo size="xs" showContainer={false} className="w-7 h-7 object-contain select-none" />
                   </div>
                 )}
+                
 
                 <div
-                  className={`max-w-[85%] sm:max-w-xl space-y-3 ${
+                  className={`space-y-3 ${
                     msg.role === 'user'
-                      ? 'bg-indigo-600 text-white p-3.5 rounded-2xl rounded-tr-none text-xs sm:text-sm font-medium shadow-sm'
-                      : 'space-y-3'
+                      ? 'max-w-[85%] sm:max-w-xl bg-indigo-600 text-white p-3.5 rounded-2xl rounded-tr-none text-xs sm:text-sm font-medium shadow-sm'
+                      : 'w-full max-w-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xs space-y-3'
                   }`}
                 >
                   {/* Prose Content */}
@@ -774,9 +779,7 @@ export const AITutorPage: React.FC = () => {
 
             {loading && (
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                  <BrainCircuit className="w-4 h-4 animate-spin" />
-                </div>
+                <VocabFlowLogo size="xs" showContainer={false} className="w-7 h-7 object-contain animate-pulse shrink-0 select-none" />
                 <div className="glass-panel p-3.5 rounded-2xl rounded-bl-none text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
                   <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                   <span>AI đang phân tích ngữ cảnh...</span>
@@ -788,7 +791,7 @@ export const AITutorPage: React.FC = () => {
           </div>
 
           {/* Bottom Composer with Real-time Token Cost Estimator */}
-          <div className="shrink-0 pt-2 space-y-1.5">
+          <div className="shrink-0 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
             {/* Curated Suggestion Chips (Kho tri thức ⚡ 0 Token) */}
             <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar">
               <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 shrink-0 flex items-center gap-1">
