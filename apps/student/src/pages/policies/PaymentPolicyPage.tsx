@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { CreditCard, QrCode, CheckCircle2, AlertCircle, RefreshCw, Clock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Danh mục các gói dịch vụ và biểu phí niêm yết' },
@@ -39,7 +40,7 @@ export const PaymentPolicyPage: React.FC = () => {
       {/* Overview Alert */}
       <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-blue-800 dark:text-blue-400">
-          <CreditCard className="w-4 h-4 shrink-0" />
+          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Thanh toán an toàn, tự động kích hoạt 24/7</span>
         </div>
         <p>

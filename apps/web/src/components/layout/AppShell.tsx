@@ -1162,7 +1162,7 @@ export const AppShell: React.FC = () => {
               title="Tin nhắn học tập E2EE"
               className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs cursor-pointer"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain" />
               <span className="hidden xl:inline">Tin nhắn</span>
             </button>
           </div>
@@ -1473,13 +1473,7 @@ export const AppShell: React.FC = () => {
               {/* Header with Title & Status calibrated to current tab */}
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  {supportTab === 'tutor' ? (
-                    <VocabFlowLogo size="md" showContainer={false} className="w-8 h-8 object-contain shrink-0" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                      <Headphones className="w-4 h-4 text-white" />
-                    </div>
-                  )}
+                  <VocabFlowLogo size="md" showContainer={false} className="w-8 h-8 object-contain shrink-0" />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-sm font-black text-white leading-snug tracking-tight">
@@ -1519,7 +1513,7 @@ export const AppShell: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                  <VocabFlowLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
                   <span>Gia sư AI</span>
                 </button>
                 <button
@@ -1531,7 +1525,7 @@ export const AppShell: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
+                  <VocabFlowLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
                   <span>CSKH</span>
                 </button>
                 <button

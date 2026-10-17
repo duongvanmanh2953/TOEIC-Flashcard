@@ -1,11 +1,24 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, ArrowLeft, Home, Lock } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, GraduationCap, Lock } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 export const NotAuthorizedPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
+
+  const handleGoBack = () => {
+    const hasLocalHistory = window.history.length > 1 && document.referrer && !document.referrer.includes('/admin');
+    if (hasLocalHistory) {
+      navigate(-1);
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleGoToStudent = () => {
+    navigate('/dashboard');
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 selection:bg-rose-500 selection:text-white relative overflow-hidden">
@@ -13,7 +26,7 @@ export const NotAuthorizedPage: React.FC = () => {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-md w-full glass-card p-8 text-center relative z-10 border border-rose-500/20 bg-slate-900/80 backdrop-blur-2xl rounded-3xl">
+      <div className="max-w-md w-full glass-card p-8 text-center relative z-10 border border-rose-500/20 bg-slate-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl">
         <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto mb-6 text-rose-400">
           <ShieldAlert className="w-8 h-8" />
         </div>
@@ -36,19 +49,23 @@ export const NotAuthorizedPage: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={() => navigate(-1)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700/60"
+            type="button"
+            onClick={handleGoBack}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700/60 active:scale-95"
+            title="Trở về trang trước hoặc bảng học tập"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Quay Lại</span>
+            <span>Trở Về</span>
           </button>
 
           <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition"
+            type="button"
+            onClick={handleGoToStudent}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition active:scale-95"
+            title="Về Bảng học tập học viên"
           >
-            <Home className="w-4 h-4" />
-            <span>Về Bảng Học Tập</span>
+            <GraduationCap className="w-4 h-4" />
+            <span>Tiếp Tục ở Học Viên</span>
           </button>
         </div>
       </div>

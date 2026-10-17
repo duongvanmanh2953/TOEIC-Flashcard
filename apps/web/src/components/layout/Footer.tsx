@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { VocabFlowLogo } from '@vocabflow/shared';
 import { useTranslation } from '../../i18n';
+import { useAuth } from '../../contexts/AuthContext';
 import { LEGAL_CONFIG, MANDATORY_POLICIES, isLegalPlaceholder } from '../../config/legalConfig';
 
 interface FooterProps {
@@ -27,6 +28,8 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ className = '', showFullDetails = true }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const homeTarget = user ? '/dashboard' : '/';
 
   const isPhonePlaceholder = isLegalPlaceholder(LEGAL_CONFIG.ownerPhone);
   const isAddressPlaceholder = isLegalPlaceholder(LEGAL_CONFIG.ownerAddress);
@@ -45,11 +48,16 @@ export const Footer: React.FC<FooterProps> = ({ className = '', showFullDetails 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 pb-10 border-b border-slate-200 dark:border-slate-800/80">
           {/* Column 1: Brand & Ministry of Industry and Trade Compliance Statement (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <Link to="/" className="inline-flex items-center gap-2.5 group">
-              <VocabFlowLogo size="sm" className="group-hover:scale-105 transition-transform" />
-              <span className="text-xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
-                {LEGAL_CONFIG.platformName}
-              </span>
+            <Link to={homeTarget} className="inline-flex items-center gap-2.5 group" title="VocabFlow">
+              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-105 transition-transform shrink-0" />
+              <div className="flex flex-col text-left">
+                <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  VocabFlow
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium tracking-tight">
+                  Multi-Language Learning
+                </span>
+              </div>
             </Link>
 
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { AlertCircle, CheckCircle2, Clock, Mail, Phone, MessageSquare, ShieldAlert, Scale, HelpCircle } from 'lucide-react';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Nguyên tắc giải quyết khiếu nại & tranh chấp' },
@@ -38,7 +39,7 @@ export const ComplaintResolutionPage: React.FC = () => {
       {/* Overview Alert */}
       <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-400">
-          <Scale className="w-4 h-4 shrink-0" />
+          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Cam kết bảo vệ quyền lợi chính đáng của học viên</span>
         </div>
         <p>
