@@ -56,12 +56,13 @@ function promptPassword(query: string): Promise<string> {
 }
 
 async function main() {
-  const masterPass = process.env.SERVER_MASTER_PASSWORD;
+  const masterPass = (process.env.SERVER_MASTER_PASSWORD || '').trim().replace(/^["']|["']$/g, '');
   if (!masterPass) {
     console.error('❌ Lỗi bảo mật: Biến môi trường SERVER_MASTER_PASSWORD chưa được thiết lập trên máy chủ.');
     process.exit(1);
   }
-  const inputPass = await promptPassword('🔑 Nhập mật khẩu máy chủ (Master Password) để tiếp tục: ');
+  const rawInput = await promptPassword('🔑 Nhập mật khẩu máy chủ (Master Password) để tiếp tục: ');
+  const inputPass = rawInput.trim();
 
   if (inputPass !== masterPass) {
     console.error('❌ Mật khẩu không chính xác! Hủy thao tác bảo mật.');
