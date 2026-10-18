@@ -30,18 +30,18 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50 dark:bg-slate-950 py-12">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
-        <div className="text-center mb-8">
-          <VocabFlowLogo size="xl" className="w-14 h-14 mx-auto mb-3 shadow-lg shadow-indigo-500/20" />
-          <h2 className="text-2xl font-bold tracking-tight">Tạo tài khoản học tập</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50 dark:bg-slate-950 py-8 sm:py-12">
+      <div className="max-w-md w-full p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div className="text-center mb-6 sm:mb-8">
+          <VocabFlowLogo size="xl" className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 shadow-lg shadow-indigo-500/20" />
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Tạo tài khoản học tập</h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Bắt đầu lộ trình cá nhân hóa cùng <span className="font-semibold text-indigo-600 dark:text-indigo-400">VocabFlow</span>
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-sm flex items-center gap-2">
+          <div className="mb-5 p-3 sm:p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-xs sm:text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -94,14 +94,14 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="btn-glass-primary w-full mt-2 !py-3 !rounded-xl disabled:opacity-50 text-white font-extrabold text-sm shadow-xl shadow-brand-500/25 flex items-center justify-center gap-2 transition"
+            className="btn-glass-primary w-full mt-2 !py-3 !rounded-xl disabled:opacity-50 text-white font-extrabold text-sm shadow-xl shadow-brand-500/25 flex items-center justify-center gap-2 transition whitespace-nowrap shrink-0"
           >
             {loading ? (
-              <span>Đang đăng ký...</span>
+              <span className="whitespace-nowrap">Đang đăng ký...</span>
             ) : (
               <>
-                <UserPlus className="w-4 h-4" />
-                <span>Đăng ký & Làm bài Placement Test</span>
+                <UserPlus className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Đăng ký & Bắt đầu học</span>
               </>
             )}
           </button>
