@@ -10,10 +10,7 @@ export const LiquidBackground: React.FC = () => {
       {/* 1. Base Atmospheric Luminous Gradient Canvas (GPU optimized, zero blur penalty) */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-50/80 via-indigo-50/20 to-slate-100/70 dark:from-[#060913]/95 dark:via-[#080d1e]/90 dark:to-[#04060c]/98" />
 
-      {/* 2. Top-Center Ambient Soft Uplight for Brightness & Clean Contrast */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] sm:w-[900px] h-[350px] sm:h-[450px] rounded-full bg-gradient-to-b from-white/90 via-indigo-100/35 to-transparent dark:from-indigo-500/18 dark:via-purple-600/10 dark:to-transparent blur-3xl transform-gpu" />
-
-      {/* 3. Top-Left Luminous Indigo / Violet Pool */}
+      {/* 2. Top-Left Luminous Indigo / Violet Pool */}
       <div className="absolute -top-24 -left-20 w-[420px] sm:w-[560px] h-[420px] sm:h-[560px] rounded-full bg-gradient-to-br from-indigo-500/25 via-violet-600/18 to-transparent blur-3xl dark:from-indigo-500/25 dark:via-purple-600/20 dark:to-transparent transform-gpu" />
 
       {/* 4. Top-Right Radiant Azure / Cyan Spot */}
