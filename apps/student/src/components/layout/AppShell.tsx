@@ -63,6 +63,7 @@ import { QuickNoteModal } from '../notes/QuickNoteModal';
 import { VocabFlowLogo } from '@vocabflow/shared';
 import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { RichAIMessageRenderer } from '../ai/RichAIMessageRenderer';
+import { usePersistentScroll } from '../../hooks/usePersistentScroll';
 
 export const AppShell: React.FC = () => {
   useDynamicDocumentTitle();
@@ -98,6 +99,10 @@ export const AppShell: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  // Persistent Sidebar Scroll Management (VOCALFLOW_SPECIFICATION Section 4 via usePersistentScroll hook)
+  const { scrollRef: sidebarNavScrollRef, handleScroll: handleSidebarScroll } =
+    usePersistentScroll<HTMLDivElement>('vocabflow_sidebar_scroll', 100);
 
   // Community E2EE Chat Drawer State
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
@@ -548,6 +553,8 @@ export const AppShell: React.FC = () => {
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isPro = isProUser(user);
+  const isPlus = !isPro && (user?.tier === 'PLUS' || user?.subscription?.tier === 'PLUS');
+  const isGuest = !user || user?.isAnonymous;
 
   const isKidSupported = isKidSupportedLanguage(activeLanguage);
 
@@ -618,10 +625,10 @@ export const AppShell: React.FC = () => {
       items: [
         {
           to: '/upgrade',
-          label: isPro ? 'VocabFlow VIP Pro' : t('nav.upgrade', 'Mở Khóa Premium'),
+          label: isPro ? 'VocabFlow VIP' : 'Nâng Cấp Pro',
           icon: Crown,
           highlight: true,
-          badge: isPro ? 'PRO' : 'MỞ KHÓA',
+          badge: isPro ? 'VIP' : 'PRO',
           isUnlock: !isPro,
         },
         { to: '/notifications', label: 'Thông báo', icon: Bell },
@@ -633,12 +640,11 @@ export const AppShell: React.FC = () => {
   ];
 
   const mobileBottomItems = [
-    { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
-    { to: '/games', label: 'Games', icon: Gamepad2 },
-    { to: '/coach', label: 'Coach', icon: Mic },
-    { to: '/leaderboard', label: 'BXH', icon: Trophy },
-    { to: '/review', label: 'Review', icon: Sparkles },
-    { to: '/word-bank', label: 'Saved', icon: Bookmark },
+    { to: '/dashboard', label: 'Trang chủ', icon: LayoutDashboard },
+    { to: '/word-bank', label: 'Kho từ', icon: BookOpen },
+    { to: '/review', label: 'Ôn tập', icon: Sparkles },
+    { to: '/games', label: 'Trò chơi', icon: Gamepad2 },
+    { to: '/coach', label: 'Gia sư AI', icon: Mic },
   ];
 
   return (
@@ -646,8 +652,16 @@ export const AppShell: React.FC = () => {
       {/* Ambient Blurred Colored Blobs / Orbs */}
       <LiquidBackground />
 
-      {/* Desktop Sidebar — Fixed Header (Logo & Streak), Scrollable Menu, Luxurious Liquid Glass Gold Unlock & Dynamic Auth Controls */}
-      <aside className="hidden lg:flex flex-col border-r border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl pt-3.5 pb-3 shrink-0 h-screen sticky top-0 overflow-hidden box-border z-20 w-64 max-w-[16rem] px-3.5">
+      {/* Desktop Sidebar — Fixed Header (Logo & Streak), Scrollable Menu, Luxurious Liquid Glass Tier Card & Dynamic Auth Controls */}
+      <aside className={`hidden lg:flex flex-col border-r bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl pt-3.5 pb-3 shrink-0 h-screen sticky top-0 overflow-hidden box-border z-20 w-64 max-w-[16rem] px-3.5 transition-colors duration-300 ${
+        isPro
+          ? 'border-amber-400/35 dark:border-amber-500/25 shadow-[1px_0_20px_rgba(245,158,11,0.06)]'
+          : isPlus
+            ? 'border-cyan-400/35 dark:border-cyan-500/25 shadow-[1px_0_20px_rgba(6,182,212,0.06)]'
+            : isGuest
+              ? 'border-indigo-200/50 dark:border-indigo-900/40'
+              : 'border-slate-200/60 dark:border-slate-800/60'
+      }`}>
         {/* 1. FIXED TOP: Brand Logo & User Streak (NEVER scrolls, always stays pinned) */}
         <div className="shrink-0 pb-3 border-b border-slate-200/60 dark:border-slate-800/60 space-y-2.5">
           {/* Brand Header with Logo */}
@@ -682,7 +696,13 @@ export const AppShell: React.FC = () => {
         </div>
 
         {/* 2. SCROLLABLE MIDDLE: ONLY navigation links scroll */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pr-1 space-y-3.5">
+        <div
+          ref={sidebarNavScrollRef}
+          data-sidebar-scroll="true"
+          data-scroll-container="sidebar"
+          onScroll={handleSidebarScroll}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pr-1 space-y-3.5"
+        >
           {navSections.map((section) => (
             <div key={section.title} className="space-y-1">
               <p className="px-2.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -706,21 +726,21 @@ export const AppShell: React.FC = () => {
                   >
                     <div className="flex items-center gap-2.5 flex-1 truncate mr-1.5 min-w-0">
                       <item.icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate whitespace-nowrap">{item.label}</span>
                     </div>
                     {item.badge && (
                       (item as any).isUnlock ? (
-                        <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0">
-                          <Crown className="w-2.5 h-2.5 text-amber-600 dark:text-amber-300 fill-amber-500" />
-                          <span>MỞ KHÓA</span>
+                        <span className="relative overflow-hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider group-hover:border-amber-300 transition-all shrink-0 whitespace-nowrap">
+                          <Crown className="w-2.5 h-2.5 text-amber-600 dark:text-amber-300 fill-amber-500 shrink-0" />
+                          <span className="whitespace-nowrap">PRO</span>
                         </span>
-                      ) : item.badge === 'PRO' ? (
-                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 rounded-md border border-amber-300 shadow-sm flex items-center gap-1">
-                          <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
-                          <span>PRO VIP</span>
+                      ) : item.badge === 'PRO' || item.badge === 'VIP' ? (
+                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 rounded-md border border-amber-300 shadow-sm flex items-center gap-1 whitespace-nowrap">
+                          <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950 shrink-0" />
+                          <span className="whitespace-nowrap">{item.badge === 'VIP' ? 'VIP' : 'PRO'}</span>
                         </span>
                       ) : (
-                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
+                        <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md whitespace-nowrap">
                           {item.badge}
                         </span>
                       )
@@ -732,104 +752,174 @@ export const AppShell: React.FC = () => {
           ))}
         </div>
 
-        {/* 3. FIXED FOOTER: Account Tier / Unlock Card, Profile, Theme & Auth Controls */}
-        <div className="shrink-0 pt-2.5 border-t border-slate-200/80 dark:border-slate-800/80 w-full min-w-0 space-y-2 bg-transparent">
-          {user?.isAnonymous || !user ? (
-            <div className="p-2.5 rounded-2xl bg-gradient-to-r from-indigo-500/15 to-purple-500/15 border border-indigo-500/25 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                  Khách Khám Phá
-                </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        {/* 3. FIXED FOOTER: Dynamic Tier-Adaptive Footer, Account Tier Card, Profile & Auth Controls */}
+        <div className={`shrink-0 pt-2.5 border-t w-full min-w-0 space-y-2 transition-all duration-300 rounded-b-2xl ${
+          isPro
+            ? 'border-amber-400/40 dark:border-amber-500/35 bg-gradient-to-t from-amber-500/[0.06] via-amber-500/[0.02] to-transparent'
+            : isPlus
+              ? 'border-cyan-400/35 dark:border-cyan-500/30 bg-gradient-to-t from-cyan-500/[0.06] via-cyan-500/[0.02] to-transparent'
+              : isGuest
+                ? 'border-indigo-200/70 dark:border-indigo-900/50 bg-gradient-to-t from-indigo-500/[0.04] to-transparent'
+                : 'border-slate-200/80 dark:border-slate-800/80 bg-slate-500/[0.02]'
+        }`}>
+          {/* Account Tier Card — ALWAYS displayed (for Guests and Logged-in users) */}
+          <div
+            onClick={() => navigate('/upgrade')}
+            className={`relative p-2.5 rounded-2xl cursor-pointer transition-all duration-300 group overflow-hidden ${
+              isPro
+                ? 'bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-400/60 shadow-md shadow-amber-500/10'
+                : isPlus
+                  ? 'bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-cyan-400/60 shadow-md shadow-cyan-500/10'
+                  : isGuest
+                    ? 'bg-indigo-50/80 dark:bg-indigo-950/35 backdrop-blur-xl border border-indigo-200/80 dark:border-indigo-800/60 hover:border-indigo-400/80 shadow-xs'
+                    : 'bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 dark:border-amber-400/30 hover:border-amber-400/80 shadow-xs'
+            }`}
+            title="Xem chi tiết gói tài khoản hoặc nâng cấp"
+          >
+            {/* Specular Liquid Sheen Reflection */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+
+            <div className="flex items-center justify-between gap-2 min-w-0 relative z-10">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                  isPro
+                    ? 'bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 shadow-sm'
+                    : isPlus
+                      ? 'bg-gradient-to-tr from-cyan-500 to-teal-400 text-slate-950 shadow-sm'
+                      : isGuest
+                        ? 'bg-indigo-500/20 border border-indigo-400/40 text-indigo-600 dark:text-indigo-400'
+                        : 'bg-amber-500/20 border border-amber-400/40 text-amber-500'
+                }`}>
+                  {isPro ? (
+                    <Crown className="w-4 h-4 shrink-0 text-slate-950 fill-slate-950" />
+                  ) : isPlus ? (
+                    <Zap className="w-4 h-4 shrink-0 text-slate-950 fill-slate-950" />
+                  ) : isGuest ? (
+                    <Sparkles className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                  ) : (
+                    <Crown className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-300 fill-amber-400" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-[10px] font-black uppercase tracking-wider whitespace-nowrap leading-tight truncate ${
+                    isPro
+                      ? 'text-amber-400'
+                      : isPlus
+                        ? 'text-cyan-400'
+                        : isGuest
+                          ? 'text-indigo-600 dark:text-indigo-400'
+                          : 'text-amber-600 dark:text-amber-400'
+                  }`}>
+                    {isPro
+                      ? 'Đặc quyền Pro'
+                      : isPlus
+                        ? 'Gói Nâng Cao'
+                        : isGuest
+                          ? 'Gói Trải Nghiệm'
+                          : 'Gói tài khoản'}
+                  </p>
+                  <p className={`text-xs font-black truncate leading-tight mt-0.5 whitespace-nowrap ${
+                    isPro
+                      ? 'text-amber-100'
+                      : isPlus
+                        ? 'text-cyan-100'
+                        : isGuest
+                          ? 'text-slate-800 dark:text-slate-200'
+                          : 'text-slate-800 dark:text-slate-100'
+                  }`}>
+                    {isPro
+                      ? 'VocabFlow VIP'
+                      : isPlus
+                        ? 'VocabFlow Plus'
+                        : isGuest
+                          ? 'Khách Khám Phá'
+                          : (user?.subscription?.tier === 'FREE' ? 'Tài khoản Free' : user?.subscription?.tier || 'Tài khoản Free')}
+                  </p>
+                </div>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
+
+              {/* Action Pill - NEVER WRAPS */}
+              <span className={`relative px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0 whitespace-nowrap group-hover:scale-105 transition-transform duration-200 ${
+                isPro
+                  ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-sm'
+                  : isPlus
+                    ? 'bg-gradient-to-r from-cyan-400 via-cyan-300 to-teal-300 text-slate-950 shadow-sm'
+                    : isGuest
+                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs'
+                      : 'bg-amber-400/25 border border-amber-400/60 text-amber-900 dark:text-amber-200'
+              }`}>
+                {isPro ? (
+                  <>
+                    <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950 shrink-0" />
+                    <span className="whitespace-nowrap">VIP</span>
+                  </>
+                ) : isPlus ? (
+                  <>
+                    <Zap className="w-2.5 h-2.5 fill-slate-950 text-slate-950 shrink-0" />
+                    <span className="whitespace-nowrap">LÊN VIP</span>
+                  </>
+                ) : isGuest ? (
+                  <>
+                    <Crown className="w-2.5 h-2.5 text-amber-300 shrink-0" />
+                    <span className="whitespace-nowrap">LÊN PRO</span>
+                  </>
+                ) : (
+                  <>
+                    <LockOpen className="w-2.5 h-2.5 text-amber-700 dark:text-amber-300 shrink-0" />
+                    <span className="whitespace-nowrap">LÊN PRO</span>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* BELOW TIER CARD: Guest 1-Tap Login OR User Profile Row */}
+          {isGuest ? (
+            <div className="p-2 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800/70 space-y-1.5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap">
+                  Đồng bộ & Lưu trữ
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              </div>
+              <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-tight">
                 Tiến độ đang lưu cục bộ. Đăng nhập để bảo lưu vĩnh viễn.
               </p>
               <button
                 onClick={() => promptLogin('Lưu trữ vĩnh viễn tiến độ học và mở khóa đầy đủ tính năng')}
-                className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5"
+                className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap shadow-xs cursor-pointer active:scale-98"
               >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Đăng nhập 1-chạm</span>
+                <LogIn className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">Đăng nhập 1-chạm</span>
               </button>
             </div>
           ) : (
-            <>
-              {/* Account Tier Card — Luxury Obsidian & Gold for PRO */}
-              <div
-                onClick={() => navigate('/upgrade')}
-                className={`relative p-2.5 rounded-2xl cursor-pointer transition-all duration-300 group overflow-hidden ${
+            <div
+              onClick={() => setProfileModalOpen(true)}
+              className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition group min-w-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60"
+              title="Bấm để xem hồ sơ cá nhân & Hướng dẫn sử dụng"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${
                   isPro
-                    ? 'bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-400/60 shadow-md shadow-amber-500/10'
-                    : 'bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 dark:border-amber-400/30 hover:border-amber-400/80'
-                }`}
-                title="Xem chi tiết gói tài khoản hoặc nâng cấp"
-              >
-                {/* Specular Liquid Sheen Reflection */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
-
-                <div className="flex items-center justify-between min-w-0 relative z-10">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
-                      isPro
-                        ? 'bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 shadow-sm'
-                        : 'bg-amber-500/20 border border-amber-400/40 text-amber-500'
-                    }`}>
-                      <Crown className={`w-4 h-4 ${isPro ? 'text-slate-950 fill-slate-950' : 'text-amber-600 dark:text-amber-300 fill-amber-400'}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`text-[9px] font-black uppercase tracking-wider leading-none ${isPro ? 'text-amber-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                        {isPro ? 'Đặc quyền thành viên' : 'Gói tài khoản'}
-                      </p>
-                      <p className={`text-[11px] font-extrabold truncate leading-tight mt-0.5 ${isPro ? 'text-amber-100 font-black' : 'text-slate-800 dark:text-slate-100'}`}>
-                        {isPro ? 'VocabFlow Pro VIP' : (user?.subscription?.tier || 'Gói Miễn Phí')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Gold Action Pill */}
-                  <span className={`relative px-2 py-1 rounded-xl text-[10px] font-black uppercase tracking-wide flex items-center gap-1 shrink-0 group-hover:scale-105 transition-transform duration-200 ${
-                    isPro
-                      ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 shadow-sm font-black'
-                      : 'bg-amber-400/20 border border-amber-400/60 text-amber-900 dark:text-amber-200 font-bold'
-                  }`}>
-                    {isPro ? (
-                      <>
-                        <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
-                        <span>VIP</span>
-                      </>
-                    ) : (
-                      <>
-                        <LockOpen className="w-2.5 h-2.5 text-amber-700 dark:text-amber-300" />
-                        <span>Mở khóa</span>
-                      </>
-                    )}
-                  </span>
+                    ? 'bg-gradient-to-tr from-amber-500 to-yellow-500 text-slate-950 font-black'
+                    : isPlus
+                      ? 'bg-gradient-to-tr from-cyan-500 to-blue-600'
+                      : 'bg-gradient-to-tr from-brand-600 to-indigo-600'
+                }`}>
+                  {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="min-w-0 truncate">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {user?.displayName || user?.email?.split('@')[0] || 'Learner'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    {user?.email || 'Học viên'}
+                  </p>
                 </div>
               </div>
-
-              {/* User Profile Info Row */}
-              <div
-                onClick={() => setProfileModalOpen(true)}
-                className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition group min-w-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60"
-                title="Bấm để xem hồ sơ cá nhân & Hướng dẫn sử dụng"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                    {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <div className="min-w-0 truncate">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {user?.displayName || user?.email?.split('@')[0] || 'Learner'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      {user?.email || 'Học viên'}
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition shrink-0" />
-              </div>
-            </>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition shrink-0" />
+            </div>
           )}
 
 
@@ -928,20 +1018,20 @@ export const AppShell: React.FC = () => {
                 }}
                 className="relative p-2.5 rounded-2xl bg-amber-400/10 dark:bg-amber-400/[0.08] backdrop-blur-xl border border-amber-400/40 hover:border-amber-400/80 cursor-pointer transition flex items-center justify-between"
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0">
-                    <Crown className="w-4 h-4 text-amber-500 fill-amber-400" />
+                    <Crown className="w-4 h-4 text-amber-500 fill-amber-400 shrink-0" />
                   </div>
-                  <div>
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-wider leading-none">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-wider leading-none whitespace-nowrap truncate">
                       {isPro ? 'VocabFlow Pro VIP' : 'Nâng cấp tài khoản'}
                     </p>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5 truncate whitespace-nowrap">
                       {isPro ? 'Đã kích hoạt toàn bộ đặc quyền' : 'Mở khóa kho từ & AI không giới hạn'}
                     </p>
                   </div>
                 </div>
-                <span className="px-2 py-1 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-wide shrink-0">
+                <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-wide shrink-0 whitespace-nowrap">
                   {isPro ? 'VIP PRO' : 'Mở khóa'}
                 </span>
               </div>
@@ -1017,16 +1107,21 @@ export const AppShell: React.FC = () => {
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <item.icon className="w-4 h-4 shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          <span className="truncate whitespace-nowrap">{item.label}</span>
                         </div>
                         {item.badge && (
                           (item as any).isUnlock ? (
-                            <span className="relative overflow-hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider">
-                              <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400" />
-                              <span>MỞ KHÓA</span>
+                            <span className="relative overflow-hidden inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-amber-400/20 dark:bg-amber-400/15 backdrop-blur-md border border-amber-400/60 text-amber-900 dark:text-amber-200 text-[9px] font-black uppercase tracking-wider whitespace-nowrap shrink-0">
+                              <Crown className="w-2.5 h-2.5 text-amber-500 dark:text-amber-300 fill-amber-400 shrink-0" />
+                              <span className="whitespace-nowrap">PRO</span>
+                            </span>
+                          ) : item.badge === 'PRO' || item.badge === 'VIP' ? (
+                            <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 rounded-md border border-amber-300 shadow-sm flex items-center gap-1 whitespace-nowrap">
+                              <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950 shrink-0" />
+                              <span className="whitespace-nowrap">{item.badge}</span>
                             </span>
                           ) : (
-                            <span className="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md">
+                            <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md whitespace-nowrap">
                               {item.badge}
                             </span>
                           )
@@ -1152,7 +1247,7 @@ export const AppShell: React.FC = () => {
               title="Tin nhắn học tập E2EE"
               className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs cursor-pointer"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain" />
               <span className="hidden xl:inline">Tin nhắn</span>
             </button>
           </div>
@@ -1164,31 +1259,35 @@ export const AppShell: React.FC = () => {
           className={`flex-1 w-full min-h-0 ${
             isFullHeightPage
               ? 'flex flex-col overflow-hidden p-0 max-w-none h-full'
-              : 'max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8'
+              : 'max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8'
           }`}
         >
           <Outlet />
         </main>
 
         {/* Mobile Thumb-Reach Bottom Navigation Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-around py-2 px-1 shadow-lg">
+        <nav
+          aria-label="Điều hướng di động"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-slate-200/80 dark:border-slate-800/80 px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.4)] flex items-center justify-around"
+        >
           {mobileBottomItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               onClick={() => setMobileMenuOpen(false)}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all ${isActive
-                  ? 'text-indigo-600 dark:text-indigo-400 font-bold scale-105'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                `flex flex-col items-center justify-center min-h-[48px] min-w-[56px] py-1 px-2 rounded-2xl transition-all duration-200 touch-manipulation active:scale-95 ${
+                  isActive
+                    ? 'text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50/80 dark:bg-indigo-950/50 shadow-xs'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`
               }
             >
-              <item.icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className="text-[10.5px] leading-tight font-medium tracking-tight mt-0.5">{item.label}</span>
             </NavLink>
           ))}
-        </div>
+        </nav>
       </div>
 
       {/* User Profile & Guidance Modal — ModalPortal to document.body */}
@@ -1459,13 +1558,7 @@ export const AppShell: React.FC = () => {
               {/* Header with Title & Status calibrated to current tab */}
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  {supportTab === 'tutor' ? (
-                    <VocabFlowLogo size="md" showContainer={false} className="w-8 h-8 object-contain shrink-0" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                      <Headphones className="w-4 h-4 text-white" />
-                    </div>
-                  )}
+                  <VocabFlowLogo size="md" showContainer={false} className="w-8 h-8 object-contain shrink-0" />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-sm font-black text-white leading-snug tracking-tight">
@@ -1505,7 +1598,7 @@ export const AppShell: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                  <VocabFlowLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
                   <span>Gia sư AI</span>
                 </button>
                 <button
@@ -1517,7 +1610,7 @@ export const AppShell: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
+                  <VocabFlowLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
                   <span>CSKH</span>
                 </button>
                 <button

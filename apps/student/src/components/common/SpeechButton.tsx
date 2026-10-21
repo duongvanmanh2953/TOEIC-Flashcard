@@ -12,17 +12,44 @@ interface SpeechButtonProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const ICON_SIZES: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'w-4 h-4',
-  md: 'w-4.5 h-4.5',
-  lg: 'w-5 h-5',
-};
+interface SizeConfig {
+  heightClass: string;
+  iconSize: string;
+  clockIconSize: string;
+  primaryPadding: string;
+  slowPadding: string;
+  slowFontSize: string;
+  rounded: string;
+}
 
-// Chuẩn hóa Touch Targets theo Apple HIG / Android Material (tối thiểu 44px cho cỡ md/lg và 36px cho sm)
-const PAD_SIZES: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'p-2 rounded-lg min-h-[36px] min-w-[36px]',
-  md: 'p-2.5 rounded-xl min-h-[44px] min-w-[44px]',
-  lg: 'p-3 rounded-2xl min-h-[48px] min-w-[48px]',
+const SIZE_CONFIGS: Record<'sm' | 'md' | 'lg', SizeConfig> = {
+  sm: {
+    heightClass: 'h-8 min-h-[32px]',
+    iconSize: 'w-3.5 h-3.5',
+    clockIconSize: 'w-3 h-3',
+    primaryPadding: 'px-2 min-w-[32px]',
+    slowPadding: 'px-2 min-w-[44px]',
+    slowFontSize: 'text-[10px]',
+    rounded: 'rounded-lg',
+  },
+  md: {
+    heightClass: 'h-9 min-h-[36px]',
+    iconSize: 'w-4 h-4',
+    clockIconSize: 'w-3.5 h-3.5',
+    primaryPadding: 'px-2.5 min-w-[36px]',
+    slowPadding: 'px-2.5 min-w-[50px]',
+    slowFontSize: 'text-[11px]',
+    rounded: 'rounded-xl',
+  },
+  lg: {
+    heightClass: 'h-10 min-h-[40px]',
+    iconSize: 'w-4.5 h-4.5',
+    clockIconSize: 'w-4 h-4',
+    primaryPadding: 'px-3 min-w-[40px]',
+    slowPadding: 'px-3 min-w-[56px]',
+    slowFontSize: 'text-xs',
+    rounded: 'rounded-xl',
+  },
 };
 
 export const SpeechButton: React.FC<SpeechButtonProps> = React.memo(({
@@ -36,6 +63,7 @@ export const SpeechButton: React.FC<SpeechButtonProps> = React.memo(({
   const { speak, stop, isPlaying, currentText } = useAudioPronunciation();
   const isThisPlaying = isPlaying && currentText === text;
   const resolvedLocale = getSpeechLocale(lang);
+  const cfg = SIZE_CONFIGS[size] || SIZE_CONFIGS.md;
 
   const handleSpeak = (rate: number = 1.0, e?: React.MouseEvent) => {
     if (e) {
@@ -50,11 +78,12 @@ export const SpeechButton: React.FC<SpeechButtonProps> = React.memo(({
   };
 
   return (
-    <div className="inline-flex items-center gap-1.5 select-none" onClick={(e) => e.stopPropagation()}>
+    <div className="inline-flex items-center gap-1.5 select-none shrink-0" onClick={(e) => e.stopPropagation()}>
+      {/* 1. Primary Native Speech Button */}
       <button
         type="button"
         onClick={(e) => handleSpeak(1.0, e)}
-        className={`${PAD_SIZES[size]} bg-slate-100/80 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60 transition active:scale-95 flex items-center justify-center cursor-pointer ${
+        className={`${cfg.heightClass} ${cfg.primaryPadding} ${cfg.rounded} bg-slate-100/90 dark:bg-slate-800/90 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/70 dark:border-slate-700/70 transition-all active:scale-95 inline-flex items-center justify-center cursor-pointer whitespace-nowrap shrink-0 ${
           isThisPlaying
             ? 'ring-2 ring-indigo-500 scale-105 bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/40 shadow-xs'
             : ''
@@ -62,19 +91,20 @@ export const SpeechButton: React.FC<SpeechButtonProps> = React.memo(({
         title={isThisPlaying ? 'Bấm để dừng' : `Phát âm chuẩn (${resolvedLocale})`}
         aria-label={`Phát âm từ ${text}`}
       >
-        <Volume2 className={`${ICON_SIZES[size]} ${isThisPlaying ? 'animate-pulse text-indigo-500' : ''}`} />
+        <Volume2 className={`${cfg.iconSize} shrink-0 ${isThisPlaying ? 'animate-pulse text-indigo-500' : ''}`} />
       </button>
 
+      {/* 2. Slow 0.75x Button (Balanced Height & Radius) */}
       {showSlowOption && (
         <button
           type="button"
           onClick={(e) => handleSpeak(0.75, e)}
-          className="px-2.5 py-1.5 min-h-[36px] rounded-xl bg-slate-100/60 dark:bg-slate-800/60 hover:bg-amber-500/10 text-slate-600 dark:text-slate-300 hover:text-amber-600 text-xs transition border border-slate-200/40 dark:border-slate-800 active:scale-95 flex items-center gap-1 font-bold text-[11px] cursor-pointer"
+          className={`${cfg.heightClass} ${cfg.slowPadding} ${cfg.rounded} ${cfg.slowFontSize} bg-slate-100/70 dark:bg-slate-800/70 hover:bg-amber-500/10 text-slate-600 dark:text-slate-300 hover:text-amber-600 transition-all border border-slate-200/50 dark:border-slate-700/60 active:scale-95 inline-flex items-center justify-center gap-1 font-bold cursor-pointer whitespace-nowrap shrink-0`}
           title="Đọc chậm 0.75x"
           aria-label={`Đọc chậm từ ${text}`}
         >
-          <Clock className="w-3.5 h-3.5 text-amber-500" />
-          <span>0.75x</span>
+          <Clock className={`${cfg.clockIconSize} text-amber-500 shrink-0`} />
+          <span className="whitespace-nowrap">0.75x</span>
         </button>
       )}
     </div>

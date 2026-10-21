@@ -18,15 +18,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
-  const { user, isGuest, loading: authLoading, login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
-
-  // If already authenticated, auto-redirect to dashboard
-  React.useEffect(() => {
-    if (!authLoading && user && !isGuest) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, isGuest, authLoading, navigate]);
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -64,12 +57,12 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50 dark:bg-slate-950 py-12">
-      <div className="max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
-        <div className="text-center mb-8">
-          <VocabFlowLogo size="xl" className="w-14 h-14 mx-auto mb-3 shadow-lg shadow-indigo-500/20" />
-          <h2 className="text-2xl font-bold tracking-tight">Chào mừng trở lại</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-50 dark:bg-slate-950 py-8 sm:py-12">
+      <div className="max-w-md w-full p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div className="text-center mb-6 sm:mb-8">
+          <VocabFlowLogo size="xl" className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 shadow-lg shadow-indigo-500/20" />
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight">Chào mừng trở lại</h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Đăng nhập vào <span className="font-semibold text-indigo-600 dark:text-indigo-400">VocabFlow AI</span> để tiếp tục phiên học
           </p>
         </div>
@@ -247,8 +240,6 @@ export const LoginPage: React.FC = () => {
             </Link>
           </div>
         </div>
-
-
       </div>
 
       <ForgotPasswordModal

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { FileText, ShieldAlert, CheckCircle2, Lock, Scale, AlertTriangle, BookOpen } from 'lucide-react';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Chấp thuận điều khoản & điều kiện sử dụng' },
@@ -41,7 +42,7 @@ export const TermsOfServicePage: React.FC = () => {
       {/* Intro alert */}
       <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-indigo-800 dark:text-indigo-400">
-          <FileText className="w-4 h-4 shrink-0" />
+          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Thỏa thuận người dùng dịch vụ học tập trực tuyến</span>
         </div>
         <p>

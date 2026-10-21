@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { Shield, Lock, Database, Eye, Share2, UserCheck, AlertTriangle, HelpCircle } from 'lucide-react';
+import { VocabFlowLogo } from '@vocabflow/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Đơn vị kiểm soát và xử lý dữ liệu' },
@@ -40,7 +41,7 @@ export const PrivacyPolicyPage: React.FC = () => {
       {/* Intro box */}
       <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-400">
-          <Shield className="w-4 h-4 shrink-0" />
+          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Cam kết bảo vệ quyền riêng tư của học viên</span>
         </div>
         <p>
