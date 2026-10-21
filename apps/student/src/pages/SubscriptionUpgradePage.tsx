@@ -74,6 +74,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
     enabled: boolean;
     reason: string;
   }>({ enabled: true, reason: '' });
+  const [showMoitNotice, setShowMoitNotice] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -539,12 +540,12 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 </button>
               ) : !gatewayStatus.enabled ? (
                 <button
-                  disabled
-                  className="w-full mt-6 py-3.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 shadow-none"
-                  title="Tính năng nạp tiền đang tạm đóng để hoàn tất thủ tục đăng ký Bộ Công Thương"
+                  type="button"
+                  onClick={() => setShowMoitNotice(true)}
+                  className="w-full mt-6 py-3.5 rounded-xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center justify-center gap-2 transition cursor-pointer shadow-sm active:scale-[0.99]"
                 >
-                  <Lock className="w-4 h-4 text-slate-400" />
-                  <span>Tạm Dừng Nạp Tiền (Chờ Bộ Công Thương)</span>
+                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Tạm Dừng Nạp Tiền (Xem Thông Báo)</span>
                 </button>
               ) : (
                 <button
@@ -705,8 +706,8 @@ export const SubscriptionUpgradePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Checkout Modal */}
-      {checkoutTier && (
+      {/* Checkout Modal - Chi hien thi khi cong thanh toan dang bat */}
+      {gatewayStatus.enabled && checkoutTier && (
         <PaymentCheckoutModal
           isOpen={Boolean(checkoutTier)}
           tier={checkoutTier}
@@ -717,6 +718,34 @@ export const SubscriptionUpgradePage: React.FC = () => {
             setInfoMsg('Giao dịch thành công! Tài khoản của bạn đã được nâng cấp quyền hạn.');
           }}
         />
+      )}
+
+      {/* Modal Thông Báo Tạm Dừng Nạp Tiền (Tuân thủ Bộ Công Thương) */}
+      {showMoitNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-amber-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+            <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-center text-slate-900 dark:text-white mb-2">
+              Thông Báo Tạm Dừng Tính Năng Nạp Tiền
+            </h3>
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200 mb-4 leading-relaxed">
+              {gatewayStatus.reason ||
+                'Hệ thống đang tạm ngừng tính năng nạp tiền để hoàn tất thủ tục đăng ký / thông báo website thương mại điện tử với Bộ Công Thương theo Nghị định 52/2013/NĐ-CP.'}
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 text-center mb-6 leading-relaxed">
+              Quý học viên vẫn có thể học từ vựng, ôn tập Flashcard 3D và sử dụng các tính năng miễn phí bình thường mà không bị gián đoạn.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowMoitNotice(false)}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition"
+            >
+              Đã hiểu & Tiếp tục học
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

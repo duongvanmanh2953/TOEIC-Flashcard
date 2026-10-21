@@ -32,6 +32,13 @@ export class SubscriptionsController {
     return this.subService.getPlans();
   }
 
+  @Public()
+  @Get('gateway-status')
+  @ApiOperation({ summary: 'Get current payment gateway status (Ministry of Industry & Trade compliance)' })
+  getGatewayStatus() {
+    return this.subService.getPaymentGatewayStatus();
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('my-status')
   @ApiBearerAuth()

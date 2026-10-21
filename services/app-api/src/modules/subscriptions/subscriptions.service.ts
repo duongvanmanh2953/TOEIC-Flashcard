@@ -317,6 +317,13 @@ export class SubscriptionsService implements OnModuleInit {
     method: PaymentMethod = PaymentMethod.VIETQR,
     billingCycle: 'monthly' | 'yearly' = 'monthly',
   ) {
+    const gateway = await this.getPaymentGatewayStatus();
+    if (!gateway.enabled) {
+      throw new BadRequestException(
+        gateway.reason || 'Hệ thống đang tạm thời ngừng nạp tiền để hoàn tất thủ tục đăng ký Bộ Công Thương.',
+      );
+    }
+
     const plan = await this.prisma.plan.findUnique({ where: { tier } });
     if (!plan) throw new NotFoundException('Gói cước không tồn tại');
     if (plan.priceMonthly <= 0) {
@@ -899,5 +906,41 @@ export class SubscriptionsService implements OnModuleInit {
       where: { id },
       data: { status: 'ARCHIVED' },
     });
+  }
+
+  /**
+   * Lấy trạng thái Cổng Thanh Toán (Tuân thủ đăng ký Bộ Công Thương / Nghị định 52)
+   */
+  async getPaymentGatewayStatus() {
+    const config = await this.prisma.systemConfig.findUnique({
+      where: { key: 'CONFIG_PAYMENT_GATEWAY' },
+    });
+
+    const defaultReason =
+      'Hệ thống đang tạm ngừng tính năng nạp tiền để hoàn tất thủ tục đăng ký / thông báo với Bộ Công Thương theo Nghị định 52/2013/NĐ-CP. Quý học viên vẫn có thể học miễn phí bình thường!';
+
+    if (!config?.value) {
+      return {
+        enabled: true,
+        reason: defaultReason,
+        updatedAt: null,
+      };
+    }
+
+    try {
+      const data = JSON.parse(config.value);
+      return {
+        enabled: data.enabled !== false,
+        reason: data.reason || defaultReason,
+        updatedAt: config.updatedAt,
+        updatedBy: data.updatedBy,
+      };
+    } catch {
+      return {
+        enabled: true,
+        reason: defaultReason,
+        updatedAt: config.updatedAt,
+      };
+    }
   }
 }
