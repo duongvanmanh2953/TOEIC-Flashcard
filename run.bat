@@ -14,6 +14,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo [2/2] Building and starting all containers (Postgres, Redis, API, Web)...
+docker rm -f cloudflared >nul 2>&1
 docker compose up --build -d
 
 echo.

@@ -115,6 +115,9 @@ if [ -n "$NO_CACHE" ]; then
     $DOCKER_COMPOSE build --no-cache
 fi
 
+# Tu dong don dep container cloudflared ton dong neu co de tranh loi Conflict name
+docker rm -f cloudflared >/dev/null 2>&1 || true
+
 printf "Dang chay: ${BOLD}%s up -d --build --remove-orphans${NC}\n" "$DOCKER_COMPOSE"
 if ! $DOCKER_COMPOSE up -d --build --remove-orphans; then
     printf "\n${RED}[ERROR] Qua trinh build hoac khoi dong container that bai!${NC}\n"
