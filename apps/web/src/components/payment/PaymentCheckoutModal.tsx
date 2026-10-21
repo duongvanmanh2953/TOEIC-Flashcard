@@ -114,7 +114,8 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
       }
     } catch (err: any) {
       console.error('Create payment failed', err);
-      setError(err?.message || 'Có lỗi xảy ra khi tạo giao dịch thanh toán.');
+      const msg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi tạo giao dịch thanh toán.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

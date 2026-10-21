@@ -92,6 +92,13 @@ export class SubscriptionsController {
   }
 
   @Public()
+  @Get('gateway-status')
+  @ApiOperation({ summary: 'Get payment gateway status (enabled/disabled for MOIT compliance)' })
+  getGatewayStatus() {
+    return this.subService.getPaymentGatewayStatus();
+  }
+
+  @Public()
   @Get('payments/:orderCode/status')
   @ApiOperation({ summary: 'Check payment order status (Pending / Paid / Expired)' })
   getPaymentStatus(@Param('orderCode', ParseIntPipe) orderCode: number) {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ModerationStatus,
@@ -10,6 +10,7 @@ import {
   SupportPriority,
   CefrLevel,
   ExamStatus,
+  PaymentStatus,
 } from '@prisma/client';
 import { DeviceSecurityService } from '../auth/device-security.service';
 import { AdminChangePasswordDto } from '../auth/dto/change-password.dto';
@@ -599,6 +600,348 @@ export class AdminService {
         createdAt: o.createdAt.toISOString(),
       })),
     };
+  }
+
+  /**
+   * 6.1 DEDICATED TRANSACTION HISTORY & RECONCILIATION
+   */
+  async getTransactions(
+    search?: string,
+    status?: string,
+    range: string = '30d',
+    page: number = 1,
+    limit: number = 20,
+  ) {
+    const now = new Date();
+    let startDate: Date | undefined;
+    if (range === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (range === '7d') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (range === '30d') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (range === '90d') {
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    } else if (range === 'all') {
+      startDate = undefined;
+    }
+
+    const where: any = {};
+    if (startDate) {
+      where.createdAt = { gte: startDate };
+    }
+
+    const trimmedSearch = search?.trim();
+    if (trimmedSearch) {
+      const isNum = /^\d+$/.test(trimmedSearch);
+      where.OR = [
+        { user: { email: { contains: trimmedSearch, mode: 'insensitive' } } },
+        { user: { displayName: { contains: trimmedSearch, mode: 'insensitive' } } },
+        { transactionCode: { contains: trimmedSearch, mode: 'insensitive' } },
+        { description: { contains: trimmedSearch, mode: 'insensitive' } },
+      ];
+      if (isNum) {
+        where.OR.push({ orderCode: parseInt(trimmedSearch, 10) });
+      }
+    }
+
+    // Status filter
+    if (status && status !== 'ALL') {
+      if (status === 'PAID') {
+        where.status = PaymentStatus.PAID;
+      } else if (status === 'PENDING') {
+        where.status = PaymentStatus.PENDING;
+      } else if (status === 'FAILED') {
+        where.status = PaymentStatus.FAILED;
+      } else if (status === 'EXPIRED') {
+        where.status = PaymentStatus.EXPIRED;
+      } else if (status === 'CANCELED') {
+        where.status = PaymentStatus.CANCELED;
+      }
+    }
+
+    const [allOrdersForSummary, totalCount, orders] = await Promise.all([
+      this.prisma.paymentOrder.findMany({
+        where: startDate ? { createdAt: { gte: startDate } } : {},
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          webhookPayload: true,
+        },
+      }),
+      this.prisma.paymentOrder.count({ where }),
+      this.prisma.paymentOrder.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+              avatar: true,
+              role: true,
+              createdAt: true,
+            },
+          },
+          plan: true,
+        },
+      }),
+    ]);
+
+    // Compute summary over selected timeframe
+    let totalGrossRevenue = 0;
+    let paidCount = 0;
+    let pendingCount = 0;
+    let failedCount = 0;
+    let refundedCount = 0;
+    let refundedAmount = 0;
+    let disputedCount = 0;
+
+    allOrdersForSummary.forEach((o) => {
+      const payload = o.webhookPayload as Record<string, any> | null;
+      const isRefunded = payload?.rollback?.isRefunded === true;
+      const isDisputed = payload?.rollback?.isDisputed === true;
+
+      if (isRefunded) {
+        refundedCount += 1;
+        refundedAmount += Number(payload?.rollback?.refundAmount) || o.amount;
+      } else if (isDisputed) {
+        disputedCount += 1;
+      }
+
+      if (o.status === PaymentStatus.PAID && !isRefunded) {
+        totalGrossRevenue += o.amount;
+        paidCount += 1;
+      } else if (o.status === PaymentStatus.PENDING) {
+        pendingCount += 1;
+      } else if (o.status === PaymentStatus.FAILED || o.status === PaymentStatus.EXPIRED) {
+        failedCount += 1;
+      }
+    });
+
+    const items = orders.map((o) => {
+      const payload = (o.webhookPayload as Record<string, any>) || {};
+      const rollback = payload.rollback || null;
+      let displayStatus = o.status as string;
+      if (rollback?.isRefunded) {
+        displayStatus = 'REFUNDED';
+      } else if (rollback?.isDisputed) {
+        displayStatus = 'DISPUTED';
+      }
+
+      return {
+        id: o.id,
+        orderCode: o.orderCode,
+        userId: o.userId,
+        user: {
+          id: o.user.id,
+          displayName: o.user.displayName || 'Học viên VocabFlow',
+          email: o.user.email,
+          avatar: o.user.avatar,
+          role: o.user.role,
+          createdAt: o.user.createdAt,
+        },
+        planId: o.planId,
+        planName: o.plan?.name || o.tier,
+        tier: o.tier,
+        amount: o.amount,
+        status: o.status,
+        displayStatus,
+        paymentMethod: o.paymentMethod,
+        transactionCode: o.transactionCode,
+        description: o.description,
+        paidAt: o.paidAt?.toISOString() || null,
+        expiresAt: o.expiresAt.toISOString(),
+        createdAt: o.createdAt.toISOString(),
+        rollback,
+      };
+    });
+
+    return {
+      items,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit) || 1,
+      },
+      summary: {
+        totalOrders: allOrdersForSummary.length,
+        totalGrossRevenue,
+        paidCount,
+        pendingCount,
+        failedCount,
+        refundedCount,
+        refundedAmount,
+        disputedCount,
+      },
+    };
+  }
+
+  /**
+   * 6.2 ROLLBACK / HOÀN TIỀN VỚI MASTER SECURITY KEY
+   */
+  async processTransactionRollback(
+    orderId: string,
+    body: {
+      securityKey: string;
+      reason: string;
+      refundTxCode?: string;
+      refundAmount?: number;
+      revertSubscription?: boolean;
+      action?: 'MARK_REFUNDED' | 'DISPUTED' | 'UNMARK_REFUNDED';
+    },
+    admin: any,
+  ) {
+    // 1. Verify Master Security Key
+    const configuredKey =
+      process.env.ADMIN_ROLLBACK_SECRET_KEY ||
+      process.env.ADMIN_SECURITY_KEY ||
+      'VF_MASTER_SECURITY_KEY_998877';
+
+    const inputKey = (body.securityKey || '').trim();
+    if (!inputKey) {
+      throw new BadRequestException('Vui lòng nhập Khóa Bảo Mật Rollback để xác thực ủy quyền tài chính!');
+    }
+
+    if (inputKey !== configuredKey) {
+      this.logger.warn(
+        `[SECURITY ALERT] Admin ${admin?.email || 'Unknown'} entered invalid Rollback Security Key for order ${orderId}`,
+      );
+      throw new UnauthorizedException(
+        'Khóa bảo mật Rollback không chính xác! Hành vi này đã bị ghi lại vào nhật ký bảo mật hệ thống.',
+      );
+    }
+
+    // 2. Fetch Order
+    const order = await this.prisma.paymentOrder.findUnique({
+      where: { id: orderId },
+      include: { user: true, plan: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy giao dịch với mã định danh cung cấp');
+    }
+
+    const action = body.action || 'MARK_REFUNDED';
+    const currentPayload = (order.webhookPayload as Record<string, any>) || {};
+
+    if (action === 'MARK_REFUNDED') {
+      const refundAmount = Number(body.refundAmount) || order.amount;
+      const rollbackInfo = {
+        isRefunded: true,
+        isDisputed: false,
+        refundedAt: new Date().toISOString(),
+        refundAmount,
+        refundTxCode: (body.refundTxCode || '').trim() || 'MANUAL-BANK-REFUND',
+        reason: (body.reason || '').trim() || 'Admin xác nhận đã chuyển khoản trả lại tiền cho khách',
+        refundedBy: {
+          id: admin?.id,
+          email: admin?.email || 'admin@vocabflow.ai',
+          displayName: admin?.displayName || 'Admin Operator',
+        },
+        rollbackKeyVerified: true,
+        action: 'MARK_REFUNDED',
+      };
+
+      // Revert subscription if requested and was active
+      if (body.revertSubscription !== false && order.status === PaymentStatus.PAID) {
+        await this.prisma.subscription.updateMany({
+          where: {
+            userId: order.userId,
+            planId: order.planId,
+            status: 'ACTIVE',
+          },
+          data: { status: 'REFUNDED' },
+        });
+
+        // Demote role to USER if no remaining active subscriptions
+        const activeCount = await this.prisma.subscription.count({
+          where: { userId: order.userId, status: 'ACTIVE' },
+        });
+        if (activeCount === 0) {
+          await this.prisma.user.update({
+            where: { id: order.userId },
+            data: { role: Role.USER },
+          });
+        }
+      }
+
+      const updated = await this.prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: {
+          status: PaymentStatus.CANCELED,
+          webhookPayload: {
+            ...currentPayload,
+            rollback: rollbackInfo,
+          },
+        },
+        include: { user: true, plan: true },
+      });
+
+      this.logger.log(
+        `[FINANCIAL ROLLBACK] Order #${order.orderCode} successfully marked as REFUNDED by ${admin?.email}. Amount: ${refundAmount} VND.`,
+      );
+
+      return {
+        success: true,
+        message: `Đã xác thực Khóa Bảo Mật thành công! Đơn hàng #${order.orderCode} đã được ghi nhận hoàn tiền (${refundAmount.toLocaleString('vi-VN')} ₫).`,
+        order: updated,
+      };
+    } else if (action === 'DISPUTED') {
+      const rollbackInfo = {
+        isRefunded: false,
+        isDisputed: true,
+        disputedAt: new Date().toISOString(),
+        reason: (body.reason || '').trim() || 'Khách hàng gửi khiếu nại - Đang chờ kiểm tra đối soát',
+        disputedBy: {
+          id: admin?.id,
+          email: admin?.email,
+        },
+        action: 'DISPUTED',
+      };
+
+      const updated = await this.prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: {
+          webhookPayload: {
+            ...currentPayload,
+            rollback: rollbackInfo,
+          },
+        },
+        include: { user: true, plan: true },
+      });
+
+      return {
+        success: true,
+        message: `Đơn hàng #${order.orderCode} đã được chuyển sang trạng thái Khiếu Nại / Chờ Đối Soát!`,
+        order: updated,
+      };
+    } else if (action === 'UNMARK_REFUNDED') {
+      const newPayload = { ...currentPayload };
+      delete newPayload.rollback;
+
+      const updated = await this.prisma.paymentOrder.update({
+        where: { id: order.id },
+        data: {
+          status: PaymentStatus.PAID,
+          webhookPayload: newPayload,
+        },
+        include: { user: true, plan: true },
+      });
+
+      return {
+        success: true,
+        message: `Đã hủy đánh dấu hoàn tiền và khôi phục đơn hàng #${order.orderCode}!`,
+        order: updated,
+      };
+    }
+
+    throw new BadRequestException('Thao tác không hợp lệ');
   }
 
   /**

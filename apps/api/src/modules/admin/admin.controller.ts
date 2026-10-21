@@ -161,6 +161,58 @@ export class AdminController {
     return this.adminService.getBillingAnalytics();
   }
 
+  @Get('transactions')
+  @ApiOperation({ summary: 'Paginated customer transaction history with search and status filters' })
+  getTransactions(
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('range') range?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminService.getTransactions(
+      search,
+      status,
+      range,
+      parseInt(page, 10) || 1,
+      parseInt(limit, 10) || 20,
+    );
+  }
+
+  @Post('transactions/:id/rollback')
+  @ApiOperation({ summary: 'Rollback/Refund customer transaction with mandatory Master Security Key' })
+  rollbackTransaction(
+    @Param('id') orderId: string,
+    @Body()
+    body: {
+      securityKey: string;
+      reason: string;
+      refundTxCode?: string;
+      refundAmount?: number;
+      revertSubscription?: boolean;
+      action?: 'MARK_REFUNDED' | 'DISPUTED' | 'UNMARK_REFUNDED';
+    },
+    @CurrentUser() admin: any,
+  ) {
+    return this.adminService.processTransactionRollback(orderId, body, admin);
+  }
+
+  @Get('payment-gateway/status')
+  @ApiOperation({ summary: 'Get payment gateway status and MOIT compliance hold settings' })
+  getPaymentGatewayStatus() {
+    return this.subscriptionsService.getPaymentGatewayStatus();
+  }
+
+  @Post('payment-gateway/toggle')
+  @ApiOperation({ summary: 'Toggle payment gateway on/off (Admin emergency switch / MOIT compliance)' })
+  togglePaymentGateway(
+    @Body('enabled') enabled: boolean,
+    @Body('reason') reason?: string,
+    @CurrentUser('id') actorId?: string,
+  ) {
+    return this.subscriptionsService.setPaymentGatewayStatus(enabled, reason, actorId);
+  }
+
   @Get('finance/overview')
   @ApiOperation({ summary: 'Dedicated Financial Intelligence: MRR, Net Revenue, ARPU, Ledgers' })
   getFinancialOverview(@Query('range') range?: string) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
   TrendingUp,
@@ -7,6 +8,7 @@ import {
   Download,
   Printer,
   RefreshCw,
+  RotateCcw,
   ArrowUpRight,
   AlertTriangle,
   CheckCircle2,
@@ -304,6 +306,23 @@ export const AdminFinancePage: React.FC = () => {
           </span>
         );
       },
+    },
+    {
+      key: 'actions',
+      header: 'Thao Tác',
+      align: 'right',
+      render: (tx) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <Link
+            to={`/admin/billing?search=${tx.orderCode}`}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition shadow-sm"
+            title="Xem chi tiết & đối soát rollback"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Đối soát & Rollback</span>
+          </Link>
+        </div>
+      ),
     },
   ];
 
@@ -611,9 +630,18 @@ export const AdminFinancePage: React.FC = () => {
               Sổ Nhật Ký Giao Dịch Gần Đây (Transaction Ledger)
             </h3>
           </div>
-          <span className="text-xs text-slate-400">
-            Hiển thị <span className="font-semibold text-white tabular-nums">{filteredTransactions.length}</span> giao dịch
-          </span>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/admin/billing"
+              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition shadow-sm"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Trung Tâm Rollback & Đối Soát Hoàn Tiền &rarr;</span>
+            </Link>
+            <span className="text-xs text-slate-400">
+              Hiển thị <span className="font-semibold text-white tabular-nums">{filteredTransactions.length}</span> giao dịch
+            </span>
+          </div>
         </div>
 
         <AdminTable

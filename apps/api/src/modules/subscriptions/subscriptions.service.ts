@@ -317,6 +317,14 @@ export class SubscriptionsService implements OnModuleInit {
     method: PaymentMethod = PaymentMethod.VIETQR,
     billingCycle: 'monthly' | 'yearly' = 'monthly',
   ) {
+    const gatewayStatus = await this.getPaymentGatewayStatus();
+    if (!gatewayStatus.enabled) {
+      throw new BadRequestException(
+        gatewayStatus.reason ||
+          'Cổng thanh toán đang tạm đóng để hoàn tất thủ tục đăng ký / thông báo với Bộ Công Thương. Vui lòng quay lại sau!',
+      );
+    }
+
     const plan = await this.prisma.plan.findUnique({ where: { tier } });
     if (!plan) throw new NotFoundException('Gói cước không tồn tại');
     if (plan.priceMonthly <= 0) {
@@ -900,4 +908,76 @@ export class SubscriptionsService implements OnModuleInit {
       data: { status: 'ARCHIVED' },
     });
   }
+
+  /**
+   * Quản lý trạng thái đóng/mở Cổng Thanh Toán (Tuân thủ đăng ký Bộ Công Thương / Nghị định 52)
+   */
+  async getPaymentGatewayStatus() {
+    const config = await this.prisma.systemConfig.findUnique({
+      where: { key: 'CONFIG_PAYMENT_GATEWAY' },
+    });
+
+    const defaultReason =
+      'Hệ thống đang tạm ngừng tính năng nạp tiền để hoàn tất thủ tục đăng ký / thông báo với Bộ Công Thương theo Nghị định 52/2013/NĐ-CP. Quý học viên vẫn có thể học miễn phí bình thường!';
+
+    if (!config?.value) {
+      return {
+        enabled: true,
+        reason: defaultReason,
+        updatedAt: null,
+      };
+    }
+
+    try {
+      const data = JSON.parse(config.value);
+      return {
+        enabled: data.enabled !== false,
+        reason: data.reason || defaultReason,
+        updatedAt: config.updatedAt,
+        updatedBy: data.updatedBy,
+      };
+    } catch {
+      return {
+        enabled: true,
+        reason: defaultReason,
+        updatedAt: config.updatedAt,
+      };
+    }
+  }
+
+  async setPaymentGatewayStatus(enabled: boolean, reason?: string, actorId?: string) {
+    const defaultReason =
+      'Hệ thống đang tạm ngừng tính năng nạp tiền để hoàn tất thủ tục đăng ký / thông báo với Bộ Công Thương theo Nghị định 52/2013/NĐ-CP. Quý học viên vẫn có thể học miễn phí bình thường!';
+
+    const value = JSON.stringify({
+      enabled: Boolean(enabled),
+      reason: reason?.trim() || defaultReason,
+      updatedBy: actorId,
+      updatedAt: new Date().toISOString(),
+    });
+
+    await this.prisma.systemConfig.upsert({
+      where: { key: 'CONFIG_PAYMENT_GATEWAY' },
+      create: {
+        key: 'CONFIG_PAYMENT_GATEWAY',
+        value,
+        description: 'Payment gateway kill switch and Ministry of Industry & Trade compliance status',
+      },
+      update: {
+        value,
+        updatedAt: new Date(),
+      },
+    });
+
+    this.logger.warn(
+      `[PAYMENT GATEWAY ${enabled ? 'ENABLED' : 'PAUSED'}] By admin ${actorId}. Reason: ${reason || defaultReason}`,
+    );
+
+    return {
+      success: true,
+      enabled: Boolean(enabled),
+      reason: reason?.trim() || defaultReason,
+    };
+  }
 }
+

@@ -20,6 +20,8 @@ import {
   Percent,
   Layers,
   Star,
+  Lock,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface Entitlements {
@@ -68,17 +70,26 @@ export const SubscriptionUpgradePage: React.FC = () => {
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [checkoutTier, setCheckoutTier] = useState<any | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
+  const [gatewayStatus, setGatewayStatus] = useState<{
+    enabled: boolean;
+    reason: string;
+  }>({ enabled: true, reason: '' });
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statusRes, plansRes]: any = await Promise.all([
+      const [statusRes, plansRes, gatewayRes]: any = await Promise.all([
         api.get('/subscriptions/my-status').catch(() => ({ data: null })),
         api.get('/subscriptions/plans').catch(() => ({ data: null })),
+        api.get('/subscriptions/gateway-status').catch(() => ({ data: null })),
       ]);
 
       if (statusRes?.data) {
         setEntitlements(statusRes.data);
+      }
+
+      if (gatewayRes?.data) {
+        setGatewayStatus(gatewayRes.data);
       }
 
       const planList = plansRes?.data?.data || plansRes?.data || plansRes;
@@ -269,6 +280,29 @@ export const SubscriptionUpgradePage: React.FC = () => {
           </div>
         )}
       </GlassCard>
+
+      {/* Bộ Công Thương Compliance Notice: Tạm ngừng nạp tiền */}
+      {!gatewayStatus.enabled && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 backdrop-blur-xl flex items-start gap-3.5 shadow-sm animate-fade-in">
+          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div className="text-xs space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-black text-sm text-amber-950 dark:text-amber-300">
+                Thông Báo Tạm Dừng Tính Năng Nạp Tiền & Nâng Cấp Gói
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 uppercase">
+                Bộ Công Thương - Nghị định 52/2013/NĐ-CP
+              </span>
+            </div>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed pt-0.5">
+              {gatewayStatus.reason ||
+                'Hệ thống đang tạm ngừng tính năng nạp tiền để hoàn tất thủ tục đăng ký / thông báo website thương mại điện tử với Bộ Công Thương theo quy định pháp luật. Quý học viên vẫn có thể học từ vựng và sử dụng các tính năng miễn phí bình thường!'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Pro Active Notice */}
       {isPro && (
@@ -502,6 +536,15 @@ export const SubscriptionUpgradePage: React.FC = () => {
                 >
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   <span>Gói Bạn Đang Sở Hữu ({plan.name})</span>
+                </button>
+              ) : !gatewayStatus.enabled ? (
+                <button
+                  disabled
+                  className="w-full mt-6 py-3.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 shadow-none"
+                  title="Tính năng nạp tiền đang tạm đóng để hoàn tất thủ tục đăng ký Bộ Công Thương"
+                >
+                  <Lock className="w-4 h-4 text-slate-400" />
+                  <span>Tạm Dừng Nạp Tiền (Chờ Bộ Công Thương)</span>
                 </button>
               ) : (
                 <button

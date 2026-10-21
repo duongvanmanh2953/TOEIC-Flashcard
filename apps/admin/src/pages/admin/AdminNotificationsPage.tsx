@@ -252,14 +252,14 @@ export const AdminNotificationsPage: React.FC = () => {
       });
 
       setSuccessMsg('Đã phát sóng thông báo thành công tới các học viên mục tiêu!');
-      const newAnnouncement: OperationalAnnouncement = {
+      const newAnnouncement: Announcement = {
         id: `bc_${Date.now()}`,
         title: broadcastTitle,
-        message: broadcastContent,
+        content: broadcastContent,
         createdAt: new Date().toISOString(),
-        author: 'Admin',
-        type: broadcastType,
-        targetAudience,
+        audience: targetAudience,
+        status: 'SENT',
+        targetCount: 0,
       };
       setAnnouncements((prev) => [newAnnouncement, ...prev]);
       setBroadcastTitle('');
