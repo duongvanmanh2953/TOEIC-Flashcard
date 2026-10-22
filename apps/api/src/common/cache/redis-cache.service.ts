@@ -115,6 +115,35 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /**
+   * Distributed Lock / Idempotency setter (SETNX with TTL)
+   * Returns true if lock was acquired, false if key already exists
+   */
+  async setIfNotExists(key: string, value: any, ttlSeconds: number = 60): Promise<boolean> {
+    const serialized = JSON.stringify(value);
+
+    if (this.isConnected && this.client) {
+      try {
+        const res = await this.client.set(key, serialized, 'EX', ttlSeconds, 'NX');
+        return res === 'OK';
+      } catch (err: any) {
+        this.logger.warn(`Redis setNX error for key ${key}: ${err.message}`);
+      }
+    }
+
+    // In-memory fallback
+    const existing = this.inMemoryFallback.get(key);
+    if (existing && existing.expiresAt > Date.now()) {
+      return false;
+    }
+
+    this.inMemoryFallback.set(key, {
+      value: serialized,
+      expiresAt: Date.now() + ttlSeconds * 1000,
+    });
+    return true;
+  }
+
   async del(key: string): Promise<void> {
     if (this.isConnected && this.client) {
       try {

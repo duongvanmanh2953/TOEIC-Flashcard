@@ -65,10 +65,14 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
 
   const pollTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
+  const idempotencyKeyRef = useRef<string>('');
 
   // Khởi tạo đơn hàng khi mở modal hoặc đổi tier/method/billingCycle
   useEffect(() => {
     if (isOpen) {
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current = 'pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+      }
       createOrder(method);
     } else {
       cleanup();
@@ -79,6 +83,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   const cleanup = () => {
     if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+    idempotencyKeyRef.current = '';
     setOrder(null);
     setStatus('PENDING');
     setError(null);
@@ -88,11 +93,19 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const res: any = await api.post('/subscriptions/create-payment', {
-        tier,
-        paymentMethod: selectedMethod,
-        billingCycle,
-      });
+      const res: any = await api.post(
+        '/subscriptions/create-payment',
+        {
+          tier,
+          paymentMethod: selectedMethod,
+          billingCycle,
+        },
+        {
+          headers: {
+            'X-Idempotency-Key': idempotencyKeyRef.current,
+          },
+        },
+      );
 
       // Hỗ trợ cả 2 định dạng response: trực tiếp hoặc bọc qua interceptor data wrapper
       const payload = res?.data || res;

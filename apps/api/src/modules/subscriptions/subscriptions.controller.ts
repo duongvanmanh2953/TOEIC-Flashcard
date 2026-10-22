@@ -6,6 +6,7 @@ import {
   Param,
   Headers,
   UseGuards,
+  UseInterceptors,
   ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -13,16 +14,21 @@ import { SubscriptionsService } from './subscriptions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { Idempotent } from '../../common/decorators/idempotent.decorator';
+import { IdempotencyInterceptor } from '../../common/interceptors/idempotency.interceptor';
+import { RabbitMQService, QUEUES } from '../../common/rabbitmq/rabbitmq.service';
 import { SubscriptionTier, PaymentMethod } from '@prisma/client';
 
 import { UsageService } from './usage.service';
 
 @ApiTags('Subscriptions & Monetization')
+@UseInterceptors(IdempotencyInterceptor)
 @Controller('subscriptions')
 export class SubscriptionsController {
   constructor(
     private readonly subService: SubscriptionsService,
     private readonly usageService: UsageService,
+    private readonly rabbitMQ: RabbitMQService,
   ) {}
 
   @Public()
@@ -57,8 +63,9 @@ export class SubscriptionsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('upgrade')
+  @Idempotent({ ttlSeconds: 180, lockUser: true })
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Direct upgrade / Create payment order' })
+  @ApiOperation({ summary: 'Direct upgrade / Create payment order (Idempotent)' })
   upgradePlan(
     @CurrentUser('id') userId: string,
     @Body('tier') tier: SubscriptionTier,
@@ -75,8 +82,9 @@ export class SubscriptionsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('create-payment')
+  @Idempotent({ ttlSeconds: 180, lockUser: true })
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create payment order with VietQR code and bank transfer memo' })
+  @ApiOperation({ summary: 'Create payment order with VietQR code and bank transfer memo (Idempotent)' })
   createPayment(
     @CurrentUser('id') userId: string,
     @Body('tier') tier: SubscriptionTier,

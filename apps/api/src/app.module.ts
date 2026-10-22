@@ -22,6 +22,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { CommunityKnowledgeModule } from './modules/community-knowledge/community-knowledge.module';
 import { RedisCacheModule } from './common/cache/redis-cache.module';
+import { RabbitMQModule } from './common/rabbitmq/rabbitmq.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
@@ -31,6 +32,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
   imports: [
     PrismaModule,
     RedisCacheModule,
+    RabbitMQModule,
     HealthModule,
     AuthModule,
     VocabularyModule,

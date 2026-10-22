@@ -142,6 +142,42 @@ export class GamesGateway
   }
 
   /**
+   * Enter RabbitMQ Matchmaking Queue for balanced Arena battles
+   */
+  @SubscribeMessage('queue_matchmaking')
+  async handleQueueMatchmaking(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      gameMode: GameModeType;
+      userId: string;
+      displayName: string;
+      avatar: string;
+    },
+  ) {
+    try {
+      const mode = data.gameMode || GameModeType.TRANSLATION_RUSH;
+      await this.gamesService.enqueueMatchmaking(mode, {
+        userId: data.userId,
+        displayName: data.displayName,
+        avatar: data.avatar,
+        socketId: client.id,
+      });
+
+      client.emit('matchmaking_status', {
+        status: 'QUEUED',
+        gameMode: mode,
+        message: 'Đã vào hàng đợi tìm đối thủ đấu trường...',
+        queuedAt: Date.now(),
+      });
+      return { status: 'queued', gameMode: mode };
+    } catch (err: any) {
+      this.logger.error(`Failed to queue player for matchmaking: ${err?.message}`);
+      return { status: 'error', message: 'Không thể xếp vào hàng đợi thi đấu.' };
+    }
+  }
+
+  /**
    * Start game countdown immediately
    */
   @SubscribeMessage('start_game_now')

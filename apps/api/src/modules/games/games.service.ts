@@ -1,8 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GameModeType, CefrLevel } from '@prisma/client';
 import { GameRoomManager, GameRoom, RoomPlayer } from './game-room.manager';
 import { GameQuestionPayload } from './game-mode.interface';
+import { RabbitMQService, QUEUES } from '../../common/rabbitmq/rabbitmq.service';
 
 export interface GameScheduleItem {
   gameMode: GameModeType;
@@ -16,14 +17,42 @@ export interface GameScheduleItem {
 }
 
 @Injectable()
-export class GamesService {
+export class GamesService implements OnModuleInit {
   private readonly logger = new Logger(GamesService.name);
   readonly roomManager = new GameRoomManager();
 
   // Test mode allows running and playing games outside 20:00-22:00 for QA & Admin testing
   private testModeEnabled: boolean = true;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rabbitMQ: RabbitMQService,
+  ) {}
+
+  async onModuleInit() {
+    // 1. Consumer Worker: Arena Game Settlement Queue
+    await this.rabbitMQ.consume(QUEUES.ARENA_GAME_RESULTS, async (data: any, ack) => {
+      try {
+        this.logger.log(`[RabbitMQ Worker] Settling match #${data.roomCode} (${data.gameMode}) for ${data.topPlayers?.length || 0} players...`);
+        await this.processGameResultsJob(data);
+        ack();
+      } catch (err: any) {
+        this.logger.error(`Error processing arena game results queue: ${err.message}`);
+        ack();
+      }
+    });
+
+    // 2. Consumer Worker: Arena Matchmaking Queue
+    await this.rabbitMQ.consume(QUEUES.ARENA_MATCHMAKING, async (data: any, ack) => {
+      try {
+        this.logger.log(`[RabbitMQ Worker] Matchmaking queued for ${data.displayName} (Mode: ${data.gameMode})`);
+        ack();
+      } catch (err: any) {
+        this.logger.error(`Error in arena matchmaking worker: ${err.message}`);
+        ack();
+      }
+    });
+  }
 
   /**
    * Check whether daily game hours are open (20:00 to 22:00 VN time)
@@ -195,36 +224,80 @@ export class GamesService {
   }
 
   /**
-   * Finalize room, persist only Top players into database, and credit XP
+   * Enqueue match results to RabbitMQ for asynchronous settlement and DB write
    */
-  async persistGameResults(roomCode: string): Promise<void> {
+  async queueGameResults(roomCode: string): Promise<boolean> {
     const room = this.roomManager.getRoom(roomCode);
-    if (!room || room.players.size === 0) return;
+    if (!room || room.players.size === 0) return false;
 
     const ranking = this.roomManager.getLeaderboard(roomCode);
     const today = new Date().toISOString().slice(0, 10);
-    const topPlayers = ranking.slice(0, 20); // Persist Top 20
+    const topPlayers = ranking.slice(0, 20); // Top 20 players
 
-    this.logger.log(`Persisting match #${roomCode} (${room.gameMode}) results for ${topPlayers.length} players...`);
+    const payload = {
+      roomCode,
+      gameMode: room.gameMode,
+      totalRounds: room.totalRounds,
+      createdAt: room.createdAt,
+      date: today,
+      durationSec: Math.round((Date.now() - room.createdAt) / 1000),
+      topPlayers: topPlayers.map((player) => ({
+        userId: player.userId,
+        rank: player.rank,
+        score: player.score,
+        correctCount: player.correctCount,
+        bestStreak: player.bestStreak,
+        accuracy: room.totalRounds > 0 ? Math.round((player.correctCount / room.totalRounds) * 100) : 0,
+      })),
+    };
 
-    for (const player of topPlayers) {
+    this.logger.log(`[RabbitMQ Enqueue] Dispatching match #${roomCode} to ARENA_GAME_RESULTS queue...`);
+    return this.rabbitMQ.publish(QUEUES.ARENA_GAME_RESULTS, payload);
+  }
+
+  /**
+   * Backwards-compatible wrapper calling queueGameResults
+   */
+  async persistGameResults(roomCode: string): Promise<void> {
+    await this.queueGameResults(roomCode);
+  }
+
+  /**
+   * Worker job: Asynchronously batch write game results and credit XP
+   */
+  async processGameResultsJob(data: {
+    roomCode: string;
+    gameMode: GameModeType;
+    totalRounds: number;
+    date: string;
+    durationSec: number;
+    topPlayers: Array<{
+      userId: string;
+      rank: number;
+      score: number;
+      correctCount: number;
+      bestStreak: number;
+      accuracy: number;
+    }>;
+  }): Promise<void> {
+    if (!data.topPlayers || data.topPlayers.length === 0) return;
+
+    for (const player of data.topPlayers) {
       try {
-        const accuracy = room.totalRounds > 0 ? Math.round((player.correctCount / room.totalRounds) * 100) : 0;
-
         await this.prisma.gameResult.create({
           data: {
-            gameId: roomCode,
-            gameMode: room.gameMode,
-            roomCode,
-            date: today,
+            gameId: data.roomCode,
+            gameMode: data.gameMode,
+            roomCode: data.roomCode,
+            date: data.date,
             userId: player.userId,
             rank: player.rank,
             score: player.score,
             correctCount: player.correctCount,
-            totalRounds: room.totalRounds,
-            accuracy,
+            totalRounds: data.totalRounds,
+            accuracy: player.accuracy,
             bestStreak: player.bestStreak,
-            durationSec: Math.round((Date.now() - room.createdAt) / 1000),
+            durationSec: data.durationSec,
           },
         });
 
@@ -240,6 +313,21 @@ export class GamesService {
         this.logger.error(`Failed to persist game result for user ${player.userId}: ${err?.message}`);
       }
     }
+    this.logger.log(`[RabbitMQ Worker] Successfully finalized match #${data.roomCode} settlements.`);
+  }
+
+  /**
+   * Push player to RabbitMQ Arena Matchmaking Queue
+   */
+  async enqueueMatchmaking(
+    gameMode: GameModeType,
+    player: { userId: string; displayName: string; avatar: string; socketId: string },
+  ): Promise<boolean> {
+    return this.rabbitMQ.publish(QUEUES.ARENA_MATCHMAKING, {
+      gameMode,
+      ...player,
+      queuedAt: Date.now(),
+    });
   }
 
   /**

@@ -35,6 +35,26 @@ services:
     networks:
       - vocalflow-network
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: vocabflow-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    ports:
+      - '127.0.0.1:5672:5672'
+      - '127.0.0.1:15672:15672'
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vocalflow-network
+
   assets:
     build:
       context: .
@@ -68,6 +88,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgrespassword@postgres:5432/vocabflow_db?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       REDIS_KEY_PREFIX: "app:"
+      RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       ASSETS_BASE_URL: ${ASSETS_URL:-https://assets.vocalflow.site}
     ports:
       - '4000:4000'
@@ -75,6 +96,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - vocalflow-network
@@ -229,6 +252,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  rabbitmq_data:
 
 networks:
   vocalflow-network:
