@@ -677,7 +677,7 @@ export const AppShell: React.FC = () => {
                   LetStuN
                 </h2>
                 <p className="text-[11px] text-slate-400 font-medium truncate flex items-center gap-1">
-                  <span>Multi-Language Learning</span>
+                  <span>Learn today, remember tomorrow.</span>
                 </p>
               </div>
             </div>

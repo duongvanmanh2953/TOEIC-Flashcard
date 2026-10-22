@@ -55,7 +55,7 @@ export const Footer: React.FC<FooterProps> = ({ className = '', showFullDetails 
                   LetStuN
                 </span>
                 <span className="text-[11px] text-slate-400 font-medium tracking-tight">
-                  Multi-Language Learning
+                  Learn today, remember tomorrow.
                 </span>
               </div>
             </Link>

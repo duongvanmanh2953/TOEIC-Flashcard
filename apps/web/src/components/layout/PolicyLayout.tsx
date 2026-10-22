@@ -89,7 +89,7 @@ export const PolicyLayout: React.FC<PolicyLayoutProps> = ({
                   LetStuN
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium tracking-tight leading-none">
-                  Multi-Language Learning
+                  Learn today, remember tomorrow.
                 </span>
               </div>
             </Link>
