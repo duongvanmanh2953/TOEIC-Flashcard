@@ -1,4 +1,4 @@
-# VocabFlow AI Agent Workflows & Multi-Skill Orchestration
+# LetStuN AI Agent Workflows & Multi-Skill Orchestration
 
 > **Quy chuẩn điều phối dành cho AI Coding Agents (Antigravity, Gemini CLI, Claude Code)**  
 > **Mục tiêu**: Đảm bảo các AI Agents làm việc nhất quán, an toàn, không phá vỡ logic đang hoạt động và tận dụng tối đa các Skills đã cài đặt.

@@ -284,7 +284,7 @@ export const AdminDashboardPage: React.FC = () => {
                     <span>Lưu Lượng Ôn Tập & Hoạt Động Học Viên 7 Ngày</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Biểu đồ đo lường số lượt ôn tập thành công trên toàn hệ thống VocabFlow.
+                    Biểu đồ đo lường số lượt ôn tập thành công trên toàn hệ thống LetStuN.
                   </p>
                 </div>
                 <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full">

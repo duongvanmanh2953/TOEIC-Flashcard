@@ -1,4 +1,4 @@
-# Security Audit Report — VocabFlow AI (V3)
+# Security Audit Report — LetStuN AI (V3)
 
 ## 1. Executive Summary
 A comprehensive security review of the backend, frontend, environment configuration, database models, and authentication flow was performed.

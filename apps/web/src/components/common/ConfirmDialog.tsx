@@ -36,7 +36,7 @@ interface DialogState extends ConfirmOptions {
 }
 
 // Global Event Name
-const CONFIRM_EVENT = 'VOCABFLOW_CONFIRM_DIALOG_REQUEST';
+const CONFIRM_EVENT = 'LETSTUN_CONFIRM_DIALOG_REQUEST';
 
 /**
  * Global standalone promise-based confirm dialog helper.
@@ -249,7 +249,7 @@ export const GlobalConfirmDialog: React.FC = () => {
                 {title}
               </h3>
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                VocabFlow System
+                LetStuN System
               </span>
             </div>
           </div>

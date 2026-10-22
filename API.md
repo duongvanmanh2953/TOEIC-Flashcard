@@ -1,4 +1,4 @@
-# API Specification — VocabFlow AI
+# API Specification — LetStuN AI
 
 Base URL: `/api/v1`
 

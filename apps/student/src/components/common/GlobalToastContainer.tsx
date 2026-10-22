@@ -9,7 +9,7 @@ export interface ToastItem {
   duration?: number;
 }
 
-const TOAST_EVENT = 'VOCABFLOW_TOAST';
+const TOAST_EVENT = 'LETSTUN_TOAST';
 
 /**
  * Global function to show a toast anywhere in the application.

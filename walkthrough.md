@@ -1,4 +1,4 @@
-# VocabFlow AI — Master Prompt V9 Critical Upgrade Walkthrough
+# LetStuN AI — Master Prompt V9 Critical Upgrade Walkthrough
 
 ## Executive Summary
 This upgrade addressed the root causes of broken GET data across the administrative dashboard, standardizing data extraction, resolving empty states on the Feedback and Users pages, implementing real-time socket events for admin triage, eliminating 100% of native `<select>` elements, and delivering authentic financial intelligence.
@@ -64,5 +64,5 @@ During end-to-end tracing of the data pipeline:
 
 ## 5. Verification & Test Results
 - **Frontend Build**: Vite compiled in 25.66s with exit code 0 (`apps/web/dist`).
-- **Container Synchronization**: Assets synced into `vocabflow-web` container (`0.0.0.0:3000`).
-- **Backend API**: `vocabflow-api` restarted with all mapped routes active on port `:4000`.
+- **Container Synchronization**: Assets synced into `letstun-web` container (`0.0.0.0:3000`).
+- **Backend API**: `letstun-api` restarted with all mapped routes active on port `:4000`.

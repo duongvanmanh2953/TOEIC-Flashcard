@@ -24,7 +24,7 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
   transactions,
   preparedBy = 'Quản Trị Viên Hệ Thống',
   chiefAccountant = 'Trần Thị Minh Hằng',
-  director = 'Ban Giám Đốc VocabFlow',
+  director = 'Ban Giám Đốc LetStuN',
   reportCode,
   notes,
 }) => {
@@ -119,13 +119,13 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
         <div className="flex justify-between items-start text-xs text-black">
           <div>
             <p className="font-extrabold uppercase text-black text-sm tracking-wide">
-              CÔNG TY CỔ PHẦN CÔNG NGHỆ GIÁO DỤC VOCABFLOW VIỆT NAM
+              CÔNG TY CỔ PHẦN CÔNG NGHỆ GIÁO DỤC LETSTUN VIỆT NAM
             </p>
             <p className="font-bold text-black text-xs mt-0.5">
               TRUNG TÂM QUẢN TRỊ TÀI CHÍNH & ĐỐI SOÁT DOANH THU
             </p>
             <p className="text-[11px] text-neutral-800 mt-0.5">
-              Hệ thống Học máy & Luyện thi Ngoại ngữ Thông minh VocabFlow
+              Hệ thống Học máy & Luyện thi Ngoại ngữ Thông minh LetStuN
             </p>
             <p className="text-[10px] text-neutral-600">
               Mã số thuế: 0108998877 | Địa chỉ: Tòa nhà Công nghệ số, TP. Hà Nội | Hotline: 1900-6868
@@ -542,14 +542,14 @@ export const FinancialReportPrintDocument: React.FC<FinancialReportDocumentProps
             <p className="font-extrabold text-black uppercase tracking-tight">GIÁM ĐỐC ĐIỀU HÀNH</p>
             <p className="italic text-[10px] text-neutral-600 mb-14">(Ký, đóng dấu, ghi rõ họ tên)</p>
             <p className="font-bold text-black">{director}</p>
-            <p className="text-[10px] text-neutral-600 font-medium">Đại diện Ban Điều Hành VocabFlow</p>
+            <p className="text-[10px] text-neutral-600 font-medium">Đại diện Ban Điều Hành LetStuN</p>
           </div>
         </div>
 
         {/* Footer Verification Note */}
         <div className="mt-10 pt-2 border-t border-black flex justify-between items-center text-[10px] text-neutral-600">
           <span>
-            Hệ thống Quản trị Tài chính VocabFlow BI • Tài liệu lưu hành nội bộ • Mã xác thực: {code}
+            Hệ thống Quản trị Tài chính LetStuN BI • Tài liệu lưu hành nội bộ • Mã xác thực: {code}
           </span>
           <span className="font-mono">Trang 1 / 1</span>
         </div>

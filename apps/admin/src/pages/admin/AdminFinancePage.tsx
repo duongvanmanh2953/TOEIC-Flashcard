@@ -223,7 +223,7 @@ export const AdminFinancePage: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `VocabFlow_Financial_Report_${Date.now()}.csv`);
+    link.setAttribute('download', `LetStuN_Financial_Report_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -678,7 +678,7 @@ export const AdminFinancePage: React.FC = () => {
               endDate={endDate}
               reportData={formattedReportData}
               transactions={data?.recentTransactions}
-              preparedBy={user?.displayName || 'Quản Trị Viên VocabFlow'}
+              preparedBy={user?.displayName || 'Quản Trị Viên LetStuN'}
             />
           </div>,
           document.body

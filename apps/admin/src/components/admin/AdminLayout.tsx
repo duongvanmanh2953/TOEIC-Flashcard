@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { CommandPaletteModal } from './CommandPaletteModal';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import {
   LayoutDashboard,
   Users,
@@ -54,7 +54,7 @@ export const AdminLayout: React.FC = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return localStorage.getItem('vocabflow_admin_sidebar_collapsed') === 'true';
+    return localStorage.getItem('letstun_admin_sidebar_collapsed') === 'true';
   });
 
   // Auto-close mobile sidebar whenever route changes (Requirement 3)
@@ -78,7 +78,7 @@ export const AdminLayout: React.FC = () => {
   const toggleSidebarCollapse = () => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem('vocabflow_admin_sidebar_collapsed', String(next));
+      localStorage.setItem('letstun_admin_sidebar_collapsed', String(next));
       return next;
     });
   };
@@ -286,9 +286,9 @@ export const AdminLayout: React.FC = () => {
           <div
             className={`flex items-center gap-2.5 min-w-0 cursor-pointer group ${sidebarCollapsed ? 'justify-center' : 'flex-1 overflow-hidden'}`}
             onClick={() => navigate('/admin')}
-            title="VocabFlow Admin"
+            title="LetStuN Admin"
           >
-            <VocabFlowLogo
+            <LetStuNLogo
               size="sm"
               showContainer={false}
               className="group-hover:scale-105 transition-transform duration-200"
@@ -297,7 +297,7 @@ export const AdminLayout: React.FC = () => {
               <div className="min-w-0 flex-1 truncate">
                 <div className="flex items-center gap-1.5">
                   <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
-                    VocabFlow
+                    LetStuN
                   </h2>
                   <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30 shrink-0">
                     ADMIN
@@ -557,10 +557,10 @@ export const AdminLayout: React.FC = () => {
             <div
               onClick={() => navigate('/admin')}
               className="lg:hidden cursor-pointer flex items-center gap-2 group shrink-0"
-              title="VocabFlow Admin"
+              title="LetStuN Admin"
             >
-              <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
-              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span>
+              <LetStuNLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
+              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">LetStuN</span>
               <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase border border-indigo-500/30">
                 ADMIN
               </span>

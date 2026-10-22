@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Award, RotateCcw, ArrowRight, Zap, Trophy, Crown, CheckCircle2 } from 'lucide-react';
-import { VocabFlowLogo } from './VocabFlowLogo';
+import { LetStuNLogo } from './LetStuNLogo';
 
 export interface VictoryStatItem {
   label: string;
@@ -77,9 +77,9 @@ export const VictoryStarModal: React.FC<VictoryStarModalProps> = ({
 
         {/* Brand Crest */}
         <div className="flex items-center justify-center gap-1.5 opacity-80">
-          <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain" />
+          <LetStuNLogo size="xs" showContainer={false} className="w-4 h-4 object-contain" />
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            VocabFlow AI Victory
+            LetStuN AI Victory
           </span>
         </div>
 

@@ -1,4 +1,4 @@
-# VocabFlow AI End-to-End Business Flows
+# LetStuN AI End-to-End Business Flows
 
 > **Trạng thái**: Đã trace chi tiết từ UI Component đến Database Transaction (Verified)
 

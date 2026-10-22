@@ -1,5 +1,5 @@
 {
-  "name": "@vocabflow/kid",
+  "name": "@letstun/kid",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vocabflow/shared": "*",
+    "@letstun/shared": "*",
     "clsx": "^2.1.0",
     "google-tts-api": "^2.0.2",
     "lucide-react": "^0.364.0",

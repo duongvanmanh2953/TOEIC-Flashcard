@@ -86,7 +86,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           id: 'kid-animals/bear.webp',
           name: 'bear.webp',
           category: 'kid-animals',
-          url: 'https://assets.vocalflow.site/game-assets/animals/bear.webp',
+          url: 'https://assets.letstun.site/game-assets/animals/bear.webp',
           sizeBytes: 42300,
           mimeType: 'image/webp',
           version: 2,
@@ -99,7 +99,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           id: 'kid-animals/cat.webp',
           name: 'cat.webp',
           category: 'kid-animals',
-          url: 'https://assets.vocalflow.site/game-assets/animals/cat.webp',
+          url: 'https://assets.letstun.site/game-assets/animals/cat.webp',
           sizeBytes: 38200,
           mimeType: 'image/webp',
           version: 2,
@@ -112,7 +112,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           id: 'kid-animals/dog.webp',
           name: 'dog.webp',
           category: 'kid-animals',
-          url: 'https://assets.vocalflow.site/game-assets/animals/dog.webp',
+          url: 'https://assets.letstun.site/game-assets/animals/dog.webp',
           sizeBytes: 41100,
           mimeType: 'image/webp',
           version: 2,
@@ -125,7 +125,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           id: 'kid-animals/elephant.webp',
           name: 'elephant.webp',
           category: 'kid-animals',
-          url: 'https://assets.vocalflow.site/game-assets/animals/elephant.webp',
+          url: 'https://assets.letstun.site/game-assets/animals/elephant.webp',
           sizeBytes: 54900,
           mimeType: 'image/webp',
           version: 2,
@@ -138,7 +138,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           id: 'kid-animals/lion.webp',
           name: 'lion.webp',
           category: 'kid-animals',
-          url: 'https://assets.vocalflow.site/game-assets/animals/lion.webp',
+          url: 'https://assets.letstun.site/game-assets/animals/lion.webp',
           sizeBytes: 47200,
           mimeType: 'image/webp',
           version: 2,
@@ -151,7 +151,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           id: 'kid-animals/old_draft_fox.png',
           name: 'old_draft_fox.png',
           category: 'kid-animals',
-          url: 'https://assets.vocalflow.site/game-assets/animals/old_draft_fox.png',
+          url: 'https://assets.letstun.site/game-assets/animals/old_draft_fox.png',
           sizeBytes: 68300,
           mimeType: 'image/png',
           version: 1,
@@ -164,7 +164,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           id: 'audio/sample_temp_bell.mp3',
           name: 'sample_temp_bell.mp3',
           category: 'audio',
-          url: 'https://assets.vocalflow.site/audio/sample_temp_bell.mp3',
+          url: 'https://assets.letstun.site/audio/sample_temp_bell.mp3',
           sizeBytes: 25400,
           mimeType: 'audio/mpeg',
           version: 1,
@@ -393,7 +393,7 @@ export const AdminAssetManagementPage: React.FC = () => {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Phục vụ CDN trực tiếp:{' '}
             <code className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded">
-              https://assets.vocalflow.site
+              https://assets.letstun.site
             </code>{' '}
             • Kiểm tra trạng thái sử dụng và dọn dẹp file thừa an toàn.
           </p>

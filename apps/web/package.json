@@ -1,5 +1,5 @@
 {
-  "name": "@vocabflow/web",
+  "name": "@letstun/web",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@types/three": "^0.186.0",
-    "@vocabflow/shared": "*",
+    "@letstun/shared": "*",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
     "firebase": "^12.18.0",

@@ -30,7 +30,7 @@ function loadManifestData(category?: string) {
   try {
     const raw = fs.readFileSync(manifestPath, 'utf8');
     const manifest = JSON.parse(raw);
-    const assetsBase = (process.env.ASSETS_BASE_URL || 'https://assets.vocalflow.site').replace(/\/+$/, '');
+    const assetsBase = (process.env.ASSETS_BASE_URL || 'https://assets.letstun.site').replace(/\/+$/, '');
     
     let items = manifest.items || [];
     if (category) {

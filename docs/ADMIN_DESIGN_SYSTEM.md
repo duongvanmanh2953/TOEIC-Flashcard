@@ -1,5 +1,5 @@
 # PROJECT UI RULE & DESIGN SYSTEM
-## VocabFlow AI & Competitive Gaming SaaS Platform
+## LetStuN AI & Competitive Gaming SaaS Platform
 
 > **Phiên bản:** 2.0 (High-End SaaS Standard)  
 > **Cập nhật:** 2026-09-09  

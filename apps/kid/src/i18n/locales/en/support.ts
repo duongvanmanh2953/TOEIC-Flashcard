@@ -5,7 +5,7 @@ export const enSupport = {
   typing: 'Specialist is typing...',
   placeholder: 'Type a message...',
   loginPrompt: 'Please log in to send a support message',
-  welcomeTitle: 'Welcome to VocabFlow CSKH!',
+  welcomeTitle: 'Welcome to LetStuN CSKH!',
   welcomeBody: 'How can we help you today with your account, VietQR billing, or study features? Send us a message below.',
   fullscreen: 'Full Screen',
   cleanMessagesBtn: 'Purge Messages >3 Days',

@@ -153,7 +153,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
     {
       id: 'default-plus',
       tier: 'PLUS',
-      name: 'VocabFlow Plus',
+      name: 'LetStuN Plus',
       slug: 'plus',
       description: 'Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt & AI Tutor mỗi ngày',
       priceMonthly: 99000,
@@ -181,7 +181,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
     {
       id: 'default-pro',
       tier: 'PRO',
-      name: 'VocabFlow Pro',
+      name: 'LetStuN Pro',
       slug: 'pro',
       description: 'Tối đa tiềm năng với AI Tutor phân tích chuyên sâu & hạn mức cao nhất',
       priceMonthly: 199000,
@@ -218,7 +218,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
           <span>Thanh toán VietQR & Cổng Webhook Tự Động Kích Hoạt 24/7</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-          {t('subscriptions.title', 'Nâng Cấp Trải Nghiệm Học Cùng VocabFlow')}
+          {t('subscriptions.title', 'Nâng Cấp Trải Nghiệm Học Cùng LetStuN')}
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
           Tăng tốc phản xạ và điểm số TOEIC với AI Tutor chuyên sâu, hạn mức theo ngày tối ưu và gói thuê bao linh hoạt.
@@ -313,7 +313,7 @@ export const SubscriptionUpgradePage: React.FC = () => {
           </div>
           <div>
             <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Tài Khoản VocabFlow Pro Đang Kích Hoạt</span>
+              <span>Tài Khoản LetStuN Pro Đang Kích Hoạt</span>
               <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-black uppercase">
                 Đang Sử Dụng
               </span>

@@ -1,7 +1,7 @@
 {
-  "name": "@vocabflow/app-api",
+  "name": "@letstun/app-api",
   "version": "1.0.0",
-  "description": "VocabFlow AI Backend API (NestJS + Prisma + PostgreSQL)",
+  "description": "LetStuN AI Backend API (NestJS + Prisma + PostgreSQL)",
   "private": true,
   "scripts": {
     "build": "nest build",

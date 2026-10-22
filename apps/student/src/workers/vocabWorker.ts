@@ -1,5 +1,5 @@
 /**
- * Dedicated Web Worker for VocabFlow Search & Filtering
+ * Dedicated Web Worker for LetStuN Search & Filtering
  * Performs fuzzy search, CEFR level classification, and alphabetical sorting
  * in a separate background thread without locking UI 60fps frame rate.
  */

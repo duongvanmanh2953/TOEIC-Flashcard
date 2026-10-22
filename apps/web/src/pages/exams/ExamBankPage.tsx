@@ -131,7 +131,7 @@ export const ExamBankPage: React.FC = () => {
       return;
     }
     window.dispatchEvent(
-      new CustomEvent('open_vocabflow_chat', {
+      new CustomEvent('open_letstun_chat', {
         detail: {
           targetUser: {
             id: targetUserId,
@@ -913,7 +913,7 @@ export const ExamBankPage: React.FC = () => {
                                   {exam.author?.displayName?.[0]?.toUpperCase() || 'U'}
                                 </div>
                                 <span className="truncate text-slate-600 dark:text-slate-400 text-[11px] font-medium">
-                                  {exam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocabFlow')}
+                                  {exam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng LetStuN')}
                                 </span>
                               </div>
                               {!isOwner && (
@@ -1323,7 +1323,7 @@ export const ExamBankPage: React.FC = () => {
                         </div>
                       )}
                       <span className="font-semibold text-white truncate max-w-[140px]">
-                        {detailModalExam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng VocabFlow')}
+                        {detailModalExam.author?.displayName || (isOwner ? 'Bạn' : 'Cộng đồng LetStuN')}
                       </span>
                     </div>
                     <span>•</span>
@@ -1980,7 +1980,7 @@ export const ExamBankPage: React.FC = () => {
           isProtected={Boolean(accessKeyManageExam.isProtected)}
           onOpenChatWithUser={(targetUserId, targetUserName) => {
             window.dispatchEvent(
-              new CustomEvent('open_vocabflow_chat', {
+              new CustomEvent('open_letstun_chat', {
                 detail: {
                   targetUser: { id: targetUserId, displayName: targetUserName },
                   context: {

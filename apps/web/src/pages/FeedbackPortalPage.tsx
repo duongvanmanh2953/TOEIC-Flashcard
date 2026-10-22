@@ -165,7 +165,7 @@ export const FeedbackPortalPage: React.FC = () => {
             Đóng Góp Ý Kiến & Lộ Trình Phát Triển
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Cùng xây dựng VocabFlow thông minh hơn. Đề xuất tính năng, báo lỗi hoặc bình chọn cho ý kiến cộng đồng.
+            Cùng xây dựng LetStuN thông minh hơn. Đề xuất tính năng, báo lỗi hoặc bình chọn cho ý kiến cộng đồng.
           </p>
         </div>
 
@@ -267,7 +267,7 @@ export const FeedbackPortalPage: React.FC = () => {
 
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <span className="text-[11px] text-slate-400">
-                      Bởi {item.user?.displayName || 'Thành viên VocabFlow'}
+                      Bởi {item.user?.displayName || 'Thành viên LetStuN'}
                     </span>
                     <button
                       onClick={() => handleVote(item.id)}
@@ -348,7 +348,7 @@ export const FeedbackPortalPage: React.FC = () => {
                     <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-900 dark:text-emerald-200">
                       <div className="flex items-center gap-1.5 font-black uppercase text-[10px] text-emerald-600 dark:text-emerald-400 mb-1">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Phản hồi từ Quản Trị Viên VocabFlow:</span>
+                        <span>Phản hồi từ Quản Trị Viên LetStuN:</span>
                       </div>
                       {item.adminReply}
                     </div>

@@ -87,7 +87,7 @@ export const WordBankTour: React.FC<WordBankTourProps> = ({ isOpen, onClose }) =
   };
 
   const handleComplete = () => {
-    localStorage.setItem('vocabflow_seen_wordbank_tour', 'true');
+    localStorage.setItem('letstun_seen_wordbank_tour', 'true');
     onClose();
   };
 

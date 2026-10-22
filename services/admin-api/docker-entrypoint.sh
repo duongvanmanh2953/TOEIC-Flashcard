@@ -7,7 +7,7 @@ until nc -z -v -w30 postgres 5432; do
   sleep 2
 done
 
-echo "🚀 Starting VocabFlow Admin API (port 4200)..."
+echo "🚀 Starting LetStuN Admin API (port 4200)..."
 if [ -f "dist/main.js" ]; then
   exec node dist/main.js
 elif [ -f "dist/src/main.js" ]; then

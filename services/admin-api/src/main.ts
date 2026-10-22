@@ -39,8 +39,8 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.get('/', (_req: any, res: any) => {
     res.status(200).json({
-      name: 'VocabFlow Admin API',
-      service: 'vocabflow-admin-api',
+      name: 'LetStuN Admin API',
+      service: 'letstun-admin-api',
       status: 'UP',
       health: '/health',
       docs: '/api/docs',
@@ -48,7 +48,7 @@ async function bootstrap() {
     });
   });
   expressApp.get('/health', (_req: any, res: any) => {
-    res.status(200).json({ status: 'UP', service: 'vocabflow-admin-api', timestamp: new Date().toISOString() });
+    res.status(200).json({ status: 'UP', service: 'letstun-admin-api', timestamp: new Date().toISOString() });
   });
 
   // Global prefix for API versioning
@@ -60,14 +60,14 @@ async function bootstrap() {
   // Enable CORS specifically for Admin Frontend
   const allowedOrigins = [
     clientUrl,
-    'https://admin.vocalflow.site',
-    'https://vocalflow.site',
+    'https://admin.letstun.site',
+    'https://letstun.site',
     'http://localhost:3200',
     'http://localhost:3000',
   ];
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('vocalflow.site')) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('letstun.site')) {
         callback(null, true);
       } else {
         callback(null, false);
@@ -89,8 +89,8 @@ async function bootstrap() {
 
   // OpenAPI Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('VocabFlow Admin API')
-    .setDescription('Dedicated Control Center & Governance API for VocabFlow Admins')
+    .setTitle('LetStuN Admin API')
+    .setDescription('Dedicated Control Center & Governance API for LetStuN Admins')
     .setVersion('1.0.0')
     .addBearerAuth()
     .addTag('Admin Command Center')
@@ -101,7 +101,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port, '0.0.0.0');
-  logger.log(`🚀 VocabFlow Admin API running on: http://localhost:${port}/api/v1`);
+  logger.log(`🚀 LetStuN Admin API running on: http://localhost:${port}/api/v1`);
   logger.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
 }
 

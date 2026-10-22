@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "VocabFlow",
-    "tagline": "Adaptive English Mastery",
+    "appName": "LetStuN",
+    "tagline": "Learn today, remember tomorrow.",
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
@@ -61,7 +61,7 @@
     "backDashboard": "Return to Dashboard"
   },
   "aiTutor": {
-    "title": "VocabFlow AI Tutor",
+    "title": "LetStuN AI Tutor",
     "subtitle": "Contextual English specialist trained on CEFR frameworks",
     "inputPlaceholder": "Ask anything: nuances, idioms, business email phrasing...",
     "send": "Ask AI",
@@ -75,12 +75,12 @@
     "newChat": "New Conversation"
   },
   "subscriptions": {
-    "title": "Upgrade Your Learning Journey with VocabFlow",
+    "title": "Upgrade Your Learning Journey with LetStuN",
     "subtitle": "Accelerate your fluency and TOEIC score with deep AI tutoring, optimized daily quotas, and flexible subscriptions.",
     "currentPlan": "Current Tier",
     "freeTitle": "Learner Free",
-    "plusTitle": "VocabFlow Plus",
-    "proTitle": "VocabFlow Pro",
+    "plusTitle": "LetStuN Plus",
+    "proTitle": "LetStuN Pro",
     "comingSoonBadge": "24/7 Automated VietQR Gateway",
     "registerInterest": "Upgrade Now",
     "aiQuota": "Daily AI Consultations",
@@ -136,7 +136,7 @@
     "typing": "Specialist is typing...",
     "placeholder": "Type a message...",
     "loginPrompt": "Please log in to send a support message",
-    "welcomeTitle": "Welcome to VocabFlow CSKH!",
+    "welcomeTitle": "Welcome to LetStuN CSKH!",
     "welcomeBody": "How can we help you today with your account, VietQR billing, or study features? Send us a message below.",
     "fullscreen": "Full Screen",
     "cleanMessagesBtn": "Purge Messages >3 Days",
@@ -210,7 +210,7 @@
     "noFailed": "No failed payment orders. Gateway operates at 100% stability.",
     "accountingLedger": "Financial Accounting Ledger",
     "emptyTitle": "No financial transaction records in database",
-    "emptyDesc": "VocabFlow enforces an authentic accounting policy (Zero Fake Data). As soon as learners complete payment orders via VietQR or PayOS, live charts and ledgers will activate.",
+    "emptyDesc": "LetStuN enforces an authentic accounting policy (Zero Fake Data). As soon as learners complete payment orders via VietQR or PayOS, live charts and ledgers will activate.",
     "timeframe": {
       "today": "Today",
       "sevenDays": "7 Days",
@@ -431,7 +431,7 @@
     "memoryRescue": "Memory Rescue",
     "proBadge": "Pro Plan",
     "proOnly": "Exclusive to Pro",
-    "unlockWithPro": "Unlock full access with VocabFlow Pro",
+    "unlockWithPro": "Unlock full access with LetStuN Pro",
     "upgradeNow": "Upgrade Now",
     "unlimited": "Unlimited",
     "usedCount": "Used",

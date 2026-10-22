@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * VocabFlow AI — Automated Translation Parity Verification Script
+ * LetStuN AI — Automated Translation Parity Verification Script
  * Validates 100% key parity between English and Vietnamese locale dictionaries.
  */
 
@@ -55,7 +55,7 @@ function parseTsDictionary(filePath) {
 }
 
 const localesDir = path.resolve(__dirname, '../apps/web/src/i18n/locales');
-console.log('🔍 Auditing VocabFlow AI Translation Parity...');
+console.log('🔍 Auditing LetStuN AI Translation Parity...');
 
 const enFiles = ['finance.ts', 'feedback.ts', 'support.ts', 'admin.ts'];
 let totalMismatches = 0;

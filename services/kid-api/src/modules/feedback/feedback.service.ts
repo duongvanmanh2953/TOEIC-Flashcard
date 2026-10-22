@@ -227,7 +227,7 @@ export class FeedbackService {
         fb.userId,
         'FEEDBACK_STATUS',
         `Cập nhật tiến độ góp ý: "${fb.title.slice(0, 40)}"`,
-        `Góp ý của bạn hiện có trạng thái: ${statusLabels[status]}. Cảm ơn bạn đã đồng hành đóng góp xây dựng VocabFlow!`,
+        `Góp ý của bạn hiện có trạng thái: ${statusLabels[status]}. Cảm ơn bạn đã đồng hành đóng góp xây dựng LetStuN!`,
         { feedbackId, route: '/feedback' },
       );
     }
@@ -254,7 +254,7 @@ export class FeedbackService {
       fb.userId,
       'FEEDBACK_REPLY',
       `Phản hồi về ý kiến của bạn: "${fb.title.slice(0, 40)}"`,
-      `Ban quản trị VocabFlow vừa phản hồi góp ý của bạn: "${adminReply.slice(0, 90)}${adminReply.length > 90 ? '...' : ''}"`,
+      `Ban quản trị LetStuN vừa phản hồi góp ý của bạn: "${adminReply.slice(0, 90)}${adminReply.length > 90 ? '...' : ''}"`,
       { feedbackId, route: '/feedback' },
     );
 

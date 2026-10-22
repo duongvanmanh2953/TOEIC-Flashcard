@@ -75,7 +75,7 @@ export const AdminOverviewPage: React.FC = () => {
             Tổng Quan Hệ Thống (Command Center)
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Dữ liệu vận hành thời gian thực từ toàn bộ dịch vụ VocabFlow AI và Đấu Trường Games.
+            Dữ liệu vận hành thời gian thực từ toàn bộ dịch vụ LetStuN AI và Đấu Trường Games.
           </p>
         </div>
 

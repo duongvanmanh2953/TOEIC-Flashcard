@@ -3,18 +3,18 @@ import api from '../lib/api';
 import { Award, Flame, TrendingUp, CheckCircle, Brain, Target, LineChart, Sparkles } from 'lucide-react';
 import { FeatureLock } from '../components/common/FeatureLock';
 import { useAuth } from '../contexts/AuthContext';
-import { VocabularyXRay } from '../components/vocabflow/VocabularyXRay';
-import { SmartQueueBar } from '../components/vocabflow/SmartQueueBar';
-import { ConfusionPairsCard } from '../components/vocabflow/ConfusionPairsCard';
-import { VocabularyCaptureModal } from '../components/vocabflow/VocabularyCaptureModal';
-import { WordDiagnosticModal } from '../components/vocabflow/WordDiagnosticModal';
+import { VocabularyXRay } from '../components/letstun/VocabularyXRay';
+import { SmartQueueBar } from '../components/letstun/SmartQueueBar';
+import { ConfusionPairsCard } from '../components/letstun/ConfusionPairsCard';
+import { VocabularyCaptureModal } from '../components/letstun/VocabularyCaptureModal';
+import { WordDiagnosticModal } from '../components/letstun/WordDiagnosticModal';
 
 export const ProgressAnalyticsPage: React.FC = () => {
   const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // VocabFlow Modals
+  // LetStuN Modals
   const [captureModalOpen, setCaptureModalOpen] = useState(false);
   const [inspectedWordId, setInspectedWordId] = useState<string | null>(null);
 
@@ -47,7 +47,7 @@ export const ProgressAnalyticsPage: React.FC = () => {
         <div>
           <h2 className="text-2xl font-extrabold tracking-tight">Tiến Độ & Phân Tích Khoa Học Trí Nhớ</h2>
           <p className="text-sm text-slate-500 mt-1">
-            VocabFlow™ AI: Phân tách Biết từ (Passive) vs Dùng từ (Active), biểu đồ 5D và gợi ý ôn tập
+            LetStuN™ AI: Phân tách Biết từ (Passive) vs Dùng từ (Active), biểu đồ 5D và gợi ý ôn tập
           </p>
         </div>
 
@@ -187,7 +187,7 @@ export const ProgressAnalyticsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* VocabFlow Modals */}
+      {/* LetStuN Modals */}
       <VocabularyCaptureModal
         isOpen={captureModalOpen}
         onClose={() => setCaptureModalOpen(false)}

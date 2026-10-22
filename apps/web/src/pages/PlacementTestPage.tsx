@@ -75,7 +75,7 @@ export const PlacementTestPage: React.FC = () => {
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight">Kết Quả Đánh Giá Năng Lực</h2>
             <p className="text-sm text-slate-500 mt-1">
-              Thuật toán VocabFlow AI đã phân tích hồ sơ phản xạ của bạn
+              Thuật toán LetStuN AI đã phân tích hồ sơ phản xạ của bạn
             </p>
           </div>
 

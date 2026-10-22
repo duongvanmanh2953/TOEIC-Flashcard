@@ -135,7 +135,7 @@ export const CreateEditPostPage: React.FC = () => {
         });
 
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'success',
               title: 'Cập nhật thành công',
@@ -158,7 +158,7 @@ export const CreateEditPostPage: React.FC = () => {
         });
 
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'success',
               title: isDraft ? 'Đã lưu bản nháp' : 'Gửi bài thành công',

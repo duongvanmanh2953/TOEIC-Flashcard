@@ -4,13 +4,13 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🚀 Creating / Updating VocabFlow Accounts (1 Full Pro & 1 Admin)...');
+  console.log('🚀 Creating / Updating LetStuN Accounts (1 Full Pro & 1 Admin)...');
 
   // 1. Ensure PRO and PLUS plans exist
   const proPlan = await prisma.plan.upsert({
     where: { tier: SubscriptionTier.PRO },
     update: {
-      name: 'VocabFlow Pro (Unlimited)',
+      name: 'LetStuN Pro (Unlimited)',
       priceMonthly: 199000,
       aiDailyQuota: -1,
       maxCustomDecks: 999,
@@ -26,7 +26,7 @@ async function main() {
     },
     create: {
       tier: SubscriptionTier.PRO,
-      name: 'VocabFlow Pro (Unlimited)',
+      name: 'LetStuN Pro (Unlimited)',
       priceMonthly: 199000,
       aiDailyQuota: -1,
       maxCustomDecks: 999,
@@ -47,20 +47,20 @@ async function main() {
   const adminHash = await bcrypt.hash('admin123', 10);
 
   // 2. ACCOUNT 1: Full Rights / Full Pro Learner Account
-  // Email: pro@vocabflow.ai | Password: password123
-  console.log('📦 Setting up Full PRO Account (pro@vocabflow.ai)...');
+  // Email: pro@letstun.com | Password: password123
+  console.log('📦 Setting up Full PRO Account (pro@letstun.com)...');
   const proUser = await prisma.user.upsert({
-    where: { email: 'pro@vocabflow.ai' },
+    where: { email: 'pro@letstun.com' },
     update: {
       role: Role.PREMIUM_USER,
       status: UserStatus.ACTIVE,
-      displayName: 'VocabFlow VIP Pro',
+      displayName: 'LetStuN VIP Pro',
       passwordHash,
     },
     create: {
-      email: 'pro@vocabflow.ai',
-      username: 'vocabflow_pro',
-      displayName: 'VocabFlow VIP Pro',
+      email: 'pro@letstun.com',
+      username: 'letstun_pro',
+      displayName: 'LetStuN VIP Pro',
       passwordHash,
       role: Role.PREMIUM_USER,
       status: UserStatus.ACTIVE,
@@ -101,23 +101,23 @@ async function main() {
       currentPeriodEnd: lifetimeEnd,
     },
   });
-  console.log('✅ Account 1 created: pro@vocabflow.ai / password123 (Role: PREMIUM_USER, Pro: ACTIVE Lifetime)');
+  console.log('✅ Account 1 created: pro@letstun.com / password123 (Role: PREMIUM_USER, Pro: ACTIVE Lifetime)');
 
   // 3. ACCOUNT 2: System Administrator Account
-  // Email: admin@vocabflow.ai | Password: admin123
-  console.log('📦 Setting up Admin Account (admin@vocabflow.ai)...');
+  // Email: admin@letstun.com | Password: admin123
+  console.log('📦 Setting up Admin Account (admin@letstun.com)...');
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@vocabflow.ai' },
+    where: { email: 'admin@letstun.com' },
     update: {
       role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
-      displayName: 'VocabFlow Administrator',
+      displayName: 'LetStuN Administrator',
       passwordHash: adminHash,
     },
     create: {
-      email: 'admin@vocabflow.ai',
+      email: 'admin@letstun.com',
       username: 'admin',
-      displayName: 'VocabFlow Administrator',
+      displayName: 'LetStuN Administrator',
       passwordHash: adminHash,
       role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
@@ -158,18 +158,18 @@ async function main() {
       currentPeriodEnd: lifetimeEnd,
     },
   });
-  console.log('✅ Account 2 created: admin@vocabflow.ai / admin123 (Role: SUPER_ADMIN, Pro: ACTIVE Lifetime)');
+  console.log('✅ Account 2 created: admin@letstun.com / admin123 (Role: SUPER_ADMIN, Pro: ACTIVE Lifetime)');
 
-  // Also sync admin@vocabflow.ai for backward compatibility
+  // Also sync admin@letstun.com for backward compatibility
   const legacyAdmin = await prisma.user.upsert({
-    where: { email: 'admin@vocabflow.ai' },
+    where: { email: 'admin@letstun.com' },
     update: {
       role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
       passwordHash: adminHash,
     },
     create: {
-      email: 'admin@vocabflow.ai',
+      email: 'admin@letstun.com',
       username: 'admin_legacy',
       displayName: 'System Admin (Legacy)',
       passwordHash: adminHash,
@@ -189,9 +189,9 @@ async function main() {
     },
   });
 
-  // Also upgrade learner@vocabflow.ai to Pro so it also has all rights
+  // Also upgrade learner@letstun.com to Pro so it also has all rights
   const demoLearner = await prisma.user.findUnique({
-    where: { email: 'learner@vocabflow.ai' },
+    where: { email: 'learner@letstun.com' },
   });
   if (demoLearner) {
     await prisma.user.update({
@@ -209,7 +209,7 @@ async function main() {
         currentPeriodEnd: lifetimeEnd,
       },
     });
-    console.log('✅ Also upgraded learner@vocabflow.ai to PRO.');
+    console.log('✅ Also upgraded learner@letstun.com to PRO.');
   }
 
   console.log('\n🎉 ALL ACCOUNTS INITIALIZED SUCCESSFULLY!');

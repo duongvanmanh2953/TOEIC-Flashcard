@@ -14,7 +14,7 @@ export const viFinance = {
   noFailed: 'Không có đơn thanh toán nào thất bại. Cổng thanh toán hoạt động ổn định 100%.',
   accountingLedger: 'Sổ Cái Giao Dịch Tài Chính',
   emptyTitle: 'Chưa có dữ liệu giao dịch tài chính trong cơ sở dữ liệu',
-  emptyDesc: 'VocabFlow tuân thủ chính sách kế toán minh bạch (Zero Fake Data). Ngay khi có giao dịch thanh toán thành công qua VietQR hoặc PayOS, các biểu đồ và sổ cái kế toán sẽ tự động hiển thị.',
+  emptyDesc: 'LetStuN tuân thủ chính sách kế toán minh bạch (Zero Fake Data). Ngay khi có giao dịch thanh toán thành công qua VietQR hoặc PayOS, các biểu đồ và sổ cái kế toán sẽ tự động hiển thị.',
   timeframe: {
     today: 'Hôm nay',
     sevenDays: '7 ngày',

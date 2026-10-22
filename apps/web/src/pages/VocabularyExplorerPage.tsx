@@ -96,7 +96,7 @@ export const VocabularyExplorerPage: React.FC = () => {
         const res: any = await api.get('/vocabulary', { params });
         if (res?.success) {
           const guestFavs: string[] = JSON.parse(
-            localStorage.getItem('vocabflow_guest_favorites') || '[]'
+            localStorage.getItem('letstun_guest_favorites') || '[]'
           );
           const rawItems = res.data?.items || res.data || [];
           const mappedItems = rawItems.map((w: any) => ({
@@ -173,11 +173,11 @@ export const VocabularyExplorerPage: React.FC = () => {
 
     if (isGuest) {
       const guestFavs: string[] = JSON.parse(
-        localStorage.getItem('vocabflow_guest_favorites') || '[]'
+        localStorage.getItem('letstun_guest_favorites') || '[]'
       );
       const isFav = guestFavs.includes(wordId);
       const updated = isFav ? guestFavs.filter((id) => id !== wordId) : [...guestFavs, wordId];
-      localStorage.setItem('vocabflow_guest_favorites', JSON.stringify(updated));
+      localStorage.setItem('letstun_guest_favorites', JSON.stringify(updated));
 
       setWords((prev) =>
         prev.map((w) =>

@@ -180,15 +180,15 @@ export const KidsLayout: React.FC = () => {
         >
           <div className="w-11 h-11 rounded-2xl bg-amber-50 p-1 border border-amber-200 shadow-2xs shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform overflow-hidden">
             <img
-              src={kidAsset('/kid/ui/vocalflow-fox-logo.png')}
-              alt="VocalFlow Kid"
+              src={kidAsset('/kid/ui/letstun-fox-logo.png')}
+              alt="LetStuN Kid"
               className="w-full h-full object-contain"
               onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png'; }}
             />
           </div>
           <div>
             <h2 className="font-black text-xl leading-tight text-[#ea580c] tracking-tight">
-              VocalFlow
+              LetStuN
             </h2>
             <p className="text-[11px] font-bold text-slate-500">
               Học tiếng Anh - Nói tự tin
@@ -285,7 +285,7 @@ export const KidsLayout: React.FC = () => {
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
             handleOpenParentGate(
-              'https://app.vocalflow.site/dashboard',
+              'https://app.letstun.site/dashboard',
               'Trở Về Màn Học Viên',
               'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
             );
@@ -405,7 +405,7 @@ export const KidsLayout: React.FC = () => {
                   type="button"
                   onClick={() =>
                     handleOpenParentGate(
-                      'https://app.vocalflow.site/dashboard',
+                      'https://app.letstun.site/dashboard',
                       'Trở Về Màn Học Viên',
                       'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
                     )

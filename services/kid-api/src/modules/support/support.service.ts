@@ -320,7 +320,7 @@ export class SupportService {
         conversationId,
         senderId: adminId,
         senderRole: admin?.role || 'ADMIN',
-        senderName: admin?.displayName || admin?.email || 'Hỗ trợ VocabFlow',
+        senderName: admin?.displayName || admin?.email || 'Hỗ trợ LetStuN',
         content,
         isInternalNote,
       },
@@ -364,7 +364,7 @@ export class SupportService {
         updated.userId,
         'SUPPORT_REPLY',
         `Yêu cầu hỗ trợ #${updated.ticketId} đã hoàn tất`,
-        `Yêu cầu hỗ trợ của bạn đã được đánh dấu là đã giải quyết. Cảm ơn bạn đã đồng hành cùng VocabFlow!`,
+        `Yêu cầu hỗ trợ của bạn đã được đánh dấu là đã giải quyết. Cảm ơn bạn đã đồng hành cùng LetStuN!`,
         { conversationId, ticketId: updated.ticketId, route: `/support?id=${conversationId}` },
       );
     }

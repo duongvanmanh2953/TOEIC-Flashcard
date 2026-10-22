@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { ModalPortal } from '../common/ModalPortal';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import { X, CheckCircle2 } from 'lucide-react';
 
 export const ContextualLoginModal: React.FC = () => {
@@ -54,7 +54,7 @@ export const ContextualLoginModal: React.FC = () => {
         {/* Icon & Heading */}
         <div className="text-center space-y-3 pt-2">
           <div className="mx-auto flex items-center justify-center">
-            <VocabFlowLogo size="xl" className="w-14 h-14 shadow-lg shadow-indigo-500/20" />
+            <LetStuNLogo size="xl" className="w-14 h-14 shadow-lg shadow-indigo-500/20" />
           </div>
 
           <div>

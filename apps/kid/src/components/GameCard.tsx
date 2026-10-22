@@ -1,5 +1,5 @@
 // ============================================================================
-// VOCALFLOW KIDS — REFINED GAME LIBRARY TILE
+// LETSTUN KIDS — REFINED GAME LIBRARY TILE
 // Clear Silhouette • Radius: 18px • Crisp Border • Distinct Hover Elevation
 // Artwork is HERO • Concise Legible Metadata • Clean 'Play →' Action
 // ============================================================================

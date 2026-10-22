@@ -16,7 +16,7 @@ import {
   ExternalLink,
   AlertTriangle,
 } from 'lucide-react';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import { useTranslation } from '../../i18n';
 import { useAuth } from '../../contexts/AuthContext';
 import { LEGAL_CONFIG, MANDATORY_POLICIES, isLegalPlaceholder } from '../../config/legalConfig';
@@ -48,11 +48,11 @@ export const Footer: React.FC<FooterProps> = ({ className = '', showFullDetails 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 pb-10 border-b border-slate-200 dark:border-slate-800/80">
           {/* Column 1: Brand & Ministry of Industry and Trade Compliance Statement (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <Link to={homeTarget} className="inline-flex items-center gap-2.5 group" title="VocabFlow">
-              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-105 transition-transform shrink-0" />
+            <Link to={homeTarget} className="inline-flex items-center gap-2.5 group" title="LetStuN">
+              <LetStuNLogo size="sm" showContainer={false} className="group-hover:scale-105 transition-transform shrink-0" />
               <div className="flex flex-col text-left">
                 <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  VocabFlow
+                  LetStuN
                 </span>
                 <span className="text-[11px] text-slate-400 font-medium tracking-tight">
                   Multi-Language Learning

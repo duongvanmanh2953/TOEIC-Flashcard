@@ -98,8 +98,8 @@ async function bootstrap() {
 
   // OpenAPI Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('VocabFlow AI API')
-    .setDescription('Production-ready API for VocabFlow AI: Spaced Repetition, Adaptive Learning, Vocabulary Explorer & AI Tutor')
+    .setTitle('LetStuN AI API')
+    .setDescription('Production-ready API for LetStuN AI: Spaced Repetition, Adaptive Learning, Vocabulary Explorer & AI Tutor')
     .setVersion('1.0.0')
     .addBearerAuth()
     .addTag('Authentication')
@@ -114,7 +114,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port, '0.0.0.0');
-  logger.log(`🚀 VocabFlow API running on: http://localhost:${port}/api/v1`);
+  logger.log(`🚀 LetStuN API running on: http://localhost:${port}/api/v1`);
   logger.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
 }
 

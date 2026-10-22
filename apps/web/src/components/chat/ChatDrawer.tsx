@@ -22,7 +22,7 @@ import {
 import api from '../../lib/api';
 import { getChatSocket } from '../../lib/socket';
 import { E2EEService } from '../../lib/e2ee';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 
 export interface ChatContextPayload {
   bankType?: 'VOCABULARY' | 'EXAM';
@@ -633,7 +633,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
           {/* List Header */}
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain" />
+              <LetStuNLogo size="xs" showContainer={false} className="w-5 h-5 object-contain" />
               <h2 className="font-bold text-white text-base">Tin nhắn học tập</h2>
             </div>
             <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@ import { SpeechButton } from '../components/common/SpeechButton';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { useTranslation } from '../i18n';
 import { useAuth, isProUser } from '../contexts/AuthContext';
@@ -85,13 +85,13 @@ interface Message {
 }
 
 export const AI_TUTOR_LANGUAGE_GREETINGS: Record<string, string> = {
-  de: 'Hallo! Ich bin dein **VocabFlow KI-Tutor für Deutsch**. Ich helfe dir, Wortbedeutungen nach CEFR zu verstehen, ähnliche Wörter zu vergleichen, Reflexionsquizze zu lösen und praktische Beispielsätze zu bilden. Welches Wort möchtest du heute entdecken?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Đức của bạn. Bạn muốn khám phá từ vựng hay ngữ pháp nào hôm nay?)*',
-  ja: 'こんにちは！私はあなたの**VocabFlow AI日本語チューター**です。CEFRレベルに応じた語彙のニュアンス解説や類義語の使い分け、反射クイズ、実用的な例文作成をサポートします。今日はどの単語を勉強したいですか？\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Nhật của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
-  zh: '你好！我是你的**VocabFlow AI中文导师**。我可以帮你根据CEFR分级解析词汇深度含义、辨析近义词用法、生成互动测验以及构建真实的语境例句。今天你想学习哪个词汇？\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Trung của bạn. Bạn muốn khám phá từ nào hôm nay?)*',
-  fr: 'Bonjour ! Je suis votre **tuteur IA VocabFlow pour le français**. Je peux vous aider à comprendre les nuances du vocabulaire selon le CECRL, comparer des mots similaires, générer des quiz de réflexe et créer des exemples concrets. Quel mot souhaitez-vous explorer aujourd\'hui ?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Pháp của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
-  es: '¡Hola! Soy tu **tutor de IA VocabFlow para español**. Puedo ayudarte a comprender los matices del vocabulario según el MCER, comparar palabras similares, resolver cuestionarios de reflejos y practicar oraciones reales. ¿Qué palabra te gustaría explorar hoy?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Tây Ban Nha của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
-  ko: '안녕하세요! 저는 당신의 **VocabFlow AI 한국어 튜터**입니다. CEFR 레벨에 맞춘 단어 뉘앙스 해설, 헷갈리기 쉬운 단어 비교, 반사 퀴즈 및 실전 예문 생성을 도와드립니다. 오늘 어떤 단어를 함께 탐구해 볼까요?\n\n*(Xin chào! Tôi là Gia sư VocabFlow AI Tiếng Hàn của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
-  en: 'Xin chào! Tôi là **Gia sư VocabFlow AI**. Tôi có thể giúp bạn giải thích sắc thái từ vựng theo CEFR, so sánh các từ dễ nhầm lẫn (như economic vs economical), tạo câu đố phản xạ hoặc dệt câu chuyện thực tế từ các từ bạn muốn học. Bạn muốn khám phá từ nào hôm nay?',
+  de: 'Hallo! Ich bin dein **LetStuN KI-Tutor für Deutsch**. Ich helfe dir, Wortbedeutungen nach CEFR zu verstehen, ähnliche Wörter zu vergleichen, Reflexionsquizze zu lösen und praktische Beispielsätze zu bilden. Welches Wort möchtest du heute entdecken?\n\n*(Xin chào! Tôi là Gia sư LetStuN AI Tiếng Đức của bạn. Bạn muốn khám phá từ vựng hay ngữ pháp nào hôm nay?)*',
+  ja: 'こんにちは！私はあなたの**LetStuN AI日本語チューター**です。CEFRレベルに応じた語彙のニュアンス解説や類義語の使い分け、反射クイズ、実用的な例文作成をサポートします。今日はどの単語を勉強したいですか？\n\n*(Xin chào! Tôi là Gia sư LetStuN AI Tiếng Nhật của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  zh: '你好！我是你的**LetStuN AI中文导师**。我可以帮你根据CEFR分级解析词汇深度含义、辨析近义词用法、生成互动测验以及构建真实的语境例句。今天你想学习哪个词汇？\n\n*(Xin chào! Tôi là Gia sư LetStuN AI Tiếng Trung của bạn. Bạn muốn khám phá từ nào hôm nay?)*',
+  fr: 'Bonjour ! Je suis votre **tuteur IA LetStuN pour le français**. Je peux vous aider à comprendre les nuances du vocabulaire selon le CECRL, comparer des mots similaires, générer des quiz de réflexe et créer des exemples concrets. Quel mot souhaitez-vous explorer aujourd\'hui ?\n\n*(Xin chào! Tôi là Gia sư LetStuN AI Tiếng Pháp của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  es: '¡Hola! Soy tu **tutor de IA LetStuN para español**. Puedo ayudarte a comprender los matices del vocabulario según el MCER, comparar palabras similares, resolver cuestionarios de reflejos y practicar oraciones reales. ¿Qué palabra te gustaría explorar hoy?\n\n*(Xin chào! Tôi là Gia sư LetStuN AI Tiếng Tây Ban Nha của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  ko: '안녕하세요! 저는 당신의 **LetStuN AI 한국어 튜터**입니다. CEFR 레벨에 맞춘 단어 뉘앙스 해설, 헷갈리기 쉬운 단어 비교, 반사 퀴즈 및 실전 예문 생성을 도와드립니다. 오늘 어떤 단어를 함께 탐구해 볼까요?\n\n*(Xin chào! Tôi là Gia sư LetStuN AI Tiếng Hàn của bạn. Bạn muốn khám phá từ vựng nào hôm nay?)*',
+  en: 'Xin chào! Tôi là **Gia sư LetStuN AI**. Tôi có thể giúp bạn giải thích sắc thái từ vựng theo CEFR, so sánh các từ dễ nhầm lẫn (như economic vs economical), tạo câu đố phản xạ hoặc dệt câu chuyện thực tế từ các từ bạn muốn học. Bạn muốn khám phá từ nào hôm nay?',
 };
 
 export const AITutorPage: React.FC = () => {
@@ -430,11 +430,11 @@ export const AITutorPage: React.FC = () => {
       {/* Top Header & Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 shrink-0">
         <div className="flex items-center gap-3">
-          <VocabFlowLogo size="md" className="w-10 h-10 shadow-md shadow-indigo-500/20 shrink-0" />
+          <LetStuNLogo size="md" className="w-10 h-10 shadow-md shadow-indigo-500/20 shrink-0" />
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-0.5 border border-indigo-500/20">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Gia Sư VocabFlow AI 24/7</span>
+              <span>Gia Sư LetStuN AI 24/7</span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white leading-snug">
               Gia Sư Trí Tuệ Nhân Tạo & Luyện Tập Ngữ Cảnh
@@ -559,7 +559,7 @@ export const AITutorPage: React.FC = () => {
               >
                 {msg.role === 'assistant' && (
                   <div className="shrink-0 mt-1">
-                    <VocabFlowLogo size="xs" showContainer={false} className="w-7 h-7 object-contain select-none" />
+                    <LetStuNLogo size="xs" showContainer={false} className="w-7 h-7 object-contain select-none" />
                   </div>
                 )}
                 
@@ -779,7 +779,7 @@ export const AITutorPage: React.FC = () => {
 
             {loading && (
               <div className="flex items-center gap-3">
-                <VocabFlowLogo size="xs" showContainer={false} className="w-7 h-7 object-contain animate-pulse shrink-0 select-none" />
+                <LetStuNLogo size="xs" showContainer={false} className="w-7 h-7 object-contain animate-pulse shrink-0 select-none" />
                 <div className="glass-panel p-3.5 rounded-2xl rounded-bl-none text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
                   <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                   <span>AI đang phân tích ngữ cảnh...</span>

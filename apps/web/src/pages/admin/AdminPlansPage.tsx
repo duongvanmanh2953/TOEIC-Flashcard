@@ -729,7 +729,7 @@ export const AdminPlansPage: React.FC = () => {
                   {editingPlan ? `Chỉnh sửa gói: ${editingPlan.name}` : 'Tạo Gói Cước Mới'}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Thiết lập giá, hạn mức AI và đặc quyền trong hệ thống VocabFlow
+                  Thiết lập giá, hạn mức AI và đặc quyền trong hệ thống LetStuN
                 </p>
               </div>
               <button
@@ -802,7 +802,7 @@ export const AdminPlansPage: React.FC = () => {
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="VD: VocabFlow Plus, Pro English AI..."
+                        placeholder="VD: LetStuN Plus, Pro English AI..."
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>

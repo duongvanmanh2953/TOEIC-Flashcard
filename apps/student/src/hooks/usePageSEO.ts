@@ -13,7 +13,7 @@ export function usePageSEO(options: SEOOptions) {
   useEffect(() => {
     // 1. Dynamic Title
     if (options.title) {
-      document.title = `${options.title} | VocabFlow`;
+      document.title = `${options.title} | LetStuN`;
     }
 
     // 2. Meta description

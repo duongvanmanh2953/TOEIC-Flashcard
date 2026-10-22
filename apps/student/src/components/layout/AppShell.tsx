@@ -60,7 +60,7 @@ import { VirtualChatPane } from '../chat/VirtualChatPane';
 import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { RichAIMessageRenderer } from '../ai/RichAIMessageRenderer';
 import { usePersistentScroll } from '../../hooks/usePersistentScroll';
@@ -100,9 +100,9 @@ export const AppShell: React.FC = () => {
     };
   }, []);
 
-  // Persistent Sidebar Scroll Management (VOCALFLOW_SPECIFICATION Section 4 via usePersistentScroll hook)
+  // Persistent Sidebar Scroll Management (LETSTUN_SPECIFICATION Section 4 via usePersistentScroll hook)
   const { scrollRef: sidebarNavScrollRef, handleScroll: handleSidebarScroll } =
-    usePersistentScroll<HTMLDivElement>('vocabflow_sidebar_scroll', 100);
+    usePersistentScroll<HTMLDivElement>('letstun_sidebar_scroll', 100);
 
   // Community E2EE Chat Drawer State
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
@@ -175,8 +175,8 @@ export const AppShell: React.FC = () => {
       setChatDrawerOpen(true);
     };
 
-    window.addEventListener('open_vocabflow_chat', handleOpenChat);
-    return () => window.removeEventListener('open_vocabflow_chat', handleOpenChat);
+    window.addEventListener('open_letstun_chat', handleOpenChat);
+    return () => window.removeEventListener('open_letstun_chat', handleOpenChat);
   }, []);
 
   // Auto-close mobile drawer whenever route changes (Requirement 3)
@@ -198,8 +198,8 @@ export const AppShell: React.FC = () => {
 
   const [showSupportBtn, setShowSupportBtn] = useState(() => {
     return (
-      localStorage.getItem('vocabflow_show_support_btn') !== 'false' &&
-      localStorage.getItem('vocabflow_show_support_btn') !== 'false'
+      localStorage.getItem('letstun_show_support_btn') !== 'false' &&
+      localStorage.getItem('letstun_show_support_btn') !== 'false'
     );
   });
   const navigate = useNavigate();
@@ -207,8 +207,8 @@ export const AppShell: React.FC = () => {
   useEffect(() => {
     const handleStorage = () => {
       setShowSupportBtn(
-        localStorage.getItem('vocabflow_show_support_btn') !== 'false' &&
-        localStorage.getItem('vocabflow_show_support_btn') !== 'false'
+        localStorage.getItem('letstun_show_support_btn') !== 'false' &&
+        localStorage.getItem('letstun_show_support_btn') !== 'false'
       );
     };
     window.addEventListener('storage', handleStorage);
@@ -232,7 +232,7 @@ export const AppShell: React.FC = () => {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Xin chào! Tôi là Gia sư VocabFlow AI của bạn. Bạn muốn tra cứu sắc thái từ, giải thích ngữ pháp hay luyện phản xạ gì hôm nay?',
+      content: 'Xin chào! Tôi là Gia sư LetStuN AI của bạn. Bạn muốn tra cứu sắc thái từ, giải thích ngữ pháp hay luyện phản xạ gì hôm nay?',
     },
   ]);
   const [tutorLoading, setTutorLoading] = useState(false);
@@ -407,7 +407,7 @@ export const AppShell: React.FC = () => {
   const [unreadSupportCount, setUnreadSupportCount] = useState(0);
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('vocabflow:unread-messages', { detail: unreadSupportCount }));
+    window.dispatchEvent(new CustomEvent('letstun:unread-messages', { detail: unreadSupportCount }));
   }, [unreadSupportCount]);
   const modalMessagesRef = useRef<HTMLDivElement>(null);
 
@@ -527,7 +527,7 @@ export const AppShell: React.FC = () => {
         setSupportMessages((prev) => (prev.some((m) => m.id === savedMsg.id) ? prev : [...prev, savedMsg]));
       } else {
         const res: any = await api.post('/support/conversations', {
-          subject: 'Hỗ trợ trực tuyến VocabFlow CSKH',
+          subject: 'Hỗ trợ trực tuyến LetStuN CSKH',
           message: content,
           tags: ['LIVE_CHAT'],
         });
@@ -625,7 +625,7 @@ export const AppShell: React.FC = () => {
       items: [
         {
           to: '/upgrade',
-          label: isPro ? 'VocabFlow VIP' : 'Nâng Cấp Pro',
+          label: isPro ? 'LetStuN VIP' : 'Nâng Cấp Pro',
           icon: Crown,
           highlight: true,
           badge: isPro ? 'VIP' : 'PRO',
@@ -669,12 +669,12 @@ export const AppShell: React.FC = () => {
             <div
               className="flex items-center gap-2.5 min-w-0 flex-1 overflow-hidden cursor-pointer group"
               onClick={() => navigate('/dashboard')}
-              title="VocabFlow Smart Adaptive English"
+              title="LetStuN Smart Adaptive English"
             >
-              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200" />
+              <LetStuNLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200" />
               <div className="min-w-0 flex-1 truncate">
                 <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
-                  VocabFlow
+                  LetStuN
                 </h2>
                 <p className="text-[11px] text-slate-400 font-medium truncate flex items-center gap-1">
                   <span>Multi-Language Learning</span>
@@ -828,9 +828,9 @@ export const AppShell: React.FC = () => {
                           : 'text-slate-800 dark:text-slate-100'
                   }`}>
                     {isPro
-                      ? 'VocabFlow VIP'
+                      ? 'LetStuN VIP'
                       : isPlus
-                        ? 'VocabFlow Plus'
+                        ? 'LetStuN Plus'
                         : isGuest
                           ? 'Khách Khám Phá'
                           : (user?.subscription?.tier === 'FREE' ? 'Tài khoản Free' : user?.subscription?.tier || 'Tài khoản Free')}
@@ -934,10 +934,10 @@ export const AppShell: React.FC = () => {
             <div
               onClick={() => navigate('/dashboard')}
               className="cursor-pointer flex items-center gap-2 group shrink-0"
-              title="VocabFlow"
+              title="LetStuN"
             >
-              <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
-              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span>
+              <LetStuNLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
+              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">LetStuN</span>
             </div>
           </div>
 
@@ -1024,7 +1024,7 @@ export const AppShell: React.FC = () => {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-wider leading-none whitespace-nowrap truncate">
-                      {isPro ? 'VocabFlow Pro VIP' : 'Nâng cấp tài khoản'}
+                      {isPro ? 'LetStuN Pro VIP' : 'Nâng cấp tài khoản'}
                     </p>
                     <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5 truncate whitespace-nowrap">
                       {isPro ? 'Đã kích hoạt toàn bộ đặc quyền' : 'Mở khóa kho từ & AI không giới hạn'}
@@ -1247,7 +1247,7 @@ export const AppShell: React.FC = () => {
               title="Tin nhắn học tập E2EE"
               className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs cursor-pointer"
             >
-              <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain" />
+              <LetStuNLogo size="xs" showContainer={false} className="w-4 h-4 object-contain" />
               <span className="hidden xl:inline">Tin nhắn</span>
             </button>
           </div>
@@ -1347,7 +1347,7 @@ export const AppShell: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Crown className="w-4 h-4 text-amber-500" />
                   <span className="font-bold text-sm text-slate-900 dark:text-white">
-                    Gói dịch vụ: {isPro ? 'VocabFlow Pro (VIP Trọn Đời)' : (user?.subscription?.tier || 'Free Tier')}
+                    Gói dịch vụ: {isPro ? 'LetStuN Pro (VIP Trọn Đời)' : (user?.subscription?.tier || 'Free Tier')}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1530,7 +1530,7 @@ export const AppShell: React.FC = () => {
 
             {/* Logo trực tiếp, không padding, không viền bo */}
             <div className="relative shrink-0 flex items-center justify-center w-7 h-7">
-              <VocabFlowLogo size="xs" showContainer={false} className="w-6 h-6 object-contain group-hover:scale-110 transition-transform" />
+              <LetStuNLogo size="xs" showContainer={false} className="w-6 h-6 object-contain group-hover:scale-110 transition-transform" />
               {unreadSupportCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-900 animate-pulse" />
               )}
@@ -1558,11 +1558,11 @@ export const AppShell: React.FC = () => {
               {/* Header with Title & Status calibrated to current tab */}
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <VocabFlowLogo size="md" showContainer={false} className="w-8 h-8 object-contain shrink-0" />
+                  <LetStuNLogo size="md" showContainer={false} className="w-8 h-8 object-contain shrink-0" />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h4 className="text-sm font-black text-white leading-snug tracking-tight">
-                        {supportTab === 'tutor' ? 'Gia Sư VocabFlow AI' : 'VocabFlow CSKH 24/7'}
+                        {supportTab === 'tutor' ? 'Gia Sư LetStuN AI' : 'LetStuN CSKH 24/7'}
                       </h4>
                       {supportTab === 'tutor' && (
                         <span className="px-1.5 py-0.2 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] font-black uppercase tracking-wider">
@@ -1598,7 +1598,7 @@ export const AppShell: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <VocabFlowLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
+                  <LetStuNLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
                   <span>Gia sư AI</span>
                 </button>
                 <button
@@ -1610,7 +1610,7 @@ export const AppShell: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <VocabFlowLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
+                  <LetStuNLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
                   <span>CSKH</span>
                 </button>
                 <button
@@ -1660,7 +1660,7 @@ export const AppShell: React.FC = () => {
                       >
                         {m.role === 'assistant' && (
                           <div className="shrink-0 mt-1">
-                            <VocabFlowLogo size="xs" showContainer={false} className="w-6 h-6 object-contain select-none" />
+                            <LetStuNLogo size="xs" showContainer={false} className="w-6 h-6 object-contain select-none" />
                           </div>
                         )}
                         
@@ -1865,7 +1865,7 @@ export const AppShell: React.FC = () => {
               {supportTab === 'quick' && (
                 <div className="space-y-3 pt-1">
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Bạn có thể liên hệ trực tiếp tới fanpage Facebook chính thức của VocabFlow hoặc tra cứu các thắc mắc thông dụng.
+                    Bạn có thể liên hệ trực tiếp tới fanpage Facebook chính thức của LetStuN hoặc tra cứu các thắc mắc thông dụng.
                   </p>
 
                   <div className="space-y-2">

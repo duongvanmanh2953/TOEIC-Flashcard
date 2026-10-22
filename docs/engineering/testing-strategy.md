@@ -1,4 +1,4 @@
-# VocabFlow AI Automated Testing Strategy
+# LetStuN AI Automated Testing Strategy
 
 > **Mục tiêu**: Xây dựng hàng rào kiểm thử tự động đa tầng, đảm bảo không hồi quy (Zero Regression) cho các luồng nghiệp vụ lõi.
 

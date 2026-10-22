@@ -1,5 +1,5 @@
 // ============================================================================
-// VOCALFLOW KIDS — MAGIC FLASHCARD DECK (SWIPER EFFECT-CARDS)
+// LETSTUN KIDS — MAGIC FLASHCARD DECK (SWIPER EFFECT-CARDS)
 // Seamless Card Stack • 75 Animals + Multi-Themes • Clean Segmented Tabs
 // Zero Glitch / Jump-Back • Exact Match to "Magic Animal Learning Cards" Aesthetic
 // ============================================================================

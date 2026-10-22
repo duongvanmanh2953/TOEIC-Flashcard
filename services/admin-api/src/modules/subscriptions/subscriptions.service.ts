@@ -76,7 +76,7 @@ export class SubscriptionsService implements OnModuleInit {
         },
         {
           tier: SubscriptionTier.PLUS,
-          name: 'VocabFlow Plus',
+          name: 'LetStuN Plus',
           slug: 'plus',
           description: 'Tăng tốc tiếp thu với bộ đề kiểm tra linh hoạt, hạn mức AI rộng rãi và bảo lưu chuỗi Streak.',
           priceMonthly: 99000,
@@ -119,7 +119,7 @@ export class SubscriptionsService implements OnModuleInit {
         },
         {
           tier: SubscriptionTier.PRO,
-          name: 'VocabFlow Pro',
+          name: 'LetStuN Pro',
           slug: 'pro',
           description: 'Tối đa tiềm năng với AI Tutor phân tích chuyên sâu, 200 lượt AI/ngày, chẩn đoán CEFR và English Twin.',
           priceMonthly: 199000,
@@ -241,7 +241,7 @@ export class SubscriptionsService implements OnModuleInit {
 
     const proPlan = plans.find((p) => p.tier === SubscriptionTier.PRO) || {
       tier: SubscriptionTier.PRO,
-      name: 'VocabFlow Pro',
+      name: 'LetStuN Pro',
       priceMonthly: 199000,
       aiDailyQuota: 200,
       maxCustomDecks: 999,
@@ -290,7 +290,7 @@ export class SubscriptionsService implements OnModuleInit {
       },
       currentPlan: {
         tier: isPro ? SubscriptionTier.PRO : currentPlan.tier,
-        name: isPro ? 'VocabFlow Pro' : currentPlan.name,
+        name: isPro ? 'LetStuN Pro' : currentPlan.name,
         priceMonthly: currentPlan.priceMonthly,
         isPro,
         isPlus,
@@ -345,7 +345,7 @@ export class SubscriptionsService implements OnModuleInit {
     // Thông tin tài khoản ngân hàng nhận VietQR
     const bankId = process.env.VIETQR_BANK_ID || 'MB';
     const accountNo = process.env.VIETQR_ACCOUNT_NO || '0388888888';
-    const accountName = process.env.VIETQR_ACCOUNT_NAME || 'VOCABFLOW VOCABFLOW';
+    const accountName = process.env.VIETQR_ACCOUNT_NAME || 'LETSTUN LETSTUN';
     const template = process.env.VIETQR_TEMPLATE || 'compact2';
 
     // Tạo link ảnh mã VietQR chuẩn NAPAS EMVCo từ VietQR Quick Link Service

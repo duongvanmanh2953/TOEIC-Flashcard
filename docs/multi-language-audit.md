@@ -1,4 +1,4 @@
-# VOCALFLOW — MULTI-LANGUAGE PLATFORM EXPANSION AUDIT REPORT
+# LETSTUN — MULTI-LANGUAGE PLATFORM EXPANSION AUDIT REPORT
 
 **Audit Date**: September 22, 2026  
 **Auditor**: Antigravity AI  
@@ -9,12 +9,12 @@
 
 ## 1. Executive Summary
 
-VocabFlow is currently structured as an advanced English vocabulary and flashcard learning platform with Spaced Repetition (FSRS/SM2-compatible), AI Tutor, and real-time games. 
+LetStuN is currently structured as an advanced English vocabulary and flashcard learning platform with Spaced Repetition (FSRS/SM2-compatible), AI Tutor, and real-time games. 
 The platform possesses strong foundational code (React 18 + Vite, NestJS 10 + Prisma, TailwindCSS, IndexedDB offline caching, HTML5/SpeechSynthesis audio engine, and a comprehensive Admin Command Center). 
 
 However, all core data models, UI contexts, TTS audio engines, and IndexedDB stores currently operate under an **implicit monolingual assumption (English with Vietnamese explanation)**. 
 
-To transform VocabFlow into a true **Multi-Language Learning Platform** without rewriting the application or creating duplicate per-language components (`GermanDashboard.vue`, etc.), we must implement a centralized **Language Registry**, decouple **App UI Language** from **Active Learning Language**, create an isolated **Learning Profile & Context system**, scope IndexedDB/LocalStorage/API models by `languageId`, and upgrade the audio engine to support multi-script pronunciation (IPA, Pinyin, Romaji, Hangul, Thai, German genders/articles, Spanish variants).
+To transform LetStuN into a true **Multi-Language Learning Platform** without rewriting the application or creating duplicate per-language components (`GermanDashboard.vue`, etc.), we must implement a centralized **Language Registry**, decouple **App UI Language** from **Active Learning Language**, create an isolated **Learning Profile & Context system**, scope IndexedDB/LocalStorage/API models by `languageId`, and upgrade the audio engine to support multi-script pronunciation (IPA, Pinyin, Romaji, Hangul, Thai, German genders/articles, Spanish variants).
 
 ---
 
@@ -25,7 +25,7 @@ To transform VocabFlow into a true **Multi-Language Learning Platform** without 
 | **Frontend Web** | React 18, Vite 5, TailwindCSS 3.4, Lucide React, Three.js | Single Page App with `react-router-dom` v6. Fully styled with glassmorphism & dark mode. |
 | **Backend API** | NestJS 10, TypeScript, Prisma ORM, PostgreSQL 16, Redis 7 | Modular REST API with JWT Auth, WebSockets (Socket.io), Edge TTS proxy, Stripe/VietQR. |
 | **Authentication** | Custom JWT + Firebase Auth (Google/Facebook/Anonymous) | `AuthContext.tsx` handles session restoration, guest trial mode, and token rotation. |
-| **Local Storage / Offline** | IndexedDB (`vocabflow_offline_db` v3) + LocalStorage | `idb.ts` stores vocabulary, local decks, and API caches. |
+| **Local Storage / Offline** | IndexedDB (`letstun_offline_db` v3) + LocalStorage | `idb.ts` stores vocabulary, local decks, and API caches. |
 | **Audio & Pronunciation** | Web Speech API + HTML5 Audio + Edge TTS fallback | `audioEngine.ts` and `pronunciationEvaluator.ts`. |
 | **UI Internationalization** | React Context (`I18nProvider`) | Handles App UI language toggling between `vi` (Tiếng Việt) and `en` (English). |
 | **Admin System** | Protected Admin Command Center (`/admin/*`) | Vocabulary management, shared decks, user quotas, analytics, and billing. |
@@ -170,7 +170,7 @@ Currently, `apps/web/src/i18n/index.tsx` manages `locale`:
 
 ```ts
 export async function migrateUserLearningData(userId: string): Promise<void> {
-  const MIGRATION_KEY = `vocabflow:migration:v4:${userId}`;
+  const MIGRATION_KEY = `letstun:migration:v4:${userId}`;
   if (localStorage.getItem(MIGRATION_KEY) === 'completed') return;
 
   // 1. Tag legacy words with languageId = 'en'
@@ -193,7 +193,7 @@ export async function migrateUserLearningData(userId: string): Promise<void> {
   }
 
   // 3. Initialize default English LearningProfile if missing
-  const profileKey = `vocabflow:user:${userId}:profiles`;
+  const profileKey = `letstun:user:${userId}:profiles`;
   const existingProfiles = JSON.parse(localStorage.getItem(profileKey) || '{}');
   if (!existingProfiles['en']) {
     existingProfiles['en'] = {
@@ -210,8 +210,8 @@ export async function migrateUserLearningData(userId: string): Promise<void> {
   }
 
   // 4. Set active language to English if not set
-  if (!localStorage.getItem('vocabflow:active_learning_language')) {
-    localStorage.setItem('vocabflow:active_learning_language', 'en');
+  if (!localStorage.getItem('letstun:active_learning_language')) {
+    localStorage.setItem('letstun:active_learning_language', 'en');
   }
 
   localStorage.setItem(MIGRATION_KEY, 'completed');

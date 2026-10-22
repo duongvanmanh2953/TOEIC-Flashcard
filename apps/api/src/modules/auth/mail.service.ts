@@ -81,22 +81,22 @@ export class MailService {
   }
 
   /**
-   * Locate the official VocabFlow logo file
+   * Locate the official LetStuN logo file
    */
   private getLogoAttachment(): { path: string; cid: string } | null {
     const possiblePaths = [
-      path.resolve(process.cwd(), 'assets/vocabflow-logo.png'),
-      path.resolve(__dirname, '../../../assets/vocabflow-logo.png'),
-      path.resolve(__dirname, '../../../../assets/vocabflow-logo.png'),
-      path.resolve(__dirname, '../../../../web/public/vocabflow-logo-256.png'),
-      path.resolve(process.cwd(), '../web/public/vocabflow-logo-256.png'),
+      path.resolve(process.cwd(), 'assets/letstun-logo.png'),
+      path.resolve(__dirname, '../../../assets/letstun-logo.png'),
+      path.resolve(__dirname, '../../../../assets/letstun-logo.png'),
+      path.resolve(__dirname, '../../../../web/public/letstun-logo-256.png'),
+      path.resolve(process.cwd(), '../web/public/letstun-logo-256.png'),
     ];
 
     for (const p of possiblePaths) {
       if (fs.existsSync(p)) {
         return {
           path: p,
-          cid: 'vocabflow-logo',
+          cid: 'letstun-logo',
         };
       }
     }
@@ -110,7 +110,7 @@ export class MailService {
     delivered: boolean;
     message: string;
   }> {
-    const recipientName = displayName || 'Học viên VocabFlow';
+    const recipientName = displayName || 'Học viên LetStuN';
     const transporter = this.getTransporter();
 
     if (!transporter) {
@@ -120,7 +120,7 @@ export class MailService {
       );
     }
 
-    const fromAddress = process.env.SMTP_FROM || `VocabFlow AI <${process.env.SMTP_USER}>`;
+    const fromAddress = process.env.SMTP_FROM || `LetStuN AI <${process.env.SMTP_USER}>`;
 
     // Time calculations (GMT+7 Vietnam timezone)
     const now = new Date();
@@ -147,11 +147,11 @@ export class MailService {
 
     if (logoAttachment) {
       attachments.push({
-        filename: 'vocabflow-logo.png',
+        filename: 'letstun-logo.png',
         path: logoAttachment.path,
         cid: logoAttachment.cid,
       });
-      logoImgTag = `<img src="cid:${logoAttachment.cid}" width="64" height="64" alt="VocabFlow AI Logo" style="border-radius: 16px; display: block; margin: 0 auto; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.25);" />`;
+      logoImgTag = `<img src="cid:${logoAttachment.cid}" width="64" height="64" alt="LetStuN AI Logo" style="border-radius: 16px; display: block; margin: 0 auto; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.25);" />`;
     } else {
       logoImgTag = `<div style="width: 56px; height: 56px; border-radius: 16px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); margin: 0 auto; line-height: 56px; text-align: center; font-size: 28px;">⚡</div>`;
     }
@@ -162,7 +162,7 @@ export class MailService {
     <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Xác Thực Bảo Mật Đặt Lại Mật Khẩu - VocabFlow AI</title>
+      <title>Xác Thực Bảo Mật Đặt Lại Mật Khẩu - LetStuN AI</title>
       <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
       <style type="text/css">
         body, table, td, p, a, li, blockquote {
@@ -196,7 +196,7 @@ export class MailService {
             <td align="center" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 75%, #6366f1 100%); background-color: #312e81; padding: 36px 24px 28px; text-align: center; color: #ffffff;">
               ${logoImgTag}
               <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-top: 12px; color: #ffffff; font-family: Roboto, 'Google Sans', Arial, sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                VOCABFLOW AI
+                LETSTUN AI
               </div>
               <div style="font-size: 13px; color: #c7d2fe; font-weight: 500; margin-top: 4px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
                 Nền Tảng Luyện Từ Vựng TOEIC &amp; Luyện Thi Thông Minh Với AI
@@ -216,7 +216,7 @@ export class MailService {
                 Xin chào ${recipientName},
               </div>
               <p style="font-size: 14px; color: #334155; margin-top: 0; margin-bottom: 20px; line-height: 1.65; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
-                Hệ thống bảo mật VocabFlow AI đã nhận được yêu cầu cấp lại mật khẩu cho tài khoản học viên của bạn. Dưới đây là thông tin chi tiết phiên yêu cầu và <strong style="color: #0f172a;">Mã Khóa Xác Thực (OTP)</strong>:
+                Hệ thống bảo mật LetStuN AI đã nhận được yêu cầu cấp lại mật khẩu cho tài khoản học viên của bạn. Dưới đây là thông tin chi tiết phiên yêu cầu và <strong style="color: #0f172a;">Mã Khóa Xác Thực (OTP)</strong>:
               </p>
 
               <!-- Project & Request Metadata Table -->
@@ -284,7 +284,7 @@ export class MailService {
                       </table>
                     </td>
                     <td valign="top" style="vertical-align: top; padding-left: 8px; color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 13px; line-height: 20px;">
-                      <strong style="color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif;">Nhập mã OTP:</strong> Nhập chính xác mã 6 chữ số bên trên vào Bước 2 trên màn hình ứng dụng VocabFlow.
+                      <strong style="color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif;">Nhập mã OTP:</strong> Nhập chính xác mã 6 chữ số bên trên vào Bước 2 trên màn hình ứng dụng LetStuN.
                     </td>
                   </tr>
                 </table>
@@ -320,7 +320,7 @@ export class MailService {
                       </table>
                     </td>
                     <td valign="top" style="vertical-align: top; padding-left: 8px; color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif; font-size: 13px; line-height: 20px;">
-                      <strong style="color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif;">Thiết lập mật khẩu an toàn:</strong> Nhập mật khẩu mới tuân thủ quy chuẩn bảo mật bắt buộc của VocabFlow.
+                      <strong style="color: #701a75; font-family: Roboto, 'Google Sans', Arial, sans-serif;">Thiết lập mật khẩu an toàn:</strong> Nhập mật khẩu mới tuân thủ quy chuẩn bảo mật bắt buộc của LetStuN.
                     </td>
                   </tr>
                 </table>
@@ -342,7 +342,7 @@ export class MailService {
 
               <!-- Security Warning -->
               <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 14px 14px 0; padding: 14px 18px; font-size: 12px; color: #92400e; line-height: 1.6; margin-top: 24px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
-                <strong style="color: #92400e; font-family: Roboto, 'Google Sans', Arial, sans-serif;">⚠️ Cảnh báo an toàn thông tin:</strong> VocabFlow AI <strong style="color: #92400e;">tuyệt đối không bao giờ</strong> yêu cầu bạn cung cấp mã OTP này qua điện thoại, tin nhắn hay bất kỳ người nào khác. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc đổi mật khẩu tài khoản ngay để phòng ngừa rủi ro.
+                <strong style="color: #92400e; font-family: Roboto, 'Google Sans', Arial, sans-serif;">⚠️ Cảnh báo an toàn thông tin:</strong> LetStuN AI <strong style="color: #92400e;">tuyệt đối không bao giờ</strong> yêu cầu bạn cung cấp mã OTP này qua điện thoại, tin nhắn hay bất kỳ người nào khác. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc đổi mật khẩu tài khoản ngay để phòng ngừa rủi ro.
               </div>
             </td>
           </tr>
@@ -350,14 +350,14 @@ export class MailService {
           <!-- Footer with Comprehensive Project Information -->
           <tr>
             <td style="background-color: #f8fafc; border-top: 1px solid #f1f5f9; padding: 28px 28px; text-align: center; font-size: 12px; color: #64748b; line-height: 1.7; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
-              <div style="font-weight: bold; color: #334155; font-size: 13px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">VocabFlow AI - Intelligent TOEIC Vocabulary Platform</div>
+              <div style="font-weight: bold; color: #334155; font-size: 13px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">LetStuN AI - Intelligent TOEIC Vocabulary Platform</div>
               <div style="margin: 6px 0; color: #475569; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
                 Dự án học từ vựng TOEIC với thuật toán Spaced Repetition (Lặp lại ngắt quãng SM-2/FSRS), Trợ giảng AI Tutor 24/7 và Đấu trường tương tác Realtime Vocabulary Arena.
               </div>
               <div style="font-size: 11px; color: #94a3b8; margin-top: 12px; font-family: Roboto, 'Google Sans', Arial, sans-serif;">
-                Email này được phát hành tự động qua máy chủ Resend SMTP của VocabFlow AI.<br />
-                Cần hỗ trợ? Liên hệ bộ phận kỹ thuật: <a href="mailto:support@vocabflow.ai" style="color: #4f46e5; text-decoration: none; font-weight: bold;">support@vocabflow.ai</a><br />
-                © 2026 VocabFlow AI Platform. All rights reserved.
+                Email này được phát hành tự động qua máy chủ Resend SMTP của LetStuN AI.<br />
+                Cần hỗ trợ? Liên hệ bộ phận kỹ thuật: <a href="mailto:support@letstun.com" style="color: #4f46e5; text-decoration: none; font-weight: bold;">support@letstun.com</a><br />
+                © 2026 LetStuN AI Platform. All rights reserved.
               </div>
             </td>
           </tr>
@@ -371,7 +371,7 @@ export class MailService {
       const mailOptions: any = {
         from: fromAddress,
         to: email,
-        subject: `[VocabFlow AI] Mã xác thực bảo mật đặt lại mật khẩu: ${otp}`,
+        subject: `[LetStuN AI] Mã xác thực bảo mật đặt lại mật khẩu: ${otp}`,
         html: htmlContent,
       };
 
@@ -412,12 +412,12 @@ export class MailService {
       };
     }
 
-    const fromAddress = process.env.SMTP_FROM || 'VocabFlow Security <onboarding@resend.dev>';
+    const fromAddress = process.env.SMTP_FROM || 'LetStuN Security <onboarding@resend.dev>';
     const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
-      <h2 style="color: #4338ca;">Xác nhận đăng xuất thiết bị - VocabFlow AI</h2>
+      <h2 style="color: #4338ca;">Xác nhận đăng xuất thiết bị - LetStuN AI</h2>
       <p>Xin chào <strong>${displayName || 'Học viên'}</strong>,</p>
-      <p>Hệ thống nhận được yêu cầu đăng xuất thiết bị <strong>"${targetDeviceName}"</strong> khỏi tài khoản VocabFlow của bạn.</p>
+      <p>Hệ thống nhận được yêu cầu đăng xuất thiết bị <strong>"${targetDeviceName}"</strong> khỏi tài khoản LetStuN của bạn.</p>
       <p>Để hoàn tất xác minh chủ sở hữu tài khoản, vui lòng nhập mã OTP sau:</p>
       <div style="background-color: #f1f5f9; padding: 16px; text-align: center; border-radius: 12px; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #4338ca; margin: 20px 0;">
         ${otp}
@@ -425,7 +425,7 @@ export class MailService {
       <p style="color: #64748b; font-size: 13px;">Mã xác thực có hiệu lực trong <strong>10 phút</strong> và chỉ sử dụng một lần.</p>
       <p style="color: #dc2626; font-size: 13px;">⚠️ Nếu bạn không thực hiện hành động này, vui lòng bỏ qua email và đổi mật khẩu ngay lập tức để bảo vệ tài khoản.</p>
       <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="font-size: 11px; color: #94a3b8; text-align: center;">© 2026 VocabFlow AI Security. All rights reserved.</p>
+      <p style="font-size: 11px; color: #94a3b8; text-align: center;">© 2026 LetStuN AI Security. All rights reserved.</p>
     </div>
     `;
 
@@ -433,7 +433,7 @@ export class MailService {
       await transporter.sendMail({
         from: fromAddress,
         to: email,
-        subject: `[VocabFlow Security] Mã xác thực đăng xuất thiết bị: ${otp}`,
+        subject: `[LetStuN Security] Mã xác thực đăng xuất thiết bị: ${otp}`,
         html: htmlContent,
       });
       return {
@@ -467,12 +467,12 @@ export class MailService {
       return;
     }
 
-    const fromAddress = process.env.SMTP_FROM || 'VocabFlow Security <onboarding@resend.dev>';
+    const fromAddress = process.env.SMTP_FROM || 'LetStuN Security <onboarding@resend.dev>';
     const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #fee2e2; border-radius: 16px; background-color: #fffafb;">
       <h2 style="color: #b91c1c;">Cảnh báo bảo mật: Thiết bị mới đăng nhập</h2>
       <p>Xin chào <strong>${displayName || 'Học viên'}</strong>,</p>
-      <p>Hệ thống VocabFlow AI phát hiện một lần đăng nhập từ thiết bị mới hoặc tài khoản của bạn đã đạt giới hạn thiết bị cho phép:</p>
+      <p>Hệ thống LetStuN AI phát hiện một lần đăng nhập từ thiết bị mới hoặc tài khoản của bạn đã đạt giới hạn thiết bị cho phép:</p>
       <div style="background-color: #ffffff; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 16px 0; font-size: 13px; line-height: 1.8;">
         <div>📱 <strong>Thiết bị:</strong> ${deviceMeta.deviceName}</div>
         <div>💻 <strong>Hệ điều hành / Trình duyệt:</strong> ${deviceMeta.os || 'Unknown'} / ${deviceMeta.browser || 'Unknown'}</div>
@@ -483,7 +483,7 @@ export class MailService {
         Nếu đây không phải là bạn, vui lòng đăng nhập ngay và vào mục Cài đặt &gt; Bảo mật &gt; Thiết bị để kiểm tra và đăng xuất thiết bị lạ, đồng thời đổi mật khẩu tài khoản ngay lập tức.
       </p>
       <hr style="border: none; border-top: 1px solid #fee2e2; margin: 20px 0;" />
-      <p style="font-size: 11px; color: #94a3b8; text-align: center;">© 2026 VocabFlow AI Security Defense System.</p>
+      <p style="font-size: 11px; color: #94a3b8; text-align: center;">© 2026 LetStuN AI Security Defense System.</p>
     </div>
     `;
 
@@ -491,7 +491,7 @@ export class MailService {
       await transporter.sendMail({
         from: fromAddress,
         to: email,
-        subject: `[VocabFlow Security] Cảnh báo đăng nhập từ thiết bị mới: ${deviceMeta.deviceName}`,
+        subject: `[LetStuN Security] Cảnh báo đăng nhập từ thiết bị mới: ${deviceMeta.deviceName}`,
         html: htmlContent,
       });
     } catch (err: any) {

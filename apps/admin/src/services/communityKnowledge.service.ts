@@ -308,7 +308,7 @@ export const communityKnowledgeService = {
     if (options.minQualityScore !== undefined) params.append('minQualityScore', String(options.minQualityScore));
     if (options.limit !== undefined) params.append('limit', String(options.limit));
 
-    const token = localStorage.getItem('vocabflow_access_token');
+    const token = localStorage.getItem('letstun_access_token');
     const response = await fetch(`/api/v1/community/admin/training-data/export?${params.toString()}`, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -319,7 +319,7 @@ export const communityKnowledgeService = {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vocabflow_training_dataset_${new Date().toISOString().slice(0, 10)}.jsonl`;
+    a.download = `letstun_training_dataset_${new Date().toISOString().slice(0, 10)}.jsonl`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

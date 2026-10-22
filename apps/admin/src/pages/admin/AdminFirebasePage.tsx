@@ -435,7 +435,7 @@ export const AdminFirebasePage: React.FC = () => {
                 rows={6}
                 value={pasteSnippet}
                 onChange={(e) => handleParseSnippet(e.target.value)}
-                placeholder={`const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "vocabflow.firebaseapp.com",\n  projectId: "vocabflow-prod",\n  storageBucket: "vocabflow-prod.appspot.com",\n  messagingSenderId: "123456789",\n  appId: "1:123456789:web:abcdef"\n};`}
+                placeholder={`const firebaseConfig = {\n  apiKey: "AIzaSy...",\n  authDomain: "letstun.firebaseapp.com",\n  projectId: "letstun-prod",\n  storageBucket: "letstun-prod.appspot.com",\n  messagingSenderId: "123456789",\n  appId: "1:123456789:web:abcdef"\n};`}
                 className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-xs text-indigo-600 dark:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
               />
               <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -468,7 +468,7 @@ export const AdminFirebasePage: React.FC = () => {
                   required
                   value={config.projectId}
                   onChange={(e) => setConfig({ ...config, projectId: e.target.value.trim() })}
-                  placeholder="my-vocabflow-project"
+                  placeholder="my-letstun-project"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
               </div>

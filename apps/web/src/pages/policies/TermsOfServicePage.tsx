@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { FileText, ShieldAlert, CheckCircle2, Lock, Scale, AlertTriangle, BookOpen } from 'lucide-react';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Chấp thuận điều khoản & điều kiện sử dụng' },
@@ -33,7 +33,7 @@ export const TermsOfServicePage: React.FC = () => {
   return (
     <PolicyLayout
       title="Điều Khoản Sử Dụng Dịch Vụ"
-      subtitle="Quy định pháp lý điều chỉnh quyền, nghĩa vụ và trách nhiệm của học viên khi tham gia học tập trên nền tảng VocabFlow."
+      subtitle="Quy định pháp lý điều chỉnh quyền, nghĩa vụ và trách nhiệm của học viên khi tham gia học tập trên nền tảng LetStuN."
       currentPath="/terms-of-service"
       toc={TOC_ITEMS}
       lastUpdated="15/10/2026"
@@ -42,7 +42,7 @@ export const TermsOfServicePage: React.FC = () => {
       {/* Intro alert */}
       <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-indigo-800 dark:text-indigo-400">
-          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
+          <LetStuNLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Thỏa thuận người dùng dịch vụ học tập trực tuyến</span>
         </div>
         <p>
@@ -116,7 +116,7 @@ export const TermsOfServicePage: React.FC = () => {
             <strong>Tài khoản Learner Free:</strong> Cung cấp miễn phí trọn đời với các quyền lợi cơ bản được công bố, giới hạn hạn mức AI Tutor là 10 lượt/ngày và tối đa 3 bộ thẻ cá nhân.
           </p>
           <p>
-            <strong>Tài khoản trả phí VocabFlow Plus & Pro:</strong> Được mở khóa các tính năng nâng cao sau khi hoàn tất thanh toán thành công theo <Link to="/payment-policy" className="text-indigo-600 dark:text-indigo-400 font-semibold underline">Chính sách thanh toán</Link>. Quyền sử dụng có hiệu lực theo kỳ cước đã mua (30 ngày hoặc 365 ngày), không tự động gia hạn trừ tiền và sẽ tự động chuyển về tài khoản miễn phí khi hết hạn kỳ cước.
+            <strong>Tài khoản trả phí LetStuN Plus & Pro:</strong> Được mở khóa các tính năng nâng cao sau khi hoàn tất thanh toán thành công theo <Link to="/payment-policy" className="text-indigo-600 dark:text-indigo-400 font-semibold underline">Chính sách thanh toán</Link>. Quyền sử dụng có hiệu lực theo kỳ cước đã mua (30 ngày hoặc 365 ngày), không tự động gia hạn trừ tiền và sẽ tự động chuyển về tài khoản miễn phí khi hết hạn kỳ cước.
           </p>
         </div>
       </section>

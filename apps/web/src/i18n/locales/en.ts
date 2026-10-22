@@ -5,7 +5,7 @@ import { enAdmin } from './en/admin';
 
 export const en = {
   common: {
-    appName: 'VocabFlow',
+    appName: 'LetStuN',
     tagline: 'Adaptive English Mastery',
     loading: 'Loading...',
     save: 'Save',
@@ -66,7 +66,7 @@ export const en = {
     backDashboard: 'Return to Dashboard',
   },
   aiTutor: {
-    title: 'VocabFlow AI Tutor',
+    title: 'LetStuN AI Tutor',
     subtitle: 'Contextual English specialist trained on CEFR frameworks',
     inputPlaceholder: 'Ask anything: nuances, idioms, business email phrasing...',
     send: 'Ask AI',
@@ -80,12 +80,12 @@ export const en = {
     newChat: 'New Conversation',
   },
   subscriptions: {
-    title: 'Upgrade Your Learning Journey with VocabFlow',
+    title: 'Upgrade Your Learning Journey with LetStuN',
     subtitle: 'Accelerate your fluency and TOEIC score with deep AI tutoring, optimized daily quotas, and flexible subscriptions.',
     currentPlan: 'Current Tier',
     freeTitle: 'Learner Free',
-    plusTitle: 'VocabFlow Plus',
-    proTitle: 'VocabFlow Pro',
+    plusTitle: 'LetStuN Plus',
+    proTitle: 'LetStuN Pro',
     comingSoonBadge: '24/7 Automated VietQR Gateway',
     registerInterest: 'Upgrade Now',
     aiQuota: 'Daily AI Consultations',

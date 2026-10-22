@@ -25,15 +25,15 @@ export const LandingHero: React.FC<LandingHeroProps> = React.memo(
           <div className="lg:col-span-7 space-y-6 text-left" data-aos="fade-up">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/25 text-indigo-300 text-xs font-bold">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-              <span>Nền tảng học thông minh • Performance-First</span>
+              <span>LetStuN • Learn today, remember tomorrow.</span>
             </div>
 
             <div className="space-y-2">
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
-                Học ít hơn.
+                Learn today.
                 <br />
                 <span className="bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-300 bg-clip-text text-transparent">
-                  Nhưng nhớ lâu hơn.
+                  Remember tomorrow.
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed font-normal pt-1">
@@ -73,7 +73,7 @@ export const LandingHero: React.FC<LandingHeroProps> = React.memo(
             {/* CTAs */}
             <div className="pt-2 flex flex-wrap items-center gap-3.5">
               <a
-                href="https://app.vocalflow.site/dashboard"
+                href="https://app.letstun.site/dashboard"
                 className="btn-glass-primary !py-3.5 !px-7 text-sm font-extrabold flex items-center gap-2 card-hover-smooth shadow-lg shadow-indigo-600/30"
               >
                 <span>Bắt đầu học</span>

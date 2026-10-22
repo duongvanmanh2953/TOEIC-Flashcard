@@ -1,4 +1,4 @@
-# VocabFlow AI System Architecture
+# LetStuN AI System Architecture
 
 > **Trạng thái**: Đã xác minh từ mã nguồn và cấu hình Docker Compose (Verified)  
 > **Phiên bản tài liệu**: 1.0.0 — Ngày lập: 15/10/2026  
@@ -8,7 +8,7 @@
 
 ## 1. Tổng quan Kiến trúc Hệ thống (High-Level Architecture)
 
-VocabFlow AI là nền tảng học từ vựng tiếng Anh chuyên sâu tích hợp Spaced Repetition (Thuật toán lặp lại ngắt quãng SM-2/FSRS), Flashcard đa ngôn ngữ, hệ thống game học tập cho trẻ em (Kid Mode), và cổng quản trị (Admin Portal). 
+LetStuN AI là nền tảng học từ vựng tiếng Anh chuyên sâu tích hợp Spaced Repetition (Thuật toán lặp lại ngắt quãng SM-2/FSRS), Flashcard đa ngôn ngữ, hệ thống game học tập cho trẻ em (Kid Mode), và cổng quản trị (Admin Portal). 
 
 Dự án được cấu trúc theo mô hình **Monorepo** quản lý bằng **npm workspaces**, gồm 5 ứng dụng giao diện (frontend), 1 backend API trung tâm (NestJS), 4 microservice đóng gói container và hạ tầng mạng Cloudflare Tunnel.
 
@@ -38,7 +38,7 @@ graph TD
     end
 
     subgraph Data_Layer [Data Persistence & Caching]
-        Postgres[(PostgreSQL 16<br/>vocabflow_db :5432)]
+        Postgres[(PostgreSQL 16<br/>letstun_db :5432)]
         Redis[(Redis 7<br/>Session, RateLimit, Cache :6379)]
     end
 
@@ -87,12 +87,12 @@ graph TD
 
 ### 2.3. Shared Package Tier (`packages/shared`)
 - **Nhiệm vụ**: Cung cấp kiểu dữ liệu TypeScript dùng chung, cấu hình hệ thống ngôn ngữ (Language Definitions, CEFR Levels, Writing Scripts) và i18n locales.
-- **Đường dẫn nhập khẩu**: `@vocabflow/shared` liên kết thông qua workspace protocol (`*`).
+- **Đường dẫn nhập khẩu**: `@letstun/shared` liên kết thông qua workspace protocol (`*`).
 
 ### 2.4. Infrastructure & Deployment
-- **Docker Compose**: Orchestration toàn bộ 9 container dịch vụ nội bộ kết nối qua bridge network `vocalflow-network`.
+- **Docker Compose**: Orchestration toàn bộ 9 container dịch vụ nội bộ kết nối qua bridge network `letstun-network`.
 - **Nginx Assets**: Dịch vụ phục vụ static files trực tiếp từ volume `./assets` với health check endpoint `/health`.
-- **Cloudflare Tunnel (`cloudflared`)**: Proxy an toàn không mở port trực tiếp ra Internet công cộng, định tuyến tên miền `*.vocalflow.site`.
+- **Cloudflare Tunnel (`cloudflared`)**: Proxy an toàn không mở port trực tiếp ra Internet công cộng, định tuyến tên miền `*.letstun.site`.
 
 ---
 
@@ -104,4 +104,4 @@ graph TD
    - `services/admin-api` sử dụng tiền tố Redis `admin:` và port nội bộ `4200`.
    - `services/app-api` sử dụng tiền tố Redis `app:` và port nội bộ `4000`.
    - `services/kid-api` sử dụng tiền tố Redis `kid:` và port nội bộ `4100`.
-   Tất cả dùng chung database PostgreSQL `vocabflow_db` nhưng phân tách rõ ràng qua Role Guards và Session scopes.
+   Tất cả dùng chung database PostgreSQL `letstun_db` nhưng phân tách rõ ràng qua Role Guards và Session scopes.

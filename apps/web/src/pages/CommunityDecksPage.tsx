@@ -172,7 +172,7 @@ export const CommunityDecksPage: React.FC = () => {
       return;
     }
     window.dispatchEvent(
-      new CustomEvent('open_vocabflow_chat', {
+      new CustomEvent('open_letstun_chat', {
         detail: {
           targetUser: {
             id: targetUserId,
@@ -2334,7 +2334,7 @@ export const CommunityDecksPage: React.FC = () => {
           isProtected={Boolean(accessKeyManageDeck.isProtected || accessKeyManageDeck.hasPassword)}
           onOpenChatWithUser={(targetUserId, targetUserName) => {
             window.dispatchEvent(
-              new CustomEvent('open_vocabflow_chat', {
+              new CustomEvent('open_letstun_chat', {
                 detail: {
                   targetUser: { id: targetUserId, displayName: targetUserName },
                   context: {

@@ -18,7 +18,7 @@ import {
   Check,
 } from 'lucide-react';
 import { LiquidBackground } from '../components/common/LiquidBackground';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import { Footer } from '../components/layout/Footer';
 
 export const LandingPage: React.FC = () => {
@@ -51,14 +51,14 @@ export const LandingPage: React.FC = () => {
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/60 dark:bg-slate-950/60 border-b border-slate-200/50 dark:border-slate-800/60 transition-colors duration-300">
         <div className="px-4 sm:px-6 py-3.5 sm:py-4 max-w-7xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <VocabFlowLogo
+            <LetStuNLogo
               size="md"
-              alt="VocabFlow"
+              alt="LetStuN"
               className="w-8 h-8 sm:w-9 sm:h-9 shadow-md shadow-indigo-500/20"
             />
             <div className="flex flex-col">
               <span className="font-extrabold text-lg sm:text-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 dark:from-sky-400 dark:via-blue-400 dark:to-cyan-300 bg-clip-text text-transparent leading-snug">
-                VocabFlow
+                LetStuN
               </span>
               <span className="hidden sm:inline-block text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider uppercase leading-none">
                 Smart Adaptive English
@@ -117,7 +117,7 @@ export const LandingPage: React.FC = () => {
 
         {/* Hero Subtitle */}
         <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
-          VocabFlow không bắt bạn lật flashcard máy móc. Nền tảng ứng dụng thuật toán FSRS đo lường độ bền trí nhớ, tự động phát hiện lỗ hổng và nhắc nhở đúng <span className="font-semibold text-cyan-600 dark:text-cyan-400">thời điểm vàng</span> trước khi não bộ quên từ vựng.
+          LetStuN không bắt bạn lật flashcard máy móc. Nền tảng ứng dụng thuật toán FSRS đo lường độ bền trí nhớ, tự động phát hiện lỗ hổng và nhắc nhở đúng <span className="font-semibold text-cyan-600 dark:text-cyan-400">thời điểm vàng</span> trước khi não bộ quên từ vựng.
         </p>
 
         {/* Hero Action Buttons */}

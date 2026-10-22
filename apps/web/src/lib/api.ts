@@ -10,14 +10,14 @@ const api = axios.create({
 });
 
 export function getOrCreateDeviceId(): string {
-  let deviceId = localStorage.getItem('vocabflow_device_id') || localStorage.getItem('vocabflow_device_id');
+  let deviceId = localStorage.getItem('letstun_device_id') || localStorage.getItem('letstun_device_id');
   if (!deviceId) {
     deviceId =
       typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : 'dev_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-    localStorage.setItem('vocabflow_device_id', deviceId);
-    localStorage.setItem('vocabflow_device_id', deviceId);
+    localStorage.setItem('letstun_device_id', deviceId);
+    localStorage.setItem('letstun_device_id', deviceId);
   }
   return deviceId;
 }
@@ -77,7 +77,7 @@ function notifyApiLoading(delta: number, config?: any) {
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
-      new CustomEvent('VOCABFLOW_API_LOADING', {
+      new CustomEvent('LETSTUN_API_LOADING', {
         detail: {
           isLoading: activeRequestsCount > 0,
           activeRequests: activeRequestsCount,
@@ -98,7 +98,7 @@ api.interceptors.request.use((config) => {
     notifyApiLoading(1, config);
   }
 
-  const token = localStorage.getItem('vocabflow_access_token') || localStorage.getItem('vocabflow_access_token');
+  const token = localStorage.getItem('letstun_access_token') || localStorage.getItem('letstun_access_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -145,7 +145,7 @@ api.interceptors.response.use(
     ) {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'success',
               title: 'Thành công',
@@ -181,7 +181,7 @@ api.interceptors.response.use(
 
       if (typeof errMsg === 'string' && typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'error',
               title: 'Lỗi thực thi',
@@ -206,12 +206,12 @@ api.interceptors.response.use(
         typeof errMsg === 'string' &&
         (errMsg.includes('đổi mật khẩu') || errMsg.includes('đăng xuất'))
       ) {
-        localStorage.removeItem('vocabflow_access_token');
-        localStorage.removeItem('vocabflow_refresh_token');
+        localStorage.removeItem('letstun_access_token');
+        localStorage.removeItem('letstun_refresh_token');
         sessionStorage.clear();
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
-            new CustomEvent('VOCABFLOW_TOAST', {
+            new CustomEvent('LETSTUN_TOAST', {
               detail: {
                 type: 'warning',
                 title: 'Phiên đăng nhập kết thúc',
@@ -227,7 +227,7 @@ api.interceptors.response.use(
       }
 
       originalRequest._retry = true;
-      const refreshToken = localStorage.getItem('vocabflow_refresh_token');
+      const refreshToken = localStorage.getItem('letstun_refresh_token');
       if (refreshToken) {
         try {
           const res = await api.post('/auth/refresh', { refreshToken }, {
@@ -237,19 +237,19 @@ api.interceptors.response.use(
             const tokenData = res.data?.data || res.data;
             const accessToken = tokenData.accessToken;
             const newRefresh = tokenData.refreshToken;
-            localStorage.setItem('vocabflow_access_token', accessToken);
-            if (newRefresh) localStorage.setItem('vocabflow_refresh_token', newRefresh);
+            localStorage.setItem('letstun_access_token', accessToken);
+            if (newRefresh) localStorage.setItem('letstun_refresh_token', newRefresh);
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return api(originalRequest);
           }
         } catch {
           // Token expired, revoked, or invalid
-          localStorage.removeItem('vocabflow_access_token');
-          localStorage.removeItem('vocabflow_refresh_token');
+          localStorage.removeItem('letstun_access_token');
+          localStorage.removeItem('letstun_refresh_token');
           sessionStorage.clear();
           if (typeof window !== 'undefined') {
             window.dispatchEvent(
-              new CustomEvent('VOCABFLOW_TOAST', {
+              new CustomEvent('LETSTUN_TOAST', {
                 detail: {
                   type: 'warning',
                   title: 'Phiên đăng nhập đã hết hạn',
@@ -266,13 +266,13 @@ api.interceptors.response.use(
         }
       } else {
         // Missing refresh token while accessing authenticated endpoint
-        const hadToken = Boolean(localStorage.getItem('vocabflow_access_token'));
-        localStorage.removeItem('vocabflow_access_token');
-        localStorage.removeItem('vocabflow_refresh_token');
+        const hadToken = Boolean(localStorage.getItem('letstun_access_token'));
+        localStorage.removeItem('letstun_access_token');
+        localStorage.removeItem('letstun_refresh_token');
         sessionStorage.clear();
         if (typeof window !== 'undefined' && hadToken) {
           window.dispatchEvent(
-            new CustomEvent('VOCABFLOW_TOAST', {
+            new CustomEvent('LETSTUN_TOAST', {
               detail: {
                 type: 'warning',
                 title: 'Phiên đăng nhập đã hết hạn',

@@ -2,15 +2,15 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/commo
 import * as amqp from 'amqplib';
 
 export const QUEUES = {
-  PAYMENT_WEBHOOK: 'vocabflow.payment.webhook',
-  ARENA_MATCHMAKING: 'vocabflow.arena.matchmaking',
-  ARENA_GAME_RESULTS: 'vocabflow.arena.results',
-  EMAIL_NOTIFICATIONS: 'vocabflow.email.notifications',
+  PAYMENT_WEBHOOK: 'letstun.payment.webhook',
+  ARENA_MATCHMAKING: 'letstun.arena.matchmaking',
+  ARENA_GAME_RESULTS: 'letstun.arena.results',
+  EMAIL_NOTIFICATIONS: 'letstun.email.notifications',
 } as const;
 
 export const EXCHANGES = {
-  MAIN: 'vocabflow.events',
-  DLX: 'vocabflow.dlx',
+  MAIN: 'letstun.events',
+  DLX: 'letstun.dlx',
 } as const;
 
 export interface PublishOptions {
@@ -75,8 +75,8 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
       // Declare Dead Letter Exchange (DLX) & Dead Letter Queue
       await this.channel.assertExchange(EXCHANGES.DLX, 'direct', { durable: true });
-      await this.channel.assertQueue('vocabflow.dead_letters', { durable: true });
-      await this.channel.bindQueue('vocabflow.dead_letters', EXCHANGES.DLX, 'dead-letter');
+      await this.channel.assertQueue('letstun.dead_letters', { durable: true });
+      await this.channel.bindQueue('letstun.dead_letters', EXCHANGES.DLX, 'dead-letter');
 
       // Assert all standard production queues with DLX routing
       for (const queue of Object.values(QUEUES)) {

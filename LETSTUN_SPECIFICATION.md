@@ -1,7 +1,7 @@
-# VocabFlow — Project Functional Specification
+# LetStuN — Project Functional Specification
 
 ## 1. Product overview
-VocabFlow is a multilingual language-learning platform centered around vocabulary, flashcards, question banks, test sets, community content, learning progress, and child-friendly/Kids learning experiences.
+LetStuN is a multilingual language-learning platform centered around vocabulary, flashcards, question banks, test sets, community content, learning progress, and child-friendly/Kids learning experiences.
 
 The product supports:
 - Multiple learning languages rather than being hard-coded to English.

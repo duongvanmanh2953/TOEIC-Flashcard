@@ -1,2 +1,2 @@
-export * from '../vocabflow/WordDiagnosticModal';
-export { WordDiagnosticModal } from '../vocabflow/WordDiagnosticModal';
+export * from '../letstun/WordDiagnosticModal';
+export { WordDiagnosticModal } from '../letstun/WordDiagnosticModal';

@@ -39,7 +39,7 @@ export const LandingReviews: React.FC = React.memo(() => {
           Cộng Đồng Tin Dùng
         </span>
         <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight mb-3">
-          Học Viên Đã Bứt Phá Điểm Số Cùng VocabFlow
+          Học Viên Đã Bứt Phá Điểm Số Cùng LetStuN
         </h2>
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
           Hơn 12,000 học viên đã chinh phục thành công chứng chỉ TOEIC, JLPT và HSK mục tiêu.

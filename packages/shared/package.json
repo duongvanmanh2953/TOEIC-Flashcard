@@ -1,11 +1,11 @@
 {
-  "name": "@vocabflow/shared",
+  "name": "@letstun/shared",
   "version": "1.0.0",
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "echo '@vocabflow/shared ready'"
+    "build": "echo '@letstun/shared ready'"
   },
   "dependencies": {},
   "peerDependencies": {

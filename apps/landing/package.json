@@ -1,5 +1,5 @@
 {
-  "name": "@vocabflow/landing",
+  "name": "@letstun/landing",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^2.2.2",
-    "@vocabflow/shared": "*"
+    "@letstun/shared": "*"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",

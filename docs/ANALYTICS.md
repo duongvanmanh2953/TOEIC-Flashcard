@@ -1,4 +1,4 @@
-# VocabFlow AI — Product & Learning Analytics Architecture
+# LetStuN AI — Product & Learning Analytics Architecture
 
 ## 1. Overview
 The Analytics Engine processes learner interaction events and vocabulary retention state directly from PostgreSQL, supporting real-time operational decision making without fabricated metrics.

@@ -64,8 +64,8 @@ interface LearningContextType {
 
 const LearningContext = createContext<LearningContextType | undefined>(undefined);
 
-const STORAGE_ACTIVE_LANG = 'vocabflow:active_learning_language';
-const STORAGE_PROFILES_PREFIX = 'vocabflow:user_profiles:';
+const STORAGE_ACTIVE_LANG = 'letstun:active_learning_language';
+const STORAGE_PROFILES_PREFIX = 'letstun:user_profiles:';
 
 export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();

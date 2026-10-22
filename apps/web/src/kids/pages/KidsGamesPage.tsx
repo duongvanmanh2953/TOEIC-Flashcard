@@ -1,5 +1,5 @@
 // ============================================================================
-// VOCALFLOW KIDS — BRIGHT GAME LIBRARY
+// LETSTUN KIDS — BRIGHT GAME LIBRARY
 // Warm Bright Palette: #FFFDF7 • Single Featured Game Anchor • Clean Categories
 // Refined Tiles with Crisp Silhouettes • Responsive Desktop/Tablet/Mobile Grid
 // ============================================================================

@@ -1,4 +1,4 @@
-# VocabFlow AI Technical Debt & Architecture Refactoring Log
+# LetStuN AI Technical Debt & Architecture Refactoring Log
 
 > **Mục tiêu**: Liệt kê các khoản nợ kỹ thuật (Technical Debt) đã phát hiện trong quá trình khảo sát thực tế, phân loại mức độ rủi ro và giải pháp khắc phục.
 

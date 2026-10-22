@@ -1,5 +1,5 @@
 /**
- * Client-Side End-to-End Encryption (E2EE) Utility for VocabFlow
+ * Client-Side End-to-End Encryption (E2EE) Utility for LetStuN
  * 
  * Architecture:
  * - Hybrid Cryptosystem: RSA-OAEP (2048-bit SHA-256) + AES-GCM (256-bit)

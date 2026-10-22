@@ -75,14 +75,14 @@ export function normalizeUser(rawUser: any): User {
       ? {
           id: rawUser.subscription?.id || 'pro-active',
           tier: 'PRO',
-          planName: rawUser.subscription?.planName || 'VocabFlow Pro (Unlimited)',
+          planName: rawUser.subscription?.planName || 'LetStuN Pro (Unlimited)',
           currentPeriodEnd: rawUser.subscription?.currentPeriodEnd || '2099-12-31T23:59:59.000Z',
         }
       : isPlus
       ? {
           id: rawUser.subscription?.id || 'plus-active',
           tier: 'PLUS',
-          planName: rawUser.subscription?.planName || 'VocabFlow Plus',
+          planName: rawUser.subscription?.planName || 'LetStuN Plus',
           currentPeriodEnd: rawUser.subscription?.currentPeriodEnd,
         }
       : rawUser.subscription || {
@@ -136,8 +136,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Initialize theme
   useEffect(() => {
     const savedTheme =
-      (localStorage.getItem('vocabflow_theme') as 'light' | 'dark') ||
-      (localStorage.getItem('vocabflow_theme') as 'light' | 'dark') ||
+      (localStorage.getItem('letstun_theme') as 'light' | 'dark') ||
+      (localStorage.getItem('letstun_theme') as 'light' | 'dark') ||
       'dark';
     setTheme(savedTheme);
     document.documentElement.classList.toggle('dark', savedTheme === 'dark');
@@ -146,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
-    localStorage.setItem('vocabflow_theme', nextTheme);
+    localStorage.setItem('letstun_theme', nextTheme);
     document.documentElement.classList.toggle('dark', nextTheme === 'dark');
   };
 
@@ -165,9 +165,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const migrateGuestData = async (targetUserId: string) => {
     try {
-      const guestFavorites = JSON.parse(localStorage.getItem('vocabflow_guest_favorites') || '[]');
-      const guestWords = JSON.parse(localStorage.getItem('vocabflow_guest_words') || '[]');
-      const guestReviews = JSON.parse(localStorage.getItem('vocabflow_guest_reviews') || '[]');
+      const guestFavorites = JSON.parse(localStorage.getItem('letstun_guest_favorites') || '[]');
+      const guestWords = JSON.parse(localStorage.getItem('letstun_guest_words') || '[]');
+      const guestReviews = JSON.parse(localStorage.getItem('letstun_guest_reviews') || '[]');
 
       if (guestFavorites.length > 0 || guestWords.length > 0 || guestReviews.length > 0) {
         await api.post('/auth/migrate-guest', {
@@ -180,9 +180,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         // Clean guest staging keys
-        localStorage.removeItem('vocabflow_guest_favorites');
-        localStorage.removeItem('vocabflow_guest_words');
-        localStorage.removeItem('vocabflow_guest_reviews');
+        localStorage.removeItem('letstun_guest_favorites');
+        localStorage.removeItem('letstun_guest_words');
+        localStorage.removeItem('letstun_guest_reviews');
       }
     } catch (err) {
       console.warn('Guest data migration completed with notice:', err);
@@ -191,8 +191,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     const hadTokens = Boolean(
-      localStorage.getItem('vocabflow_access_token') ||
-      localStorage.getItem('vocabflow_refresh_token')
+      localStorage.getItem('letstun_access_token') ||
+      localStorage.getItem('letstun_refresh_token')
     );
 
     try {
@@ -201,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(normalizeUser({ ...res.data, isAnonymous: false }));
         setAuthState('AUTHENTICATED');
         if (res.data?.accessToken) {
-          localStorage.setItem('vocabflow_access_token', res.data.accessToken);
+          localStorage.setItem('letstun_access_token', res.data.accessToken);
         }
         return;
       }
@@ -210,16 +210,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Attempt token recovery via refresh token (from cross-app SSO handoff or cookie)
-    const refreshToken = localStorage.getItem('vocabflow_refresh_token');
+    const refreshToken = localStorage.getItem('letstun_refresh_token');
     if (refreshToken) {
       try {
         const refRes: any = await api.post('/auth/refresh', { refreshToken });
         const newAccess = refRes?.data?.accessToken || refRes?.accessToken;
         const newRefresh = refRes?.data?.refreshToken || refRes?.refreshToken;
         if (newAccess) {
-          localStorage.setItem('vocabflow_access_token', newAccess);
+          localStorage.setItem('letstun_access_token', newAccess);
           if (newRefresh) {
-            localStorage.setItem('vocabflow_refresh_token', newRefresh);
+            localStorage.setItem('letstun_refresh_token', newRefresh);
           }
           const retryRes: any = await api.get('/auth/me', { _skipAuthRedirect: true } as any);
           if (retryRes?.success && retryRes.data) {
@@ -234,8 +234,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Admin portal requires authenticated admin session: logout and redirect to login
-    localStorage.removeItem('vocabflow_access_token');
-    localStorage.removeItem('vocabflow_refresh_token');
+    localStorage.removeItem('letstun_access_token');
+    localStorage.removeItem('letstun_refresh_token');
     sessionStorage.clear();
     setUser(null);
     setAuthState('UNAUTHENTICATED');
@@ -244,7 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window !== 'undefined') {
       if (hadTokens) {
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'warning',
               title: 'Phiên làm việc hết hạn',
@@ -280,8 +280,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (payload?.type === 'LOGOUT') {
         setUser(null);
         setAuthState('UNAUTHENTICATED');
-        localStorage.removeItem('vocabflow_access_token');
-        localStorage.removeItem('vocabflow_refresh_token');
+        localStorage.removeItem('letstun_access_token');
+        localStorage.removeItem('letstun_refresh_token');
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
@@ -296,8 +296,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: { email: string; password: string }) => {
     const res: any = await api.post('/auth/login', credentials);
     if (res?.success) {
-      localStorage.setItem('vocabflow_access_token', res.data.accessToken);
-      localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
+      localStorage.setItem('letstun_access_token', res.data.accessToken);
+      localStorage.setItem('letstun_refresh_token', res.data.refreshToken);
       setUser(normalizeUser({ ...res.data.user, isAnonymous: false }));
       setAuthState('AUTHENTICATED');
       broadcastAuthChange({ type: 'LOGIN', user: res.data.user });
@@ -309,8 +309,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: { email: string; password: string; displayName: string }) => {
     const res: any = await api.post('/auth/register', data);
     if (res?.success) {
-      localStorage.setItem('vocabflow_access_token', res.data.accessToken);
-      localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
+      localStorage.setItem('letstun_access_token', res.data.accessToken);
+      localStorage.setItem('letstun_refresh_token', res.data.refreshToken);
       setUser(normalizeUser({ ...res.data.user, isAnonymous: false }));
       setAuthState('AUTHENTICATED');
       await migrateGuestData(res.data.user.id);
@@ -331,8 +331,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (res?.data || res?.user) {
         const payload = res.data || res;
-        localStorage.setItem('vocabflow_access_token', payload.accessToken);
-        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
+        localStorage.setItem('letstun_access_token', payload.accessToken);
+        localStorage.setItem('letstun_refresh_token', payload.refreshToken);
         setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
         setAuthState('AUTHENTICATED');
         await migrateGuestData(payload.user.id);
@@ -365,8 +365,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (res?.data || res?.user) {
         const payload = res.data || res;
-        localStorage.setItem('vocabflow_access_token', payload.accessToken);
-        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
+        localStorage.setItem('letstun_access_token', payload.accessToken);
+        localStorage.setItem('letstun_refresh_token', payload.refreshToken);
         setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
         setAuthState('AUTHENTICATED');
         await migrateGuestData(payload.user.id);
@@ -391,8 +391,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Ignored
     } finally {
-      localStorage.removeItem('vocabflow_access_token');
-      localStorage.removeItem('vocabflow_refresh_token');
+      localStorage.removeItem('letstun_access_token');
+      localStorage.removeItem('letstun_refresh_token');
       sessionStorage.clear();
       broadcastAuthChange({ type: 'LOGOUT' });
 
@@ -404,7 +404,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'info',
               title: 'Đã đăng xuất',

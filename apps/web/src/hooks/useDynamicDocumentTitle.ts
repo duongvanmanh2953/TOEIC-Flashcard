@@ -12,7 +12,7 @@ export const ROUTE_TITLE_MAP: Record<string, { vi: string; en: string }> = {
   '/community': { vi: 'Bộ Thẻ Cộng Đồng', en: 'Community Decks' },
   '/community-knowledge': { vi: 'Kho Tri Thức Học Thuật', en: 'Community Knowledge' },
   '/notes': { vi: 'Sổ Tay Ghi Chú Thông Minh', en: 'Smart Study Notes' },
-  '/ai-tutor': { vi: 'Gia Sư VocabFlow AI 24/7', en: 'AI Tutor 24/7' },
+  '/ai-tutor': { vi: 'Gia Sư LetStuN AI 24/7', en: 'AI Tutor 24/7' },
   '/ai-coach': { vi: 'AI Coach Studio', en: 'AI Coach Studio' },
   '/subscription': { vi: 'Nâng Cấp Gói VIP Pro', en: 'Upgrade Pro VIP' },
   '/pricing': { vi: 'Bảng Giá & Gói Hội Viên', en: 'Pricing & Plans' },
@@ -67,12 +67,12 @@ export function useDynamicDocumentTitle(customTitle?: string) {
       setUnreadMessages(Math.max(0, count));
     };
 
-    window.addEventListener('vocabflow:unread-notifs', handleNotifs);
-    window.addEventListener('vocabflow:unread-messages', handleMessages);
+    window.addEventListener('letstun:unread-notifs', handleNotifs);
+    window.addEventListener('letstun:unread-messages', handleMessages);
 
     return () => {
-      window.removeEventListener('vocabflow:unread-notifs', handleNotifs);
-      window.removeEventListener('vocabflow:unread-messages', handleMessages);
+      window.removeEventListener('letstun:unread-notifs', handleNotifs);
+      window.removeEventListener('letstun:unread-messages', handleMessages);
     };
   }, []);
 
@@ -82,9 +82,9 @@ export function useDynamicDocumentTitle(customTitle?: string) {
     const totalUnread = unreadNotifs + unreadMessages;
 
     if (totalUnread > 0) {
-      document.title = `(${totalUnread}) ${baseTitle} — VocabFlow AI`;
+      document.title = `(${totalUnread}) ${baseTitle} — LetStuN AI`;
     } else {
-      document.title = `${baseTitle} — VocabFlow AI`;
+      document.title = `${baseTitle} — LetStuN AI`;
     }
 
     // Keep HTML lang synchronized

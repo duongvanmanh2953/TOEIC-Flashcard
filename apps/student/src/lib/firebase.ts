@@ -11,7 +11,7 @@ import {
 import api from './api';
 
 /**
- * Firebase Authentication Client for VocabFlow
+ * Firebase Authentication Client for LetStuN
  * Supports Real Firebase Google OAuth, Facebook OAuth, and Anonymous-first guest access.
  * Allows runtime client configuration (via UI / localStorage) or environment variables (Vite prefix).
  */
@@ -36,7 +36,7 @@ export interface FirebaseUserToken {
   accessToken?: string;
 }
 
-export const FIREBASE_STORAGE_KEY = 'vocabflow_firebase_config';
+export const FIREBASE_STORAGE_KEY = 'letstun_firebase_config';
 
 /**
  * Retrieve user-stored Firebase config from localStorage if present
@@ -62,10 +62,10 @@ export function getActiveFirebaseConfig(): FirebaseClientConfig {
   if (stored) return stored;
 
   return {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoVocabFlowAuthProjectKey2026',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vocabflow-learning.firebaseapp.com',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vocabflow-learning',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vocabflow-learning.appspot.com',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoLetStuNAuthProjectKey2026',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'letstun-learning.firebaseapp.com',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'letstun-learning',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'letstun-learning.appspot.com',
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '103948572019',
     appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:103948572019:web:9c8d7e6f5a4b3c2d',
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
@@ -184,7 +184,7 @@ export async function testFirebaseConnection(config: {
       if (!isMatch && /^\d+$/.test(rawApiProjectId)) {
         detectedProjectNumber = rawApiProjectId;
 
-        // Check if any authorized domain corresponds to the input project ID (e.g. "vocalflow-e04ca.firebaseapp.com")
+        // Check if any authorized domain corresponds to the input project ID (e.g. "letstun-e04ca.firebaseapp.com")
         const domainMatch = authorizedDomains.some((d: string) => {
           const domainLower = String(d).toLowerCase().trim();
           return (
@@ -331,7 +331,7 @@ export function formatFirebaseAuthError(errorCode: string): string {
     case 'auth/cancelled-popup-request':
       return 'Cửa sổ đăng nhập trước đó đã được thay thế.';
     case 'auth/popup-blocked':
-      return 'Trình duyệt đã chặn cửa sổ đăng nhập (Popup). Vui lòng cho phép popup cho VocabFlow.';
+      return 'Trình duyệt đã chặn cửa sổ đăng nhập (Popup). Vui lòng cho phép popup cho LetStuN.';
     case 'auth/unauthorized-domain':
       return 'Tên miền hiện tại chưa được cấp phép trong Firebase Console. Vui lòng thêm localhost/domain vào Firebase Authentication > Settings > Authorized domains.';
     case 'auth/account-exists-with-different-credential':
@@ -360,7 +360,7 @@ export function formatFirebaseAuthError(errorCode: string): string {
 }
 
 // Local storage key for persistent anonymous guest identification
-const ANONYMOUS_UID_KEY = 'vocabflow_anonymous_uid';
+const ANONYMOUS_UID_KEY = 'letstun_anonymous_uid';
 
 export function getOrCreateAnonymousUid(): string {
   let uid = localStorage.getItem(ANONYMOUS_UID_KEY);

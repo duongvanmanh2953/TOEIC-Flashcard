@@ -10,14 +10,14 @@ export const LandingCTA: React.FC = React.memo(() => {
             Sẵn sàng bứt phá mục tiêu ngôn ngữ của bạn?
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Tham gia cùng hàng ngàn học viên đang sử dụng VocabFlow để học thông minh hơn,
+            Tham gia cùng hàng ngàn học viên đang sử dụng LetStuN để học thông minh hơn,
             làm đề thực chiến và lưu ghi chép 1 chạm mỗi ngày.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-3.5 relative z-10 pt-2">
           <a
-            href="https://app.vocalflow.site/dashboard"
+            href="https://app.letstun.site/dashboard"
             className="btn-glass-primary !py-3 !px-7 text-sm font-extrabold flex items-center gap-2 card-hover-smooth"
           >
             <span>Bắt đầu học miễn phí</span>
@@ -25,7 +25,7 @@ export const LandingCTA: React.FC = React.memo(() => {
           </a>
 
           <a
-            href="https://app.vocalflow.site/login"
+            href="https://app.letstun.site/login"
             className="btn-glass-secondary !py-3 !px-6 text-sm font-bold card-hover-smooth"
           >
             Đăng nhập tài khoản

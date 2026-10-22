@@ -1,4 +1,4 @@
-# VocabFlow AI Application Security Review
+# LetStuN AI Application Security Review
 
 > **Phương pháp tiếp cận**: Threat-Modeling Mindset (STRIDE / OWASP Top 10)  
 > **Nguyên tắc**: Mọi lỗ hổng đều có file/path chính xác, bằng chứng từ code, phân tích tác động và phương án khắc phục chi tiết. Không suy diễn.
@@ -37,7 +37,7 @@
     return { user, ...tokens };
   }
   ```
-- **Nguyên nhân cốt lõi**: Controller chấp nhận JSON body trực tiếp từ client (`{ provider: 'google', email: 'admin@vocabflow.ai' }`) và chuyển thẳng cho service mà không yêu cầu Google `id_token` hoặc Firebase Auth Token để xác thực với Google Identity Server.
+- **Nguyên nhân cốt lõi**: Controller chấp nhận JSON body trực tiếp từ client (`{ provider: 'google', email: 'admin@letstun.com' }`) và chuyển thẳng cho service mà không yêu cầu Google `id_token` hoặc Firebase Auth Token để xác thực với Google Identity Server.
 - **Tác động (Impact)**: Kẻ tấn công chỉ cần biết email của bất kỳ người dùng hoặc Quản trị viên (Admin/SuperAdmin) nào là có thể gửi request `POST /api/v1/auth/oauth` và ngay lập tức nhận về Access Token có quyền cao nhất mà không cần mật khẩu.
 - **Đề xuất khắc phục (Proposed Fix)**:
   1. Client phải gửi `idToken` (Google JWT) hoặc `accessToken` được cấp từ OAuth provider.
@@ -50,11 +50,11 @@
 - **Tệp tin**: `apps/api/updateAdminPass.ts`, dòng 59.
 - **Bằng chứng mã nguồn**:
   ```typescript
-  const masterPass = process.env.SERVER_MASTER_PASSWORD || 'vocabflow2026';
+  const masterPass = process.env.SERVER_MASTER_PASSWORD || 'letstun2026';
   const inputPass = await promptPassword('🔑 Nhập mật khẩu máy chủ (Master Password) để tiếp tục: ');
   ```
-- **Nguyên nhân**: Script cung cấp giá trị dự phòng mặc định `'vocabflow2026'` nếu biến môi trường `SERVER_MASTER_PASSWORD` không được thiết lập.
-- **Tác động**: Nếu máy chủ production chạy mà thiếu biến môi trường, bất kỳ ai có quyền truy cập shell hoặc console có thể sử dụng chuỗi `'vocabflow2026'` để reset mật khẩu toàn bộ Super Admin.
+- **Nguyên nhân**: Script cung cấp giá trị dự phòng mặc định `'letstun2026'` nếu biến môi trường `SERVER_MASTER_PASSWORD` không được thiết lập.
+- **Tác động**: Nếu máy chủ production chạy mà thiếu biến môi trường, bất kỳ ai có quyền truy cập shell hoặc console có thể sử dụng chuỗi `'letstun2026'` để reset mật khẩu toàn bộ Super Admin.
 - **Đề xuất khắc phục**: Loại bỏ hoàn toàn fallback. Nếu `!process.env.SERVER_MASTER_PASSWORD`, ném lỗi và dừng script ngay lập tức.
 
 ---

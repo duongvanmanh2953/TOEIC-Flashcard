@@ -1,4 +1,4 @@
-# VocabFlow AI Directory & File Map
+# LetStuN AI Directory & File Map
 
 > **Trạng thái**: Đã xác minh cấu trúc thực tế của Monorepo (Verified)  
 > **Mục tiêu**: Giúp AI Coding Agents và Kỹ sư định vị chính xác vị trí mã nguồn cần đọc và sửa.
@@ -22,7 +22,7 @@ TOEIC-Flashcard-1/
 │   ├── assets/                   # Nginx Static File Server phục vụ media/audio (Port 3300)
 │   └── kid-api/                  # Backend riêng cho Kid App (Port 4100)
 ├── packages/                     # Thư viện dùng chung nội bộ
-│   └── shared/                   # @vocabflow/shared: Types, Locales, Config
+│   └── shared/                   # @letstun/shared: Types, Locales, Config
 ├── infra/                        # Cấu hình hạ tầng
 │   └── cloudflared/              # Cloudflare Tunnel credentials & configuration
 ├── assets/                       # Thư mục chứa tài nguyên tĩnh (Audio pronunciation, images)
@@ -66,7 +66,7 @@ TOEIC-Flashcard-1/
   - `flashcard/LanguageFlashcard.tsx`: Thẻ học từ vựng 3D flip hiệu ứng, hiển thị phiên âm, phát âm thanh.
   - `common/SpeechButton.tsx`: Nút phát âm TTS tích hợp đa ngôn ngữ.
   - `language/LanguageBadge.tsx` & `CountryFlag.tsx`: Hiển thị quốc kỳ, mã CEFR và tên ngôn ngữ mục tiêu.
-  - `vocabflow/VocabularyXRay.tsx`: Biểu đồ radar chẩn đoán năng lực từ vựng của học viên.
+  - `letstun/VocabularyXRay.tsx`: Biểu đồ radar chẩn đoán năng lực từ vựng của học viên.
   - `admin/ui/AdminButton.tsx`: Component button chuẩn hóa của backoffice.
 - **Quản lý Ngôn ngữ**:
   - `src/config/languages.ts`: Bảng đăng ký 15+ ngôn ngữ, hướng viết (LTR/RTL), bảng chữ cái (Latin, Hanzi, Kana, Hangul, Cyrillic, Arabic).

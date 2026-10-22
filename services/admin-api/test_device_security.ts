@@ -2,7 +2,7 @@ import * as bcrypt from 'bcrypt';
 
 // Test Policy Rules & Invariants
 async function runSecurityTests() {
-  console.log('--- RUNNING VOCABFLOW / VOCABFLOW SECURITY SUITE ---');
+  console.log('--- RUNNING LETSTUN / LETSTUN SECURITY SUITE ---');
 
   // Test 1: Device Limits Rule
   const DEVICE_LIMITS = {
@@ -69,7 +69,7 @@ async function runSecurityTests() {
   console.assert(validPreflight === true, 'Preflight passes when all 3 factors provided');
   console.log('✅ Test 5: Reset All Data requires strict confirmation string "RESET" + Password + Keypass');
 
-  // Test 6: VocabFlow Cognitive 5D Dimensions
+  // Test 6: LetStuN Cognitive 5D Dimensions
   const cognitiveDimensions = ['recognition', 'recall', 'context', 'production', 'speaking'];
   console.assert(cognitiveDimensions.length === 5, 'Must have 5 dimensions');
   console.log('✅ Test 6: Cognitive 5D dimensions correctly specified');

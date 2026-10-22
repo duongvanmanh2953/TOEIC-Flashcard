@@ -19,7 +19,7 @@ export interface LearnerMemoryContext {
 @Injectable()
 export class PromptService {
   buildExplainPrompt(word: string, cefrLevel: CefrLevel): string {
-    return `You are VocabFlow AI Vocabulary Tutor.
+    return `You are LetStuN AI Vocabulary Tutor.
 Explain the word "${word}" for an English learner at CEFR level ${cefrLevel}.
 Format your response clearly:
 1. Core definition and nuances.
@@ -38,7 +38,7 @@ Include Vietnamese translation and key grammar pattern for each.`;
   }
 
   buildTutorPrompt(userMessage: string, cefrLevel: CefrLevel, contextWord?: string): string {
-    return `You are VocabFlow AI Personal English Tutor.
+    return `You are LetStuN AI Personal English Tutor.
 Learner CEFR Level: ${cefrLevel}.
 Target word context: ${contextWord || 'General'}.
 Learner query: "${userMessage}".
@@ -68,7 +68,7 @@ Follow the teaching method: Teach concisely -> Provide a clear contextual exampl
       ? ctx.ragContext.join('\n- ')
       : 'Kho từ vựng chuẩn TOEIC & Giao tiếp kinh doanh.';
 
-    return `You are VocabFlow AI 1-on-1 Dedicated Personal Language Tutor (Gia sư AI đồng hành cá nhân hoá).
+    return `You are LetStuN AI 1-on-1 Dedicated Personal Language Tutor (Gia sư AI đồng hành cá nhân hoá).
 You are tutoring: ${name}
 Target Language: ${lang}
 Current Mastery (CEFR): ${ctx.cefrLevel} | Target Goal: ${ctx.targetLevel || 'C1'} (${ctx.primaryGoal || 'TOEIC 850+'})

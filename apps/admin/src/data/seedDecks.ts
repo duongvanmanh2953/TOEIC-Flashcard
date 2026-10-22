@@ -1,5 +1,5 @@
 /**
- * Curated Starter Packs & Seed Decks for VocabFlow Multi-Language Platform
+ * Curated Starter Packs & Seed Decks for LetStuN Multi-Language Platform
  * Automatically loaded when a user adds a new language learning space or resets data.
  */
 
@@ -413,8 +413,8 @@ export const SEED_DECKS: Record<string, SeedDeck[]> = {
           partOfSpeech: 'verb',
           cefrLevel: 'A1',
           topic: 'Education',
-          example: 'Es fácil aprender español con VocabFlow.',
-          exampleTranslation: 'Học tiếng Tây Ban Nha thật dễ với VocabFlow.',
+          example: 'Es fácil aprender español con LetStuN.',
+          exampleTranslation: 'Học tiếng Tây Ban Nha thật dễ với LetStuN.',
         },
       ],
     },

@@ -72,17 +72,17 @@ export const SettingsPage: React.FC = () => {
 
   // Multi-Language Pronunciation & Script preferences
   const [voiceGender, setVoiceGender] = useState<'female' | 'male'>(() => {
-    return (localStorage.getItem('vocabflow_voice_gender') as 'female' | 'male') || 'female';
+    return (localStorage.getItem('letstun_voice_gender') as 'female' | 'male') || 'female';
   });
   const [showScriptAids, setShowScriptAids] = useState<boolean>(() => {
-    return localStorage.getItem('vocabflow_show_script_aids') !== 'false';
+    return localStorage.getItem('letstun_show_script_aids') !== 'false';
   });
 
   // 1. Giao diện settings
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>(() => {
     return (
-      (localStorage.getItem('vocabflow_theme_mode') as any) ||
-      (localStorage.getItem('vocabflow_theme_mode') as any) ||
+      (localStorage.getItem('letstun_theme_mode') as any) ||
+      (localStorage.getItem('letstun_theme_mode') as any) ||
       theme ||
       'system'
     );
@@ -90,8 +90,8 @@ export const SettingsPage: React.FC = () => {
 
   const [accentColor, setAccentColor] = useState<'violet' | 'indigo' | 'emerald' | 'amber' | 'rose' | 'slate'>(() => {
     return (
-      (localStorage.getItem('vocabflow_accent') as any) ||
-      (localStorage.getItem('vocabflow_accent') as any) ||
+      (localStorage.getItem('letstun_accent') as any) ||
+      (localStorage.getItem('letstun_accent') as any) ||
       'violet'
     );
   });
@@ -99,52 +99,52 @@ export const SettingsPage: React.FC = () => {
   // 2. Phiên âm & Giọng đọc
   const [showPhonetic, setShowPhonetic] = useState<boolean>(() => {
     return (
-      (localStorage.getItem('vocabflow_show_phonetic') || localStorage.getItem('vocabflow_show_phonetic')) !== 'false'
+      (localStorage.getItem('letstun_show_phonetic') || localStorage.getItem('letstun_show_phonetic')) !== 'false'
     );
   });
 
   const [voiceAccent, setVoiceAccent] = useState<'en-US' | 'en-GB' | 'en-AU'>(() => {
     return (
-      (localStorage.getItem('vocabflow_voice') as any) ||
-      (localStorage.getItem('vocabflow_voice') as any) ||
+      (localStorage.getItem('letstun_voice') as any) ||
+      (localStorage.getItem('letstun_voice') as any) ||
       'en-US'
     );
   });
 
   const [voiceSpeed, setVoiceSpeed] = useState<number>(() => {
     return parseFloat(
-      localStorage.getItem('vocabflow_voice_speed') || localStorage.getItem('vocabflow_voice_speed') || '1.0'
+      localStorage.getItem('letstun_voice_speed') || localStorage.getItem('letstun_voice_speed') || '1.0'
     );
   });
 
   const [autoPlayAudio, setAutoPlayAudio] = useState<boolean>(() => {
     return (
-      (localStorage.getItem('vocabflow_auto_audio') || localStorage.getItem('vocabflow_auto_audio')) === 'true'
+      (localStorage.getItem('letstun_auto_audio') || localStorage.getItem('letstun_auto_audio')) === 'true'
     );
   });
 
   // 3. Tùy chọn học
   const [showImages, setShowImages] = useState<boolean>(() => {
     return (
-      (localStorage.getItem('vocabflow_show_images') || localStorage.getItem('vocabflow_show_images')) !== 'false'
+      (localStorage.getItem('letstun_show_images') || localStorage.getItem('letstun_show_images')) !== 'false'
     );
   });
 
   const [showExamples, setShowExamples] = useState<boolean>(() => {
     return (
-      (localStorage.getItem('vocabflow_show_examples') || localStorage.getItem('vocabflow_show_examples')) !== 'false'
+      (localStorage.getItem('letstun_show_examples') || localStorage.getItem('letstun_show_examples')) !== 'false'
     );
   });
 
   const [autoAdvance, setAutoAdvance] = useState<boolean>(() => {
     return (
-      (localStorage.getItem('vocabflow_auto_advance') || localStorage.getItem('vocabflow_auto_advance')) === 'true'
+      (localStorage.getItem('letstun_auto_advance') || localStorage.getItem('letstun_auto_advance')) === 'true'
     );
   });
 
   const [showSupportBtn, setShowSupportBtn] = useState<boolean>(() => {
     return (
-      (localStorage.getItem('vocabflow_show_support_btn') || localStorage.getItem('vocabflow_show_support_btn')) !==
+      (localStorage.getItem('letstun_show_support_btn') || localStorage.getItem('letstun_show_support_btn')) !==
       'false'
     );
   });
@@ -152,7 +152,7 @@ export const SettingsPage: React.FC = () => {
   // 4. Mục tiêu ngày
   const [dailyGoal, setDailyGoal] = useState<number>(() => {
     return parseInt(
-      localStorage.getItem('vocabflow_daily_goal') || localStorage.getItem('vocabflow_daily_goal') || '20',
+      localStorage.getItem('letstun_daily_goal') || localStorage.getItem('letstun_daily_goal') || '20',
       10
     );
   });
@@ -307,8 +307,8 @@ export const SettingsPage: React.FC = () => {
       });
 
       // 1. Immediately wipe all tokens from localStorage & sessionStorage
-      localStorage.removeItem('vocabflow_access_token');
-      localStorage.removeItem('vocabflow_refresh_token');
+      localStorage.removeItem('letstun_access_token');
+      localStorage.removeItem('letstun_refresh_token');
       sessionStorage.clear();
 
       // 2. Clear IndexedDB offline cache
@@ -321,7 +321,7 @@ export const SettingsPage: React.FC = () => {
       setPasswordMsg('Đổi mật khẩu thành công! Toàn bộ token và phiên đăng nhập đã được xóa sạch. Đang chuyển hướng về trang đăng nhập...');
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'success',
               title: 'Đổi mật khẩu thành công',
@@ -348,17 +348,17 @@ export const SettingsPage: React.FC = () => {
 
   const handleExportData = () => {
     try {
-      const guestFavorites = JSON.parse(localStorage.getItem('vocabflow_guest_favorites') || '[]');
-      const guestWords = JSON.parse(localStorage.getItem('vocabflow_guest_words') || '[]');
-      const guestReviews = JSON.parse(localStorage.getItem('vocabflow_guest_reviews') || '[]');
+      const guestFavorites = JSON.parse(localStorage.getItem('letstun_guest_favorites') || '[]');
+      const guestWords = JSON.parse(localStorage.getItem('letstun_guest_words') || '[]');
+      const guestReviews = JSON.parse(localStorage.getItem('letstun_guest_reviews') || '[]');
 
       const exportPayload = {
-        app: 'VocabFlow AI',
+        app: 'LetStuN AI',
         version: '4.0.0',
         exportedAt: new Date().toISOString(),
         user: {
           id: user?.id || 'guest',
-          email: user?.email || 'guest@vocabflow.local',
+          email: user?.email || 'guest@letstun.local',
           displayName: user?.displayName || 'Học viên',
           tier: user?.tier || 'FREE',
         },
@@ -379,7 +379,7 @@ export const SettingsPage: React.FC = () => {
       const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute('href', dataStr);
-      downloadAnchor.setAttribute('download', `vocabflow_export_${new Date().toISOString().split('T')[0]}.json`);
+      downloadAnchor.setAttribute('download', `letstun_export_${new Date().toISOString().split('T')[0]}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -407,7 +407,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleSelectTheme = (mode: 'system' | 'light' | 'dark') => {
     setThemeMode(mode);
-    localStorage.setItem('vocabflow_theme_mode', mode);
+    localStorage.setItem('letstun_theme_mode', mode);
     if (mode === 'system') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if ((prefersDark && theme !== 'dark') || (!prefersDark && theme === 'dark')) {
@@ -421,16 +421,16 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleSaveAll = () => {
-    localStorage.setItem('vocabflow_accent', accentColor);
-    localStorage.setItem('vocabflow_show_phonetic', showPhonetic ? 'true' : 'false');
-    localStorage.setItem('vocabflow_voice', voiceAccent);
-    localStorage.setItem('vocabflow_voice_speed', voiceSpeed.toString());
-    localStorage.setItem('vocabflow_auto_audio', autoPlayAudio ? 'true' : 'false');
-    localStorage.setItem('vocabflow_show_images', showImages ? 'true' : 'false');
-    localStorage.setItem('vocabflow_show_examples', showExamples ? 'true' : 'false');
-    localStorage.setItem('vocabflow_auto_advance', autoAdvance ? 'true' : 'false');
-    localStorage.setItem('vocabflow_daily_goal', dailyGoal.toString());
-    localStorage.setItem('vocabflow_show_support_btn', showSupportBtn ? 'true' : 'false');
+    localStorage.setItem('letstun_accent', accentColor);
+    localStorage.setItem('letstun_show_phonetic', showPhonetic ? 'true' : 'false');
+    localStorage.setItem('letstun_voice', voiceAccent);
+    localStorage.setItem('letstun_voice_speed', voiceSpeed.toString());
+    localStorage.setItem('letstun_auto_audio', autoPlayAudio ? 'true' : 'false');
+    localStorage.setItem('letstun_show_images', showImages ? 'true' : 'false');
+    localStorage.setItem('letstun_show_examples', showExamples ? 'true' : 'false');
+    localStorage.setItem('letstun_auto_advance', autoAdvance ? 'true' : 'false');
+    localStorage.setItem('letstun_daily_goal', dailyGoal.toString());
+    localStorage.setItem('letstun_show_support_btn', showSupportBtn ? 'true' : 'false');
     window.dispatchEvent(new Event('storage'));
 
     setSavedToast(true);
@@ -438,7 +438,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleConfirmResetProgress = () => {
-    localStorage.removeItem('vocabflow_recent_chat');
+    localStorage.removeItem('letstun_recent_chat');
     setResetProgressModalOpen(false);
     setActionSuccessMsg('Đã đặt lại tiến độ học thành công!');
     setTimeout(() => setActionSuccessMsg(null), 3500);
@@ -637,7 +637,7 @@ export const SettingsPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setVoiceGender('female');
-                        localStorage.setItem('vocabflow_voice_gender', 'female');
+                        localStorage.setItem('letstun_voice_gender', 'female');
                       }}
                       className={`p-2 rounded-xl border text-xs font-bold transition ${
                         voiceGender === 'female'
@@ -651,7 +651,7 @@ export const SettingsPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setVoiceGender('male');
-                        localStorage.setItem('vocabflow_voice_gender', 'male');
+                        localStorage.setItem('letstun_voice_gender', 'male');
                       }}
                       className={`p-2 rounded-xl border text-xs font-bold transition ${
                         voiceGender === 'male'
@@ -693,7 +693,7 @@ export const SettingsPage: React.FC = () => {
                     onClick={() => {
                       const next = !showScriptAids;
                       setShowScriptAids(next);
-                      localStorage.setItem('vocabflow_show_script_aids', String(next));
+                      localStorage.setItem('letstun_show_script_aids', String(next));
                     }}
                     className={`w-full p-2 rounded-xl border text-xs font-bold transition flex items-center justify-between ${
                       showScriptAids
@@ -898,7 +898,7 @@ export const SettingsPage: React.FC = () => {
                       checked={showSupportBtn}
                       onChange={(val) => {
                         setShowSupportBtn(val);
-                        localStorage.setItem('vocabflow_show_support_btn', val ? 'true' : 'false');
+                        localStorage.setItem('letstun_show_support_btn', val ? 'true' : 'false');
                         window.dispatchEvent(new Event('storage'));
                       }}
                       label="Nút Hỗ trợ nổi"

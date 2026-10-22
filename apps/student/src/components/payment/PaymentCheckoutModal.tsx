@@ -226,7 +226,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight">
-                Nâng Cấp Gói {tier === 'PRO' ? 'VocabFlow Pro' : 'VocabFlow Plus'}
+                Nâng Cấp Gói {tier === 'PRO' ? 'LetStuN Pro' : 'LetStuN Plus'}
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Thanh toán an toàn • Quét mã QR tự động kích hoạt tài khoản 24/7

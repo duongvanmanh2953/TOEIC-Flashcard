@@ -69,10 +69,10 @@ async function main() {
     process.exit(1);
   }
 
-  const adminEmail = 'admin@vocabflow.ai';
+  const adminEmail = 'admin@letstun.com';
   // Generate a highly secure 24-character password with symbols
   const rawBytes = crypto.randomBytes(18).toString('base64');
-  const securePassword = `VocabFlow!${rawBytes.replace(/[^a-zA-Z0-9]/g, '')}#2026`;
+  const securePassword = `LetStuN!${rawBytes.replace(/[^a-zA-Z0-9]/g, '')}#2026`;
 
   console.log('🔄 Đang mã hóa mật khẩu bảo mật cao...');
   const passwordHash = await bcrypt.hash(securePassword, 10);

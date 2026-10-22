@@ -1,7 +1,7 @@
 /**
- * VocabFlow Cross-App Unified Single Sign-On (SSO) Helper
+ * LetStuN Cross-App Unified Single Sign-On (SSO) Helper
  * Ensures seamless token sharing between Student, Admin, and Kid sub-apps.
- * Works seamlessly in both Local Development (port-based) and Production (.vocalflow.site).
+ * Works seamlessly in both Local Development (port-based) and Production (.letstun.site).
  */
 
 export type SubApp = 'student' | 'admin' | 'kid' | 'landing';
@@ -9,19 +9,19 @@ export type SubApp = 'student' | 'admin' | 'kid' | 'landing';
 /**
  * Resolves the absolute base URL for any target sub-application.
  * Automatically adapts between local development (ports 3000, 3100, 3200, 3080)
- * and production domains (*.vocalflow.site).
+ * and production domains (*.letstun.site).
  */
 export function getAppBaseUrl(app: SubApp): string {
   if (typeof window === 'undefined') {
     switch (app) {
       case 'admin':
-        return 'https://admin.vocalflow.site';
+        return 'https://admin.letstun.site';
       case 'kid':
-        return 'https://kid.vocalflow.site';
+        return 'https://kid.letstun.site';
       case 'student':
-        return 'https://app.vocalflow.site';
+        return 'https://app.letstun.site';
       case 'landing':
-        return 'https://vocalflow.site';
+        return 'https://letstun.site';
     }
   }
 
@@ -49,13 +49,13 @@ export function getAppBaseUrl(app: SubApp): string {
   // Production domain mapping
   switch (app) {
     case 'admin':
-      return 'https://admin.vocalflow.site';
+      return 'https://admin.letstun.site';
     case 'kid':
-      return 'https://kid.vocalflow.site';
+      return 'https://kid.letstun.site';
     case 'student':
-      return 'https://app.vocalflow.site';
+      return 'https://app.letstun.site';
     case 'landing':
-      return 'https://vocalflow.site';
+      return 'https://letstun.site';
   }
 }
 
@@ -70,15 +70,15 @@ export function buildSsoUrl(app: SubApp, path = '/'): string {
 
   if (typeof window !== 'undefined') {
     const token =
-      localStorage.getItem('vocabflow_access_token') ||
-      sessionStorage.getItem('vocabflow_access_token');
+      localStorage.getItem('letstun_access_token') ||
+      sessionStorage.getItem('letstun_access_token');
     const refresh =
-      localStorage.getItem('vocabflow_refresh_token') ||
-      sessionStorage.getItem('vocabflow_refresh_token');
+      localStorage.getItem('letstun_refresh_token') ||
+      sessionStorage.getItem('letstun_refresh_token');
 
     const deviceId =
-      localStorage.getItem('vocabflow_device_id') ||
-      sessionStorage.getItem('vocabflow_device_id');
+      localStorage.getItem('letstun_device_id') ||
+      sessionStorage.getItem('letstun_device_id');
 
     if (token) {
       target.searchParams.set('sso_token', token);
@@ -95,7 +95,7 @@ export function buildSsoUrl(app: SubApp, path = '/'): string {
 }
 
 /**
- * Seamlessly navigates to another VocabFlow sub-app with SSO token handoff.
+ * Seamlessly navigates to another LetStuN sub-app with SSO token handoff.
  */
 export function navigateToApp(app: SubApp, path = '/'): void {
   const url = buildSsoUrl(app, path);
@@ -119,13 +119,13 @@ export function ingestSsoTokens(): boolean {
     const ssoDeviceId = urlParams.get('sso_device_id');
 
     if (ssoDeviceId) {
-      localStorage.setItem('vocabflow_device_id', ssoDeviceId);
+      localStorage.setItem('letstun_device_id', ssoDeviceId);
     }
 
     if (ssoToken) {
-      localStorage.setItem('vocabflow_access_token', ssoToken);
+      localStorage.setItem('letstun_access_token', ssoToken);
       if (ssoRefresh) {
-        localStorage.setItem('vocabflow_refresh_token', ssoRefresh);
+        localStorage.setItem('letstun_refresh_token', ssoRefresh);
       }
 
       // Clean query parameters from address bar and history
@@ -159,7 +159,7 @@ if (typeof window !== 'undefined') {
 let authChannel: BroadcastChannel | null = null;
 try {
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-    authChannel = new BroadcastChannel('vocabflow_auth_channel');
+    authChannel = new BroadcastChannel('letstun_auth_channel');
   }
 } catch {
   // BroadcastChannel unavailable

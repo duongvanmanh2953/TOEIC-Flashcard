@@ -168,7 +168,7 @@ export const CommunityPostDetailPage: React.FC = () => {
     try {
       await navigator.clipboard.writeText(url);
       window.dispatchEvent(
-        new CustomEvent('VOCABFLOW_TOAST', {
+        new CustomEvent('LETSTUN_TOAST', {
           detail: {
             type: 'success',
             title: 'Đã sao chép liên kết',

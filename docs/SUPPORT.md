@@ -1,4 +1,4 @@
-# VocabFlow AI — Real-time Support Architecture
+# LetStuN AI — Real-time Support Architecture
 
 ## 1. Domain Separation
 - **Learner Experience**: Embedded support launcher & live floating chat modal (`SupportFloatingModal.tsx`). Learner does not have or need an administrative support workspace.

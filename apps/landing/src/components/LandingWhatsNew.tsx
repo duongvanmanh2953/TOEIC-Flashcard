@@ -10,7 +10,7 @@ export const LandingWhatsNew: React.FC = React.memo(() => {
           <span>Nâng Cấp Mới Thực Tế</span>
         </span>
         <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-          Có gì mới trên VocabFlow?
+          Có gì mới trên LetStuN?
         </h2>
         <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
           Hệ thống được thiết kế lại xoay quanh tính hiệu quả trong từng phút học thực tế của bạn.

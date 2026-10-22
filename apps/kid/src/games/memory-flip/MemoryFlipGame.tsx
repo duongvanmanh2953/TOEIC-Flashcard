@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { COMPREHENSIVE_VOCABULARY, VocabularyItem } from '../../data/vocabulary/vocabularyData';
 import { KidsIllustration } from '../../assets/illustrations/KidsIllustration';
-import { VocabFlowLogo, VictoryStarModal } from '@vocabflow/shared';
+import { LetStuNLogo, VictoryStarModal } from '@letstun/shared';
 import { soundManager } from '../../services/sound/KidsSoundManager';
 import { voiceService } from '../../services/voice/voiceService';
 import { kidAsset } from '../../utils/kidAsset';

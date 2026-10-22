@@ -19,7 +19,7 @@ import {
   Moon,
   Sun,
 } from 'lucide-react';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import { Footer } from './Footer';
 import { LEGAL_CONFIG, MANDATORY_POLICIES } from '../../config/legalConfig';
 import { useTranslation } from '../../i18n';
@@ -73,7 +73,7 @@ export const PolicyLayout: React.FC<PolicyLayoutProps> = ({
   const relatedPolicies = MANDATORY_POLICIES.filter((p) => p.path !== currentPath);
 
   const getPolicyIcon = (_path: string) => {
-    return <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />;
+    return <LetStuNLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />;
   };
 
   return (
@@ -82,11 +82,11 @@ export const PolicyLayout: React.FC<PolicyLayoutProps> = ({
       <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
-            <Link to={homeTarget} className="flex items-center gap-2.5 group min-w-0" title="VocabFlow Smart Adaptive English">
-              <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200 shrink-0" />
+            <Link to={homeTarget} className="flex items-center gap-2.5 group min-w-0" title="LetStuN Smart Adaptive English">
+              <LetStuNLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200 shrink-0" />
               <div className="flex flex-col text-left">
                 <span className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                  VocabFlow
+                  LetStuN
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium tracking-tight leading-none">
                   Multi-Language Learning
@@ -160,13 +160,13 @@ export const PolicyLayout: React.FC<PolicyLayoutProps> = ({
 
           <div className="space-y-4 max-w-4xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-sm">
-              <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />
+              <LetStuNLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />
               <span>{t('policies.badge', 'Văn Bản Chính Thức')}</span>
             </div>
 
             <div className="flex items-start sm:items-center gap-3 sm:gap-4">
               <div className="p-2 sm:p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 shadow-md shrink-0">
-                <VocabFlowLogo size="md" showContainer={false} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+                <LetStuNLogo size="md" showContainer={false} className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
                 {title}
@@ -207,7 +207,7 @@ export const PolicyLayout: React.FC<PolicyLayoutProps> = ({
             {toc.length > 0 && (
               <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                  <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />
+                  <LetStuNLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />
                   <span>{t('policies.tableOfContents', 'Mục Lục Văn Bản')}</span>
                 </h3>
                 <nav className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1 text-xs">
@@ -260,7 +260,7 @@ export const PolicyLayout: React.FC<PolicyLayoutProps> = ({
             {/* Direct Support & Hotline Contact Card */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-200/70 dark:border-indigo-800/40 space-y-3 text-xs">
               <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-white">
-                <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />
+                <LetStuNLogo size="xs" showContainer={false} className="w-4 h-4 object-contain shrink-0" />
                 <span>{t('policies.needAssistance', 'Cần Hỗ Trợ Trực Tiếp?')}</span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">

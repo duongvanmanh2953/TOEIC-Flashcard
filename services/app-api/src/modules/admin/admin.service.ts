@@ -118,7 +118,7 @@ export class AdminService {
         id: `user-${u.id}`,
         type: 'SIGNUP',
         title: 'Tài khoản mới đăng ký',
-        description: `${u.displayName || u.email} vừa gia nhập VocabFlow`,
+        description: `${u.displayName || u.email} vừa gia nhập LetStuN`,
         severity: 'INFO',
         timestamp: u.createdAt,
       });
@@ -452,8 +452,8 @@ export class AdminService {
 
     const recentTransactions = orders.map((o) => ({
       id: o.id,
-      userEmail: o.user?.email || 'learner@vocabflow.ai',
-      plan: o.plan?.name || o.tier || 'VocabFlow Plus',
+      userEmail: o.user?.email || 'learner@letstun.com',
+      plan: o.plan?.name || o.tier || 'LetStuN Plus',
       amount: o.amount,
       status: o.status,
       createdAt: o.createdAt.toISOString(),
@@ -542,12 +542,12 @@ export class AdminService {
 
     const planBreakdown = [
       {
-        plan: 'VocabFlow PLUS',
+        plan: 'LetStuN PLUS',
         revenue: paidOrders.filter((o) => o.tier === SubscriptionTier.PLUS).reduce((s, o) => s + o.amount, 0),
         count: paidOrders.filter((o) => o.tier === SubscriptionTier.PLUS).length,
       },
       {
-        plan: 'VocabFlow PRO',
+        plan: 'LetStuN PRO',
         revenue: paidOrders.filter((o) => o.tier === SubscriptionTier.PRO).reduce((s, o) => s + o.amount, 0),
         count: paidOrders.filter((o) => o.tier === SubscriptionTier.PRO).length,
       },
@@ -577,7 +577,7 @@ export class AdminService {
         id: o.id,
         orderCode: o.orderCode,
         userId: o.userId,
-        userEmail: o.user?.email || 'learner@vocabflow.ai',
+        userEmail: o.user?.email || 'learner@letstun.com',
         userName: o.user?.displayName || 'Learner',
         planName: o.plan?.name || o.tier,
         tier: o.tier,
@@ -1055,7 +1055,7 @@ export class AdminService {
         if (!isMatch && /^\d+$/.test(rawApiProjectId)) {
           detectedProjectNumber = rawApiProjectId;
 
-          // Check if any authorized domain corresponds to the input project ID (e.g. "vocalflow-e04ca.firebaseapp.com")
+          // Check if any authorized domain corresponds to the input project ID (e.g. "letstun-e04ca.firebaseapp.com")
           const domainMatch = authorizedDomains.some((d: string) => {
             const domainLower = String(d).toLowerCase().trim();
             return (
@@ -1714,14 +1714,14 @@ export class AdminService {
 
     return {
       general: map['CONFIG_GENERAL'] || {
-        siteName: 'VocabFlow AI',
-        supportEmail: 'support@vocabflow.ai',
+        siteName: 'LetStuN AI',
+        supportEmail: 'support@letstun.com',
         timezone: 'Asia/Ho_Chi_Minh',
         defaultCurrency: 'VND',
         allowRegistration: true,
       },
       branding: map['CONFIG_BRANDING'] || {
-        appName: 'VocabFlow',
+        appName: 'LetStuN',
         brandAccent: '#6366f1',
         defaultTheme: 'dark',
       },

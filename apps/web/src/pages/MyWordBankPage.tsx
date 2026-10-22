@@ -167,30 +167,30 @@ export const MyWordBankPage: React.FC = () => {
 
   // View Modes: 'grid' (dưới ô) vs 'list' (danh sách)
   const [deckViewMode, setDeckViewMode] = useState<'grid' | 'list'>(() => {
-    return (localStorage.getItem('vocabflow_deck_view_mode') as 'grid' | 'list') || 'grid';
+    return (localStorage.getItem('letstun_deck_view_mode') as 'grid' | 'list') || 'grid';
   });
   const [wordViewMode, setWordViewMode] = useState<'grid' | 'list'>(() => {
-    return (localStorage.getItem('vocabflow_word_view_mode') as 'grid' | 'list') || 'grid';
+    return (localStorage.getItem('letstun_word_view_mode') as 'grid' | 'list') || 'grid';
   });
 
   const toggleDeckViewMode = (mode: 'grid' | 'list') => {
     setDeckViewMode(mode);
     try {
-      localStorage.setItem('vocabflow_deck_view_mode', mode);
+      localStorage.setItem('letstun_deck_view_mode', mode);
     } catch {}
   };
 
   const toggleWordViewMode = (mode: 'grid' | 'list') => {
     setWordViewMode(mode);
     try {
-      localStorage.setItem('vocabflow_word_view_mode', mode);
+      localStorage.setItem('letstun_word_view_mode', mode);
     } catch {}
   };
 
   // Favorites state
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('vocabflow_favorites') || '[]');
+      return JSON.parse(localStorage.getItem('letstun_favorites') || '[]');
     } catch {
       return [];
     }
@@ -241,7 +241,7 @@ export const MyWordBankPage: React.FC = () => {
 
   const [customCategories, setCustomCategories] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('vocabflow_custom_deck_categories');
+      const saved = localStorage.getItem('letstun_custom_deck_categories');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -274,7 +274,7 @@ export const MyWordBankPage: React.FC = () => {
     const updated = [...customCategories, trimmed];
     setCustomCategories(updated);
     try {
-      localStorage.setItem('vocabflow_custom_deck_categories', JSON.stringify(updated));
+      localStorage.setItem('letstun_custom_deck_categories', JSON.stringify(updated));
     } catch (e) {
       console.warn('Failed to persist custom categories', e);
     }
@@ -643,7 +643,7 @@ export const MyWordBankPage: React.FC = () => {
 
   // Synchronize Favorite IDs with localStorage
   useEffect(() => {
-    localStorage.setItem('vocabflow_favorites', JSON.stringify(favoriteIds));
+    localStorage.setItem('letstun_favorites', JSON.stringify(favoriteIds));
   }, [favoriteIds]);
 
   // Multi-Language Native Browser Speech

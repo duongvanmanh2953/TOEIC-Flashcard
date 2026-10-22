@@ -1,4 +1,4 @@
-# VocabFlow AI Feature Inventory
+# LetStuN AI Feature Inventory
 
 > **Trạng thái**: Đã xác minh qua mã nguồn Frontend và Controller/Service Backend (Verified)  
 > **Nguyên tắc**: Không suy diễn tính năng hoàn thiện chỉ vì có giao diện; đánh giá đúng mức độ hoàn thiện thực tế.

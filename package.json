@@ -1,7 +1,7 @@
 {
-  "name": "vocabflow-ai",
+  "name": "letstun-ai",
   "version": "1.0.0",
-  "description": "VocabFlow AI — Advanced English Vocabulary Learning Platform with Spaced Repetition & AI Tutor",
+  "description": "LetStuN AI — Learn today, remember tomorrow. Advanced Language Learning Platform with Spaced Repetition & AI Tutor",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -19,7 +19,8 @@
     "admin:reset": "npx ts-node apps/api/updateAdminPass.ts"
   },
   "keywords": [
-    "vocabflow",
+    "letstun",
+    "learn-today-remember-tomorrow",
     "vocabulary",
     "spaced-repetition",
     "nestjs",
@@ -27,6 +28,6 @@
     "toeic",
     "english-learning"
   ],
-  "author": "VocabFlow Team",
+  "author": "LetStuN Team",
   "license": "MIT"
 }

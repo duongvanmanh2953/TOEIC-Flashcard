@@ -64,7 +64,7 @@ function slugify(text: string): string {
 }
 
 async function main() {
-  console.log('🌱 Starting VocabFlow AI database seeding...');
+  console.log('🌱 Starting LetStuN AI database seeding...');
 
   // 1. Create Achievements
   const achievements = [
@@ -88,7 +88,7 @@ async function main() {
   // 2. Create Default Users (Demo & Admin)
   const crypto = require('crypto');
   const learnerPassword = process.env.INITIAL_LEARNER_PASSWORD || crypto.randomBytes(12).toString('hex');
-  const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@vocabflow.ai';
+  const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@letstun.com';
   const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
 
   console.log(`[SECURE] Admin password generated or loaded from ENV. Check your logs or .env file.`);
@@ -97,15 +97,15 @@ async function main() {
   const adminHash = await bcrypt.hash(adminPassword, 10);
 
   const proUser = await prisma.user.upsert({
-    where: { email: 'pro@vocabflow.ai' },
+    where: { email: 'pro@letstun.com' },
     update: {
       role: Role.PREMIUM_USER,
       status: UserStatus.ACTIVE,
     },
     create: {
-      email: 'pro@vocabflow.ai',
-      username: 'vocabflow_pro',
-      displayName: 'VocabFlow VIP Pro',
+      email: 'pro@letstun.com',
+      username: 'letstun_pro',
+      displayName: 'LetStuN VIP Pro',
       passwordHash,
       role: Role.PREMIUM_USER,
       status: UserStatus.ACTIVE,
@@ -133,17 +133,17 @@ async function main() {
     },
   });
 
-  // 2.2 System Admin Account (admin@vocabflow.ai)
+  // 2.2 System Admin Account (admin@letstun.com)
   await prisma.user.upsert({
-    where: { email: 'admin@vocabflow.ai' },
+    where: { email: 'admin@letstun.com' },
     update: {
       role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
     },
     create: {
-      email: 'admin@vocabflow.ai',
-      username: 'vocabflow_admin',
-      displayName: 'VocabFlow Administrator',
+      email: 'admin@letstun.com',
+      username: 'letstun_admin',
+      displayName: 'LetStuN Administrator',
       passwordHash: adminHash,
       role: Role.SUPER_ADMIN,
       status: UserStatus.ACTIVE,
@@ -160,7 +160,7 @@ async function main() {
   const proPlan = await prisma.plan.upsert({
     where: { tier: SubscriptionTier.PRO },
     update: {
-      name: 'VocabFlow Pro (Unlimited)',
+      name: 'LetStuN Pro (Unlimited)',
       priceMonthly: 199000,
       aiDailyQuota: -1,
       maxCustomDecks: 999,
@@ -176,7 +176,7 @@ async function main() {
     },
     create: {
       tier: SubscriptionTier.PRO,
-      name: 'VocabFlow Pro (Unlimited)',
+      name: 'LetStuN Pro (Unlimited)',
       priceMonthly: 199000,
       aiDailyQuota: -1,
       maxCustomDecks: 999,
@@ -193,7 +193,7 @@ async function main() {
   });
 
   const lifetimeEnd = new Date('2099-12-31T23:59:59.000Z');
-  const proEmails = ['pro@vocabflow.ai', 'admin@vocabflow.ai'];
+  const proEmails = ['pro@letstun.com', 'admin@letstun.com'];
   for (const email of proEmails) {
     const u = await prisma.user.findUnique({ where: { email } });
     if (u) {
@@ -565,7 +565,7 @@ async function main() {
     await prisma.adminAnnouncement.deleteMany({});
     await prisma.reviewEvent.deleteMany({});
     await prisma.studySession.deleteMany({});
-    await prisma.user.deleteMany({ where: { email: { notIn: ['admin@vocabflow.ai', 'pro@vocabflow.ai'] } } });
+    await prisma.user.deleteMany({ where: { email: { notIn: ['admin@letstun.com', 'pro@letstun.com'] } } });
     console.log('✅ Database cleaned: Only real users, plans, achievements and vocabulary preserved.');
   } catch (err) {
     console.warn('Notice during mock data cleanup:', err);

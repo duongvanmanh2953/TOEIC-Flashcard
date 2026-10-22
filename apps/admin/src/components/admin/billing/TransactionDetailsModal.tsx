@@ -120,7 +120,7 @@ export const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = (
                 <div>
                   <span className="text-slate-400 block text-[11px]">Họ tên học viên</span>
                   <span className="font-semibold text-white text-sm">
-                    {order.user?.displayName || 'Học viên VocabFlow'}
+                    {order.user?.displayName || 'Học viên LetStuN'}
                   </span>
                 </div>
                 <div>

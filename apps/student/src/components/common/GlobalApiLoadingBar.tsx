@@ -61,9 +61,9 @@ export const GlobalApiLoadingBar: React.FC = () => {
       }
     };
 
-    window.addEventListener('VOCABFLOW_API_LOADING', handleLoading);
+    window.addEventListener('LETSTUN_API_LOADING', handleLoading);
     return () => {
-      window.removeEventListener('VOCABFLOW_API_LOADING', handleLoading);
+      window.removeEventListener('LETSTUN_API_LOADING', handleLoading);
       if (progressTimerRef.current) clearInterval(progressTimerRef.current);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };

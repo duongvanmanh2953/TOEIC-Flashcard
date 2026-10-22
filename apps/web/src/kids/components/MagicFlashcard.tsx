@@ -1,5 +1,5 @@
 // ============================================================================
-// VOCALFLOW KIDS — MAGIC FLASHCARD COMPONENT
+// LETSTUN KIDS — MAGIC FLASHCARD COMPONENT
 // Pixel-perfect match with the "Magic Animal Learning Cards" reference image:
 // - Top-Left: Large bold glowing Letter with sparkles (E ✨, F ✨, L ✨, O ✨...)
 // - Vivid Candy Gradient Background (Coral, Cyan, Lavender, Azure, Emerald, Mint...)

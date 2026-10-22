@@ -211,7 +211,7 @@ export class LeaderboardService {
       return {
         rank: idx + 1,
         userId: s.userId,
-        displayName: u?.displayName || 'Thành viên VocabFlow',
+        displayName: u?.displayName || 'Thành viên LetStuN',
         emailMasked: u?.email ? this.maskEmail(u.email) : '***@***.com',
         avatar: u?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${s.userId}`,
         englishLevel: u?.profile?.englishLevel || 'B1',

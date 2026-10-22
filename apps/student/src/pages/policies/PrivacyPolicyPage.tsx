@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { Shield, Lock, Database, Eye, Share2, UserCheck, AlertTriangle, HelpCircle } from 'lucide-react';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Đơn vị kiểm soát và xử lý dữ liệu' },
@@ -41,7 +41,7 @@ export const PrivacyPolicyPage: React.FC = () => {
       {/* Intro box */}
       <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-400">
-          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
+          <LetStuNLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Cam kết bảo vệ quyền riêng tư của học viên</span>
         </div>
         <p>
@@ -191,17 +191,17 @@ export const PrivacyPolicyPage: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-600 dark:text-slate-400">
               <tr>
-                <td className="p-2.5 font-mono text-[11px]">vocabflow_token</td>
+                <td className="p-2.5 font-mono text-[11px]">letstun_token</td>
                 <td className="p-2.5">Lưu trữ JWT token để xác thực phiên đăng nhập an toàn</td>
                 <td className="p-2.5">Cho đến khi đăng xuất hoặc hết hạn phiên</td>
               </tr>
               <tr>
-                <td className="p-2.5 font-mono text-[11px]">vocabflow_theme</td>
+                <td className="p-2.5 font-mono text-[11px]">letstun_theme</td>
                 <td className="p-2.5">Ghi nhớ giao diện Sáng (Light) hoặc Tối (Dark) theo mắt học viên</td>
                 <td className="p-2.5">Vĩnh viễn trên trình duyệt</td>
               </tr>
               <tr>
-                <td className="p-2.5 font-mono text-[11px]">vocabflow_locale</td>
+                <td className="p-2.5 font-mono text-[11px]">letstun_locale</td>
                 <td className="p-2.5">Ghi nhớ lựa chọn ngôn ngữ hiển thị (Tiếng Việt / Tiếng Anh)</td>
                 <td className="p-2.5">Vĩnh viễn trên trình duyệt</td>
               </tr>

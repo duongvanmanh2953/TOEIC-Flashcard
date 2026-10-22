@@ -46,7 +46,7 @@ function createCallHandler(response: any): CallHandler {
 
 async function runTests() {
   console.log('\n======================================================');
-  console.log('🧪 RUNNING VOCABFLOW SECURITY & FAULT TOLERANCE TESTS');
+  console.log('🧪 RUNNING LETSTUN SECURITY & FAULT TOLERANCE TESTS');
   console.log('======================================================\n');
 
   let passed = 0;
@@ -200,13 +200,13 @@ async function runTests() {
     await rabbitMQ.onModuleInit();
 
     let receivedData: any = null;
-    await rabbitMQ.consume('vocabflow.test.queue', async (data, ack) => {
+    await rabbitMQ.consume('letstun.test.queue', async (data, ack) => {
       receivedData = data;
       ack();
     });
 
     const testPayload = { matchId: 'room_101', score: 500 };
-    const published = await rabbitMQ.publish('vocabflow.test.queue', testPayload);
+    const published = await rabbitMQ.publish('letstun.test.queue', testPayload);
     assert.strictEqual(published, true, 'Publish must return true');
 
     // Wait a tick for in-process fallback dispatch

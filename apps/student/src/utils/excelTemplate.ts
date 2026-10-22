@@ -77,12 +77,12 @@ export const downloadVocabularyTemplate = (format: 'xlsx' | 'csv' = 'xlsx') => {
   ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'VocabFlow_Template');
+  XLSX.utils.book_append_sheet(wb, ws, 'LetStuN_Template');
 
   if (format === 'csv') {
-    XLSX.writeFile(wb, 'vocabflow_vocabulary_sample_template.csv', { bookType: 'csv' });
+    XLSX.writeFile(wb, 'letstun_vocabulary_sample_template.csv', { bookType: 'csv' });
   } else {
-    XLSX.writeFile(wb, 'vocabflow_vocabulary_sample_template.xlsx', { bookType: 'xlsx' });
+    XLSX.writeFile(wb, 'letstun_vocabulary_sample_template.xlsx', { bookType: 'xlsx' });
   }
 };
 
@@ -484,7 +484,7 @@ export const parseVocabularyFile = async (file: File): Promise<ParsedWordItem[]>
  */
 export const exportWordsToExcelOrCsv = (
   words: any[],
-  filename: string = 'vocabflow_vocabulary_export',
+  filename: string = 'letstun_vocabulary_export',
   format: 'xlsx' | 'csv' = 'xlsx'
 ) => {
   const exportData = words.map((w) => {

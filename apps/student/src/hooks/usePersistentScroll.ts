@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
  * usePersistentScroll
  * Preserves and restores scroll position across navigations without causing layout shifts or remounting.
  * Debounces sessionStorage writes to guarantee 60fps smooth scrolling.
- * Complies with VOCALFLOW_SPECIFICATION Section 4 and Vercel React Best Practices.
+ * Complies with LETSTUN_SPECIFICATION Section 4 and Vercel React Best Practices.
  */
 export function usePersistentScroll<T extends HTMLElement = HTMLDivElement>(
   storageKey: string,

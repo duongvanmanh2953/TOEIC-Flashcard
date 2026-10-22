@@ -28,7 +28,7 @@ export const NotificationBell: React.FC = () => {
       const payload = res.data?.data || res.data || {};
       const c = payload.unreadCount ?? payload.count ?? 0;
       setUnreadCount(c);
-      window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: c }));
+      window.dispatchEvent(new CustomEvent('letstun:unread-notifs', { detail: c }));
     } catch {
       // Ignore if unauthenticated
     }
@@ -62,7 +62,7 @@ export const NotificationBell: React.FC = () => {
     const onNewNotif = (notif: any) => {
       setUnreadCount((c) => {
         const next = c + 1;
-        window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: next }));
+        window.dispatchEvent(new CustomEvent('letstun:unread-notifs', { detail: next }));
         return next;
       });
       const normalized = {
@@ -107,7 +107,7 @@ export const NotificationBell: React.FC = () => {
       );
       setUnreadCount((c) => {
         const next = Math.max(0, c - 1);
-        window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: next }));
+        window.dispatchEvent(new CustomEvent('letstun:unread-notifs', { detail: next }));
         return next;
       });
     } catch (err) {
@@ -120,7 +120,7 @@ export const NotificationBell: React.FC = () => {
       await api.post('/notifications/mark-all-read');
       setRecentNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      window.dispatchEvent(new CustomEvent('vocabflow:unread-notifs', { detail: 0 }));
+      window.dispatchEvent(new CustomEvent('letstun:unread-notifs', { detail: 0 }));
     } catch (err) {
       console.error(err);
     }

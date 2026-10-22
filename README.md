@@ -1,4 +1,4 @@
-# VocabFlow AI — Advanced English Vocabulary Learning Platform
+# LetStuN AI — Advanced English Vocabulary Learning Platform
 
 > **"Học ít từ hơn. Ghi nhớ trọn đời."**  
 > Nền tảng học từ vựng tiếng Anh cá nhân hóa với thuật toán Lặp lại Ngắt quãng Thích ứng (Adaptive Spaced Repetition) và Gia sư AI tương tác.
@@ -78,11 +78,11 @@ Hệ thống sẽ tự động khởi tạo PostgreSQL, Redis, NestJS Backend v�
 ## 🔑 Tài Khoản Trải Nghiệm Mẫu
 
 - **Tài khoản Học viên (Learner)**:
-  - Email: `learner@vocabflow.ai`
+  - Email: `learner@letstun.com`
   - Mật khẩu: `password123`
   - Đã có sẵn dữ liệu học tập: Cấp độ B1, 5-day streak, các từ đến hạn ôn tập.
 - **Tài khoản Quản trị viên (Admin)**:
-  - Email: `admin@vocabflow.ai`
+  - Email: `admin@letstun.com`
   - Mật khẩu: `admin123`
 
 ---

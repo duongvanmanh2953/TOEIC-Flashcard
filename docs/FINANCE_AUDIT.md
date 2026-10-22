@@ -1,4 +1,4 @@
-# VocabFlow AI — Financial Intelligence & Billing Audit (Phase 0)
+# LetStuN AI — Financial Intelligence & Billing Audit (Phase 0)
 
 > **Mandatory Rule**: The Financial Dashboard must represent a legitimate **Financial Reporting System**.  
 > Never fabricate mock transactions or simulate artificial MRR.  

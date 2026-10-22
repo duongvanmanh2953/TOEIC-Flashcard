@@ -25,12 +25,12 @@ async function runTests() {
 
   // Find or create test users
   let testUser = await prisma.user.findFirst({
-    where: { email: 'student.test@vocabflow.ai' },
+    where: { email: 'student.test@letstun.com' },
   });
   if (!testUser) {
     testUser = await prisma.user.create({
       data: {
-        email: 'student.test@vocabflow.ai',
+        email: 'student.test@letstun.com',
         displayName: 'Test Student',
         passwordHash: 'dummy_hash',
       },
@@ -38,12 +38,12 @@ async function runTests() {
   }
 
   let testAdmin = await prisma.user.findFirst({
-    where: { email: 'admin.test@vocabflow.ai' },
+    where: { email: 'admin.test@letstun.com' },
   });
   if (!testAdmin) {
     testAdmin = await prisma.user.create({
       data: {
-        email: 'admin.test@vocabflow.ai',
+        email: 'admin.test@letstun.com',
         displayName: 'Test Admin',
         role: 'ADMIN',
         passwordHash: 'dummy_hash',

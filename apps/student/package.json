@@ -1,5 +1,5 @@
 {
-  "name": "@vocabflow/student",
+  "name": "@letstun/student",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vocabflow/shared": "*",
+    "@letstun/shared": "*",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
     "firebase": "^12.18.0",

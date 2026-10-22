@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * KidsViviUniverse.tsx
- * High-fidelity vector illustrations for VocalFlow Kid Mode
+ * High-fidelity vector illustrations for LetStuN Kid Mode
  * Inspired by Pixar-style storybook & modern children's edtech design:
  * - Vivi the Fox (Mascot): Hero explorer with backpack, reader with headphones, sleeping on cloud
  * - Wooden signpost with 4 planks: Words, Listening, Speaking, Test

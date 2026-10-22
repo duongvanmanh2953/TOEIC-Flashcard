@@ -96,7 +96,7 @@ export const VocabularyCaptureModal: React.FC<VocabularyCaptureModalProps> = ({
         sourceTitle: sourceTitle || 'Tài liệu thực tế',
         selectedWords,
       });
-      setSuccessMsg(`Đã kết nối thành công ${selectedWords.length} từ vựng vào vòng lặp trí nhớ VocabFlow!`);
+      setSuccessMsg(`Đã kết nối thành công ${selectedWords.length} từ vựng vào vòng lặp trí nhớ LetStuN!`);
       setTimeout(() => {
         if (onSaved) onSaved();
         onClose();

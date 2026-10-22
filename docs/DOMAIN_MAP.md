@@ -1,4 +1,4 @@
-# VocabFlow AI — Domain Boundary Map (Phase 0)
+# LetStuN AI — Domain Boundary Map (Phase 0)
 
 > **Mandatory Rule**: Do NOT conflate or merge distinct operational concepts.  
 > Each domain possesses distinct business logic, data models, routes, lifecycle stages, and permission gates.

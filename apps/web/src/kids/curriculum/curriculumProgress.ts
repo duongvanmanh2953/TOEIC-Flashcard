@@ -38,7 +38,7 @@ export interface KidProgressState {
   unlockedDecorations: string[];
 }
 
-const STORAGE_KEY = 'vocabflow_kids_progress_v2';
+const STORAGE_KEY = 'letstun_kids_progress_v2';
 
 export const getInitialKidsState = (): KidProgressState => {
   const today = new Date().toISOString().slice(0, 10);

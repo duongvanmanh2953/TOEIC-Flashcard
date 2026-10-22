@@ -1,7 +1,7 @@
 @echo off
-title VocabFlow AI - Starting System
+title LetStuN AI - Starting System
 echo ===================================================
-echo     VOCABFLOW AI - ADVANCED VOCABULARY PLATFORM
+echo     LETSTUN AI - ADVANCED VOCABULARY PLATFORM
 echo ===================================================
 echo.
 echo [1/2] Checking Docker...

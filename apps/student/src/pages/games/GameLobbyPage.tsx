@@ -23,7 +23,7 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 
 interface ScheduleItem {
   gameMode: string;
@@ -69,12 +69,12 @@ export const GameLobbyPage: React.FC = () => {
   const [selectedGameMode, setSelectedGameMode] = useState<string>('TRANSLATION_RUSH');
   const [joining, setJoining] = useState(false);
   const [showHeroBanner, setShowHeroBanner] = useState(() => {
-    return localStorage.getItem('vocabflow_hide_games_hero') !== 'true';
+    return localStorage.getItem('letstun_hide_games_hero') !== 'true';
   });
 
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem('vocabflow_fav_games') || '["FOUR_SKILLS_ARENA"]');
+      return JSON.parse(localStorage.getItem('letstun_fav_games') || '["FOUR_SKILLS_ARENA"]');
     } catch {
       return ['FOUR_SKILLS_ARENA'];
     }
@@ -84,14 +84,14 @@ export const GameLobbyPage: React.FC = () => {
     e.stopPropagation();
     setFavorites((prev) => {
       const next = prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode];
-      localStorage.setItem('vocabflow_fav_games', JSON.stringify(next));
+      localStorage.setItem('letstun_fav_games', JSON.stringify(next));
       return next;
     });
   };
 
   const dismissHeroBanner = () => {
     setShowHeroBanner(false);
-    localStorage.setItem('vocabflow_hide_games_hero', 'true');
+    localStorage.setItem('letstun_hide_games_hero', 'true');
   };
 
   useEffect(() => {
@@ -223,7 +223,7 @@ export const GameLobbyPage: React.FC = () => {
           <button
             onClick={() => {
               setShowHeroBanner(true);
-              localStorage.removeItem('vocabflow_hide_games_hero');
+              localStorage.removeItem('letstun_hide_games_hero');
             }}
             className="text-[11px] text-indigo-300 hover:text-white flex items-center gap-1.5 font-bold transition py-1.5 px-3.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-500/30 shadow-md cursor-pointer"
             title="Hiện lại banner giới thiệu"
@@ -357,7 +357,7 @@ export const GameLobbyPage: React.FC = () => {
           {/* Card 1: Word Match Challenge */}
           <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/70 border border-indigo-500/30 hover:border-indigo-400 transition-all duration-300 space-y-4 shadow-lg group">
             <div className="flex items-center justify-between">
-              <VocabFlowLogo size="md" showContainer={false} className="group-hover:scale-110 transition" />
+              <LetStuNLogo size="md" showContainer={false} className="group-hover:scale-110 transition" />
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
                 Lật Thẻ Trí Nhớ
               </span>

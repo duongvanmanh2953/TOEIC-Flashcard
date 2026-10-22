@@ -309,7 +309,7 @@ export class UsageService {
       tier: isPro ? 'PRO' : isPlus ? 'PLUS' : 'FREE',
       isPro,
       isPlus,
-      planName: isPro ? 'VocabFlow Pro (VIP)' : isPlus ? 'VocabFlow Plus' : 'Free Starter',
+      planName: isPro ? 'LetStuN Pro (VIP)' : isPlus ? 'LetStuN Plus' : 'Free Starter',
     };
 
     results.forEach((q) => {

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { Truck, CheckCircle, RefreshCcw, AlertTriangle, ShieldCheck, Clock, FileCheck } from 'lucide-react';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Bản chất dịch vụ số và phương thức cung cấp' },
@@ -39,7 +39,7 @@ export const DeliveryRefundPolicyPage: React.FC = () => {
       {/* Intro Alert Box */}
       <div className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-purple-800 dark:text-purple-400">
-          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
+          <LetStuNLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Phương thức cung cấp sản phẩm số trực tuyến (Digital Access Service)</span>
         </div>
         <p>

@@ -1,2 +1,2 @@
-export * from '../vocabflow/VocabularyCaptureModal';
-export { VocabularyCaptureModal } from '../vocabflow/VocabularyCaptureModal';
+export * from '../letstun/VocabularyCaptureModal';
+export { VocabularyCaptureModal } from '../letstun/VocabularyCaptureModal';

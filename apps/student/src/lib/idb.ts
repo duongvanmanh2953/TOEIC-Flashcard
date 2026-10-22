@@ -1,10 +1,10 @@
 /**
- * IndexedDB Offline Cache & High-Speed Storage for VocabFlow
+ * IndexedDB Offline Cache & High-Speed Storage for LetStuN
  * Provides asynchronous, zero-blocking storage for vocabulary lists, word banks (decks),
  * search indexes, and review state with versioning and cache invalidation.
  */
 
-const DB_NAME = 'vocabflow_offline_db';
+const DB_NAME = 'letstun_offline_db';
 const DB_VERSION = 4;
 const STORE_VOCAB = 'vocabulary';
 const STORE_CACHE = 'api_cache';
@@ -474,7 +474,7 @@ export async function idbResetLanguageData(userId: string | undefined, languageI
 export async function migrateUserLearningData(userId?: string): Promise<void> {
   try {
     const db = await openDB();
-    const MIGRATION_FLAG = `vocabflow:migration:v4:${userId || 'guest'}`;
+    const MIGRATION_FLAG = `letstun:migration:v4:${userId || 'guest'}`;
     if (typeof localStorage !== 'undefined' && localStorage.getItem(MIGRATION_FLAG) === 'completed') {
       return;
     }
@@ -623,7 +623,7 @@ export const idbGetDecks = idbGetLocalDecks;
 
 export function getSessionUnlockedDecks(): Record<string, boolean> {
   try {
-    const raw = sessionStorage.getItem('vocabflow_unlocked_decks');
+    const raw = sessionStorage.getItem('letstun_unlocked_decks');
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -634,7 +634,7 @@ export function saveSessionUnlockedDeck(deckId: string): void {
   try {
     const existing = getSessionUnlockedDecks();
     existing[deckId] = true;
-    sessionStorage.setItem('vocabflow_unlocked_decks', JSON.stringify(existing));
+    sessionStorage.setItem('letstun_unlocked_decks', JSON.stringify(existing));
   } catch { }
 }
 

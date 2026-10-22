@@ -1,4 +1,4 @@
-# Sổ Tay Kỹ Thuật UI/UX & Quy Chuẩn Layout (VocabFlow Web)
+# Sổ Tay Kỹ Thuật UI/UX & Quy Chuẩn Layout (LetStuN Web)
 
 > **Tài liệu ghi chú kỹ thuật, quy chuẩn thiết kế và lưu ý sửa đổi giao diện**  
 > **Cập nhật lần cuối**: 18/10/2026
@@ -37,8 +37,8 @@
   - **Phân nhánh 4 cấp bậc tài khoản**:
     1. **Khách (Guest)**: Viền và nền ánh tím/indigo frosted glass nhẹ, nhãn "GÓI TRẢI NGHIỆM", tên "Khách Khám Phá", nút bấm `[👑 LÊN PRO]` (hoặc Mở Khóa). Ngay bên dưới là card đồng bộ tiến độ với nút `[Đăng nhập 1-chạm]`.
     2. **Miễn Phí (Free)**: Viền và nền amber/slate nhẹ, nhãn "GÓI TÀI KHOẢN", tên "Tài khoản Free", nút bấm `[👑 LÊN PRO]`. Bên dưới là thông tin Profile cá nhân.
-    3. **Nâng Cao (Plus)**: Viền neon cyan luminous, gradient slate-cyan, icon `Zap`, nhãn "GÓI NÂNG CAO", tên "VocabFlow Plus", nút bấm `[⚡ LÊN VIP]`.
-    4. **VIP (Pro)**: Viền mạ vàng obsidian `border-amber-400/60`, dải phản quang lỏng (specular sheen), icon `Crown` vàng hoàng gia, nhãn "ĐẶC QUYỀN PRO", tên "VocabFlow VIP", badge `[👑 VIP]`.
+    3. **Nâng Cao (Plus)**: Viền neon cyan luminous, gradient slate-cyan, icon `Zap`, nhãn "GÓI NÂNG CAO", tên "LetStuN Plus", nút bấm `[⚡ LÊN VIP]`.
+    4. **VIP (Pro)**: Viền mạ vàng obsidian `border-amber-400/60`, dải phản quang lỏng (specular sheen), icon `Crown` vàng hoàng gia, nhãn "ĐẶC QUYỀN PRO", tên "LetStuN VIP", badge `[👑 VIP]`.
   - **Viền Sidebar & Footer**: Đường phân cách `border-t` và `border-r` của `<aside>` tự động phát sáng nhẹ theo màu sắc của từng tier (Amber Gold cho Pro, Cyan Luminous cho Plus, Indigo cho Guest, Slate cho Free).
 
 ---

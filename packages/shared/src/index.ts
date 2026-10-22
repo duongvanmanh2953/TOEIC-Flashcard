@@ -1,5 +1,5 @@
 /**
- * @vocabflow/shared - Shared types, domain contracts & auth specifications
+ * @letstun/shared - Shared types, domain contracts & auth specifications
  */
 
 export enum Role {
@@ -57,7 +57,7 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-export * from './components/VocabFlowLogo';
+export * from './components/LetStuNLogo';
 export * from './components/VictoryStarModal';
 export * from './config/languageStandards';
 export { default as enTranslations } from './locales/en.json';

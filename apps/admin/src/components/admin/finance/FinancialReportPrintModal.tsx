@@ -34,10 +34,10 @@ export const FinancialReportPrintModal: React.FC<FinancialReportPrintModalProps>
 }) => {
   const [selectedType, setSelectedType] = useState<string>(initialReportType || 'ALL');
   const [preparedBy, setPreparedBy] = useState<string>(
-    currentUser?.displayName || 'Quản Trị Viên VocabFlow'
+    currentUser?.displayName || 'Quản Trị Viên LetStuN'
   );
   const [chiefAccountant, setChiefAccountant] = useState<string>('Trần Thị Minh Hằng');
-  const [director, setDirector] = useState<string>('Ban Giám Đốc VocabFlow');
+  const [director, setDirector] = useState<string>('Ban Giám Đốc LetStuN');
   const [customNotes, setCustomNotes] = useState<string>('');
   const [showConfig, setShowConfig] = useState<boolean>(false);
 

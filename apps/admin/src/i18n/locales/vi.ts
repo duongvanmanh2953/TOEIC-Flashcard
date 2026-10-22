@@ -5,7 +5,7 @@ import { viAdmin } from './vi/admin';
 
 export const vi = {
   common: {
-    appName: 'VocabFlow',
+    appName: 'LetStuN',
     tagline: 'Học Từ Vựng Thích Ứng Cao Cấp',
     loading: 'Đang tải dữ liệu...',
     save: 'Lưu thay đổi',
@@ -66,7 +66,7 @@ export const vi = {
     backDashboard: 'Trở về Tổng Quan',
   },
   aiTutor: {
-    title: 'Gia Sư AI VocabFlow',
+    title: 'Gia Sư AI LetStuN',
     subtitle: 'Chuyên gia ngôn ngữ theo ngữ cảnh chuẩn khung tham chiếu CEFR',
     inputPlaceholder: 'Hỏi bất kỳ điều gì: sắc thái từ, phrasal verbs, cách viết email công việc...',
     send: 'Gửi câu hỏi',
@@ -80,12 +80,12 @@ export const vi = {
     newChat: 'Đoạn hội thoại mới',
   },
   subscriptions: {
-    title: 'Nâng Cấp Trải Nghiệm Học Cùng VocabFlow',
+    title: 'Nâng Cấp Trải Nghiệm Học Cùng LetStuN',
     subtitle: 'Tăng tốc phản xạ và điểm số TOEIC với AI Tutor chuyên sâu, hạn mức theo ngày tối ưu và gói thuê bao linh hoạt.',
     currentPlan: 'Gói hiện tại',
     freeTitle: 'Learner Free',
-    plusTitle: 'VocabFlow Plus',
-    proTitle: 'VocabFlow Pro',
+    plusTitle: 'LetStuN Plus',
+    proTitle: 'LetStuN Pro',
     comingSoonBadge: 'Cổng VietQR tự động 24/7',
     registerInterest: 'Nâng cấp ngay',
     aiQuota: 'Số lượt tham vấn AI hàng ngày',
@@ -122,7 +122,7 @@ export const vi = {
   },
   adminSettings: {
     title: 'Cài Đặt Hệ Thống & Cấu Hình Quản Trị',
-    subtitle: 'Quản lý chính sách lưu trữ DB, mô hình AI, cổng thanh toán và thông số vận hành VocabFlow.',
+    subtitle: 'Quản lý chính sách lưu trữ DB, mô hình AI, cổng thanh toán và thông số vận hành LetStuN.',
     tabRetention: 'Chính Sách Lưu Trữ & DB',
     tabGeneral: 'Cấu Hình Nền Tảng',
     tabAI: 'Mô Hình AI Tutor',

@@ -83,8 +83,8 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.get('/', (_req: any, res: any) => {
     res.status(200).json({
-      name: 'VocabFlow Student API',
-      service: 'vocabflow-app-api',
+      name: 'LetStuN Student API',
+      service: 'letstun-app-api',
       status: 'UP',
       health: '/health',
       docs: '/api/docs',
@@ -92,20 +92,20 @@ async function bootstrap() {
     });
   });
   expressApp.get('/health', (_req: any, res: any) => {
-    res.status(200).json({ status: 'UP', service: 'vocabflow-app-api', timestamp: new Date().toISOString() });
+    res.status(200).json({ status: 'UP', service: 'letstun-app-api', timestamp: new Date().toISOString() });
   });
 
   // Enable CORS for Student Domain
   const allowedOrigins = [
     clientUrl,
-    'https://app.vocalflow.site',
-    'https://vocalflow.site',
+    'https://app.letstun.site',
+    'https://letstun.site',
     'http://localhost:3000',
     'http://localhost:5173',
   ];
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('vocalflow.site')) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('letstun.site')) {
         callback(null, true);
       } else {
         callback(null, false);
@@ -127,8 +127,8 @@ async function bootstrap() {
 
   // OpenAPI Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('VocabFlow AI API')
-    .setDescription('Production-ready API for VocabFlow AI: Spaced Repetition, Adaptive Learning, Vocabulary Explorer & AI Tutor')
+    .setTitle('LetStuN AI API')
+    .setDescription('Production-ready API for LetStuN AI: Spaced Repetition, Adaptive Learning, Vocabulary Explorer & AI Tutor')
     .setVersion('1.0.0')
     .addBearerAuth()
     .addTag('Authentication')
@@ -143,7 +143,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port, '0.0.0.0');
-  logger.log(`🚀 VocabFlow API running on: http://localhost:${port}/api/v1`);
+  logger.log(`🚀 LetStuN API running on: http://localhost:${port}/api/v1`);
   logger.log(`📚 Swagger Documentation: http://localhost:${port}/api/docs`);
 }
 

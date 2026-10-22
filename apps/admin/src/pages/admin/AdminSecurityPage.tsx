@@ -97,8 +97,8 @@ export const AdminSecurityPage: React.FC = () => {
       });
 
       // 1. Immediately wipe all local tokens & sessions
-      localStorage.removeItem('vocabflow_access_token');
-      localStorage.removeItem('vocabflow_refresh_token');
+      localStorage.removeItem('letstun_access_token');
+      localStorage.removeItem('letstun_refresh_token');
       sessionStorage.clear();
 
       setAdminPassSuccess(
@@ -107,7 +107,7 @@ export const AdminSecurityPage: React.FC = () => {
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('VOCABFLOW_TOAST', {
+          new CustomEvent('LETSTUN_TOAST', {
             detail: {
               type: 'success',
               title: 'Đổi mật khẩu Quản trị viên thành công',

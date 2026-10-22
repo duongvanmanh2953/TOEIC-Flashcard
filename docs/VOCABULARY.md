@@ -1,4 +1,4 @@
-# VocabFlow AI — Vocabulary Master Bank (`/admin/vocabulary`)
+# LetStuN AI — Vocabulary Master Bank (`/admin/vocabulary`)
 
 ## 1. Overview
 The Vocabulary Management Module provides complete administrative control over the canonical vocabulary dictionary.

@@ -85,7 +85,7 @@ export const WordDiagnosticModal: React.FC<WordDiagnosticModalProps> = ({
                 Chẩn đoán: Tại sao tôi hay quên / dùng sai từ này?
               </h3>
               <p className="text-[11px] text-slate-400">
-                VocabFlow™ Root-Cause Diagnostic & Word Journey Timeline
+                LetStuN™ Root-Cause Diagnostic & Word Journey Timeline
               </p>
             </div>
           </div>

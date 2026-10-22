@@ -1,4 +1,4 @@
-# VocabFlow AI — Notifications & Operational Alert Center
+# LetStuN AI — Notifications & Operational Alert Center
 
 ## 1. Separation of Notification Planes
 - **Learner In-App Notifications**: Study reminders, streak alerts, feedback replies, and system announcements.

@@ -179,7 +179,7 @@ export const downloadExamExcelTemplate = (format: 'xlsx' | 'csv' = 'xlsx') => {
   const wsGuide = XLSX.utils.json_to_sheet(INSTRUCTIONS_DATA);
   XLSX.utils.book_append_sheet(wb, wsGuide, 'Huong_Dan_Nhap_De');
 
-  const filename = `vocabflow_mau_nhap_bo_de_thi.${format}`;
+  const filename = `letstun_mau_nhap_bo_de_thi.${format}`;
   XLSX.writeFile(wb, filename, { bookType: format });
 };
 
@@ -190,7 +190,7 @@ export const downloadExamCsvTemplate = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'vocabflow_mau_nhap_bo_de_thi.csv';
+  a.download = 'letstun_mau_nhap_bo_de_thi.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

@@ -169,7 +169,7 @@ export class AuthService {
           ? {
               id: activeSub?.id || 'pro-active',
               tier: 'PRO',
-              planName: activeSub?.plan?.name || 'VocabFlow Pro (Unlimited)',
+              planName: activeSub?.plan?.name || 'LetStuN Pro (Unlimited)',
               currentPeriodEnd: activeSub?.currentPeriodEnd || new Date('2099-12-31T23:59:59.000Z'),
             }
           : activeSub
@@ -309,7 +309,7 @@ export class AuthService {
         ? {
             id: activeSub?.id || 'pro-active',
             tier: 'PRO',
-            planName: activeSub?.plan?.name || 'VocabFlow Pro (Unlimited)',
+            planName: activeSub?.plan?.name || 'LetStuN Pro (Unlimited)',
             currentPeriodEnd: activeSub?.currentPeriodEnd || new Date('2099-12-31T23:59:59.000Z'),
           }
         : activeSub
@@ -554,7 +554,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Đặt lại mật khẩu thành công! Chào mừng bạn quay lại VocabFlow AI.',
+      message: 'Đặt lại mật khẩu thành công! Chào mừng bạn quay lại LetStuN AI.',
       user: {
         id: updatedUser.id,
         email: updatedUser.email,

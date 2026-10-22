@@ -1,4 +1,4 @@
-# UI / UX Audit Report — VocabFlow AI (V3)
+# UI / UX Audit Report — LetStuN AI (V3)
 
 ## 1. Executive Summary
 This audit evaluates the current frontend implementation against the **Premium Liquid Glass Educational SaaS** design system requirements, accessibility standards, responsive layouts, and information architecture.

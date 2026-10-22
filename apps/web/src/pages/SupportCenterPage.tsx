@@ -279,13 +279,13 @@ export const SupportCenterPage: React.FC = () => {
           <Headphones className="w-6 h-6" />
         </div>
         <h2 className="text-xl font-black text-slate-900 dark:text-white">
-          Trung Tâm Hỗ Trợ Khách Hàng VocabFlow
+          Trung Tâm Hỗ Trợ Khách Hàng LetStuN
         </h2>
         <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
           Đăng nhập tài khoản để chat trực tiếp với chuyên viên hỗ trợ 24/7 và theo dõi tiến độ ticket.
         </p>
         <button
-          onClick={() => promptLogin('Liên hệ CSKH VocabFlow')}
+          onClick={() => promptLogin('Liên hệ CSKH LetStuN')}
           className="btn-glass-primary text-xs !py-2.5 !px-5 shadow-sm"
         >
           Đăng nhập ngay
@@ -466,7 +466,7 @@ export const SupportCenterPage: React.FC = () => {
                         <div className={`max-w-[75%] space-y-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
                           <div className="flex items-center gap-1.5 text-[10px] text-slate-400 px-1">
                             <span className="font-semibold text-slate-700 dark:text-slate-300">
-                              {m.senderName || (isMe ? 'Bạn' : 'Hỗ Trợ Viên VocabFlow')}
+                              {m.senderName || (isMe ? 'Bạn' : 'Hỗ Trợ Viên LetStuN')}
                             </span>
                             <span>•</span>
                             <span>

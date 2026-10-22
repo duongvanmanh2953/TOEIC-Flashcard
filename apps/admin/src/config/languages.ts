@@ -1,5 +1,5 @@
 /**
- * Language Registry for VocabFlow Multi-Language Learning Platform
+ * Language Registry for LetStuN Multi-Language Learning Platform
  * Defines core supported languages, speech locales, writing scripts, CEFR/Proficiency levels,
  * feature flags, and visual identity tokens.
  */

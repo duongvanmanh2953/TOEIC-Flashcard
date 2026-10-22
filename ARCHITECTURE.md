@@ -1,8 +1,8 @@
-# Architecture Specification — VocabFlow AI
+# Architecture Specification — LetStuN AI
 
 ## 1. Architectural Overview
 
-VocabFlow AI uses a modern Clean Monorepo Architecture separating backend API services, data persistence, and front-end user experience.
+LetStuN AI uses a modern Clean Monorepo Architecture separating backend API services, data persistence, and front-end user experience.
 
 ```
                   ┌───────────────────────────────┐

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { PolicyLayout, TocItem } from '../../components/layout/PolicyLayout';
 import { LEGAL_CONFIG } from '../../config/legalConfig';
 import { CreditCard, QrCode, CheckCircle2, AlertCircle, RefreshCw, Clock, ArrowRight, ShieldCheck } from 'lucide-react';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 
 const TOC_ITEMS: TocItem[] = [
   { id: 'section-1', title: '1. Danh mục các gói dịch vụ và biểu phí niêm yết' },
@@ -40,7 +40,7 @@ export const PaymentPolicyPage: React.FC = () => {
       {/* Overview Alert */}
       <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
         <div className="flex items-center gap-2 font-bold text-blue-800 dark:text-blue-400">
-          <VocabFlowLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
+          <LetStuNLogo size="xs" showContainer={false} className="w-5 h-5 object-contain shrink-0" />
           <span>Thanh toán an toàn, tự động kích hoạt 24/7</span>
         </div>
         <p>
@@ -79,7 +79,7 @@ export const PaymentPolicyPage: React.FC = () => {
                 </td>
               </tr>
               <tr className="bg-indigo-50/30 dark:bg-indigo-950/20">
-                <td className="p-3 font-bold text-indigo-700 dark:text-indigo-400">VocabFlow Plus</td>
+                <td className="p-3 font-bold text-indigo-700 dark:text-indigo-400">LetStuN Plus</td>
                 <td className="p-3 font-semibold text-slate-900 dark:text-white">99.000 VNĐ / tháng</td>
                 <td className="p-3 font-semibold text-slate-900 dark:text-white">
                   828.000 VNĐ / năm <br />
@@ -90,7 +90,7 @@ export const PaymentPolicyPage: React.FC = () => {
                 </td>
               </tr>
               <tr className="bg-purple-50/30 dark:bg-purple-950/20">
-                <td className="p-3 font-bold text-purple-700 dark:text-purple-400">VocabFlow Pro</td>
+                <td className="p-3 font-bold text-purple-700 dark:text-purple-400">LetStuN Pro</td>
                 <td className="p-3 font-semibold text-slate-900 dark:text-white">199.000 VNĐ / tháng</td>
                 <td className="p-3 font-semibold text-slate-900 dark:text-white">
                   1.548.000 VNĐ / năm <br />
@@ -137,7 +137,7 @@ export const PaymentPolicyPage: React.FC = () => {
               <strong>Bước 1 - Đăng nhập tài khoản:</strong> Học viên đăng nhập vào tài khoản {LEGAL_CONFIG.platformName} (hoặc đăng ký tài khoản mới miễn phí).
             </li>
             <li>
-              <strong>Bước 2 - Lựa chọn gói dịch vụ:</strong> Truy cập mục <em>Nâng cấp tài khoản</em>, chọn gói cước mong muốn (VocabFlow Plus hoặc VocabFlow Pro) và chọn chu kỳ thanh toán (Theo tháng hoặc Theo năm).
+              <strong>Bước 2 - Lựa chọn gói dịch vụ:</strong> Truy cập mục <em>Nâng cấp tài khoản</em>, chọn gói cước mong muốn (LetStuN Plus hoặc LetStuN Pro) và chọn chu kỳ thanh toán (Theo tháng hoặc Theo năm).
             </li>
             <li>
               <strong>Bước 3 - Xác nhận đơn hàng & Tạo mã thanh toán:</strong> Nhấn nút <em>Nâng cấp ngay</em>. Hệ thống sẽ tạo một đơn hàng thanh toán duy nhất với Mã đơn hàng (<code>orderCode</code>), số tiền chính xác, thông tin tài khoản ngân hàng thụ hưởng và mã QR chuyển khoản VietQR. Đơn hàng có thời gian hiệu lực đếm ngược trong vòng <strong>15 phút</strong>.

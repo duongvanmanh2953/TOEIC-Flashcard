@@ -33,7 +33,7 @@ async function main() {
   const proPlan = await prisma.plan.upsert({
     where: { tier: 'PRO' },
     update: {
-      name: 'VocabFlow Pro (Unlimited)',
+      name: 'LetStuN Pro (Unlimited)',
       priceMonthly: 199000,
       aiDailyQuota: -1,
       maxCustomDecks: 999,
@@ -49,7 +49,7 @@ async function main() {
     },
     create: {
       tier: 'PRO',
-      name: 'VocabFlow Pro (Unlimited)',
+      name: 'LetStuN Pro (Unlimited)',
       priceMonthly: 199000,
       aiDailyQuota: -1,
       maxCustomDecks: 999,
@@ -70,19 +70,19 @@ async function main() {
   const adminHash = await bcrypt.hash('admin123', 10);
 
   // ACCOUNT 1: Full VIP Pro Account
-  // Email: pro@vocabflow.ai | Password: password123
+  // Email: pro@letstun.com | Password: password123
   const proUser = await prisma.user.upsert({
-    where: { email: 'pro@vocabflow.ai' },
+    where: { email: 'pro@letstun.com' },
     update: {
       role: 'PREMIUM_USER',
       status: 'ACTIVE',
-      displayName: 'VocabFlow VIP Pro',
+      displayName: 'LetStuN VIP Pro',
       passwordHash,
     },
     create: {
-      email: 'pro@vocabflow.ai',
-      username: 'vocabflow_pro',
-      displayName: 'VocabFlow VIP Pro',
+      email: 'pro@letstun.com',
+      username: 'letstun_pro',
+      displayName: 'LetStuN VIP Pro',
       passwordHash,
       role: 'PREMIUM_USER',
       status: 'ACTIVE',
@@ -120,22 +120,22 @@ async function main() {
       currentPeriodEnd: lifetimeEnd,
     },
   });
-  console.log('✅ Tài khoản 1: pro@vocabflow.ai | Mật khẩu: password123 (VIP Pro Unlimited)');
+  console.log('✅ Tài khoản 1: pro@letstun.com | Mật khẩu: password123 (VIP Pro Unlimited)');
 
   // ACCOUNT 2: System Administrator
-  // Email: admin@vocabflow.ai | Password: admin123
+  // Email: admin@letstun.com | Password: admin123
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@vocabflow.ai' },
+    where: { email: 'admin@letstun.com' },
     update: {
       role: 'SUPER_ADMIN',
       status: 'ACTIVE',
-      displayName: 'VocabFlow Administrator',
+      displayName: 'LetStuN Administrator',
       passwordHash: adminHash,
     },
     create: {
-      email: 'admin@vocabflow.ai',
+      email: 'admin@letstun.com',
       username: 'admin',
-      displayName: 'VocabFlow Administrator',
+      displayName: 'LetStuN Administrator',
       passwordHash: adminHash,
       role: 'SUPER_ADMIN',
       status: 'ACTIVE',
@@ -173,18 +173,18 @@ async function main() {
       currentPeriodEnd: lifetimeEnd,
     },
   });
-  console.log('✅ Tài khoản 2: admin@vocabflow.ai | Mật khẩu: admin123 (Super Admin)');
+  console.log('✅ Tài khoản 2: admin@letstun.com | Mật khẩu: admin123 (Super Admin)');
 
-  // Sync legacy admin@vocabflow.ai for backwards compatibility
+  // Sync legacy admin@letstun.com for backwards compatibility
   await prisma.user.upsert({
-    where: { email: 'admin@vocabflow.ai' },
+    where: { email: 'admin@letstun.com' },
     update: {
       role: 'SUPER_ADMIN',
       status: 'ACTIVE',
       passwordHash: adminHash,
     },
     create: {
-      email: 'admin@vocabflow.ai',
+      email: 'admin@letstun.com',
       username: 'admin_legacy',
       displayName: 'System Admin',
       passwordHash: adminHash,
@@ -194,7 +194,7 @@ async function main() {
   });
 
   // Delete all other mock users
-  const allowedEmails = ['admin@vocabflow.ai', 'pro@vocabflow.ai', 'admin@vocabflow.ai'];
+  const allowedEmails = ['admin@letstun.com', 'pro@letstun.com', 'admin@letstun.com'];
   const deletedUsers = await prisma.user.deleteMany({
     where: {
       email: { notIn: allowedEmails },
@@ -428,8 +428,8 @@ async function main() {
   console.log('\n✨ HOÀN TẤT THÀNH CÔNG!');
   console.log('----------------------------------------------------');
   console.log('📌 2 TÀI KHOẢN CỐ ĐỊNH DUY NHẤT:');
-  console.log('   1. Học viên VIP Pro: pro@vocabflow.ai | pass: password123');
-  console.log('   2. Quản trị hệ thống: admin@vocabflow.ai | pass: admin123');
+  console.log('   1. Học viên VIP Pro: pro@letstun.com | pass: password123');
+  console.log('   2. Quản trị hệ thống: admin@letstun.com | pass: admin123');
   console.log(`📌 KHO TỪ VỰNG: ${vocabCount} từ TOEIC được bảo toàn nguyên vẹn.`);
   console.log(`📌 NGÂN HÀNG GAME: ${finalQuestionsCount} câu hỏi sẵn sàng cho đấu trường.`);
   console.log('----------------------------------------------------');

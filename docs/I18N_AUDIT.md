@@ -1,4 +1,4 @@
-# VocabFlow AI — Internationalization (i18n) Audit (Phase 0)
+# LetStuN AI — Internationalization (i18n) Audit (Phase 0)
 
 > **Mandatory Rule**: All UI text must stem from the internationalization engine (`t("...")`).  
 > Zero hardcoded English or Vietnamese in UI components, tables, buttons, toasts, tooltips, or empty states.  
@@ -10,7 +10,7 @@
 
 ### 1.1 Existing Setup
 - Location: `apps/web/src/i18n/index.tsx`
-- Provider: `I18nProvider` storing locale in `localStorage` (`vocabflow_locale`).
+- Provider: `I18nProvider` storing locale in `localStorage` (`letstun_locale`).
 - Files: Monolithic dictionary files: `apps/web/src/i18n/locales/en.ts` and `vi.ts`.
 - Fallback logic: Current locale → English dictionary fallback → key string.
 

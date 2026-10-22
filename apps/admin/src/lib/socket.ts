@@ -18,7 +18,7 @@ export const getSocket = (): Socket => {
     });
 
     socket.on('connect', () => {
-      console.log('⚡ Connected to VocabFlow Realtime WebSocket Server:', socket?.id);
+      console.log('⚡ Connected to LetStuN Realtime WebSocket Server:', socket?.id);
     });
 
     socket.on('disconnect', (reason) => {
@@ -48,7 +48,7 @@ export const getChatSocket = (userId?: string): Socket => {
     });
 
     chatSocket.on('connect', () => {
-      console.log('💬 Connected to VocabFlow Realtime E2EE Chat Gateway:', chatSocket?.id);
+      console.log('💬 Connected to LetStuN Realtime E2EE Chat Gateway:', chatSocket?.id);
       if (userId) {
         chatSocket?.emit('register_user', { userId });
       }

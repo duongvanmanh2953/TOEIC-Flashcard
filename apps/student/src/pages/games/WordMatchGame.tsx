@@ -7,7 +7,7 @@ import {
 import api from '../../lib/api';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 import { CountryFlag } from '../../components/language/CountryFlag';
-import { VocabFlowLogo, VictoryStarModal } from '@vocabflow/shared';
+import { LetStuNLogo, VictoryStarModal } from '@letstun/shared';
 
 interface MatchCard {
   id: string;
@@ -252,7 +252,7 @@ export const WordMatchGame: React.FC = () => {
                       </span>
                     </div>
                     <div className="text-[10px] opacity-60 tracking-wider uppercase font-semibold">
-                      VocabFlow
+                      LetStuN
                     </div>
                   </>
                 ) : (
@@ -264,7 +264,7 @@ export const WordMatchGame: React.FC = () => {
                     </div>
                     <div className="my-auto flex flex-col items-center gap-2">
                       <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800/90 flex items-center justify-center p-2 border border-slate-200/80 dark:border-slate-700">
-                        <VocabFlowLogo size="xs" showContainer={false} className="w-6 h-6 object-contain" />
+                        <LetStuNLogo size="xs" showContainer={false} className="w-6 h-6 object-contain" />
                       </div>
                       <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500">
                         Lật Thẻ

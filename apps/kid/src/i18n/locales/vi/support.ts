@@ -5,7 +5,7 @@ export const viSupport = {
   typing: 'Chuyên viên đang soạn tin...',
   placeholder: 'Nhập tin nhắn trao đổi...',
   loginPrompt: 'Vui lòng đăng nhập để gửi yêu cầu hỗ trợ',
-  welcomeTitle: 'Chào mừng bạn đến với CSKH VocabFlow!',
+  welcomeTitle: 'Chào mừng bạn đến với CSKH LetStuN!',
   welcomeBody: 'Chúng tôi có thể hỗ trợ gì cho bạn hôm nay về tài khoản, thanh toán VietQR hay các tính năng học tập? Hãy nhắn tin bên dưới.',
   fullscreen: 'Toàn màn hình',
   cleanMessagesBtn: 'Dọn dẹp tin nhắn cũ hơn 3 ngày',

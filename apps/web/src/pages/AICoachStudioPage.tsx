@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { CustomSelect, SelectOption } from '../components/ui/CustomSelect';
 import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import { confirmModal } from '../components/common/ConfirmDialog';
 import {
   Mic,
@@ -184,12 +184,12 @@ export const AICoachStudioPage: React.FC = () => {
 
   // Hero banner dismiss state
   const [showHeroBanner, setShowHeroBanner] = useState(() => {
-    return localStorage.getItem('vocabflow_hide_coach_hero') !== 'true';
+    return localStorage.getItem('letstun_hide_coach_hero') !== 'true';
   });
 
   const dismissHeroBanner = () => {
     setShowHeroBanner(false);
-    localStorage.setItem('vocabflow_hide_coach_hero', 'true');
+    localStorage.setItem('letstun_hide_coach_hero', 'true');
   };
 
   // ==========================================
@@ -1020,7 +1020,7 @@ export const AICoachStudioPage: React.FC = () => {
           <button
             onClick={() => {
               setShowHeroBanner(true);
-              localStorage.removeItem('vocabflow_hide_coach_hero');
+              localStorage.removeItem('letstun_hide_coach_hero');
             }}
             className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 font-medium transition py-0.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
             title="Hiện lại banner giới thiệu"
@@ -1329,14 +1329,14 @@ export const AICoachStudioPage: React.FC = () => {
                 </button>
 
                 <div className="relative shrink-0">
-                  <VocabFlowLogo size="md" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl shadow-md shadow-indigo-500/20" />
+                  <LetStuNLogo size="md" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl shadow-md shadow-indigo-500/20" />
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 animate-pulse" title="AI Coach Sẵn Sàng" />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <h3 className="font-extrabold text-xs sm:text-base text-slate-900 dark:text-white truncate leading-tight">
-                      VocabFlow AI Coach
+                      LetStuN AI Coach
                     </h3>
                     <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
@@ -1419,7 +1419,7 @@ export const AICoachStudioPage: React.FC = () => {
                 >
                   {msg.role === 'assistant' && (
                     <div className="shrink-0 mt-0.5">
-                      <VocabFlowLogo size="xs" showContainer={false} className="w-7 h-7 sm:w-8 sm:h-8 object-contain select-none" />
+                      <LetStuNLogo size="xs" showContainer={false} className="w-7 h-7 sm:w-8 sm:h-8 object-contain select-none" />
                     </div>
                   )}
                   {msg.role === 'user' ? (

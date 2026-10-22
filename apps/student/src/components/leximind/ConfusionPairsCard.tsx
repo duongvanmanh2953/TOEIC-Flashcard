@@ -1,2 +1,2 @@
-export * from '../vocabflow/ConfusionPairsCard';
-export { ConfusionPairsCard } from '../vocabflow/ConfusionPairsCard';
+export * from '../letstun/ConfusionPairsCard';
+export { ConfusionPairsCard } from '../letstun/ConfusionPairsCard';

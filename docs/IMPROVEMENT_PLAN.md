@@ -1,4 +1,4 @@
-# Improvement Plan — VocabFlow AI (V3)
+# Improvement Plan — LetStuN AI (V3)
 
 ## Prioritized Implementation Roadmap
 

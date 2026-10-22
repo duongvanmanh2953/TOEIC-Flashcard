@@ -200,15 +200,15 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         newPassword,
       });
 
-      setSuccessMsg('Đổi mật khẩu thành công! Chào mừng bạn quay lại VocabFlow AI.');
+      setSuccessMsg('Đổi mật khẩu thành công! Chào mừng bạn quay lại LetStuN AI.');
 
       // Auto login with new JWT session
       if (res.data?.accessToken) {
-        localStorage.setItem('vocabflow_access_token', res.data.accessToken);
-        localStorage.setItem('vocabflow_access_token', res.data.accessToken);
+        localStorage.setItem('letstun_access_token', res.data.accessToken);
+        localStorage.setItem('letstun_access_token', res.data.accessToken);
         if (res.data.refreshToken) {
-          localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
-          localStorage.setItem('vocabflow_refresh_token', res.data.refreshToken);
+          localStorage.setItem('letstun_refresh_token', res.data.refreshToken);
+          localStorage.setItem('letstun_refresh_token', res.data.refreshToken);
         }
       }
 
@@ -323,7 +323,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           <form onSubmit={handleRequestOtp} className="space-y-4 pt-1">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
-                Email Tài Khoản VocabFlow
+                Email Tài Khoản LetStuN
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -333,7 +333,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   autoFocus
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vidu@vocabflow.ai"
+                  placeholder="vidu@letstun.com"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium text-slate-900 dark:text-white"
                 />
               </div>

@@ -625,7 +625,7 @@ export const AdminFinancialReportsPage: React.FC = () => {
               startDate={startDate}
               endDate={endDate}
               reportData={reportData}
-              preparedBy={user?.displayName || 'Quản Trị Viên VocabFlow'}
+              preparedBy={user?.displayName || 'Quản Trị Viên LetStuN'}
             />
           </div>,
           document.body

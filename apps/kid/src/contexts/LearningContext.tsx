@@ -14,14 +14,14 @@ const KidLearningContext = createContext<KidLearningContextType | undefined>(und
 
 export const LearningProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeLanguage, setActiveLanguage] = useState<LanguageDefinition>(() => {
-    const saved = localStorage.getItem('vocalflow_kid_active_lang');
+    const saved = localStorage.getItem('letstun_kid_active_lang');
     return (saved && getLanguage(saved)) || DEFAULT_LEARNING_LANGUAGE;
   });
 
   const switchLanguage = async (languageId: string) => {
     const next = getLanguage(languageId) || DEFAULT_LEARNING_LANGUAGE;
     setActiveLanguage(next);
-    localStorage.setItem('vocalflow_kid_active_lang', next.id);
+    localStorage.setItem('letstun_kid_active_lang', next.id);
   };
 
   return (

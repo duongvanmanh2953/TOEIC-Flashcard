@@ -45,12 +45,12 @@ export const DashboardPage: React.FC = () => {
   const [quotas, setQuotas] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSpotlight, setShowSpotlight] = useState(() => {
-    return localStorage.getItem('vocabflow_hide_dash_spotlight') !== 'true';
+    return localStorage.getItem('letstun_hide_dash_spotlight') !== 'true';
   });
 
   const dismissSpotlight = () => {
     setShowSpotlight(false);
-    localStorage.setItem('vocabflow_hide_dash_spotlight', 'true');
+    localStorage.setItem('letstun_hide_dash_spotlight', 'true');
   };
 
   useEffect(() => {
@@ -368,13 +368,13 @@ export const DashboardPage: React.FC = () => {
                 {isPro ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 text-slate-950 text-xs font-black shadow-sm">
                     <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                    <span>VOCABFLOW PRO VIP</span>
+                    <span>LETSTUN PRO VIP</span>
                   </span>
                 ) : (
                   <PremiumBadge tier={effectiveTier} />
                 )}
                 <span className={`text-xs font-semibold ${isPro ? 'text-amber-700 dark:text-amber-300 font-bold' : 'text-slate-600 dark:text-slate-300'}`}>
-                  {isPro ? 'Đặc quyền học tập tối đa: Trợ lý AI v5 & Ôn tập không giới hạn' : effectiveTier === 'PLUS' ? 'Gói VocabFlow Plus' : 'Tài khoản Miễn Phí'}
+                  {isPro ? 'Đặc quyền học tập tối đa: Trợ lý AI v5 & Ôn tập không giới hạn' : effectiveTier === 'PLUS' ? 'Gói LetStuN Plus' : 'Tài khoản Miễn Phí'}
                 </span>
               </div>
               {!isPro && effectiveTier === 'FREE' && (

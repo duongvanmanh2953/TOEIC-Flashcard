@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { LetStuNLogo } from '@letstun/shared';
 import {
   Volume2,
   Globe,
@@ -60,7 +60,7 @@ export const RichAIMessageRenderer: React.FC<RichAIMessageRendererProps> = ({
   const { activeLanguage } = useLearningContext();
   const effectiveTargetLocale = activeLanguage?.speechLocale || 'en-US';
 
-  const isOfflineFallback = provider === 'vocabflow-core' || content.includes('VocabFlow AI');
+  const isOfflineFallback = provider === 'letstun-core' || content.includes('LetStuN AI');
   const isGemini = provider?.includes('gemini');
   const isOpenAI = provider?.includes('openai');
 

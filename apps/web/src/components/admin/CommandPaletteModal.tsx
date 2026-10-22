@@ -112,7 +112,7 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({ isOpen
         </div>
 
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-[10px] text-slate-400 flex items-center justify-between px-4">
-          <span>VocabFlow Command Center v7.0</span>
+          <span>LetStuN Command Center v7.0</span>
           <span>Bấm phím mũi tên hoặc click để điều hướng</span>
         </div>
       </div>

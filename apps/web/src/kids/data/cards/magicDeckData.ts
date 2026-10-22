@@ -1,5 +1,5 @@
 // ============================================================================
-// VOCALFLOW KIDS — MAGIC LEARNING CARDS DATASET (65+ ANIMALS & MULTI-THEME)
+// LETSTUN KIDS — MAGIC LEARNING CARDS DATASET (65+ ANIMALS & MULTI-THEME)
 // Inspired by the "Magic Animal Learning Cards" collectible deck:
 // Big Letter • "is for Word" • 3D Character Halo • Rich Gradient Themes • Phonetics & Vi
 // ============================================================================

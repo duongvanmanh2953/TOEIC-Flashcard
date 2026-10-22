@@ -1,4 +1,4 @@
-# VocabFlow AI Performance & Optimization Review
+# LetStuN AI Performance & Optimization Review
 
 > **Trạng thái**: Đánh giá dựa trên mã nguồn React Frontend và Prisma Query Backend (Verified & Likely)
 

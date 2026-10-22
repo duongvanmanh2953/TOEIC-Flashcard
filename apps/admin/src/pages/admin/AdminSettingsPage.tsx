@@ -240,14 +240,14 @@ export const AdminSettingsPage: React.FC = () => {
   // Settings State State Record
   const [settings, setSettings] = useState<Record<string, any>>({
     general: {
-      siteName: 'VocabFlow AI - Multi-Language Platform',
+      siteName: 'LetStuN AI - Multi-Language Platform',
       tagline: 'Làm chủ từ vựng TOEIC với Spaced Repetition & AI Tutor',
-      supportEmail: 'support@vocabflow.edu.vn',
+      supportEmail: 'support@letstun.edu.vn',
       maintenanceMode: false,
       allowRegistration: true,
     },
     branding: {
-      logoUrl: '/vocabflow-logo-256.png',
+      logoUrl: '/letstun-logo-256.png',
       accentColor: 'indigo',
       defaultDarkMode: true,
     },
@@ -720,7 +720,7 @@ export const AdminSettingsPage: React.FC = () => {
                         value={settings.branding?.accentColor || 'indigo'}
                         onChange={(val) => handleUpdateField('branding', 'accentColor', val)}
                         options={[
-                          { value: 'indigo', label: 'Indigo Royal (VocabFlow Standard)' },
+                          { value: 'indigo', label: 'Indigo Royal (LetStuN Standard)' },
                           { value: 'violet', label: 'Violet Electric (Modern AI)' },
                           { value: 'emerald', label: 'Emerald Mint (Academic High-Pass)' },
                           { value: 'amber', label: 'Amber Warmth (Dynamic)' },

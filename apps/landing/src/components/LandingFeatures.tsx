@@ -12,7 +12,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
           Không Chỉ Là Flashcard Đơn Thuần
         </h2>
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-          VocabFlow cung cấp trọn bộ công cụ mạnh mẽ hỗ trợ mọi nhu cầu học tập của bạn,
+          LetStuN cung cấp trọn bộ công cụ mạnh mẽ hỗ trợ mọi nhu cầu học tập của bạn,
           từ học sinh nhỏ tuổi tới người đi làm bận rộn.
         </p>
       </div>
@@ -33,7 +33,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
             </p>
           </div>
           <a
-            href="https://app.vocalflow.site/vocabulary"
+            href="https://app.letstun.site/vocabulary"
             className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1 pt-2"
           >
             <span>Khám phá Word Bank</span>
@@ -48,7 +48,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
               <Smile className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-white">
-              VocabFlow Kid: Không Gian Cho Bé
+              LetStuN Kid: Không Gian Cho Bé
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
               Thiết kế giao diện tươi sáng thân thiện, game ghép tranh, phát âm mẫu âm thanh
@@ -56,7 +56,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
             </p>
           </div>
           <a
-            href="https://kid.vocalflow.site"
+            href="https://kid.letstun.site"
             className="text-xs font-bold text-pink-400 hover:underline flex items-center gap-1 pt-2"
           >
             <span>Trải nghiệm Thế Giới Bé</span>
@@ -79,7 +79,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
             </p>
           </div>
           <a
-            href="https://app.vocalflow.site/dashboard"
+            href="https://app.letstun.site/dashboard"
             className="text-xs font-bold text-emerald-400 hover:underline flex items-center gap-1 pt-2"
           >
             <span>Cài đặt ứng dụng PWA</span>

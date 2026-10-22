@@ -1,6 +1,6 @@
 // ============================================================================
-// VOCALFLOW GAME ASSET SERVICE — 3-TIER CACHE ARCHITECTURE
-// Tier 1: In-Memory Cache • Tier 2: IndexedDB (VocalFlowCache) • Tier 3: Cache Storage
+// LETSTUN GAME ASSET SERVICE — 3-TIER CACHE ARCHITECTURE
+// Tier 1: In-Memory Cache • Tier 2: IndexedDB (LetStuNCache) • Tier 3: Cache Storage
 // Request Deduplication • Stale-While-Revalidate • AbortController • 60 FPS
 // ============================================================================
 
@@ -21,10 +21,10 @@ export interface GameAssetManifest {
   items: GameAssetItem[];
 }
 
-const DB_NAME = 'VocalFlowCache';
+const DB_NAME = 'LetStuNCache';
 const DB_VERSION = 1;
 const STORE_MANIFESTS = 'asset-manifests';
-const CACHE_STORAGE_NAME = 'vocalflow-game-assets-v1';
+const CACHE_STORAGE_NAME = 'letstun-game-assets-v1';
 
 class GameAssetService {
   // Tier 1: In-Memory Cache

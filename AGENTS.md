@@ -1,19 +1,19 @@
-# AGENTS.md — VocabFlow AI Engineering & Orchestration Protocol
+# AGENTS.md — LetStuN AI Engineering & Orchestration Protocol
 
 > **Quy chuẩn điều phối trung tâm cho AI Coding Agents (Antigravity, Gemini CLI, Claude Code)**  
-> **Repository**: `VocabFlow AI` (Monorepo TOEIC & Spaced Repetition Platform)  
+> **Repository**: `LetStuN AI` (Monorepo TOEIC & Spaced Repetition Platform)  
 > **Phiên bản**: 2.0.0 — Cập nhật lần cuối: 15/10/2026
 
 ---
 
 ## 1. Tổng quan Dự án (Project Overview — Verified)
 
-VocabFlow AI là nền tảng học từ vựng tiếng Anh và đa ngôn ngữ chuyên sâu tích hợp thuật toán Spaced Repetition (FSRS/SM-2), Flashcard 3D, hệ thống bảo mật đa thiết bị và game giáo dục cho trẻ em.
+LetStuN AI là nền tảng học từ vựng tiếng Anh và đa ngôn ngữ chuyên sâu tích hợp thuật toán Spaced Repetition (FSRS/SM-2), Flashcard 3D, hệ thống bảo mật đa thiết bị và game giáo dục cho trẻ em.
 
 - **Mô hình kiến trúc**: Monorepo quản lý bằng `npm workspaces` (`apps/*`, `services/*`, `packages/*`).
 - **Frontend Stack**: React 18, Vite 5, Tailwind CSS 3.4 (`apps/web`, `apps/student`, `apps/kid`, `apps/admin`, `apps/landing`).
 - **Backend Stack**: NestJS 10, Prisma ORM 5.14, PostgreSQL 16, Redis 7 (`apps/api`, `services/*-api`).
-- **Shared Code**: `@vocabflow/shared` tại `packages/shared`.
+- **Shared Code**: `@letstun/shared` tại `packages/shared`.
 
 ---
 

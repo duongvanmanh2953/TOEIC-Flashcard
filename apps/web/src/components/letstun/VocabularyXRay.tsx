@@ -59,7 +59,7 @@ export const VocabularyXRay: React.FC<VocabularyXRayProps> = ({ onInspectWord, o
     return (
       <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center min-h-[280px]">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mb-3" />
-        <p className="text-xs font-semibold text-slate-500">Đang quét đa chiều cấu trúc trí nhớ (VocabFlow X-Ray)...</p>
+        <p className="text-xs font-semibold text-slate-500">Đang quét đa chiều cấu trúc trí nhớ (LetStuN X-Ray)...</p>
       </div>
     );
   }
@@ -122,7 +122,7 @@ export const VocabularyXRay: React.FC<VocabularyXRayProps> = ({ onInspectWord, o
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                VocabFlow™ Vocabulary X-Ray
+                LetStuN™ Vocabulary X-Ray
               </h3>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                 Cognitive 5D

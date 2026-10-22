@@ -82,7 +82,7 @@ export const QuickNoteModal: React.FC<QuickNoteModalProps> = ({ isOpen, onClose 
 
       setSavedSuccess(true);
       window.dispatchEvent(
-        new CustomEvent('VOCABFLOW_TOAST', {
+        new CustomEvent('LETSTUN_TOAST', {
           detail: {
             type: 'success',
             title: 'Đã lưu ghi chép',

@@ -24,7 +24,7 @@ Khi người dùng (Learner) tạo/up một bộ từ vựng:
   - **Chủ đề / Danh mục**.
 
 ### B. Lưu Trữ IndexedDB Cục Bộ -> Đẩy Lên Cloud (Bản Trả Phí Mới Có)
-- **IndexedDB**: Kho từ cá nhân và dữ liệu tạo mới được lưu trữ cục bộ, tức thì trong IndexedDB của trình duyệt (`vocabflow_offline_db`).
+- **IndexedDB**: Kho từ cá nhân và dữ liệu tạo mới được lưu trữ cục bộ, tức thì trong IndexedDB của trình duyệt (`letstun_offline_db`).
 - **Nút "Đồng bộ / Đẩy lên Cloud" (Sync to Cloud)**:
   - Kiểm tra hạng tài khoản (`user.tier`: `PLUS`, `PRO`, `ENTERPRISE`, hoặc `user.role === 'ADMIN' | 'PREMIUM_USER'`).
   - Nếu là tài khoản Miễn phí (`FREE`): Hiển thị modal VIP thông báo *"Tính năng Lưu trữ & Đồng bộ Đám mây Không giới hạn dành riêng cho gói Trả phí (Plus/Pro). Dữ liệu hiện tại của bạn vẫn được lưu an toàn trên máy (IndexedDB)."* kèm nút nâng cấp gói.

@@ -42,8 +42,8 @@ import {
   CachedWordItem,
   LocalDeck,
 } from '../lib/idb';
-import { WordDiagnosticModal } from '../components/vocabflow/WordDiagnosticModal';
-import { VictoryStarModal } from '@vocabflow/shared';
+import { WordDiagnosticModal } from '../components/letstun/WordDiagnosticModal';
+import { VictoryStarModal } from '@letstun/shared';
 
 export interface ReviewQueueItem {
   vocabularyId: string;
@@ -1092,7 +1092,7 @@ export const ReviewSessionPage: React.FC = () => {
             onFlip={() => setIsFlipped(!isFlipped)}
           />
 
-          {/* Quick Voice Practice Modal Trigger & VocabFlow Diagnostic */}
+          {/* Quick Voice Practice Modal Trigger & LetStuN Diagnostic */}
           <div className="flex items-center justify-end gap-2 flex-wrap">
             <button
               type="button"
@@ -1322,7 +1322,7 @@ export const ReviewSessionPage: React.FC = () => {
           )}
         </div>
       )}
-      {/* VocabFlow Word Diagnostic Modal */}
+      {/* LetStuN Word Diagnostic Modal */}
       <WordDiagnosticModal
         vocabularyId={diagnosticWordId}
         onClose={() => setDiagnosticWordId(null)}

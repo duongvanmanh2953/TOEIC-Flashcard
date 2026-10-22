@@ -36,7 +36,7 @@ export const LandingLearningLoop: React.FC<LandingLearningLoopProps> = React.mem
           <span>Quy Trình Học Tập Khép Kín</span>
         </span>
         <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-          Luồng Học Cốt Lõi Tại VocabFlow
+          Luồng Học Cốt Lõi Tại LetStuN
         </h2>
         <p className="text-xs sm:text-sm text-slate-400">
           Không học vẹt rời rạc. Mỗi lỗ hổng kiến thức phát hiện khi làm bài đều được

@@ -26,7 +26,7 @@ if [ -f "prisma/create-accounts.js" ]; then
   node prisma/create-accounts.js || true
 fi
 
-echo "🚀 Starting VocabFlow AI NestJS Backend..."
+echo "🚀 Starting LetStuN AI NestJS Backend..."
 if [ -f "dist/main.js" ]; then
   exec node dist/main.js
 elif [ -f "dist/src/main.js" ]; then
