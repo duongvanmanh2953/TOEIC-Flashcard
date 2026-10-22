@@ -59,14 +59,14 @@ async function bootstrap() {
   // Enable CORS specifically for Kid Frontend
   const allowedOrigins = [
     clientUrl,
-    'https://kid.letstun.site',
-    'https://letstun.site',
+    'https://kid.vocalflow.site',
+    'https://vocalflow.site',
     'http://localhost:3100',
     'http://localhost:3000',
   ];
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('letstun.site')) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('vocalflow.site')) {
         callback(null, true);
       } else {
         callback(null, false);

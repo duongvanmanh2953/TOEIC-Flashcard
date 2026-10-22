@@ -98,14 +98,14 @@ async function bootstrap() {
   // Enable CORS for Student Domain
   const allowedOrigins = [
     clientUrl,
-    'https://app.letstun.site',
-    'https://letstun.site',
+    'https://app.vocalflow.site',
+    'https://vocalflow.site',
     'http://localhost:3000',
     'http://localhost:5173',
   ];
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('letstun.site')) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('vocalflow.site')) {
         callback(null, true);
       } else {
         callback(null, false);

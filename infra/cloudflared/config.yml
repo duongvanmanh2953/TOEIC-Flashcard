@@ -2,31 +2,31 @@ tunnel: 74b06db0-84c1-4dca-b950-a9550d8c410f
 credentials-file: /etc/cloudflared/74b06db0-84c1-4dca-b950-a9550d8c410f.json
 
 ingress:
-  - hostname: letstun.site
+  - hostname: vocalflow.site
     service: http://landing:80
 
-  - hostname: www.letstun.site
+  - hostname: www.vocalflow.site
     service: http://landing:80
 
-  - hostname: app.letstun.site
+  - hostname: app.vocalflow.site
     service: http://student:80
 
-  - hostname: app-api.letstun.site
+  - hostname: app-api.vocalflow.site
     service: http://app-api:4000
 
-  - hostname: kid.letstun.site
+  - hostname: kid.vocalflow.site
     service: http://kid:80
 
-  - hostname: kid-api.letstun.site
+  - hostname: kid-api.vocalflow.site
     service: http://kid-api:4100
 
-  - hostname: admin.letstun.site
+  - hostname: admin.vocalflow.site
     service: http://admin:80
 
-  - hostname: admin-api.letstun.site
+  - hostname: admin-api.vocalflow.site
     service: http://admin-api:4200
 
-  - hostname: assets.letstun.site
+  - hostname: assets.vocalflow.site
     service: http://assets:80
 
   - service: http_status:404

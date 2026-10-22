@@ -60,14 +60,14 @@ async function bootstrap() {
   // Enable CORS specifically for Admin Frontend
   const allowedOrigins = [
     clientUrl,
-    'https://admin.letstun.site',
-    'https://letstun.site',
+    'https://admin.vocalflow.site',
+    'https://vocalflow.site',
     'http://localhost:3200',
     'http://localhost:3000',
   ];
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('letstun.site')) {
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('vocalflow.site')) {
         callback(null, true);
       } else {
         callback(null, false);

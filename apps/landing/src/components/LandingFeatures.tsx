@@ -33,7 +33,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
             </p>
           </div>
           <a
-            href="https://app.letstun.site/vocabulary"
+            href="https://app.vocalflow.site/vocabulary"
             className="text-xs font-bold text-amber-400 hover:underline flex items-center gap-1 pt-2"
           >
             <span>Khám phá Word Bank</span>
@@ -56,7 +56,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
             </p>
           </div>
           <a
-            href="https://kid.letstun.site"
+            href="https://kid.vocalflow.site"
             className="text-xs font-bold text-pink-400 hover:underline flex items-center gap-1 pt-2"
           >
             <span>Trải nghiệm Thế Giới Bé</span>
@@ -79,7 +79,7 @@ export const LandingFeatures: React.FC = React.memo(() => {
             </p>
           </div>
           <a
-            href="https://app.letstun.site/dashboard"
+            href="https://app.vocalflow.site/dashboard"
             className="text-xs font-bold text-emerald-400 hover:underline flex items-center gap-1 pt-2"
           >
             <span>Cài đặt ứng dụng PWA</span>

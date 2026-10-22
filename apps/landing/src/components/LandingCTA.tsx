@@ -17,7 +17,7 @@ export const LandingCTA: React.FC = React.memo(() => {
 
         <div className="flex flex-wrap items-center justify-center gap-3.5 relative z-10 pt-2">
           <a
-            href="https://app.letstun.site/dashboard"
+            href="https://app.vocalflow.site/dashboard"
             className="btn-glass-primary !py-3 !px-7 text-sm font-extrabold flex items-center gap-2 card-hover-smooth"
           >
             <span>Bắt đầu học miễn phí</span>
@@ -25,7 +25,7 @@ export const LandingCTA: React.FC = React.memo(() => {
           </a>
 
           <a
-            href="https://app.letstun.site/login"
+            href="https://app.vocalflow.site/login"
             className="btn-glass-secondary !py-3 !px-6 text-sm font-bold card-hover-smooth"
           >
             Đăng nhập tài khoản

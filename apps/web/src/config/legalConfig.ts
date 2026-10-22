@@ -56,7 +56,7 @@ export const LEGAL_PLACEHOLDERS = {
   OWNER_NAME: '[Chưa cập nhật: Tên cá nhân / Đơn vị sở hữu website - BLOCKED: OWNER INPUT]',
   OWNER_ADDRESS: '[Chưa cập nhật: Địa chỉ liên hệ / Trụ sở chính thức - BLOCKED: OWNER INPUT]',
   OWNER_PHONE: '[Chưa cập nhật: Số điện thoại liên hệ chính thức - BLOCKED: OWNER INPUT]',
-  OWNER_EMAIL: 'support@letstun.site',
+  OWNER_EMAIL: 'support@vocalflow.site',
   OWNER_TAX_CODE: '[Chưa cập nhật: Mã số thuế - BLOCKED: OWNER INPUT]',
   REPRESENTATIVE: '[Chưa cập nhật: Người đại diện pháp luật - BLOCKED: OWNER INPUT]',
 };
@@ -73,8 +73,8 @@ export const LEGAL_CONFIG: LegalContactConfig = {
   representative: env.VITE_LEGAL_REPRESENTATIVE || LEGAL_PLACEHOLDERS.REPRESENTATIVE,
   platformName: 'LetStuN',
   brandNames: ['LetStuN', 'LetStuN', 'LexiMind'],
-  domain: 'letstun.site',
-  websiteUrl: env.VITE_CLIENT_URL || 'https://app.letstun.site',
+  domain: 'vocalflow.site',
+  websiteUrl: env.VITE_CLIENT_URL || 'https://app.vocalflow.site',
   supportHours: 'Thứ Hai – Thứ Sáu: 08:30 – 17:30 | Thứ Bảy: 08:30 – 12:00 (Nghỉ Chủ Nhật & Lễ, Tết)',
   initialResponseHours: 24,
   isVerifiedByOwner: Boolean(

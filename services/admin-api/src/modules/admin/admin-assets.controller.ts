@@ -165,7 +165,7 @@ export class AdminAssetsController {
     @Query('status') status?: 'all' | 'used' | 'unused',
   ) {
     const storageDir = getAssetStoragePath();
-    const assetsBase = (process.env.ASSETS_BASE_URL || 'https://assets.letstun.site').replace(/\/+$/, '');
+    const assetsBase = (process.env.ASSETS_BASE_URL || 'https://assets.vocalflow.site').replace(/\/+$/, '');
     const results: any[] = [];
 
     const { usedSet, usageDetails } = await this.getAssetUsageMap();
@@ -294,7 +294,7 @@ export class AdminAssetsController {
       const destPath = path.join(targetDir, safeFilename);
 
       fs.writeFileSync(destPath, file.buffer);
-      const assetsBase = (process.env.ASSETS_BASE_URL || 'https://assets.letstun.site').replace(/\/+$/, '');
+      const assetsBase = (process.env.ASSETS_BASE_URL || 'https://assets.vocalflow.site').replace(/\/+$/, '');
       const publicUrl = `${assetsBase}/${sanitizedCategory}/${safeFilename}`;
 
       uploadedResults.push({

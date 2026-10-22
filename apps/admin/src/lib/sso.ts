@@ -1,7 +1,7 @@
 /**
  * LetStuN Cross-App Unified Single Sign-On (SSO) Helper
  * Ensures seamless token sharing between Student, Admin, and Kid sub-apps.
- * Works seamlessly in both Local Development (port-based) and Production (.letstun.site).
+ * Works seamlessly in both Local Development (port-based) and Production (.vocalflow.site).
  */
 
 export type SubApp = 'student' | 'admin' | 'kid' | 'landing';
@@ -9,19 +9,19 @@ export type SubApp = 'student' | 'admin' | 'kid' | 'landing';
 /**
  * Resolves the absolute base URL for any target sub-application.
  * Automatically adapts between local development (ports 3000, 3100, 3200, 3080)
- * and production domains (*.letstun.site).
+ * and production domains (*.vocalflow.site).
  */
 export function getAppBaseUrl(app: SubApp): string {
   if (typeof window === 'undefined') {
     switch (app) {
       case 'admin':
-        return 'https://admin.letstun.site';
+        return 'https://admin.vocalflow.site';
       case 'kid':
-        return 'https://kid.letstun.site';
+        return 'https://kid.vocalflow.site';
       case 'student':
-        return 'https://app.letstun.site';
+        return 'https://app.vocalflow.site';
       case 'landing':
-        return 'https://letstun.site';
+        return 'https://vocalflow.site';
     }
   }
 
@@ -49,13 +49,13 @@ export function getAppBaseUrl(app: SubApp): string {
   // Production domain mapping
   switch (app) {
     case 'admin':
-      return 'https://admin.letstun.site';
+      return 'https://admin.vocalflow.site';
     case 'kid':
-      return 'https://kid.letstun.site';
+      return 'https://kid.vocalflow.site';
     case 'student':
-      return 'https://app.letstun.site';
+      return 'https://app.vocalflow.site';
     case 'landing':
-      return 'https://letstun.site';
+      return 'https://vocalflow.site';
   }
 }
 

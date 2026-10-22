@@ -43,7 +43,7 @@ export const LandingPvPArena: React.FC = React.memo(() => {
 
           <div className="pt-2">
             <a
-              href="https://app.letstun.site/pvp"
+              href="https://app.vocalflow.site/pvp"
               className="btn-glass-primary !py-2.5 !px-5 text-xs font-bold inline-flex items-center gap-2 card-hover-smooth"
             >
               <Swords className="w-4 h-4" />

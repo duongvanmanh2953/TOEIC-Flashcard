@@ -285,7 +285,7 @@ export const KidsLayout: React.FC = () => {
           onClick={() => {
             if (isDrawer) setMobileMenuOpen(false);
             handleOpenParentGate(
-              'https://app.letstun.site/dashboard',
+              'https://app.vocalflow.site/dashboard',
               'Trở Về Màn Học Viên',
               'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
             );
@@ -405,7 +405,7 @@ export const KidsLayout: React.FC = () => {
                   type="button"
                   onClick={() =>
                     handleOpenParentGate(
-                      'https://app.letstun.site/dashboard',
+                      'https://app.vocalflow.site/dashboard',
                       'Trở Về Màn Học Viên',
                       'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
                     )

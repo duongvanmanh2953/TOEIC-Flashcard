@@ -20,7 +20,7 @@ export const LandingQuickActions: React.FC = React.memo(() => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" data-aos="fade-up">
         <a
-          href="https://app.letstun.site/vocabulary"
+          href="https://app.vocalflow.site/vocabulary"
           className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-indigo-400/40 card-hover-smooth flex flex-col justify-between group"
         >
           <div className="space-y-2">
@@ -41,7 +41,7 @@ export const LandingQuickActions: React.FC = React.memo(() => {
         </a>
 
         <a
-          href="https://app.letstun.site/review"
+          href="https://app.vocalflow.site/review"
           className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-sky-400/40 card-hover-smooth flex flex-col justify-between group"
         >
           <div className="space-y-2">
@@ -62,7 +62,7 @@ export const LandingQuickActions: React.FC = React.memo(() => {
         </a>
 
         <a
-          href="https://app.letstun.site/exams"
+          href="https://app.vocalflow.site/exams"
           className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-emerald-400/40 card-hover-smooth flex flex-col justify-between group"
         >
           <div className="space-y-2">
@@ -83,7 +83,7 @@ export const LandingQuickActions: React.FC = React.memo(() => {
         </a>
 
         <a
-          href="https://app.letstun.site/community-knowledge"
+          href="https://app.vocalflow.site/community-knowledge"
           className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-purple-400/40 card-hover-smooth flex flex-col justify-between group"
         >
           <div className="space-y-2">
@@ -104,7 +104,7 @@ export const LandingQuickActions: React.FC = React.memo(() => {
         </a>
 
         <a
-          href="https://app.letstun.site/notes"
+          href="https://app.vocalflow.site/notes"
           className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.08] hover:border-amber-400/40 card-hover-smooth flex flex-col justify-between group"
         >
           <div className="space-y-2">

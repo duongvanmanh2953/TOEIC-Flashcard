@@ -33,7 +33,7 @@ export class AuthController {
 
   private getCookieOptions() {
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieDomain = process.env.COOKIE_DOMAIN || (isProduction ? '.letstun.site' : undefined);
+    const cookieDomain = process.env.COOKIE_DOMAIN || (isProduction ? '.vocalflow.site' : undefined);
     return {
       httpOnly: true,
       secure: isProduction,

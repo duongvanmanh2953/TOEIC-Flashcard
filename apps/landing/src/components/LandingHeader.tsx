@@ -35,7 +35,7 @@ export const LandingHeader: React.FC = React.memo(() => {
             Tính Năng AI
           </a>
           <a
-            href="https://kid.letstun.site"
+            href="https://kid.vocalflow.site"
             className="flex items-center gap-1 text-amber-300 hover:text-amber-200 transition py-1 px-2.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-xs font-bold"
           >
             <span>Thế Giới Bé</span>
@@ -45,13 +45,13 @@ export const LandingHeader: React.FC = React.memo(() => {
         {/* Auth Actions */}
         <div className="flex items-center gap-2.5 shrink-0">
           <a
-            href="https://app.letstun.site/login"
+            href="https://app.vocalflow.site/login"
             className="whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-cyan-400 hover:bg-white/[0.06] transition"
           >
             Đăng nhập
           </a>
           <a
-            href="https://app.letstun.site/dashboard"
+            href="https://app.vocalflow.site/dashboard"
             className="whitespace-nowrap btn-glass-primary !py-2 !px-4 text-xs font-bold flex items-center gap-1.5"
           >
             <span>Bắt đầu học</span>

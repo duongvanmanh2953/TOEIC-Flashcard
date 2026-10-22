@@ -73,7 +73,7 @@ export const LandingHero: React.FC<LandingHeroProps> = React.memo(
             {/* CTAs */}
             <div className="pt-2 flex flex-wrap items-center gap-3.5">
               <a
-                href="https://app.letstun.site/dashboard"
+                href="https://app.vocalflow.site/dashboard"
                 className="btn-glass-primary !py-3.5 !px-7 text-sm font-extrabold flex items-center gap-2 card-hover-smooth shadow-lg shadow-indigo-600/30"
               >
                 <span>Bắt đầu học</span>

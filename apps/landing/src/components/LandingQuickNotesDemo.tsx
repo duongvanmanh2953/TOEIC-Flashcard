@@ -127,7 +127,7 @@ export const LandingQuickNotesDemo: React.FC<LandingQuickNotesDemoProps> = React
                 </div>
               </div>
               <a
-                href="https://app.letstun.site/notes"
+                href="https://app.vocalflow.site/notes"
                 className="px-2.5 py-1 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 font-bold text-[11px] border border-indigo-500/30 transition"
               >
                 Xem ghi chú

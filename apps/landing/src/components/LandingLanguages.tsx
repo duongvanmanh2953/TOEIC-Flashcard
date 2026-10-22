@@ -54,7 +54,7 @@ export const LandingLanguages: React.FC = React.memo(() => {
             </div>
           </div>
           <a
-            href="https://app.letstun.site/vocabulary"
+            href="https://app.vocalflow.site/vocabulary"
             className="pt-2 text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
           >
             <span>Học từ vựng Tiếng Anh</span>
@@ -90,7 +90,7 @@ export const LandingLanguages: React.FC = React.memo(() => {
             </div>
           </div>
           <a
-            href="https://app.letstun.site/vocabulary"
+            href="https://app.vocalflow.site/vocabulary"
             className="pt-2 text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
           >
             <span>Học từ vựng Tiếng Nhật</span>
@@ -126,7 +126,7 @@ export const LandingLanguages: React.FC = React.memo(() => {
             </div>
           </div>
           <a
-            href="https://app.letstun.site/vocabulary"
+            href="https://app.vocalflow.site/vocabulary"
             className="pt-2 text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"
           >
             <span>Học từ vựng Tiếng Trung</span>
@@ -162,7 +162,7 @@ export const LandingLanguages: React.FC = React.memo(() => {
             </div>
           </div>
           <a
-            href="https://app.letstun.site/vocabulary"
+            href="https://app.vocalflow.site/vocabulary"
             className="pt-2 text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"
           >
             <span>Học từ vựng Tiếng Hàn</span>
@@ -198,7 +198,7 @@ export const LandingLanguages: React.FC = React.memo(() => {
             </div>
           </div>
           <a
-            href="https://app.letstun.site/vocabulary"
+            href="https://app.vocalflow.site/vocabulary"
             className="pt-2 text-xs font-bold text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
           >
             <span>Học từ vựng Tiếng Đức</span>
@@ -237,7 +237,7 @@ export const LandingLanguages: React.FC = React.memo(() => {
             </div>
           </div>
           <a
-            href="https://app.letstun.site/vocabulary"
+            href="https://app.vocalflow.site/vocabulary"
             className="pt-2 text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
           >
             <span>Khám phá ngôn ngữ mới</span>
