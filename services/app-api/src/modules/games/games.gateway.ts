@@ -157,12 +157,21 @@ export class GamesGateway
   ) {
     try {
       const mode = data.gameMode || GameModeType.TRANSLATION_RUSH;
-      await this.gamesService.enqueueMatchmaking(mode, {
+      const enqueued = await this.gamesService.enqueueMatchmaking(mode, {
         userId: data.userId,
         displayName: data.displayName,
         avatar: data.avatar,
         socketId: client.id,
       });
+
+      if (!enqueued) {
+        client.emit('matchmaking_status', {
+          status: 'ALREADY_QUEUED',
+          gameMode: mode,
+          message: 'Bạn đang có yêu cầu ghép trận đang chờ xử lý. Vui lòng đợi trong giây lát!',
+        });
+        return { status: 'already_queued', gameMode: mode };
+      }
 
       client.emit('matchmaking_status', {
         status: 'QUEUED',
@@ -336,7 +345,7 @@ export class GamesGateway
 
   private async finishGame(roomCode: string) {
     const room = this.gamesService.roomManager.getRoom(roomCode);
-    if (!room) return;
+    if (!room || room.status === 'FINISHED') return;
 
     room.status = 'FINISHED';
     const ranking = this.gamesService.roomManager.getLeaderboard(roomCode);

@@ -15,15 +15,44 @@ import {
   Role,
 } from '@prisma/client';
 import * as crypto from 'crypto';
+import { RabbitMQService, QUEUES } from '../../common/rabbitmq/rabbitmq.service';
 
 @Injectable()
 export class SubscriptionsService implements OnModuleInit {
   private readonly logger = new Logger(SubscriptionsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private rabbitMQ: RabbitMQService,
+  ) {}
 
   async onModuleInit() {
     await this.ensureDefaultPlans();
+
+    // Consumer Worker: Payment Webhook Queue (vocabflow.payment.webhook)
+    await this.rabbitMQ.consume(
+      QUEUES.PAYMENT_WEBHOOK,
+      async (data: { orderId: string; transactionCode: string; payload: any }, ack, nack) => {
+        try {
+          this.logger.log(`[RabbitMQ Worker] Processing payment fulfillment for order ${data.orderId}...`);
+          const order = await this.prisma.paymentOrder.findUnique({
+            where: { id: data.orderId },
+            include: { plan: true },
+          });
+          if (!order) {
+            this.logger.warn(`Order ${data.orderId} not found in database for fulfillment.`);
+            ack();
+            return;
+          }
+          await this.activateOrderAndSubscription(order, data.transactionCode, data.payload);
+          ack();
+        } catch (err: any) {
+          this.logger.error(`Error processing payment webhook queue: ${err.message}`);
+          nack(false); // Route to Dead Letter Queue
+        }
+      },
+      { prefetch: 5, maxRetries: 3 },
+    );
   }
 
   /**
@@ -331,13 +360,20 @@ export class SubscriptionsService implements OnModuleInit {
       throw new BadRequestException('Gói cước này là miễn phí, không cần thanh toán');
     }
 
-    // Sinh mã đơn hàng ngẫu nhiên 6 chữ số độc nhất (Ví dụ: 829103)
-    let orderCode = Math.floor(100000 + Math.random() * 900000);
-    const existing = await this.prisma.paymentOrder.findUnique({
-      where: { orderCode },
-    });
-    if (existing) {
-      orderCode = Math.floor(100000 + Math.random() * 900000);
+    // Sinh mã đơn hàng ngẫu nhiên 6 chữ số độc nhất (Thử tối đa 10 lần tránh race condition)
+    let orderCode = 0;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const candidate = Math.floor(100000 + Math.random() * 900000);
+      const existing = await this.prisma.paymentOrder.findUnique({
+        where: { orderCode: candidate },
+      });
+      if (!existing) {
+        orderCode = candidate;
+        break;
+      }
+    }
+    if (!orderCode) {
+      throw new BadRequestException('Hệ thống đang quá tải tạo mã đơn hàng. Vui lòng thử lại sau giây lát!');
     }
 
     const description = `VF${orderCode}`;
@@ -495,7 +531,11 @@ export class SubscriptionsService implements OnModuleInit {
 
     // Kiểm tra bảo mật nếu có cấu hình PAYMENT_WEBHOOK_SECRET
     const secret = process.env.PAYMENT_WEBHOOK_SECRET;
-    if (secret && authHeader) {
+    if (secret) {
+      if (!authHeader) {
+        this.logger.warn('VietQR Webhook rejected: missing Authorization header while PAYMENT_WEBHOOK_SECRET is active');
+        throw new UnauthorizedException('Chữ ký Webhook bắt buộc nhưng không được cung cấp');
+      }
       const cleanHeader = authHeader.replace(/^(Bearer|Apikey)\s+/i, '');
       if (cleanHeader !== secret && authHeader !== secret) {
         this.logger.warn('VietQR Webhook authentication mismatch');
@@ -559,7 +599,35 @@ export class SubscriptionsService implements OnModuleInit {
       };
     }
 
-    // Kích hoạt thành công đơn hàng & Subscription
+    // Kiểm tra chống trùng mã giao dịch ngoại vi (External Transaction ID replay attack)
+    if (transactionCode) {
+      const existingTx = await this.prisma.paymentOrder.findFirst({
+        where: {
+          transactionCode,
+          status: PaymentStatus.PAID,
+          id: { not: order.id },
+        },
+      });
+      if (existingTx) {
+        this.logger.warn(
+          `External transaction code "${transactionCode}" was already redeemed for order #${existingTx.orderCode}`,
+        );
+        return {
+          success: false,
+          message: 'Mã giao dịch chuyển khoản này đã được sử dụng cho một đơn hàng khác trước đó.',
+        };
+      }
+    }
+
+    // Phát sự kiện lên RabbitMQ hàng đợi thanh toán với cơ chế Publisher Confirm & DLQ
+    await this.rabbitMQ.publish(QUEUES.PAYMENT_WEBHOOK, {
+      orderId: order.id,
+      orderCode: order.orderCode,
+      transactionCode,
+      payload,
+    });
+
+    // Kích hoạt thành công đơn hàng & Subscription với Transaction an toàn và kiểm tra trạng thái nguyên tử
     await this.activateOrderAndSubscription(order, transactionCode, payload);
 
     return {
@@ -604,9 +672,39 @@ export class SubscriptionsService implements OnModuleInit {
       return { success: true, message: 'Đơn hàng đã thanh toán' };
     }
 
+    const transactionCode = String(orderData.reference || 'PAYOS_WEBHOOK');
+
+    // Chống trùng mã giao dịch ngoại vi
+    if (transactionCode && transactionCode !== 'PAYOS_WEBHOOK') {
+      const existingTx = await this.prisma.paymentOrder.findFirst({
+        where: {
+          transactionCode,
+          status: PaymentStatus.PAID,
+          id: { not: order.id },
+        },
+      });
+      if (existingTx) {
+        this.logger.warn(
+          `PayOS transaction code "${transactionCode}" was already redeemed for order #${existingTx.orderCode}`,
+        );
+        return {
+          success: false,
+          message: 'Mã giao dịch PayOS đã được sử dụng trước đó.',
+        };
+      }
+    }
+
+    // Phát sự kiện lên RabbitMQ hàng đợi thanh toán với cơ chế Publisher Confirm & DLQ
+    await this.rabbitMQ.publish(QUEUES.PAYMENT_WEBHOOK, {
+      orderId: order.id,
+      orderCode: order.orderCode,
+      transactionCode,
+      payload,
+    });
+
     await this.activateOrderAndSubscription(
       order,
-      orderData.reference || 'PAYOS_WEBHOOK',
+      transactionCode,
       payload,
     );
 
@@ -669,9 +767,19 @@ export class SubscriptionsService implements OnModuleInit {
     const durationDays = isYearly ? 365 : 30;
     const currentPeriodEnd = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-    await this.prisma.$transaction([
-      // 1. Cập nhật trạng thái đơn hàng sang PAID
-      this.prisma.paymentOrder.update({
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Kiểm tra trạng thái nguyên tử: Nếu đơn hàng đã PAID thì bỏ qua, chống kích hoạt kép
+      const currentOrder = await tx.paymentOrder.findUnique({
+        where: { id: order.id },
+      });
+
+      if (!currentOrder || currentOrder.status === PaymentStatus.PAID) {
+        this.logger.warn(`Order #${order.orderCode} already marked as PAID. Skipping duplicate fulfillment.`);
+        return;
+      }
+
+      // 2. Cập nhật trạng thái đơn hàng sang PAID
+      await tx.paymentOrder.update({
         where: { id: order.id },
         data: {
           status: PaymentStatus.PAID,
@@ -679,34 +787,34 @@ export class SubscriptionsService implements OnModuleInit {
           transactionCode,
           webhookPayload,
         },
-      }),
+      });
 
-      // 2. Hủy các subscription ACTIVE cũ của người dùng nếu có
-      this.prisma.subscription.updateMany({
+      // 3. Hủy các subscription ACTIVE cũ của người dùng nếu có
+      await tx.subscription.updateMany({
         where: { userId: order.userId, status: 'ACTIVE' },
         data: { status: 'SUPERSEDED' },
-      }),
+      });
 
-      // 3. Tạo Subscription ACTIVE mới
-      this.prisma.subscription.create({
+      // 4. Tạo Subscription ACTIVE mới
+      await tx.subscription.create({
         data: {
           userId: order.userId,
           planId: order.planId,
           status: 'ACTIVE',
           currentPeriodEnd,
         },
-      }),
+      });
 
-      // 4. Cập nhật role người dùng lên PREMIUM_USER
-      this.prisma.user.update({
+      // 5. Cập nhật role người dùng lên PREMIUM_USER
+      await tx.user.update({
         where: { id: order.userId },
         data: {
           role: Role.PREMIUM_USER,
         },
-      }),
+      });
 
-      // 5. Ghi nhật ký hệ thống AuditLog
-      this.prisma.auditLog.create({
+      // 6. Ghi nhật ký hệ thống AuditLog
+      await tx.auditLog.create({
         data: {
           actorId: order.userId,
           action: 'SUBSCRIPTION_UPGRADE_PAID',
@@ -720,8 +828,8 @@ export class SubscriptionsService implements OnModuleInit {
             transactionCode,
           },
         },
-      }),
-    ]);
+      });
+    });
 
     this.logger.log(
       `Successfully activated order ${order.orderCode} (tier: ${order.tier}) for user ${order.userId}`,

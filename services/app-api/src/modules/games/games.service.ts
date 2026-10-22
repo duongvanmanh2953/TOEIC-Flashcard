@@ -4,6 +4,7 @@ import { GameModeType, CefrLevel } from '@prisma/client';
 import { GameRoomManager, GameRoom, RoomPlayer } from './game-room.manager';
 import { GameQuestionPayload } from './game-mode.interface';
 import { RabbitMQService, QUEUES } from '../../common/rabbitmq/rabbitmq.service';
+import { RedisCacheService } from '../../common/cache/redis-cache.service';
 
 export interface GameScheduleItem {
   gameMode: GameModeType;
@@ -27,31 +28,42 @@ export class GamesService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly rabbitMQ: RabbitMQService,
+    private readonly redisCache: RedisCacheService,
   ) {}
 
   async onModuleInit() {
     // 1. Consumer Worker: Arena Game Settlement Queue
-    await this.rabbitMQ.consume(QUEUES.ARENA_GAME_RESULTS, async (data: any, ack) => {
-      try {
-        this.logger.log(`[RabbitMQ Worker] Settling match #${data.roomCode} (${data.gameMode}) for ${data.topPlayers?.length || 0} players...`);
-        await this.processGameResultsJob(data);
-        ack();
-      } catch (err: any) {
-        this.logger.error(`Error processing arena game results queue: ${err.message}`);
-        ack();
-      }
-    });
+    await this.rabbitMQ.consume(
+      QUEUES.ARENA_GAME_RESULTS,
+      async (data: any, ack, nack) => {
+        try {
+          this.logger.log(
+            `[RabbitMQ Worker] Settling match #${data.roomCode} (${data.gameMode}) for ${data.topPlayers?.length || 0} players...`,
+          );
+          await this.processGameResultsJob(data);
+          ack();
+        } catch (err: any) {
+          this.logger.error(`Error processing arena game results queue: ${err.message}`);
+          nack(false); // Reject to Dead Letter Queue for inspection and retry
+        }
+      },
+      { prefetch: 5, maxRetries: 3 },
+    );
 
     // 2. Consumer Worker: Arena Matchmaking Queue
-    await this.rabbitMQ.consume(QUEUES.ARENA_MATCHMAKING, async (data: any, ack) => {
-      try {
-        this.logger.log(`[RabbitMQ Worker] Matchmaking queued for ${data.displayName} (Mode: ${data.gameMode})`);
-        ack();
-      } catch (err: any) {
-        this.logger.error(`Error in arena matchmaking worker: ${err.message}`);
-        ack();
-      }
-    });
+    await this.rabbitMQ.consume(
+      QUEUES.ARENA_MATCHMAKING,
+      async (data: any, ack, nack) => {
+        try {
+          this.logger.log(`[RabbitMQ Worker] Matchmaking queued for ${data.displayName} (Mode: ${data.gameMode})`);
+          ack();
+        } catch (err: any) {
+          this.logger.error(`Error in arena matchmaking worker: ${err.message}`);
+          nack(false);
+        }
+      },
+      { prefetch: 20 },
+    );
   }
 
   /**
@@ -230,6 +242,13 @@ export class GamesService implements OnModuleInit {
     const room = this.roomManager.getRoom(roomCode);
     if (!room || room.players.size === 0) return false;
 
+    // Chống dispatch trùng lặp cho cùng một phòng
+    if ((room as any).isResultsQueued) {
+      this.logger.warn(`Match #${roomCode} results have already been queued. Skipping duplicate dispatch.`);
+      return true;
+    }
+    (room as any).isResultsQueued = true;
+
     const ranking = this.roomManager.getLeaderboard(roomCode);
     const today = new Date().toISOString().slice(0, 10);
     const topPlayers = ranking.slice(0, 20); // Top 20 players
@@ -264,6 +283,7 @@ export class GamesService implements OnModuleInit {
 
   /**
    * Worker job: Asynchronously batch write game results and credit XP
+   * Protected with room-level distributed lock, DB idempotency and atomic transactions
    */
   async processGameResultsJob(data: {
     roomCode: string;
@@ -282,47 +302,87 @@ export class GamesService implements OnModuleInit {
   }): Promise<void> {
     if (!data.topPlayers || data.topPlayers.length === 0) return;
 
-    for (const player of data.topPlayers) {
-      try {
-        await this.prisma.gameResult.create({
-          data: {
-            gameId: data.roomCode,
-            gameMode: data.gameMode,
-            roomCode: data.roomCode,
-            date: data.date,
-            userId: player.userId,
-            rank: player.rank,
-            score: player.score,
-            correctCount: player.correctCount,
-            totalRounds: data.totalRounds,
-            accuracy: player.accuracy,
-            bestStreak: player.bestStreak,
-            durationSec: data.durationSec,
-          },
-        });
-
-        // Credit earned XP to player's UserXP
-        if (player.score > 0) {
-          await this.prisma.userXP.upsert({
-            where: { userId: player.userId },
-            update: { totalXP: { increment: player.score } },
-            create: { userId: player.userId, totalXP: player.score, currentLevel: 1 },
-          });
-        }
-      } catch (err: any) {
-        this.logger.error(`Failed to persist game result for user ${player.userId}: ${err?.message}`);
-      }
+    // 1. Distributed lock per room to prevent concurrent worker settlements
+    const lockKey = `lock:settle:room:${data.roomCode}`;
+    const lockToken = await this.redisCache.acquireLock(lockKey, 30);
+    if (!lockToken) {
+      this.logger.warn(
+        `[Anti-Double-Settlement] Room #${data.roomCode} settlement is currently in progress by another worker. Skipping concurrent job.`,
+      );
+      return;
     }
-    this.logger.log(`[RabbitMQ Worker] Successfully finalized match #${data.roomCode} settlements.`);
+
+    try {
+      // 2. Room-level idempotency check: If match already recorded, skip
+      const existingRoom = await this.prisma.gameResult.findFirst({
+        where: { roomCode: data.roomCode },
+      });
+      if (existingRoom) {
+        this.logger.warn(`[Anti-Double-Settlement] Room #${data.roomCode} already has recorded settlements in DB. Skipping.`);
+        return;
+      }
+
+      // 3. Transactional Batch Settlement:
+      await this.prisma.$transaction(async (tx) => {
+        for (const player of data.topPlayers) {
+          // Player-level uniqueness check inside transaction
+          const existingPlayer = await tx.gameResult.findFirst({
+            where: { roomCode: data.roomCode, userId: player.userId },
+          });
+          if (existingPlayer) {
+            continue;
+          }
+
+          // Insert game result record
+          await tx.gameResult.create({
+            data: {
+              gameId: data.roomCode,
+              gameMode: data.gameMode,
+              roomCode: data.roomCode,
+              date: data.date,
+              userId: player.userId,
+              rank: player.rank,
+              score: player.score,
+              correctCount: player.correctCount,
+              totalRounds: data.totalRounds,
+              accuracy: player.accuracy,
+              bestStreak: player.bestStreak,
+              durationSec: data.durationSec,
+            },
+          });
+
+          // Atomically credit earned XP to player's UserXP in the same transaction
+          if (player.score > 0) {
+            await tx.userXP.upsert({
+              where: { userId: player.userId },
+              update: { totalXP: { increment: player.score } },
+              create: { userId: player.userId, totalXP: player.score, currentLevel: 1 },
+            });
+          }
+        }
+      });
+
+      this.logger.log(`[RabbitMQ Worker] Successfully finalized match #${data.roomCode} settlements.`);
+    } finally {
+      await this.redisCache.releaseLock(lockKey, lockToken);
+    }
   }
 
   /**
-   * Push player to RabbitMQ Arena Matchmaking Queue
+   * Push player to RabbitMQ Arena Matchmaking Queue with deduplication lock
    */
   async enqueueMatchmaking(
     gameMode: GameModeType,
     player: { userId: string; displayName: string; avatar: string; socketId: string },
   ): Promise<boolean> {
+    // Prevent same user from enqueuing multiple concurrent matchmaking tickets
+    const mmLockKey = `lock:matchmaking:${player.userId}`;
+    const token = await this.redisCache.acquireLock(mmLockKey, 30);
+    if (!token) {
+      this.logger.warn(`Player ${player.userId} already has an active matchmaking ticket. Ignoring duplicate queue request.`);
+      return false;
+    }
+
     return this.rabbitMQ.publish(QUEUES.ARENA_MATCHMAKING, {
       gameMode,
       ...player,

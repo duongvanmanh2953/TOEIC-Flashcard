@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
@@ -142,6 +143,71 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
       expiresAt: Date.now() + ttlSeconds * 1000,
     });
     return true;
+  }
+
+  /**
+   * Acquire a distributed lock with a unique ownership token
+   * Returns lockToken (string) if acquired, null if already locked
+   */
+  async acquireLock(key: string, ttlSeconds: number = 10): Promise<string | null> {
+    const lockToken = crypto.randomUUID();
+
+    if (this.isConnected && this.client) {
+      try {
+        const res = await this.client.set(key, lockToken, 'EX', ttlSeconds, 'NX');
+        if (res === 'OK') {
+          return lockToken;
+        }
+        return null;
+      } catch (err: any) {
+        this.logger.warn(`Redis acquireLock error for key ${key}: ${err.message}`);
+      }
+    }
+
+    // In-memory fallback with token ownership
+    const existing = this.inMemoryFallback.get(key);
+    if (existing && existing.expiresAt > Date.now()) {
+      return null;
+    }
+
+    this.inMemoryFallback.set(key, {
+      value: lockToken,
+      expiresAt: Date.now() + ttlSeconds * 1000,
+    });
+    return lockToken;
+  }
+
+  /**
+   * Atomic Lua script release lock: Only the owner with matching token can delete the lock.
+   * Prevents removing another process's lock if TTL expired.
+   */
+  async releaseLock(key: string, lockToken: string): Promise<boolean> {
+    if (!lockToken) return false;
+
+    if (this.isConnected && this.client) {
+      try {
+        // Lua script: check value matches token, only then delete
+        const luaScript = `
+          if redis.call("get", KEYS[1]) == ARGV[1] then
+            return redis.call("del", KEYS[1])
+          else
+            return 0
+          end
+        `;
+        const result = await this.client.eval(luaScript, 1, key, lockToken);
+        return result === 1;
+      } catch (err: any) {
+        this.logger.warn(`Redis releaseLock error for key ${key}: ${err.message}`);
+      }
+    }
+
+    // In-memory fallback: only delete if token matches
+    const existing = this.inMemoryFallback.get(key);
+    if (existing && existing.value === lockToken) {
+      this.inMemoryFallback.delete(key);
+      return true;
+    }
+    return false;
   }
 
   async del(key: string): Promise<void> {

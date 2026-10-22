@@ -70,9 +70,8 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   // Khởi tạo đơn hàng khi mở modal hoặc đổi tier/method/billingCycle
   useEffect(() => {
     if (isOpen) {
-      if (!idempotencyKeyRef.current) {
-        idempotencyKeyRef.current = 'pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
-      }
+      // Mỗi lần thay đổi gói, phương thức hoặc chu kỳ, sinh key mới tránh xung đột payload hash với key cũ
+      idempotencyKeyRef.current = 'pay_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
       createOrder(method);
     } else {
       cleanup();
