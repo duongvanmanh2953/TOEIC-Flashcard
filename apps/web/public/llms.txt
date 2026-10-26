@@ -1,0 +1,24 @@
+# VocabFlow AI
+
+> VocabFlow AI is an adaptive, spaced-repetition English and multilingual vocabulary learning platform powered by FSRS (Free Spaced Repetition Scheduler) algorithms and interactive AI tutoring.
+
+VocabFlow helps learners master foreign language vocabulary through scientifically timed memory intervals, multi-sensory flashcards, contextual usage examples, and gamified practice sessions.
+
+## Public Resources & Information
+
+- [Homepage](https://app.vocalflow.site/): Public landing page, platform overview, core methodology, and feature highlights.
+- [Public Vocabulary Catalog](https://app.vocalflow.site/vocabulary): Browse curated CEFR-aligned vocabulary decks from A1 to C2.
+- [Community Hub](https://app.vocalflow.site/community): Public learning communities and shared study decks.
+- [Student Login](https://app.vocalflow.site/login): Secure learner portal access and sign-in.
+- [New Learner Registration](https://app.vocalflow.site/register): Free account creation and placement onboarding.
+- [Terms of Service](https://app.vocalflow.site/terms-of-service): Terms of service, acceptable use, and platform policies.
+- [Privacy Policy](https://app.vocalflow.site/privacy-policy): User data protection, GDPR compliance, and privacy commitments.
+- [Payment Policy](https://app.vocalflow.site/payment-policy): Subscription tiers, transparent billing terms, and payment guidelines.
+- [Delivery & Refund Policy](https://app.vocalflow.site/delivery-refund-policy): Service delivery timeline and refund regulations.
+- [Complaint Resolution](https://app.vocalflow.site/complaint-resolution): Dispute handling mechanisms and customer support contacts.
+
+## Technical Specifications for AI & LLM Assistants
+
+- Primary Language: Vietnamese (vi), English (en)
+- Pedagogical Model: FSRS-5 (Free Spaced Repetition Scheduler) & Bloom's 2-Sigma Mastery
+- Core Offerings: Spaced Repetition Flashcards, AI Coach Studio, Exam Bank, Kids Multilingual Immersion

@@ -60,5 +60,37 @@ export const getChatSocket = (userId?: string): Socket => {
   return chatSocket;
 };
 
+let isLifecycleBound = false;
+
+function bindBfcacheLifecycle() {
+  if (isLifecycleBound || typeof window === 'undefined') return;
+  isLifecycleBound = true;
+
+  window.addEventListener('pagehide', () => {
+    // Gracefully close active connections when navigating into bfcache
+    if (socket?.connected) {
+      socket.disconnect();
+    }
+    if (chatSocket?.connected) {
+      chatSocket.disconnect();
+    }
+  });
+
+  window.addEventListener('pageshow', (event) => {
+    // Reconnect when restored from back/forward cache
+    if (event.persisted) {
+      if (socket && !socket.connected) {
+        socket.connect();
+      }
+      if (chatSocket && !chatSocket.connected) {
+        chatSocket.connect();
+      }
+    }
+  });
+}
+
+// Bind bfcache lifecycle early in client environment
+bindBfcacheLifecycle();
+
 export default getSocket;
 

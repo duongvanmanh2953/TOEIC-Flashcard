@@ -21,10 +21,15 @@ export default defineConfig({
       },
     },
   },
+  esbuild: {
+    legalComments: 'none',
+  },
   optimizeDeps: {
     exclude: ['mammoth', 'pdfjs-dist', 'pdfjs-dist/legacy/build/pdf.mjs'],
   },
   build: {
+    target: 'es2022',
+    cssCodeSplit: true,
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       external: ['mammoth', 'pdfjs-dist/legacy/build/pdf.mjs'],

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import '../assets/css/kids.css';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   KidsHomeIcon,

@@ -89,5 +89,29 @@ export function useDynamicDocumentTitle(customTitle?: string) {
 
     // Keep HTML lang synchronized
     document.documentElement.lang = lang;
+
+    // Coordinate robots meta tag for public vs private/authenticated routes
+    const isPrivateRoute =
+      location.pathname.startsWith('/dashboard') ||
+      location.pathname.startsWith('/admin') ||
+      location.pathname.startsWith('/review') ||
+      location.pathname.startsWith('/word-bank') ||
+      location.pathname.startsWith('/settings') ||
+      location.pathname.startsWith('/notifications') ||
+      location.pathname.startsWith('/feedback') ||
+      location.pathname.startsWith('/custom-quiz') ||
+      location.pathname.startsWith('/placement-test') ||
+      location.pathname.startsWith('/coach') ||
+      location.pathname.startsWith('/ai-tutor') ||
+      location.pathname.startsWith('/notes');
+
+    let robotsMeta = document.querySelector('meta[name="robots"]');
+    if (!robotsMeta) {
+      robotsMeta = document.createElement('meta');
+      robotsMeta.setAttribute('name', 'robots');
+      document.head.appendChild(robotsMeta);
+    }
+    robotsMeta.setAttribute('content', isPrivateRoute ? 'noindex, nofollow' : 'index, follow');
   }, [location.pathname, locale, customTitle, unreadNotifs, unreadMessages]);
 }
+

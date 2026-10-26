@@ -236,9 +236,9 @@ export const DashboardPage: React.FC = () => {
             <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="lg" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">
               Chào mừng bạn đến với không gian học {activeLanguage.name} ({activeLanguage.nativeName})
-            </h3>
+            </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
               Không gian học này đã sẵn sàng. Hãy bắt đầu ôn tập bộ từ vựng căn bản {activeLanguage.name} Starter để xây dựng phản xạ ngay hôm nay!
             </p>
@@ -279,7 +279,7 @@ export const DashboardPage: React.FC = () => {
               <div className="relative w-12 h-12 rounded-xl bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
                 <BrainCircuit className="w-6 h-6" />
                 {reviewDue > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-sm">
+                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-sm">
                     {reviewDue}
                   </span>
                 )}
@@ -298,13 +298,13 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 {reviewDue > 0 ? (
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
                     <span className="text-rose-600 dark:text-rose-400 font-extrabold">{reviewDue} từ vựng</span> đã chạm ngưỡng cần củng cố (SRS Retrievability &lt; 75%)
-                  </h3>
+                  </h2>
                 ) : (
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
                     Bộ nhớ hoàn hảo: Bạn đã hoàn thành toàn bộ từ vựng cần ôn hôm nay
-                  </h3>
+                  </h2>
                 )}
 
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
@@ -591,10 +591,10 @@ export const DashboardPage: React.FC = () => {
         >
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <span>Phân Bổ Từ Vựng CEFR</span>
-              </h3>
+              </h2>
               <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-400/30">
                 Chuẩn Quốc Tế
               </span>
@@ -701,9 +701,9 @@ export const DashboardPage: React.FC = () => {
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>Memory Rescue</span>
             </div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
               Cứu Từ Vựng Có Nguy Cơ Quên
-            </h3>
+            </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
               Dự đoán xác suất ghi nhớ đang dưới 60%. Cần kích hoạt 1 lần phản xạ để đưa từ trở lại vùng an toàn.
             </p>

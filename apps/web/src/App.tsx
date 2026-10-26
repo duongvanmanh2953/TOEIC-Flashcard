@@ -1,110 +1,126 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LearningProvider } from './contexts/LearningContext';
 import { I18nProvider } from './i18n';
 import { AppShell } from './components/layout/AppShell';
+
+// Eager Critical Routes for instant initial dashboard & landing render
 import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { MyLanguagesPage } from './pages/MyLanguagesPage';
-import { ReviewSessionPage } from './pages/ReviewSessionPage';
-import { VocabularyExplorerPage } from './pages/VocabularyExplorerPage';
-import { PlacementTestPage } from './pages/PlacementTestPage';
-import { AITutorPage } from './pages/AITutorPage';
-import { ProgressAnalyticsPage } from './pages/ProgressAnalyticsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { CommunityDecksPage } from './pages/CommunityDecksPage';
-import { MyWordBankPage } from './pages/MyWordBankPage';
-import { CustomQuizPage } from './pages/CustomQuizPage';
-import { SubscriptionUpgradePage } from './pages/SubscriptionUpgradePage';
-import { LeaderboardPage } from './pages/LeaderboardPage';
-import { AICoachStudioPage } from './pages/AICoachStudioPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
-
-// Exam Bank & Evaluation Engine Pages
-import { ExamBankPage } from './pages/exams/ExamBankPage';
-import { ExamEditorPage } from './pages/exams/ExamEditorPage';
-import { ExamSessionPage } from './pages/exams/ExamSessionPage';
-import { ExamResultPage } from './pages/exams/ExamResultPage';
-import { WrongAnswerReviewPage } from './pages/exams/WrongAnswerReviewPage';
-
-// User Portal Pages
-import { SupportCenterPage } from './pages/SupportCenterPage';
-import { FeedbackPortalPage } from './pages/FeedbackPortalPage';
-import { NotificationCenterPage } from './pages/NotificationCenterPage';
-import { NotesPage } from './pages/notes/NotesPage';
-import { CommunityKnowledgeFeedPage } from './pages/community/CommunityKnowledgeFeedPage';
-import { CommunityPostDetailPage } from './pages/community/CommunityPostDetailPage';
-import { CreateEditPostPage } from './pages/community/CreateEditPostPage';
-import { MyPostsPage } from './pages/community/MyPostsPage';
-import { SavedPostsPage } from './pages/community/SavedPostsPage';
-import { AdminCommunityModerationPage } from './pages/admin/AdminCommunityModerationPage';
-
-// Mandatory E-Commerce Legal Policy Pages (Ministry of Industry and Trade Compliance)
-import { PrivacyPolicyPage } from './pages/policies/PrivacyPolicyPage';
-import { PaymentPolicyPage } from './pages/policies/PaymentPolicyPage';
-import { DeliveryRefundPolicyPage } from './pages/policies/DeliveryRefundPolicyPage';
-import { ComplaintResolutionPage } from './pages/policies/ComplaintResolutionPage';
-import { TermsOfServicePage } from './pages/policies/TermsOfServicePage';
-
-// Admin Command Center Layout & Pages
-import { AdminLayout } from './components/admin/AdminLayout';
-import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
-import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { AdminSupportPage } from './pages/admin/AdminSupportPage';
-import { AdminFeedbackPage } from './pages/admin/AdminFeedbackPage';
-import { AdminVocabularyPage } from './pages/admin/AdminVocabularyPage';
-import { AdminLearningPage } from './pages/admin/AdminLearningPage';
-import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
-import { AdminAIPage } from './pages/admin/AdminAIPage';
-import { AdminBillingPage } from './pages/admin/AdminBillingPage';
-import { AdminFinancePage } from './pages/admin/AdminFinancePage';
-import { AdminSystemPage } from './pages/admin/AdminSystemPage';
-import { AdminSecurityPage } from './pages/admin/AdminSecurityPage';
-import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
-import { AdminSharedVocabularyPage } from './pages/admin/AdminSharedVocabularyPage';
-import { AdminPricingPage } from './pages/admin/AdminPricingPage';
-import { AdminPlansPage } from './pages/admin/AdminPlansPage';
-import { AdminResourcesPage } from './pages/admin/AdminResourcesPage';
-import { AdminGamesPage } from './pages/admin/AdminGamesPage';
-import { AdminFinancialReportsPage } from './pages/admin/AdminFinancialReportsPage';
-import { GameLobbyPage } from './pages/games/GameLobbyPage';
-import { RealtimeGameRoomPage } from './pages/games/RealtimeGameRoomPage';
-import { WordMatchGame } from './pages/games/WordMatchGame';
-import { WordScrambleGame } from './pages/games/WordScrambleGame';
-import { NotAuthorizedPage } from './pages/NotAuthorizedPage';
-import { AdminFirebasePage } from './pages/admin/AdminFirebasePage';
-import { AdminLanguagePage } from './pages/admin/AdminLanguagePage';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { GlobalConfirmDialog } from './components/common/ConfirmDialog';
 import { GlobalApiLoadingBar } from './components/common/GlobalApiLoadingBar';
 import { GlobalToastContainer } from './components/common/GlobalToastContainer';
 
+// Route-level code-splitting (Lazy loaded on demand)
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
+
+// Mandatory E-Commerce Legal Policy Pages
+const PrivacyPolicyPage = lazy(() => import('./pages/policies/PrivacyPolicyPage').then(m => ({ default: m.PrivacyPolicyPage })));
+const PaymentPolicyPage = lazy(() => import('./pages/policies/PaymentPolicyPage').then(m => ({ default: m.PaymentPolicyPage })));
+const DeliveryRefundPolicyPage = lazy(() => import('./pages/policies/DeliveryRefundPolicyPage').then(m => ({ default: m.DeliveryRefundPolicyPage })));
+const ComplaintResolutionPage = lazy(() => import('./pages/policies/ComplaintResolutionPage').then(m => ({ default: m.ComplaintResolutionPage })));
+const TermsOfServicePage = lazy(() => import('./pages/policies/TermsOfServicePage').then(m => ({ default: m.TermsOfServicePage })));
+
+// Learner Portal Pages
+const MyLanguagesPage = lazy(() => import('./pages/MyLanguagesPage').then(m => ({ default: m.MyLanguagesPage })));
+const ReviewSessionPage = lazy(() => import('./pages/ReviewSessionPage').then(m => ({ default: m.ReviewSessionPage })));
+const VocabularyExplorerPage = lazy(() => import('./pages/VocabularyExplorerPage').then(m => ({ default: m.VocabularyExplorerPage })));
+const PlacementTestPage = lazy(() => import('./pages/PlacementTestPage').then(m => ({ default: m.PlacementTestPage })));
+const AITutorPage = lazy(() => import('./pages/AITutorPage').then(m => ({ default: m.AITutorPage })));
+const ProgressAnalyticsPage = lazy(() => import('./pages/ProgressAnalyticsPage').then(m => ({ default: m.ProgressAnalyticsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const CommunityDecksPage = lazy(() => import('./pages/CommunityDecksPage').then(m => ({ default: m.CommunityDecksPage })));
+const MyWordBankPage = lazy(() => import('./pages/MyWordBankPage').then(m => ({ default: m.MyWordBankPage })));
+const CustomQuizPage = lazy(() => import('./pages/CustomQuizPage').then(m => ({ default: m.CustomQuizPage })));
+const SubscriptionUpgradePage = lazy(() => import('./pages/SubscriptionUpgradePage').then(m => ({ default: m.SubscriptionUpgradePage })));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
+const AICoachStudioPage = lazy(() => import('./pages/AICoachStudioPage').then(m => ({ default: m.AICoachStudioPage })));
+
+// Exam Bank & Evaluation Engine Pages
+const ExamBankPage = lazy(() => import('./pages/exams/ExamBankPage').then(m => ({ default: m.ExamBankPage })));
+const ExamEditorPage = lazy(() => import('./pages/exams/ExamEditorPage').then(m => ({ default: m.ExamEditorPage })));
+const ExamSessionPage = lazy(() => import('./pages/exams/ExamSessionPage').then(m => ({ default: m.ExamSessionPage })));
+const ExamResultPage = lazy(() => import('./pages/exams/ExamResultPage').then(m => ({ default: m.ExamResultPage })));
+const WrongAnswerReviewPage = lazy(() => import('./pages/exams/WrongAnswerReviewPage').then(m => ({ default: m.WrongAnswerReviewPage })));
+
+// User Portal Pages
+const SupportCenterPage = lazy(() => import('./pages/SupportCenterPage').then(m => ({ default: m.SupportCenterPage })));
+const FeedbackPortalPage = lazy(() => import('./pages/FeedbackPortalPage').then(m => ({ default: m.FeedbackPortalPage })));
+const NotificationCenterPage = lazy(() => import('./pages/NotificationCenterPage').then(m => ({ default: m.NotificationCenterPage })));
+const NotesPage = lazy(() => import('./pages/notes/NotesPage').then(m => ({ default: m.NotesPage })));
+const CommunityKnowledgeFeedPage = lazy(() => import('./pages/community/CommunityKnowledgeFeedPage').then(m => ({ default: m.CommunityKnowledgeFeedPage })));
+const CommunityPostDetailPage = lazy(() => import('./pages/community/CommunityPostDetailPage').then(m => ({ default: m.CommunityPostDetailPage })));
+const CreateEditPostPage = lazy(() => import('./pages/community/CreateEditPostPage').then(m => ({ default: m.CreateEditPostPage })));
+const MyPostsPage = lazy(() => import('./pages/community/MyPostsPage').then(m => ({ default: m.MyPostsPage })));
+const SavedPostsPage = lazy(() => import('./pages/community/SavedPostsPage').then(m => ({ default: m.SavedPostsPage })));
+const AdminCommunityModerationPage = lazy(() => import('./pages/admin/AdminCommunityModerationPage').then(m => ({ default: m.AdminCommunityModerationPage })));
+
+// Admin Layout & Pages
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage').then(m => ({ default: m.AdminOverviewPage })));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage').then(m => ({ default: m.AdminSupportPage })));
+const AdminFeedbackPage = lazy(() => import('./pages/admin/AdminFeedbackPage').then(m => ({ default: m.AdminFeedbackPage })));
+const AdminVocabularyPage = lazy(() => import('./pages/admin/AdminVocabularyPage').then(m => ({ default: m.AdminVocabularyPage })));
+const AdminLearningPage = lazy(() => import('./pages/admin/AdminLearningPage').then(m => ({ default: m.AdminLearningPage })));
+const AdminNotificationsPage = lazy(() => import('./pages/admin/AdminNotificationsPage').then(m => ({ default: m.AdminNotificationsPage })));
+const AdminAIPage = lazy(() => import('./pages/admin/AdminAIPage').then(m => ({ default: m.AdminAIPage })));
+const AdminBillingPage = lazy(() => import('./pages/admin/AdminBillingPage').then(m => ({ default: m.AdminBillingPage })));
+const AdminFinancePage = lazy(() => import('./pages/admin/AdminFinancePage').then(m => ({ default: m.AdminFinancePage })));
+const AdminSystemPage = lazy(() => import('./pages/admin/AdminSystemPage').then(m => ({ default: m.AdminSystemPage })));
+const AdminSecurityPage = lazy(() => import('./pages/admin/AdminSecurityPage').then(m => ({ default: m.AdminSecurityPage })));
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage').then(m => ({ default: m.AdminSettingsPage })));
+const AdminSharedVocabularyPage = lazy(() => import('./pages/admin/AdminSharedVocabularyPage').then(m => ({ default: m.AdminSharedVocabularyPage })));
+const AdminPricingPage = lazy(() => import('./pages/admin/AdminPricingPage').then(m => ({ default: m.AdminPricingPage })));
+const AdminPlansPage = lazy(() => import('./pages/admin/AdminPlansPage').then(m => ({ default: m.AdminPlansPage })));
+const AdminResourcesPage = lazy(() => import('./pages/admin/AdminResourcesPage').then(m => ({ default: m.AdminResourcesPage })));
+const AdminGamesPage = lazy(() => import('./pages/admin/AdminGamesPage').then(m => ({ default: m.AdminGamesPage })));
+const AdminFinancialReportsPage = lazy(() => import('./pages/admin/AdminFinancialReportsPage').then(m => ({ default: m.AdminFinancialReportsPage })));
+const GameLobbyPage = lazy(() => import('./pages/games/GameLobbyPage').then(m => ({ default: m.GameLobbyPage })));
+const RealtimeGameRoomPage = lazy(() => import('./pages/games/RealtimeGameRoomPage').then(m => ({ default: m.RealtimeGameRoomPage })));
+const WordMatchGame = lazy(() => import('./pages/games/WordMatchGame').then(m => ({ default: m.WordMatchGame })));
+const WordScrambleGame = lazy(() => import('./pages/games/WordScrambleGame').then(m => ({ default: m.WordScrambleGame })));
+const NotAuthorizedPage = lazy(() => import('./pages/NotAuthorizedPage').then(m => ({ default: m.NotAuthorizedPage })));
+const AdminFirebasePage = lazy(() => import('./pages/admin/AdminFirebasePage').then(m => ({ default: m.AdminFirebasePage })));
+const AdminLanguagePage = lazy(() => import('./pages/admin/AdminLanguagePage').then(m => ({ default: m.AdminLanguagePage })));
+
 // Kids English Learning System
-import { KidsLayout } from './kids/components/KidsLayout';
-import { KidsHomePage } from './kids/pages/KidsHomePage';
-import { KidsJourneyPage } from './kids/pages/KidsJourneyPage';
-import { KidsLessonPage } from './kids/pages/KidsLessonPage';
-import { KidsGamesPage } from './kids/pages/KidsGamesPage';
-import { KidsMyWorldPage } from './kids/pages/KidsMyWorldPage';
-import { KidsParentDashboardPage } from './kids/pages/KidsParentDashboardPage';
-import { KidsFlashcardsPage } from './kids/pages/KidsFlashcardsPage';
-import { kidsAudioManager } from './kids/services/audio/KidsAudioManager';
-import { voiceService } from './kids/services/voice/voiceService';
+const KidsLayout = lazy(() => import('./kids/components/KidsLayout').then(m => ({ default: m.KidsLayout })));
+const KidsHomePage = lazy(() => import('./kids/pages/KidsHomePage').then(m => ({ default: m.KidsHomePage })));
+const KidsJourneyPage = lazy(() => import('./kids/pages/KidsJourneyPage').then(m => ({ default: m.KidsJourneyPage })));
+const KidsLessonPage = lazy(() => import('./kids/pages/KidsLessonPage').then(m => ({ default: m.KidsLessonPage })));
+const KidsGamesPage = lazy(() => import('./kids/pages/KidsGamesPage').then(m => ({ default: m.KidsGamesPage })));
+const KidsMyWorldPage = lazy(() => import('./kids/pages/KidsMyWorldPage').then(m => ({ default: m.KidsMyWorldPage })));
+const KidsParentDashboardPage = lazy(() => import('./kids/pages/KidsParentDashboardPage').then(m => ({ default: m.KidsParentDashboardPage })));
+const KidsFlashcardsPage = lazy(() => import('./kids/pages/KidsFlashcardsPage').then(m => ({ default: m.KidsFlashcardsPage })));
 
 const RouteAudioWatcher: React.FC = () => {
   const location = useLocation();
+  const prevWasKids = useRef(false);
+
   useEffect(() => {
-    if (!location.pathname.startsWith('/kids')) {
-      kidsAudioManager.stopAll();
-      voiceService.stop();
+    const isKids = location.pathname.startsWith('/kids');
+    if (!isKids && prevWasKids.current) {
+      // Dynamic import to prevent bundling kids audio in dashboard
+      import('./kids/services/audio/KidsAudioManager').then((m) => m.kidsAudioManager.stopAll()).catch(() => {});
+      import('./kids/services/voice/voiceService').then((m) => m.voiceService.stop()).catch(() => {});
     }
+    prevWasKids.current = isKids;
   }, [location.pathname]);
+
   return null;
 };
+
+const PageSuspenseFallback: React.FC = () => (
+  <div className="min-h-[50vh] flex items-center justify-center bg-transparent">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+  </div>
+);
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
   children,
@@ -172,8 +188,8 @@ export const App: React.FC = () => {
             <ContextualLoginModal />
             <GlobalConfirmDialog />
             <GlobalApiLoadingBar />
-            <GlobalToastContainer />
-            <Routes>
+            <Suspense fallback={<PageSuspenseFallback />}>
+              <Routes>
               {/* Public Entry Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -366,6 +382,7 @@ export const App: React.FC = () => {
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+        </Suspense>
         </BrowserRouter>
       </LearningProvider>
     </AuthProvider>
