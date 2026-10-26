@@ -432,12 +432,7 @@ export const AppShell: React.FC = () => {
       setLoadingChat(false);
     }
   };
-
-  useEffect(() => {
-    if (user) {
-      fetchUserChat();
-    }
-  }, [user]);
+  // CSKH conversation is fetched lazily on-demand when support modal is opened (in handleSupportBtnClick)
 
   // Socket.io Realtime Listener for active conversation & personal user room
   useEffect(() => {
@@ -673,10 +668,10 @@ export const AppShell: React.FC = () => {
             >
               <VocabFlowLogo size="sm" showContainer={false} className="group-hover:scale-110 transition-transform duration-200" />
               <div className="min-w-0 flex-1 truncate">
-                <h2 className="font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
+                <span className="block font-extrabold text-base leading-tight tracking-tight text-slate-900 dark:text-white truncate">
                   VocabFlow
-                </h2>
-                <p className="text-[11px] text-slate-400 font-medium truncate flex items-center gap-1">
+                </span>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate flex items-center gap-1">
                   <span>Multi-Language Learning</span>
                 </p>
               </div>

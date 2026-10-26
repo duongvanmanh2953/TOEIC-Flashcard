@@ -27,7 +27,7 @@ export const PremiumBadge: React.FC<PremiumBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-black uppercase tracking-wider bg-gradient-to-r from-amber-500/15 via-brand-500/20 to-indigo-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shadow-xs backdrop-blur-md select-none transition hover:border-amber-500/60 ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center rounded-full font-black uppercase tracking-wider bg-gradient-to-r from-amber-500/15 via-brand-500/20 to-indigo-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 shadow-xs backdrop-blur-md select-none transition hover:border-amber-500/60 ${sizeClasses[size]} ${className}`}
       title="Tính năng cao cấp dành cho tài khoản Premium"
     >
       {showIcon && <Sparkles className="w-3 h-3 text-amber-500 animate-pulse shrink-0" />}

@@ -152,8 +152,8 @@ export const QuotaMeter: React.FC<QuotaMeterProps> = ({
             </>
           ) : isCritical ? (
             <>
-              <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> {t('quota.oneTurnLeft', 'Còn 1 lượt sử dụng hôm nay')}
+              <span className="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 text-amber-500" /> {t('quota.oneTurnLeft', 'Còn 1 lượt sử dụng hôm nay')}
               </span>
               <button
                 type="button"
@@ -166,7 +166,7 @@ export const QuotaMeter: React.FC<QuotaMeterProps> = ({
             </>
           ) : isApproaching ? (
             <>
-              <span className="text-amber-600 dark:text-amber-400 font-semibold">
+              <span className="text-amber-700 dark:text-amber-400 font-semibold">
                 {t('quota.approachingLimit', 'Sắp chạm giới hạn AI hôm nay')}
               </span>
               <button
@@ -179,7 +179,7 @@ export const QuotaMeter: React.FC<QuotaMeterProps> = ({
               </button>
             </>
           ) : (
-            <span className="text-slate-400 font-medium">
+            <span className="text-slate-600 dark:text-slate-400 font-medium">
               Còn {actualRemaining} {t('quota.turnsLeft', 'lượt hôm nay')}
             </span>
           )}

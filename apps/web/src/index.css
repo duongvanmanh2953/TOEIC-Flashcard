@@ -429,7 +429,7 @@ a.card-brand-effect {
   content: '';
   position: absolute;
   top: -70%;
-  left: -150%;
+  left: 0;
   width: 60%;
   height: 240%;
   background: linear-gradient(105deg,
@@ -440,13 +440,14 @@ a.card-brand-effect {
       rgba(255, 255, 255, 0.76) 55%,
       rgba(255, 255, 255, 0.04) 80%,
       transparent 100%);
-  transform: rotate(26deg);
+  transform: translateX(-200%) rotate(26deg);
   pointer-events: none;
   opacity: 0;
   filter: blur(1.5px);
   z-index: 10;
-  /* Quan trọng: Khi bỏ hover, opacity tắt ngay và left trở về mà không animate lùi */
-  transition: opacity 0.3s ease, left 0s 0.3s;
+  /* Compositor-friendly transform animation */
+  transition: opacity 0.3s ease, transform 0s 0.3s;
+  will-change: transform, opacity;
 }
 
 .dark .liquid-glass-card::after,
@@ -461,12 +462,12 @@ a.card-brand-effect {
       transparent 100%);
 }
 
-/* Kích hoạt chùm tia sáng quét từ trái sang phải: Lóe chậm lại hơn (1.45s) cực êm và sang trọng */
+/* Kích hoạt chùm tia sáng quét từ trái sang phải: 100% GPU-composited via transform */
 .liquid-glass-card:hover::after,
 .card-brand-effect:hover::after {
-  left: 210%;
+  transform: translateX(350%) rotate(26deg);
   opacity: 1;
-  transition: left 1.45s cubic-bezier(0.25, 0.85, 0.3, 1), opacity 0.3s ease;
+  transition: transform 1.45s cubic-bezier(0.25, 0.85, 0.3, 1), opacity 0.3s ease;
 }
 
 .card-brand-effect,
@@ -2368,4 +2369,16 @@ button:not(.btn-multiline):not([data-multiline="true"]) > span,
 
 .btn-gold-glowing:active {
   transform: scale(0.97) !important;
+}
+
+/* Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

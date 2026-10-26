@@ -56,6 +56,14 @@ export const CountryFlag: React.FC<CountryFlagProps> = ({
     xl: 'w-10 h-7 rounded-lg',
   };
 
+  const dimensions = {
+    xs: { width: 16, height: 12 },
+    sm: { width: 20, height: 14 },
+    md: { width: 24, height: 16 },
+    lg: { width: 32, height: 22 },
+    xl: { width: 40, height: 28 },
+  };
+
   const flagUrl = `https://flagcdn.com/w40/${code}.png`;
   const flagSrcSet = `https://flagcdn.com/w80/${code}.png 2x`;
 
@@ -74,8 +82,11 @@ export const CountryFlag: React.FC<CountryFlagProps> = ({
       src={flagUrl}
       srcSet={flagSrcSet}
       alt={alt || `${code.toUpperCase()} Flag`}
+      width={dimensions[size].width}
+      height={dimensions[size].height}
       onError={() => setHasError(true)}
       loading="lazy"
+      decoding="async"
       className={`object-cover border border-black/10 dark:border-white/20 shadow-2xs shrink-0 select-none ${sizeStyles[size]} ${className}`}
     />
   );

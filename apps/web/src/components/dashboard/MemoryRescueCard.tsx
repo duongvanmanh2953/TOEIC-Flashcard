@@ -61,13 +61,13 @@ export const MemoryRescueCard: React.FC<MemoryRescueCardProps> = ({
             <Brain className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
               <span>Memory Rescue</span>
               <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-black uppercase tracking-wider">
                 Khẩn cấp
               </span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Thuật toán AI phát hiện từ vựng sắp trôi khỏi trí nhớ
             </p>
           </div>
@@ -90,7 +90,7 @@ export const MemoryRescueCard: React.FC<MemoryRescueCardProps> = ({
             >
               <span>{w.word}</span>
               {w.meaning && (
-                <span className="text-slate-400 font-normal">({w.meaning})</span>
+                <span className="text-slate-600 dark:text-slate-400 font-normal">({w.meaning})</span>
               )}
             </div>
           ))}
