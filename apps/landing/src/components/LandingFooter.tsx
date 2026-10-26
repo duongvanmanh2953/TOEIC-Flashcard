@@ -34,11 +34,11 @@ export const LandingFooter: React.FC = React.memo(() => {
           </div>
         </div>
 
-        <div className="pt-6 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
+        <div className="pt-6 border-t border-white/[0.06] flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
           <div className="flex flex-wrap items-center gap-3 justify-center md:justify-start">
             <span>© {new Date().getFullYear()} VocabFlow. Bảo lưu mọi quyền.</span>
             <span>•</span>
-            <span className="text-slate-400">Website TMĐT cung cấp dịch vụ trực tuyến</span>
+            <span className="text-slate-300 font-medium">Website TMĐT cung cấp dịch vụ trực tuyến</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">

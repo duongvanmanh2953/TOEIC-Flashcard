@@ -7,7 +7,12 @@ export default defineConfig({
   server: {
     port: 3080,
   },
+  esbuild: {
+    legalComments: 'none',
+  },
   build: {
+    target: 'es2022',
+    cssCodeSplit: true,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {

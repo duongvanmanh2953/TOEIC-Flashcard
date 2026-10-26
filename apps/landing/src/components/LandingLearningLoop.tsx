@@ -60,7 +60,7 @@ export const LandingLearningLoop: React.FC<LandingLearningLoopProps> = React.mem
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase text-slate-500">
+                  <span className="text-[10px] font-black uppercase text-slate-400">
                     Bước {item.step}
                   </span>
                   <div className={`w-7 h-7 rounded-xl ${item.bg} ${item.color} flex items-center justify-center`}>
@@ -68,7 +68,7 @@ export const LandingLearningLoop: React.FC<LandingLearningLoopProps> = React.mem
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-white">{item.title}</h4>
+                  <h3 className="font-extrabold text-sm text-white">{item.title}</h3>
                   <p className="text-[11px] text-slate-400 mt-1 leading-snug">{item.desc}</p>
                 </div>
               </div>

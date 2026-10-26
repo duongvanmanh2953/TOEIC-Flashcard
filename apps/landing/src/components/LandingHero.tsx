@@ -137,9 +137,9 @@ export const LandingHero: React.FC<LandingHeroProps> = React.memo(
                   <span className="inline-block px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 mb-1.5">
                     {currentSample.badge}
                   </span>
-                  <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  <p className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                     {currentSample.word}
-                  </h3>
+                  </p>
                   <p className="text-xs text-slate-400 font-mono mt-0.5">
                     {currentSample.pronunciation} • <span className="italic">{currentSample.pos}</span>
                   </p>

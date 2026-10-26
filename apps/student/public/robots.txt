@@ -22,4 +22,4 @@ Disallow: /coach
 Disallow: /ai-tutor
 Disallow: /api/
 
-Sitemap: https://toeicflashcard.com/sitemap.xml
+Sitemap: https://app.vocalflow.site/sitemap.xml

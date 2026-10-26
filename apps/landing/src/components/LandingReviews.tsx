@@ -64,7 +64,7 @@ export const LandingReviews: React.FC = React.memo(() => {
                 {rev.initials}
               </div>
               <div>
-                <h4 className="font-bold text-xs text-white">{rev.author}</h4>
+                <h3 className="font-bold text-xs text-white">{rev.author}</h3>
                 <span className="text-[10px] text-slate-400">{rev.role}</span>
               </div>
             </div>

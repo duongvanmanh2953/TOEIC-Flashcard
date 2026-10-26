@@ -86,7 +86,7 @@ export const LandingPvPArena: React.FC = React.memo(() => {
                 <span className="text-slate-300">Tỉ số hiện tại:</span>
                 <div className="flex items-center gap-3 font-black">
                   <span className="text-cyan-400">Bạn: 2,450 pts</span>
-                  <span className="text-slate-500">VS</span>
+                  <span className="text-slate-400 font-bold">VS</span>
                   <span className="text-amber-400">Đối thủ: 2,120 pts</span>
                 </div>
               </div>
