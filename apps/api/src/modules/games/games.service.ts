@@ -26,7 +26,7 @@ export class GamesService implements OnModuleInit {
   private testModeEnabled: boolean = true;
 
   constructor(
-    private readonly prisma: PrismaService,
+    public readonly prisma: PrismaService,
     private readonly rabbitMQ: RabbitMQService,
     private readonly redisCache: RedisCacheService,
   ) {}
