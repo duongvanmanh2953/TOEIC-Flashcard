@@ -40,6 +40,8 @@ const CustomQuizPage = lazy(() => import('./pages/CustomQuizPage').then(m => ({ 
 const SubscriptionUpgradePage = lazy(() => import('./pages/SubscriptionUpgradePage').then(m => ({ default: m.SubscriptionUpgradePage })));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
 const AICoachStudioPage = lazy(() => import('./pages/AICoachStudioPage').then(m => ({ default: m.AICoachStudioPage })));
+const GrammarMasteryPage = lazy(() => import('./pages/grammar/GrammarMasteryPage').then(m => ({ default: m.GrammarMasteryPage })));
+const HandwritingStudioPage = lazy(() => import('./pages/handwriting/HandwritingStudioPage').then(m => ({ default: m.HandwritingStudioPage })));
 
 // Exam Bank & Evaluation Engine Pages
 const ExamBankPage = lazy(() => import('./pages/exams/ExamBankPage').then(m => ({ default: m.ExamBankPage })));
@@ -177,19 +179,23 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+import { PerformanceProvider } from './contexts/PerformanceContext';
+
 export const App: React.FC = () => {
   return (
     <I18nProvider>
       <AuthProvider>
-        <LearningProvider>
-          <BrowserRouter>
-            <RouteAudioWatcher />
-            <ScrollToTop />
-            <ContextualLoginModal />
-            <GlobalConfirmDialog />
-            <GlobalApiLoadingBar />
-            <Suspense fallback={<PageSuspenseFallback />}>
-              <Routes>
+        <PerformanceProvider>
+          <LearningProvider>
+            <BrowserRouter>
+              <RouteAudioWatcher />
+              <ScrollToTop />
+              <ContextualLoginModal />
+              <GlobalConfirmDialog />
+              <GlobalApiLoadingBar />
+              <Suspense fallback={<PageSuspenseFallback />}>
+                <Routes>
+
               {/* Public Entry Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -221,7 +227,12 @@ export const App: React.FC = () => {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/languages" element={<MyLanguagesPage />} />
                 <Route path="/review" element={<ReviewSessionPage />} />
+                <Route path="/practice" element={<ReviewSessionPage />} />
                 <Route path="/vocabulary" element={<VocabularyExplorerPage />} />
+                <Route path="/grammar" element={<GrammarMasteryPage />} />
+                <Route path="/grammar/:topicId" element={<GrammarMasteryPage />} />
+                <Route path="/handwriting" element={<Navigate to="/review?mode=handwriting" replace />} />
+
               <Route
                 path="/word-bank"
                 element={
@@ -384,7 +395,8 @@ export const App: React.FC = () => {
           </Routes>
         </Suspense>
         </BrowserRouter>
-      </LearningProvider>
+        </LearningProvider>
+      </PerformanceProvider>
     </AuthProvider>
   </I18nProvider>
 );

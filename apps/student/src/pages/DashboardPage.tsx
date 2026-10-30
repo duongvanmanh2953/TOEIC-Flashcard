@@ -10,7 +10,6 @@ import { CountryFlag } from '../components/language/CountryFlag';
 import { MemoryRescueCard } from '../components/dashboard/MemoryRescueCard';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { PremiumBadge } from '../components/common/PremiumBadge';
-import { notesService, NoteUsageResponse } from '../services/notes.service';
 import {
   Sparkles,
   Flame,
@@ -32,6 +31,9 @@ import {
   LockOpen,
   X,
   Crown,
+  BookCheck,
+  PenTool,
+  Gamepad2,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -44,7 +46,6 @@ export const DashboardPage: React.FC = () => {
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [memoryRescue, setMemoryRescue] = useState<any>(null);
   const [quotas, setQuotas] = useState<any>(null);
-  const [notesUsage, setNotesUsage] = useState<NoteUsageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSpotlight, setShowSpotlight] = useState(() => {
     return localStorage.getItem('vocabflow_hide_dash_spotlight') !== 'true';
@@ -56,30 +57,41 @@ export const DashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
+    let isMounted = true;
     const fetchDashboard = async () => {
       try {
         const quotaEndpoint = isGuest ? '/subscriptions/guest-quotas' : '/subscriptions/my-quotas';
-        const [dashRes, heatRes, rescueRes, quotaRes, words, notesUsageRes]: any = await Promise.all([
+        const [dashRes, heatRes, rescueRes, quotaRes]: any = await Promise.all([
           api.get('/dashboard', { params: { language: activeLanguage.id } }).catch(() => ({ data: {} })),
           api.get('/dashboard/heatmap').catch(() => ({ data: [] })),
           api.get('/reviews/memory-rescue', { params: { language: activeLanguage.id } }).catch(() => ({ data: null })),
           api.get(quotaEndpoint).catch(() => ({ data: null })),
-          idbGetWords(user?.id, activeLanguage.id),
-          notesService.getNotesUsage().catch(() => null),
         ]);
+        if (!isMounted) return;
         setData(dashRes.data || dashRes || {});
         setHeatmap(heatRes.data || heatRes || []);
         setMemoryRescue(rescueRes?.data || rescueRes || null);
         setQuotas(quotaRes?.data || quotaRes || null);
-        setLocalWords(words || []);
-        if (notesUsageRes) setNotesUsage(notesUsageRes);
       } catch (err) {
         console.error('Error loading dashboard data', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
+      }
+
+      // Asynchronously fetch local IndexedDB cache without blocking first paint / TTFB
+      try {
+        const words = await idbGetWords(user?.id, activeLanguage.id);
+        if (isMounted && words) {
+          setLocalWords(words);
+        }
+      } catch {
+        // Silently tolerate local cache miss
       }
     };
     fetchDashboard();
+    return () => {
+      isMounted = false;
+    };
   }, [isGuest, activeLanguage.id, user?.id]);
 
   if (loading) {
@@ -194,7 +206,7 @@ export const DashboardPage: React.FC = () => {
 
           {/* Quick Win Micro-Learning Selector (2, 5, 10, 15 min) */}
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1">
               <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span>Quick Win:</span>
             </span>
@@ -226,12 +238,116 @@ export const DashboardPage: React.FC = () => {
             >
               15 phút
             </button>
-            <span className="text-[11px] text-slate-400 italic hidden sm:inline">
+            <span className="text-[11px] text-slate-600 dark:text-slate-400 italic hidden sm:inline">
               (Học vi mô mọi lúc rảnh rỗi)
             </span>
           </div>
         </div>
       </GlassCard>
+
+      {/* 4 Core Pillars: Mastery Learning Suite Hub */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Grammar Mastery */}
+        <div
+          onClick={() => navigate('/grammar')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-emerald-400/80 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <BookCheck className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40">
+              Mới
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            Ngữ Pháp Chuyên Sâu
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            12 thì ngữ pháp, cấu trúc câu & bài tập tương tác Spaced Repetition.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Khám phá ngay</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* Handwriting Practice Mode in Vocabulary Session */}
+        <div
+          onClick={() => navigate('/review?mode=handwriting')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-pink-400/80 hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 flex items-center justify-center font-bold">
+              <PenTool className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-300/40">
+              Phương Thức Mới
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+            Luyện Viết Từ Vựng
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            Viết từng chữ trong bộ từ vựng với nhận diện hình học vector & nắn nét chuẩn.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-pink-600 dark:text-pink-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Luyện viết từ vựng</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+
+        {/* Multiplayer Game Arena & Custom Rooms */}
+        <div
+          onClick={() => navigate('/games')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-amber-400/80 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+              <Gamepad2 className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300/40">
+              Phòng đấu
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+            Đấu Trường Phản Xạ
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            Tạo phòng đấu bạn bè qua mã PIN, tranh tài tốc độ thời gian thực.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-amber-600 dark:text-amber-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Tham gia đấu trường</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* UMS Smart Progress & Radar */}
+        <div
+          onClick={() => navigate('/progress')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-400/80 hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+              <Award className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300/40">
+              UMS AI
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            Chỉ Số Thông Thạo UMS
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            Radar năng lực 6 chiều, đường cong quên lãng & phân tích trí nhớ FSRS.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Xem phân tích</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      </div>
 
       {/* Empty State Banner if no words learned yet in this language */}
       {localWords.length === 0 && (
@@ -240,10 +356,10 @@ export const DashboardPage: React.FC = () => {
             <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="lg" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">
               Chào mừng bạn đến với không gian học {activeLanguage.name} ({activeLanguage.nativeName})
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-md mx-auto">
               Không gian học này đã sẵn sàng. Hãy bắt đầu ôn tập bộ từ vựng căn bản {activeLanguage.name} Starter để xây dựng phản xạ ngay hôm nay!
             </p>
           </div>
@@ -271,7 +387,7 @@ export const DashboardPage: React.FC = () => {
         <div className="relative rounded-2xl p-5 sm:p-6 border border-indigo-200/90 dark:border-indigo-800/60 bg-gradient-to-r from-indigo-50/70 via-white to-amber-50/40 dark:from-indigo-950/40 dark:via-slate-900/95 dark:to-amber-950/20 shadow-sm hover:shadow-md transition-shadow">
           <button
             onClick={dismissSpotlight}
-            className="absolute top-3.5 right-3.5 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition z-10 cursor-pointer"
+            className="absolute top-3.5 right-3.5 p-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition z-10 cursor-pointer"
             title="Ẩn thông báo này"
           >
             <X className="w-4 h-4" />
@@ -283,7 +399,7 @@ export const DashboardPage: React.FC = () => {
               <div className="relative w-12 h-12 rounded-xl bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
                 <BrainCircuit className="w-6 h-6" />
                 {reviewDue > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-sm">
+                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px] font-black border-2 border-white dark:border-slate-900 shadow-sm">
                     {reviewDue}
                   </span>
                 )}
@@ -302,13 +418,13 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 {reviewDue > 0 ? (
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
                     <span className="text-rose-600 dark:text-rose-400 font-extrabold">{reviewDue} từ vựng</span> đã chạm ngưỡng cần củng cố (SRS Retrievability &lt; 75%)
-                  </h3>
+                  </h2>
                 ) : (
-                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
                     Bộ nhớ hoàn hảo: Bạn đã hoàn thành toàn bộ từ vựng cần ôn hôm nay
-                  </h3>
+                  </h2>
                 )}
 
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
@@ -393,7 +509,7 @@ export const DashboardPage: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <QuotaMeter
                 label={t('quota.aiTutor', 'Trợ lý AI Gia sư')}
                 feature="AI_TUTOR"
@@ -418,15 +534,6 @@ export const DashboardPage: React.FC = () => {
                 used={quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0}
                 limit={isPro ? 20 : (quotas.storyGen?.limit ?? quotas.AI_STORY?.limit ?? 0)}
                 remaining={isPro ? Math.max(0, 20 - (quotas.storyGen?.used ?? quotas.AI_STORY?.used ?? 0)) : (quotas.storyGen?.remaining ?? quotas.AI_STORY?.remaining ?? 0)}
-                tier={effectiveTier}
-                onUpgrade={() => navigate('/subscription')}
-              />
-              <QuotaMeter
-                label={t('quota.notes', 'Ghi chú cá nhân')}
-                feature="NOTES"
-                used={notesUsage?.used ?? 0}
-                limit={notesUsage?.unlimited ? -1 : (notesUsage?.limit ?? (isPro ? 500 : 20))}
-                remaining={notesUsage?.remaining}
                 tier={effectiveTier}
                 onUpgrade={() => navigate('/subscription')}
               />
@@ -458,7 +565,7 @@ export const DashboardPage: React.FC = () => {
           <div className="mt-3">
             <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
               <div
-                className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                className="h-full bg-indigo-600 rounded-full transition-colors duration-200"
                 style={{ width: `${goalPercent}%` }}
               />
             </div>
@@ -470,18 +577,18 @@ export const DashboardPage: React.FC = () => {
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 {t('dashboard.streak', 'Chuỗi liên tiếp')}
               </span>
-              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
-                <Flame className="w-4 h-4 fill-amber-500" />
+              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400">
+                <Flame className="w-4 h-4 fill-amber-500 text-amber-500" />
               </div>
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mt-1">
-              {data?.streak?.currentStreak || 0} <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">ngày</span>
+              {data?.streak?.currentStreak || 0} <span className="text-base sm:text-lg font-bold text-amber-700 dark:text-amber-400">ngày</span>
             </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 font-medium">
             Kỷ lục cao nhất: <strong className="font-bold text-slate-700 dark:text-slate-200">{data?.streak?.longestStreak || 0} ngày</strong>
           </p>
         </div>
@@ -490,7 +597,7 @@ export const DashboardPage: React.FC = () => {
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 {t('dashboard.totalWords', 'Từ đã thành thạo')}
               </span>
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
@@ -501,7 +608,7 @@ export const DashboardPage: React.FC = () => {
               {data?.masteredCount || 0} <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">từ</span>
             </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 font-medium">
             Độ bền trí nhớ SRS &gt; 85%
           </p>
         </div>
@@ -510,7 +617,7 @@ export const DashboardPage: React.FC = () => {
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/90 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 {t('dashboard.level', 'Cấp độ & XP')}
               </span>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
@@ -521,7 +628,7 @@ export const DashboardPage: React.FC = () => {
               Lvl {user?.xp?.currentLevel || 1}
             </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 font-medium">
             <strong className="font-bold text-slate-700 dark:text-slate-200">{user?.xp?.totalXP || 0} XP</strong> tích lũy
           </p>
         </div>
@@ -540,12 +647,12 @@ export const DashboardPage: React.FC = () => {
                 <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <span>Biểu Đồ Hoạt Động Ôn Tập & Đường Cong Ghi Nhớ 7 Ngày</span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                 Số từ vựng đã ôn tập qua Spaced Repetition và tỷ lệ duy trì trí nhớ hàng ngày.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-500">
+            <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-indigo-600"></span>
                 <span>Từ đã ôn</span>
@@ -568,11 +675,11 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <div className="w-full max-w-[32px] bg-slate-100 dark:bg-slate-800 rounded-t-xl overflow-hidden relative flex items-end h-32">
                     <div
-                      className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 group-hover:from-indigo-500 group-hover:to-purple-500 transition-all duration-500 rounded-t-xl"
+                      className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 group-hover:from-indigo-500 group-hover:to-purple-500 transition-colors duration-200 rounded-t-xl"
                       style={{ height: `${heightPct}%` }}
                     ></div>
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">{item.day}</span>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{item.day}</span>
                 </div>
               );
             })}
@@ -581,7 +688,7 @@ export const DashboardPage: React.FC = () => {
           {/* Chart Footnote Insights */}
           <div className="grid grid-cols-3 gap-3 pt-4 text-center">
             <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Tổng từ tuần này</span>
+              <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Tổng từ tuần này</span>
               <p className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
                 {weeklyData.reduce((acc, curr) => acc + curr.reviews, 0)} từ
               </p>
@@ -604,15 +711,15 @@ export const DashboardPage: React.FC = () => {
         >
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Layers className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <span>Phân Bổ Từ Vựng CEFR</span>
-              </h3>
+              </h2>
               <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-400/30">
                 Chuẩn Quốc Tế
               </span>
             </div>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
               Tiến độ tích lũy và tỷ lệ thành thạo từ vựng theo từng bậc khung tham chiếu châu Âu.
             </p>
 
@@ -623,11 +730,11 @@ export const DashboardPage: React.FC = () => {
                     <span className="text-slate-700 dark:text-slate-300 font-bold">
                       Cấp độ {item.level} ({item.count} từ)
                     </span>
-                    <span className="text-slate-500">{item.percent}% thành thạo</span>
+                    <span className="text-slate-600 dark:text-slate-400">{item.percent}% thành thạo</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
-                      className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                      className={`h-full ${item.color} rounded-full transition-colors duration-200`}
                       style={{ width: `${item.percent}%` }}
                     ></div>
                   </div>
@@ -660,7 +767,7 @@ export const DashboardPage: React.FC = () => {
               <CalendarCheck className="w-4 h-4 text-indigo-500" />
               <span>{t('dashboard.todayPlan', 'Kế hoạch học tập hôm nay')}</span>
             </h2>
-            <span className="text-xs font-semibold text-slate-400">
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
               {goalPercent}% hoàn thành
             </span>
           </div>
@@ -669,27 +776,27 @@ export const DashboardPage: React.FC = () => {
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2
-                  className={`w-4 h-4 ${completedToday >= 10 ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'
+                  className={`w-4 h-4 ${completedToday >= 10 ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
                     }`}
                 />
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
                   Luyện Flashcard 10 từ vựng mục tiêu mới
                 </span>
               </div>
-              <span className="text-slate-400 font-medium">{Math.min(completedToday, 10)}/10</span>
+              <span className="text-slate-600 dark:text-slate-400 font-medium">{Math.min(completedToday, 10)}/10</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2
-                  className={`w-4 h-4 ${reviewDue === 0 ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'
+                  className={`w-4 h-4 ${reviewDue === 0 ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
                     }`}
                 />
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
                   Hoàn thành phiên ôn tập ngắt quãng (SRS Review)
                 </span>
               </div>
-              <span className="text-slate-400 font-medium">{reviewDue} còn nợ</span>
+              <span className="text-slate-600 dark:text-slate-400 font-medium">{reviewDue} còn nợ</span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
@@ -714,10 +821,10 @@ export const DashboardPage: React.FC = () => {
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>Memory Rescue</span>
             </div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
               Cứu Từ Vựng Có Nguy Cơ Quên
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
               Dự đoán xác suất ghi nhớ đang dưới 60%. Cần kích hoạt 1 lần phản xạ để đưa từ trở lại vùng an toàn.
             </p>
 
@@ -730,7 +837,7 @@ export const DashboardPage: React.FC = () => {
                   >
                     <div>
                       <span className="font-bold text-slate-800 dark:text-slate-200">{w.word}</span>
-                      <span className="text-[10px] text-slate-400 block">{w.meaning || 'Nguy cơ quên'}</span>
+                      <span className="text-[10px] text-slate-600 dark:text-slate-400 block">{w.meaning || 'Nguy cơ quên'}</span>
                     </div>
                     <span className="text-[11px] text-rose-600 dark:text-rose-400 font-bold">
                       {w.masteryScore !== undefined ? `${Math.round(w.masteryScore)}% nhớ` : `${w.slipRisk || 45}% rủi ro`}
@@ -764,7 +871,7 @@ export const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-slate-400">Độ Bền Trí Nhớ (Retention)</span>
+            <span className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Độ Bền Trí Nhớ (Retention)</span>
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Tốt</span>
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">84%</p>
@@ -775,7 +882,7 @@ export const DashboardPage: React.FC = () => {
 
         <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-slate-400">Tính Đều Đặn (Consistency)</span>
+            <span className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Tính Đều Đặn (Consistency)</span>
             <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Rất Cao</span>
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">91%</p>
@@ -786,8 +893,8 @@ export const DashboardPage: React.FC = () => {
 
         <GlassCard variant="liquid" className="p-4 sm:p-5 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-slate-400">Tốc Độ Phản Xạ (Recall)</span>
-            <span className="text-xs font-bold text-amber-500">Ổn Định</span>
+            <span className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Tốc Độ Phản Xạ (Recall)</span>
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400">Ổn Định</span>
           </div>
           <p className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">78%</p>
           <div className="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">

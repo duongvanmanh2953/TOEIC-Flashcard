@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import {
@@ -22,6 +22,7 @@ import {
   Lock,
   LockOpen,
   Mic,
+  PenTool,
   X,
   AlertCircle,
   Clock,
@@ -30,10 +31,13 @@ import {
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { PronunciationPracticeCard } from '../components/audio/PronunciationPracticeCard';
+import { VocabularyHandwritingPractice } from '../components/handwriting/VocabularyHandwritingPractice';
+import { isHandwritingSupportedForLanguage } from '../config/languages';
 import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { LanguageFlashcard } from '../components/flashcard/LanguageFlashcard';
+
 import {
   idbGetLocalDecks,
   idbGetWords,
@@ -159,13 +163,16 @@ export function calculateWordPriority(item: Partial<ReviewQueueItem>): number {
 function mapToReviewItem(raw: any, defaultTopic = 'General', origin = 'DECK'): ReviewQueueItem {
   const v = raw.vocabulary || raw;
   const wordMeaning =
-    v.meaning ||
-    v.shortDefinition ||
-    v.definition ||
-    raw.meaning ||
-    raw.shortDefinition ||
-    raw.definition ||
+    v.meanings?.[0]?.meaning ||
     raw.meanings?.[0]?.meaning ||
+    v.meaning ||
+    v.meaningVi ||
+    raw.meaning ||
+    raw.meaningVi ||
+    v.shortDefinition ||
+    raw.shortDefinition ||
+    v.definition ||
+    raw.definition ||
     'Nghĩa từ vựng';
 
   const now = Date.now();
@@ -204,13 +211,10 @@ function mapToReviewItem(raw: any, defaultTopic = 'General', origin = 'DECK'): R
     transliteration: v.transliteration || raw.transliteration,
     script: v.script || raw.script,
     languageId: v.languageId || raw.languageId,
-    options: [
-      wordMeaning,
-      'Sự trì hoãn trong công việc và dự án',
-      'Đánh giá tiến độ và hiệu suất công việc',
-      'Chính sách phát triển và bảo trì hệ thống',
-    ].sort(() => Math.random() - 0.5),
-    correctAnswer: wordMeaning,
+    options: raw.options && Array.isArray(raw.options) && raw.options.length >= 2
+      ? raw.options
+      : [wordMeaning],
+    correctAnswer: raw.correctAnswer || wordMeaning,
     dueAt,
     lastReviewedAt,
     reviewCount,
@@ -229,6 +233,68 @@ function mapToReviewItem(raw: any, defaultTopic = 'General', origin = 'DECK'): R
   return item;
 }
 
+/**
+ * Enriches review items with dynamic, realistic distractors from other words in the current session
+ */
+function enrichItemsWithOptions(queue: ReviewQueueItem[]): ReviewQueueItem[] {
+  if (queue.length === 0) return queue;
+  const allMeanings = queue.map((q) => q.meaning).filter(Boolean);
+
+  return queue.map((item, idx) => {
+    if (item.options && item.options.length >= 4 && item.options.includes(item.correctAnswer)) {
+      return item;
+    }
+
+    const otherMeanings = Array.from(
+      new Set(allMeanings.filter((m) => m.toLowerCase().trim() !== item.meaning.toLowerCase().trim()))
+    );
+    const distractors = otherMeanings.sort(() => Math.random() - 0.5).slice(0, 3);
+
+    const fallbackPool = [
+      'Khái niệm hoặc phương pháp phân tích',
+      'Đặc điểm cấu trúc hoặc tính chất cốt lõi',
+      'Mục tiêu cụ thể cần đạt được',
+      'Quá trình trao đổi hoặc thảo luận nhóm',
+      'Điều kiện thuận lợi để phát triển năng lực',
+      'Trạng thái duy trì hoặc phát triển ổn định',
+    ];
+
+    while (distractors.length < 3) {
+      const fb = fallbackPool.find((f) => f !== item.meaning && !distractors.includes(f));
+      if (fb) distractors.push(fb);
+      else distractors.push(`Ý nghĩa tham chiếu ${distractors.length + 1}`);
+    }
+
+    const quizOptions = [item.meaning, ...distractors].sort(() => Math.random() - 0.5);
+
+    return {
+      ...item,
+      options: quizOptions,
+      correctAnswer: item.meaning,
+    };
+  });
+}
+
+/**
+ * Calculate Levenshtein distance between two strings for fuzzy spelling evaluation
+ */
+export function getLevenshteinDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const d: number[][] = [];
+  for (let i = 0; i <= m; i++) d[i] = [i];
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1].toLowerCase() === b[j - 1].toLowerCase() ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+    }
+  }
+  return d[m][n];
+}
+
+export type ReviewStudyMode = 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting';
+
 export const ReviewSessionPage: React.FC = () => {
   const [diagnosticWordId, setDiagnosticWordId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -236,8 +302,31 @@ export const ReviewSessionPage: React.FC = () => {
   const { user } = useAuth();
   const { activeLanguage, recordStudyActivity } = useLearningContext();
 
-  // Mode: 3D Flashcard vs Multiple Choice Quiz
-  const [studyMode, setStudyMode] = useState<'flashcard' | 'quiz'>('flashcard');
+  // Mode: Interactive Learning Modes (Flashcard, Quiz, Typing, Listening, Speaking, Handwriting)
+  const initialModeParam = searchParams.get('mode') as ReviewStudyMode;
+  const [studyMode, setStudyMode] = useState<ReviewStudyMode>(() => {
+    if (
+      initialModeParam &&
+      ['flashcard', 'quiz', 'typing', 'listening', 'speaking', 'handwriting'].includes(initialModeParam)
+    ) {
+      return initialModeParam;
+    }
+    return 'flashcard';
+  });
+
+
+  // Typing test state
+  const [typingInput, setTypingInput] = useState('');
+  const [typingFeedback, setTypingFeedback] = useState<{
+    status: 'correct' | 'typo' | 'wrong' | null;
+    message: string;
+    distance?: number;
+  }>({ status: null, message: '' });
+
+  // Listening test state
+  const [listenSpeed, setListenSpeed] = useState<number>(1.0);
+  const [listenFeedback, setListenFeedback] = useState<boolean | null>(null);
+  const [selectedListeningWord, setSelectedListeningWord] = useState<string | null>(null);
 
   // Topic & Deck Selection
   const initialTopic =
@@ -398,7 +487,7 @@ export const ReviewSessionPage: React.FC = () => {
           setSession(res.data.session);
           const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Memory Rescue', 'MEMORY_RESCUE'));
           mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-          setItems(mapped);
+          setItems(enrichItemsWithOptions(mapped));
         } else {
           // Fallback to local slipping words for this language
           const localWords = await idbGetWords(user?.id, activeLanguage.id);
@@ -406,7 +495,7 @@ export const ReviewSessionPage: React.FC = () => {
             .filter((w) => (w.wrongCount || 0) > 0 || (w.stability || 1.0) < 1.5)
             .map((w) => mapToReviewItem(w, 'Memory Rescue', 'LOCAL'));
           slipping.sort((a, b) => b.priorityScore - a.priorityScore);
-          setItems(slipping);
+          setItems(enrichItemsWithOptions(slipping));
         }
       }
       // 2. MY WORDS (ALL)
@@ -418,7 +507,7 @@ export const ReviewSessionPage: React.FC = () => {
         }
         const mapped = localWords.map((item: any) => mapToReviewItem(item, 'My Words', 'WORD_BANK'));
         mapped.sort((a, b) => b.priorityScore - a.priorityScore);
-        setItems(mapped);
+        setItems(enrichItemsWithOptions(mapped));
       }
       // 3. SPECIFIC DECK OR QUERY DECK ID
       else if (
@@ -476,7 +565,7 @@ export const ReviewSessionPage: React.FC = () => {
             mapToReviewItem(item, deckTitleToSearch, 'DECK')
           );
           mapped.sort((a, b) => b.priorityScore - a.priorityScore);
-          setItems(mapped);
+          setItems(enrichItemsWithOptions(mapped));
         } else {
           // If no words found for deck, fall back to general vocabulary
           setItems([]);
@@ -492,7 +581,7 @@ export const ReviewSessionPage: React.FC = () => {
         if (allLocalWords.length > 0) {
           const mapped = allLocalWords.map((item: any) => mapToReviewItem(item, 'General', 'WORD_BANK'));
           mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-          setItems(mapped);
+          setItems(enrichItemsWithOptions(mapped));
         } else {
           // Fall back to server vocabulary session
           const res: any = await api.post('/reviews/smart-session', { limit: 50, languageId: activeLanguage.id }).catch(() => null);
@@ -500,13 +589,13 @@ export const ReviewSessionPage: React.FC = () => {
             setSession(res.data.session);
             const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Smart Review', 'SYSTEM'));
             mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-            setItems(mapped);
+            setItems(enrichItemsWithOptions(mapped));
           } else {
             const vocabRes: any = await api.get('/vocabulary', { params: { limit: 50, languageId: activeLanguage.id } }).catch(() => ({ data: { items: [] } }));
             const raw = vocabRes.data?.items || vocabRes.data || [];
             const mapped = raw.map((v: any) => mapToReviewItem(v, 'Vocabulary', 'VOCABULARY'));
             mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-            setItems(mapped);
+            setItems(enrichItemsWithOptions(mapped));
           }
         }
       }
@@ -534,7 +623,7 @@ export const ReviewSessionPage: React.FC = () => {
 
         const mapped = allWords.map((v: any) => mapToReviewItem(v, cleanSlug, 'TOPIC'));
         mapped.sort((a, b) => b.priorityScore - a.priorityScore);
-        setItems(mapped);
+        setItems(enrichItemsWithOptions(mapped));
       }
 
       startTimeRef.current = Date.now();
@@ -729,7 +818,7 @@ export const ReviewSessionPage: React.FC = () => {
         setTimeout(() => setTransitionNotice(null), 4000);
         const nextQueue = nextDeckInfo.words.map((w) => mapToReviewItem(w, nextDeckInfo.deck.title, 'DECK'));
         nextQueue.sort((a, b) => b.priorityScore - a.priorityScore);
-        setItems(nextQueue);
+        setItems(enrichItemsWithOptions(nextQueue));
         setCurrentIndex(0);
         setSelectedTopic(`deck_${nextDeckInfo.deck.id}`);
         return;
@@ -748,63 +837,109 @@ export const ReviewSessionPage: React.FC = () => {
     }
   };
 
+  const handleRating = (rating: 'again' | 'hard' | 'good' | 'easy') => {
+    handleRateFlashcard(rating.toUpperCase() as any);
+  };
+
   // Handle Quiz submit
-  const handleQuizSubmit = async (answer: string) => {
+  const handleQuizSubmit = (answer: string) => {
     setUserAnswer(answer);
     setSubmitting(true);
+    const cleanUser = answer.trim().toLowerCase();
+    const cleanCorrect = (currentItem.correctAnswer || currentItem.meaningVi || currentItem.meaning || '').trim().toLowerCase();
+
     const isCorrect =
-      answer.toLowerCase().trim() === (currentItem.correctAnswer || currentItem.meaning).toLowerCase().trim();
+      cleanUser === cleanCorrect ||
+      cleanCorrect.includes(cleanUser) ||
+      cleanUser.includes(cleanCorrect);
 
     setFeedback({
       isCorrect,
-      correctAnswer: currentItem.correctAnswer || currentItem.meaning,
-      explanation: currentItem.englishDefinition || currentItem.meaning,
+      correctAnswer: currentItem.correctAnswer || currentItem.meaningVi || currentItem.meaning,
+      explanation: currentItem.englishDefinition || currentItem.meaningVi || currentItem.meaning,
     });
     setSubmitting(false);
   };
 
   const handleNextQuiz = async () => {
     const wasCorrect = feedback?.isCorrect;
-    recordStudyActivity(1, Boolean(wasCorrect), 1);
     setFeedback(null);
     setUserAnswer('');
     setShowHint(false);
     startTimeRef.current = Date.now();
+    await handleRateFlashcard(wasCorrect ? 'GOOD' : 'AGAIN');
+  };
 
-    // If answer was wrong in Quiz mode, re-insert 2 questions ahead
-    if (!wasCorrect) {
-      const newItems = [...items];
-      const wrongItem = newItems.splice(currentIndex, 1)[0];
-      const insertIdx = Math.min(currentIndex + 2, newItems.length);
-      newItems.splice(insertIdx, 0, wrongItem);
-      setItems(newItems);
-      return;
-    }
+  // Typing mode handlers (PROMPT 3)
+  const handleTypingSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!currentItem || !typingInput.trim() || typingFeedback.status) return;
 
-    if (currentIndex + 1 < items.length) {
-      setCurrentIndex((prev) => prev + 1);
+    const cleanInput = typingInput.trim().toLowerCase();
+    const cleanWord = currentItem.word.trim().toLowerCase();
+    const dist = getLevenshteinDistance(cleanInput, cleanWord);
+
+    if (dist === 0) {
+      setTypingFeedback({
+        status: 'correct',
+        message: 'Hoàn hảo! Bạn đã nhớ chính xác 100% chính tả từ này. (+15 XP)',
+        distance: 0,
+      });
+    } else if (dist === 1) {
+      setTypingFeedback({
+        status: 'typo',
+        message: `Gần chính xác! Chỉ khác 1 ký tự typo (Bạn gõ "${typingInput}", từ đúng là "${currentItem.word}").`,
+        distance: 1,
+      });
     } else {
-      // Check multi-deck transition
-      const nextDeckInfo = await findNextReviewableDeck(selectedTopic);
-      if (nextDeckInfo) {
-        setTransitionNotice(
-          `🎉 Hoàn thành kho hiện tại! Tiếp tục chuyển sang kho "${nextDeckInfo.deck.title}" còn ${nextDeckInfo.words.length} từ...`
-        );
-        setTimeout(() => setTransitionNotice(null), 4000);
-        const nextQueue = nextDeckInfo.words.map((w) => mapToReviewItem(w, nextDeckInfo.deck.title, 'DECK'));
-        nextQueue.sort((a, b) => b.priorityScore - a.priorityScore);
-        setItems(nextQueue);
-        setCurrentIndex(0);
-        setSelectedTopic(`deck_${nextDeckInfo.deck.id}`);
-        return;
-      }
-
-      setSummary({
-        totalQuestions: items.length,
-        xpEarned: items.length * 15,
-        accuracy: 95,
+      setTypingFeedback({
+        status: 'wrong',
+        message: `Chưa chính xác! Từ đúng là: "${currentItem.word}".`,
+        distance: dist,
       });
     }
+  };
+
+  const handleNextTyping = async () => {
+    const wasCorrect = typingFeedback.status === 'correct' || typingFeedback.status === 'typo';
+    setTypingInput('');
+    setTypingFeedback({ status: null, message: '' });
+    await handleRateFlashcard(wasCorrect ? 'GOOD' : 'AGAIN');
+  };
+
+  // Listening mode handlers (PROMPT 3)
+  const handlePlayListening = () => {
+    if (!currentItem) return;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentItem.word);
+      utterance.lang = activeLanguage?.speechLocale || 'en-US';
+      utterance.rate = listenSpeed;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const listeningWords = useMemo(() => {
+    if (!currentItem) return [];
+    const otherWords = items
+      .filter((it, idx) => idx !== currentIndex && it.word.toLowerCase() !== currentItem.word.toLowerCase())
+      .map((it) => it.word);
+    const distractors = Array.from(new Set(otherWords)).sort(() => Math.random() - 0.5).slice(0, 3);
+    return [currentItem.word, ...distractors].sort(() => Math.random() - 0.5);
+  }, [currentItem, items, currentIndex]);
+
+  const handleListeningSelect = (opt: string) => {
+    if (listenFeedback !== null || !currentItem) return;
+    const isCorrect = opt.trim().toLowerCase() === currentItem.word.trim().toLowerCase();
+    setSelectedListeningWord(opt);
+    setListenFeedback(isCorrect);
+  };
+
+  const handleNextListening = async () => {
+    const wasCorrect = Boolean(listenFeedback);
+    setListenFeedback(null);
+    setSelectedListeningWord(null);
+    await handleRateFlashcard(wasCorrect ? 'GOOD' : 'AGAIN');
   };
 
   if (loading) {
@@ -963,31 +1098,87 @@ export const ReviewSessionPage: React.FC = () => {
 
       {/* Top Controls: Mode Switcher & Topic Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
-        {/* Mode Switcher */}
-        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 self-start">
-          <button
-            onClick={() => setStudyMode('flashcard')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-              studyMode === 'flashcard'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Flashcard 3D (SRS)</span>
-          </button>
-          <button
-            onClick={() => setStudyMode('quiz')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-              studyMode === 'quiz'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <BrainCircuit className="w-3.5 h-3.5" />
-            <span>Trắc nghiệm (Quiz)</span>
-          </button>
+        {/* Mode Switcher: Sleek, compact segmented bar */}
+        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar py-0.5">
+          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+            <button
+              onClick={() => setStudyMode('flashcard')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                studyMode === 'flashcard'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Flashcard</span>
+            </button>
+            <button
+              onClick={() => setStudyMode('quiz')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                studyMode === 'quiz'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+              }`}
+            >
+              <BrainCircuit className="w-3.5 h-3.5" />
+              <span>Trắc nghiệm</span>
+            </button>
+            <button
+              onClick={() => {
+                setStudyMode('typing');
+                setTypingInput('');
+                setTypingFeedback({ status: null, message: '' });
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                studyMode === 'typing'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Luyện gõ</span>
+            </button>
+            <button
+              onClick={() => {
+                setStudyMode('listening');
+                setListenFeedback(null);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                studyMode === 'listening'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+              }`}
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              <span>Luyện nghe</span>
+            </button>
+            <button
+              onClick={() => setStudyMode('speaking')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                studyMode === 'speaking'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+              }`}
+            >
+              <Mic className="w-3.5 h-3.5" />
+              <span>Phát âm</span>
+            </button>
+            {isHandwritingSupportedForLanguage(activeLanguage?.id) && (
+              <button
+                onClick={() => setStudyMode('handwriting')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  studyMode === 'handwriting'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+                }`}
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                <span>Viết chữ</span>
+              </button>
+            )}
+          </div>
         </div>
+
 
         {/* Topic Selector Custom Dropdown */}
         <div className="flex items-center gap-2">
@@ -1322,8 +1513,261 @@ export const ReviewSessionPage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODE 3: TYPING / SPELLING TEST WITH LEVENSHTEIN FUZZY CHECK (PROMPT 3)   */}
+      {/* ========================================================================= */}
+      {studyMode === 'typing' && (
+        <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+          <div className="flex items-center justify-between">
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              {currentItem.topic} • Luyện Gõ Chính Tả
+            </span>
+            <span className="text-xs font-bold text-slate-400">
+              Độ dài: {currentItem.word.length} ký tự
+            </span>
+          </div>
+
+          <div className="text-center py-2 space-y-3">
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-wider font-bold text-slate-400 block">
+                Nghĩa tiếng Việt
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                "{currentItem.meaningVi || currentItem.meaning}"
+              </h2>
+            </div>
+
+            {currentItem.example && (
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                <strong>Ngữ cảnh:</strong>{' '}
+                {currentItem.example.replace(new RegExp(currentItem.word, 'gi'), '______')}
+              </div>
+            )}
+          </div>
+
+          {/* Typing Input Form */}
+          <form onSubmit={handleTypingSubmit} className="max-w-md mx-auto space-y-3">
+            <div className="relative">
+              <input
+                type="text"
+                value={typingInput}
+                onChange={(e) => setTypingInput(e.target.value)}
+                placeholder="Gõ từ tiếng Anh chính xác..."
+                autoFocus
+                disabled={!!typingFeedback.status}
+                className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-base font-bold text-slate-900 dark:text-white text-center focus:outline-none focus:border-emerald-500 transition"
+              />
+            </div>
+
+            {!typingFeedback.status && (
+              <button
+                type="submit"
+                disabled={!typingInput.trim()}
+                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition disabled:opacity-50 cursor-pointer"
+              >
+                Kiểm Tra Chính Tả
+              </button>
+            )}
+          </form>
+
+          {/* Typing Feedback */}
+          {typingFeedback.status && (
+            <div
+              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${
+                typingFeedback.status === 'correct'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
+                  : typingFeedback.status === 'typo'
+                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-800 dark:text-amber-300'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-sm">
+                {typingFeedback.status === 'correct' ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                ) : typingFeedback.status === 'typo' ? (
+                  <AlertCircle className="w-5 h-5 text-amber-500" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-rose-500" />
+                )}
+                <span>{typingFeedback.message}</span>
+              </div>
+
+              <button
+                onClick={handleNextTyping}
+                className="btn-glass-primary w-full !py-2.5 text-xs gap-2"
+              >
+                <span>Từ tiếp theo</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODE 4: LISTENING COMPREHENSION WITH SPEED CONTROL (PROMPT 3)             */}
+      {/* ========================================================================= */}
+      {studyMode === 'listening' && (
+        <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+          <div className="flex items-center justify-between">
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+              {currentItem.topic} • Luyện Nghe Phản Xạ
+            </span>
+
+            {/* Speed Control */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+              {[0.75, 1.0, 1.25].map((spd) => (
+                <button
+                  key={spd}
+                  onClick={() => setListenSpeed(spd)}
+                  className={`px-2 py-0.5 rounded-lg transition ${
+                    listenSpeed === spd
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {spd}x
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Big Speaker Button */}
+          <div className="text-center py-6 space-y-4">
+            <button
+              onClick={handlePlayListening}
+              className="w-20 h-20 rounded-3xl bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center mx-auto shadow-xl shadow-purple-600/40 hover:scale-105 active:scale-95 transition cursor-pointer"
+              title="Phát lại âm thanh"
+            >
+              <Volume2 className="w-9 h-9" />
+            </button>
+            <p className="text-xs font-bold text-slate-500">
+              Nhấn loa để nghe audio phát âm chuẩn ({listenSpeed}x) và chọn từ tương ứng
+            </p>
+          </div>
+
+          {/* Multiple choices: foreign words to identify */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {listeningWords.map((opt, idx) => {
+              const isSelected = selectedListeningWord === opt;
+              let btnClass = 'bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700';
+              if (listenFeedback !== null) {
+                if (opt.toLowerCase().trim() === currentItem.word.toLowerCase().trim()) {
+                  btnClass = 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold';
+                } else if (isSelected) {
+                  btnClass = 'bg-rose-50 dark:bg-rose-950/60 border-rose-500 text-rose-700 dark:text-rose-300';
+                }
+              }
+              return (
+                <button
+                  key={idx}
+                  disabled={listenFeedback !== null}
+                  onClick={() => handleListeningSelect(opt)}
+                  className={`p-4 rounded-2xl border text-xs sm:text-sm font-bold text-left transition ${btnClass}`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Feedback */}
+          {listenFeedback !== null && (
+            <div
+              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${
+                listenFeedback
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-sm">
+                {listenFeedback ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-rose-500" />
+                )}
+                <span>
+                  {listenFeedback
+                    ? 'Tuyệt vời! Bạn nghe rất chuẩn xác.'
+                    : `Chưa đúng! Từ được phát âm là: "${currentItem.word}" (${currentItem.meaningVi || currentItem.meaning})`}
+                </span>
+              </div>
+
+              <button
+                onClick={handleNextListening}
+                className="btn-glass-primary w-full !py-2.5 text-xs gap-2"
+              >
+                <span>Từ tiếp theo</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODE 5: SPEAKING / PRONUNCIATION PRACTICE (PROMPT 3)                      */}
+      {/* ========================================================================= */}
+      {studyMode === 'speaking' && (
+        <div className="space-y-4">
+          <PronunciationPracticeCard
+            word={currentItem.word}
+            phonetic={currentItem.pronunciation || '/.../'}
+            meaning={currentItem.meaningVi || currentItem.meaning}
+            exampleSentence={currentItem.example}
+            onComplete={() => {
+              handleRating('good');
+              if (currentIndex + 1 < items.length) {
+                setCurrentIndex((prev) => prev + 1);
+              } else {
+                handleNextQuiz();
+              }
+            }}
+          />
+
+          <div className="flex justify-end">
+            <button
+              onClick={() => {
+                if (currentIndex + 1 < items.length) {
+                  setCurrentIndex((prev) => prev + 1);
+                } else {
+                  handleNextQuiz();
+                }
+              }}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center gap-2"
+            >
+              <span>Bỏ qua từ này</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODE 6: HANDWRITING / VOCABULARY WRITING PRACTICE (TASK 1 & 2)           */}
+      {/* ========================================================================= */}
+      {studyMode === 'handwriting' && currentItem && (
+        <VocabularyHandwritingPractice
+          key={`hw-${currentItem.vocabularyId || currentItem.word}`}
+          word={currentItem.word}
+          meaning={currentItem.meaningVi || currentItem.meaning}
+          pronunciation={currentItem.pronunciation}
+          romaji={currentItem.romaji}
+          pinyin={currentItem.pinyin}
+          languageId={activeLanguage?.id}
+          onWordComplete={(accuracy, isCorrect) => {
+            // Progress recorded on onNextWord
+          }}
+          onNextWord={async () => {
+            await handleRateFlashcard('GOOD');
+          }}
+        />
+      )}
+
       {/* VocabFlow Word Diagnostic Modal */}
       <WordDiagnosticModal
+
         vocabularyId={diagnosticWordId}
         onClose={() => setDiagnosticWordId(null)}
       />

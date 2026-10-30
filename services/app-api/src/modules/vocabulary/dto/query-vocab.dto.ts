@@ -9,6 +9,11 @@ export class QueryVocabDto {
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({ description: 'Language ID e.g. en, ja, ko, zh' })
+  @IsOptional()
+  @IsString()
+  languageId?: string;
+
   @ApiPropertyOptional({ enum: CefrLevel })
   @IsOptional()
   @IsEnum(CefrLevel)
@@ -24,10 +29,6 @@ export class QueryVocabDto {
   @IsString()
   topic?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by language code e.g. en, ja, zh, de' })
-  @IsOptional()
-  @IsString()
-  languageId?: string;
 
   @ApiPropertyOptional({ description: 'Part of speech e.g. n., v., adj.' })
   @IsOptional()

@@ -1,0 +1,12 @@
+import { Module } from '@nestjs/common';
+import { GrammarController } from './grammar.controller';
+import { GrammarService } from './grammar.service';
+import { PrismaModule } from '../../prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [GrammarController],
+  providers: [GrammarService],
+  exports: [GrammarService],
+})
+export class GrammarModule {}

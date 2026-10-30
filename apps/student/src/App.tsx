@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LearningProvider } from './contexts/LearningContext';
+import { PerformanceProvider } from './contexts/PerformanceContext';
 import { I18nProvider } from './i18n';
 import { AppShell } from './components/layout/AppShell';
 import { LoginPage } from './pages/LoginPage';
@@ -25,6 +26,7 @@ const CustomQuizPage = React.lazy(() => import('./pages/CustomQuizPage').then((m
 const SubscriptionUpgradePage = React.lazy(() => import('./pages/SubscriptionUpgradePage').then((m) => ({ default: m.SubscriptionUpgradePage })));
 const LeaderboardPage = React.lazy(() => import('./pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })));
 const AICoachStudioPage = React.lazy(() => import('./pages/AICoachStudioPage').then((m) => ({ default: m.AICoachStudioPage })));
+const GrammarMasteryPage = React.lazy(() => import('./pages/grammar/GrammarMasteryPage').then((m) => ({ default: m.GrammarMasteryPage })));
 
 // Exam Bank & Evaluation Engine Pages
 const ExamBankPage = React.lazy(() => import('./pages/exams/ExamBankPage').then((m) => ({ default: m.ExamBankPage })));
@@ -134,7 +136,8 @@ export const App: React.FC = () => {
   return (
     <I18nProvider>
       <AuthProvider>
-        <LearningProvider>
+        <PerformanceProvider>
+          <LearningProvider>
           <BrowserRouter>
             <ScrollToTop />
             <ContextualLoginModal />
@@ -174,6 +177,8 @@ export const App: React.FC = () => {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/languages" element={<MyLanguagesPage />} />
                   <Route path="/review" element={<ReviewSessionPage />} />
+                  <Route path="/handwriting" element={<Navigate to="/review?mode=handwriting" replace />} />
+                  <Route path="/grammar" element={<GrammarMasteryPage />} />
                   <Route path="/vocabulary" element={<VocabularyExplorerPage />} />
                   <Route
                     path="/word-bank"
@@ -309,7 +314,8 @@ export const App: React.FC = () => {
               </Routes>
             </Suspense>
           </BrowserRouter>
-        </LearningProvider>
+          </LearningProvider>
+        </PerformanceProvider>
       </AuthProvider>
     </I18nProvider>
   );

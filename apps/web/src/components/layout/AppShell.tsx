@@ -48,6 +48,8 @@ import {
   Zap,
   StickyNote,
   User,
+  PenTool,
+  BookCheck,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
@@ -65,11 +67,15 @@ import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { RichAIMessageRenderer } from '../ai/RichAIMessageRenderer';
 import { usePersistentScroll } from '../../hooks/usePersistentScroll';
 
+import { usePerformance } from '../../contexts/PerformanceContext';
+
 export const AppShell: React.FC = () => {
   useDynamicDocumentTitle();
   const { activeLanguage, activeProfile, switchLanguage } = useLearningContext();
   const { user, logout, theme, toggleTheme, promptLogin } = useAuth();
+  const { isUltraEfficient, togglePerformanceMode } = usePerformance();
   const { t } = useTranslation();
+
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -555,72 +561,69 @@ export const AppShell: React.FC = () => {
 
   const navSections = [
     {
-      title: 'HỌC TẬP & LUYỆN TẬP',
+      title: '1. TỔNG QUAN (OVERVIEW)',
       items: [
         { to: '/dashboard', label: t('nav.dashboard', 'Bảng điều khiển'), icon: LayoutDashboard },
-        { to: '/languages', label: 'My Languages', icon: Globe },
-        { to: '/review', label: t('nav.review', 'Ôn tập thông minh'), icon: Sparkles },
-        { to: '/games', label: 'Đấu trường phản xạ', icon: Gamepad2 },
+        { to: '/community-knowledge', label: 'Bảng tin cộng đồng', icon: Sparkles, badge: 'HOT' },
+        { to: '/languages', label: 'Không gian đa ngữ', icon: Globe },
       ],
     },
-    ...(isKidSupported
-      ? [
-          {
-            title: 'TIẾNG ANH CHO BÉ',
-            items: [
-              {
-                to: '/kids',
-                label: 'Học cùng bé',
-                icon: Baby,
-                badge: 'NEW',
-              },
-            ],
-          },
-        ]
-      : []),
     {
-      title: 'KHO TỪ VỰNG & BỘ ĐỀ',
+      title: '2. HỌC TẬP (LEARNING)',
       items: [
         { to: '/vocabulary', label: t('nav.vocabulary', 'Thư viện từ vựng'), icon: BookOpen },
         { to: '/word-bank', label: t('nav.wordBank', 'Kho từ của tôi'), icon: Bookmark },
+        { to: '/grammar', label: 'Ngữ pháp chuyên sâu', icon: BookCheck, badge: 'MỚI' },
+        ...(isKidSupported
+          ? [
+              {
+                to: '/kids',
+                label: 'Tiếng Anh cho bé',
+                icon: Baby,
+                badge: 'KIDS',
+              },
+            ]
+          : []),
+      ],
+    },
+
+    {
+      title: '3. LUYỆN TẬP (PRACTICE)',
+      items: [
+        { to: '/review', label: t('nav.review', 'Ôn tập thông minh SRS'), icon: Sparkles },
+        { to: '/exams', label: 'Ngân hàng bộ đề', icon: GraduationCap, badge: 'TOEIC' },
+        { to: '/custom-quiz', label: t('nav.customQuiz', 'Trắc nghiệm tùy chọn'), icon: HelpCircle },
         {
           to: '/notes',
           label: 'Ghi chép cá nhân',
           icon: StickyNote,
           badge: userNotesCount > 0 ? `${userNotesCount}` : undefined,
         },
-        {
-          to: '/community-knowledge',
-          label: 'Tri thức cộng đồng',
-          icon: Sparkles,
-          badge: 'HOT',
-        },
-        { to: '/community', label: t('nav.community', 'Cộng đồng kho từ'), icon: Share2 },
-        { to: '/exams', label: 'Ngân hàng bộ đề', icon: GraduationCap, badge: 'HOT' },
-        { to: '/custom-quiz', label: t('nav.customQuiz', 'Trắc nghiệm tùy chọn'), icon: HelpCircle },
+        { to: '/coach', label: 'Gia sư AI Personal Coach', icon: Mic },
+        { to: '/ai-tutor', label: t('nav.aiTutor', 'Gia sư AI Studio'), icon: BrainCircuit },
       ],
     },
     {
-      title: 'TRỢ LÝ HỌC TẬP AI',
+      title: '4. ĐẤU TRƯỜNG (CHALLENGE)',
       items: [
-        { to: '/coach', label: 'AI Personal Coach', icon: Mic },
-        { to: '/ai-tutor', label: t('nav.aiTutor', 'Gia Sư AI Studio'), icon: BrainCircuit },
+        { to: '/games', label: 'Đấu trường phản xạ 24/7', icon: Gamepad2, badge: 'LIVE' },
+        { to: '/leaderboard', label: 'Bảng xếp hạng Fair-Play', icon: Trophy },
+        { to: '/community', label: t('nav.community', 'Cộng đồng chia sẻ kho từ'), icon: Share2 },
       ],
     },
     {
-      title: 'TIẾN TRÌNH & NĂNG LỰC',
+      title: '5. TIẾN TRÌNH (PROGRESS)',
       items: [
-        { to: '/leaderboard', label: 'Bảng xếp hạng', icon: Trophy },
-        { to: '/progress', label: t('nav.progress', 'Tiến trình học tập'), icon: Award },
-        { to: '/placement-test', label: t('nav.placementTest', 'Kiểm tra năng lực'), icon: Compass },
+        { to: '/progress', label: 'Chỉ số UMS & Trí nhớ', icon: Award, badge: 'UMS' },
+        { to: '/placement-test', label: t('nav.placementTest', 'Kiểm tra năng lực CEFR'), icon: Compass },
       ],
     },
     {
-      title: 'TÀI KHOẢN & HỆ THỐNG',
+      title: '6. HỆ THỐNG & TÀI KHOẢN (SETTINGS)',
       items: [
         {
           to: '/upgrade',
-          label: isPro ? 'VocabFlow VIP' : 'Nâng Cấp Pro',
+          label: isPro ? 'VocabFlow VIP' : 'Nâng Cấp Pro/VIP',
           icon: Crown,
           highlight: true,
           badge: isPro ? 'VIP' : 'PRO',
@@ -937,7 +940,19 @@ export const AppShell: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={togglePerformanceMode}
+              title={isUltraEfficient ? 'Bật Giao diện Đầy đủ' : 'Bật Tiết kiệm GPU/RAM'}
+              className={`p-2 rounded-xl transition ${
+                isUltraEfficient
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Zap className={`w-4 h-4 ${isUltraEfficient ? 'fill-amber-500 text-amber-500' : ''}`} />
+            </button>
             <NotificationBell />
+
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
@@ -1227,8 +1242,27 @@ export const AppShell: React.FC = () => {
               <BookOpen className="w-4 h-4 group-hover:scale-105 transition-transform" />
             </button>
 
+            {/* Global Performance Mode Controller (Default vs Ultra Efficient) */}
+            <button
+              onClick={togglePerformanceMode}
+              title={
+                isUltraEfficient
+                  ? 'Chế độ: Siêu tiết kiệm GPU/RAM (Bấm để bật Giao diện Đầy đủ)'
+                  : 'Chế độ: Giao diện Đầy đủ (Bấm để bật Siêu tiết kiệm GPU/RAM)'
+              }
+              className={`h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer ${
+                isUltraEfficient
+                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/40'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Zap className={`w-3.5 h-3.5 ${isUltraEfficient ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
+              <span className="hidden xl:inline">{isUltraEfficient ? 'Tiết kiệm GPU' : 'Hiệu năng'}</span>
+            </button>
+
             {/* Notification Bell with Badge & Dropdown */}
             <NotificationBell />
+
 
             {/* Student-to-Student E2EE Chat Button */}
             <button

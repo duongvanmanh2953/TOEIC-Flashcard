@@ -8,10 +8,14 @@ export class VocabularyService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryVocabDto, userId?: string) {
-    const { page, limit, search, cefrLevel, topic, partOfSpeech, sortBy, sortOrder } = query;
+    const { page, limit, search, cefrLevel, topic, partOfSpeech, sortBy, sortOrder, languageId } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.VocabularyWhereInput = {};
+
+    if (languageId) {
+      where.languageId = languageId;
+    }
 
     if (search) {
       const cleanSearch = search.trim().toLowerCase();

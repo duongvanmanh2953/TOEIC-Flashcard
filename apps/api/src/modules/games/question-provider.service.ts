@@ -105,15 +105,14 @@ export class QuestionProviderService {
       } else if (Array.isArray(q.correctAnswer) && q.correctAnswer.length > 0) {
         correctText = String(q.correctAnswer[0]);
       } else {
-        const correctOpt = q.options.find((o) => o.isCorrect);
-        correctText = correctOpt ? correctOpt.optionText : 'A';
+        correctText = q.options[0]?.key || 'A';
       }
 
       // If correctText is just 'A', 'B', 'C', 'D', find the text of that option
       const matchingOpt = q.options.find(
-        (o) => o.optionKey.toUpperCase() === correctText.toUpperCase(),
+        (o) => o.key.toUpperCase() === correctText.toUpperCase(),
       );
-      const fullAnswer = matchingOpt ? matchingOpt.optionText : correctText;
+      const fullAnswer = matchingOpt ? matchingOpt.text : correctText;
 
       return {
         id: q.id,

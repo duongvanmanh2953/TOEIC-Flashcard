@@ -18,6 +18,11 @@ import {
   Crown,
   Volume2,
   Send,
+  Copy,
+  Check,
+  UserMinus,
+  MessageSquare,
+  Share2,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
@@ -32,6 +37,8 @@ interface RoomPlayer {
   latencyMs: number;
   rank: number;
   lastResponseTimeMs: number;
+  isReady?: boolean;
+  isHost?: boolean;
 }
 
 interface QuestionData {
@@ -94,7 +101,22 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [latency, setLatency] = useState<number>(35);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Waiting Room state
+  const [isCopiedCode, setIsCopiedCode] = useState(false);
+  const [isCopiedLink, setIsCopiedLink] = useState(false);
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      id: string;
+      userId: string;
+      displayName: string;
+      avatar?: string;
+      message: string;
+      timestamp: number;
+    }>
+  >([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isReady, setIsReady] = useState(false);
+  const [isHost, setIsHost] = useState(false);
 
   // Setup Socket.IO connection
   useEffect(() => {
@@ -106,17 +128,67 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
     s.on('connect', () => {
       setIsConnected(true);
-      // Join game room
-      s.emit('join_game', {
-        gameMode,
-        userId: user?.id || `anon_${Math.random().toString(36).slice(2, 7)}`,
-        displayName: user?.displayName || 'Learner',
-        avatar: user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.id || 'guest'}`,
-      });
+      const isCustomRoom = roomId && !roomId.startsWith('auto_');
+      if (isCustomRoom) {
+        s.emit('room:join_custom', {
+          roomCode: roomId,
+          userId: user?.id || `anon_${Math.random().toString(36).slice(2, 7)}`,
+          displayName: user?.displayName || 'Learner',
+          avatar: user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.id || 'guest'}`,
+        });
+      } else {
+        s.emit('join_game', {
+          gameMode,
+          userId: user?.id || `anon_${Math.random().toString(36).slice(2, 7)}`,
+          displayName: user?.displayName || 'Learner',
+          avatar: user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.id || 'guest'}`,
+        });
+      }
     });
 
     s.on('disconnect', () => {
       setIsConnected(false);
+    });
+
+    s.on('room:joined_success', (data: any) => {
+      setRoomCode(data.roomCode);
+      setRoomTitle(data.title);
+      setRoomStatus(data.status);
+      setTotalRounds(data.totalRounds);
+      setMyPlayer(data.player);
+      if (data.players) setPlayers(data.players);
+      if (data.player?.isHost) setIsHost(true);
+    });
+
+    s.on('room:player_joined', (data: any) => {
+      if (data.players) setPlayers(data.players);
+    });
+
+    s.on('room:player_ready_changed', (data: { userId: string; isReady: boolean }) => {
+      setPlayers((prev) =>
+        prev.map((p) => (p.userId === data.userId ? { ...p, isReady: data.isReady } : p)),
+      );
+      if (user?.id === data.userId) {
+        setIsReady(data.isReady);
+      }
+    });
+
+    s.on('room:starting_countdown', (data: { countdownSec: number }) => {
+      setRoomStatus('STARTING');
+      setCountdown(data.countdownSec);
+    });
+
+    s.on('room:player_kicked', (data: { targetUserId: string }) => {
+      if (data.targetUserId === user?.id) {
+        alert('Bạn đã bị chủ phòng mời ra khỏi phòng thi đấu.');
+        navigate('/games');
+      } else {
+        setPlayers((prev) => prev.filter((p) => p.userId !== data.targetUserId));
+      }
+    });
+
+    s.on('room:chat_message', (msg: any) => {
+      setChatMessages((prev) => [...prev.slice(-49), msg]);
     });
 
     s.on('joined_game_room', (data: any) => {
@@ -242,9 +314,59 @@ export const RealtimeGameRoomPage: React.FC = () => {
     setHasSubmitted(true);
   };
 
+  const handleToggleReady = () => {
+    if (!socket || !roomCode || !user?.id) return;
+    const next = !isReady;
+    setIsReady(next);
+    socket.emit('room:toggle_ready', {
+      roomCode,
+      userId: user.id,
+      isReady: next,
+    });
+  };
+
+  const handleHostStartGame = () => {
+    if (!socket || !roomCode) return;
+    socket.emit('room:host_start_game', { roomCode });
+  };
+
+  const handleKickPlayer = (targetUserId: string) => {
+    if (!socket || !roomCode) return;
+    socket.emit('room:kick_user', { roomCode, targetUserId });
+  };
+
+  const handleSendChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!socket || !chatInput.trim() || !user) return;
+    socket.emit('room:send_chat', {
+      roomCode,
+      userId: user.id,
+      displayName: user.displayName || user.email || 'Learner',
+      avatar: user.avatar,
+      message: chatInput.trim(),
+    });
+    setChatInput('');
+  };
+
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(roomCode);
+    setIsCopiedCode(true);
+    setTimeout(() => setIsCopiedCode(false), 2000);
+  };
+
+  const copyRoomLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setIsCopiedLink(true);
+    setTimeout(() => setIsCopiedLink(false), 2000);
+  };
+
   const handleStartNow = () => {
     if (socket) {
-      socket.emit('start_game_now', { roomCode });
+      if (isHost) {
+        socket.emit('room:host_start_game', { roomCode });
+      } else {
+        socket.emit('start_game_now', { roomCode });
+      }
     }
   };
 
@@ -318,9 +440,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
       {/* VIEW A: WAITING / COUNTDOWN */}
       {(roomStatus === 'WAITING' || roomStatus === 'STARTING') && (
-        <div className="p-8 sm:p-12 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-6 shadow-sm">
+        <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-6 shadow-sm">
           {countdown !== null && countdown > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-4 py-8">
               <span className="text-xs font-black tracking-widest text-indigo-500 uppercase">
                 {t('games.statusStarting', 'Chuẩn bị bắt đầu...')}
               </span>
@@ -328,51 +450,203 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 {countdown}
               </div>
               <p className="text-sm text-slate-500 font-medium">
-                Hãy sẵn sàng! Câu hỏi đầu tiên sắp xuất hiện.
+                Hãy sẵn sàng! Vòng thi đấu đầu tiên chuẩn bị bắt đầu.
               </p>
             </div>
           ) : (
-            <div className="space-y-5">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center mx-auto animate-bounce">
-                <Clock className="w-8 h-8" />
-              </div>
-              <div className="space-y-1">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-                  Đang Đợi Người Chơi Tham Gia...
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-md mx-auto">
-                  Trận đấu sẽ tự động đếm ngược khi đủ đấu thủ. Bạn có thể nhấn bắt đầu ngay để trải nghiệm lập tức!
-                </p>
+            <div className="space-y-6">
+              {/* Room Code & Invite Card */}
+              <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/70 via-slate-900 to-purple-950/70 border border-indigo-500/30 text-white space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="text-left space-y-1">
+                    <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider block">
+                      MÃ PHÒNG THI ĐẤU
+                    </span>
+                    <div className="text-3xl sm:text-4xl font-mono font-black text-white tracking-widest flex items-center gap-3">
+                      <span>#{roomCode}</span>
+                      <button
+                        onClick={copyRoomCode}
+                        className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition text-xs flex items-center gap-1 cursor-pointer"
+                        title="Sao chép mã phòng"
+                      >
+                        {isCopiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        <span className="text-[11px] font-sans">{isCopiedCode ? 'Đã chép' : 'Chép mã'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={copyRoomLink}
+                      className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer border border-white/10"
+                    >
+                      {isCopiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                      <span>{isCopiedLink ? 'Đã chép link' : 'Chia sẻ link phòng'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10 text-xs text-slate-300">
+                  <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold text-[11px]">
+                    {roomTitle}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 font-bold text-[11px]">
+                    {totalRounds} câu hỏi
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 font-bold text-[11px]">
+                    {roundDuration}s mỗi vòng
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <button
-                  onClick={handleStartNow}
-                  className="btn-glass-primary px-6 py-3 rounded-2xl font-bold text-sm shadow-md"
-                >
-                  Bắt Đầu Ngay (Start Now)
-                </button>
+              {/* Waiting Players Grid */}
+              <div className="space-y-3 text-left">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <Users className="w-4 h-4 text-indigo-500" />
+                    <span>Người chơi trong phòng ({players.length})</span>
+                  </h3>
+                  <span className="text-xs text-slate-500">
+                    {players.filter((p) => p.isReady || p.isHost).length}/{players.length} đã sẵn sàng
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {players.map((p) => {
+                    const isMe = p.userId === (user?.id || myPlayer?.userId);
+                    return (
+                      <div
+                        key={p.userId}
+                        className={`p-3 rounded-2xl border transition flex items-center justify-between ${
+                          isMe
+                            ? 'bg-indigo-500/10 border-indigo-500/40 text-slate-900 dark:text-white'
+                            : 'bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="relative">
+                            <img
+                              src={p.avatar}
+                              alt={p.displayName}
+                              className="w-9 h-9 rounded-full object-cover border-2 border-indigo-500/30"
+                            />
+                            {p.isHost && (
+                              <Crown className="w-4 h-4 text-amber-400 absolute -top-1.5 -right-1.5 fill-current filter drop-shadow" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-black truncate flex items-center gap-1">
+                              <span>{p.displayName}</span>
+                              {isMe && <span className="text-[10px] text-indigo-400 font-bold">(Bạn)</span>}
+                            </div>
+                            <div className="text-[10px] text-slate-500">
+                              {p.isHost ? 'Chủ phòng' : p.isReady ? '🟢 Sẵn sàng' : '🟡 Đang đợi...'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Host controls kick */}
+                        {isHost && !p.isHost && (
+                          <button
+                            onClick={() => handleKickPlayer(p.userId)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                            title="Mời ra khỏi phòng"
+                          >
+                            <UserMinus className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Ready / Start Buttons */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs text-slate-500 text-left">
+                  {isHost ? (
+                    <span className="font-semibold">
+                      👑 <strong>Bạn là chủ phòng.</strong> Nhấn bắt đầu khi mọi người đã sẵn sàng!
+                    </span>
+                  ) : (
+                    <span className="font-semibold">
+                      Nhấn <strong>Sẵn Sàng</strong> để thông báo cho chủ phòng bắt đầu trận đấu!
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {!isHost && (
+                    <button
+                      onClick={handleToggleReady}
+                      className={`px-6 py-2.5 rounded-2xl font-black text-xs transition flex items-center gap-2 cursor-pointer ${
+                        isReady
+                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-500'
+                          : 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 hover:bg-amber-400'
+                      }`}
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>{isReady ? 'ĐÃ SẴN SÀNG (READY)' : 'SẴN SÀNG'}</span>
+                    </button>
+                  )}
+
+                  {isHost && (
+                    <button
+                      onClick={handleHostStartGame}
+                      className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
+                    >
+                      <Zap className="w-4 h-4" />
+                      <span>BẮT ĐẦU TRẬN ĐẤU (START)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Waiting Room Live Chat Drawer */}
+              <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800/70 p-4 text-left space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <span className="flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Trò Chuyện Phòng Đấu</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500">{chatMessages.length} tin nhắn</span>
+                </div>
+
+                <div className="h-28 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                  {chatMessages.length === 0 ? (
+                    <div className="text-[11px] text-slate-400 italic text-center py-6">
+                      Chưa có tin nhắn nào. Hãy gửi lời chào đến các đối thủ!
+                    </div>
+                  ) : (
+                    chatMessages.map((msg) => (
+                      <div key={msg.id} className="flex items-baseline gap-2">
+                        <span className="font-bold text-indigo-500 shrink-0">{msg.displayName}:</span>
+                        <span className="text-slate-700 dark:text-slate-300 break-words">{msg.message}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <form onSubmit={handleSendChat} className="flex items-center gap-2 pt-1 border-t border-slate-200 dark:border-slate-700/50">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Gửi tin nhắn trong phòng..."
+                    maxLength={100}
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim()}
+                    className="p-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition disabled:opacity-40 cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </form>
               </div>
             </div>
           )}
-
-          {/* Waiting Players Grid */}
-          <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
-            <span className="text-xs font-bold text-slate-500 uppercase block mb-3">
-              Người chơi trong phòng ({players.length})
-            </span>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {players.map((p) => (
-                <div
-                  key={p.userId}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200"
-                >
-                  <img src={p.avatar} alt={p.displayName} className="w-6 h-6 rounded-full" />
-                  <span>{p.displayName}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 

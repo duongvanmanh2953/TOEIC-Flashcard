@@ -31,6 +31,9 @@ import {
   LockOpen,
   X,
   Crown,
+  BookCheck,
+  PenTool,
+  Gamepad2,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -241,6 +244,110 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </GlassCard>
+
+      {/* 4 Core Pillars: Mastery Learning Suite Hub */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Grammar Mastery */}
+        <div
+          onClick={() => navigate('/grammar')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-emerald-400/80 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <BookCheck className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/40">
+              Mới
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            Ngữ Pháp Chuyên Sâu
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            12 thì ngữ pháp, cấu trúc câu & bài tập tương tác Spaced Repetition.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Khám phá ngay</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* Handwriting Practice Mode in Vocabulary Session */}
+        <div
+          onClick={() => navigate('/review?mode=handwriting')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-pink-400/80 hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 flex items-center justify-center font-bold">
+              <PenTool className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-300/40">
+              Phương Thức Mới
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+            Luyện Viết Từ Vựng
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            Viết từng chữ trong bộ từ vựng với nhận diện hình học vector & nắn nét chuẩn.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-pink-600 dark:text-pink-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Luyện viết từ vựng</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+
+        {/* Multiplayer Game Arena & Custom Rooms */}
+        <div
+          onClick={() => navigate('/games')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-amber-400/80 hover:shadow-lg hover:shadow-amber-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+              <Gamepad2 className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300/40">
+              Phòng đấu
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+            Đấu Trường Phản Xạ
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            Tạo phòng đấu bạn bè qua mã PIN, tranh tài tốc độ thời gian thực.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-amber-600 dark:text-amber-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Tham gia đấu trường</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        {/* UMS Smart Progress & Radar */}
+        <div
+          onClick={() => navigate('/progress')}
+          className="group relative p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-400/80 hover:shadow-lg hover:shadow-indigo-500/10 transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+              <Award className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300/40">
+              UMS AI
+            </span>
+          </div>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            Chỉ Số Thông Thạo UMS
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            Radar năng lực 6 chiều, đường cong quên lãng & phân tích trí nhớ FSRS.
+          </p>
+          <div className="mt-3 flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 gap-1 group-hover:translate-x-0.5 transition-transform">
+            <span>Xem phân tích</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </div>
+        </div>
+      </div>
 
       {/* Empty State Banner if no words learned yet in this language */}
       {localWords.length === 0 && (

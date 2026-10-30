@@ -66,6 +66,7 @@ import {
 import { useLearningContext } from '../../contexts/LearningContext';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { getLanguage } from '../../config/languages';
+import { getCertificatesForLanguage, getDefaultCertificateForLanguage } from '@vocabflow/shared';
 
 export const ExamBankPage: React.FC = () => {
   const navigate = useNavigate();
@@ -82,6 +83,18 @@ export const ExamBankPage: React.FC = () => {
   const [examType, setExamType] = useState('ALL');
   const [level, setLevel] = useState('ALL');
   const [sortBy, setSortBy] = useState<'popular' | 'newest' | 'attempts'>('popular');
+
+  // Dynamic Exam Type options based on current active Language Space
+  const activeLangCerts = getCertificatesForLanguage(activeLanguage?.id);
+  const dynamicExamTypeOptions = [
+    { value: 'ALL', label: 'Tất cả kỳ thi' },
+    ...activeLangCerts.map((cert) => ({
+      value: cert.name,
+      label: `${cert.name} — ${cert.fullName}`,
+      icon: <CountryFlag languageId={activeLanguage?.id} size="xs" />,
+    })),
+    { value: 'GENERAL_QUIZ', label: 'Quiz & Bài tập tổng hợp', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" /> },
+  ];
 
   // Exam Detail Modal state (Blog / Post Detail style)
   const [detailModalExam, setDetailModalExam] = useState<any | null>(null);
@@ -160,6 +173,7 @@ export const ExamBankPage: React.FC = () => {
       setLoading(true);
       if (activeTab === 'explore') {
         const params: any = {};
+        if (activeLanguage?.id) params.languageId = activeLanguage.id;
         if (search.trim()) params.search = search.trim();
         if (examType !== 'ALL') params.examType = examType;
         if (level !== 'ALL') params.level = level;
@@ -199,7 +213,7 @@ export const ExamBankPage: React.FC = () => {
 
   useEffect(() => {
     fetchExams();
-  }, [activeTab, examType, level, sortBy]);
+  }, [activeTab, examType, level, sortBy, activeLanguage?.id]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -529,10 +543,14 @@ export const ExamBankPage: React.FC = () => {
         tags: Array.isArray(q.tags) ? q.tags : [],
       }));
 
+      const defaultCert = getDefaultCertificateForLanguage(activeLanguage?.id);
+      const resolvedExamType = defaultCert?.name || 'GENERAL_QUIZ';
+
       await api.post('/exams', {
         title: defaultTitle,
         description: `Bộ đề được tạo tự động từ file ${importFileName}`,
-        examType: 'TOEIC',
+        examType: resolvedExamType,
+        languageId: activeLanguage?.id || 'en',
         durationMinutes: 60,
         status: 'DRAFT',
         questions: cleanQuestions,
@@ -693,17 +711,7 @@ export const ExamBankPage: React.FC = () => {
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </button>
               }
-              options={[
-                { value: 'ALL', label: 'Tất cả kỳ thi' },
-                { value: 'TOEIC', label: 'TOEIC', icon: <CountryFlag languageId="en" size="xs" /> },
-                { value: 'IELTS', label: 'IELTS', icon: <CountryFlag languageId="en" size="xs" /> },
-                { value: 'HSK', label: 'HSK (Tiếng Trung)', icon: <CountryFlag languageId="zh" size="xs" /> },
-                { value: 'JLPT', label: 'JLPT (Tiếng Nhật)', icon: <CountryFlag languageId="ja" size="xs" /> },
-                { value: 'TOPIK', label: 'TOPIK (Tiếng Hàn)', icon: <CountryFlag languageId="ko" size="xs" /> },
-                { value: 'THPT', label: 'THPT Quốc Gia', icon: <CountryFlag languageId="vi" size="xs" /> },
-                { value: 'SAT', label: 'SAT', icon: <CountryFlag countryCode="us" size="xs" /> },
-                { value: 'GENERAL_QUIZ', label: 'Quiz Tiếng Anh tổng hợp', icon: <CountryFlag languageId="en" size="xs" /> },
-              ]}
+              options={dynamicExamTypeOptions}
               onSelect={(val) => setExamType(val)}
             />
 

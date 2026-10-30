@@ -560,3 +560,13 @@ export function getSpeechLocale(idOrCode?: string): string {
   const lang = getLanguage(clean);
   return lang?.speechLocale || 'en-US';
 }
+
+export {
+  getLanguageCapabilities,
+  isHandwritingSupportedForLanguage,
+  getSupportedScriptsForLanguage,
+  type LanguageCapabilityRegistryEntry,
+  type HandwritingCapabilities,
+  type LanguageScriptDefinition,
+} from '@vocabflow/shared';
+

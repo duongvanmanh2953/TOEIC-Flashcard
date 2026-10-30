@@ -44,6 +44,7 @@ export class GamesGateway
     if (roomCode && userId) {
       this.gamesService.roomManager.removePlayer(roomCode, userId);
       this.server.to(`game_room_${roomCode}`).emit('player_left', { userId });
+      this.server.to(`game_room_${roomCode}`).emit('room:player_left', { userId });
       this.broadcastRanking(roomCode);
     }
   }
@@ -65,7 +66,7 @@ export class GamesGateway
   }
 
   /**
-   * Player joins or creates a game room
+   * Player joins or creates an automatic game room
    */
   @SubscribeMessage('join_game')
   async handleJoinGame(
@@ -142,6 +143,152 @@ export class GamesGateway
   }
 
   /**
+   * Player joins custom user-created room
+   */
+  @SubscribeMessage('join_custom_room')
+  async handleJoinCustomRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      roomCode: string;
+      userId: string;
+      displayName: string;
+      avatar: string;
+    },
+  ) {
+    try {
+      const code = data.roomCode.toUpperCase();
+      let room = this.gamesService.roomManager.getRoom(code);
+      if (!room) {
+        // Fallback: load room from DB if not yet in memory
+        const dbRoom = await this.gamesService.prisma.customGameRoom.findUnique({
+          where: { roomCode: code },
+        });
+        if (!dbRoom) {
+          return { status: 'error', message: 'Phòng thi đấu không tồn tại.' };
+        }
+        room = this.gamesService.roomManager.createRoom(
+          dbRoom.roomCode,
+          dbRoom.gameMode,
+          dbRoom.title,
+          [],
+          dbRoom.roundDurationSec,
+        );
+      }
+
+      const player = this.gamesService.roomManager.addPlayer(
+        code,
+        data.userId,
+        data.displayName,
+        data.avatar,
+        client.id,
+      );
+
+      client.data.userId = data.userId;
+      client.data.roomCode = code;
+      client.join(`game_room_${code}`);
+
+      // Notify player
+      client.emit('room:joined_success', {
+        roomCode: code,
+        title: room.title,
+        gameMode: room.gameMode,
+        status: room.status,
+        totalRounds: room.totalRounds,
+        currentRound: room.currentRound,
+        player,
+        players: Array.from(room.players.values()),
+      });
+
+      // Broadcast to all participants in waiting room
+      this.server.to(`game_room_${code}`).emit('room:player_joined', {
+        player,
+        totalPlayers: room.players.size,
+        players: Array.from(room.players.values()),
+      });
+
+      return { status: 'success', roomCode: code };
+    } catch (err: any) {
+      this.logger.error(`Error joining custom room: ${err?.message}`);
+      return { status: 'error', message: err?.message };
+    }
+  }
+
+  /**
+   * Player toggles ready status in waiting room
+   */
+  @SubscribeMessage('room:toggle_ready')
+  handleToggleReady(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomCode: string; userId: string; isReady: boolean },
+  ) {
+    const code = data.roomCode.toUpperCase();
+    this.server.to(`game_room_${code}`).emit('room:player_ready_changed', {
+      userId: data.userId,
+      isReady: data.isReady,
+    });
+    return { status: 'success' };
+  }
+
+  /**
+   * Host starts game from waiting room
+   */
+  @SubscribeMessage('room:host_start_game')
+  handleHostStartGame(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomCode: string },
+  ) {
+    const code = data.roomCode.toUpperCase();
+    this.server.to(`game_room_${code}`).emit('room:starting_countdown', { countdownSec: 3 });
+    this.scheduleGameStart(code, 3);
+    return { status: 'starting' };
+  }
+
+  /**
+   * Host kicks a player from waiting room
+   */
+  @SubscribeMessage('room:kick_user')
+  handleKickUser(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomCode: string; targetUserId: string },
+  ) {
+    const code = data.roomCode.toUpperCase();
+    this.gamesService.roomManager.removePlayer(code, data.targetUserId);
+    this.server.to(`game_room_${code}`).emit('room:player_kicked', {
+      targetUserId: data.targetUserId,
+    });
+    this.broadcastRanking(code);
+    return { status: 'success' };
+  }
+
+  /**
+   * Chat message inside waiting room or battle room
+   */
+  @SubscribeMessage('room:send_chat')
+  handleRoomChat(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      roomCode: string;
+      userId: string;
+      displayName: string;
+      message: string;
+      avatar?: string;
+    },
+  ) {
+    if (!data.message || !data.message.trim()) return;
+    const code = data.roomCode.toUpperCase();
+    this.server.to(`game_room_${code}`).emit('room:chat_message', {
+      id: Date.now().toString(),
+      userId: data.userId,
+      displayName: data.displayName,
+      avatar: data.avatar,
+      message: data.message.trim(),
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
    * Enter RabbitMQ Matchmaking Queue for balanced Arena battles
    */
   @SubscribeMessage('queue_matchmaking')
@@ -191,7 +338,7 @@ export class GamesGateway
    */
   @SubscribeMessage('start_game_now')
   handleStartGameNow(@MessageBody() data: { roomCode: string }) {
-    this.scheduleGameStart(data.roomCode, 3);
+    this.scheduleGameStart(data.roomCode.toUpperCase(), 3);
   }
 
   private scheduleGameStart(roomCode: string, countdownSec: number) {
@@ -202,87 +349,80 @@ export class GamesGateway
     room.status = 'STARTING';
     const timerKey = `start_${roomCode}`;
 
+    if (this.roomTimers.has(timerKey)) {
+      clearInterval(this.roomTimers.get(timerKey)!);
+    }
+
     const interval = setInterval(() => {
-      this.server.to(`game_room_${roomCode}`).emit('game_countdown', {
-        countdown: remaining,
+      this.server.to(`game_room_${roomCode}`).emit('game_starting_countdown', {
+        secondsRemaining: remaining,
       });
 
-      if (remaining <= 0) {
+      remaining -= 1;
+      if (remaining < 0) {
         clearInterval(interval);
         this.roomTimers.delete(timerKey);
         this.startNextRound(roomCode);
       }
-      remaining -= 1;
     }, 1000);
 
     this.roomTimers.set(timerKey, interval);
   }
 
   private startNextRound(roomCode: string) {
-    const room = this.gamesService.roomManager.getRoom(roomCode);
-    if (!room) return;
-
     const roundData = this.gamesService.roomManager.startRound(roomCode);
-
     if (!roundData) {
-      // All rounds completed -> FINISH GAME
       this.finishGame(roomCode);
       return;
     }
 
-    const { question, round } = roundData;
+    const room = this.gamesService.roomManager.getRoom(roomCode);
+    if (!room) return;
 
-    // Broadcast question to all players without revealing the answer!
     this.server.to(`game_room_${roomCode}`).emit('round_started', {
-      round,
+      round: roundData.round,
       totalRounds: room.totalRounds,
       question: {
-        id: question.id,
-        prompt: question.prompt,
-        direction: question.direction,
-        category: question.category,
-        audioUrl: question.audioUrl,
+        id: roundData.question.id,
+        prompt: roundData.question.prompt,
+        direction: roundData.question.direction,
+        category: roundData.question.category,
+        audioUrl: roundData.question.audioUrl,
       },
       durationSec: room.roundDurationSec,
     });
 
-    // Schedule round end timeout
     const roundTimerKey = `round_${roomCode}`;
-    if (this.roomTimers.has(roundTimerKey)) {
-      clearTimeout(this.roomTimers.get(roundTimerKey)!);
-    }
-
-    const timer = setTimeout(() => {
+    const roundTimer = setTimeout(() => {
       this.endRound(roomCode);
-    }, room.roundDurationSec * 1000 + 500);
+    }, room.roundDurationSec * 1000);
 
-    this.roomTimers.set(roundTimerKey, timer);
+    this.roomTimers.set(roundTimerKey, roundTimer);
   }
 
   private endRound(roomCode: string) {
     const room = this.gamesService.roomManager.getRoom(roomCode);
-    if (!room || room.status !== 'IN_ROUND') return;
+    if (!room) return;
 
     room.status = 'ROUND_SUMMARY';
-    const answer = room.currentQuestion?.correctAnswer;
-    const explanation = room.currentQuestion?.explanation;
+    const ranking = this.gamesService.roomManager.getLeaderboard(roomCode);
 
     this.server.to(`game_room_${roomCode}`).emit('round_ended', {
       round: room.currentRound,
-      correctAnswer: answer,
-      explanation,
-      ranking: this.gamesService.roomManager.getLeaderboard(roomCode),
+      correctAnswer: room.currentQuestion?.correctAnswer || '',
+      explanation: room.currentQuestion?.explanation || '',
+      ranking,
     });
 
-    // Short 3-second break between rounds, then start next round
     setTimeout(() => {
-      this.startNextRound(roomCode);
-    }, 3000);
+      if (room.currentRound >= room.totalRounds) {
+        this.finishGame(roomCode);
+      } else {
+        this.startNextRound(roomCode);
+      }
+    }, 4000);
   }
 
-  /**
-   * Player submits an answer
-   */
   @SubscribeMessage('submit_answer')
   async handleSubmitAnswer(
     @ConnectedSocket() client: Socket,
@@ -293,8 +433,9 @@ export class GamesGateway
       answer: string;
     },
   ) {
+    const code = data.roomCode.toUpperCase();
     const result = await this.gamesService.roomManager.submitAnswer(
-      data.roomCode,
+      code,
       data.userId,
       data.answer,
     );
@@ -305,7 +446,6 @@ export class GamesGateway
 
     const { evaluation, player, ranking } = result;
 
-    // Send instant individual evaluation feedback to user
     client.emit('answer_result', {
       evaluation,
       currentScore: player.score,
@@ -313,8 +453,7 @@ export class GamesGateway
       rank: player.rank,
     });
 
-    // Broadcast live ranking update with rank change micro-animation event
-    this.server.to(`game_room_${data.roomCode}`).emit('live_ranking_update', {
+    this.server.to(`game_room_${code}`).emit('live_ranking_update', {
       ranking,
       lastAnsweredBy: {
         displayName: player.displayName,
@@ -324,19 +463,18 @@ export class GamesGateway
       },
     });
 
-    // If all active players in room have answered, end round early
-    const room = this.gamesService.roomManager.getRoom(data.roomCode);
+    const room = this.gamesService.roomManager.getRoom(code);
     if (room && room.status === 'IN_ROUND') {
       const allAnswered = Array.from(room.players.values()).every(
         (p) => p.lastAnsweredRound === room.currentRound,
       );
       if (allAnswered) {
-        const roundTimerKey = `round_${data.roomCode}`;
+        const roundTimerKey = `round_${code}`;
         if (this.roomTimers.has(roundTimerKey)) {
           clearTimeout(this.roomTimers.get(roundTimerKey)!);
           this.roomTimers.delete(roundTimerKey);
         }
-        this.endRound(data.roomCode);
+        this.endRound(code);
       }
     }
 
@@ -344,15 +482,15 @@ export class GamesGateway
   }
 
   private async finishGame(roomCode: string) {
-    const room = this.gamesService.roomManager.getRoom(roomCode);
+    const code = roomCode.toUpperCase();
+    const room = this.gamesService.roomManager.getRoom(code);
     if (!room || room.status === 'FINISHED') return;
 
     room.status = 'FINISHED';
-    const ranking = this.gamesService.roomManager.getLeaderboard(roomCode);
+    const ranking = this.gamesService.roomManager.getLeaderboard(code);
 
-    // Broadcast Game Over celebration and podium
-    this.server.to(`game_room_${roomCode}`).emit('game_finished', {
-      roomCode,
+    this.server.to(`game_room_${code}`).emit('game_finished', {
+      roomCode: code,
       gameMode: room.gameMode,
       totalRounds: room.totalRounds,
       ranking,
@@ -363,12 +501,12 @@ export class GamesGateway
       },
     });
 
-    // Persist final Top records to database (PostgreSQL)
-    await this.gamesService.persistGameResults(roomCode);
+    await this.gamesService.persistGameResults(code);
   }
 
   private broadcastRanking(roomCode: string) {
-    const ranking = this.gamesService.roomManager.getLeaderboard(roomCode);
-    this.server.to(`game_room_${roomCode}`).emit('live_ranking_update', { ranking });
+    const code = roomCode.toUpperCase();
+    const ranking = this.gamesService.roomManager.getLeaderboard(code);
+    this.server.to(`game_room_${code}`).emit('live_ranking_update', { ranking });
   }
 }

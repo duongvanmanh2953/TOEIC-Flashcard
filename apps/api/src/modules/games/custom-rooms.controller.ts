@@ -11,7 +11,8 @@ import {
 } from '@nestjs/common';
 import { CustomRoomsService } from './custom-rooms.service';
 import { CreateCustomRoomDto, VerifyRoomPasswordDto, InviteRoomPlayerDto } from './dto/custom-room.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('games/rooms')
 export class CustomRoomsController {
@@ -29,6 +30,7 @@ export class CustomRoomsController {
     };
   }
 
+  @Public()
   @Get()
   async getPublicRooms(@Query('languageId') languageId?: string, @Query('gameMode') gameMode?: string) {
     const rooms = await this.customRoomsService.getPublicRooms({ languageId, gameMode });
@@ -38,6 +40,7 @@ export class CustomRoomsController {
     };
   }
 
+  @Public()
   @Get(':roomCode')
   async getRoom(@Param('roomCode') roomCode: string) {
     const room = await this.customRoomsService.getRoomByCode(roomCode);
@@ -47,6 +50,7 @@ export class CustomRoomsController {
     };
   }
 
+  @Public()
   @Post(':roomCode/verify-password')
   async verifyPassword(
     @Param('roomCode') roomCode: string,

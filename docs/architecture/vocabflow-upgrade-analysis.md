@@ -203,7 +203,7 @@ Qua kiểm toán chi tiết source code, phát hiện **5 điểm nghẽn kỹ t
 ```
 
 ### 6.1. Module Game Rooms do người dùng tự tạo (PROMPT 1)
-- Cho phép người dùng bấm "+ Tạo phòng đấu".
+- Cho phép người dùng bấm "Tạo phòng đấu".
 - Hỗ trợ 4 cấu hình: Public/Private x Có/Không có mật khẩu.
 - Cho phép chọn Data Source qua Question Provider Adapter (Kho từ cá nhân, Ngân hàng TOEIC, Ngữ pháp).
 - Vòng đời phòng chuẩn: `WAITING` → `STARTING` → `IN_PROGRESS` → `ROUND_SUMMARY` → `FINISHED`.

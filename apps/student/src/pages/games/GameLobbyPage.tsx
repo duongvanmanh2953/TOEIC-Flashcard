@@ -21,9 +21,17 @@ import {
   Award,
   History,
   Lightbulb,
+  PlusCircle,
+  Lock,
+  Search,
+  Hash,
+  KeyRound,
+  RotateCw,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { VocabFlowLogo } from '@vocabflow/shared';
+import { CreateCustomRoomModal } from '../../components/games/CreateCustomRoomModal';
+import { EnterRoomPasswordModal } from '../../components/games/EnterRoomPasswordModal';
 
 interface ScheduleItem {
   gameMode: string;
@@ -94,11 +102,76 @@ export const GameLobbyPage: React.FC = () => {
     localStorage.setItem('vocabflow_hide_games_hero', 'true');
   };
 
+  const [customRooms, setCustomRooms] = useState<any[]>([]);
+  const [customRoomsLoading, setCustomRoomsLoading] = useState<boolean>(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [passwordModalData, setPasswordModalData] = useState<{
+    isOpen: boolean;
+    roomCode: string;
+    roomTitle: string;
+    gameMode: string;
+  } | null>(null);
+  const [quickJoinCode, setQuickJoinCode] = useState<string>('');
+  const [customRoomFilter, setCustomRoomFilter] = useState<string>('ALL');
+  const [customRoomSearch, setCustomRoomSearch] = useState<string>('');
+
   useEffect(() => {
     fetchLobby();
-    const interval = setInterval(fetchLobby, 10000); // 10s sync
+    fetchCustomRooms();
+    const interval = setInterval(() => {
+      fetchLobby();
+      fetchCustomRooms();
+    }, 10000); // 10s sync
     return () => clearInterval(interval);
   }, []);
+
+  const fetchCustomRooms = async () => {
+    try {
+      setCustomRoomsLoading(true);
+      const res: any = await api.get('/games/rooms');
+      const list = res?.data?.data || res?.data || res;
+      if (Array.isArray(list)) {
+        setCustomRooms(list);
+      }
+    } catch (err) {
+      console.error('Failed to fetch custom rooms:', err);
+    } finally {
+      setCustomRoomsLoading(false);
+    }
+  };
+
+  const handleCreateRoomSuccess = (room: any) => {
+    setIsCreateModalOpen(false);
+    navigate(`/games/room/${room.roomCode}?mode=${room.gameMode}`);
+  };
+
+  const handleJoinCustomRoom = (room: any) => {
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để tham gia thi đấu cùng bạn bè');
+      return;
+    }
+    if (room.hasPassword) {
+      setPasswordModalData({
+        isOpen: true,
+        roomCode: room.roomCode,
+        roomTitle: room.title,
+        gameMode: room.gameMode,
+      });
+    } else {
+      navigate(`/games/room/${room.roomCode}?mode=${room.gameMode}`);
+    }
+  };
+
+  const handleQuickJoin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickJoinCode.trim()) return;
+    if (isGuest || !user) {
+      promptLogin('Đăng nhập để tham gia phòng đấu');
+      return;
+    }
+    const cleanCode = quickJoinCode.trim().toUpperCase();
+    navigate(`/games/room/${cleanCode}`);
+  };
 
   // Countdown timer tick
   useEffect(() => {
@@ -239,9 +312,8 @@ export const GameLobbyPage: React.FC = () => {
         <div className="space-y-1 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-2">
             <span
-              className={`w-3 h-3 rounded-full ${
-                isOpen ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'
-              }`}
+              className={`w-3 h-3 rounded-full ${isOpen ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'
+                }`}
             />
             <span className="text-xs font-black uppercase tracking-wider text-slate-400">
               Trạng thái đấu trường
@@ -431,11 +503,10 @@ export const GameLobbyPage: React.FC = () => {
               {/* Favorite Heart Button */}
               <button
                 onClick={(e) => toggleFavorite(item.gameMode, e)}
-                className={`absolute top-4 right-4 p-1.5 rounded-lg border transition ${
-                  favorites.includes(item.gameMode)
+                className={`absolute top-4 right-4 p-1.5 rounded-lg border transition ${favorites.includes(item.gameMode)
                     ? 'bg-rose-500/15 border-rose-500/40 text-rose-400'
                     : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-white'
-                }`}
+                  }`}
                 title={favorites.includes(item.gameMode) ? 'Bỏ yêu thích' : 'Lưu vào game yêu thích'}
               >
                 <Heart className={`w-3.5 h-3.5 ${favorites.includes(item.gameMode) ? 'fill-current' : ''}`} />
@@ -459,14 +530,14 @@ export const GameLobbyPage: React.FC = () => {
                   {item.gameMode === 'TRANSLATION_RUSH'
                     ? t('games.translationRush.desc', 'Dịch nhanh song ngữ Anh - Việt với AI.')
                     : item.gameMode === 'WORD_BLITZ'
-                    ? t('games.wordBlitz.desc', 'Phản xạ tìm từ đồng nghĩa, trái nghĩa cấp tốc.')
-                    : item.gameMode === 'SENTENCE_SPRINT'
-                    ? t('games.sentenceSprint.desc', 'Sáng tạo câu hoàn chỉnh chuẩn ngữ cảnh.')
-                    : item.gameMode === 'MISSING_WORD'
-                    ? t('games.missingWord.desc', 'Điền từ khuyết chính xác vào câu.')
-                    : item.gameMode === 'LISTENING_RUSH'
-                    ? t('games.listeningRush.desc', 'Nghe audio chuẩn và gõ lại câu chính xác.')
-                    : t('games.synonymBattle.desc', 'Đấu trí tìm từ đồng nghĩa.')}
+                      ? t('games.wordBlitz.desc', 'Phản xạ tìm từ đồng nghĩa, trái nghĩa cấp tốc.')
+                      : item.gameMode === 'SENTENCE_SPRINT'
+                        ? t('games.sentenceSprint.desc', 'Sáng tạo câu hoàn chỉnh chuẩn ngữ cảnh.')
+                        : item.gameMode === 'MISSING_WORD'
+                          ? t('games.missingWord.desc', 'Điền từ khuyết chính xác vào câu.')
+                          : item.gameMode === 'LISTENING_RUSH'
+                            ? t('games.listeningRush.desc', 'Nghe audio chuẩn và gõ lại câu chính xác.')
+                            : t('games.synonymBattle.desc', 'Đấu trí tìm từ đồng nghĩa.')}
                 </p>
 
                 <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium pt-1">
@@ -479,11 +550,10 @@ export const GameLobbyPage: React.FC = () => {
               <button
                 onClick={() => handleJoinGame(item.gameMode)}
                 disabled={!isOpen && !lobbyData?.hoursStatus?.testMode}
-                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition ${
-                  isOpen || lobbyData?.hoursStatus?.testMode
+                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition ${isOpen || lobbyData?.hoursStatus?.testMode
                     ? 'btn-glass-primary'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>
@@ -497,50 +567,245 @@ export const GameLobbyPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Active Live Rooms Browser */}
-      {lobbyData?.activeRooms && lobbyData.activeRooms.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-indigo-500" />
-            <span>Phòng Thi Đấu Đang Mở ({lobbyData.activeRooms.length})</span>
-          </h2>
+      {/* 4. Custom & Community Battle Rooms Section (PROMPT 1) */}
+      <div className="space-y-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-500" />
+              <span>PHÒNG ĐẤU BẠN BÈ & CỘNG ĐỒNG (CUSTOM ROOMS)</span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Tự tạo phòng riêng, mời bạn bè cùng thi đấu hoặc tham gia các phòng đấu tự do 24/7
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {lobbyData.activeRooms.map((room) => (
-              <div
-                key={room.roomCode}
-                className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="tabular-nums font-black text-sm text-indigo-600 dark:text-indigo-400">
-                      #{room.roomCode}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                      {room.status}
-                    </span>
-                  </div>
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-1">
-                    {room.title}
-                  </p>
-                  <span className="text-[11px] text-slate-400">
-                    {room.playerCount} người chơi • Vòng {room.currentRound}/{room.totalRounds}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => handleJoinGame(room.gameMode, room.roomCode)}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition"
-                >
-                  Tham Gia
-                </button>
-              </div>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (isGuest || !user) {
+                  promptLogin('Đăng nhập để tạo phòng đấu riêng');
+                  return;
+                }
+                setIsCreateModalOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Tạo Phòng Đấu</span>
+            </button>
+            <button
+              onClick={fetchCustomRooms}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+              title="Làm mới danh sách phòng"
+            >
+              <RotateCw className={`w-4 h-4 ${customRoomsLoading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
+
+        {/* Quick Join by Code + Filters Bar */}
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Quick Join Code Form */}
+          <form onSubmit={handleQuickJoin} className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 sm:w-60">
+              <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={quickJoinCode}
+                onChange={(e) => setQuickJoinCode(e.target.value.toUpperCase())}
+                placeholder="Nhập mã phòng (VF...)"
+                maxLength={8}
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!quickJoinCode.trim()}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-indigo-600 text-white text-xs font-bold transition disabled:opacity-40 cursor-pointer"
+            >
+              Vào
+            </button>
+          </form>
+
+          {/* Search + Filter Chips */}
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={customRoomSearch}
+                onChange={(e) => setCustomRoomSearch(e.target.value)}
+                placeholder="Tìm tên phòng..."
+                className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 w-40 sm:w-48"
+              />
+            </div>
+
+            <select
+              value={customRoomFilter}
+              onChange={(e) => setCustomRoomFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">Tất cả chế độ</option>
+              <option value="TRANSLATION_RUSH">Dịch Nhanh Song Ngữ</option>
+              <option value="WORD_BLITZ">Từ Vựng Cấp Tốc</option>
+              <option value="SENTENCE_SPRINT">Ghép Câu Siêu Tốc</option>
+              <option value="MISSING_WORD">Điền Từ Khuyết</option>
+              <option value="FOUR_SKILLS_ARENA">4 Kỹ Năng</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Custom Rooms Grid */}
+        {(() => {
+          const filtered = customRooms.filter((r) => {
+            const matchesMode = customRoomFilter === 'ALL' || r.gameMode === customRoomFilter;
+            const matchesSearch =
+              !customRoomSearch ||
+              r.title.toLowerCase().includes(customRoomSearch.toLowerCase()) ||
+              r.roomCode.toLowerCase().includes(customRoomSearch.toLowerCase());
+            return matchesMode && matchesSearch;
+          });
+
+          if (filtered.length === 0) {
+            return (
+              <div className="p-8 rounded-3xl bg-slate-900/60 border border-slate-800 text-center space-y-3">
+                <Users className="w-10 h-10 text-slate-600 mx-auto" />
+                <h3 className="text-sm font-black text-white">Chưa có phòng đấu mở nào phù hợp</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Hãy là người đầu tiên tạo phòng đấu riêng và rủ bạn bè vào so tài phản xạ tiếng Anh!
+                </p>
+                <button
+                  onClick={() => {
+                    if (isGuest || !user) {
+                      promptLogin('Đăng nhập để tạo phòng');
+                      return;
+                    }
+                    setIsCreateModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/20"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Tạo Phòng Mới Ngay</span>
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {filtered.map((room) => (
+                <div
+                  key={room.id || room.roomCode}
+                  className="p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 transition-all duration-200 space-y-3 flex flex-col justify-between shadow-sm hover:shadow-md"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-black px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                          #{room.roomCode}
+                        </span>
+                        {room.hasPassword && (
+                          <span
+                            className="p-1 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px]"
+                            title="Phòng có mật khẩu bảo vệ"
+                          >
+                            <Lock className="w-3 h-3" />
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="text-[11px] font-bold text-slate-400">
+                        {room.playerCount || (room.participants ? room.participants.length : 1)}/
+                        {room.maxPlayers || 8} người
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white line-clamp-1">
+                      {room.title}
+                    </h3>
+
+                    {room.description && (
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                        {room.description}
+                      </p>
+                    )}
+
+                    {/* Metadata tags */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        {room.gameMode === 'TRANSLATION_RUSH'
+                          ? 'Dịch Nhanh'
+                          : room.gameMode === 'WORD_BLITZ'
+                            ? 'Từ Vựng'
+                            : room.gameMode === 'SENTENCE_SPRINT'
+                              ? 'Ghép Câu'
+                              : room.gameMode === 'MISSING_WORD'
+                                ? 'Điền Từ'
+                                : '4 Kỹ Năng'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        {room.questionCount || 10} câu
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        {room.roundDurationSec || 15}s
+                      </span>
+                    </div>
+
+                    {/* Host avatar & name */}
+                    {room.host && (
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/80">
+                        <div className="w-5 h-5 rounded-full bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-[10px] font-bold overflow-hidden">
+                          {room.host.avatar ? (
+                            <img src={room.host.avatar} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            room.host.displayName?.[0] || 'H'
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-semibold truncate">
+                          Chủ phòng: {room.host.displayName || 'Learner'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => handleJoinCustomRoom(room)}
+                    className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Tham Gia</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Modals */}
+      <CreateCustomRoomModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onRoomCreated={handleCreateRoomSuccess}
+      />
+
+      {passwordModalData && (
+        <EnterRoomPasswordModal
+          isOpen={passwordModalData.isOpen}
+          roomCode={passwordModalData.roomCode}
+          roomTitle={passwordModalData.roomTitle}
+          onClose={() => setPasswordModalData(null)}
+          onSuccess={(code) => {
+            const mode = passwordModalData.gameMode;
+            setPasswordModalData(null);
+            navigate(`/games/room/${code}?mode=${mode}`);
+          }}
+        />
       )}
     </div>
   );
 };
 
 export default GameLobbyPage;
+
