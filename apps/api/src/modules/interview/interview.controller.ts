@@ -15,7 +15,7 @@ import { InterviewService } from './interview.service';
 import { InterviewTaxonomyService } from './interview-taxonomy.service';
 import { InterviewDocumentService } from './interview-document.service';
 import { InterviewBillingService } from './interview-billing.service';
-import { InterviewSetupConfig } from '@vocabflow/shared';
+import { InterviewSetupConfig, TranslationPurpose } from '@vocabflow/shared';
 
 @ApiTags('AI Interview Studio')
 @Controller('interview')
@@ -37,15 +37,39 @@ export class InterviewController {
   @UseGuards(JwtAuthGuard)
   @Get('billing/status')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Check candidate quota & billing entitlement' })
+  @ApiOperation({ summary: 'Check candidate quota & billing entitlement (Fail-Closed)' })
   getBillingStatus(@CurrentUser('id') userId: string) {
     return this.billingService.checkEntitlement(userId);
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('opening-script')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate dynamic opening script matching role and interview language' })
+  getOpeningScript(
+    @Query('industryCode') industryCode: string,
+    @Query('positionCode') positionCode: string,
+    @Query('positionTitle') positionTitle: string,
+    @Query('seniorityLevel') seniorityLevel: string,
+    @Query('interviewType') interviewType: string,
+    @Query('languageId') languageId: string,
+    @Query('interviewerStyle') interviewerStyle?: string
+  ) {
+    return this.interviewService.getOpeningScript({
+      industryCode: industryCode || 'TECH',
+      positionCode,
+      positionTitle: positionTitle || 'Candidate',
+      seniorityLevel: seniorityLevel || 'Mid-level',
+      interviewType: interviewType || 'General Professional',
+      languageId: languageId || 'en',
+      interviewerStyle,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('setup')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Initialize and start a new 1:1 AI Interview session' })
+  @ApiOperation({ summary: 'Initialize and start a new 1:1 AI Interview session (Pro exclusive)' })
   createSession(
     @CurrentUser('id') userId: string,
     @Body() config: InterviewSetupConfig
@@ -62,14 +86,22 @@ export class InterviewController {
     @Param('id') sessionId: string,
     @Body('turnNumber') turnNumber: number,
     @Body('answer') answer: string,
-    @Body('durationSec') durationSec?: number
+    @Body('durationSec') durationSec?: number,
+    @Body('isTranslated') isTranslated?: boolean,
+    @Body('detectedSourceLanguage') detectedSourceLanguage?: string,
+    @Body('originalTranscript') originalTranscript?: string
   ) {
     return this.interviewService.submitTurnAnswer(
       userId,
       sessionId,
       turnNumber,
       answer,
-      durationSec || 0
+      durationSec || 0,
+      {
+        isTranslated,
+        detectedSourceLanguage,
+        originalTranscript,
+      }
     );
   }
 
@@ -89,13 +121,22 @@ export class InterviewController {
   @UseGuards(JwtAuthGuard)
   @Post('sessions/:id/translate')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Translate interview question or hint into support language' })
+  @ApiOperation({ summary: 'Centralized translation service with direction & purpose' })
   translateContent(
     @CurrentUser('id') userId: string,
+    @Param('id') sessionId: string,
     @Body('text') text: string,
-    @Body('targetLang') targetLang?: string
+    @Body('targetLang') targetLang?: string,
+    @Body('sourceLang') sourceLang?: string,
+    @Body('purpose') purpose?: TranslationPurpose
   ) {
-    return this.interviewService.translateContent(userId, text, targetLang || 'vi');
+    return this.interviewService.translateContent(
+      userId,
+      text,
+      targetLang || 'vi',
+      sourceLang,
+      purpose || 'question'
+    );
   }
 
   @UseGuards(JwtAuthGuard)

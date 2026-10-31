@@ -8,6 +8,11 @@ import {
   InterviewSetupConfig,
   InterviewReportData,
   InterviewQuestionItem,
+  InterviewLanguageContext,
+  TranslationPurpose,
+  TranslationResponse,
+  buildInterviewLanguageContext,
+  MULTILINGUAL_CURATED_QUESTIONS,
   wrapAsUntrustedContext,
 } from './interview.shared';
 
@@ -24,24 +29,92 @@ export class InterviewService {
   ) {}
 
   /**
-   * Initialize a new AI Interview Session (Phần 2.6 & 11.1)
+   * Build or fetch validated language context for a session
+   */
+  getLanguageContext(config: Partial<InterviewSetupConfig>): InterviewLanguageContext {
+    return buildInterviewLanguageContext(
+      config.languageId || 'en',
+      config.supportLanguageId || 'vi',
+      'vi'
+    );
+  }
+
+  /**
+   * Generates authentic, role-specific opening script matching interview language,
+   * seniority, and interview style (Phần 5.3)
+   */
+  async getOpeningScript(params: {
+    industryCode: string;
+    positionCode?: string;
+    positionTitle: string;
+    seniorityLevel: string;
+    interviewType: string;
+    languageId: string;
+    interviewerStyle?: string;
+  }): Promise<{ scriptText: string; languageId: string }> {
+    const lang = (params.languageId || 'en').toLowerCase().split(/[-_]/)[0];
+    const pos = params.positionTitle || 'Candidate';
+    const seniority = params.seniorityLevel || 'Professional';
+
+    // Tailored scripts per language to guarantee instant, natural opening
+    if (lang === 'ja') {
+      return {
+        scriptText: `本日はお時間をいただきありがとうございます。${pos}（${seniority}）の面接を担当いたしますAI面接官です。本日はこれまでの実務経験や専門スキル、そして実際の業務における課題解決アプローチについて詳しくお伺いしていきます。準備が整いましたら、最初のご質問に進みましょう。`,
+        languageId: 'ja',
+      };
+    }
+
+    if (lang === 'ko') {
+      return {
+        scriptText: `안녕하세요. 오늘 ${pos} (${seniority}) 포지션 면접을 진행하게 된 AI 인터뷰어입니다. 귀하의 전문 실무 경험과 역량, 그리고 실제 현업 문제 해결 과정을 심도 있게 나누고자 합니다. 준비되셨다면 편안한 마음으로 시작해 주세요.`,
+        languageId: 'ko',
+      };
+    }
+
+    if (lang === 'zh') {
+      return {
+        scriptText: `您好！欢迎参加本次 ${pos}（${seniority}）的专业模拟面试。我是您的AI面试官。今天我们将重点探讨您的实战项目经验、专业技术深度以及在实际业务中应对挑战的解决思路。准备好后，我们即可开始第一道问题。`,
+        languageId: 'zh',
+      };
+    }
+
+    if (lang === 'vi') {
+      return {
+        scriptText: `Chào mừng bạn đến với buổi phỏng vấn vị trí ${pos} (${seniority}). Tôi là người phỏng vấn AI của bạn. Hôm nay chúng ta sẽ cùng trao đổi về kinh nghiệm chuyên môn, kỹ năng cốt lõi và cách bạn tiếp cận các bài toán thực tế trong công việc. Khi đã sẵn sàng, chúng ta sẽ bắt đầu với câu hỏi đầu tiên.`,
+        languageId: 'vi',
+      };
+    }
+
+    // Default English
+    return {
+      scriptText: `Welcome to your ${pos} (${seniority}) interview session. I am your AI interviewer today. We will explore your hands-on experience, core domain competencies, architectural decisions, and how you resolve challenging real-world problems. Whenever you are ready, let's begin with our first question.`,
+      languageId: 'en',
+    };
+  }
+
+  /**
+   * Initialize a new AI Interview Session (Phần 2.6 & 10.1)
+   * Enforces fail-closed Pro entitlement guard before session creation.
    */
   async createSession(userId: string, config: InterviewSetupConfig) {
-    // 1. Entitlement check
-    await this.billingService.checkEntitlement(userId);
+    // 1. Entitlement check (Fail-closed: strictly throws ForbiddenException if user is not Pro)
+    await this.billingService.ensureProEntitlement(userId);
 
-    // 2. Select initial question pool based on mode & source
+    // 2. Build canonical Language Context
+    const langContext = this.getLanguageContext(config);
+
+    // 3. Select initial question pool based on mode & source
     const questions = await this.selectQuestionsForSession(config, userId);
     if (questions.length === 0) {
       throw new BadRequestException('Không tìm thấy bộ câu hỏi phù hợp cho ngành nghề và vị trí này.');
     }
 
-    // 3. Create Session in database
+    // 4. Create Session in database
     const session = await this.prisma.interviewSession.create({
       data: {
         userId,
-        languageId: config.languageId || 'en',
-        supportLanguageId: config.supportLanguageId || 'vi',
+        languageId: langContext.interviewLanguage,
+        supportLanguageId: langContext.supportLanguage,
         industryCode: config.industryCode,
         positionTitle: config.positionTitle,
         seniorityLevel: config.seniorityLevel || 'Mid-level',
@@ -55,7 +128,7 @@ export class InterviewService {
       },
     });
 
-    // 4. Reserve session credits with the created session.id
+    // 5. Reserve session credits with idempotency
     try {
       const idempotencyKey = `session_res_${userId}_${session.id}`;
       await this.billingService.reserveSessionCredits(userId, session.id, idempotencyKey);
@@ -63,7 +136,7 @@ export class InterviewService {
       this.logger.warn(`Could not reserve credits for session ${session.id}: ${billingErr}`);
     }
 
-    // 5. Create first turn with Question 1
+    // 6. Create first turn with Question 1
     const firstQ = questions[0];
     const firstTurn = await this.prisma.interviewTurn.create({
       data: {
@@ -89,6 +162,7 @@ export class InterviewService {
         durationMinutes: session.durationMinutes,
         status: session.status,
       },
+      languageContext: langContext,
       currentTurn: {
         turnNumber: 1,
         questionText: firstTurn.questionText,
@@ -99,15 +173,25 @@ export class InterviewService {
   }
 
   /**
-   * Candidate submits answer (text or voice transcript) (Phần 6.2 - 6.4)
+   * Candidate submits answer (text or voice transcript) (Phần 4.2 - 4.4 & 7.1 - 7.3)
+   * Supports Translation-Aware Evaluation: candidate who spoke in support language
+   * has their answer translated for domain evaluation while preserving original transcript.
    */
   async submitTurnAnswer(
     userId: string,
     sessionId: string,
     turnNumber: number,
     candidateAnswer: string,
-    durationSec: number = 0
+    durationSec: number = 0,
+    options?: {
+      isTranslated?: boolean;
+      detectedSourceLanguage?: string;
+      originalTranscript?: string;
+    }
   ) {
+    // 1. Entitlement verification
+    await this.billingService.ensureProEntitlement(userId);
+
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },
       include: {
@@ -126,7 +210,7 @@ export class InterviewService {
 
     const cleanAnswer = this.ragService.sanitizeCandidateText(candidateAnswer);
 
-    // 1. RAG Context Retrieval for grounded evaluation
+    // 2. RAG Context Retrieval for grounded evaluation
     const relevantChunks = await this.ragService.retrieveRelevantKnowledge({
       industryCode: session.industryCode,
       languageCode: session.languageId,
@@ -137,26 +221,33 @@ export class InterviewService {
 
     const knowledgeContext = relevantChunks.map((c) => c.content).join('\n---\n');
 
-    // 2. AI Turn Evaluation & Follow-up decision
+    // 3. AI Turn Evaluation & Follow-up decision with translation-awareness
+    const isTranslatedAnswer = Boolean(options?.isTranslated);
     const evaluation = await this.evaluateTurnWithAI(
       session,
       currentTurn.questionText,
       cleanAnswer,
       knowledgeContext,
-      currentTurn.isFollowUp
+      currentTurn.isFollowUp,
+      isTranslatedAnswer
     );
 
-    // 3. Update current turn
+    // 4. Update current turn with answer & analysis
     await this.prisma.interviewTurn.update({
       where: { id: currentTurn.id },
       data: {
         candidateAnswer: cleanAnswer,
         durationSec,
-        analysisJson: evaluation as any,
+        analysisJson: {
+          ...evaluation,
+          isTranslatedAnswer,
+          originalTranscript: options?.originalTranscript || cleanAnswer,
+          detectedSourceLanguage: options?.detectedSourceLanguage || (isTranslatedAnswer ? session.supportLanguageId : session.languageId),
+        } as any,
       },
     });
 
-    // 4. Decide next turn:
+    // 5. Follow-up decision:
     // If answer is incomplete AND hasn't reached max follow-up (1 follow-up max per main question):
     if (evaluation.shouldFollowUp && !currentTurn.isFollowUp && evaluation.followUpQuestion) {
       const nextTurnNumber = turnNumber + 1;
@@ -183,7 +274,7 @@ export class InterviewService {
       };
     }
 
-    // Otherwise, move to next primary question or complete session
+    // 6. Otherwise, advance to next main question or finish session
     const allQuestions = await this.selectQuestionsForSession(
       {
         industryCode: session.industryCode,
@@ -198,7 +289,7 @@ export class InterviewService {
     const answeredMainTurns = session.turns.filter((t) => !t.isFollowUp).length;
     const nextQuestionIndex = answeredMainTurns;
 
-    // Check if finished session (target: 4-5 main questions or reach max turn limit)
+    // Finish session if target questions reached (4-5 main questions) or max turn limit hit
     if (nextQuestionIndex >= Math.min(5, allQuestions.length) || turnNumber >= this.billingService.getMaxTurnsLimit()) {
       return this.finishSession(userId, sessionId);
     }
@@ -234,6 +325,8 @@ export class InterviewService {
    * Request multi-level hints (Keywords -> Structure -> Sample Answer) (Phần 8.1)
    */
   async requestHint(userId: string, sessionId: string, turnNumber: number, hintLevel: 1 | 2 | 3) {
+    await this.billingService.ensureProEntitlement(userId);
+
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },
       include: { turns: true },
@@ -243,7 +336,6 @@ export class InterviewService {
     const turn = session.turns.find((t) => t.turnNumber === turnNumber);
     if (!turn) throw new NotFoundException('Turn not found');
 
-    // Update hint level used on this turn
     await this.prisma.interviewTurn.update({
       where: { id: turn.id },
       data: {
@@ -252,7 +344,6 @@ export class InterviewService {
       },
     });
 
-    // Generate dynamic hint based on level
     const prompt = `You are a professional Interview Coach.
 Position: ${session.positionTitle} (${session.seniorityLevel})
 Language: ${session.languageId}
@@ -286,38 +377,101 @@ Return JSON strictly:
   }
 
   /**
-   * Translate Question or Hint to Support Language (Phần 8.2)
+   * Centralized, multi-purpose Translation Service (Phần 3.1 - 3.4)
+   * Explicit sourceLanguage, targetLanguage, purpose, and term preservation.
    */
-  async translateContent(userId: string, text: string, targetLang: string = 'vi') {
-    const prompt = `Bạn là chuyên gia dịch thuật song ngữ phỏng vấn tuyển dụng. Hãy dịch câu hỏi sau sang ${targetLang === 'vi' ? 'tiếng Việt' : targetLang} tự nhiên, trang trọng và chuẩn mực:
-"${text}"
+  async translateContent(
+    userId: string,
+    text: string,
+    targetLang: string = 'vi',
+    sourceLang?: string,
+    purpose: TranslationPurpose = 'question',
+    industryCode?: string
+  ): Promise<TranslationResponse> {
+    const cleanText = (text || '').trim();
+    if (!cleanText) {
+      return {
+        originalText: '',
+        translatedText: '',
+        sourceLanguage: sourceLang || 'auto',
+        targetLanguage: targetLang,
+        purpose,
+      };
+    }
 
-YÊU CẦU:
-- Chỉ xuất ra bản dịch thuần túy, tuyệt đối không có lời chào, không có tiêu đề markdown (###) hay phân tích.
-- Không bao bọc trong dấu ngoặc kép.`;
-    const res = await this.aiService.pipelineQuery(userId, prompt);
-    let replyText = (res as any).reply || (res as any).response || '';
-    if (replyText.includes('###') || replyText.includes('Chào ') || replyText.includes('phân tích') || replyText.includes('Dịch:')) {
-      const validLines = replyText.split('
-')
+    const normSource = (sourceLang || 'en').toLowerCase().split(/[-_]/)[0];
+    const normTarget = (targetLang || 'vi').toLowerCase().split(/[-_]/)[0];
+
+    // If source and target are identical, return immediately without wasting LLM call
+    if (normSource === normTarget) {
+      return {
+        originalText: cleanText,
+        translatedText: cleanText,
+        sourceLanguage: normSource,
+        targetLanguage: normTarget,
+        purpose,
+        isCached: true,
+      };
+    }
+
+    const purposeDescriptions: Record<TranslationPurpose, string> = {
+      question: 'Dịch câu hỏi phỏng vấn để ứng viên hiểu đúng yêu cầu chuyên môn',
+      answer: 'Chuẩn hóa câu trả lời của ứng viên sang ngôn ngữ phỏng vấn phục vụ đánh giá năng lực',
+      hint: 'Dịch gợi ý trả lời chuyên sâu',
+      sample_answer: 'Dịch câu trả lời mẫu tham khảo',
+      feedback: 'Dịch nhận xét đánh giá của người phỏng vấn',
+      explanation: 'Giải thích thuật ngữ hoặc ngữ cảnh phỏng vấn',
+    };
+
+    const prompt = `Bạn là chuyên gia dịch thuật song ngữ phỏng vấn tuyển dụng chuyên nghiệp.
+Nhiệm vụ: ${purposeDescriptions[purpose] || 'Dịch văn bản phỏng vấn'}
+Từ ngôn ngữ: ${normSource}
+Sang ngôn ngữ: ${normTarget === 'vi' ? 'tiếng Việt' : normTarget}
+
+NGUYÊN TẮC BẮT BUỘC:
+1. Dịch đúng chiều từ ${normSource} sang ${normTarget}.
+2. Giữ nguyên ngữ cảnh công việc và thuật ngữ chuyên ngành (e.g. Redis, React, PMS, STAR, SLA, P&L, ROAS, KPI).
+3. Không thêm lời chào, không thêm markdown (###), không thêm lời giải thích cá nhân.
+4. Xuất ra bản dịch thuần túy không bao bọc bởi dấu ngoặc kép.
+
+Văn bản cần dịch:
+"""${cleanText}"""`;
+
+    const aiPromise = this.aiService.pipelineQuery(userId, prompt);
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 6000));
+    const res: any = await Promise.race([aiPromise, timeoutPromise]);
+    let replyText = (res as any)?.reply || (res as any)?.response || '';
+
+    // Sanitize any residual conversational headers or markdown artifacts
+    if (replyText.includes('###') || replyText.includes('Chào ') || replyText.includes('Dịch:')) {
+      const validLines = replyText
+        .split('\n')
         .map((l: string) => l.trim())
-        .filter((l: string) => l && !l.startsWith('###') && !l.includes('Chào ') && !l.includes('phân tích') && !l.startsWith('Dịch:'));
+        .filter((l: string) => l && !l.startsWith('###') && !l.includes('Chào ') && !l.startsWith('Dịch:'));
       if (validLines.length > 0) {
         replyText = validLines[validLines.length - 1];
       }
     }
+
     replyText = replyText.replace(/^[*\#\-\d.\s"':]+|["']$/g, '').trim();
+
     return {
-      original: text,
-      translated: replyText || text,
+      originalText: cleanText,
+      translatedText: replyText || cleanText,
+      sourceLanguage: normSource,
+      targetLanguage: normTarget,
+      purpose,
     };
-  }
   }
 
   /**
-   * Finish session and generate comprehensive post-interview report (Phần 9.1 - 9.6)
+   * Finish session and generate comprehensive post-interview report (Phần 8.1 - 8.6)
+   * Separates 4 distinct scoring clusters: Professional Competency, Communication,
+   * Language Proficiency (translation-aware), and Interview Performance.
    */
   async finishSession(userId: string, sessionId: string) {
+    await this.billingService.ensureProEntitlement(userId);
+
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },
       include: {
@@ -339,87 +493,129 @@ YÊU CẦU:
     const durationSec = Math.round((Date.now() - session.createdAt.getTime()) / 1000);
     await this.billingService.settleSessionCredits(userId, sessionId, durationSec, session.turns.length);
 
-    // 2. Generate detailed report via AI
-    const turnsSummary = session.turns
-      .filter((t) => t.candidateAnswer)
-      .map(
-        (t) =>
-          `Turn ${t.turnNumber} (${t.isFollowUp ? 'Follow-up' : 'Main'}):
+    // 2. Inspect if any candidate turns were translated from support language
+    let hasTranslatedAnswer = false;
+    const answeredTurns = session.turns.filter((t) => t.candidateAnswer);
+
+    for (const t of answeredTurns) {
+      const analysis = t.analysisJson as any;
+      if (analysis?.isTranslatedAnswer) {
+        hasTranslatedAnswer = true;
+        break;
+      }
+    }
+
+    // 3. Prepare structured transcript for multi-dimensional AI assessment
+    const turnsSummary = answeredTurns
+      .map((t) => {
+        const analysis = t.analysisJson as any;
+        return `Turn ${t.turnNumber} (${t.isFollowUp ? 'Follow-up' : 'Main'}):
 Question: ${t.questionText}
 Candidate Answer: ${t.candidateAnswer}
-Hint Used: Level ${t.hintLevelUsed}`
-      )
+Was Translated: ${analysis?.isTranslatedAnswer ? 'YES (Original speech was in support language)' : 'NO (Direct speech in interview language)'}
+Hint Level Used: ${t.hintLevelUsed}`;
+      })
       .join('\n\n');
 
-    const prompt = `You are a Senior Technical Hiring Lead and Certified Language Assessor.
-Analyze this completed mock interview session:
+    const prompt = `You are a Senior Technical Hiring Director and International Interview Auditor.
+Analyze this completed interview session:
 Position: ${session.positionTitle} (${session.seniorityLevel})
-Language: ${session.languageId}
-Transcript:
-${turnsSummary || 'No responses provided.'}
+Industry: ${session.industryCode}
+Interview Language: ${session.languageId}
+Support Language: ${session.supportLanguageId}
+Candidate used translation on some turns: ${hasTranslatedAnswer ? 'YES' : 'NO'}
 
-Evaluate comprehensively and output strictly in JSON format:
+Transcript:
+${turnsSummary || 'No responses recorded.'}
+
+SCORING CRITERIA (4 DISTINCT CLUSTERS, 0-100 each):
+1. professionalCompetency: Depth of domain knowledge, system decisions, technical accuracy.
+2. communication: Structure, clarity, conciseness, ability to articulate ideas.
+3. languageProficiency: Grammar, vocabulary, natural phrasing in ${session.languageId}. NOTE: If candidate used translation, languageProficiency must reflect direct responses only or note that speech was translated.
+4. interviewPerformance: Relevance to questions, STAR evidence, quantified impact.
+
+Output strictly valid JSON with this structure:
 {
   "overallScore": 82,
-  "competencyScore": 84,
-  "languageScore": 80,
-  "strengths": ["Clear explanation of component architecture", "Good structured STAR communication"],
-  "weaknesses": ["Missed quantifying latency improvement metrics", "Minor grammatical hesitation with past tenses"],
-  "summaryMd": "Detailed 2-paragraph markdown summary of candidate performance, role readiness, and key takeaways.",
+  "competencyScore": 85,
+  "communicationScore": 80,
+  "languageScore": ${hasTranslatedAnswer ? 65 : 82},
+  "performanceScore": 84,
+  "strengths": ["Clear architectural breakdown", "Structured STAR delivery"],
+  "weaknesses": ["Could provide more quantifiable latency metrics"],
+  "summaryMd": "Detailed professional evaluation in Markdown with actionable insights.",
   "questionReviews": [
     {
       "turnNumber": 1,
       "question": "question text",
+      "questionTranslation": "bản dịch câu hỏi",
       "candidateAnswer": "answer text",
       "score": 85,
-      "feedback": "constructive feedback",
-      "suggestedAnswer": "model answer",
-      "translationVi": "bản dịch tiếng Việt câu trả lời mẫu"
+      "feedback": "detailed critique",
+      "rubricEvaluation": {
+        "completeness": 4,
+        "technicalDepth": 4,
+        "communicationClarity": 4,
+        "evidenceMetrics": 3
+      },
+      "suggestedAnswer": "exemplary reference answer demonstrating ideal response",
+      "translationVi": "bản dịch tiếng Việt của câu trả lời tham khảo",
+      "practiceTips": ["Practice quantifying outcomes with metrics"]
     }
   ],
   "learningRecommendations": [
     {
-      "domain": "VOCABULARY",
-      "title": "Technical Performance Metrics & Tradeoffs",
-      "reason": "Reinforce terminology for throughput, memory bottlenecks, and latency.",
+      "domain": "TECHNICAL",
+      "title": "${session.positionTitle} Core Architecture",
+      "reason": "Deepen practical trade-off analysis.",
       "targetUrl": "/vocabulary"
     },
     {
-      "domain": "GRAMMAR",
-      "title": "Past Perfect & Conditionals for Situational Examples",
-      "reason": "Enhance fluency when describing previous engineering challenges.",
-      "targetUrl": "/grammar"
+      "domain": "VOCABULARY",
+      "title": "Interview Metric Verbs & STAR Phrases",
+      "reason": "Enhance precision when describing results.",
+      "targetUrl": "/vocabulary"
     }
   ]
 }`;
 
-    const aiRes = await this.aiService.pipelineQuery(userId, prompt);
+    const aiPromise = this.aiService.pipelineQuery(userId, prompt);
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 10000));
+    const aiRes: any = await Promise.race([aiPromise, timeoutPromise]);
     let parsed: any = null;
     try {
-      const match = ((aiRes as any).reply || (aiRes as any).response || '').match(/\{[\s\S]*\}/);
-      if (match) parsed = JSON.parse(match[0]);
+      if (aiRes) {
+        const match = ((aiRes as any).reply || (aiRes as any).response || '').match(/\{[\s\S]*\}/);
+        if (match) parsed = JSON.parse(match[0]);
+      }
     } catch {}
 
-    const overallScore = parsed?.overallScore || 75;
     const competencyScore = parsed?.competencyScore || 78;
-    const languageScore = parsed?.languageScore || 72;
+    const communicationScore = parsed?.communicationScore || 75;
+    const languageScore = parsed?.languageScore || (hasTranslatedAnswer ? 65 : 72);
+    const performanceScore = parsed?.performanceScore || 76;
+    const overallScore =
+      parsed?.overallScore ||
+      Math.round(competencyScore * 0.35 + communicationScore * 0.25 + languageScore * 0.2 + performanceScore * 0.2);
 
-    // 3. Save Evaluation record
+    // 4. Save Evaluation record
     const evaluation = await this.prisma.interviewEvaluation.create({
       data: {
         sessionId: session.id,
         overallScore,
         competencyScore,
         languageScore,
-        strengths: parsed?.strengths || ['Professional attitude', 'Relevant background knowledge'],
-        weaknesses: parsed?.weaknesses || ['Provide more concrete metrics in answers'],
-        summaryMd: parsed?.summaryMd || 'Ứng viên thể hiện hiểu biết tốt về vị trí công việc, cần bổ sung thêm số liệu minh chứng cụ thể.',
+        strengths: parsed?.strengths || ['Professional demeanor', 'Relevant core concepts mentioned'],
+        weaknesses: parsed?.weaknesses || ['Include more quantifiable metrics and structured STAR examples'],
+        summaryMd:
+          parsed?.summaryMd ||
+          `Ứng viên thể hiện kiến thức nền tảng tốt cho vị trí **${session.positionTitle}**, cần rèn luyện thêm cách diễn đạt theo cấu trúc STAR và số liệu thực tế.`,
         recommendationsJson: parsed?.learningRecommendations || [],
         questionReviewsJson: parsed?.questionReviews || [],
       },
     });
 
-    // 4. Update session status
+    // 5. Update session status
     await this.prisma.interviewSession.update({
       where: { id: sessionId },
       data: {
@@ -435,7 +631,10 @@ Evaluate comprehensively and output strictly in JSON format:
         sessionId: session.id,
         overallScore,
         competencyScore,
+        communicationScore,
         languageScore,
+        performanceScore,
+        isAnyAnswerTranslated: hasTranslatedAnswer,
         strengths: evaluation.strengths,
         weaknesses: evaluation.weaknesses,
         summaryMd: evaluation.summaryMd,
@@ -446,15 +645,16 @@ Evaluate comprehensively and output strictly in JSON format:
   }
 
   /**
-   * Fetch Question Pool matching interview configuration (Phần 3.1 - 3.4)
+   * Question Pool Selection with Multilingual Role Competency Mapping (Phần 6)
    */
   async selectQuestionsForSession(config: InterviewSetupConfig, userId: string): Promise<InterviewQuestionItem[]> {
     const { industryCode, languageId = 'en', questionSource = 'CURATED', questionMode = 'SEQUENTIAL' } = config;
+    const normLang = (languageId || 'en').toLowerCase().split(/[-_]/)[0];
 
     let dbQuestions = await this.prisma.interviewQuestion.findMany({
       where: {
         industryCode,
-        language: languageId,
+        language: normLang,
         isApproved: true,
         OR: [
           { source: 'CURATED' },
@@ -465,9 +665,8 @@ Evaluate comprehensively and output strictly in JSON format:
       take: 15,
     });
 
-    // If no questions in DB yet, return curated fallback questions
     if (dbQuestions.length === 0) {
-      return this.getCuratedFallbackQuestions(industryCode, languageId);
+      return this.getCuratedFallbackQuestions(industryCode, normLang);
     }
 
     if (questionMode === 'RANDOM') {
@@ -488,97 +687,79 @@ Evaluate comprehensively and output strictly in JSON format:
     }));
   }
 
+  /**
+   * Adaptive AI Turn Evaluation with Translation-Aware Context (Phần 7.1 - 7.3 & 8.3)
+   */
   private async evaluateTurnWithAI(
     session: any,
     questionText: string,
     answerText: string,
     knowledgeContext: string,
-    isFollowUp: boolean
+    isFollowUp: boolean,
+    isTranslatedAnswer: boolean
   ) {
-    const prompt = `You are a professional Interviewer for ${session.positionTitle} (${session.seniorityLevel}).
-Language: ${session.languageId}
+    const prompt = `You are a Senior Interviewer for ${session.positionTitle} (${session.seniorityLevel}).
+Industry: ${session.industryCode}
+Interview Language: ${session.languageId}
 Question: "${questionText}"
 Candidate Answer: "${answerText}"
+Was Translated from Support Language: ${isTranslatedAnswer ? 'YES' : 'NO'}
+
 Reference Knowledge:
 ${knowledgeContext}
 
 Analyze the candidate's answer:
-1. Is it complete? Does it lack critical evidence, technical diagnosis, or metrics?
-2. If incomplete and isFollowUp is false, propose ONE sharp, natural follow-up question.
-3. If complete or already a follow-up, do not follow up.
+1. Is it complete? Does it address the question with solid evidence or technical steps?
+2. If incomplete and this is NOT a follow-up, propose ONE sharp, natural follow-up question in ${session.languageId}.
+3. If complete or already a follow-up, set shouldFollowUp to false.
 
 Return JSON strictly:
 {
   "completenessScore": 75,
   "shouldFollowUp": true,
-  "followUpQuestion": "Which specific optimization techniques did you apply, and how did you measure latency?",
-  "feedbackMessage": "Good initial overview, but lacked quantifiable metrics.",
-  "missingDimensions": ["Quantifiable metrics", "Specific tools"]
+  "followUpQuestion": "Which specific tools did you use and what were the measured results?",
+  "feedbackMessage": "Good initial direction, but lacks quantifiable metrics.",
+  "missingDimensions": ["Quantifiable metrics", "Implementation tools"]
 }`;
 
-    const res = await this.aiService.pipelineQuery(session.userId, prompt);
+    const aiPromise = this.aiService.pipelineQuery(session.userId, prompt);
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 7000));
+    const res: any = await Promise.race([aiPromise, timeoutPromise]);
     try {
-      const match = ((res as any).reply || (res as any).response || '').match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
+      if (res) {
+        const match = ((res as any).reply || (res as any).response || '').match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+      }
     } catch {}
 
+    const isShort = answerText.split(/\s+/).length < 20;
     return {
-      completenessScore: 70,
-      shouldFollowUp: !isFollowUp && answerText.split(' ').length < 25,
-      followUpQuestion: !isFollowUp ? `Could you elaborate on the specific actions you took in that situation?` : null,
-      feedbackMessage: 'Clear start, but could provide more details.',
-      missingDimensions: [],
+      completenessScore: isShort ? 60 : 75,
+      shouldFollowUp: !isFollowUp && isShort,
+      followUpQuestion:
+        !isFollowUp && isShort
+          ? session.languageId === 'ja'
+            ? '具体的にどのような手法を用い、どのような結果が得られたか詳しく教えていただけますか？'
+            : session.languageId === 'ko'
+            ? '구체적으로 어떤 기술적 조치를 취하셨고 어떤 결과를 얻으셨는지 자세히 말씀해 주시겠습니까?'
+            : session.languageId === 'zh'
+            ? '能否请您详细说明一下您具体采取了哪些措施，以及取得了怎样的成效？'
+            : 'Could you elaborate on the specific actions you took and the measurable results you achieved?'
+          : null,
+      feedbackMessage: 'Clear foundation, could be strengthened with concrete metrics and tools.',
+      missingDimensions: isShort ? ['Specific actions', 'Quantified results'] : [],
     };
   }
 
+  /**
+   * Curated Fallback Matrix covering TECH, HOSP, BIZ, FIN, MKT, EDU across EN, JA, KO, ZH
+   */
   private getCuratedFallbackQuestions(industryCode: string, lang: string): InterviewQuestionItem[] {
-    const questionsByIndustry: Record<string, Array<{ title: string; body: string; competencies: string[] }>> = {
-      TECH: [
-        {
-          title: 'Introduction & Background',
-          body: 'Could you introduce yourself, your technical background, and a significant production system you recently engineered?',
-          competencies: ['Communication', 'Architecture', 'Overview'],
-        },
-        {
-          title: 'Performance Optimization & Troubleshooting',
-          body: 'Describe a challenging performance bottleneck you diagnosed in production. What tools did you use and what was the measurable outcome?',
-          competencies: ['Problem Solving', 'Technical Diagnosis', 'Metrics'],
-        },
-        {
-          title: 'State Architecture & API Integration',
-          body: 'How do you design scalable client-server state synchronization while handling network latency, offline states, and error retries?',
-          competencies: ['System Design', 'Reliability', 'API Design'],
-        },
-        {
-          title: 'Engineering Tradeoffs & Code Quality',
-          body: 'Tell me about a time you had to balance rapid feature delivery against technical debt. How did you negotiate tradeoffs with stakeholders?',
-          competencies: ['Decision Making', 'Communication', 'Pragmatism'],
-        },
-      ],
-      BIZ: [
-        {
-          title: 'Strategic Prioritization',
-          body: 'How do you prioritize competing business features when multiple key stakeholders have opposing high-priority demands?',
-          competencies: ['Stakeholder Management', 'Prioritization', 'Leadership'],
-        },
-        {
-          title: 'Data-Driven Decision Making',
-          body: 'Can you share an example where qualitative customer feedback contradicted your quantitative analytics? How did you resolve it?',
-          competencies: ['Data Analysis', 'Critical Thinking', 'Discovery'],
-        },
-      ],
-      FIN: [
-        {
-          title: 'Financial Modeling & Forecasting',
-          body: 'Walk me through how you build a 3-statement financial model and account for working capital fluctuations.',
-          competencies: ['Financial Modeling', 'Accounting', 'Attention to Detail'],
-        },
-      ],
-    };
+    const industryData = MULTILINGUAL_CURATED_QUESTIONS[industryCode] || MULTILINGUAL_CURATED_QUESTIONS.TECH;
+    const questionsForLang = industryData[lang] || industryData.en || [];
 
-    const list = questionsByIndustry[industryCode] || questionsByIndustry.TECH;
-    return list.map((q, idx) => ({
-      id: `curated-${industryCode}-${idx + 1}`,
+    return questionsForLang.map((q, idx) => ({
+      id: `curated-${industryCode}-${lang}-${idx + 1}`,
       title: q.title,
       body: q.body,
       difficulty: 3.0,

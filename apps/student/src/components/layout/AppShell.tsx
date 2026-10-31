@@ -563,18 +563,19 @@ export const AppShell: React.FC = () => {
 
   const navSections = [
     {
-      title: '1. TỔNG QUAN (OVERVIEW)',
+      title: 'TỔNG QUAN',
       items: [
         { to: '/dashboard', label: t('nav.dashboard', 'Bảng điều khiển'), icon: LayoutDashboard },
-        { to: '/community-knowledge', label: 'Bảng tin cộng đồng', icon: Sparkles, badge: 'HOT' },
-        { to: '/languages', label: 'Không gian đa ngữ', icon: Globe },
+        { to: '/progress', label: 'Chỉ số UMS & Trí nhớ', icon: Award, badge: 'UMS' },
+        { to: '/placement-test', label: t('nav.placementTest', 'Kiểm tra năng lực CEFR'), icon: Compass },
       ],
     },
     {
-      title: '2. HỌC TẬP (LEARNING)',
+      title: 'TỪ VỰNG & NGỮ PHÁP',
       items: [
         { to: '/vocabulary', label: t('nav.vocabulary', 'Thư viện từ vựng'), icon: BookOpen },
         { to: '/word-bank', label: t('nav.wordBank', 'Kho từ của tôi'), icon: Bookmark },
+        { to: '/review', label: t('nav.review', 'Ôn tập ngắt quãng SRS'), icon: Sparkles },
         { to: '/grammar', label: 'Ngữ pháp chuyên sâu', icon: BookCheck, badge: 'MỚI' },
         ...(isKidSupported
           ? [
@@ -588,41 +589,57 @@ export const AppShell: React.FC = () => {
           : []),
       ],
     },
-
     {
-      title: '3. LUYỆN TẬP (PRACTICE)',
+      title: 'PHÒNG LUYỆN AI (PRO)',
+      highlight: true,
       items: [
-        { to: '/review', label: t('nav.review', 'Ôn tập thông minh SRS'), icon: Sparkles },
+        {
+          to: '/interview',
+          label: 'AI Interview Studio (Phỏng vấn)',
+          icon: Briefcase,
+          badge: 'PRO',
+          isUnlock: !isPro,
+        },
+        {
+          to: '/coach',
+          label: 'Gia sư AI Personal Coach',
+          icon: Mic,
+          badge: 'PRO',
+          isUnlock: !isPro,
+        },
+        {
+          to: '/ai-tutor',
+          label: t('nav.aiTutor', 'Gia sư AI Studio (Hỏi đáp)'),
+          icon: BrainCircuit,
+          badge: 'AI',
+        },
+      ],
+    },
+    {
+      title: 'LUYỆN THI & BỘ ĐỀ',
+      items: [
         { to: '/exams', label: 'Ngân hàng bộ đề', icon: GraduationCap },
         { to: '/custom-quiz', label: t('nav.customQuiz', 'Trắc nghiệm tùy chọn'), icon: HelpCircle },
         {
           to: '/notes',
-          label: 'Ghi chép cá nhân',
+          label: 'Sổ ghi chép cá nhân',
           icon: StickyNote,
           badge: userNotesCount > 0 ? `${userNotesCount}` : undefined,
         },
-        { to: '/coach', label: 'Gia sư AI Personal Coach', icon: Mic },
-        { to: '/interview', label: 'AI Interview Studio (Phỏng vấn)', icon: Briefcase, badge: 'PRO' },
-        { to: '/ai-tutor', label: t('nav.aiTutor', 'Gia sư AI Studio'), icon: BrainCircuit },
       ],
     },
     {
-      title: '4. ĐẤU TRƯỜNG (CHALLENGE)',
+      title: 'CỘNG ĐỒNG & THỬ THÁCH',
       items: [
+        { to: '/community-knowledge', label: 'Bảng tin cộng đồng', icon: Sparkles, badge: 'HOT' },
         { to: '/games', label: 'Đấu trường phản xạ 24/7', icon: Gamepad2, badge: 'LIVE' },
         { to: '/leaderboard', label: 'Bảng xếp hạng Fair-Play', icon: Trophy },
         { to: '/community', label: t('nav.community', 'Cộng đồng chia sẻ kho từ'), icon: Share2 },
+        { to: '/languages', label: 'Không gian đa ngữ', icon: Globe },
       ],
     },
     {
-      title: '5. TIẾN TRÌNH (PROGRESS)',
-      items: [
-        { to: '/progress', label: 'Chỉ số UMS & Trí nhớ', icon: Award, badge: 'UMS' },
-        { to: '/placement-test', label: t('nav.placementTest', 'Kiểm tra năng lực CEFR'), icon: Compass },
-      ],
-    },
-    {
-      title: '6. HỆ THỐNG & TÀI KHOẢN (SETTINGS)',
+      title: 'HỆ THỐNG & TÀI KHOẢN',
       items: [
         {
           to: '/upgrade',
@@ -632,9 +649,9 @@ export const AppShell: React.FC = () => {
           badge: isPro ? 'VIP' : 'PRO',
           isUnlock: !isPro,
         },
-        { to: '/notifications', label: 'Thông báo', icon: Bell },
+        { to: '/notifications', label: 'Trung tâm thông báo', icon: Bell },
         { to: '/feedback', label: 'Góp ý & Roadmap', icon: MessageSquare },
-        { to: '/settings', label: t('nav.settings', 'Cài đặt'), icon: Settings },
+        { to: '/settings', label: t('nav.settings', 'Cài đặt hệ thống'), icon: Settings },
         ...(isAdmin ? [{ to: '/admin', label: t('nav.admin', 'Admin Center'), icon: ShieldCheck, admin: true }] : []),
       ],
     },
@@ -706,9 +723,16 @@ export const AppShell: React.FC = () => {
         >
           {navSections.map((section) => (
             <div key={section.title} className="space-y-1">
-              <p className="px-2.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                {section.title}
-              </p>
+              <div className="flex items-center justify-between px-2.5 py-0.5">
+                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                  {section.title}
+                </span>
+                {(section as any).highlight && (
+                  <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                    PREMIUM
+                  </span>
+                )}
+              </div>
               <div className="space-y-0.5">
                 {section.items.map((item) => (
                   <NavLink
@@ -1114,9 +1138,16 @@ export const AppShell: React.FC = () => {
               {/* 4. Navigation Menu Sections */}
               {navSections.map((section) => (
                 <div key={section.title} className="space-y-1">
-                  <p className="px-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    {section.title}
-                  </p>
+                  <div className="flex items-center justify-between px-2 py-0.5">
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      {section.title}
+                    </span>
+                    {(section as any).highlight && (
+                      <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                        PREMIUM
+                      </span>
+                    )}
+                  </div>
                   <div className="space-y-0.5">
                     {section.items.map((item) => (
                       <NavLink

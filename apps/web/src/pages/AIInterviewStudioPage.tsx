@@ -4,9 +4,7 @@ import { useLearningContext } from '../contexts/LearningContext';
 import { usePerformance } from '../contexts/PerformanceContext';
 import api from '../lib/api';
 import { audioEngine } from '../lib/audioEngine';
-import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { CountryFlag } from '../components/language/CountryFlag';
-import { SUPPORTED_LANGUAGES, getLanguage } from '../config/languages';
 import { CustomSelect, SelectOption } from '../components/ui/CustomSelect';
 import {
   InterviewIndustryDto,
@@ -18,6 +16,8 @@ import {
   InterviewQuestionSource,
   InterviewReportData,
   PREDEFINED_TAXONOMY,
+  getLocaleForLanguage,
+  buildInterviewLanguageContext,
 } from '@vocabflow/shared';
 import {
   Briefcase,
@@ -54,6 +54,9 @@ import {
   ChevronDown,
   X,
   ExternalLink,
+  Lock,
+  Award,
+  Zap,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -62,10 +65,15 @@ export const AIInterviewStudioPage: React.FC = () => {
   const { activeLanguage } = useLearningContext();
   const { isUltraEfficient } = usePerformance();
 
+  // Entitlement & Pro State (Task 10: Fail-Closed Guard)
+  const [checkingBilling, setCheckingBilling] = useState<boolean>(true);
+  const [isProAllowed, setIsProAllowed] = useState<boolean>(false);
+  const [billingDetails, setBillingDetails] = useState<any | null>(null);
+
   // Navigation / Phase State: 'SETUP' | 'STUDIO' | 'REPORT'
   const [phase, setPhase] = useState<'SETUP' | 'STUDIO' | 'REPORT'>('SETUP');
 
-  // Taxonomy State: Guaranteed immediate fallback with PREDEFINED_TAXONOMY so UI is never empty
+  // Taxonomy State: Initialized with predefined fallback
   const [industries, setIndustries] = useState<InterviewIndustryDto[]>(PREDEFINED_TAXONOMY as any);
   const [selectedIndustry, setSelectedIndustry] = useState<string>('TECH');
   const [selectedPosition, setSelectedPosition] = useState<string>('TECH_FE');
@@ -92,34 +100,23 @@ export const AIInterviewStudioPage: React.FC = () => {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [setupStep, setSetupStep] = useState<1 | 2 | 3>(1);
 
+  // Candidate Voice Input Mode: Direct Interview Language vs Vietnamese with Normalization
+  const [speechLanguageMode, setSpeechLanguageMode] = useState<'INTERVIEW_LANG' | 'SUPPORT_VI'>('INTERVIEW_LANG');
+  const [isVoiceRecording, setIsVoiceRecording] = useState<boolean>(false);
+  const speechRecognitionRef = useRef<any>(null);
+  const baseTranscriptRef = useRef<string>('');
+
   // Transcript History
   const [transcriptHistory, setTranscriptHistory] = useState<
-    Array<{ turn: number; sender: 'AI' | 'CANDIDATE'; text: string; isFollowUp?: boolean }>
+    Array<{
+      turn: number;
+      sender: 'AI' | 'CANDIDATE';
+      text: string;
+      translatedText?: string;
+      isFollowUp?: boolean;
+      isTranslated?: boolean;
+    }>
   >([]);
-
-  // Synchronize transcript history with sessionStorage (offline resilient, no DB clutter)
-  useEffect(() => {
-    if (sessionId && transcriptHistory.length > 0) {
-      try {
-        sessionStorage.setItem(`vf_interview_transcript_${sessionId}`, JSON.stringify(transcriptHistory));
-      } catch (_) {}
-    }
-  }, [sessionId, transcriptHistory]);
-
-  // Load cached transcript history on re-entry
-  useEffect(() => {
-    if (sessionId && transcriptHistory.length === 0) {
-      try {
-        const cached = sessionStorage.getItem(`vf_interview_transcript_${sessionId}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setTranscriptHistory(parsed);
-          }
-        }
-      } catch (_) {}
-    }
-  }, [sessionId]);
 
   // Hints & Translation
   const [hintDrawerOpen, setHintDrawerOpen] = useState<boolean>(false);
@@ -142,7 +139,6 @@ export const AIInterviewStudioPage: React.FC = () => {
   const [docIsPrivate, setDocIsPrivate] = useState<boolean>(true);
   const [docContributeCommunity, setDocContributeCommunity] = useState<boolean>(false);
   const [uploadingDoc, setUploadingDoc] = useState<boolean>(false);
-  const [uploadedQuestionsPreview, setUploadedQuestionsPreview] = useState<any[] | null>(null);
 
   // Category Proposal Modal
   const [proposalModalOpen, setProposalModalOpen] = useState<boolean>(false);
@@ -150,16 +146,56 @@ export const AIInterviewStudioPage: React.FC = () => {
   const [proposalDesc, setProposalDesc] = useState<string>('');
   const [submittingProposal, setSubmittingProposal] = useState<boolean>(false);
 
-  // Voice recording
-  const { isRecording, startRecording, stopRecording } = useVoiceRecorder();
-  const recordedTranscript = '';
-
-  // Synchronize mic speech transcript to input
+  // Check Pro Entitlement on Mount (Task 10: Fail-Closed)
   useEffect(() => {
-    if (recordedTranscript) {
-      setCandidateTextAnswer((prev) => (prev ? `${prev} ${recordedTranscript}` : recordedTranscript));
+    let isMounted = true;
+    setCheckingBilling(true);
+    api
+      .get('/interview/billing/status')
+      .then((res) => {
+        if (!isMounted) return;
+        const data = res.data?.data !== undefined ? res.data.data : res.data;
+        setBillingDetails(data);
+        setIsProAllowed(Boolean(data?.allowed && data?.isPremium));
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        // User role check fallback
+        const userIsPro = user?.role === 'PREMIUM_USER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+        setIsProAllowed(Boolean(userIsPro));
+      })
+      .finally(() => {
+        if (isMounted) setCheckingBilling(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Synchronize transcript history with sessionStorage
+  useEffect(() => {
+    if (sessionId && transcriptHistory.length > 0) {
+      try {
+        sessionStorage.setItem(`vf_interview_transcript_${sessionId}`, JSON.stringify(transcriptHistory));
+      } catch (_) {}
     }
-  }, [recordedTranscript]);
+  }, [sessionId, transcriptHistory]);
+
+  // Load cached transcript history on re-entry
+  useEffect(() => {
+    if (sessionId && transcriptHistory.length === 0) {
+      try {
+        const cached = sessionStorage.getItem(`vf_interview_transcript_${sessionId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTranscriptHistory(parsed);
+          }
+        }
+      } catch (_) {}
+    }
+  }, [sessionId]);
 
   // Synchronize interview language with current learning context automatically
   useEffect(() => {
@@ -195,6 +231,17 @@ export const AIInterviewStudioPage: React.FC = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, [phase, isPaused, timeRemainingSec]);
+
+  // Clean up speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (speechRecognitionRef.current) {
+        try {
+          speechRecognitionRef.current.abort();
+        } catch (_) {}
+      }
+    };
+  }, []);
 
   // Current Industry & Position helpers
   const currentIndustryObj = industries.find((i) => i.code === selectedIndustry) || industries[0];
@@ -236,42 +283,39 @@ export const AIInterviewStudioPage: React.FC = () => {
   }));
 
   const seniorityOptions: SelectOption<string>[] = [
-    { value: 'Intern / Fresher', label: 'Intern / Sinh viên mới tốt nghiệp', description: 'Nắm vững kiến thức nền tảng & tư duy học hỏi' },
+    { value: 'Intern / Fresher', label: 'Intern / Sinh viên mới tốt nghiệp', description: 'Nền tảng lý thuyết & tinh thần học hỏi' },
     { value: 'Junior', label: 'Junior (1 - 2 năm kinh nghiệm)', description: 'Thực thi nhiệm vụ độc lập & xử lý task cụ thể' },
-    { value: 'Mid-level', label: 'Mid-level (2 - 4 năm kinh nghiệm)', description: 'Giải quyết vấn đề phức tạp & tự chủ dự án' },
-    { value: 'Senior', label: 'Senior (4 - 7 năm kinh nghiệm)', description: 'Lãnh đạo kỹ thuật, tối ưu kiến trúc & phản biện sâu' },
-    { value: 'Lead / Manager', label: 'Lead / Engineering Manager', description: 'Tầm nhìn chiến lược, quản trị đội ngũ & hệ thống lớn' },
+    { value: 'Mid-level', label: 'Mid-level (2 - 4 năm kinh nghiệm)', description: 'Giải quyết bài toán phức tạp & tự chủ dự án' },
+    { value: 'Senior', label: 'Senior (4 - 7 năm kinh nghiệm)', description: 'Kiến trúc chuyên sâu, tối ưu hệ thống & phản biện sâu' },
+    { value: 'Lead / Manager', label: 'Lead / Operations Manager', description: 'Tầm nhìn chiến lược, quản trị đội ngũ & vận hành' },
   ];
 
   const interviewTypeOptions: SelectOption<string>[] = [
-    { value: 'Technical Interview', label: 'Chuyên môn kỹ thuật (Technical Depth)', description: 'Đào sâu framework, thuật toán và giải pháp thực tế' },
-    { value: 'Behavioral (STAR)', label: 'Tình huống & Hành vi (STAR Method)', description: 'Situation - Task - Action - Result theo chuẩn FAANG' },
-    { value: 'System Design', label: 'Thiết kế Kiến trúc (System Architecture)', description: 'Khả năng mở rộng, phân tải và tối ưu cơ sở dữ liệu' },
+    { value: 'Technical Interview', label: 'Chuyên môn & Giải pháp (Domain Depth)', description: 'Đào sâu nghiệp vụ, kỹ năng thực chiến và giải quyết bài toán' },
+    { value: 'Behavioral (STAR)', label: 'Tình huống & Hành vi (STAR Method)', description: 'Situation - Task - Action - Result theo chuẩn quốc tế' },
+    { value: 'System Design', label: 'Thiết kế Kiến trúc / Vận hành (Architecture)', description: 'Khả năng mở rộng, phân tải và quy trình hệ thống' },
     { value: 'HR & Culture Fit', label: 'Văn hóa & Động lực (HR & Culture)', description: 'Mục tiêu nghề nghiệp, tinh thần đồng đội và hòa nhập văn hóa' },
   ];
 
-  const interviewerStyleOptions: SelectOption<string>[] = [
-    { value: 'PROFESSIONAL', label: 'Chuyên nghiệp & Chuẩn mực (Professional)', description: 'Lịch thiệp, chuẩn mực, tập trung vào năng lực cốt lõi' },
-    { value: 'FRIENDLY', label: 'Thân thiện & Cởi mở (Friendly)', description: 'Khích lệ, hỗ trợ ứng viên tự tin thể hiện tiềm năng' },
-    { value: 'STRICT', label: 'Khắt khe & Chi tiết (Strict)', description: 'Truy vấn sâu từng số liệu, bắt bẻ lỗ hổng lập luận' },
-    { value: 'CHALLENGING', label: 'Thử thách phản biện (Challenging)', description: 'Đưa ra các tình huống biên cực đoan và yêu cầu phản xạ nhanh' },
-  ];
-
-  // Play Question Voice (Neural TTS)
+  // Play Question Speech with BCP-47 speech locale accuracy (Task 2 & Task 4)
   const playQuestionSpeech = (text: string) => {
+    if (!text) return;
     setAiState('SPEAKING');
+    const targetLocale = getLocaleForLanguage(interviewLang);
+
     try {
       if (audioEngine && typeof (audioEngine as any).speak === 'function') {
         (audioEngine as any).speak(
           text,
-          interviewLang || activeLanguage?.id || 'en',
+          targetLocale,
           () => setAiState('WAITING'),
           () => setAiState('WAITING')
         );
       } else if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = (interviewLang || activeLanguage?.id || 'en') === 'vi' ? 'vi-VN' : 'en-US';
+        utterance.lang = targetLocale;
+        utterance.rate = 0.95;
         utterance.onend = () => setAiState('WAITING');
         utterance.onerror = () => setAiState('WAITING');
         window.speechSynthesis.speak(utterance);
@@ -284,8 +328,91 @@ export const AIInterviewStudioPage: React.FC = () => {
     }
   };
 
-  // Start Session with resilient network parsing & intelligent fallback
+  // Start Web Speech Recognition with Dynamic Locale & Real-time Streaming (Task 4)
+  const handleToggleVoiceRecording = () => {
+    if (isVoiceRecording) {
+      // Stop recording gracefully
+      if (speechRecognitionRef.current) {
+        try {
+          speechRecognitionRef.current.stop();
+        } catch (_) {}
+      }
+      setIsVoiceRecording(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Trình duyệt của bạn không hỗ trợ Web Speech API. Vui lòng sử dụng Chrome, Safari hoặc nhập bằng văn bản.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      const targetLocale =
+        speechLanguageMode === 'SUPPORT_VI' ? 'vi-VN' : getLocaleForLanguage(interviewLang);
+
+      recognition.lang = targetLocale;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      // Remember any text previously entered so voice recognition appends seamlessly
+      baseTranscriptRef.current = candidateTextAnswer.trim();
+
+      recognition.onstart = () => {
+        setIsVoiceRecording(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let finalChunk = '';
+        let interimChunk = '';
+
+        for (let i = 0; i < event.results.length; ++i) {
+          const resItem = event.results[i];
+          if (resItem.isFinal) {
+            finalChunk += resItem[0].transcript + ' ';
+          } else {
+            interimChunk += resItem[0].transcript;
+          }
+        }
+
+        const currentStream = (finalChunk + interimChunk).trim();
+        const base = baseTranscriptRef.current;
+        const combined = base ? `${base} ${currentStream}` : currentStream;
+
+        // Immediately update state so words appear in the textarea as spoken
+        setCandidateTextAnswer(combined);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('SpeechRecognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          alert('Không thể truy cập Microphone. Vui lòng cho phép quyền Microphone trong cài đặt trình duyệt.');
+        }
+        setIsVoiceRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsVoiceRecording(false);
+      };
+
+      speechRecognitionRef.current = recognition;
+      recognition.start();
+    } catch (err: any) {
+      console.warn('Could not start SpeechRecognition:', err);
+      setIsVoiceRecording(false);
+    }
+  };
+
+  // Start Session (Strictly Pro Enforced, No local mock bypass)
   const handleStartSession = async () => {
+    if (!isProAllowed) {
+      alert('Bạn cần nâng cấp lên gói Pro / Premium để bắt đầu phiên phỏng vấn 1:1 với AI.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const config: InterviewSetupConfig = {
@@ -315,136 +442,107 @@ export const AIInterviewStudioPage: React.FC = () => {
         setCurrentQuestionText(payload.currentTurn.questionText);
         setTotalQuestions(payload.currentTurn.totalQuestions || 4);
         setTimeRemainingSec(durationMinutes * 60);
+
+        // Fetch dynamic tailored opening script (Task 5.3)
+        let openingSpeech = payload.currentTurn.questionText;
+        try {
+          const scriptRes = await api.get('/interview/opening-script', {
+            params: {
+              industryCode: selectedIndustry,
+              positionCode: selectedPosition,
+              positionTitle: currentPositionObj?.title,
+              seniorityLevel,
+              interviewType,
+              languageId: interviewLang,
+              interviewerStyle,
+            },
+          });
+          const scriptData = scriptRes.data?.data !== undefined ? scriptRes.data.data : scriptRes.data;
+          if (scriptData?.scriptText) {
+            openingSpeech = `${scriptData.scriptText}\n\n${payload.currentTurn.questionText}`;
+          }
+        } catch (_) {}
+
         setTranscriptHistory([
           {
             turn: 1,
             sender: 'AI',
-            text: payload.currentTurn.questionText,
+            text: openingSpeech,
           },
         ]);
+
         setPhase('STUDIO');
-        playQuestionSpeech(payload.currentTurn.questionText);
+        playQuestionSpeech(openingSpeech);
         return;
       }
-      throw new Error('Dữ liệu phiên phỏng vấn không hợp lệ');
-    } catch (err: any) {
-      console.warn('Network setup error, activating intelligent fallback session:', err);
-      // Fallback session so user is NEVER blocked
-      const fallbackQuestion =
-        interviewLang === 'ja'
-          ? `自己紹介をお願いします。これまでの経験と、${currentPositionObj?.titleVi || currentPositionObj?.title || 'このポジション'}に興味を持った理由を教えてください。`
-          : interviewLang === 'ko'
-          ? `간단한 자기소개와 함께, ${currentPositionObj?.titleVi || currentPositionObj?.title || '이 직무'}에 지원하게 된 동기를 말씀해 주세요.`
-          : interviewLang === 'zh'
-          ? `请您做一个简短的自我介绍，并谈谈您为什么对 ${currentPositionObj?.titleVi || currentPositionObj?.title || '这个职位'} 感兴趣？`
-          : `Hello and welcome! Could you please introduce yourself and share what key experiences make you a great fit for this ${currentPositionObj?.title || 'position'}?`;
 
-      const mockId = `session_local_${Date.now()}`;
-      setSessionId(mockId);
-      setCurrentTurnNumber(1);
-      setCurrentQuestionText(fallbackQuestion);
-      setTotalQuestions(4);
-      setTimeRemainingSec(durationMinutes * 60);
-      setTranscriptHistory([
-        {
-          turn: 1,
-          sender: 'AI',
-          text: fallbackQuestion,
-        },
-      ]);
-      setPhase('STUDIO');
-      playQuestionSpeech(fallbackQuestion);
+      throw new Error('Không nhận được dữ liệu phiên phỏng vấn hợp lệ từ máy chủ.');
+    } catch (err: any) {
+      const errMsg =
+        err.response?.data?.message || err.message || 'Không thể khởi tạo phòng phỏng vấn. Vui lòng thử lại sau.';
+      alert(errMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Submit Answer
+  // Submit Candidate Answer (With Support Translation normalization if candidate answered in Vietnamese)
   const handleSubmitAnswer = async () => {
     if (!sessionId || !candidateTextAnswer.trim()) return;
-    if (isRecording) stopRecording();
+    if (isVoiceRecording) {
+      handleToggleVoiceRecording();
+    }
 
     setIsSubmitting(true);
     setAiState('THINKING');
 
-    const submittedAnswer = candidateTextAnswer.trim();
+    const rawAnswer = candidateTextAnswer.trim();
     setCandidateTextAnswer('');
 
-    // Append to transcript
-    setTranscriptHistory((prev) => [
-      ...prev,
-      { turn: currentTurnNumber, sender: 'CANDIDATE', text: submittedAnswer },
-    ]);
-
     try {
-      let payload: any;
-      if (sessionId.startsWith('session_local_')) {
-        // Local simulation fallback
-        await new Promise((r) => setTimeout(r, 600));
-        if (currentTurnNumber >= totalQuestions) {
-          payload = {
-            isSessionCompleted: true,
-            report: {
-              sessionId,
-              overallScore: 8.5,
-              competencyScore: 8.8,
-              languageScore: 8.2,
-              strengths: [
-                'Trình bày mạch lạc, cấu trúc câu trả lời rõ ràng',
-                'Nắm chắc các khái niệm kỹ thuật cốt lõi và kiến trúc hệ thống',
-                'Phản xạ giao tiếp tự tin và làm rõ yêu cầu trọng tâm',
-              ],
-              weaknesses: [
-                'Cần bổ sung thêm số liệu định lượng (metrics) để tăng tính thuyết phục',
-                'Có thể đi sâu hơn vào giải pháp xử lý sự cố trong môi trường tải cao',
-              ],
-              summaryMd: `### Báo cáo Tổng kết Phỏng vấn\n\nỨng viên thể hiện năng lực chuyên môn vững vàng cho vị trí **${currentPositionObj?.title || 'Chuyên viên'}** ở cấp độ **${seniorityLevel}**.\n\n- **Kỹ năng chuyên môn:** Nắm chắc kiến trúc và thực hành tốt.\n- **Ngôn ngữ:** Diễn đạt trôi chảy, từ vựng kỹ thuật chính xác.`,
-              questionReviews: transcriptHistory.map((t, idx) => ({
-                turnNumber: idx + 1,
-                question: t.text,
-                candidateAnswer: submittedAnswer,
-                score: 8.5,
-                feedback: 'Câu trả lời đầy đủ ý chính, phân tích chặt chẽ.',
-                rubricEvaluation: { completeness: 8.5, relevance: 9.0, depth: 8.0 },
-                suggestedAnswer: 'Tham khảo câu trả lời chuẩn theo STAR framework.',
-                translationVi: 'Bản dịch tiếng Việt tham khảo.',
-              })),
-              learningRecommendations: [
-                { domain: 'VOCABULARY', title: 'Thuật ngữ kỹ thuật nâng cao', reason: 'Nâng cao độ chính xác khi mô tả kiến trúc', targetUrl: '/review' },
-                { domain: 'SPEAKING', title: 'Luyện phản xạ tình huống STAR', reason: 'Tối ưu thời gian trả lời câu hỏi hành vi', targetUrl: '/chat' },
-              ],
-            },
-          };
-        } else {
-          const nextQuestions = [
-            `Can you describe a challenging technical problem you solved recently in ${currentPositionObj?.title || 'your work'}? What was your approach?`,
-            `How do you handle performance bottlenecks and optimize system latency in production?`,
-            `Tell me about a situation where you had a disagreement with a team member or stakeholder regarding a technical decision. How did you resolve it?`,
-          ];
-          const nextQ = nextQuestions[(currentTurnNumber - 1) % nextQuestions.length];
-          payload = {
-            nextTurn: {
-              turnNumber: currentTurnNumber + 1,
-              questionText: nextQ,
-              isFollowUp: false,
-              totalQuestions: 4,
-            },
-            evaluation: {
-              completenessScore: 8.5,
-              feedbackText: 'Câu trả lời rất tốt! Bạn đã nêu được giải pháp rõ ràng.',
-              strengths: ['Rõ ràng', 'Đúng trọng tâm'],
-              improvements: ['Có thể bổ sung thêm ví dụ thực tế'],
-            },
-          };
+      let finalAnswerToSend = rawAnswer;
+      const isVietnameseSpoken = speechLanguageMode === 'SUPPORT_VI';
+
+      // If candidate answered in Vietnamese, normalize to Interview Language via translation service (Task 4)
+      if (isVietnameseSpoken && interviewLang !== 'vi') {
+        try {
+          const transRes = await api.post(`/interview/sessions/${sessionId}/translate`, {
+            text: rawAnswer,
+            sourceLang: 'vi',
+            targetLang: interviewLang,
+            purpose: 'answer',
+          }, { timeout: 30000 });
+          const transData = transRes.data?.data !== undefined ? transRes.data.data : transRes.data;
+          if (transData?.translatedText) {
+            finalAnswerToSend = transData.translatedText;
+          }
+        } catch (transErr) {
+          console.warn('Answer normalization translation fallback:', transErr);
         }
-      } else {
-        const res = await api.post(`/interview/sessions/${sessionId}/turn`, {
-          turnNumber: currentTurnNumber,
-          answer: submittedAnswer,
-          durationSec: 30,
-        });
-        payload = res.data?.data !== undefined ? res.data.data : res.data;
       }
+
+      // Append to candidate transcript
+      setTranscriptHistory((prev) => [
+        ...prev,
+        {
+          turn: currentTurnNumber,
+          sender: 'CANDIDATE',
+          text: rawAnswer,
+          translatedText: isVietnameseSpoken && finalAnswerToSend !== rawAnswer ? finalAnswerToSend : undefined,
+          isTranslated: isVietnameseSpoken,
+        },
+      ]);
+
+      const res = await api.post(`/interview/sessions/${sessionId}/turn`, {
+        turnNumber: currentTurnNumber,
+        answer: finalAnswerToSend,
+        durationSec: 30,
+        isTranslated: isVietnameseSpoken,
+        detectedSourceLanguage: isVietnameseSpoken ? 'vi' : interviewLang,
+        originalTranscript: rawAnswer,
+      }, { timeout: 45000 });
+
+      const payload = res.data?.data !== undefined ? res.data.data : res.data;
 
       if (payload?.isSessionCompleted) {
         setReport(payload.report);
@@ -479,126 +577,98 @@ export const AIInterviewStudioPage: React.FC = () => {
         playQuestionSpeech(next.questionText);
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Gửi câu trả lời thất bại.');
+      const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+      const msg = isTimeout
+        ? 'Máy chủ AI đang phân tích sâu câu trả lời của bạn. Vui lòng bấm "Gửi câu trả lời" để thử lại.'
+        : err.response?.data?.message || 'Gửi câu trả lời thất bại. Vui lòng thử lại.';
+      alert(msg);
+      // Restore answer to textarea so candidate never loses their thought!
+      setCandidateTextAnswer(rawAnswer);
       setAiState('WAITING');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Request Progressive Hint with instant intelligent fallback
+  // Request Progressive Hint
   const handleRequestHint = async (level: 1 | 2 | 3) => {
     setLoadingHint(true);
     setActiveHintLevel(level);
 
-    const getInstantHint = (lvl: 1 | 2 | 3) => {
-      const posTitle = currentPositionObj?.title || 'chuyên môn';
-      if (lvl === 1) {
-        return {
-          text: `Core Focus: Technical Depth, Architecture Decisions, Scalability, Concrete Metrics in ${posTitle}.`,
-          textVi: `Từ khóa cốt lõi: Phân tích kiến trúc, Lựa chọn kỹ thuật, Tối ưu hiệu năng, Con số định lượng thực tế trong ${posTitle}.`,
-        };
-      } else if (lvl === 2) {
-        return {
-          text: `STAR Framework Outline:
-• Situation: Project context & critical constraints
-• Task: Your exact responsibility
-• Action: Concrete technical solution applied
-• Result: Measurable outcome (e.g. latency -30%, throughput +2x)`,
-          textVi: `Dàn ý trả lời theo chuẩn STAR:
-• Tình huống (Situation): Bối cảnh dự án & thách thức lớn nhất
-• Nhiệm vụ (Task): Trách nhiệm trực tiếp của bạn
-• Hành động (Action): Các bước kỹ thuật bạn đã trực tiếp triển khai
-• Kết quả (Result): Con số định lượng đạt được và bài học rút ra`,
-        };
-      } else {
-        return {
-          text: `"In my recent experience as a ${posTitle}, we faced a critical challenge when... To address this, I designed a solution using... As a direct result, we improved latency by 35% and scaled smoothly to 100k users."`,
-          textVi: `"Trong dự án gần đây với vai trò ${posTitle}, nhóm tôi gặp bài toán phức tạp khi... Để giải quyết, tôi đã chủ trì thiết kế giải pháp... Kết quả là hệ thống giảm 35% độ trễ và vận hành ổn định cho hơn 100.000 người dùng."`,
-        };
-      }
-    };
-
     try {
-      if (sessionId && !sessionId.startsWith('session_local_')) {
-        const res = await api.post(`/interview/sessions/${sessionId}/hint`, {
-          turnNumber: currentTurnNumber,
-          hintLevel: level,
+      const res = await api.post(`/interview/sessions/${sessionId}/hint`, {
+        turnNumber: currentTurnNumber,
+        hintLevel: level,
+      });
+      const data = res.data?.data !== undefined ? res.data.data : res.data;
+      if (data?.hint) {
+        setHintContent({
+          text: data.hint,
+          textVi: data.translationVi || data.hint,
         });
-        const payload = res.data?.data !== undefined ? res.data.data : res.data;
-        if (payload && (payload.hint || payload.text)) {
-          setHintContent({
-            text: payload.hint || payload.text,
-            textVi: payload.translationVi || payload.textVi || '',
-          });
-          return;
-        }
+        return;
       }
-      setHintContent(getInstantHint(level));
-    } catch (err) {
-      console.warn('Hint request fallback to instant smart hint:', err);
-      setHintContent(getInstantHint(level));
-    } finally {
-      setLoadingHint(false);
+    } catch (_) {}
+
+    // Fallback hints
+    const posTitle = currentPositionObj?.title || 'chuyên môn';
+    if (level === 1) {
+      setHintContent({
+        text: `Core Focus: Professional Depth, Strategic Decisions, Practical Execution, Measurable Metrics in ${posTitle}.`,
+        textVi: `Từ khóa cốt lõi: Năng lực chuyên môn, Quyết định chiến lược, Khả năng thực thi và Con số đo lường trong ${posTitle}.`,
+      });
+    } else if (level === 2) {
+      setHintContent({
+        text: `STAR Framework Outline:\n• Situation: Project context & challenges\n• Task: Your direct responsibility\n• Action: Concrete solutions executed\n• Result: Measurable outcome & lessons learned`,
+        textVi: `Dàn ý theo chuẩn STAR:\n• Tình huống (Situation): Bối cảnh dự án & thách thức\n• Nhiệm vụ (Task): Trách nhiệm trực tiếp\n• Hành động (Action): Giải pháp kỹ thuật đã triển khai\n• Kết quả (Result): Con số đo lường và bài học rút ra`,
+      });
+    } else {
+      setHintContent({
+        text: `"In my recent experience as a ${posTitle}, we faced a critical challenge when... To resolve this, I implemented... As a result, we achieved measurable success."`,
+        textVi: `"Trong dự án gần đây với vai trò ${posTitle}, nhóm tôi gặp thử thách khi... Để giải quyết, tôi đã triển khai... Kết quả là đạt được thành công đo lường được."`,
+      });
     }
+    setLoadingHint(false);
   };
 
-  // Translate Question to Vietnamese with clean formatting & fallback
+  // Translate Question (Task 3: Direction-Aware)
   const handleTranslateQuestion = async () => {
-    if (!currentQuestionText) return;
     if (translatedQuestion) {
       setTranslatedQuestion(null);
       return;
     }
     setTranslating(true);
     try {
-      let rawText = '';
-      if (sessionId && !sessionId.startsWith('session_local_')) {
-        const res = await api.post(`/interview/sessions/${sessionId}/translate`, {
-          text: currentQuestionText,
-          targetLang: supportLang || 'vi',
-        });
-        const payload = res.data?.data !== undefined ? res.data.data : res.data;
-        rawText = payload?.translated || '';
-      }
+      const res = await api.post(`/interview/sessions/${sessionId}/translate`, {
+        text: currentQuestionText,
+        sourceLang: interviewLang,
+        targetLang: supportLang || 'vi',
+        purpose: 'question',
+      }, { timeout: 30000 });
+      const raw = res.data;
+      const translated =
+        raw?.data?.translatedText ||
+        raw?.translatedText ||
+        raw?.data?.data?.translatedText ||
+        (typeof raw?.data === 'string' ? raw.data : null);
 
-      if (!rawText) {
-        if (currentQuestionText.includes('introduce yourself') || currentQuestionText.includes('自己紹介')) {
-          rawText = 'Bạn hãy giới thiệu ngắn gọn về bản thân, kinh nghiệm làm việc và lý do bạn ứng tuyển vào vị trí này?';
-        } else if (currentQuestionText.includes('challenging') || currentQuestionText.includes('problem')) {
-          rawText = 'Bạn hãy chia sẻ về một bài toán kỹ thuật phức tạp hoặc thách thức lớn nhất mà bạn đã giải quyết? Cách tiếp cận của bạn là gì?';
-        } else if (currentQuestionText.includes('bottleneck') || currentQuestionText.includes('latency')) {
-          rawText = 'Làm thế nào bạn phát hiện điểm nghẽn hiệu năng (bottleneck) và tối ưu độ trễ của hệ thống trong môi trường thực tế?';
-        } else if (currentQuestionText.includes('disagreement') || currentQuestionText.includes('team member')) {
-          rawText = 'Kể về một tình huống bạn có bất đồng quan điểm kỹ thuật với đồng nghiệp hoặc quản lý. Bạn đã giải quyết vấn đề đó như thế nào?';
-        } else {
-          rawText = currentQuestionText;
-        }
+      if (translated) {
+        setTranslatedQuestion(translated);
       }
-
-      // Thorough cleanup of any conversational preamble, markdown headings (###) or quotes
-      let clean = rawText;
-      if (clean.includes('###') || clean.includes('Chào ') || clean.includes('phân tích') || clean.includes('Dịch:')) {
-        const lines = clean.split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter((l) => l && !l.startsWith('###') && !l.includes('Chào ') && !l.includes('phân tích') && !l.startsWith('Dịch:'));
-        clean = lines[lines.length - 1] || clean;
-      }
-      clean = clean.replace(/^[*\#\-\d.\s"':]+|["']$/g, '').trim();
-      setTranslatedQuestion(clean);
-    } catch (err) {
-      console.warn('Translation failed, fallback to smart translation:', err);
-      setTranslatedQuestion('Bạn hãy giới thiệu ngắn gọn về bản thân, kinh nghiệm làm việc và lý do ứng tuyển vị trí này?');
+    } catch (err: any) {
+      console.warn('Translation error:', err);
     } finally {
       setTranslating(false);
     }
   };
 
-  // Finish Interview manually
+  // Finish Interview Session
   const handleFinishInterview = async () => {
     if (!sessionId) return;
-    if (!confirm('Bạn có chắc chắn muốn kết thúc buổi phỏng vấn sớm và nhận báo cáo đánh giá?')) return;
+    if (isVoiceRecording) handleToggleVoiceRecording();
+
     setIsSubmitting(true);
+    setAiState('THINKING');
     try {
       const res = await api.post(`/interview/sessions/${sessionId}/finish`);
       const payload = res.data?.data !== undefined ? res.data.data : res.data;
@@ -606,25 +676,23 @@ export const AIInterviewStudioPage: React.FC = () => {
         setReport(payload.report);
         setPhase('REPORT');
       }
-    } catch (err) {
-      console.warn('Finish interview error:', err);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Không thể tổng kết phiên phỏng vấn.');
+      setAiState('WAITING');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Document Upload & Ingestion
+  // Upload Custom Document (DOCX / PDF / TXT)
   const handleUploadDocument = async () => {
-    if (!docRawText.trim()) {
-      alert('Vui lòng dán hoặc nhập nội dung câu hỏi/tài liệu.');
-      return;
-    }
+    if (!docRawText.trim()) return;
     setUploadingDoc(true);
     try {
-      const res = await api.post('/interview/documents/upload', {
-        title: docTitle || 'Bộ câu hỏi phỏng vấn tải lên',
-        fileName: 'interview_materials.docx',
-        fileMime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      await api.post('/interview/documents/upload', {
+        title: docTitle.trim() || 'Tài liệu phỏng vấn người dùng',
+        fileName: 'custom_questions.txt',
+        fileMime: 'text/plain',
         fileSize: docRawText.length,
         rawText: docRawText,
         industryCode: selectedIndustry,
@@ -632,13 +700,12 @@ export const AIInterviewStudioPage: React.FC = () => {
         isPrivate: docIsPrivate,
         contributeToCommunity: docContributeCommunity,
       });
-
-      if (res.data?.questions) {
-        setUploadedQuestionsPreview(res.data.questions);
-        alert(`Đã trích xuất thành công ${res.data.extractedQuestionCount} câu hỏi phỏng vấn!`);
-      }
+      alert('Tài liệu đã được tải lên và trích xuất câu hỏi thành công vào kho lưu trữ riêng của bạn!');
+      setDocModalOpen(false);
+      setDocTitle('');
+      setDocRawText('');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Tải lên tài liệu thất bại.');
+      alert(err.response?.data?.message || 'Tải tài liệu thất bại.');
     } finally {
       setUploadingDoc(false);
     }
@@ -651,12 +718,11 @@ export const AIInterviewStudioPage: React.FC = () => {
     try {
       await api.post('/interview/proposals', {
         proposedType: 'POSITION',
-        name: proposalName,
+        name: proposalName.trim(),
         parentCategory: selectedIndustry,
-        description: proposalDesc,
-        exampleQuestions: [],
+        description: proposalDesc.trim(),
       });
-      alert('Đã gửi đề xuất vị trí tuyển dụng mới đến Ban Quản trị VocabFlow. Cảm ơn bạn!');
+      alert('Cảm ơn bạn! Đề xuất vị trí đã được gửi đến ban quản trị nội dung xem xét.');
       setProposalModalOpen(false);
       setProposalName('');
       setProposalDesc('');
@@ -667,7 +733,6 @@ export const AIInterviewStudioPage: React.FC = () => {
     }
   };
 
-  // Format MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -675,72 +740,158 @@ export const AIInterviewStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 w-full h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pt-4 sm:pt-8 pb-28 sm:pb-10 px-3 sm:px-6 flex flex-col items-center">
-      <div className="w-full">
+    <div className="flex-1 w-full h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pt-3 sm:pt-6 pb-24 sm:pb-12 px-3 sm:px-6 flex flex-col items-center">
+      <div className="w-full max-w-6xl">
         {/* =========================================================================
-            HEADER BAR (Tasteskill: Clean title, quiet border, real actions)
+            HEADER BAR (Tasteskill: Clean hierarchy, quiet border, responsive actions)
         ========================================================================= */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
               <Briefcase className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
                   AI Interview Studio
                 </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                  EXECUTIVE 1:1
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  PRO 1:1
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Mô phỏng phỏng vấn tuyển dụng chuyên sâu theo chuẩn quốc tế · RAG Tri thức ngành
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                Mô phỏng phỏng vấn tuyển dụng chuyên sâu · Đánh giá chuẩn quốc tế
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* Compact Language Space Badge */}
-            <div className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 shadow-2xs">
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Language Space Indicator */}
+            <div className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 shadow-2xs">
               <CountryFlag countryCode={activeLanguage?.countryCode || 'US'} languageId={activeLanguage?.id} />
-              <span>{activeLanguage?.name || 'Tiếng Anh'}</span>
-              <span className="text-[10px] font-normal text-slate-400">({activeLanguage?.nativeName || 'English'})</span>
+              <span className="hidden sm:inline">{activeLanguage?.name || 'Tiếng Anh'}</span>
+              <span className="text-[11px] font-mono text-slate-400 uppercase">({interviewLang})</span>
             </div>
 
-            <button
-              onClick={() => setDocModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition shadow-2xs"
-            >
-              <Upload className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Nạp đề riêng</span>
-            </button>
-            <button
-              onClick={() => setProposalModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition shadow-2xs"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Đề xuất vị trí</span>
-            </button>
+            {isProAllowed && (
+              <>
+                <button
+                  onClick={() => setDocModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition shadow-2xs"
+                  title="Nạp tài liệu câu hỏi riêng"
+                >
+                  <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                  <span className="hidden md:inline">Nạp đề riêng</span>
+                </button>
+                <button
+                  onClick={() => setProposalModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition shadow-2xs"
+                  title="Đề xuất vị trí hoặc ngành mới"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden md:inline">Đề xuất vị trí</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
         {/* =========================================================================
-            STATE 1: SETUP & CONFIGURATION WIZARD
+            PRO PAYWALL EXECUTIVE SHOWCASE (Task 10: Fail-Closed Guard)
         ========================================================================= */}
+        {!checkingBilling && !isProAllowed && (
+          <div className="p-6 sm:p-10 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-8 animate-in fade-in duration-300">
+            <div className="max-w-2xl mx-auto text-center space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Tính năng độc quyền gói Pro & Premium</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                Luyện Phỏng Vấn Chuyên Nghiệp 1:1 Với AI Tuyển Dụng
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Mô phỏng chân thực quy trình tuyển dụng tại các tập đoàn đa quốc gia. AI đóng vai Trưởng bộ phận,
+                đào sâu theo phương pháp STAR, chuẩn hóa giọng nói song ngữ và xuất báo cáo năng lực chi tiết.
+              </p>
+            </div>
+
+            {/* Feature Matrix */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black">
+                  <BrainCircuit className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">AI Phỏng vấn thích ứng</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Tự động đào sâu khi ứng viên trả lời thiếu dữ liệu (STAR), điều chỉnh độ khó theo năng lực thực tế.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Voice Pipeline Đa ngôn ngữ</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Hỗ trợ trả lời trực tiếp bằng tiếng Anh, Nhật, Hàn, Trung hoặc nói tiếng Việt để AI tự chuẩn hóa dịch thuật.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black">
+                  <Award className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Báo cáo Năng lực 4 Cột mốc</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Tách bạch điểm Chuyên môn, Giao tiếp, Năng lực ngôn ngữ và Bản lĩnh phỏng vấn có dẫn chứng cụ thể.
+                </p>
+              </div>
+            </div>
+
+            {/* Upgrade CTA */}
+            <div className="text-center pt-2">
+              <Link
+                to="/pricing"
+                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm tracking-wide shadow-lg shadow-indigo-500/20 transition active:scale-95"
+              >
+                <Zap className="w-4 h-4 fill-current" />
+                <span>Nâng cấp Pro để mở khóa phòng phỏng vấn ngay</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <div className="text-[11px] text-slate-400 mt-2">Kích hoạt tức thì · Hủy bất kỳ lúc nào</div>
+            </div>
+          </div>
+        )}
+
         {/* =========================================================================
-            STATE 1: SETUP & CONFIGURATION 3-STEP CONFIRMATION WIZARD
+            STATE 1: SETUP & CONFIGURATION WIZARD (Pro Users Only)
         ========================================================================= */}
-        {phase === 'SETUP' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            {/* Step Progress Indicator */}
-            <div className="p-2.5 sm:p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
-              <div className="grid grid-cols-3 gap-2">
-                {/* Step 1 Tab */}
+        {isProAllowed && phase === 'SETUP' && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            {/* Stepper Navigation: Responsive Compact Bar for Mobile & Full Tabs for Desktop (Task 9) */}
+            <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+              {/* Mobile Stepper (< 640px) */}
+              <div className="sm:hidden space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-indigo-600 dark:text-indigo-400">
+                    Bước {setupStep} / 3: {setupStep === 1 ? 'Chọn Vị trí' : setupStep === 2 ? 'Tiêu chuẩn phỏng vấn' : 'Xác nhận & Bắt đầu'}
+                  </span>
+                  <span className="text-slate-400 text-[11px]">{setupStep === 1 ? '33%' : setupStep === 2 ? '66%' : '100%'}</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-600 transition-all duration-300"
+                    style={{ width: setupStep === 1 ? '33.3%' : setupStep === 2 ? '66.6%' : '100%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Desktop Stepper (>= 640px) */}
+              <div className="hidden sm:grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setSetupStep(1)}
-                  className={`flex items-center gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer border ${
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl transition text-left cursor-pointer border ${
                     setupStep === 1
                       ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
                       : setupStep > 1
@@ -749,7 +900,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                   }`}
                 >
                   <span
-                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg text-[11px] sm:text-xs font-black flex items-center justify-center shrink-0 ${
+                    className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 ${
                       setupStep === 1
                         ? 'bg-white text-indigo-700 shadow-xs'
                         : setupStep > 1
@@ -760,32 +911,15 @@ export const AIInterviewStudioPage: React.FC = () => {
                     {setupStep > 1 ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : '1'}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className={`text-[9px] uppercase font-black tracking-wider leading-none ${
-                      setupStep === 1
-                        ? 'text-indigo-100'
-                        : setupStep > 1
-                        ? 'text-emerald-700 dark:text-emerald-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      Bước 1
-                    </div>
-                    <div className={`text-[11px] sm:text-xs truncate font-bold leading-tight mt-0.5 ${
-                      setupStep === 1
-                        ? 'text-white'
-                        : setupStep > 1
-                        ? 'text-emerald-900 dark:text-emerald-100'
-                        : 'text-slate-900 dark:text-slate-100'
-                    }`}>
-                      Vị trí
-                    </div>
+                    <div className="text-[10px] uppercase font-black tracking-wider leading-none opacity-80">Bước 1</div>
+                    <div className="text-xs truncate font-bold mt-0.5">Vị trí & Ngành nghề</div>
                   </div>
                 </button>
 
-                {/* Step 2 Tab */}
                 <button
                   type="button"
                   onClick={() => setSetupStep(2)}
-                  className={`flex items-center gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer border ${
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl transition text-left cursor-pointer border ${
                     setupStep === 2
                       ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
                       : setupStep > 2
@@ -794,7 +928,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                   }`}
                 >
                   <span
-                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg text-[11px] sm:text-xs font-black flex items-center justify-center shrink-0 ${
+                    className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 ${
                       setupStep === 2
                         ? 'bg-white text-indigo-700 shadow-xs'
                         : setupStep > 2
@@ -805,39 +939,22 @@ export const AIInterviewStudioPage: React.FC = () => {
                     {setupStep > 2 ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : '2'}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className={`text-[9px] uppercase font-black tracking-wider leading-none ${
-                      setupStep === 2
-                        ? 'text-indigo-100'
-                        : setupStep > 2
-                        ? 'text-emerald-700 dark:text-emerald-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      Bước 2
-                    </div>
-                    <div className={`text-[11px] sm:text-xs truncate font-bold leading-tight mt-0.5 ${
-                      setupStep === 2
-                        ? 'text-white'
-                        : setupStep > 2
-                        ? 'text-emerald-900 dark:text-emerald-100'
-                        : 'text-slate-900 dark:text-slate-100'
-                    }`}>
-                      Tiêu chuẩn
-                    </div>
+                    <div className="text-[10px] uppercase font-black tracking-wider leading-none opacity-80">Bước 2</div>
+                    <div className="text-xs truncate font-bold mt-0.5">Tiêu chuẩn & Phong cách</div>
                   </div>
                 </button>
 
-                {/* Step 3 Tab */}
                 <button
                   type="button"
                   onClick={() => setSetupStep(3)}
-                  className={`flex items-center gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer border ${
+                  className={`flex items-center gap-2.5 p-2.5 rounded-xl transition text-left cursor-pointer border ${
                     setupStep === 3
                       ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 font-semibold'
                   }`}
                 >
                   <span
-                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg text-[11px] sm:text-xs font-black flex items-center justify-center shrink-0 ${
+                    className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 ${
                       setupStep === 3
                         ? 'bg-white text-indigo-700 shadow-xs'
                         : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
@@ -846,42 +963,29 @@ export const AIInterviewStudioPage: React.FC = () => {
                     3
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className={`text-[9px] uppercase font-black tracking-wider leading-none ${
-                      setupStep === 3
-                        ? 'text-indigo-100'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      Bước 3
-                    </div>
-                    <div className={`text-[11px] sm:text-xs truncate font-bold leading-tight mt-0.5 ${
-                      setupStep === 3
-                        ? 'text-white'
-                        : 'text-slate-900 dark:text-slate-100'
-                    }`}>
-                      Xác nhận
-                    </div>
+                    <div className="text-[10px] uppercase font-black tracking-wider leading-none opacity-80">Bước 3</div>
+                    <div className="text-xs truncate font-bold mt-0.5">Xác nhận & Bắt đầu</div>
                   </div>
                 </button>
               </div>
             </div>
 
-            {/* STEP 1: VỊ TRÍ & CẤP BẬC */}
+            {/* STEP 1: NGÀNH NGHỀ & VỊ TRÍ */}
             {setupStep === 1 && (
-              <div className="p-5 sm:p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-6">
+              <div className="p-4 sm:p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-5">
                 <div>
                   <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                    Bước 1: Chọn Ngành nghề, Vị trí ứng tuyển & Cấp bậc
+                    Bước 1: Chọn Ngành nghề, Vị trí & Cấp bậc ứng tuyển
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Ngân hàng câu hỏi RAG sẽ điều chỉnh theo tiêu chuẩn thực tế của doanh nghiệp và ngành nghề bạn chọn.
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Câu hỏi và tiêu chí phỏng vấn sẽ điều chỉnh chuẩn xác theo competency matrix của vị trí bạn chọn.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Industry Select */}
                   <div>
                     <CustomSelect
-                      label="Ngành nghề ứng tuyển (Industry)"
+                      label="Ngành nghề tuyển dụng (Industry)"
                       value={selectedIndustry}
                       onChange={(val) => {
                         setSelectedIndustry(val);
@@ -896,24 +1000,22 @@ export const AIInterviewStudioPage: React.FC = () => {
                     />
                   </div>
 
-                  {/* Position Select */}
                   <div>
                     <CustomSelect
-                      label="Vị trí công việc cụ thể (Job Position)"
+                      label="Vị trí ứng tuyển (Position)"
                       value={selectedPosition}
                       onChange={(val) => setSelectedPosition(val)}
                       options={positionOptions}
                       placeholder="Chọn vị trí tuyển dụng..."
                       searchable={true}
-                      searchPlaceholder="Tìm kiếm vị trí..."
                     />
                   </div>
                 </div>
 
                 {/* Selected Position Detail Card */}
                 {currentPositionObj && (
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                         <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
@@ -922,7 +1024,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                         <span className="text-xs text-slate-400">({currentPositionObj.title})</span>
                       </div>
                       <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                        {(currentPositionObj as any)?.category || 'Chuyên môn'}
+                        {currentIndustryObj?.name}
                       </span>
                     </div>
 
@@ -932,7 +1034,7 @@ export const AIInterviewStudioPage: React.FC = () => {
 
                     <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap items-center gap-1.5">
                       <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1">
-                        Kỹ năng cốt lõi:
+                        Kỹ năng then chốt:
                       </span>
                       {currentPositionObj.requiredSkills?.map((skill, idx) => (
                         <span
@@ -942,19 +1044,10 @@ export const AIInterviewStudioPage: React.FC = () => {
                           {skill}
                         </span>
                       ))}
-                      {(currentPositionObj as any)?.techStack?.map((tech, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
-                        >
-                          {tech}
-                        </span>
-                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* Seniority Select */}
                 <div>
                   <CustomSelect
                     label="Cấp bậc kinh nghiệm (Seniority Level)"
@@ -966,14 +1059,13 @@ export const AIInterviewStudioPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Navigation Buttons */}
-                <div className="flex items-center justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setSetupStep(2)}
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm tracking-wide shadow-xs transition flex items-center gap-2 cursor-pointer active:scale-95"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm tracking-wide shadow-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
-                    <span>Tiếp tục: Cấu hình tiêu chuẩn phỏng vấn</span>
+                    <span>Tiếp tục: Cấu hình tiêu chuẩn</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -982,140 +1074,122 @@ export const AIInterviewStudioPage: React.FC = () => {
 
             {/* STEP 2: TIÊU CHUẨN & ĐỊNH DẠNG */}
             {setupStep === 2 && (
-              <div className="p-5 sm:p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-6">
+              <div className="p-4 sm:p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-5">
                 <div>
                   <h2 className="text-base font-bold text-slate-900 dark:text-white">
                     Bước 2: Định dạng buổi phỏng vấn & Phong cách AI
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Lựa chọn phương thức phản hồi, thời lượng và phong cách người phỏng vấn.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Interview Type */}
                   <div>
                     <CustomSelect
                       label="Trọng tâm phỏng vấn (Interview Type)"
                       value={interviewType}
                       onChange={(val) => setInterviewType(val)}
                       options={interviewTypeOptions}
-                      placeholder="Chọn hình thức..."
+                      placeholder="Chọn trọng tâm..."
                       searchable={false}
                     />
                   </div>
 
-                  {/* AI Persona Style */}
                   <div>
                     <CustomSelect
-                      label="Phong cách người phỏng vấn (AI Persona)"
-                      value={interviewerStyle}
-                      onChange={(val) => setInterviewerStyle(val as any)}
-                      options={interviewerStyleOptions}
-                      placeholder="Chọn phong cách..."
+                      label="Thời lượng phỏng vấn (Duration)"
+                      value={durationMinutes.toString()}
+                      onChange={(val) => setDurationMinutes(parseInt(val, 10))}
+                      options={[
+                        { value: '15', label: '15 phút (Nhanh - 3 câu hỏi chính)' },
+                        { value: '20', label: '20 phút (Tiêu chuẩn - 4 câu hỏi chính)' },
+                        { value: '30', label: '30 phút (Chuyên sâu - 5 câu hỏi chính + Follow-up)' },
+                      ]}
+                      placeholder="Chọn thời lượng..."
                       searchable={false}
                     />
                   </div>
                 </div>
 
-                {/* Mode Selector Toggle */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Chế độ luyện tập
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div
-                      onClick={() => setInterviewMode('REALISTIC')}
-                      className={`p-4 rounded-xl border cursor-pointer transition select-none flex flex-col justify-between ${
-                        interviewMode === 'REALISTIC'
-                          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500 ring-1 ring-indigo-500/20 text-slate-900 dark:text-white'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-bold text-xs sm:text-sm">Mô phỏng áp lực thực tế (Realistic)</span>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            interviewMode === 'REALISTIC'
-                              ? 'border-indigo-600 bg-indigo-600'
-                              : 'border-slate-300 dark:border-slate-600'
-                          }`}
-                        >
-                          {interviewMode === 'REALISTIC' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-                        AI đóng vai interviewer nghiêm túc, không can thiệp giữa chừng, nhận báo cáo đánh giá năng lực toàn diện ở cuối buổi.
-                      </p>
-                    </div>
-
-                    <div
-                      onClick={() => setInterviewMode('COACH')}
-                      className={`p-4 rounded-xl border cursor-pointer transition select-none flex flex-col justify-between ${
-                        interviewMode === 'COACH'
-                          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500 ring-1 ring-indigo-500/20 text-slate-900 dark:text-white'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-bold text-xs sm:text-sm">Kèm cặp & Sửa lỗi ngay (Coach Mode)</span>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            interviewMode === 'COACH'
-                              ? 'border-indigo-600 bg-indigo-600'
-                              : 'border-slate-300 dark:border-slate-600'
-                          }`}
-                        >
-                          {interviewMode === 'COACH' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
-                        Cung cấp gợi ý STAR từng bước, phân tích cấu trúc trả lời và cho phép luyện tập thử lại ngay sau mỗi câu hỏi.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Duration */}
-                <div>
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    <span>Thời lượng buổi phỏng vấn</span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-bold">{durationMinutes} phút</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {[15, 20, 30, 45].map((mins) => (
+                {/* Mode & Style Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Chế độ tương tác (Interview Mode)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
-                        key={mins}
                         type="button"
-                        onClick={() => setDurationMinutes(mins)}
-                        className={`flex-1 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer ${
-                          durationMinutes === mins
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
+                        onClick={() => setInterviewMode('REALISTIC')}
+                        className={`p-2.5 rounded-lg text-xs font-bold border transition text-center ${
+                          interviewMode === 'REALISTIC'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        {mins} phút
+                        Thực chiến (Realistic)
                       </button>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={() => setInterviewMode('COACH')}
+                        className={`p-2.5 rounded-lg text-xs font-bold border transition text-center ${
+                          interviewMode === 'COACH'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        Huấn luyện (Coach)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Phong cách phỏng vấn (Style)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setInterviewerStyle('PROFESSIONAL')}
+                        className={`p-2.5 rounded-lg text-xs font-bold border transition text-center ${
+                          interviewerStyle === 'PROFESSIONAL'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        Chuyên nghiệp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInterviewerStyle('CHALLENGING')}
+                        className={`p-2.5 rounded-lg text-xs font-bold border transition text-center ${
+                          interviewerStyle === 'CHALLENGING'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        Thử thách cao
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Navigation Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setSetupStep(1)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition cursor-pointer"
+                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Quay lại: Vị trí & Cấp bậc</span>
+                    <span>Quay lại</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSetupStep(3)}
                     className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm tracking-wide shadow-xs transition flex items-center gap-2 cursor-pointer active:scale-95"
                   >
-                    <span>Tiếp tục: Xác nhận & Chuẩn bị</span>
+                    <span>Tiếp tục: Xác nhận phòng phỏng vấn</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1124,115 +1198,87 @@ export const AIInterviewStudioPage: React.FC = () => {
 
             {/* STEP 3: XÁC NHẬN & BẮT ĐẦU */}
             {setupStep === 3 && (
-              <div className="p-5 sm:p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-6">
+              <div className="p-4 sm:p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-5">
                 <div>
                   <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                    Bước 3: Xác nhận thông số buổi phỏng vấn & Kiểm tra âm thanh
+                    Bước 3: Xác nhận thông tin phòng phỏng vấn 1:1
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Kiểm tra lại toàn bộ thông số phiên và thử nghiệm giọng đọc AI trước khi bắt đầu.
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Kiểm tra cấu hình trước khi kết nối AI Interviewer trực tiếp.
                   </p>
                 </div>
 
-                {/* Confirmation Specs Card */}
-                <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
-                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
-                        Vị trí & Cấp bậc
-                      </div>
-                      <div className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                        {currentPositionObj?.titleVi || currentPositionObj?.title || 'Chuyên viên'}
-                      </div>
-                      <div className="text-slate-500 dark:text-slate-400 mt-0.5">
-                        {seniorityLevel} · {industries.find((i) => i.code === selectedIndustry)?.nameVi || 'Ngành nghề'}
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
-                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
-                        Trọng tâm & Chế độ
-                      </div>
-                      <div className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                        {interviewType}
-                      </div>
-                      <div className="text-slate-500 dark:text-slate-400 mt-0.5">
-                        {interviewMode === 'REALISTIC' ? 'Mô phỏng áp lực thực tế' : 'Kèm cặp Coach Mode'} · {interviewerStyle}
-                      </div>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
-                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">
-                        Ngôn ngữ & Thời lượng
-                      </div>
-                      <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-                        <CountryFlag countryCode={activeLanguage?.countryCode || 'US'} languageId={activeLanguage?.id} />
-                        <span>{activeLanguage?.name || 'Tiếng Anh'}</span>
-                      </div>
-                      <div className="text-slate-500 dark:text-slate-400 mt-0.5">
-                        {durationMinutes} phút · ~4 - 6 câu hỏi chuyên sâu
-                      </div>
-                    </div>
+                {/* Summary Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Vị trí</span>
+                    <span className="font-bold text-slate-900 dark:text-white truncate block mt-0.5">
+                      {currentPositionObj?.title}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Cấp bậc</span>
+                    <span className="font-bold text-slate-900 dark:text-white block mt-0.5">{seniorityLevel}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Ngôn ngữ phỏng vấn</span>
+                    <span className="font-bold text-slate-900 dark:text-white block mt-0.5 uppercase">
+                      {interviewLang} ({getLocaleForLanguage(interviewLang)})
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                    <span className="text-slate-400 text-[10px] block uppercase font-bold">Thời lượng</span>
+                    <span className="font-bold text-slate-900 dark:text-white block mt-0.5">{durationMinutes} phút</span>
                   </div>
                 </div>
 
-                {/* Voice / Audio Test Card */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Volume2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
-                        Thử nghiệm âm thanh người phỏng vấn AI
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Bấm nút bên cạnh để kiểm tra âm lượng và phát âm trước khi vào phòng.
-                      </p>
-                    </div>
+                {/* Voice Test Strip */}
+                <div className="p-3.5 rounded-xl border border-indigo-100 dark:border-indigo-950/80 bg-indigo-50/50 dark:bg-indigo-950/30 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 text-xs text-indigo-900 dark:text-indigo-200">
+                    <Volume2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <span>Kiểm tra âm thanh phát âm chuẩn theo ngôn ngữ phỏng vấn ({interviewLang})</span>
                   </div>
-
                   <button
                     type="button"
                     onClick={() =>
                       playQuestionSpeech(
-                        activeLanguage?.id === 'vi'
-                          ? 'Xin chào! Tôi là người phỏng vấn AI của bạn. Rất vui được gặp bạn trong buổi phỏng vấn hôm nay.'
-                          : activeLanguage?.id === 'ja'
+                        interviewLang === 'ja'
                           ? 'こんにちは！AI面接官です。本日の面接を始めましょう。'
-                          : 'Hello and welcome to your professional interview session. Whenever you are ready, please click start.'
+                          : interviewLang === 'ko'
+                          ? '안녕하세요! AI 인터뷰어입니다. 오늘의 면접을 시작하겠습니다.'
+                          : interviewLang === 'zh'
+                          ? '您好！我是您的AI面试官。让我们开始今天的模拟面试。'
+                          : 'Hello and welcome to your executive interview session. Let us begin.'
                       )
                     }
-                    className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-slate-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 flex items-center justify-center gap-2 shadow-2xs transition shrink-0 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-2xs hover:bg-indigo-50 transition"
                   >
-                    <Volume2 className="w-4 h-4" />
-                    <span>{aiState === 'SPEAKING' ? 'Đang phát âm...' : 'Thử giọng AI'}</span>
+                    {aiState === 'SPEAKING' ? 'Đang phát âm...' : 'Thử giọng AI'}
                   </button>
                 </div>
 
-                {/* Primary Launch Actions */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setSetupStep(2)}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Điều chỉnh thiết lập</span>
+                    <span>Điều chỉnh</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleStartSession}
                     disabled={isSubmitting}
-                    className="w-full sm:w-auto px-7 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm tracking-wide shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95"
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm tracking-wide shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <Play className="w-4 h-4 fill-current" />
                     )}
-                    <span>{isSubmitting ? 'Đang khởi tạo phòng phỏng vấn...' : 'Xác nhận & Bắt đầu phỏng vấn ngay'}</span>
+                    <span>{isSubmitting ? 'Đang kết nối phòng phỏng vấn...' : 'Bắt đầu phỏng vấn ngay'}</span>
                   </button>
                 </div>
               </div>
@@ -1244,33 +1290,32 @@ export const AIInterviewStudioPage: React.FC = () => {
             STATE 2: LIVE INTERVIEW STUDIO WORKSPACE
         ========================================================================= */}
         {phase === 'STUDIO' && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-in fade-in duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in duration-300">
             {/* Main Stage (3 Cols) */}
             <div className="lg:col-span-3 space-y-4">
-              {/* Interview Top Bar */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      {currentPositionObj?.title} ({seniorityLevel})
-                    </span>
-                  </div>
+              {/* Studio Top Control Bar */}
+              <div className="p-3 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                    {currentPositionObj?.title}
+                  </span>
                   <span className="text-xs text-slate-400">|</span>
-                  <span className="text-xs text-slate-500">
-                    Câu hỏi {currentTurnNumber} / ~{totalQuestions}
+                  <span className="text-xs text-slate-500 shrink-0">
+                    Câu {currentTurnNumber} / ~{totalQuestions}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <div className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400">
                     <Clock className="w-3.5 h-3.5" />
                     <span>{formatTime(timeRemainingSec)}</span>
                   </div>
 
                   <button
                     onClick={() => setIsPaused((prev) => !prev)}
-                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition"
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                    title={isPaused ? 'Tiếp tục' : 'Tạm dừng'}
                   >
                     {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
                   </button>
@@ -1284,20 +1329,20 @@ export const AIInterviewStudioPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* AI Interviewer Avatar & Speech State */}
-              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-indigo-950/20 to-slate-900/60 border border-slate-200/80 dark:border-slate-800 relative overflow-hidden flex flex-col items-center text-center">
-                <div className="relative mb-4">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30">
-                    <BrainCircuit className="w-10 h-10" />
+              {/* AI Interviewer Avatar & Speech Stage */}
+              <div className="p-5 sm:p-8 rounded-3xl bg-gradient-to-b from-indigo-950/20 to-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center relative overflow-hidden">
+                <div className="relative mb-3">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30">
+                    <BrainCircuit className="w-8 h-8 sm:w-10 sm:h-10" />
                   </div>
                   {aiState === 'SPEAKING' && (
                     <div className="absolute -inset-2 rounded-full border-2 border-indigo-500 animate-ping opacity-60" />
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-2">
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                       aiState === 'SPEAKING'
                         ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
                         : aiState === 'THINKING'
@@ -1314,8 +1359,8 @@ export const AIInterviewStudioPage: React.FC = () => {
 
                   <button
                     onClick={() => playQuestionSpeech(currentQuestionText)}
-                    className="p-1.5 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 transition"
-                    title="Phát lại câu hỏi"
+                    className="p-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                    title="Phát lại âm thanh"
                   >
                     <Volume2 className="w-3.5 h-3.5" />
                   </button>
@@ -1327,28 +1372,123 @@ export const AIInterviewStudioPage: React.FC = () => {
                   </span>
                 )}
 
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white max-w-2xl leading-relaxed">
+                <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white max-w-2xl leading-relaxed">
                   "{currentQuestionText}"
                 </h2>
 
+                {/* Quick Action Toolbar on Question Card */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2.5">
+                  <button
+                    type="button"
+                    onClick={handleTranslateQuestion}
+                    disabled={translating}
+                    className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                  >
+                    <Languages className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>{translating ? 'Đang dịch...' : translatedQuestion ? 'Ẩn bản dịch' : 'Dịch câu hỏi'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRequestHint(1)}
+                    disabled={loadingHint}
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                      activeHintLevel === 1
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-2xs'
+                        : 'border-amber-200 dark:border-amber-800/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                    }`}
+                  >
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Gợi ý Lv1: Cốt lõi</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRequestHint(2)}
+                    disabled={loadingHint}
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                      activeHintLevel === 2
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-2xs'
+                        : 'border-amber-200 dark:border-amber-800/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                    }`}
+                  >
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Gợi ý Lv2: Dàn ý STAR</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleRequestHint(3)}
+                    disabled={loadingHint}
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                      activeHintLevel === 3
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-2xs'
+                        : 'border-amber-200 dark:border-amber-800/60 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                    }`}
+                  >
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Gợi ý Lv3: Mẫu câu</span>
+                  </button>
+                </div>
+
+                {/* Translated Question Display — Immediately Under Question */}
                 {translatedQuestion && (
-                  <div className="mt-3.5 p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 text-slate-800 dark:text-indigo-200 text-xs sm:text-sm font-medium flex items-start gap-2.5 animate-in fade-in shadow-2xs">
-                    <Languages className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block mb-0.5">
-                        Bản dịch câu hỏi tham khảo:
+                  <div className="mt-3 p-3.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs text-slate-800 dark:text-indigo-200 space-y-1 animate-in fade-in max-w-xl w-full text-left">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
+                        <Languages className="w-3.5 h-3.5" />
+                        Bản dịch câu hỏi tiếng Việt:
                       </span>
-                      <span className="leading-relaxed">{translatedQuestion}</span>
+                      <button
+                        type="button"
+                        onClick={() => setTranslatedQuestion(null)}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-0.5 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition cursor-pointer"
+                      >
+                        ✕ Đóng
+                      </button>
                     </div>
+                    <p className="leading-relaxed font-medium text-slate-700 dark:text-slate-200">
+                      {translatedQuestion}
+                    </p>
+                  </div>
+                )}
+
+                {/* Progressive Hint Display — Immediately Under Question & Translation */}
+                {hintContent && (
+                  <div className="mt-3 p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/60 border border-amber-300/80 dark:border-amber-700/80 text-xs text-slate-800 dark:text-amber-100 space-y-1.5 animate-in fade-in max-w-xl w-full text-left">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold flex items-center gap-1.5 text-amber-800 dark:text-amber-300 uppercase text-[11px]">
+                        <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        Gợi ý trả lời ({activeHintLevel === 1 ? 'Cốt lõi' : activeHintLevel === 2 ? 'Dàn ý STAR' : 'Mẫu câu mẫu'}):
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHintContent(null);
+                          setActiveHintLevel(null);
+                        }}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-0.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/40 transition cursor-pointer"
+                      >
+                        ✕ Đóng
+                      </button>
+                    </div>
+                    <p className="font-semibold text-slate-900 dark:text-white leading-relaxed">
+                      {hintContent.text}
+                    </p>
+                    {hintContent.textVi && (
+                      <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed pt-1 border-t border-amber-200 dark:border-amber-800/60">
+                        💡 {hintContent.textVi}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Coach Mode Immediate Feedback Card (If enabled) */}
+              {/* Coach Mode Immediate Feedback Card */}
               {coachFeedback && (
-                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5 animate-in fade-in">
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1 animate-in fade-in">
                   <div className="font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-3.5 h-3.5" />
                     <span>Nhận xét tức thì của AI Coach:</span>
                   </div>
                   <p className="text-slate-700 dark:text-slate-300">{coachFeedback.feedbackMessage}</p>
@@ -1356,60 +1496,120 @@ export const AIInterviewStudioPage: React.FC = () => {
               )}
 
               {/* Candidate Response Workspace */}
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+              <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <UserCheck className="w-4 h-4 text-indigo-500" />
                     <span>Câu trả lời của bạn:</span>
                   </label>
 
-                  {/* Toolbar Actions */}
-                  <div className="flex items-center gap-2">
+                  {/* Mode & Toolbar Actions */}
+                  <div className="flex items-center gap-1.5">
                     <button
+                      type="button"
                       onClick={handleTranslateQuestion}
                       disabled={translating}
-                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1 transition"
+                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1 transition cursor-pointer"
                     >
-                      <Languages className="w-3 h-3 text-indigo-500" />
-                      <span>{translatedQuestion ? 'Ẩn bản dịch' : 'Dịch câu hỏi'}</span>
+                      <Languages className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{translating ? 'Đang dịch...' : translatedQuestion ? 'Ẩn bản dịch' : 'Dịch câu hỏi'}</span>
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => setHintDrawerOpen((prev) => !prev)}
-                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1 transition"
+                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1 transition cursor-pointer"
                     >
-                      <Lightbulb className="w-3 h-3 text-amber-500" />
-                      <span>Gợi ý trả lời</span>
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Gợi ý</span>
                     </button>
                   </div>
                 </div>
 
+                {/* Visible Translated Question Banner inside Candidate Workspace */}
+                {translatedQuestion && (
+                  <div className="p-3.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs text-slate-800 dark:text-indigo-200 space-y-1 animate-in fade-in">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
+                        <Languages className="w-3.5 h-3.5" />
+                        Bản dịch câu hỏi tiếng Việt:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setTranslatedQuestion(null)}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-0.5 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition cursor-pointer"
+                      >
+                        ✕ Đóng
+                      </button>
+                    </div>
+                    <p className="leading-relaxed font-medium text-slate-700 dark:text-slate-200">
+                      {translatedQuestion}
+                    </p>
+                  </div>
+                )}
+
+                {/* Candidate Speech Language Mode Toggle (Task 4) */}
+                <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-[11px] font-bold">
+                  <span className="text-slate-400 pl-1">Ngôn ngữ nói:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSpeechLanguageMode('INTERVIEW_LANG')}
+                    className={`px-2.5 py-1 rounded-lg transition ${
+                      speechLanguageMode === 'INTERVIEW_LANG'
+                        ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-2xs font-black'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    Tiếng {interviewLang.toUpperCase()} ({getLocaleForLanguage(interviewLang)})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSpeechLanguageMode('SUPPORT_VI')}
+                    className={`px-2.5 py-1 rounded-lg transition ${
+                      speechLanguageMode === 'SUPPORT_VI'
+                        ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-2xs font-black'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    Tiếng Việt (Tự động dịch sang {interviewLang.toUpperCase()})
+                  </button>
+                </div>
+
+                {/* Real-time Voice Recognition Indicator */}
+                {isVoiceRecording && (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 text-xs font-semibold animate-pulse">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+                      <span>Đang nghe bạn nói... Từ sẽ hiện ngay lập tức vào ô trả lời bên dưới.</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-rose-500/20 shrink-0">
+                      {speechLanguageMode === 'SUPPORT_VI' ? 'VI-VN' : getLocaleForLanguage(interviewLang)}
+                    </span>
+                  </div>
+                )}
+
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={candidateTextAnswer}
                   onChange={(e) => setCandidateTextAnswer(e.target.value)}
-                  placeholder="Nhập câu trả lời bằng tiếng Anh / ngôn ngữ phỏng vấn hoặc bật micro để trả lời..."
-                  className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed"
+                  placeholder={`Nhập câu trả lời bằng ${speechLanguageMode === 'SUPPORT_VI' ? 'tiếng Việt' : `tiếng ${interviewLang.toUpperCase()}`} hoặc bấm "Nói qua Micro" để nói trực tiếp...`}
+                  className="w-full p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none leading-relaxed"
                 />
 
                 <div className="flex items-center justify-between pt-1">
-                  {/* Microphone Recorder Toggle */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={isRecording ? stopRecording : startRecording}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-                        isRecording
-                          ? 'bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-indigo-500" />}
-                      <span>{isRecording ? 'Đang ghi âm (Dừng)' : 'Nói qua Micro'}</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleVoiceRecording}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                      isVoiceRecording
+                        ? 'bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {isVoiceRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-indigo-500" />}
+                    <span>{isVoiceRecording ? 'Đang nhận diện giọng nói (Dừng)' : 'Nói qua Micro'}</span>
+                  </button>
 
-                  {/* Submit Button */}
                   <button
                     onClick={handleSubmitAnswer}
                     disabled={isSubmitting || !candidateTextAnswer.trim()}
@@ -1427,26 +1627,23 @@ export const AIInterviewStudioPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Progressive Hints Popover Drawer */}
+              {/* Progressive Hints Popover */}
               {hintDrawerOpen && (
-                <div className="p-4 rounded-3xl bg-amber-500/5 border border-amber-500/20 space-y-3 animate-in fade-in">
+                <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2.5 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-xs font-black uppercase text-amber-600 dark:text-amber-400">
-                      <Lightbulb className="w-4 h-4" />
-                      <span>Hệ thống Gợi ý (3 Cấp độ)</span>
+                      <Lightbulb className="w-3.5 h-3.5" />
+                      <span>Gợi ý trả lời</span>
                     </div>
-                    <button
-                      onClick={() => setHintDrawerOpen(false)}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                    >
-                      <X className="w-4 h-4" />
+                    <button onClick={() => setHintDrawerOpen(false)} className="text-slate-400 hover:text-slate-600">
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleRequestHint(1)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${
+                      className={`p-2 rounded-lg border text-[11px] font-bold transition text-center ${
                         activeHintLevel === 1
                           ? 'bg-amber-500 text-white border-amber-500'
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
@@ -1456,17 +1653,17 @@ export const AIInterviewStudioPage: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleRequestHint(2)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${
+                      className={`p-2 rounded-lg border text-[11px] font-bold transition text-center ${
                         activeHintLevel === 2
                           ? 'bg-amber-500 text-white border-amber-500'
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                       }`}
                     >
-                      Cấp 2: Cấu trúc
+                      Cấp 2: Dàn ý STAR
                     </button>
                     <button
                       onClick={() => handleRequestHint(3)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${
+                      className={`p-2 rounded-lg border text-[11px] font-bold transition text-center ${
                         activeHintLevel === 3
                           ? 'bg-amber-500 text-white border-amber-500'
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
@@ -1476,39 +1673,45 @@ export const AIInterviewStudioPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {loadingHint ? (
-                    <div className="text-xs text-slate-400 italic">Đang tải gợi ý từ AI Coach...</div>
-                  ) : hintContent ? (
-                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5">
-                      <div className="font-semibold text-slate-900 dark:text-white">{hintContent.text}</div>
-                      <div className="text-slate-500 dark:text-slate-400 italic">Dịch: {hintContent.textVi}</div>
+                  {hintContent && (
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+                      <div className="font-semibold text-slate-900 dark:text-white whitespace-pre-line">{hintContent.text}</div>
+                      <div className="text-slate-500 dark:text-slate-400 italic whitespace-pre-line">{hintContent.textVi}</div>
                     </div>
-                  ) : null}
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Transcript Drawer / Sidebar (1 Col) */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col h-[600px]">
-              <h3 className="text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
+            {/* Transcript History Sidebar (1 Col) */}
+            <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col h-[500px] lg:h-[620px]">
+              <h3 className="text-xs font-black uppercase text-slate-500 dark:text-slate-400 mb-2.5 flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Nhật ký phỏng vấn</span>
+                <span>Nhật ký hội thoại</span>
               </h3>
 
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+              <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 text-xs">
                 {transcriptHistory.map((item, idx) => (
                   <div
                     key={idx}
-                    className={`p-3 rounded-2xl ${
+                    className={`p-2.5 rounded-xl ${
                       item.sender === 'AI'
                         ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/40 text-slate-900 dark:text-indigo-100'
-                        : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 ml-4'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 ml-3'
                     }`}
                   >
-                    <div className="font-bold text-[10px] text-slate-400 uppercase mb-1">
+                    <div className="font-bold text-[10px] text-slate-400 uppercase mb-0.5">
                       {item.sender === 'AI' ? (item.isFollowUp ? 'AI Follow-up' : 'AI Interviewer') : 'Ứng viên'}
+                      {item.isTranslated && (
+                        <span className="ml-1 text-[9px] text-amber-500 font-semibold">(Đã dịch)</span>
+                      )}
                     </div>
                     <div className="leading-relaxed">{item.text}</div>
+                    {item.translatedText && (
+                      <div className="mt-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px] text-indigo-600 dark:text-indigo-300">
+                        <strong>Chuẩn hóa ({interviewLang}):</strong> {item.translatedText}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1517,12 +1720,12 @@ export const AIInterviewStudioPage: React.FC = () => {
         )}
 
         {/* =========================================================================
-            STATE 3: COMPREHENSIVE POST-INTERVIEW EVALUATION REPORT
+            STATE 3: COMPREHENSIVE POST-INTERVIEW EVALUATION REPORT (Task 8)
         ========================================================================= */}
         {phase === 'REPORT' && report && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Top Score Banner */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-900 via-slate-900 to-violet-950 border border-slate-200/80 dark:border-slate-800 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="space-y-5 animate-in fade-in duration-300">
+            {/* Top Score Banner with 4 Clusters */}
+            <div className="p-5 sm:p-7 rounded-3xl bg-gradient-to-r from-indigo-900 via-slate-900 to-violet-950 border border-slate-200/80 dark:border-slate-800 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -1537,37 +1740,58 @@ export const AIInterviewStudioPage: React.FC = () => {
               </div>
 
               {/* Overall Score Circle */}
-              <div className="flex items-center gap-6 shrink-0">
-                <div className="text-center">
-                  <div className="text-4xl sm:text-5xl font-black text-amber-400 tracking-tight">
-                    {report.overallScore}
-                  </div>
-                  <div className="text-[11px] font-bold text-slate-300 uppercase mt-0.5">Điểm Tổng quan / 100</div>
+              <div className="text-center shrink-0">
+                <div className="text-4xl sm:text-5xl font-black text-amber-400 tracking-tight">
+                  {report.overallScore}
                 </div>
+                <div className="text-[10px] font-bold text-slate-300 uppercase mt-0.5">Điểm Tổng hợp / 100</div>
+              </div>
+            </div>
 
-                <div className="border-l border-white/10 pl-6 space-y-2 text-xs">
-                  <div>
-                    <span className="text-slate-400">Chuyên môn (Competency):</span>{' '}
-                    <strong className="text-emerald-400">{report.competencyScore} / 100</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400">Ngôn ngữ & Phản xạ (Language):</span>{' '}
-                    <strong className="text-indigo-400">{report.languageScore} / 100</strong>
-                  </div>
+            {/* 4 Distinct Score Clusters (Task 8.1) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Chuyên môn (Competency)</div>
+                <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                  {report.competencyScore}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Giao tiếp (Communication)</div>
+                <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
+                  {report.communicationScore || report.overallScore}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Ngôn ngữ (Language)</div>
+                <div className="text-2xl font-black text-violet-600 dark:text-violet-400 mt-1">
+                  {report.languageScore}
+                </div>
+                {report.isAnyAnswerTranslated && (
+                  <span className="text-[9px] text-amber-500 font-bold block mt-0.5">Một số câu qua dịch thuật</span>
+                )}
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Bản lĩnh (Performance)</div>
+                <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
+                  {report.performanceScore || report.overallScore}
                 </div>
               </div>
             </div>
 
-            {/* Strengths & Areas of Improvement */}
+            {/* Strengths & Weaknesses */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-2 text-xs font-black uppercase text-emerald-600 dark:text-emerald-400">
+              <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-black uppercase text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Điểm mạnh đã thể hiện</span>
+                  <span>Điểm mạnh ghi nhận</span>
                 </div>
-                <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+                <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
                   {report.strengths.map((str, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
+                    <li key={idx} className="flex items-start gap-1.5">
                       <span className="text-emerald-500 font-bold">•</span>
                       <span>{str}</span>
                     </li>
@@ -1575,14 +1799,14 @@ export const AIInterviewStudioPage: React.FC = () => {
                 </ul>
               </div>
 
-              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
-                <div className="flex items-center gap-2 text-xs font-black uppercase text-amber-600 dark:text-amber-400">
+              <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-black uppercase text-amber-600 dark:text-amber-400">
                   <AlertCircle className="w-4 h-4" />
-                  <span>Điểm cần cải thiện & Đào sâu</span>
+                  <span>Điểm cần cải thiện</span>
                 </div>
-                <ul className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+                <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
                   {report.weaknesses.map((w, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
+                    <li key={idx} className="flex items-start gap-1.5">
                       <span className="text-amber-500 font-bold">•</span>
                       <span>{w}</span>
                     </li>
@@ -1591,19 +1815,19 @@ export const AIInterviewStudioPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Question-by-Question Review */}
+            {/* Question Breakdown */}
             {report.questionReviews && report.questionReviews.length > 0 && (
-              <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-4">
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-indigo-500" />
                   <span>Phân tích chi tiết từng câu hỏi</span>
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {report.questionReviews.map((rev, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-2 text-xs"
+                      className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 space-y-1.5 text-xs"
                     >
                       <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
                         <span>Câu {rev.turnNumber || idx + 1}: {rev.question}</span>
@@ -1612,7 +1836,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                       <p className="text-slate-600 dark:text-slate-400 italic">
                         <strong>Bạn đã trả lời:</strong> "{rev.candidateAnswer}"
                       </p>
-                      <div className="p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/40 text-slate-800 dark:text-indigo-200">
+                      <div className="p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/40 text-slate-800 dark:text-indigo-200">
                         <strong>Gợi ý câu trả lời mẫu:</strong> {rev.suggestedAnswer}
                       </div>
                     </div>
@@ -1621,10 +1845,10 @@ export const AIInterviewStudioPage: React.FC = () => {
               </div>
             )}
 
-            {/* Linked Learning Recommendations to VocabFlow */}
+            {/* Linked Learning Recommendations */}
             {report.learningRecommendations && report.learningRecommendations.length > 0 && (
-              <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-emerald-500" />
                   <span>Lộ trình ôn tập gợi ý trên VocabFlow</span>
                 </h3>
@@ -1634,7 +1858,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                     <Link
                       key={idx}
                       to={rec.targetUrl}
-                      className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500/60 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/30 transition flex items-center justify-between group"
+                      className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-500/60 bg-slate-50/50 dark:bg-slate-800/40 transition flex items-center justify-between group"
                     >
                       <div>
                         <div className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400">
@@ -1650,11 +1874,10 @@ export const AIInterviewStudioPage: React.FC = () => {
               </div>
             )}
 
-            {/* Back Button */}
             <div className="flex justify-center pt-2">
               <button
                 onClick={() => setPhase('SETUP')}
-                className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer"
+                className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Thực hiện buổi phỏng vấn mới</span>
@@ -1663,16 +1886,14 @@ export const AIInterviewStudioPage: React.FC = () => {
           </div>
         )}
 
-        {/* =========================================================================
-            MODAL: DOCUMENT INGESTION (DOCX, PDF, TXT)
-        ========================================================================= */}
+        {/* Modal: Document Ingestion */}
         {docModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-            <div className="w-full max-w-lg p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div className="w-full max-w-lg p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2 font-black text-sm text-slate-900 dark:text-white">
                   <Upload className="w-4 h-4 text-indigo-500" />
-                  <span>Nạp tài liệu câu hỏi (DOCX / PDF / Text)</span>
+                  <span>Nạp tài liệu câu hỏi (Word / PDF / Text)</span>
                 </div>
                 <button onClick={() => setDocModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                   <X className="w-4 h-4" />
@@ -1687,57 +1908,35 @@ export const AIInterviewStudioPage: React.FC = () => {
                   type="text"
                   value={docTitle}
                   onChange={(e) => setDocTitle(e.target.value)}
-                  placeholder="VD: 50 Câu hỏi phỏng vấn React Frontend Senior"
+                  placeholder="VD: 50 Câu hỏi phỏng vấn Chuyên môn"
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Nội dung câu hỏi trích xuất
+                  Nội dung câu hỏi
                 </label>
                 <textarea
-                  rows={6}
+                  rows={5}
                   value={docRawText}
                   onChange={(e) => setDocRawText(e.target.value)}
-                  placeholder="Dán nội dung từ file Word / PDF tại đây..."
-                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono"
+                  placeholder="Dán nội dung câu hỏi tại đây..."
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-mono"
                 />
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={docIsPrivate}
-                    onChange={(e) => setDocIsPrivate(e.target.checked)}
-                    className="accent-indigo-600 rounded"
-                  />
-                  <span>Tài liệu cá nhân riêng tư (Chỉ dùng cho tài khoản của bạn)</span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={docContributeCommunity}
-                    onChange={(e) => setDocContributeCommunity(e.target.checked)}
-                    className="accent-indigo-600 rounded"
-                  />
-                  <span>Đồng ý đóng góp vào Thư viện Cộng đồng (Chờ Admin duyệt)</span>
-                </label>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={() => setDocModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300"
                 >
                   Đóng
                 </button>
                 <button
                   onClick={handleUploadDocument}
                   disabled={uploadingDoc || !docRawText.trim()}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs disabled:opacity-50"
+                  className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs disabled:opacity-50"
                 >
                   {uploadingDoc ? 'Đang trích xuất...' : 'Trích xuất & Lưu'}
                 </button>
@@ -1746,16 +1945,14 @@ export const AIInterviewStudioPage: React.FC = () => {
           </div>
         )}
 
-        {/* =========================================================================
-            MODAL: CATEGORY / POSITION PROPOSAL
-        ========================================================================= */}
+        {/* Modal: Category Proposal */}
         {proposalModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-            <div className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div className="w-full max-w-md p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2 font-black text-sm text-slate-900 dark:text-white">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span>Đề xuất Vị trí / Ngành nghề mới</span>
+                  <span>Đề xuất Vị trí / Ngành mới</span>
                 </div>
                 <button onClick={() => setProposalModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                   <X className="w-4 h-4" />
@@ -1770,35 +1967,33 @@ export const AIInterviewStudioPage: React.FC = () => {
                   type="text"
                   value={proposalName}
                   onChange={(e) => setProposalName(e.target.value)}
-                  placeholder="VD: Cloud Solutions Architect"
+                  placeholder="VD: Data Protection Officer"
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Mô tả & Kỹ năng yêu cầu
-                </label>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Mô tả</label>
                 <textarea
                   rows={3}
                   value={proposalDesc}
                   onChange={(e) => setProposalDesc(e.target.value)}
-                  placeholder="Mô tả ngắn gọn về vị trí này..."
-                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  placeholder="Mô tả ngắn gọn về vị trí..."
+                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={() => setProposalModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleSubmitProposal}
                   disabled={submittingProposal || !proposalName.trim()}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs disabled:opacity-50"
+                  className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs disabled:opacity-50"
                 >
                   {submittingProposal ? 'Đang gửi...' : 'Gửi đề xuất'}
                 </button>

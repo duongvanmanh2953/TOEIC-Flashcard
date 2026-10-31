@@ -15,7 +15,7 @@ export interface BillingStatus {
 export class InterviewBillingService {
   private readonly logger = new Logger(InterviewBillingService.name);
 
-  // Default configuration
+  // Configuration standards
   private readonly DEFAULT_SESSION_CREDIT_COST = 10;
   private readonly MAX_SESSION_DURATION_MINUTES = 30;
   private readonly MAX_TURNS_PER_SESSION = 15;
@@ -23,49 +23,60 @@ export class InterviewBillingService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Check if candidate is entitled to start an AI Interview session (Phần 10.1)
+   * Check if candidate is entitled to access AI Interview Studio (Phần 10.1 & 10.2)
+   * FAIL-CLOSED: AI Interview Studio is strictly reserved for Pro / Premium users.
    */
   async checkEntitlement(userId: string): Promise<BillingStatus> {
+    if (!userId) {
+      return {
+        allowed: false,
+        isPremium: false,
+        availableCredits: 0,
+        costPerSession: this.DEFAULT_SESSION_CREDIT_COST,
+        maxSessionMinutes: 0,
+        remainingMinutesToday: 0,
+      };
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { role: true },
     });
 
-    const isPremium = user?.role === Role.PREMIUM_USER || user?.role === Role.ADMIN || user?.role === Role.SUPER_ADMIN;
-
-    // Check existing usage records for today
-    const today = new Date().toISOString().slice(0, 10);
-    const usage = await this.prisma.entitlementUsage.findUnique({
-      where: { userId_date: { userId, date: today } },
-    });
-
-    // Premium users get unlimited or high quota; free users get 1 complimentary trial session
-    const sessionsToday = usage?.aiUsageCount || 0;
-    const allowed = isPremium || sessionsToday < 2;
+    const isPremium =
+      user?.role === Role.PREMIUM_USER ||
+      user?.role === Role.ADMIN ||
+      user?.role === Role.SUPER_ADMIN;
 
     return {
-      allowed,
-      isPremium,
-      availableCredits: isPremium ? 999 : Math.max(0, 2 - sessionsToday),
+      allowed: Boolean(isPremium),
+      isPremium: Boolean(isPremium),
+      availableCredits: isPremium ? 999 : 0,
       costPerSession: this.DEFAULT_SESSION_CREDIT_COST,
-      maxSessionMinutes: this.MAX_SESSION_DURATION_MINUTES,
-      remainingMinutesToday: isPremium ? 120 : 30,
+      maxSessionMinutes: isPremium ? this.MAX_SESSION_DURATION_MINUTES : 0,
+      remainingMinutesToday: isPremium ? 120 : 0,
     };
+  }
+
+  /**
+   * Strictly enforces Pro entitlement across all endpoints (Fail-Closed)
+   */
+  async ensureProEntitlement(userId: string): Promise<void> {
+    const entitlement = await this.checkEntitlement(userId);
+    if (!entitlement.allowed) {
+      throw new ForbiddenException(
+        'AI Interview Studio là đặc quyền dành riêng cho học viên gói Pro / Premium. Vui lòng nâng cấp tài khoản để bắt đầu phòng phỏng vấn 1:1 với AI.'
+      );
+    }
   }
 
   /**
    * Reserve credits with idempotency key before starting session (Phần 10.3)
    */
   async reserveSessionCredits(userId: string, sessionId?: string | null, idempotencyKey?: string) {
-    const entitlement = await this.checkEntitlement(userId);
-    if (!entitlement.allowed) {
-      throw new ForbiddenException(
-        'Bạn đã sử dụng hết hạn mức phỏng vấn hôm nay. Vui lòng nâng cấp gói Pro/Premium để tiếp tục luyện tập không giới hạn.'
-      );
-    }
+    await this.ensureProEntitlement(userId);
 
     const key = idempotencyKey || `session_res_${userId}_${sessionId || Date.now()}`;
-    // Check if transaction already exists for idempotency
     const existing = await this.prisma.interviewCreditTransaction.findUnique({
       where: { idempotencyKey: key },
     });
@@ -94,7 +105,7 @@ export class InterviewBillingService {
     const idempotencyKey = `settle_${sessionId}_${Date.now()}`;
     const today = new Date().toISOString().slice(0, 10);
 
-    // Increment AI usage in entitlement tracker
+    // Track usage record
     await this.prisma.entitlementUsage.upsert({
       where: { userId_date: { userId, date: today } },
       create: {

@@ -10,7 +10,7 @@ function resolveApiBaseUrl(raw?: string): string {
 
 const api = axios.create({
   baseURL: resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL),
-  timeout: 12000,
+  timeout: 35000,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
