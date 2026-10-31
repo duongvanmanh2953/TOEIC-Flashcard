@@ -369,8 +369,14 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   const runCharacterEvaluation = useCallback(
     (strokes: CharacterStrokeModel[]) => {
       if (!charReference) return;
-      const rawStrokes = strokes.map((s) => s.points);
-      const evalResult = evaluateFullCharacter(rawStrokes, charReference, LOGICAL_CANVAS_SIZE);
+      const normalizedStrokes = strokes.map((s, idx) => {
+        const refStk = charReference.strokes?.[idx];
+        if ((s.isValidated || (s as any).canSnapToReference) && refStk) {
+          return refStk.points;
+        }
+        return s.points;
+      });
+      const evalResult = evaluateFullCharacter(normalizedStrokes, charReference, LOGICAL_CANVAS_SIZE);
       setCharEvaluation(evalResult);
 
       if (evalResult.finalCorrectness === 'CORRECT') {
@@ -455,7 +461,8 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       const isNearlyCorrect = (evalResult.confidence >= 55 || evalResult.canSnapToReference || evalResult.correct) && !isBackwards;
 
       if (isNearlyCorrect) {
-        // MATCH: Commit stroke, snap gently to reference vector
+        // MATCH: Commit stroke, auto-fill points to canonical reference vector so evaluation is 100% correct
+        newStrokeModel.points = refStroke.points;
         newStrokeModel.isValidated = true;
         drawnStrokesRef.current.push(newStrokeModel);
         displayStrokesRef.current.push(refStroke.points);

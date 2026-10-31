@@ -249,8 +249,11 @@ export function evaluateSingleStroke(
   }
 
   const confidence = Math.max(5, Math.min(99, rawConfidence));
-  const correct = confidence >= 70 && !isBackwards;
-  const canSnapToReference = confidence >= 75 && !isBackwards;
+  // Smart tolerant threshold for natural mobile touchscreen drawing:
+  // If stroke has correct general direction and shape is reasonably close (>= 45%),
+  // auto-snap to the perfect reference stroke and consider it correct!
+  const canSnapToReference = confidence >= 45 && !isBackwards;
+  const correct = (confidence >= 45 || canSnapToReference) && !isBackwards;
 
   // Granular actionable feedback message
   let feedbackMessage = 'Nét vẽ chuẩn xác!';

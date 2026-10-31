@@ -40,6 +40,7 @@ const CustomQuizPage = lazy(() => import('./pages/CustomQuizPage').then(m => ({ 
 const SubscriptionUpgradePage = lazy(() => import('./pages/SubscriptionUpgradePage').then(m => ({ default: m.SubscriptionUpgradePage })));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
 const AICoachStudioPage = lazy(() => import('./pages/AICoachStudioPage').then(m => ({ default: m.AICoachStudioPage })));
+const AIInterviewStudioPage = lazy(() => import('./pages/AIInterviewStudioPage').then(m => ({ default: m.AIInterviewStudioPage })));
 const GrammarMasteryPage = lazy(() => import('./pages/grammar/GrammarMasteryPage').then(m => ({ default: m.GrammarMasteryPage })));
 const HandwritingStudioPage = lazy(() => import('./pages/handwriting/HandwritingStudioPage').then(m => ({ default: m.HandwritingStudioPage })));
 
@@ -319,6 +320,8 @@ export const App: React.FC = () => {
               <Route path="/ai-tutor" element={<AICoachStudioPage />} />
               <Route path="/ai-turbo" element={<Navigate to="/ai-tutor" replace />} />
               <Route path="/coach" element={<AICoachStudioPage />} />
+              <Route path="/interview" element={<AIInterviewStudioPage />} />
+              <Route path="/interview-studio" element={<Navigate to="/interview" replace />} />
               <Route path="/games" element={<GameLobbyPage />} />
               <Route path="/games/word-match" element={<WordMatchGame />} />
               <Route path="/games/scramble" element={<WordScrambleGame />} />

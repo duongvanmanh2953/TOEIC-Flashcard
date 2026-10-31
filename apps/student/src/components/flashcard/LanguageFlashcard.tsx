@@ -222,7 +222,7 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
             {/* Chinese Pinyin with Tone indication */}
             {language.id === 'zh' && item.pinyin && showPinyin && (
               <div className="flex items-center justify-center gap-2">
-                <p className="text-lg sm:text-xl font-semibold text-red-600 dark:text-red-400 tracking-wide font-mono">
+                <p className="text-base sm:text-xl font-semibold text-red-600 dark:text-red-400 tracking-wide font-mono truncate max-w-full px-2">
                   {item.pinyin}
                 </p>
                 {item.tone && (
@@ -235,28 +235,28 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
 
             {/* Japanese Romaji */}
             {language.id === 'ja' && item.romaji && showRomaji && (
-              <p className="text-base sm:text-lg font-medium text-rose-500 dark:text-rose-400 italic">
+              <p className="text-sm sm:text-lg font-medium text-rose-500 dark:text-rose-400 italic truncate max-w-full px-2">
                 {item.romaji}
               </p>
             )}
 
             {/* Korean Romanization */}
             {language.id === 'ko' && item.transliteration && (
-              <p className="text-base sm:text-lg font-medium text-sky-600 dark:text-sky-400 font-mono">
+              <p className="text-sm sm:text-lg font-medium text-sky-600 dark:text-sky-400 font-mono truncate max-w-full px-2">
                 {item.transliteration}
               </p>
             )}
 
             {/* Thai Transliteration */}
             {language.id === 'th' && item.transliteration && (
-              <p className="text-base sm:text-lg font-medium text-amber-600 dark:text-amber-400 font-mono">
+              <p className="text-sm sm:text-lg font-medium text-amber-600 dark:text-amber-400 font-mono truncate max-w-full px-2">
                 {item.transliteration}
               </p>
             )}
 
             {/* Phonetic / IPA representation */}
             {(item.phonetic || item.pronunciation) && (
-              <p className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-500 tracking-wider">
+              <p className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-500 tracking-wider truncate max-w-full px-2" title={item.phonetic || item.pronunciation}>
                 {item.phonetic || item.pronunciation}
               </p>
             )}

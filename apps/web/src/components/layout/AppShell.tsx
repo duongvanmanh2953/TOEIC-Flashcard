@@ -50,6 +50,7 @@ import {
   User,
   PenTool,
   BookCheck,
+  Briefcase,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
@@ -84,6 +85,7 @@ export const AppShell: React.FC = () => {
   const isFullHeightPage =
     location.pathname.startsWith('/coach') ||
     location.pathname.startsWith('/ai-tutor') ||
+    location.pathname.startsWith('/interview') ||
     location.pathname.startsWith('/notes');
   const isFullHeightChat = isFullHeightPage;
 
@@ -600,6 +602,7 @@ export const AppShell: React.FC = () => {
           badge: userNotesCount > 0 ? `${userNotesCount}` : undefined,
         },
         { to: '/coach', label: 'Gia sư AI Personal Coach', icon: Mic },
+        { to: '/interview', label: 'AI Interview Studio (Phỏng vấn)', icon: Briefcase, badge: 'PRO' },
         { to: '/ai-tutor', label: t('nav.aiTutor', 'Gia sư AI Studio'), icon: BrainCircuit },
       ],
     },
@@ -1047,7 +1050,7 @@ export const AppShell: React.FC = () => {
               </div>
 
               {/* 3. Mobile Header Actions Bar (Now nicely tucked in sidebar) */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1061,7 +1064,7 @@ export const AppShell: React.FC = () => {
                   className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-800 transition text-center"
                 >
                   <BookOpen className="w-4 h-4 text-indigo-500 mb-1" />
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Ghi chép</span>
+                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Ghi chép</span>
                 </button>
 
                 <button
@@ -1077,7 +1080,19 @@ export const AppShell: React.FC = () => {
                   className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-800 transition text-center"
                 >
                   <MessageSquare className="w-4 h-4 text-indigo-500 mb-1" />
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Tin nhắn</span>
+                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Tin nhắn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setSupportModalOpen(true);
+                  }}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-50 dark:hover:bg-slate-800 transition text-center"
+                >
+                  <Headphones className="w-4 h-4 text-indigo-500 mb-1" />
+                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">CSKH</span>
                 </button>
 
                 <button
@@ -1090,7 +1105,7 @@ export const AppShell: React.FC = () => {
                   ) : (
                     <Moon className="w-4 h-4 text-indigo-500 mb-1" />
                   )}
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
                     {theme === 'dark' ? 'Sáng' : 'Tối'}
                   </span>
                 </button>
@@ -1276,7 +1291,7 @@ export const AppShell: React.FC = () => {
               title="Tin nhắn học tập E2EE"
               className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 flex items-center gap-1.5 transition shadow-xs cursor-pointer"
             >
-              <VocabFlowLogo size="xs" showContainer={false} className="w-4 h-4 object-contain" />
+              <MessageSquare className="w-4 h-4" />
               <span className="hidden xl:inline">Tin nhắn</span>
             </button>
           </div>
@@ -1287,8 +1302,8 @@ export const AppShell: React.FC = () => {
           data-scroll-container="true"
           className={`flex-1 w-full min-h-0 ${
             isFullHeightPage
-              ? 'flex flex-col overflow-hidden p-0 max-w-none h-full'
-              : 'max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8'
+              ? 'flex flex-col overflow-hidden p-0 max-w-none h-full pb-20 lg:pb-0'
+              : 'max-w-[1680px] mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8'
           }`}
         >
           <Outlet />
@@ -1501,13 +1516,13 @@ export const AppShell: React.FC = () => {
         </div>
       </ModalPortal>
 
-      {/* Right-Docked Vertical-Drag CSKH Support Button (Hidden for Admin) */}
+      {/* Right-Docked Vertical-Drag CSKH Support Button (Hidden for Admin & hidden on mobile so it never covers cards/content) */}
       {showSupportBtn && !isAdmin && (
         <div
           style={{
             top: btnPosY ? `${btnPosY}px` : '70vh',
           }}
-          className={`fixed right-0 z-40 touch-none select-none transition-shadow ${isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab'
+          className={`hidden sm:block fixed right-0 z-40 touch-none select-none transition-shadow ${isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab'
             }`}
           onMouseDown={(e) => {
             handleDragStart(e.clientY);
@@ -1557,9 +1572,9 @@ export const AppShell: React.FC = () => {
               </div>
             </div>
 
-            {/* Logo trực tiếp, không padding, không viền bo */}
+            {/* CSKH Support Headphones Icon */}
             <div className="relative shrink-0 flex items-center justify-center w-7 h-7">
-              <VocabFlowLogo size="xs" showContainer={false} className="w-6 h-6 object-contain group-hover:scale-110 transition-transform" />
+              <Headphones className="w-5 h-5 text-indigo-300 group-hover:text-white group-hover:scale-110 transition-all" />
               {unreadSupportCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-slate-900 animate-pulse" />
               )}
@@ -1639,7 +1654,7 @@ export const AppShell: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <VocabFlowLogo size="xs" showContainer={false} className="w-3.5 h-3.5 object-contain" />
+                  <Headphones className="w-3.5 h-3.5 text-indigo-500" />
                   <span>CSKH</span>
                 </button>
                 <button
@@ -2034,7 +2049,7 @@ export const AppShell: React.FC = () => {
         }}
         aria-label="Ghi chép nhanh"
         title="Ghi chép nhanh (Alt+N)"
-        className="fixed bottom-20 lg:bottom-6 right-5 z-40 w-11 h-11 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/60 dark:border-slate-700/60 shadow-lg shadow-slate-900/10 dark:shadow-black/30 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group cursor-pointer"
+        className="hidden lg:flex fixed bottom-6 right-5 z-40 w-11 h-11 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/60 dark:border-slate-700/60 shadow-lg shadow-slate-900/10 dark:shadow-black/30 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group cursor-pointer"
       >
         <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
       </button>

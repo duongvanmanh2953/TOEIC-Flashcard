@@ -535,6 +535,58 @@ class AudioEngine {
   public playNovaMultilingualTTS = this.playMultilingualMaleTTS.bind(this);
 
   /**
+   * Universal Speech Synthesis Method
+   * Directly speaks given text in the requested language (or current target locale),
+   * providing instant client-side Web Speech playback with resilient fallback.
+   */
+  public speak(
+    text: string,
+    langOrLocale: string = 'en',
+    onEnd?: () => void,
+    onError?: (err: any) => void
+  ): void {
+    const clean = text.replace(/[*#_`]/g, '').trim();
+    if (!clean) {
+      onEnd?.();
+      return;
+    }
+
+    this.stop();
+    const sessionId = ++this.currentSessionId;
+    this.isCurrentlyPlaying = true;
+
+    // Detect target locale from language code
+    let targetLocale = 'en-US';
+    const lang = (langOrLocale || 'en').toLowerCase().trim();
+    if (lang === 'vi' || lang.startsWith('vi-')) targetLocale = 'vi-VN';
+    else if (lang === 'ja' || lang.startsWith('ja-')) targetLocale = 'ja-JP';
+    else if (lang === 'ko' || lang.startsWith('ko-')) targetLocale = 'ko-KR';
+    else if (lang === 'zh' || lang.startsWith('zh-')) targetLocale = 'zh-CN';
+    else if (lang === 'fr' || lang.startsWith('fr-')) targetLocale = 'fr-FR';
+    else if (lang === 'de' || lang.startsWith('de-')) targetLocale = 'de-DE';
+    else if (lang === 'es' || lang.startsWith('es-')) targetLocale = 'es-ES';
+    else if (lang.includes('-')) targetLocale = lang;
+
+    this.playMultilingualMaleTTS(
+      clean,
+      sessionId,
+      {
+        onEnd: () => {
+          this.isCurrentlyPlaying = false;
+          onEnd?.();
+        },
+        onError: (err) => {
+          this.isCurrentlyPlaying = false;
+          onError?.(err);
+          onEnd?.();
+        },
+      },
+      1.05,
+      targetLocale
+    );
+  }
+
+  /**
    * High-Fidelity Native Vietnamese TTS using direct Google Neural Audio Stream.
    * Guarantees 100% genuine Vietnamese pronunciation with crisp, fast conversational tempo.
    */

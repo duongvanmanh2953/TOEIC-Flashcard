@@ -24,6 +24,7 @@ import { CommunityKnowledgeModule } from './modules/community-knowledge/communit
 import { GrammarModule } from './modules/grammar/grammar.module';
 import { ScriptsModule } from './modules/scripts/scripts.module';
 import { ProgressModule } from './modules/progress/progress.module';
+import { InterviewModule } from './modules/interview/interview.module';
 import { RedisCacheModule } from './common/cache/redis-cache.module';
 import { RabbitMQModule } from './common/rabbitmq/rabbitmq.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -59,6 +60,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     GrammarModule,
     ScriptsModule,
     ProgressModule,
+    InterviewModule,
   ],
   providers: [
     {

@@ -197,6 +197,12 @@ model User {
   domainMasterySnapshots UserDomainMasterySnapshot[]
   recommendations        LearningRecommendation[]
 
+  // Module G: AI Interview Studio
+  interviewSessions          InterviewSession[]
+  interviewDocuments         InterviewDocument[]
+  interviewContributions     InterviewContribution[]
+  interviewCategoryProposals InterviewCategoryProposal[]
+
   @@index([email])
   @@index([role])
 }
@@ -2077,3 +2083,225 @@ model LearningRecommendation {
 
   @@index([userId, isCompleted])
 }
+
+// =============================================================================
+// AI INTERVIEW STUDIO & RAG INFRASTRUCTURE (PROMPT 8)
+// =============================================================================
+
+model InterviewIndustry {
+  id          String              @id @default(uuid())
+  code        String              @unique
+  name        String
+  nameVi      String
+  description String?
+  icon        String?             @default("Briefcase")
+  orderIndex  Int                 @default(0)
+  positions   InterviewPosition[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model InterviewPosition {
+  id             String              @id @default(uuid())
+  industryId     String
+  code           String              @unique
+  title          String
+  titleVi        String
+  description    String?
+  requiredSkills String[]            @default([])
+  technicalTags  String[]            @default([])
+  industry       InterviewIndustry   @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  questions      InterviewQuestion[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([industryId])
+}
+
+model InterviewQuestion {
+  id              String             @id @default(uuid())
+  positionId      String?
+  industryCode    String
+  title           String
+  body            String
+  suggestedAnswer String?
+  answerRubric    Json?
+  difficulty      Float              @default(3.0)
+  seniority       String             @default("Mid-level")
+  interviewType   String             @default("General Professional")
+  competencyTags  String[]           @default([])
+  language        String             @default("en")
+  source          String             @default("CURATED") // CURATED, COMMUNITY, PRIVATE, AI_GENERATED
+  sourceDocId     String?
+  ownerId         String?
+  isApproved      Boolean            @default(true)
+  position        InterviewPosition? @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([industryCode])
+  @@index([positionId])
+  @@index([source])
+  @@index([language])
+}
+
+model InterviewDocument {
+  id            String                  @id @default(uuid())
+  userId        String
+  title         String
+  fileName      String
+  fileMime      String
+  fileSize      Int
+  extractedText String
+  questionCount Int                     @default(0)
+  isPrivate     Boolean                 @default(true)
+  status        String                  @default("PARSED") // PENDING, PARSED, FAILED
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contribution  InterviewContribution?
+  chunks        InterviewKnowledgeChunk[]
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([userId])
+}
+
+model InterviewContribution {
+  id              String            @id @default(uuid())
+  documentId      String            @unique
+  userId          String
+  consentAccepted Boolean           @default(true)
+  consentVersion  String            @default("1.0.0")
+  consentTimestamp DateTime         @default(now())
+  status          String            @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes      String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  document        InterviewDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model InterviewCategoryProposal {
+  id               String   @id @default(uuid())
+  userId           String
+  proposedType     String   @default("INDUSTRY") // INDUSTRY, POSITION
+  name             String
+  parentCategory   String?
+  description      String?
+  exampleQuestions String[] @default([])
+  status           String   @default("PENDING") // PENDING, APPROVED, REJECTED, MERGED
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model InterviewKnowledgeChunk {
+  id           String             @id @default(uuid())
+  documentId   String?
+  ownerId      String?
+  visibility   String             @default("CURATED") // CURATED, COMMUNITY, PRIVATE
+  languageCode String             @default("en")
+  industryCode String
+  positionCode String?
+  content      String
+  keywords     String[]           @default([])
+  metadata     Json?
+  document     InterviewDocument? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([industryCode])
+  @@index([visibility])
+  @@index([languageCode])
+  @@index([ownerId])
+}
+
+model InterviewSession {
+  id                String               @id @default(uuid())
+  userId            String
+  languageId        String               @default("en")
+  supportLanguageId String               @default("vi")
+  industryCode      String
+  positionTitle     String
+  seniorityLevel    String               @default("Mid-level")
+  interviewType     String               @default("General Professional")
+  mode              String               @default("REALISTIC") // REALISTIC, COACH
+  questionMode      String               @default("SEQUENTIAL") // SEQUENTIAL, RANDOM, ADAPTIVE
+  interviewerStyle  String               @default("PROFESSIONAL") // PROFESSIONAL, FRIENDLY, STRICT, CHALLENGING
+  durationMinutes   Int                  @default(20)
+  status            String               @default("READY") // CREATED, READY, IN_PROGRESS, PAUSED, PROCESSING, COMPLETED, CANCELLED, FAILED
+  score             Float                @default(0.0)
+  turnsCount        Int                  @default(0)
+  startedAt         DateTime?
+  endedAt           DateTime?
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  turns             InterviewTurn[]
+  evaluation        InterviewEvaluation?
+  transactions      InterviewCreditTransaction[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+model InterviewTurn {
+  id                String           @id @default(uuid())
+  sessionId         String
+  turnNumber        Int
+  questionText      String
+  questionId        String?
+  candidateAnswer   String?
+  candidateAudioUrl String?
+  aiSpeechUrl       String?
+  isFollowUp        Boolean          @default(false)
+  followUpParentId  String?
+  hintLevelUsed     Int              @default(0)
+  usedSampleAnswer  Boolean          @default(false)
+  durationSec       Int              @default(0)
+  analysisJson      Json?
+  session           InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([sessionId, turnNumber])
+}
+
+model InterviewEvaluation {
+  id                   String           @id @default(uuid())
+  sessionId            String           @unique
+  overallScore         Float
+  competencyScore      Float
+  languageScore        Float
+  strengths            String[]         @default([])
+  weaknesses           String[]         @default([])
+  summaryMd            String
+  recommendationsJson  Json?
+  questionReviewsJson  Json
+  session              InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+}
+
+model InterviewCreditTransaction {
+  id             String            @id @default(uuid())
+  userId         String
+  sessionId      String?
+  amount         Int
+  type           String            // RESERVE, SETTLE, REFUND
+  idempotencyKey String            @unique
+  reason         String
+  session        InterviewSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdAt      DateTime          @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+}
+

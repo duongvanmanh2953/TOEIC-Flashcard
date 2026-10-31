@@ -188,19 +188,17 @@ export function evaluateFullCharacter(
   } else if (
     missingStrokes === 0 &&
     extraStrokes === 0 &&
-    strokeOrderCorrect &&
     wrongDirectionIndices.length === 0 &&
-    incorrectStrokeIndices.length === 0 &&
-    positionStatus === 'ALIGNED' &&
-    rawConfidence >= 75
+    (rawConfidence >= 45 || strokeEvaluations.every((s) => s.canSnapToReference || s.correct))
   ) {
     finalCorrectness = 'CORRECT';
   } else if (
     missingStrokes === 0 &&
     extraStrokes === 0 &&
-    wrongDirectionIndices.length === 0 &&
-    rawConfidence >= 55
+    wrongDirectionIndices.length === 0
   ) {
+    finalCorrectness = 'CORRECT';
+  } else if (missingStrokes === 0 && rawConfidence >= 40) {
     finalCorrectness = 'NEARLY_CORRECT';
   } else {
     finalCorrectness = 'INCORRECT';

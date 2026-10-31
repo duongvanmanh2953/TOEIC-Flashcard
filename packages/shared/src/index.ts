@@ -63,4 +63,5 @@ export * from './config/languageStandards';
 export * from './config/languageCapabilities';
 export { default as enTranslations } from './locales/en.json';
 export { default as viTranslations } from './locales/vi.json';
+export * from './interview';
 
