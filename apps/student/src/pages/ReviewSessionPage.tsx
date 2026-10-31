@@ -333,8 +333,8 @@ export const ReviewSessionPage: React.FC = () => {
     searchParams.get('type') === 'MEMORY_RESCUE'
       ? 'MEMORY_RESCUE'
       : searchParams.get('deckId')
-      ? `deck_${searchParams.get('deckId')}`
-      : searchParams.get('topic') || 'ALL';
+        ? `deck_${searchParams.get('deckId')}`
+        : searchParams.get('topic') || 'ALL';
 
   const [selectedTopic, setSelectedTopic] = useState<string>(initialTopic);
   const [topicOptions, setTopicOptions] = useState<any[]>(DEFAULT_TOPIC_OPTIONS);
@@ -832,7 +832,7 @@ export const ReviewSessionPage: React.FC = () => {
         accuracy: Math.round(((sessionStats.good + sessionStats.easy + 1) / totalReviews) * 100),
       });
       if (session?.id) {
-        api.post(`/reviews/${session.id}/complete`).catch(() => {});
+        api.post(`/reviews/${session.id}/complete`).catch(() => { });
       }
     }
   };
@@ -1005,11 +1005,10 @@ export const ReviewSessionPage: React.FC = () => {
                 <button
                   key={m.id}
                   onClick={() => setSessionMood(m.id as any)}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold transition border ${
-                    sessionMood === m.id
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                      : 'bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100'
-                  }`}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition border ${sessionMood === m.id
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100'
+                    }`}
                 >
                   {m.label}
                 </button>
@@ -1097,28 +1096,26 @@ export const ReviewSessionPage: React.FC = () => {
       )}
 
       {/* Top Controls: Mode Switcher & Topic Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
+      <div className="flex flex-col justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
         {/* Mode Switcher: Sleek, compact segmented bar */}
-        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar py-0.5">
+        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5">
           <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
             <button
               onClick={() => setStudyMode('flashcard')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                studyMode === 'flashcard'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'flashcard'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+                }`}
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Flashcard</span>
             </button>
             <button
               onClick={() => setStudyMode('quiz')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                studyMode === 'quiz'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'quiz'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+                }`}
             >
               <BrainCircuit className="w-3.5 h-3.5" />
               <span>Trắc nghiệm</span>
@@ -1129,11 +1126,10 @@ export const ReviewSessionPage: React.FC = () => {
                 setTypingInput('');
                 setTypingFeedback({ status: null, message: '' });
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                studyMode === 'typing'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'typing'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+                }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>Luyện gõ</span>
@@ -1143,22 +1139,20 @@ export const ReviewSessionPage: React.FC = () => {
                 setStudyMode('listening');
                 setListenFeedback(null);
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                studyMode === 'listening'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'listening'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+                }`}
             >
               <Volume2 className="w-3.5 h-3.5" />
               <span>Luyện nghe</span>
             </button>
             <button
               onClick={() => setStudyMode('speaking')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                studyMode === 'speaking'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'speaking'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+                }`}
             >
               <Mic className="w-3.5 h-3.5" />
               <span>Phát âm</span>
@@ -1166,11 +1160,10 @@ export const ReviewSessionPage: React.FC = () => {
             {isHandwritingSupportedForLanguage(activeLanguage?.id) && (
               <button
                 onClick={() => setStudyMode('handwriting')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                  studyMode === 'handwriting'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'handwriting'
+                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
+                  }`}
               >
                 <PenTool className="w-3.5 h-3.5" />
                 <span>Viết chữ</span>
@@ -1574,13 +1567,12 @@ export const ReviewSessionPage: React.FC = () => {
           {/* Typing Feedback */}
           {typingFeedback.status && (
             <div
-              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${
-                typingFeedback.status === 'correct'
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
-                  : typingFeedback.status === 'typo'
+              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${typingFeedback.status === 'correct'
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
+                : typingFeedback.status === 'typo'
                   ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-800 dark:text-amber-300'
                   : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
                 {typingFeedback.status === 'correct' ? (
@@ -1621,11 +1613,10 @@ export const ReviewSessionPage: React.FC = () => {
                 <button
                   key={spd}
                   onClick={() => setListenSpeed(spd)}
-                  className={`px-2 py-0.5 rounded-lg transition ${
-                    listenSpeed === spd
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className={`px-2 py-0.5 rounded-lg transition ${listenSpeed === spd
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
                 >
                   {spd}x
                 </button>
@@ -1675,11 +1666,10 @@ export const ReviewSessionPage: React.FC = () => {
           {/* Feedback */}
           {listenFeedback !== null && (
             <div
-              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${
-                listenFeedback
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
-                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
-              }`}
+              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${listenFeedback
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
+                : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
+                }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
                 {listenFeedback ? (

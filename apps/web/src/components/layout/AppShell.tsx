@@ -591,7 +591,7 @@ export const AppShell: React.FC = () => {
       title: '3. LUYỆN TẬP (PRACTICE)',
       items: [
         { to: '/review', label: t('nav.review', 'Ôn tập thông minh SRS'), icon: Sparkles },
-        { to: '/exams', label: 'Ngân hàng bộ đề', icon: GraduationCap, badge: 'TOEIC' },
+        { to: '/exams', label: 'Ngân hàng bộ đề', icon: GraduationCap },
         { to: '/custom-quiz', label: t('nav.customQuiz', 'Trắc nghiệm tùy chọn'), icon: HelpCircle },
         {
           to: '/notes',

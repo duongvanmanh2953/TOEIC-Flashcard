@@ -1,8 +1,9 @@
 /**
- * Stroke Evaluation Engine & Multi-Script Evaluator
- * Comprehensive character-level and stroke-level evaluation.
- * Calculates true geometric scores, detects missing/extra strokes,
- * out-of-order strokes, reverse strokes, and produces actionable feedback.
+ * Stroke Evaluation Engine & Multi-Script Recognition System (Phần B)
+ * Fully geometric, deterministic evaluation:
+ * - Detects missing strokes, extra strokes, out-of-order strokes, backwards strokes
+ * - Computes shape similarity, endpoint precision, direction cosine, and position alignment
+ * - Provides structured diagnostics without fake scoring or artificial auto-completion
  */
 
 import {
@@ -14,7 +15,7 @@ import {
 import { evaluateSingleStroke, sampleSvgPath, distance, resamplePoints } from './strokeMath';
 
 /**
- * Build CharacterReference from database/API character object
+ * Build CharacterReference from database/API/dictionary character object
  */
 export function buildCharacterReference(
   charData: {
@@ -30,8 +31,6 @@ export function buildCharacterReference(
   scriptCode: string,
   canvasSize: number = 500
 ): CharacterReference {
-  // SVG paths in KanjiVG / Hanzi are authored inside a 109x109 or 1024x1024 coordinate system.
-  // Standard KanjiVG is 109x109. If max coordinate > 200, assume 1024x1024.
   const firstPath = charData.svgPaths[0] || '';
   const is1024 = /1024|[4-9]\d{2}/.test(firstPath);
   const authoringSize = is1024 ? 1024 : 109;
@@ -63,7 +62,35 @@ export function buildCharacterReference(
 }
 
 /**
- * Full Character Evaluation
+ * Compute bounding box and geometric centroid of stroke set
+ */
+function computeBoundingBoxAndCenter(strokes: HandwritingStroke[]): { cx: number; cy: number; width: number; height: number } {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let sumX = 0, sumY = 0, totalPts = 0;
+
+  for (const s of strokes) {
+    for (const pt of s) {
+      if (pt.x < minX) minX = pt.x;
+      if (pt.x > maxX) maxX = pt.x;
+      if (pt.y < minY) minY = pt.y;
+      if (pt.y > maxY) maxY = pt.y;
+      sumX += pt.x;
+      sumY += pt.y;
+      totalPts++;
+    }
+  }
+
+  if (totalPts === 0) return { cx: 250, cy: 250, width: 0, height: 0 };
+  return {
+    cx: sumX / totalPts,
+    cy: sumY / totalPts,
+    width: Math.max(0, maxX - minX),
+    height: Math.max(0, maxY - minY),
+  };
+}
+
+/**
+ * Full Character Recognition & Evaluation Pipeline (Sections B1 - B4)
  */
 export function evaluateFullCharacter(
   userStrokes: HandwritingStroke[],
@@ -72,21 +99,25 @@ export function evaluateFullCharacter(
 ): CharacterEvaluationResult {
   const expectedCount = reference.strokeCount;
   const actualCount = userStrokes.length;
-  const countCorrect = expectedCount === actualCount;
+  const missingStrokes = Math.max(0, expectedCount - actualCount);
+  const extraStrokes = Math.max(0, actualCount - expectedCount);
 
   const strokeEvaluations: SingleStrokeEvaluation[] = [];
-  const mistakes: number[] = [];
+  const incorrectStrokeIndices: number[] = [];
+  const wrongDirectionIndices: number[] = [];
+  const wrongOrderIndices: number[] = [];
   const suggestions: string[] = [];
 
-  // Check stroke count discrepancies
-  if (actualCount < expectedCount) {
-    suggestions.push(`Bạn mới vẽ ${actualCount}/${expectedCount} nét. Hãy hoàn thành các nét còn lại!`);
-  } else if (actualCount > expectedCount) {
-    suggestions.push(`Ký tự này chỉ có ${expectedCount} nét chuẩn, bạn đã vẽ thừa ${actualCount - expectedCount} nét.`);
+  // 1. Missing or extra strokes diagnostics
+  if (missingStrokes > 0) {
+    suggestions.push(`Chưa đủ nét: Đã vẽ ${actualCount}/${expectedCount} nét. Còn thiếu ${missingStrokes} nét.`);
+  } else if (extraStrokes > 0) {
+    suggestions.push(`Phát hiện thừa nét: Ký tự có ${expectedCount} nét chuẩn, bạn đã vẽ ${actualCount} nét (thừa ${extraStrokes} nét).`);
   }
 
-  // Evaluate strokes in sequential order
+  // 2. Sequential Stroke Evaluation
   let totalStrokeScore = 0;
+  let validStrokeCount = 0;
   const evalCount = Math.min(actualCount, expectedCount);
 
   for (let i = 0; i < evalCount; i++) {
@@ -97,58 +128,135 @@ export function evaluateFullCharacter(
     const evalResult = evaluateSingleStroke(userStroke, refStroke.points, i, canvasSize, canvasSize);
     strokeEvaluations.push(evalResult);
 
-    if (!evalResult.correct) {
-      mistakes.push(i);
-      suggestions.push(`Nét thứ ${i + 1}: ${evalResult.feedbackMessage}`);
+    if (evalResult.directionCosine < -0.15) {
+      wrongDirectionIndices.push(i);
+      suggestions.push(`Nét thứ ${i + 1} bị ngược hướng. Chú ý điểm đặt bút và hướng kéo nét.`);
     }
+
+    if (!evalResult.correct) {
+      incorrectStrokeIndices.push(i);
+      suggestions.push(`Nét thứ ${i + 1}: ${evalResult.feedbackMessage}`);
+    } else {
+      validStrokeCount++;
+    }
+
     totalStrokeScore += evalResult.confidence;
   }
 
-  // Stroke order check: check if any subsequent stroke was actually drawn earlier
+  // 3. Stroke Order Detection (cross-match consecutive strokes)
   let strokeOrderCorrect = true;
-  if (actualCount >= 2 && expectedCount >= 2) {
-    // Check if user drew stroke 1 before stroke 0
-    if (userStrokes[0] && reference.strokes[1] && reference.strokes[0]) {
-      const matchWithStroke1 = evaluateSingleStroke(userStrokes[0], reference.strokes[1].points, 0, canvasSize, canvasSize);
-      const matchWithStroke0 = evaluateSingleStroke(userStrokes[0], reference.strokes[0].points, 0, canvasSize, canvasSize);
-      if (matchWithStroke1.confidence > matchWithStroke0.confidence + 25) {
-        strokeOrderCorrect = false;
-        suggestions.push('Cảnh báo thứ tự nét: Bạn đã vẽ nét thứ 2 trước nét thứ 1!');
-      }
+  if (actualCount >= 2 && expectedCount >= 2 && reference.strokes[0] && reference.strokes[1]) {
+    const matchWithStroke1 = evaluateSingleStroke(userStrokes[0], reference.strokes[1].points, 0, canvasSize, canvasSize);
+    const matchWithStroke0 = evaluateSingleStroke(userStrokes[0], reference.strokes[0].points, 0, canvasSize, canvasSize);
+    if (matchWithStroke1.confidence > matchWithStroke0.confidence + 25) {
+      strokeOrderCorrect = false;
+      wrongOrderIndices.push(0);
+      suggestions.push('Cảnh báo thứ tự nét: Bạn đã vẽ nét thứ 2 trước nét thứ 1!');
     }
   }
 
-  // Overall confidence
-  const avgStrokeScore = evalCount > 0 ? totalStrokeScore / evalCount : 0;
-  // Penalty for count mismatch
-  const countPenalty = Math.abs(expectedCount - actualCount) * 15;
-  const orderPenalty = strokeOrderCorrect ? 0 : 20;
+  // 4. Shape & Position Evaluation
+  const avgShapeSim = evalCount > 0
+    ? Math.round(strokeEvaluations.reduce((sum, s) => sum + s.shapeSimilarity, 0) / evalCount)
+    : 0;
 
-  const rawConfidence = Math.max(0, Math.min(100, Math.round(avgStrokeScore - countPenalty - orderPenalty)));
-  const recognized = rawConfidence >= 75 && countCorrect && strokeOrderCorrect;
+  const shapeStatus: 'GOOD' | 'FAIR' | 'POOR' = avgShapeSim >= 75 ? 'GOOD' : avgShapeSim >= 50 ? 'FAIR' : 'POOR';
 
-  if (recognized && suggestions.length === 0) {
-    suggestions.push('Xuất sắc! Ký tự chuẩn xác cả về cấu trúc, hướng nét và thứ tự viết.');
+  // Centroid position offset check
+  const userBox = computeBoundingBoxAndCenter(userStrokes);
+  const refStrokesArray = reference.strokes.map((s) => s.points);
+  const refBox = computeBoundingBoxAndCenter(refStrokesArray);
+  const centerOffset = Math.round(distance({ x: userBox.cx, y: userBox.cy }, { x: refBox.cx, y: refBox.cy }));
+  const positionStatus: 'ALIGNED' | 'MISALIGNED' = centerOffset <= 85 ? 'ALIGNED' : 'MISALIGNED';
+
+  if (positionStatus === 'MISALIGNED' && actualCount > 0) {
+    suggestions.push('Vị trí ký tự lệch khỏi trung tâm khung lưới Điền-Tự-Cách.');
   }
 
-  // Pre-morph mastery score (authentic measure of independent writing skill)
-  const preMorphMasteryScore = Math.max(0, Math.min(100, rawConfidence));
+  // 5. Final Correctness Classification (Case 1 - 5)
+  const avgStrokeScore = evalCount > 0 ? totalStrokeScore / evalCount : 0;
+  const countPenalty = (missingStrokes + extraStrokes) * 18;
+  const orderPenalty = strokeOrderCorrect ? 0 : 20;
+  const positionPenalty = positionStatus === 'MISALIGNED' ? 12 : 0;
+
+  const rawConfidence = Math.max(0, Math.min(100, Math.round(avgStrokeScore - countPenalty - orderPenalty - positionPenalty)));
+
+  let finalCorrectness: 'CORRECT' | 'NEARLY_CORRECT' | 'INCORRECT' | 'UNRECOGNIZED';
+
+  if (actualCount === 0 || evalCount === 0) {
+    finalCorrectness = 'UNRECOGNIZED';
+  } else if (
+    missingStrokes === 0 &&
+    extraStrokes === 0 &&
+    strokeOrderCorrect &&
+    wrongDirectionIndices.length === 0 &&
+    incorrectStrokeIndices.length === 0 &&
+    positionStatus === 'ALIGNED' &&
+    rawConfidence >= 75
+  ) {
+    finalCorrectness = 'CORRECT';
+  } else if (
+    missingStrokes === 0 &&
+    extraStrokes === 0 &&
+    wrongDirectionIndices.length === 0 &&
+    rawConfidence >= 55
+  ) {
+    finalCorrectness = 'NEARLY_CORRECT';
+  } else {
+    finalCorrectness = 'INCORRECT';
+  }
+
+  const recognized = finalCorrectness === 'CORRECT' || finalCorrectness === 'NEARLY_CORRECT';
+
+  if (recognized && suggestions.length === 0) {
+    suggestions.push('Xuất sắc! Ký tự chuẩn xác cả về cấu trúc, hướng nét, vị trí và thứ tự viết.');
+  }
 
   return {
+    recognizedCharacter: recognized ? reference.literal : '?',
+    expectedCharacter: reference.literal,
+    recognitionConfidence: rawConfidence,
+    expectedStrokeCount: expectedCount,
+    actualStrokeCount: actualCount,
+    validStrokeCount,
+    incorrectStrokeIndices,
+    missingStrokes,
+    extraStrokes,
+    wrongDirectionIndices,
+    wrongOrderIndices,
+    shapeEvaluation: {
+      similarity: avgShapeSim,
+      status: shapeStatus,
+    },
+    positionEvaluation: {
+      offset: centerOffset,
+      status: positionStatus,
+    },
+    finalCorrectness,
+    evaluationProvider: reference.hasRealSvgPaths ? 'KanjiVG-VectorModel' : 'GeometricResamplingEngine',
+    evaluationCapability: [
+      'stroke_count',
+      'stroke_order',
+      'stroke_direction',
+      'shape_similarity',
+      'position_alignment',
+    ],
+    suggestions,
+    canSnapToReference: finalCorrectness === 'CORRECT' || finalCorrectness === 'NEARLY_CORRECT',
+    preMorphMasteryScore: rawConfidence,
+
+    // Backward compatibility aliases
     recognized,
     confidence: rawConfidence,
     strokeCount: {
       expected: expectedCount,
       actual: actualCount,
-      correct: countCorrect,
+      correct: missingStrokes === 0 && extraStrokes === 0,
     },
     strokeOrder: {
       correct: strokeOrderCorrect,
-      mistakes,
+      mistakes: wrongOrderIndices,
     },
     strokeEvaluations,
-    suggestions,
-    canSnapToReference: recognized,
-    preMorphMasteryScore,
   };
 }

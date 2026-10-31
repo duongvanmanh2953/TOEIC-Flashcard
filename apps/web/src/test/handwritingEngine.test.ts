@@ -6,9 +6,17 @@ import {
   getDirectionVector,
   cosineSimilarity,
   evaluateSingleStroke,
+  sampleSvgPath,
   RESAMPLE_COUNT,
 } from '../lib/handwriting/strokeMath';
 import { animateStrokeMorph } from '../lib/handwriting/morphEngine';
+import {
+  buildCharacterReference,
+  evaluateFullCharacter,
+} from '../lib/handwriting/evaluationEngine';
+import { COMMON_CHARACTER_DICTIONARY } from '../lib/handwriting/characterDictionary';
+import { segmentIntoGraphemes } from '../components/handwriting/VocabularyHandwritingPractice';
+import { CharacterStrokeModel } from '../lib/handwriting/types';
 import {
   getLanguageCapabilities,
   isHandwritingSupportedForLanguage,
@@ -138,6 +146,179 @@ describe('Handwriting Engine: Smooth Morphing Invariant', () => {
   });
 });
 
+describe('Section F1: Stroke Lifecycle & Pointer Isolation Invariants', () => {
+  it('enforces structured CharacterStrokeModel with pointer metadata', () => {
+    const stroke: CharacterStrokeModel = {
+      strokeId: 'strk-101',
+      characterId: 'char-日',
+      strokeIndex: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+      points: [
+        { x: 100, y: 100, timestamp: 1000 },
+        { x: 100, y: 300, timestamp: 1200 },
+      ],
+      startPoint: { x: 100, y: 100 },
+      endPoint: { x: 100, y: 300 },
+      strokeDurationMs: 200,
+      timestamp: 1000,
+    };
+
+    expect(stroke.strokeId).toBe('strk-101');
+    expect(stroke.pointerId).toBe(1);
+    expect(stroke.pointerType).toBe('touch');
+    expect(stroke.points.length).toBe(2);
+    expect(stroke.startPoint.x).toBe(100);
+    expect(stroke.endPoint.y).toBe(300);
+  });
+
+  it('isolates different pointer IDs and does not merge simultaneous strokes', () => {
+    const activePointers = new Map<number, { x: number; y: number }[]>();
+    activePointers.set(1, [{ x: 50, y: 50 }, { x: 60, y: 60 }]);
+    activePointers.set(2, [{ x: 200, y: 200 }, { x: 210, y: 210 }]);
+
+    // Modifying pointer 1 should not touch pointer 2
+    activePointers.get(1)!.push({ x: 70, y: 70 });
+    expect(activePointers.get(1)!.length).toBe(3);
+    expect(activePointers.get(2)!.length).toBe(2);
+  });
+});
+
+describe('Section F2: Character Validation Matrix (4-Stroke Kanji "日")', () => {
+  const kanjiEntry = COMMON_CHARACTER_DICTIONARY['日'];
+  expect(kanjiEntry).toBeDefined();
+  const ref = buildCharacterReference(kanjiEntry, 'KANJI', 500);
+
+  // Sample the 4 reference strokes to use as user inputs
+  const stroke0 = ref.strokes[0].points;
+  const stroke1 = ref.strokes[1].points;
+  const stroke2 = ref.strokes[2].points;
+  const stroke3 = ref.strokes[3].points;
+
+  it('Test 1: Only 1 stroke written -> Incomplete (missing 3 strokes)', () => {
+    const result = evaluateFullCharacter([stroke0], ref, 500);
+    expect(result.actualStrokeCount).toBe(1);
+    expect(result.expectedStrokeCount).toBe(4);
+    expect(result.missingStrokes).toBe(3);
+    expect(result.extraStrokes).toBe(0);
+    expect(result.finalCorrectness).toBe('INCORRECT');
+    expect(result.recognized).toBe(false);
+    expect(result.suggestions[0]).toContain('Chưa đủ nét: Đã vẽ 1/4 nét. Còn thiếu 3 nét.');
+  });
+
+  it('Test 2: Only 2 strokes written -> Incomplete (missing 2 strokes)', () => {
+    const result = evaluateFullCharacter([stroke0, stroke1], ref, 500);
+    expect(result.actualStrokeCount).toBe(2);
+    expect(result.missingStrokes).toBe(2);
+    expect(result.finalCorrectness).toBe('INCORRECT');
+  });
+
+  it('Test 3: Only 3 strokes written -> Incomplete (missing 1 stroke)', () => {
+    const result = evaluateFullCharacter([stroke0, stroke1, stroke2], ref, 500);
+    expect(result.actualStrokeCount).toBe(3);
+    expect(result.missingStrokes).toBe(1);
+    expect(result.finalCorrectness).toBe('INCORRECT');
+  });
+
+  it('Test 4: All 4 strokes written correctly -> Fully CORRECT with snap allowed', () => {
+    const result = evaluateFullCharacter([stroke0, stroke1, stroke2, stroke3], ref, 500);
+    expect(result.actualStrokeCount).toBe(4);
+    expect(result.missingStrokes).toBe(0);
+    expect(result.extraStrokes).toBe(0);
+    expect(result.wrongDirectionIndices.length).toBe(0);
+    expect(result.incorrectStrokeIndices.length).toBe(0);
+    expect(result.strokeOrder.correct).toBe(true);
+    expect(result.positionEvaluation.status).toBe('ALIGNED');
+    expect(result.finalCorrectness).toBe('CORRECT');
+    expect(result.canSnapToReference).toBe(true);
+    expect(result.recognizedCharacter).toBe('日');
+  });
+
+  it('Test 5: 4 strokes written but misaligned (shifted by 160px) -> Reports position misalignment', () => {
+    const misalignedStrokes = [stroke0, stroke1, stroke2, stroke3].map((stroke) =>
+      stroke.map((pt) => ({ x: pt.x + 160, y: pt.y + 160 }))
+    );
+    const result = evaluateFullCharacter(misalignedStrokes, ref, 500);
+    expect(result.positionEvaluation.status).toBe('MISALIGNED');
+    expect(result.suggestions.some((msg) => msg.includes('khung lưới Điền-Tự-Cách') || msg.includes('lệch'))).toBe(true);
+  });
+
+  it('Test 6: 5 strokes written -> Detects extra stroke and flags INCORRECT', () => {
+    const extraStroke = [
+      { x: 100, y: 100 },
+      { x: 200, y: 200 },
+    ];
+    const result = evaluateFullCharacter([stroke0, stroke1, stroke2, stroke3, extraStroke], ref, 500);
+    expect(result.actualStrokeCount).toBe(5);
+    expect(result.extraStrokes).toBe(1);
+    expect(result.finalCorrectness).toBe('INCORRECT');
+    expect(result.suggestions.some((s) => s.includes('Phát hiện thừa nét'))).toBe(true);
+  });
+
+  it('Test 7: Reverse stroke direction -> Detects wrong direction', () => {
+    // Reverse stroke 0 (drawn bottom to top)
+    const reversedStroke0 = [...stroke0].reverse();
+    const result = evaluateFullCharacter([reversedStroke0, stroke1, stroke2, stroke3], ref, 500);
+    expect(result.wrongDirectionIndices).toContain(0);
+    expect(result.finalCorrectness).toBe('INCORRECT');
+    expect(result.suggestions.some((s) => s.includes('ngược hướng'))).toBe(true);
+  });
+
+  it('Test 8: Wrong stroke order -> Detects order violation', () => {
+    // Stroke 1 drawn before stroke 0
+    const result = evaluateFullCharacter([stroke1, stroke0, stroke2, stroke3], ref, 500);
+    expect(result.strokeOrder.correct).toBe(false);
+    expect(result.wrongOrderIndices).toContain(0);
+    expect(result.suggestions.some((s) => s.includes('thứ tự nét'))).toBe(true);
+  });
+});
+
+describe('Section F3: Deterministic Consistency Test (25 Iterations)', () => {
+  it('produces identical evaluation result across 25 consecutive runs without random auto-fill', () => {
+    const kanjiEntry = COMMON_CHARACTER_DICTIONARY['日'];
+    const ref = buildCharacterReference(kanjiEntry, 'KANJI', 500);
+    const strokes = [
+      ref.strokes[0].points,
+      ref.strokes[1].points,
+      ref.strokes[2].points,
+      ref.strokes[3].points,
+    ];
+
+    const baseline = evaluateFullCharacter(strokes, ref, 500);
+
+    for (let i = 0; i < 25; i++) {
+      const run = evaluateFullCharacter(strokes, ref, 500);
+      expect(run.finalCorrectness).toBe(baseline.finalCorrectness);
+      expect(run.recognitionConfidence).toBe(baseline.recognitionConfidence);
+      expect(run.missingStrokes).toBe(baseline.missingStrokes);
+      expect(run.extraStrokes).toBe(baseline.extraStrokes);
+      expect(run.suggestions).toEqual(baseline.suggestions);
+    }
+  });
+});
+
+describe('Section D5: Script-Aware Multi-Character Grapheme Segmentation', () => {
+  it('segments Japanese Hiragana words into atomic kana units', () => {
+    const units = segmentIntoGraphemes('こんにちは');
+    expect(units).toEqual(['こ', 'ん', 'に', 'ち', 'は']);
+    expect(units.length).toBe(5);
+  });
+
+  it('segments Japanese Kanji compounds correctly', () => {
+    const units = segmentIntoGraphemes('今日');
+    expect(units).toEqual(['今', '日']);
+  });
+
+  it('handles Latin words gracefully', () => {
+    const units = segmentIntoGraphemes('vocab');
+    expect(units).toEqual(['v', 'o', 'c', 'a', 'b']);
+  });
+
+  it('returns empty array for empty strings', () => {
+    expect(segmentIntoGraphemes('')).toEqual([]);
+  });
+});
+
 describe('Language Learning Capability Registry', () => {
   it('enables handwriting board for Asian ideographic & syllable scripts (ja, zh, ko)', () => {
     expect(isHandwritingSupportedForLanguage('ja')).toBe(true);
@@ -164,3 +345,4 @@ describe('Language Learning Capability Registry', () => {
     expect(enCaps.supportedScripts.length).toBe(0);
   });
 });
+

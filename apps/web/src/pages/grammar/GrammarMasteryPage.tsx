@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  JAPANESE_GRAMMAR_CATEGORIES,
+  JAPANESE_GRAMMAR_TOPIC_DETAILS,
+} from './japaneseCurriculum';
 
 interface GrammarRule {
   id: string;
@@ -99,6 +103,17 @@ export const GrammarMasteryPage: React.FC = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
+
+      // Dedicated Authentic Japanese Grammar Space
+      if (activeLanguage?.id === 'ja') {
+        setCategories(JAPANESE_GRAMMAR_CATEGORIES);
+        setSelectedCategory(JAPANESE_GRAMMAR_CATEGORIES[0]);
+        if (JAPANESE_GRAMMAR_CATEGORIES[0]?.topics?.length > 0) {
+          fetchTopicDetail(JAPANESE_GRAMMAR_CATEGORIES[0].topics[0].id);
+        }
+        return;
+      }
+
       const res: any = await api.get('/grammar/categories', {
         params: { languageId: activeLanguage?.id || 'en' },
       });
@@ -116,7 +131,15 @@ export const GrammarMasteryPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to load grammar categories:', err);
-      setCategories([]);
+      if (activeLanguage?.id === 'ja') {
+        setCategories(JAPANESE_GRAMMAR_CATEGORIES);
+        setSelectedCategory(JAPANESE_GRAMMAR_CATEGORIES[0]);
+        if (JAPANESE_GRAMMAR_CATEGORIES[0]?.topics?.length > 0) {
+          fetchTopicDetail(JAPANESE_GRAMMAR_CATEGORIES[0].topics[0].id);
+        }
+      } else {
+        setCategories([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -129,11 +152,22 @@ export const GrammarMasteryPage: React.FC = () => {
       setSelectedTopicId(topicId);
       setUserAnswers({});
       setSubmittedResults(null);
+
+      // Check Japanese curriculum topic detail
+      if (JAPANESE_GRAMMAR_TOPIC_DETAILS[topicId]) {
+        setTopicDetail(JAPANESE_GRAMMAR_TOPIC_DETAILS[topicId]);
+        return;
+      }
+
       const res: any = await api.get(`/grammar/topics/${topicId}`);
       const data = res?.data?.data || res?.data || res;
       setTopicDetail(data);
     } catch (err) {
-      console.error('Failed to load topic detail:', err);
+      if (JAPANESE_GRAMMAR_TOPIC_DETAILS[topicId]) {
+        setTopicDetail(JAPANESE_GRAMMAR_TOPIC_DETAILS[topicId]);
+      } else {
+        console.error('Failed to load topic detail:', err);
+      }
     } finally {
       setLoadingDetail(false);
     }
@@ -153,6 +187,30 @@ export const GrammarMasteryPage: React.FC = () => {
     if (!topicDetail || topicDetail.exercises.length === 0) return;
     if (isGuest || !user) {
       promptLogin('Đăng nhập để lưu tiến trình và lịch ôn tập ngữ pháp FSRS');
+      return;
+    }
+
+    // Japanese authentic curriculum grading
+    if (JAPANESE_GRAMMAR_TOPIC_DETAILS[topicDetail.id]) {
+      const exList = JAPANESE_GRAMMAR_TOPIC_DETAILS[topicDetail.id].exercises || [];
+      let correctCount = 0;
+      const results = exList.map((ex: any) => {
+        const userAns = (userAnswers[ex.id] || '').trim();
+        const isCorrect = userAns === ex.correctAnswer;
+        if (isCorrect) correctCount++;
+        return {
+          exerciseId: ex.id,
+          isCorrect,
+          correctAnswer: ex.correctAnswer,
+          explanationMd: ex.explanationMd,
+        };
+      });
+      setSubmittedResults({
+        correctCount,
+        totalCount: exList.length,
+        accuracyScore: Math.round((correctCount / exList.length) * 100),
+        results,
+      });
       return;
     }
 
@@ -187,11 +245,19 @@ export const GrammarMasteryPage: React.FC = () => {
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-            Kho Ngữ Pháp Tiếng Anh Học Thuật & TOEIC
+            {activeLanguage?.id === 'ja'
+              ? 'Kho Ngữ Pháp Tiếng Nhật JLPT & Giao Tiếp'
+              : activeLanguage?.id === 'en'
+              ? 'Kho Ngữ Pháp Tiếng Anh Học Thuật & Giao Tiếp'
+              : `Kho Ngữ Pháp ${activeLanguage?.name || ''} Chuyên Sâu`}
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-300 font-semibold leading-relaxed">
-            Học ngữ pháp bằng cấu trúc câu trực quan, phân tích ngữ cảnh thực tế và rèn luyện trắc nghiệm có giải thích chi tiết từng bẫy đề thi.
+            {activeLanguage?.id === 'ja'
+              ? 'Nắm vững các mẫu câu, trợ từ và thể động từ JLPT N5 - N1 qua các ví dụ thực tế và bài tập kiểm tra thông minh.'
+              : activeLanguage?.id === 'en'
+              ? 'Học ngữ pháp bằng cấu trúc câu trực quan, phân tích ngữ cảnh thực tế và rèn luyện trắc nghiệm có giải thích chi tiết.'
+              : `Học ngữ pháp ${activeLanguage?.name || ''} bằng cấu trúc câu trực quan, phân tích ngữ cảnh thực tế và bài tập kiểm tra FSRS.`}
           </p>
         </div>
       </div>
