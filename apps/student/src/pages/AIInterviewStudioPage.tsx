@@ -97,30 +97,6 @@ export const AIInterviewStudioPage: React.FC = () => {
     Array<{ turn: number; sender: 'AI' | 'CANDIDATE'; text: string; isFollowUp?: boolean }>
   >([]);
 
-  // Synchronize transcript history with sessionStorage (offline resilient, no DB clutter)
-  useEffect(() => {
-    if (sessionId && transcriptHistory.length > 0) {
-      try {
-        sessionStorage.setItem(`vf_interview_transcript_${sessionId}`, JSON.stringify(transcriptHistory));
-      } catch (_) {}
-    }
-  }, [sessionId, transcriptHistory]);
-
-  // Load cached transcript history on re-entry
-  useEffect(() => {
-    if (sessionId && transcriptHistory.length === 0) {
-      try {
-        const cached = sessionStorage.getItem(`vf_interview_transcript_${sessionId}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setTranscriptHistory(parsed);
-          }
-        }
-      } catch (_) {}
-    }
-  }, [sessionId]);
-
   // Hints & Translation
   const [hintDrawerOpen, setHintDrawerOpen] = useState<boolean>(false);
   const [activeHintLevel, setActiveHintLevel] = useState<1 | 2 | 3 | null>(null);
@@ -151,8 +127,7 @@ export const AIInterviewStudioPage: React.FC = () => {
   const [submittingProposal, setSubmittingProposal] = useState<boolean>(false);
 
   // Voice recording
-  const { isRecording, startRecording, stopRecording } = useVoiceRecorder();
-  const recordedTranscript = '';
+  const { isRecording, startRecording, stopRecording, transcript: recordedTranscript } = useVoiceRecorder();
 
   // Synchronize mic speech transcript to input
   useEffect(() => {
@@ -334,10 +309,10 @@ export const AIInterviewStudioPage: React.FC = () => {
         interviewLang === 'ja'
           ? `自己紹介をお願いします。これまでの経験と、${currentPositionObj?.titleVi || currentPositionObj?.title || 'このポジション'}に興味を持った理由を教えてください。`
           : interviewLang === 'ko'
-          ? `간단한 자기소개와 함께, ${currentPositionObj?.titleVi || currentPositionObj?.title || '이 직무'}에 지원하게 된 동기를 말씀해 주세요.`
-          : interviewLang === 'zh'
-          ? `请您做一个简短的自我介绍，并谈谈您为什么对 ${currentPositionObj?.titleVi || currentPositionObj?.title || '这个职位'} 感兴趣？`
-          : `Hello and welcome! Could you please introduce yourself and share what key experiences make you a great fit for this ${currentPositionObj?.title || 'position'}?`;
+            ? `간단한 자기소개와 함께, ${currentPositionObj?.titleVi || currentPositionObj?.title || '이 직무'}에 지원하게 된 동기를 말씀해 주세요.`
+            : interviewLang === 'zh'
+              ? `请您做一个简短的自我介绍，并谈谈您为什么对 ${currentPositionObj?.titleVi || currentPositionObj?.title || '这个职位'} 感兴趣？`
+              : `Hello and welcome! Could you please introduce yourself and share what key experiences make you a great fit for this ${currentPositionObj?.title || 'position'}?`;
 
       const mockId = `session_local_${Date.now()}`;
       setSessionId(mockId);
@@ -486,109 +461,49 @@ export const AIInterviewStudioPage: React.FC = () => {
     }
   };
 
-  // Request Progressive Hint with instant intelligent fallback
+  // Request Progressive Hint
   const handleRequestHint = async (level: 1 | 2 | 3) => {
+    if (!sessionId) return;
     setLoadingHint(true);
     setActiveHintLevel(level);
-
-    const getInstantHint = (lvl: 1 | 2 | 3) => {
-      const posTitle = currentPositionObj?.title || 'chuyên môn';
-      if (lvl === 1) {
-        return {
-          text: `Core Focus: Technical Depth, Architecture Decisions, Scalability, Concrete Metrics in ${posTitle}.`,
-          textVi: `Từ khóa cốt lõi: Phân tích kiến trúc, Lựa chọn kỹ thuật, Tối ưu hiệu năng, Con số định lượng thực tế trong ${posTitle}.`,
-        };
-      } else if (lvl === 2) {
-        return {
-          text: `STAR Framework Outline:
-• Situation: Project context & critical constraints
-• Task: Your exact responsibility
-• Action: Concrete technical solution applied
-• Result: Measurable outcome (e.g. latency -30%, throughput +2x)`,
-          textVi: `Dàn ý trả lời theo chuẩn STAR:
-• Tình huống (Situation): Bối cảnh dự án & thách thức lớn nhất
-• Nhiệm vụ (Task): Trách nhiệm trực tiếp của bạn
-• Hành động (Action): Các bước kỹ thuật bạn đã trực tiếp triển khai
-• Kết quả (Result): Con số định lượng đạt được và bài học rút ra`,
-        };
-      } else {
-        return {
-          text: `"In my recent experience as a ${posTitle}, we faced a critical challenge when... To address this, I designed a solution using... As a direct result, we improved latency by 35% and scaled smoothly to 100k users."`,
-          textVi: `"Trong dự án gần đây với vai trò ${posTitle}, nhóm tôi gặp bài toán phức tạp khi... Để giải quyết, tôi đã chủ trì thiết kế giải pháp... Kết quả là hệ thống giảm 35% độ trễ và vận hành ổn định cho hơn 100.000 người dùng."`,
-        };
-      }
-    };
-
     try {
-      if (sessionId && !sessionId.startsWith('session_local_')) {
-        const res = await api.post(`/interview/sessions/${sessionId}/hint`, {
-          turnNumber: currentTurnNumber,
-          hintLevel: level,
+      const res = await api.post(`/interview/sessions/${sessionId}/hint`, {
+        turnNumber: currentTurnNumber,
+        hintLevel: level,
+      });
+      const payload = res.data?.data !== undefined ? res.data.data : res.data;
+      if (payload) {
+        setHintContent({
+          text: payload.hint || payload.text,
+          textVi: payload.translationVi || payload.textVi,
         });
-        const payload = res.data?.data !== undefined ? res.data.data : res.data;
-        if (payload && (payload.hint || payload.text)) {
-          setHintContent({
-            text: payload.hint || payload.text,
-            textVi: payload.translationVi || payload.textVi || '',
-          });
-          return;
-        }
       }
-      setHintContent(getInstantHint(level));
     } catch (err) {
-      console.warn('Hint request fallback to instant smart hint:', err);
-      setHintContent(getInstantHint(level));
+      console.warn('Hint request failed:', err);
     } finally {
       setLoadingHint(false);
     }
   };
 
-  // Translate Question to Vietnamese with clean formatting & fallback
+  // Translate Question to Vietnamese
   const handleTranslateQuestion = async () => {
-    if (!currentQuestionText) return;
+    if (!sessionId || !currentQuestionText) return;
     if (translatedQuestion) {
       setTranslatedQuestion(null);
       return;
     }
     setTranslating(true);
     try {
-      let rawText = '';
-      if (sessionId && !sessionId.startsWith('session_local_')) {
-        const res = await api.post(`/interview/sessions/${sessionId}/translate`, {
-          text: currentQuestionText,
-          targetLang: supportLang || 'vi',
-        });
-        const payload = res.data?.data !== undefined ? res.data.data : res.data;
-        rawText = payload?.translated || '';
+      const res = await api.post(`/interview/sessions/${sessionId}/translate`, {
+        text: currentQuestionText,
+        targetLang: supportLang,
+      });
+      const payload = res.data?.data !== undefined ? res.data.data : res.data;
+      if (payload?.translated) {
+        setTranslatedQuestion(payload.translated);
       }
-
-      if (!rawText) {
-        if (currentQuestionText.includes('introduce yourself') || currentQuestionText.includes('自己紹介')) {
-          rawText = 'Bạn hãy giới thiệu ngắn gọn về bản thân, kinh nghiệm làm việc và lý do bạn ứng tuyển vào vị trí này?';
-        } else if (currentQuestionText.includes('challenging') || currentQuestionText.includes('problem')) {
-          rawText = 'Bạn hãy chia sẻ về một bài toán kỹ thuật phức tạp hoặc thách thức lớn nhất mà bạn đã giải quyết? Cách tiếp cận của bạn là gì?';
-        } else if (currentQuestionText.includes('bottleneck') || currentQuestionText.includes('latency')) {
-          rawText = 'Làm thế nào bạn phát hiện điểm nghẽn hiệu năng (bottleneck) và tối ưu độ trễ của hệ thống trong môi trường thực tế?';
-        } else if (currentQuestionText.includes('disagreement') || currentQuestionText.includes('team member')) {
-          rawText = 'Kể về một tình huống bạn có bất đồng quan điểm kỹ thuật với đồng nghiệp hoặc quản lý. Bạn đã giải quyết vấn đề đó như thế nào?';
-        } else {
-          rawText = currentQuestionText;
-        }
-      }
-
-      // Thorough cleanup of any conversational preamble, markdown headings (###) or quotes
-      let clean = rawText;
-      if (clean.includes('###') || clean.includes('Chào ') || clean.includes('phân tích') || clean.includes('Dịch:')) {
-        const lines = clean.split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter((l) => l && !l.startsWith('###') && !l.includes('Chào ') && !l.includes('phân tích') && !l.startsWith('Dịch:'));
-        clean = lines[lines.length - 1] || clean;
-      }
-      clean = clean.replace(/^[*\#\-\d.\s"':]+|["']$/g, '').trim();
-      setTranslatedQuestion(clean);
     } catch (err) {
-      console.warn('Translation failed, fallback to smart translation:', err);
-      setTranslatedQuestion('Bạn hãy giới thiệu ngắn gọn về bản thân, kinh nghiệm làm việc và lý do ứng tuyển vị trí này?');
+      console.warn('Translation failed:', err);
     } finally {
       setTranslating(false);
     }
@@ -675,7 +590,7 @@ export const AIInterviewStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 w-full h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pt-4 sm:pt-8 pb-28 sm:pb-10 px-3 sm:px-6 flex flex-col items-center">
+    <div className="flex-1 w-full h-full overflow-y-auto bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-6 sm:py-8 px-3 sm:px-6 flex flex-col items-center">
       <div className="w-full">
         {/* =========================================================================
             HEADER BAR (Tasteskill: Clean title, quiet border, real actions)
@@ -703,7 +618,7 @@ export const AIInterviewStudioPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             {/* Compact Language Space Badge */}
             <div className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 shadow-2xs">
-              <CountryFlag countryCode={activeLanguage?.countryCode || 'US'} languageId={activeLanguage?.id} />
+              <CountryFlag code={activeLanguage?.flag || 'US'} />
               <span>{activeLanguage?.name || 'Tiếng Anh'}</span>
               <span className="text-[10px] font-normal text-slate-400">({activeLanguage?.nativeName || 'English'})</span>
             </div>
@@ -740,44 +655,26 @@ export const AIInterviewStudioPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSetupStep(1)}
-                  className={`flex items-center gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer border ${
-                    setupStep === 1
-                      ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
-                      : setupStep > 1
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 font-bold'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 font-semibold'
-                  }`}
+                  className={`flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer ${setupStep === 1
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800'
+                    : setupStep > 1
+                      ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium'
+                      : 'text-slate-400 dark:text-slate-600 font-medium'
+                    }`}
                 >
                   <span
-                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg text-[11px] sm:text-xs font-black flex items-center justify-center shrink-0 ${
-                      setupStep === 1
-                        ? 'bg-white text-indigo-700 shadow-xs'
-                        : setupStep > 1
+                    className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${setupStep === 1
+                      ? 'bg-indigo-600 text-white'
+                      : setupStep > 1
                         ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
-                    }`}
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                      }`}
                   >
-                    {setupStep > 1 ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : '1'}
+                    {setupStep > 1 ? <Check className="w-3.5 h-3.5" /> : '1'}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className={`text-[9px] uppercase font-black tracking-wider leading-none ${
-                      setupStep === 1
-                        ? 'text-indigo-100'
-                        : setupStep > 1
-                        ? 'text-emerald-700 dark:text-emerald-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      Bước 1
-                    </div>
-                    <div className={`text-[11px] sm:text-xs truncate font-bold leading-tight mt-0.5 ${
-                      setupStep === 1
-                        ? 'text-white'
-                        : setupStep > 1
-                        ? 'text-emerald-900 dark:text-emerald-100'
-                        : 'text-slate-900 dark:text-slate-100'
-                    }`}>
-                      Vị trí
-                    </div>
+                  <div className="min-w-0 hidden sm:block">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Bước 1</div>
+                    <div className="text-xs sm:text-sm truncate">Vị trí & Cấp bậc</div>
                   </div>
                 </button>
 
@@ -785,44 +682,26 @@ export const AIInterviewStudioPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSetupStep(2)}
-                  className={`flex items-center gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer border ${
-                    setupStep === 2
-                      ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
-                      : setupStep > 2
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700 font-bold'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 font-semibold'
-                  }`}
+                  className={`flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer ${setupStep === 2
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800'
+                    : setupStep > 2
+                      ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium'
+                      : 'text-slate-400 dark:text-slate-600 font-medium'
+                    }`}
                 >
                   <span
-                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg text-[11px] sm:text-xs font-black flex items-center justify-center shrink-0 ${
-                      setupStep === 2
-                        ? 'bg-white text-indigo-700 shadow-xs'
-                        : setupStep > 2
+                    className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${setupStep === 2
+                      ? 'bg-indigo-600 text-white'
+                      : setupStep > 2
                         ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
-                    }`}
+                        : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                      }`}
                   >
-                    {setupStep > 2 ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : '2'}
+                    {setupStep > 2 ? <Check className="w-3.5 h-3.5" /> : '2'}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className={`text-[9px] uppercase font-black tracking-wider leading-none ${
-                      setupStep === 2
-                        ? 'text-indigo-100'
-                        : setupStep > 2
-                        ? 'text-emerald-700 dark:text-emerald-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      Bước 2
-                    </div>
-                    <div className={`text-[11px] sm:text-xs truncate font-bold leading-tight mt-0.5 ${
-                      setupStep === 2
-                        ? 'text-white'
-                        : setupStep > 2
-                        ? 'text-emerald-900 dark:text-emerald-100'
-                        : 'text-slate-900 dark:text-slate-100'
-                    }`}>
-                      Tiêu chuẩn
-                    </div>
+                  <div className="min-w-0 hidden sm:block">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Bước 2</div>
+                    <div className="text-xs sm:text-sm truncate">Tiêu chuẩn & Định dạng</div>
                   </div>
                 </button>
 
@@ -830,36 +709,22 @@ export const AIInterviewStudioPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSetupStep(3)}
-                  className={`flex items-center gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer border ${
-                    setupStep === 3
-                      ? 'bg-indigo-600 text-white font-bold border-indigo-600 shadow-md ring-2 ring-indigo-500/20'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 font-semibold'
-                  }`}
+                  className={`flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl transition text-left cursor-pointer ${setupStep === 3
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800'
+                    : 'text-slate-400 dark:text-slate-600 font-medium'
+                    }`}
                 >
                   <span
-                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg text-[11px] sm:text-xs font-black flex items-center justify-center shrink-0 ${
-                      setupStep === 3
-                        ? 'bg-white text-indigo-700 shadow-xs'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'
-                    }`}
+                    className={`w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 ${setupStep === 3
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                      }`}
                   >
                     3
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <div className={`text-[9px] uppercase font-black tracking-wider leading-none ${
-                      setupStep === 3
-                        ? 'text-indigo-100'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      Bước 3
-                    </div>
-                    <div className={`text-[11px] sm:text-xs truncate font-bold leading-tight mt-0.5 ${
-                      setupStep === 3
-                        ? 'text-white'
-                        : 'text-slate-900 dark:text-slate-100'
-                    }`}>
-                      Xác nhận
-                    </div>
+                  <div className="min-w-0 hidden sm:block">
+                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Bước 3</div>
+                    <div className="text-xs sm:text-sm truncate">Xác nhận & Bắt đầu</div>
                   </div>
                 </button>
               </div>
@@ -922,7 +787,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                         <span className="text-xs text-slate-400">({currentPositionObj.title})</span>
                       </div>
                       <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-                        {(currentPositionObj as any)?.category || 'Chuyên môn'}
+                        {currentPositionObj.category || 'Chuyên môn'}
                       </span>
                     </div>
 
@@ -942,7 +807,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                           {skill}
                         </span>
                       ))}
-                      {(currentPositionObj as any)?.techStack?.map((tech, idx) => (
+                      {currentPositionObj.techStack?.map((tech, idx) => (
                         <span
                           key={idx}
                           className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
@@ -1026,20 +891,18 @@ export const AIInterviewStudioPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div
                       onClick={() => setInterviewMode('REALISTIC')}
-                      className={`p-4 rounded-xl border cursor-pointer transition select-none flex flex-col justify-between ${
-                        interviewMode === 'REALISTIC'
-                          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500 ring-1 ring-indigo-500/20 text-slate-900 dark:text-white'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400'
-                      }`}
+                      className={`p-4 rounded-xl border cursor-pointer transition select-none flex flex-col justify-between ${interviewMode === 'REALISTIC'
+                        ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500 ring-1 ring-indigo-500/20 text-slate-900 dark:text-white'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400'
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="font-bold text-xs sm:text-sm">Mô phỏng áp lực thực tế (Realistic)</span>
                         <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            interviewMode === 'REALISTIC'
-                              ? 'border-indigo-600 bg-indigo-600'
-                              : 'border-slate-300 dark:border-slate-600'
-                          }`}
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${interviewMode === 'REALISTIC'
+                            ? 'border-indigo-600 bg-indigo-600'
+                            : 'border-slate-300 dark:border-slate-600'
+                            }`}
                         >
                           {interviewMode === 'REALISTIC' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
@@ -1051,20 +914,18 @@ export const AIInterviewStudioPage: React.FC = () => {
 
                     <div
                       onClick={() => setInterviewMode('COACH')}
-                      className={`p-4 rounded-xl border cursor-pointer transition select-none flex flex-col justify-between ${
-                        interviewMode === 'COACH'
-                          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500 ring-1 ring-indigo-500/20 text-slate-900 dark:text-white'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400'
-                      }`}
+                      className={`p-4 rounded-xl border cursor-pointer transition select-none flex flex-col justify-between ${interviewMode === 'COACH'
+                        ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-500 ring-1 ring-indigo-500/20 text-slate-900 dark:text-white'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-600 dark:text-slate-400'
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="font-bold text-xs sm:text-sm">Kèm cặp & Sửa lỗi ngay (Coach Mode)</span>
                         <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            interviewMode === 'COACH'
-                              ? 'border-indigo-600 bg-indigo-600'
-                              : 'border-slate-300 dark:border-slate-600'
-                          }`}
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${interviewMode === 'COACH'
+                            ? 'border-indigo-600 bg-indigo-600'
+                            : 'border-slate-300 dark:border-slate-600'
+                            }`}
                         >
                           {interviewMode === 'COACH' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                         </div>
@@ -1088,11 +949,10 @@ export const AIInterviewStudioPage: React.FC = () => {
                         key={mins}
                         type="button"
                         onClick={() => setDurationMinutes(mins)}
-                        className={`flex-1 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer ${
-                          durationMinutes === mins
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
-                        }`}
+                        className={`flex-1 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer ${durationMinutes === mins
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
+                          }`}
                       >
                         {mins} phút
                       </button>
@@ -1166,7 +1026,7 @@ export const AIInterviewStudioPage: React.FC = () => {
                         Ngôn ngữ & Thời lượng
                       </div>
                       <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-                        <CountryFlag countryCode={activeLanguage?.countryCode || 'US'} languageId={activeLanguage?.id} />
+                        <CountryFlag code={activeLanguage?.flag || 'US'} />
                         <span>{activeLanguage?.name || 'Tiếng Anh'}</span>
                       </div>
                       <div className="text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1199,8 +1059,8 @@ export const AIInterviewStudioPage: React.FC = () => {
                         activeLanguage?.id === 'vi'
                           ? 'Xin chào! Tôi là người phỏng vấn AI của bạn. Rất vui được gặp bạn trong buổi phỏng vấn hôm nay.'
                           : activeLanguage?.id === 'ja'
-                          ? 'こんにちは！AI面接官です。本日の面接を始めましょう。'
-                          : 'Hello and welcome to your professional interview session. Whenever you are ready, please click start.'
+                            ? 'こんにちは！AI面接官です。本日の面接を始めましょう。'
+                            : 'Hello and welcome to your professional interview session. Whenever you are ready, please click start.'
                       )
                     }
                     className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-slate-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 flex items-center justify-center gap-2 shadow-2xs transition shrink-0 cursor-pointer"
@@ -1297,19 +1157,18 @@ export const AIInterviewStudioPage: React.FC = () => {
 
                 <div className="flex items-center gap-2 mb-3">
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
-                      aiState === 'SPEAKING'
-                        ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                        : aiState === 'THINKING'
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${aiState === 'SPEAKING'
+                      ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                      : aiState === 'THINKING'
                         ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                         : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
-                    }`}
+                      }`}
                   >
                     {aiState === 'SPEAKING'
                       ? 'AI đang phát biểu...'
                       : aiState === 'THINKING'
-                      ? 'AI đang phân tích...'
-                      : 'Đang lắng nghe câu trả lời'}
+                        ? 'AI đang phân tích...'
+                        : 'Đang lắng nghe câu trả lời'}
                   </span>
 
                   <button
@@ -1332,15 +1191,9 @@ export const AIInterviewStudioPage: React.FC = () => {
                 </h2>
 
                 {translatedQuestion && (
-                  <div className="mt-3.5 p-3 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 text-slate-800 dark:text-indigo-200 text-xs sm:text-sm font-medium flex items-start gap-2.5 animate-in fade-in shadow-2xs">
-                    <Languages className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block mb-0.5">
-                        Bản dịch câu hỏi tham khảo:
-                      </span>
-                      <span className="leading-relaxed">{translatedQuestion}</span>
-                    </div>
-                  </div>
+                  <p className="mt-3 text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 font-medium italic max-w-xl animate-in fade-in">
+                    Dịch: "{translatedQuestion}"
+                  </p>
                 )}
               </div>
 
@@ -1398,11 +1251,10 @@ export const AIInterviewStudioPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={isRecording ? stopRecording : startRecording}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
-                        isRecording
-                          ? 'bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${isRecording
+                        ? 'bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
                     >
                       {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-indigo-500" />}
                       <span>{isRecording ? 'Đang ghi âm (Dừng)' : 'Nói qua Micro'}</span>
@@ -1446,31 +1298,28 @@ export const AIInterviewStudioPage: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => handleRequestHint(1)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${
-                        activeHintLevel === 1
-                          ? 'bg-amber-500 text-white border-amber-500'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                      }`}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${activeHintLevel === 1
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
                     >
                       Cấp 1: Từ khóa
                     </button>
                     <button
                       onClick={() => handleRequestHint(2)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${
-                        activeHintLevel === 2
-                          ? 'bg-amber-500 text-white border-amber-500'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                      }`}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${activeHintLevel === 2
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
                     >
                       Cấp 2: Cấu trúc
                     </button>
                     <button
                       onClick={() => handleRequestHint(3)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${
-                        activeHintLevel === 3
-                          ? 'bg-amber-500 text-white border-amber-500'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                      }`}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition text-center ${activeHintLevel === 3
+                        ? 'bg-amber-500 text-white border-amber-500'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                        }`}
                     >
                       Cấp 3: Mẫu chuẩn
                     </button>
@@ -1499,11 +1348,10 @@ export const AIInterviewStudioPage: React.FC = () => {
                 {transcriptHistory.map((item, idx) => (
                   <div
                     key={idx}
-                    className={`p-3 rounded-2xl ${
-                      item.sender === 'AI'
-                        ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/40 text-slate-900 dark:text-indigo-100'
-                        : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 ml-4'
-                    }`}
+                    className={`p-3 rounded-2xl ${item.sender === 'AI'
+                      ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/40 text-slate-900 dark:text-indigo-100'
+                      : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 ml-4'
+                      }`}
                   >
                     <div className="font-bold text-[10px] text-slate-400 uppercase mb-1">
                       {item.sender === 'AI' ? (item.isFollowUp ? 'AI Follow-up' : 'AI Interviewer') : 'Ứng viên'}
