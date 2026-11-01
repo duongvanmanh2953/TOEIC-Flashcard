@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -15,7 +16,14 @@ import { InterviewService } from './interview.service';
 import { InterviewTaxonomyService } from './interview-taxonomy.service';
 import { InterviewDocumentService } from './interview-document.service';
 import { InterviewBillingService } from './interview-billing.service';
-import { InterviewSetupConfig, TranslationPurpose } from './interview.shared';
+import { InterviewAnalyzerService } from './interview-analyzer.service';
+import { InterviewLearningService } from './interview-learning.service';
+import {
+  InterviewSetupConfig,
+  TranslationPurpose,
+  InterviewActivity,
+  InterviewJobBrief,
+} from './interview.shared';
 
 @ApiTags('AI Interview Studio')
 @Controller('interview')
@@ -25,6 +33,8 @@ export class InterviewController {
     private readonly taxonomyService: InterviewTaxonomyService,
     private readonly documentService: InterviewDocumentService,
     private readonly billingService: InterviewBillingService,
+    private readonly analyzerService: InterviewAnalyzerService,
+    private readonly learningService: InterviewLearningService,
   ) {}
 
   @Public()
@@ -191,5 +201,99 @@ export class InterviewController {
     }
   ) {
     return this.documentService.submitCategoryProposal(userId, data);
+  }
+
+  // ===========================================================================
+  // AI INTERVIEW STUDIO V2 ENDPOINTS
+  // ===========================================================================
+
+  @UseGuards(JwtAuthGuard)
+  @Post('jd/analyze')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Analyze Job Description, extract requirements & editable skill matrix (Step 2)' })
+  analyzeJobDescription(
+    @CurrentUser('id') userId: string,
+    @Body()
+    payload: {
+      rawText: string;
+      industryCode?: string;
+      positionTitle?: string;
+    }
+  ) {
+    return this.analyzerService.analyzeJobDescription(
+      userId,
+      payload.rawText,
+      payload.industryCode || 'TECH',
+      payload.positionTitle
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('blueprint/generate')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate personalized interview blueprint based on job brief and duration' })
+  async generateBlueprint(
+    @CurrentUser('id') userId: string,
+    @Body()
+    payload: {
+      jobBrief: InterviewJobBrief;
+      durationMinutes?: number;
+      seniority?: string;
+    }
+  ) {
+    const profile = await this.learningService.getOrCreateProfile(userId);
+    return this.analyzerService.generateBlueprint(
+      userId,
+      payload.jobBrief,
+      payload.durationMinutes || 20,
+      payload.seniority || 'Mid-level',
+      profile
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sessions/:id/activity')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Emit and update real-time interview activity state' })
+  updateActivity(
+    @Param('id') sessionId: string,
+    @Body('activity') activity: InterviewActivity
+  ) {
+    return this.interviewService.updateSessionActivity(sessionId, activity);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('sessions/:id/activity')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current interview activity state' })
+  getActivity(@Param('id') sessionId: string) {
+    return this.interviewService.getSessionActivity(sessionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('learning-profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user interview learning memory & mastery profile' })
+  getLearningProfile(@CurrentUser('id') userId: string) {
+    return this.learningService.getOrCreateProfile(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('learning-profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reset interview learning memory for user privacy control' })
+  resetLearningProfile(@CurrentUser('id') userId: string) {
+    return this.learningService.resetProfile(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('learning-profile/toggle')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle adaptive personalization ON/OFF' })
+  togglePersonalization(
+    @CurrentUser('id') userId: string,
+    @Body('enabled') enabled: boolean
+  ) {
+    return this.learningService.setPersonalizationEnabled(userId, enabled);
   }
 }

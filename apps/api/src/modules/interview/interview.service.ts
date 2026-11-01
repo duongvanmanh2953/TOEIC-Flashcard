@@ -14,11 +14,15 @@ import {
   buildInterviewLanguageContext,
   MULTILINGUAL_CURATED_QUESTIONS,
   wrapAsUntrustedContext,
-} from './interview.shared';
+  InterviewActivity,
+} from '@vocabflow/shared';
+import { InterviewAnalyzerService } from './interview-analyzer.service';
+import { InterviewLearningService } from './interview-learning.service';
 
 @Injectable()
 export class InterviewService {
   private readonly logger = new Logger(InterviewService.name);
+  private readonly hintCache = new Map<string, { turnNumber: number; level: number; hint: string; translationVi: string }>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -26,6 +30,8 @@ export class InterviewService {
     private readonly taxonomyService: InterviewTaxonomyService,
     private readonly ragService: InterviewRagService,
     private readonly billingService: InterviewBillingService,
+    private readonly analyzerService: InterviewAnalyzerService,
+    private readonly learningService: InterviewLearningService,
   ) {}
 
   /**
@@ -124,6 +130,9 @@ export class InterviewService {
         interviewerStyle: config.interviewerStyle || 'PROFESSIONAL',
         durationMinutes: config.durationMinutes || 20,
         status: 'IN_PROGRESS',
+        jobBriefJson: (config.jobBrief as any) || null,
+        blueprintJson: (config.blueprint as any) || null,
+        currentActivity: 'speaking',
         startedAt: new Date(),
       },
     });
@@ -210,71 +219,139 @@ export class InterviewService {
 
     const cleanAnswer = this.ragService.sanitizeCandidateText(candidateAnswer);
 
-    // 2. RAG Context Retrieval for grounded evaluation
-    const relevantChunks = await this.ragService.retrieveRelevantKnowledge({
-      industryCode: session.industryCode,
-      languageCode: session.languageId,
-      queryText: `${currentTurn.questionText} ${cleanAnswer}`,
-      requesterUserId: userId,
-      limit: 3,
+    // 1. Update activity: analyzing
+    await this.prisma.interviewSession.update({
+      where: { id: sessionId },
+      data: { currentActivity: 'analyzing' },
     });
 
-    const knowledgeContext = relevantChunks.map((c) => c.content).join('\n---\n');
+    // 2. RAG Context Retrieval for grounded evaluation (selective, only if needed)
+    let knowledgeContext = '';
+    try {
+      const relevantChunks = await this.ragService.retrieveRelevantKnowledge({
+        industryCode: session.industryCode,
+        languageCode: session.languageId,
+        queryText: `${currentTurn.questionText} ${cleanAnswer}`,
+        requesterUserId: userId,
+        limit: 2,
+      });
+      if (relevantChunks.length > 0) {
+        knowledgeContext = relevantChunks.map((c) => c.content).join('\n---\n');
+      }
+    } catch (ragErr) {
+      this.logger.warn(`RAG retrieval warning: ${ragErr}`);
+    }
 
-    // 3. AI Turn Evaluation & Follow-up decision with translation-awareness
-    const isTranslatedAnswer = Boolean(options?.isTranslated);
-    const evaluation = await this.evaluateTurnWithAI(
-      session,
-      currentTurn.questionText,
-      cleanAnswer,
+    // 3. Consolidated Single-Pass Turn Orchestrator (Task 4)
+    const recentTurnsSummary = session.turns
+      .filter((t) => t.candidateAnswer)
+      .slice(-3)
+      .map((t) => `Q: ${t.questionText} | A: ${t.candidateAnswer}`)
+      .join('\n');
+
+    const orchestratorRes = await this.analyzerService.orchestrateTurn({
+      userId,
+      sessionId,
+      turnNumber,
+      currentQuestionText: currentTurn.questionText,
+      candidateAnswer: cleanAnswer,
+      isFollowUp: currentTurn.isFollowUp,
+      interviewLanguage: session.languageId,
+      supportLanguage: session.supportLanguageId,
+      jobTitle: session.positionTitle,
+      seniority: session.seniorityLevel,
+      recentTurnsSummary,
       knowledgeContext,
-      currentTurn.isFollowUp,
-      isTranslatedAnswer
+      blueprint: session.blueprintJson as any,
+    });
+
+    // 4. Record learning memory evidence (Task 7)
+    await this.learningService.recordTurnEvidence(
+      userId,
+      sessionId,
+      turnNumber,
+      {
+        demonstratedCompetencies: orchestratorRes.contentAssessment.demonstratedCompetencies,
+        missingEvidence: orchestratorRes.contentAssessment.missingEvidence,
+        technicalScore: orchestratorRes.contentAssessment.technicalAccuracyScore,
+      },
+      session.jobBriefJson as any
     );
 
-    // 4. Update current turn with answer & analysis
+    const isTranslatedAnswer = orchestratorRes.answerType === 'translated' || Boolean(options?.isTranslated);
+
+    // 5. Update current turn with candidate answer & analysis
     await this.prisma.interviewTurn.update({
       where: { id: currentTurn.id },
       data: {
         candidateAnswer: cleanAnswer,
         durationSec,
         analysisJson: {
-          ...evaluation,
+          ...orchestratorRes.contentAssessment,
           isTranslatedAnswer,
           originalTranscript: options?.originalTranscript || cleanAnswer,
-          detectedSourceLanguage: options?.detectedSourceLanguage || (isTranslatedAnswer ? session.supportLanguageId : session.languageId),
+          normalizedAnswer: orchestratorRes.normalizedAnswer,
+          detectedSourceLanguage: orchestratorRes.detectedLanguage || (isTranslatedAnswer ? session.supportLanguageId : session.languageId),
+          feedbackForUser: orchestratorRes.feedbackForUser,
+          tokenUsage: orchestratorRes.tokenUsage,
         } as any,
       },
     });
 
-    // 5. Follow-up decision:
-    // If answer is incomplete AND hasn't reached max follow-up (1 follow-up max per main question):
-    if (evaluation.shouldFollowUp && !currentTurn.isFollowUp && evaluation.followUpQuestion) {
+    // Update session metrics
+    const currentMetrics = (session.metricsJson as any) || {
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCachedTokens: 0,
+      totalCostUsd: 0,
+      totalRequests: 0,
+      turnLatenciesMs: [],
+    };
+    if (orchestratorRes.tokenUsage) {
+      currentMetrics.totalInputTokens += orchestratorRes.tokenUsage.inputTokens || 0;
+      currentMetrics.totalOutputTokens += orchestratorRes.tokenUsage.outputTokens || 0;
+      currentMetrics.totalCachedTokens += orchestratorRes.tokenUsage.cachedInputTokens || 0;
+      currentMetrics.totalCostUsd += orchestratorRes.tokenUsage.estimatedCostUsd || 0;
+      currentMetrics.totalRequests += 1;
+    }
+
+    // 6. Follow-up decision:
+    if (orchestratorRes.decision === 'ask_followup' && !currentTurn.isFollowUp && orchestratorRes.followUpQuestion) {
       const nextTurnNumber = turnNumber + 1;
       const followUpTurn = await this.prisma.interviewTurn.create({
         data: {
           sessionId: session.id,
           turnNumber: nextTurnNumber,
-          questionText: evaluation.followUpQuestion,
+          questionText: orchestratorRes.followUpQuestion,
           isFollowUp: true,
           followUpParentId: currentTurn.id,
           hintLevelUsed: 0,
         },
       });
 
+      await this.prisma.interviewSession.update({
+        where: { id: sessionId },
+        data: {
+          currentActivity: 'speaking',
+          metricsJson: currentMetrics as any,
+        },
+      });
+
       return {
         isSessionCompleted: false,
-        evaluation: session.mode === 'COACH' ? evaluation : undefined,
+        evaluation: session.mode === 'COACH' ? orchestratorRes.contentAssessment : undefined,
+        feedbackForUser: orchestratorRes.feedbackForUser,
         nextTurn: {
           turnNumber: nextTurnNumber,
           questionText: followUpTurn.questionText,
           isFollowUp: true,
           followUpParentQuestion: currentTurn.questionText,
         },
+        tokenUsage: orchestratorRes.tokenUsage,
       };
     }
 
-    // 6. Otherwise, advance to next main question or finish session
+    // 7. Otherwise, advance to next main question or finish session
     const allQuestions = await this.selectQuestionsForSession(
       {
         industryCode: session.industryCode,
@@ -308,9 +385,18 @@ export class InterviewService {
       },
     });
 
+    await this.prisma.interviewSession.update({
+      where: { id: sessionId },
+      data: {
+        currentActivity: 'speaking',
+        metricsJson: currentMetrics as any,
+      },
+    });
+
     return {
       isSessionCompleted: false,
-      evaluation: session.mode === 'COACH' ? evaluation : undefined,
+      evaluation: session.mode === 'COACH' ? orchestratorRes.contentAssessment : undefined,
+      feedbackForUser: orchestratorRes.feedbackForUser,
       nextTurn: {
         turnNumber: nextTurnNumber,
         questionText: nextTurn.questionText,
@@ -318,6 +404,7 @@ export class InterviewService {
         isFollowUp: false,
         totalQuestions: Math.min(5, allQuestions.length),
       },
+      tokenUsage: orchestratorRes.tokenUsage,
     };
   }
 
@@ -326,6 +413,11 @@ export class InterviewService {
    */
   async requestHint(userId: string, sessionId: string, turnNumber: number, hintLevel: 1 | 2 | 3) {
     await this.billingService.ensureProEntitlement(userId);
+
+    const cacheKey = `${sessionId}_${turnNumber}_${hintLevel}`;
+    if (this.hintCache.has(cacheKey)) {
+      return this.hintCache.get(cacheKey)!;
+    }
 
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },
@@ -368,12 +460,14 @@ Return JSON strictly:
       if (match) parsedHint = JSON.parse(match[0]);
     } catch {}
 
-    return {
+    const result = {
       turnNumber,
       level: hintLevel,
       hint: parsedHint?.content || 'Focus on concrete actions, measurable results, and technical tools.',
       translationVi: parsedHint?.contentVi || 'Hãy tập trung vào hành động cụ thể, kết quả đo lường được và công cụ kỹ thuật.',
     };
+    this.hintCache.set(cacheKey, result);
+    return result;
   }
 
   /**
@@ -615,15 +709,23 @@ Output strictly valid JSON with this structure:
       },
     });
 
-    // 5. Update session status
+    // 5. Update session status & activity
     await this.prisma.interviewSession.update({
       where: { id: sessionId },
       data: {
         status: 'COMPLETED',
+        currentActivity: 'completed',
         score: overallScore,
         endedAt: new Date(),
       },
     });
+
+    // 6. Finalize learning profile (Task 7)
+    try {
+      await this.learningService.finalizeSessionLearning(userId, session, evaluation);
+    } catch (e) {
+      this.logger.warn(`Failed to finalize learning memory: ${e}`);
+    }
 
     return {
       isSessionCompleted: true,
@@ -642,6 +744,21 @@ Output strictly valid JSON with this structure:
         learningRecommendations: evaluation.recommendationsJson as any,
       },
     };
+  }
+
+  async updateSessionActivity(sessionId: string, activity: InterviewActivity) {
+    return this.prisma.interviewSession.update({
+      where: { id: sessionId },
+      data: { currentActivity: activity },
+    });
+  }
+
+  async getSessionActivity(sessionId: string) {
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { id: sessionId },
+      select: { currentActivity: true, id: true, status: true },
+    });
+    return session || { currentActivity: 'idle', status: 'READY' };
   }
 
   /**

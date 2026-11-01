@@ -202,6 +202,7 @@ model User {
   interviewDocuments         InterviewDocument[]
   interviewContributions     InterviewContribution[]
   interviewCategoryProposals InterviewCategoryProposal[]
+  interviewLearningProfile   InterviewLearningProfile?
 
   @@index([email])
   @@index([role])
@@ -2239,6 +2240,10 @@ model InterviewSession {
   status            String               @default("READY") // CREATED, READY, IN_PROGRESS, PAUSED, PROCESSING, COMPLETED, CANCELLED, FAILED
   score             Float                @default(0.0)
   turnsCount        Int                  @default(0)
+  jobBriefJson      Json?
+  blueprintJson     Json?
+  metricsJson       Json?
+  currentActivity   String?              @default("idle")
   startedAt         DateTime?
   endedAt           DateTime?
   user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2303,5 +2308,23 @@ model InterviewCreditTransaction {
 
   @@index([userId])
   @@index([sessionId])
+}
+
+model InterviewLearningProfile {
+  id                     String    @id @default(uuid())
+  userId                 String    @unique
+  careerFocus            String?
+  targetSeniority        String?
+  skillsMatrixJson       Json?
+  communicationPatterns  String[]  @default([])
+  languageNeeds          String[]  @default([])
+  totalSessions          Int       @default(0)
+  lastSessionAt          DateTime?
+  personalizationEnabled Boolean   @default(true)
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([userId])
 }
 

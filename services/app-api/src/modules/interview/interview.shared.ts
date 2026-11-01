@@ -1,5 +1,5 @@
 /**
- * services/app-api - AI Interview Studio Types & Domain Contracts (Synchronized with @vocabflow/shared)
+ * @vocabflow/shared - AI Interview Studio Types & Domain Contracts
  */
 
 export interface InterviewIndustryDto {
@@ -53,6 +53,8 @@ export interface InterviewSetupConfig {
   enableTranslation: boolean;
   enableVoice: boolean;
   customJobDescription?: string;
+  jobBrief?: InterviewJobBrief;
+  blueprint?: InterviewBlueprint;
 }
 
 export interface InterviewLanguageContext {
@@ -173,10 +175,24 @@ export interface InterviewTurnResult {
   };
 }
 
+export interface InterviewSessionSummary {
+  id: string;
+  status: 'READY' | 'IN_PROGRESS' | 'PAUSED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
+  industryCode: string;
+  positionTitle: string;
+  seniorityLevel: string;
+  languageId: string;
+  mode: InterviewMode;
+  currentTurn: number;
+  totalQuestions: number;
+  startedAt?: string;
+  timeRemainingSec: number;
+}
+
 export interface InterviewScoreCluster {
   professionalCompetency: number; // 0-100
   communication: number; // 0-100
-  languageProficiency: number; // 0-100 (0 or null if translated)
+  languageProficiency: number; // 0-100 (0 or null if answer was translated from support language)
   interviewPerformance: number; // 0-100
   overallScore: number; // 0-100
   isTranslatedAnswer?: boolean;
@@ -226,6 +242,16 @@ export interface InterviewReportData {
     reason: string;
     targetUrl: string;
   }>;
+}
+
+export interface InterviewDocumentIngestionResult {
+  documentId: string;
+  title: string;
+  fileName: string;
+  extractedQuestionCount: number;
+  questions: InterviewQuestionItem[];
+  previewSummary: string;
+  isPrivate: boolean;
 }
 
 export const PREDEFINED_TAXONOMY: InterviewIndustryDto[] = [
@@ -417,6 +443,10 @@ export const PREDEFINED_TAXONOMY: InterviewIndustryDto[] = [
   },
 ];
 
+/**
+ * Multilingual Curated Questions Bank
+ * Guarantees high-fidelity role-specific questions for any language space and vertical.
+ */
 export const MULTILINGUAL_CURATED_QUESTIONS: Record<
   string,
   Record<string, Array<{ title: string; body: string; competencies: string[] }>>
@@ -664,3 +694,247 @@ export function extractQuestionsFromText(text: string) {
 
   return questions;
 }
+
+// =============================================================================
+// AI INTERVIEW STUDIO V2: DOMAIN CONTRACTS & STATE MACHINES
+// =============================================================================
+
+export type InterviewActivity =
+  | 'idle'
+  | 'preparing'
+  | 'listening'
+  | 'transcribing'
+  | 'analyzing'
+  | 'retrieving_context'
+  | 'evaluating'
+  | 'selecting_question'
+  | 'generating_response'
+  | 'speaking'
+  | 'completed'
+  | 'error';
+
+export interface InterviewActivityEvent {
+  sessionId: string;
+  correlationId: string;
+  activity: InterviewActivity;
+  timestamp: number;
+  message?: string;
+  metadata?: Record<string, any>;
+}
+
+export type SkillRequirementType = 'required' | 'preferred' | 'optional' | 'inferred' | 'user_added';
+export type SkillCategory =
+  | 'Programming Language'
+  | 'Framework'
+  | 'Database'
+  | 'DevOps & Cloud'
+  | 'Core Knowledge'
+  | 'Soft Skills'
+  | 'Business Domain'
+  | 'Tooling';
+
+export interface ExtractedSkillItem {
+  id: string;
+  name: string;
+  category: SkillCategory | string;
+  priority: 'required' | 'preferred' | 'optional';
+  requirementType: SkillRequirementType;
+  source: 'job_description' | 'user_added' | 'inferred';
+  confidence: number; // 0.0 - 1.0
+  importance: number; // 1 - 5
+  includeInInterview: boolean;
+  userNotes?: string;
+}
+
+export interface ExtractedJobRequirements {
+  jobInformation: {
+    jobTitle: string;
+    industry?: string;
+    department?: string;
+    seniority?: string;
+    experienceRequired?: string;
+    employmentType?: string;
+    mainResponsibilities: string[];
+    keyObjectives?: string[];
+  };
+  skills: ExtractedSkillItem[];
+  frameworksAndTools: string[];
+  coreKnowledge: string[];
+  softSkills: string[];
+  businessDomain: string[];
+  languageRequirements?: {
+    requiredLanguage: string;
+    expectedProficiency?: string;
+    communicationRequirements?: string;
+  };
+  preferredQualifications: string[];
+}
+
+export interface InterviewJobBrief {
+  id: string;
+  sourceDocId?: string;
+  fileName?: string;
+  jobTitle: string;
+  industryCode: string;
+  positionCode?: string;
+  seniority: string;
+  responsibilities: string[];
+  requiredSkills: ExtractedSkillItem[];
+  preferredSkills: ExtractedSkillItem[];
+  userAddedSkills: ExtractedSkillItem[];
+  competencyMatrix: Record<string, ExtractedSkillItem[]>;
+  interviewPriorities: string[];
+  languageRequirements?: string;
+  version: number;
+  createdAt: string;
+}
+
+export interface InterviewBlueprintTopic {
+  id: string;
+  topicName: string;
+  targetCompetencies: string[];
+  priority: 'high' | 'medium' | 'low';
+  questionBudget: number;
+  timeAllocationMinutes: number;
+  suggestedFocus: string;
+}
+
+export interface InterviewBlueprint {
+  id: string;
+  sessionId?: string;
+  targetSeniority: string;
+  targetPosition: string;
+  totalDurationMinutes: number;
+  phases: Array<'introduction' | 'technical_deep_dive' | 'architecture_system_design' | 'situational_behavioral' | 'candidate_qa_wrap_up'>;
+  topics: InterviewBlueprintTopic[];
+  competencies: string[];
+  totalQuestionBudget: number;
+  followUpAllowancePerQuestion: number;
+  difficultyBaseline: number; // 1.0 - 5.0
+  createdAt: string;
+}
+
+export interface TurnContentAssessment {
+  relevance: 'high' | 'medium' | 'low';
+  completeness: 'complete' | 'partial' | 'inadequate';
+  demonstratedCompetencies: string[];
+  missingEvidence: string[];
+  technicalAccuracyScore: number; // 0 - 100
+  communicationClarityScore: number; // 0 - 100
+}
+
+export interface InterviewTurnOrchestratorResult {
+  turnNumber: number;
+  detectedLanguage: string;
+  normalizedAnswer: string;
+  answerType: 'direct' | 'translated';
+  contentAssessment: TurnContentAssessment;
+  decision: 'ask_followup' | 'next_question' | 'conclude_interview';
+  nextQuestion?: string;
+  followUpQuestion?: string;
+  feedbackForUser?: string;
+  tokenUsage?: {
+    inputTokens: number;
+    outputTokens: number;
+    cachedInputTokens?: number;
+    estimatedCostUsd?: number;
+  };
+}
+
+export type CandidateSkillMasteryStatus = 'not_assessed' | 'emerging' | 'developing' | 'demonstrated' | 'strong';
+
+export interface CandidateSkillRecord {
+  name: string;
+  category: string;
+  status: CandidateSkillMasteryStatus;
+  confidence: number; // 0.0 - 1.0
+  evidenceCount: number;
+  lastAssessedTurn?: number;
+  lastAssessedSessionId?: string;
+  strengths: string[];
+  weaknesses: string[];
+  improvementTrend?: 'improving' | 'stable' | 'declining';
+}
+
+export interface UserInterviewLearningProfileDto {
+  userId: string;
+  careerFocus: string;
+  targetSeniority: string;
+  skills: CandidateSkillRecord[];
+  communicationPatterns: string[];
+  languageLearningNeeds: string[];
+  totalSessions: number;
+  lastSessionAt?: string;
+  personalizationEnabled: boolean;
+}
+
+export interface InterviewSessionMetrics {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCachedTokens: number;
+  totalCostUsd: number;
+  totalRequests: number;
+  turnLatenciesMs: number[];
+  averageTurnLatencyMs: number;
+}
+
+/**
+ * Normalizes common technical skill aliases to avoid redundant duplicates (React.js, React JS -> React)
+ */
+export function normalizeSkillName(rawName: string): string {
+  if (!rawName) return '';
+  const trimmed = rawName.trim();
+  const lower = trimmed.toLowerCase();
+
+  const ALIAS_MAP: Record<string, string> = {
+    'react': 'React',
+    'reactjs': 'React',
+    'react.js': 'React',
+    'react js': 'React',
+    'vue': 'Vue.js',
+    'vuejs': 'Vue.js',
+    'vue.js': 'Vue.js',
+    'vue 3': 'Vue.js',
+    'angular': 'Angular',
+    'angularjs': 'Angular',
+    'node': 'Node.js',
+    'nodejs': 'Node.js',
+    'node.js': 'Node.js',
+    'ts': 'TypeScript',
+    'typescript': 'TypeScript',
+    'js': 'JavaScript',
+    'javascript': 'JavaScript',
+    'py': 'Python',
+    'python': 'Python',
+    'postgres': 'PostgreSQL',
+    'postgresql': 'PostgreSQL',
+    'psql': 'PostgreSQL',
+    'mongo': 'MongoDB',
+    'mongodb': 'MongoDB',
+    'redis': 'Redis',
+    'docker': 'Docker',
+    'k8s': 'Kubernetes',
+    'kubernetes': 'Kubernetes',
+    'aws': 'AWS',
+    'gcp': 'Google Cloud',
+    'azure': 'Microsoft Azure',
+    'rest': 'REST API',
+    'restful api': 'REST API',
+    'rest api': 'REST API',
+    'graphql': 'GraphQL',
+    'git': 'Git',
+    'gitlab': 'GitLab CI/CD',
+    'github actions': 'GitHub Actions',
+    'ci/cd': 'CI/CD Pipelines',
+    'cicd': 'CI/CD Pipelines',
+    'tailwind': 'Tailwind CSS',
+    'tailwindcss': 'Tailwind CSS',
+    'html': 'HTML5',
+    'html5': 'HTML5',
+    'css': 'CSS3',
+    'css3': 'CSS3',
+  };
+
+  return ALIAS_MAP[lower] || trimmed;
+}
+
