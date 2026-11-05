@@ -125,6 +125,29 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   const activeMorphRef = useRef<MorphController | null>(null);
   const animationTimerRef = useRef<number | null>(null);
 
+  // Draw Tian-zi-ge grid
+  const drawGrid = useCallback(
+    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+      if (!showGrid) return;
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = isUltraEfficient ? '#e2e8f0' : 'rgba(99, 102, 241, 0.15)';
+      ctx.setLineDash([5, 5]);
+
+      // Cross lines (Tian-zi-ge)
+      ctx.beginPath();
+      ctx.moveTo(width / 2, 0);
+      ctx.lineTo(width / 2, height);
+      ctx.moveTo(0, height / 2);
+      ctx.lineTo(width, height / 2);
+      ctx.stroke();
+
+      ctx.restore();
+    },
+    [showGrid, isUltraEfficient]
+  );
+
+
   // Clear Canvas (Delete)
   const clearCanvas = useCallback(() => {
     if (activeMorphRef.current) {
@@ -255,28 +278,6 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       isCancelled = true;
     };
   }, [currentChar, languageId]);
-
-  // Draw Tian-zi-ge grid
-  const drawGrid = useCallback(
-    (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-      if (!showGrid) return;
-      ctx.save();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = isUltraEfficient ? '#e2e8f0' : 'rgba(99, 102, 241, 0.15)';
-      ctx.setLineDash([5, 5]);
-
-      // Cross lines (Tian-zi-ge)
-      ctx.beginPath();
-      ctx.moveTo(width / 2, 0);
-      ctx.lineTo(width / 2, height);
-      ctx.moveTo(0, height / 2);
-      ctx.lineTo(width, height / 2);
-      ctx.stroke();
-
-      ctx.restore();
-    },
-    [showGrid, isUltraEfficient]
-  );
 
   // Redraw Canvas with High-DPI scaling (Section E3, G)
   const renderCanvas = useCallback(() => {

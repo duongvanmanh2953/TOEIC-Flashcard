@@ -325,13 +325,14 @@ export function getAutoExerciseForWord(
   const consecutiveWrong = item.consecutiveWrong || 0;
   const retrievability = item.retrievability || 1.0;
 
-  // Script languages check for handwriting
+  // East Asian script languages: frequent tactile handwriting practice
   if (
     isHandwritingSupportedForLanguage(lang) &&
-    (item.script === 'KANJI' || item.script === 'HANZI' || item.script === 'HANGUL' || ['ja', 'zh', 'ko'].includes(lang)) &&
-    (reviewCount % 3 === 2)
+    (item.script === 'KANJI' || item.script === 'HANZI' || item.script === 'HANGUL' || ['ja', 'zh', 'ko'].includes(lang))
   ) {
-    return 'handwriting';
+    if (reviewCount % 2 === 0 || wrongCount >= 1) {
+      return 'handwriting';
+    }
   }
 
   // High slip risk or new word -> Flashcard
@@ -441,6 +442,7 @@ export const ReviewSessionPage: React.FC = () => {
   const [sessionMood, setSessionMood] = useState<'great' | 'good' | 'okay' | 'tired' | null>(null);
   const [showSmartBreak, setShowSmartBreak] = useState(false);
   const [showVoicePractice, setShowVoicePractice] = useState(false);
+  const [showHandwritingInLearn, setShowHandwritingInLearn] = useState(false);
   const startTimeRef = useRef<number>(Date.now());
   const sessionDurationRef = useRef<number>(Date.now());
 
@@ -1468,46 +1470,61 @@ export const ReviewSessionPage: React.FC = () => {
         </div>
       )}
 
-      {/* Top Controls: 3-Way Segmented Control (Learn vs Assess vs Auto SRS) & Topic Selector */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+      {/* Top Controls: Responsive Mode Selector & Topic Selector */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
+        <div className="grid grid-cols-3 sm:flex items-center gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 w-full sm:w-auto">
           <button
             onClick={() => setStudyMode('learn')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer ${
+            className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
               studyMode === 'learn' || studyMode === 'flashcard'
                 ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             title="Học thẻ Flashcard kèm luyện viết cho ngôn ngữ hỗ trợ"
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Học Thẻ (Learn)</span>
+            <BookOpen className="w-3.5 h-3.5 shrink-0" />
+            <span>Học Thẻ</span>
           </button>
+
+          {isHandwritingSupportedForLanguage(activeLanguage?.id) && (
+            <button
+              onClick={() => setStudyMode('handwriting')}
+              className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                studyMode === 'handwriting'
+                  ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              title="Luyện viết nét Hán tự / Chữ mẫu trên khung Tian-zi-ge"
+            >
+              <PenTool className="w-3.5 h-3.5 shrink-0" />
+              <span>Tập Viết</span>
+            </button>
+          )}
 
           <button
             onClick={() => setStudyMode('assess')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer ${
-              studyMode === 'assess' || ['quiz', 'typing', 'listening', 'speaking', 'handwriting'].includes(studyMode)
+            className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              studyMode === 'assess' || ['quiz', 'typing', 'listening', 'speaking'].includes(studyMode)
                 ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             title="Kiểm tra sau học: Trắc nghiệm, Điền từ, Luyện gõ, Viết không gợi ý, Nghe"
           >
-            <BrainCircuit className="w-3.5 h-3.5" />
-            <span>Đánh Giá (Assess)</span>
+            <BrainCircuit className="w-3.5 h-3.5 shrink-0" />
+            <span>Đánh Giá</span>
           </button>
 
           <button
             onClick={() => setStudyMode('auto')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer ${
+            className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
               studyMode === 'auto'
                 ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             title="Auto FSRS: Tự động chọn phương pháp phù hợp theo chu kỳ nhớ và độ khó"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Tự Động (Auto SRS)</span>
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Auto SRS</span>
           </button>
         </div>
 
@@ -1601,8 +1618,22 @@ export const ReviewSessionPage: React.FC = () => {
             onFlip={() => setIsFlipped(!isFlipped)}
           />
 
-          {/* Quick Voice Practice Modal Trigger & VocabFlow Diagnostic */}
+          {/* Quick Handwriting & Voice Practice Modal Trigger & VocabFlow Diagnostic */}
           <div className="flex items-center justify-end gap-2 flex-wrap">
+            {isHandwritingSupportedForLanguage(activeLanguage?.id) && (
+              <button
+                type="button"
+                onClick={() => setShowHandwritingInLearn(!showHandwritingInLearn)}
+                className={`px-3 py-1.5 rounded-xl border transition active:scale-95 flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
+                  showHandwritingInLearn
+                    ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                    : 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30'
+                }`}
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                <span>{showHandwritingInLearn ? 'Đóng tập viết' : '✍️ Tập viết Hán tự/Chữ này'}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setDiagnosticWordId(currentItem.vocabularyId)}
@@ -1645,6 +1676,38 @@ export const ReviewSessionPage: React.FC = () => {
                   languageFlag={activeLanguage?.flag}
                 />
               </div>
+            </div>
+          )}
+
+{showHandwritingInLearn && isHandwritingSupportedForLanguage(activeLanguage?.id) && (
+            <div className="p-4 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-purple-200 dark:border-purple-800/60 shadow-xl space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                  <PenTool className="w-4 h-4 text-purple-600" />
+                  Luyện viết chuẩn nét: {currentItem.word}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowHandwritingInLearn(false)}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+              <VocabularyHandwritingPractice
+                key={`hw-learn-${currentItem.vocabularyId || currentItem.word}-${currentIndex}`}
+                word={currentItem.word}
+                meaning={currentItem.meaningVi || currentItem.meaning}
+                pronunciation={currentItem.pronunciation}
+                romaji={currentItem.romaji}
+                pinyin={currentItem.pinyin}
+                languageId={activeLanguage?.id}
+                showGuide={true}
+                onWordComplete={() => {}}
+                onNextWord={async () => {
+                  await handleRateFlashcard('GOOD');
+                }}
+              />
             </div>
           )}
 
@@ -1871,7 +1934,7 @@ export const ReviewSessionPage: React.FC = () => {
                 type="text"
                 value={typingInput}
                 onChange={(e) => setTypingInput(e.target.value)}
-                placeholder="Gõ từ tiếng Anh chính xác..."
+                placeholder={`Gõ từ ${activeLanguage?.name || 'mục tiêu'} chính xác...`}
                 autoFocus
                 disabled={!!typingFeedback.status}
                 className="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-base font-bold text-slate-900 dark:text-white text-center focus:outline-none focus:border-emerald-500 transition"
