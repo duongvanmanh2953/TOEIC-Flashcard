@@ -31,6 +31,7 @@ import {
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { PronunciationPracticeCard } from '../components/audio/PronunciationPracticeCard';
+import { getSeedDecksForLanguage } from '../data/seedDecks';
 import { VocabularyHandwritingPractice } from '../components/handwriting/VocabularyHandwritingPractice';
 import { isHandwritingSupportedForLanguage } from '../config/languages';
 import { useAuth } from '../contexts/AuthContext';
@@ -350,6 +351,22 @@ export function getAutoExerciseForWord(
   return 'quiz';
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => resolve(fallback), ms);
+  });
+  return Promise.race([promise, timeoutPromise])
+    .then((res) => {
+      clearTimeout(timer);
+      return res;
+    })
+    .catch(() => {
+      clearTimeout(timer);
+      return fallback;
+    });
+}
+
 export const ReviewSessionPage: React.FC = () => {
   const [diagnosticWordId, setDiagnosticWordId] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -427,12 +444,20 @@ export const ReviewSessionPage: React.FC = () => {
   const startTimeRef = useRef<number>(Date.now());
   const sessionDurationRef = useRef<number>(Date.now());
 
+  // Deferred Review Batch States
+  const [bufferedReviews, setBufferedReviews] = useState<BufferedReview[]>([]);
+  const bufferedReviewsRef = useRef<BufferedReview[]>([]);
+  const [isSubmittingBatch, setIsSubmittingBatch] = useState(false);
+  const [isSessionSaved, setIsSessionSaved] = useState(false);
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
+
   // Load user decks & system topics on mount or when language changes
   useEffect(() => {
+    const langId = activeLanguage?.id || 'en';
     Promise.allSettled([
-      idbGetLocalDecks(user?.id, activeLanguage.id),
-      api.get('/community/my-decks', { params: { languageId: activeLanguage.id } }).catch(() => []),
-      api.get('/vocabulary/topics', { params: { languageId: activeLanguage.id } }).catch(() => ({ data: [] })),
+      withTimeout(idbGetLocalDecks(user?.id, langId), 1500, []),
+      withTimeout<any>(api.get('/community/my-decks', { params: { languageId: langId }, timeout: 2500 } as any), 2500, []),
+      withTimeout<any>(api.get('/vocabulary/topics', { params: { languageId: langId }, timeout: 2500 } as any), 2500, { data: [] }),
     ]).then(([localDecksRes, cloudDecksRes, topicsRes]) => {
       const localDecks: LocalDeck[] =
         localDecksRes.status === 'fulfilled' && Array.isArray(localDecksRes.value) ? localDecksRes.value : [];
@@ -539,35 +564,48 @@ export const ReviewSessionPage: React.FC = () => {
     setIsSessionSaved(false);
     setShowExitConfirmModal(false);
 
+    const langId = activeLanguage?.id || 'en';
+
     try {
+      let finalItems: ReviewQueueItem[] = [];
+
       // 1. MEMORY RESCUE
       if (topicKey === 'MEMORY_RESCUE') {
-        const res: any = await api.post('/reviews/memory-rescue/session', { languageId: activeLanguage.id }).catch(() => ({ data: { items: [] } }));
-        if (res?.success && res.data?.items?.length > 0) {
-          setSession(res.data.session);
-          const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Memory Rescue', 'MEMORY_RESCUE'));
+        const res: any = await withTimeout(
+          api.post('/reviews/memory-rescue/session', { languageId: langId }, { timeout: 2500 } as any),
+          2500,
+          null
+        );
+        const serverItems = res?.data?.items || res?.items;
+        if (Array.isArray(serverItems) && serverItems.length > 0) {
+          setSession(res?.data?.session || res?.session);
+          const mapped = serverItems.map((item: any) => mapToReviewItem(item, 'Memory Rescue', 'MEMORY_RESCUE'));
           mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-          setItems(enrichItemsWithOptions(mapped));
+          finalItems = enrichItemsWithOptions(mapped);
         } else {
           // Fallback to local slipping words for this language
-          const localWords = await idbGetWords(user?.id, activeLanguage.id);
+          const localWords = await withTimeout(idbGetWords(user?.id, langId), 1500, []);
           const slipping = localWords
             .filter((w) => (w.wrongCount || 0) > 0 || (w.stability || 1.0) < 1.5)
             .map((w) => mapToReviewItem(w, 'Memory Rescue', 'LOCAL'));
           slipping.sort((a, b) => b.priorityScore - a.priorityScore);
-          setItems(enrichItemsWithOptions(slipping));
+          finalItems = enrichItemsWithOptions(slipping);
         }
       }
       // 2. MY WORDS (ALL)
       else if (topicKey === 'MY_WORDS') {
-        let localWords = await idbGetWords(user?.id, activeLanguage.id);
+        let localWords = await withTimeout(idbGetWords(user?.id, langId), 1500, []);
         if (localWords.length === 0) {
-          const cloudRes: any = await api.get(`/community/my-words?filter=ALL&languageId=${activeLanguage.id}`).catch(() => []);
+          const cloudRes: any = await withTimeout(
+            api.get(`/community/my-words?filter=ALL&languageId=${langId}`, { timeout: 2500 } as any),
+            2500,
+            []
+          );
           localWords = Array.isArray(cloudRes) ? cloudRes : cloudRes?.data || [];
         }
         const mapped = localWords.map((item: any) => mapToReviewItem(item, 'My Words', 'WORD_BANK'));
         mapped.sort((a, b) => b.priorityScore - a.priorityScore);
-        setItems(enrichItemsWithOptions(mapped));
+        finalItems = enrichItemsWithOptions(mapped);
       }
       // 3. SPECIFIC DECK OR QUERY DECK ID
       else if (
@@ -579,10 +617,14 @@ export const ReviewSessionPage: React.FC = () => {
           ? topicKey.replace('deck_', '')
           : searchParams.get('deckId');
 
-        const [localDecks, allLocalWords] = await Promise.all([
-          idbGetLocalDecks(user?.id, activeLanguage.id),
-          idbGetWords(user?.id, activeLanguage.id),
-        ]);
+        const [localDecks, allLocalWords] = await withTimeout(
+          Promise.all([
+            idbGetLocalDecks(user?.id, langId),
+            idbGetWords(user?.id, langId),
+          ]),
+          1500,
+          [[], []]
+        );
 
         let matchedDeck = targetDeckId
           ? localDecks.find((d) => d.id === targetDeckId) || userDecks.find((d) => d.id === targetDeckId)
@@ -599,7 +641,7 @@ export const ReviewSessionPage: React.FC = () => {
         const deckTitleToSearch = matchedDeck?.title || topicKey;
 
         if (deckIdToSearch) {
-          deckWords = await idbGetWordsByDeck(deckIdToSearch);
+          deckWords = await withTimeout(idbGetWordsByDeck(deckIdToSearch), 1500, []);
         }
 
         if (deckWords.length === 0) {
@@ -613,91 +655,165 @@ export const ReviewSessionPage: React.FC = () => {
 
         // If still empty and deckId is present, query Cloud API
         if (deckWords.length === 0 && deckIdToSearch) {
-          const cloudDeck: any = await api.get(`/community/decks/${deckIdToSearch}`, { params: { languageId: activeLanguage.id } }).catch(() => null);
+          const cloudDeck: any = await withTimeout(
+            api.get(`/community/decks/${deckIdToSearch}`, { params: { languageId: langId }, timeout: 2500 } as any),
+            2500,
+            null
+          );
           if (cloudDeck?.words && cloudDeck.words.length > 0) {
             deckWords = cloudDeck.words;
           }
         }
 
-        // If words exist, map them all and sort by Spaced Repetition priority
         if (deckWords.length > 0) {
           const mapped = deckWords.map((item: any) =>
             mapToReviewItem(item, deckTitleToSearch, 'DECK')
           );
           mapped.sort((a, b) => b.priorityScore - a.priorityScore);
-          setItems(enrichItemsWithOptions(mapped));
-        } else {
-          // If no words found for deck, fall back to general vocabulary
-          setItems([]);
+          finalItems = enrichItemsWithOptions(mapped);
         }
       }
       // 4. ALL DUE (SMART SRS SESSION)
       else if (topicKey === 'ALL') {
-        const [localDecks, allLocalWords] = await Promise.all([
-          idbGetLocalDecks(user?.id, activeLanguage.id),
-          idbGetWords(user?.id, activeLanguage.id),
-        ]);
+        const [localDecks, allLocalWords] = await withTimeout(
+          Promise.all([
+            idbGetLocalDecks(user?.id, langId),
+            idbGetWords(user?.id, langId),
+          ]),
+          1500,
+          [[], []]
+        );
 
         if (allLocalWords.length > 0) {
           const mapped = allLocalWords.map((item: any) => mapToReviewItem(item, 'General', 'WORD_BANK'));
           mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-          setItems(enrichItemsWithOptions(mapped));
+          finalItems = enrichItemsWithOptions(mapped);
         } else {
           // Fall back to server vocabulary session
-          const res: any = await api.post('/reviews/smart-session', { limit: 50, languageId: activeLanguage.id }).catch(() => null);
-          if (res?.success && res.data?.items?.length > 0) {
-            setSession(res.data.session);
-            const mapped = res.data.items.map((item: any) => mapToReviewItem(item, 'Smart Review', 'SYSTEM'));
+          const res: any = await withTimeout(
+            api.post('/reviews/smart-session', { limit: 50, languageId: langId }, { timeout: 2500 } as any),
+            2500,
+            null
+          );
+          const serverItems = res?.data?.items || res?.items;
+          if (Array.isArray(serverItems) && serverItems.length > 0) {
+            setSession(res?.data?.session || res?.session);
+            const mapped = serverItems.map((item: any) => mapToReviewItem(item, 'Smart Review', 'SYSTEM'));
             mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-            setItems(enrichItemsWithOptions(mapped));
+            finalItems = enrichItemsWithOptions(mapped);
           } else {
-            const vocabRes: any = await api.get('/vocabulary', { params: { limit: 50, languageId: activeLanguage.id } }).catch(() => ({ data: { items: [] } }));
-            const raw = vocabRes.data?.items || vocabRes.data || [];
-            const mapped = raw.map((v: any) => mapToReviewItem(v, 'Vocabulary', 'VOCABULARY'));
-            mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
-            setItems(enrichItemsWithOptions(mapped));
+            const vocabRes: any = await withTimeout(
+              api.get('/vocabulary', { params: { limit: 50, languageId: langId }, timeout: 2500 } as any),
+              2500,
+              null
+            );
+            const raw = Array.isArray(vocabRes?.data) ? vocabRes.data : vocabRes?.data?.items || [];
+            if (raw.length > 0) {
+              const mapped = raw.map((v: any) => mapToReviewItem(v, 'Vocabulary', 'VOCABULARY'));
+              mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
+              finalItems = enrichItemsWithOptions(mapped);
+            }
           }
         }
       }
       // 5. TOPIC SLUG
       else {
         const cleanSlug = topicKey.startsWith('topic_') ? topicKey.replace('topic_', '') : topicKey;
-        const res: any = await api.get('/vocabulary', { params: { topic: cleanSlug, limit: 100, languageId: activeLanguage.id } }).catch(() => ({ data: { items: [] } }));
-        const rawList = res?.data?.items || res?.data || [];
-        const totalPages = res?.meta?.pagination?.totalPages || res?.data?.pagination?.totalPages || 1;
-
-        let allWords = [...rawList];
-        if (totalPages > 1) {
-          const nextPages = await Promise.allSettled(
-            Array.from({ length: Math.min(totalPages, 5) - 1 }, (_, i) =>
-              api.get('/vocabulary', { params: { topic: cleanSlug, page: i + 2, limit: 100, languageId: activeLanguage.id } })
-            )
-          );
-          nextPages.forEach((p) => {
-            if (p.status === 'fulfilled') {
-              const pItems = p.value?.data?.items || p.value?.data || [];
-              allWords.push(...pItems);
-            }
-          });
+        const res: any = await withTimeout(
+          api.get('/vocabulary', { params: { topic: cleanSlug, limit: 100, languageId: langId }, timeout: 2500 } as any),
+          2500,
+          null
+        );
+        const rawList = Array.isArray(res?.data) ? res.data : res?.data?.items || [];
+        if (rawList.length > 0) {
+          const mapped = rawList.map((v: any) => mapToReviewItem(v, cleanSlug, 'TOPIC'));
+          mapped.sort((a, b) => b.priorityScore - a.priorityScore);
+          finalItems = enrichItemsWithOptions(mapped);
         }
-
-        const mapped = allWords.map((v: any) => mapToReviewItem(v, cleanSlug, 'TOPIC'));
-        mapped.sort((a, b) => b.priorityScore - a.priorityScore);
-        setItems(enrichItemsWithOptions(mapped));
       }
 
+      // 6. RESILIENT SEED RECOVERY: If STILL 0 items, seed starter words immediately so user is NEVER stranded
+      if (finalItems.length === 0) {
+        const seedPacks = getSeedDecksForLanguage(langId);
+        const seedWords = seedPacks.flatMap((pack) =>
+          pack.words.map((w, idx) => ({
+            id: `seed_${langId}_${pack.id}_${idx}`,
+            word: w.word,
+            meaning: w.meaning,
+            definition: w.definition,
+            phonetic: w.phonetic,
+            pronunciation: w.pronunciation,
+            partOfSpeech: w.partOfSpeech,
+            cefrLevel: w.cefrLevel,
+            topic: w.topic || pack.title,
+            example: w.example,
+            exampleTranslation: w.exampleTranslation,
+            article: w.article,
+            gender: w.gender,
+            pinyin: w.pinyin,
+            tone: w.tone,
+            romaji: w.romaji,
+            transliteration: w.transliteration,
+            script: w.script,
+            dueAt: Date.now(),
+            stability: 1.0,
+            difficulty: 5.0,
+            interval: 1,
+            wrongCount: 0,
+            correctCount: 0,
+            reviewCount: 0,
+            consecutiveCorrect: 0,
+            consecutiveWrong: 0,
+          }))
+        );
+
+        if (seedWords.length > 0) {
+          const mapped = seedWords.map((item: any) => mapToReviewItem(item, 'Bộ Từ Mẫu SRS', 'STARTER'));
+          finalItems = enrichItemsWithOptions(mapped);
+        }
+      }
+
+      setItems(finalItems);
       startTimeRef.current = Date.now();
     } catch (err) {
       console.error('Failed to load study items', err);
-      setItems([]);
+      try {
+        const seedPacks = getSeedDecksForLanguage(langId);
+        const seedWords = seedPacks.flatMap((p) => p.words);
+        if (seedWords.length > 0) {
+          const mapped = seedWords.map((item: any) => mapToReviewItem(item, 'Bộ Từ Mẫu SRS', 'STARTER'));
+          setItems(enrichItemsWithOptions(mapped));
+        } else {
+          setItems([]);
+        }
+      } catch {
+        setItems([]);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadStudyItems(selectedTopic);
-  }, [selectedTopic, activeLanguage.id, user?.id]);
+    let isMounted = true;
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 3500);
+
+    loadStudyItems(selectedTopic).finally(() => {
+      clearTimeout(safetyTimer);
+      if (isMounted) {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+    };
+  }, [selectedTopic, activeLanguage?.id, user?.id]);
 
   const currentItem = items[currentIndex];
 
@@ -1199,6 +1315,50 @@ export const ReviewSessionPage: React.FC = () => {
               className="btn-glass-secondary w-full !py-3 text-xs"
             >
               Xem Kho Từ Vựng
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // All cards reviewed - Celebratory Victory Modal
+  {/* Empty Queue State: No cards available for this topic or language */}
+  if (items.length === 0) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4 text-center animate-fade-in">
+        <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-5">
+          <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center">
+            <BookOpen className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              Chưa Có Thẻ Cần Ôn Tập
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+              Không tìm thấy từ vựng nào đến hạn ôn tập cho {activeLanguage?.name || 'ngôn ngữ này'}. Bạn có thể nạp ngay bộ từ vựng mẫu để bắt đầu học.
+            </p>
+          </div>
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => {
+                const seedPacks = getSeedDecksForLanguage(activeLanguage?.id || 'en');
+                const seedWords = seedPacks.flatMap((p) => p.words);
+                if (seedWords.length > 0) {
+                  const mapped = seedWords.map((item: any) => mapToReviewItem(item, 'Bộ Từ Mẫu SRS', 'STARTER'));
+                  setItems(enrichItemsWithOptions(mapped));
+                }
+              }}
+              className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Nạp Bộ Từ Mẫu Cần Ôn</span>
+            </button>
+            <button
+              onClick={() => navigate('/word-bank')}
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition cursor-pointer"
+            >
+              Khám Phá Kho Từ Vựng
             </button>
           </div>
         </div>

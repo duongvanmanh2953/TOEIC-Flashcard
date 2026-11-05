@@ -87,7 +87,17 @@ function openDB(): Promise<IDBDatabase> {
       return reject(new Error('IndexedDB not supported'));
     }
 
+    const timer = setTimeout(() => {
+      reject(new Error('IndexedDB open timeout'));
+    }, 3000);
+
     const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onblocked = () => {
+      clearTimeout(timer);
+      console.warn('IndexedDB upgrade blocked');
+      reject(new Error('IndexedDB blocked'));
+    };
 
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -130,8 +140,14 @@ function openDB(): Promise<IDBDatabase> {
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      clearTimeout(timer);
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      clearTimeout(timer);
+      reject(request.error);
+    };
   });
 }
 

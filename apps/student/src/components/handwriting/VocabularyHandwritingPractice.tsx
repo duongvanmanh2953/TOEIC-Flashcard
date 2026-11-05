@@ -36,6 +36,7 @@ import {
   animateStrokeMorph,
   MorphController,
   buildCharacterReference,
+  sampleSvgPath,
 } from '../../lib/handwriting';
 import { COMMON_CHARACTER_DICTIONARY } from '../../lib/handwriting/characterDictionary';
 import api from '../../lib/api';
