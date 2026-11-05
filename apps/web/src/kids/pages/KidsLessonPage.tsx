@@ -130,16 +130,16 @@ export const KidsLessonPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 md:space-y-6 animate-fadeIn pb-12">
+    <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4 md:space-y-6 animate-fadeIn pb-12 px-2 sm:px-0">
       {/* Top Focus Mode Header with Caterpillar Progress & Parent-Protected Exit */}
-      <div className="bg-white rounded-3xl p-3.5 sm:p-5 border-2 border-amber-300 flex items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 border-2 border-amber-300 flex items-center justify-between gap-2 sm:gap-3">
         {/* Protected Back / Exit button (Requires Parent confirmation) */}
         <button
           onClick={() => {
             soundManager.playPop();
             setParentExitModalOpen(true);
           }}
-          className="px-3 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer border border-slate-300 text-xs font-black shrink-0"
+          className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition-all cursor-pointer border border-slate-300 text-xs font-black shrink-0"
           title="Thoát bài học (Bố Mẹ mở khóa)"
         >
           <Lock className="w-3.5 h-3.5 text-slate-600" />
@@ -147,25 +147,25 @@ export const KidsLessonPage: React.FC = () => {
         </button>
 
         {/* Caterpillar Steps Indicator */}
-        <div className="flex-1 max-w-md">
-          <div className="flex items-center justify-between text-xs font-black text-slate-800 mb-1.5 px-1">
-            <span className="truncate mr-2 flex items-center gap-1">
-              <Target className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>{targetLesson.title}</span>
+        <div className="flex-1 min-w-0 max-w-md">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs font-black text-slate-800 mb-1 px-0.5 sm:px-1">
+            <span className="truncate mr-1.5 flex items-center gap-1">
+              <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-600 shrink-0" />
+              <span className="truncate">{targetLesson.title}</span>
             </span>
-            <span className="text-amber-700 shrink-0">
-              Trạm {currentStep + 1} / {activities.length}
+            <span className="text-amber-700 shrink-0 font-mono">
+              {currentStep + 1}/{activities.length}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             {activities.map((act, idx) => {
               const isDone = idx < currentStep;
               const isCurrent = idx === currentStep;
               return (
                 <div
                   key={act.id}
-                  className={`h-3.5 rounded-full flex-1 transition-all duration-300 ${
+                  className={`h-2 sm:h-3.5 rounded-full flex-1 transition-all duration-300 ${
                     isDone
                       ? 'bg-emerald-500'
                       : isCurrent
@@ -179,15 +179,15 @@ export const KidsLessonPage: React.FC = () => {
         </div>
 
         {/* Fullscreen & Lesson Emoji Badge */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={handleToggleFullscreen}
-            className="w-10 h-10 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-300 flex items-center justify-center text-slate-700 transition cursor-pointer text-sm font-black"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-300 flex items-center justify-center text-slate-700 transition cursor-pointer text-xs sm:text-sm font-black"
             title="Toàn màn hình tập trung"
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center p-1 overflow-hidden shadow-2xs">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center p-1 overflow-hidden shadow-2xs">
             <KidsIllustration
               name={targetLesson.id || 'star'}
               className="w-full h-full object-contain"

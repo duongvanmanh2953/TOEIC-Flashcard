@@ -245,7 +245,7 @@ export const KidsJourneyPage: React.FC = () => {
       {/* 2. ADVENTURE WORLD HEADER (ATMOSPHERIC CINEMATIC BANNER)         */}
       {/* ================================================================ */}
       <div
-        className={`relative overflow-hidden rounded-3xl bg-gradient-to-r ${currentBiome.gradient} text-white p-5 sm:p-7 lg:p-8 border-2 ${currentBiome.border} shadow-sm min-h-[170px] flex flex-col justify-between`}
+        className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r ${currentBiome.gradient} text-white p-4 sm:p-7 lg:p-8 border-2 ${currentBiome.border} shadow-sm min-h-[150px] sm:min-h-[170px] flex flex-col justify-between`}
       >
         {/* Real 3D World Art Background */}
         {currentBiome.image && (
@@ -257,15 +257,15 @@ export const KidsJourneyPage: React.FC = () => {
           />
         )}
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
-          <div className="space-y-2 max-w-xl min-w-0 flex-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/25 backdrop-blur-md text-[11px] sm:text-xs font-black uppercase tracking-wider border border-white/20">
-              <KidsMapIcon size={16} />
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-1.5 sm:space-y-2 max-w-xl min-w-0 flex-1">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-black/25 backdrop-blur-md text-[10px] sm:text-xs font-black uppercase tracking-wider border border-white/20">
+              <KidsMapIcon size={14} />
               <span>Cung Đường Thám Hiểm</span>
               <span>•</span>
               <span>Cấp độ {currentWorld.level}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white drop-shadow-md">
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight text-white drop-shadow-md">
               {currentWorld.title}
             </h1>
             <p className="text-white/95 font-medium text-xs sm:text-sm leading-relaxed drop-shadow-sm">
@@ -274,13 +274,13 @@ export const KidsJourneyPage: React.FC = () => {
           </div>
 
           {/* Expedition Quick Milestone Box */}
-          <div className="bg-black/20 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/25 flex items-center gap-3 sm:gap-4 shrink-0 shadow-xs self-stretch sm:self-auto">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-xs shrink-0">
-              <Flag className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className="bg-black/20 backdrop-blur-md p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/25 flex items-center gap-3 sm:gap-4 shrink-0 shadow-xs self-stretch sm:self-auto">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-xs shrink-0">
+              <Flag className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-white/80">Tiến độ chặng</p>
-              <p className="text-sm sm:text-base font-black text-white">
+              <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white/80">Tiến độ chặng</p>
+              <p className="text-xs sm:text-base font-black text-white">
                 {completedCount} / {allWorldLessons.length} Trạm
               </p>
             </div>
@@ -291,25 +291,25 @@ export const KidsJourneyPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 3. VIVI EXPEDITION COMPANION BAR (NEXT STATION JUMP)             */}
       {/* ================================================================ */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
-        <div className="flex items-center gap-4 text-center sm:text-left">
+      <div className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3.5 sm:gap-4 shadow-xs">
+        <div className="flex items-center gap-3 sm:gap-4 text-center sm:text-left">
           <div
             onClick={() => {
               soundManager.playPop();
             }}
             className="shrink-0"
           >
-            <KidsMascot mood="excited" size={60} />
+            <KidsMascot mood="excited" size={52} />
           </div>
           <div>
-            <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-150 inline-flex items-center gap-1">
+            <span className="text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-150 inline-flex items-center gap-1">
               <Compass className="w-3.5 h-3.5 text-sky-600" />
               Bạn Đồng Hành Vivi
             </span>
-            <h3 className="font-black text-slate-900 text-base sm:text-lg mt-0.5">
+            <h3 className="font-black text-slate-900 text-sm sm:text-lg mt-0.5">
               Trạm kế tiếp: {activeLesson ? activeLesson.title : 'Đỉnh Vinh Quang'}
             </h3>
-            <p className="text-xs font-semibold text-slate-500">
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-500">
               Vượt qua từng trạm để thu thập ngôi sao và cắm cờ tại đỉnh núi!
             </p>
           </div>
@@ -318,11 +318,11 @@ export const KidsJourneyPage: React.FC = () => {
         {activeLesson && (
           <button
             onClick={() => handleSelectLesson(activeLesson, true)}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0 shadow-sm"
+            className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0 shadow-sm"
           >
-            <KidsPlayIcon size={18} />
+            <KidsPlayIcon size={16} />
             <span>VÀO TRẠM NÀY NGAY</span>
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="w-3.5 h-3.5 fill-current" />
           </button>
         )}
       </div>
@@ -330,7 +330,7 @@ export const KidsJourneyPage: React.FC = () => {
       {/* ================================================================ */}
       {/* 4. ADVENTURE WORLD: CONTINUOUS SVG PATH MOUNTAIN ROADMAP         */}
       {/* ================================================================ */}
-      <div className="relative rounded-3xl bg-gradient-to-b from-emerald-100 via-green-50 to-emerald-200/90 border-3 border-emerald-400 p-3 sm:p-8 overflow-hidden shadow-md select-none">
+      <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-b from-emerald-100 via-green-50 to-emerald-200/90 border-2 sm:border-3 border-emerald-400 p-2 sm:p-8 overflow-hidden shadow-md select-none">
         
         {/* Atmosphere Background Silhouette (Layer 1: Behind Path) */}
         <div className="absolute inset-0 pointer-events-none opacity-30 overflow-hidden">

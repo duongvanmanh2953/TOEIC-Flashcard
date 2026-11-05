@@ -134,17 +134,17 @@ export const KidsLayout: React.FC = () => {
     },
     {
       to: '/flashcards',
-      label: 'Học từ vựng',
+      label: 'Từ vựng',
       icon: BookOpen,
     },
     {
       to: '/world',
-      label: 'Luyện nghe nói',
+      label: 'Nghe nói',
       icon: Headphones,
     },
     {
       to: '/games',
-      label: 'Trò chơi vui nhộn',
+      label: 'Trò chơi',
       icon: ClipboardList,
     },
     {
@@ -154,7 +154,7 @@ export const KidsLayout: React.FC = () => {
     },
     {
       to: '/parent',
-      label: 'Kết quả học tập',
+      label: 'Báo cáo',
       icon: Users,
     },
   ];
@@ -365,41 +365,41 @@ export const KidsLayout: React.FC = () => {
       <div className={`flex-1 flex flex-col min-w-0 ${!isFocusMode ? 'lg:pl-64 xl:pl-72' : 'h-screen h-[100dvh] max-h-[100dvh] overflow-hidden'}`}>
         {/* Top Header HUD (Pixel-perfect matching prototype) */}
         {!isFocusMode && (
-          <header className="sticky top-0 z-30 bg-[#F7FBFF]/90 backdrop-blur-xl border-b border-sky-100/70 px-4 sm:px-6 lg:px-8 py-3 shadow-2xs">
-            <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <header className="sticky top-0 z-30 bg-[#F7FBFF]/95 backdrop-blur-xl border-b border-sky-100/70 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-2xs">
+            <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
               {/* Left: Child Profile Greeting */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="lg:hidden h-10 w-10 rounded-2xl bg-sky-500 text-white flex items-center justify-center shrink-0 cursor-pointer shadow-xs active:scale-95"
+                  className="lg:hidden h-9 w-9 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-sky-500 text-white flex items-center justify-center shrink-0 cursor-pointer shadow-xs active:scale-95"
                   aria-label="Mở Menu Khám Phá"
                 >
                   <Menu className="w-5 h-5" />
                 </button>
 
-                <div className="relative">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 p-0.5 shadow-xs shrink-0 flex items-center justify-center">
+                <div className="relative shrink-0">
+                  <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-amber-300 to-orange-400 p-0.5 shadow-xs flex items-center justify-center">
                     <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                      <Smile className="w-5 h-5 text-amber-700" />
+                      <Smile className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700" />
                     </div>
                   </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-emerald-500 border-2 border-white" />
                 </div>
 
-                <div>
-                  <h1 className="text-base sm:text-lg font-black text-[#17345B] tracking-tight leading-tight">
-                    Xin chào, Bé!
+                <div className="min-w-0">
+                  <h1 className="text-sm sm:text-base lg:text-lg font-black text-[#17345B] tracking-tight leading-tight truncate">
+                    Xin chào, Bé! 👋
                   </h1>
-                  <p className="text-xs font-semibold text-[#64748B] flex items-center gap-1">
-                    <span>Hôm nay mình học thêm một chút nữa nhé!</span>
+                  <p className="text-[11px] sm:text-xs font-semibold text-[#64748B] hidden sm:flex items-center gap-1">
+                    <span>Hôm nay mình học thêm một chút nhé!</span>
                     <Sun className="w-3.5 h-3.5 text-amber-500 fill-amber-400 inline shrink-0" />
                   </p>
                 </div>
               </div>
 
               {/* Right: Return to Learner + Streak HUD + Settings Gear + Profile Circle */}
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                 {/* Return to Learner Dashboard Button */}
                 <button
                   type="button"
@@ -410,12 +410,12 @@ export const KidsLayout: React.FC = () => {
                       'Nhấn và giữ 1.5 giây để mở khóa và trở về giao diện học viên người lớn.'
                     )
                   }
-                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-white hover:bg-rose-50 border border-slate-200/90 hover:border-rose-300 text-xs font-black text-slate-700 hover:text-rose-600 shadow-2xs cursor-pointer transition-all active:scale-95 group"
+                  className="flex items-center justify-center gap-1.5 p-2 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-full bg-white hover:bg-rose-50 border border-slate-200/90 hover:border-rose-300 text-xs font-black text-slate-700 hover:text-rose-600 shadow-2xs cursor-pointer transition-all active:scale-95 group"
                   title="Thoát chế độ bé & trở về màn học viên"
                 >
                   <GraduationCap className="w-4 h-4 text-indigo-600 group-hover:text-rose-600 transition-colors" />
-                  <span className="hidden sm:inline">Về màn học viên</span>
-                  <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500 transition-colors" />
+                  <span className="hidden md:inline">Về màn học viên</span>
+                  <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500 transition-colors hidden sm:inline" />
                 </button>
 
                 {/* Streak Pill */}
@@ -424,29 +424,29 @@ export const KidsLayout: React.FC = () => {
                     kidsSound.play('sparkle');
                     handleOpenParentGate('/parent');
                   }}
-                  className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white hover:bg-amber-50/70 border border-slate-200/90 text-xs font-black text-slate-800 shadow-2xs cursor-pointer transition-all active:scale-95"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full bg-white hover:bg-amber-50/70 border border-slate-200/90 text-xs font-black text-slate-800 shadow-2xs cursor-pointer transition-all active:scale-95"
                 >
-                  <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
-                  <span className="hidden sm:inline">Chuỗi học tập</span>
-                  <span className="text-orange-600 font-black">{progress.streakDays || 12} ngày</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                  <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 fill-orange-500 animate-pulse" />
+                  <span className="hidden sm:inline">Chuỗi:</span>
+                  <span className="text-orange-600 font-black">{progress.streakDays || 12}d</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
                 </button>
 
                 {/* Settings Gear */}
                 <button
-                  onClick={() => handleOpenParentGate('/kids/parent')}
+                  onClick={() => handleOpenParentGate('/parent')}
                   title="Cài đặt dành cho phụ huynh"
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200/90 text-slate-600 flex items-center justify-center cursor-pointer shadow-2xs transition-all active:scale-95"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 border border-slate-200/90 text-slate-600 flex items-center justify-center cursor-pointer shadow-2xs transition-all active:scale-95"
                 >
                   <Settings className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 </button>
 
                 {/* Profile Circle Avatar */}
                 <div
-                  onClick={() => handleOpenParentGate('/kids/parent')}
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 p-0.5 shadow-2xs cursor-pointer active:scale-95 flex items-center justify-center"
+                  onClick={() => handleOpenParentGate('/parent')}
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 p-0.5 shadow-2xs cursor-pointer active:scale-95 flex items-center justify-center"
                 >
-                  <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center text-sm font-black text-sky-700">
+                  <div className="w-full h-full rounded-[10px] sm:rounded-[14px] bg-white flex items-center justify-center text-xs sm:text-sm font-black text-sky-700">
                     Bé
                   </div>
                 </div>
@@ -460,7 +460,7 @@ export const KidsLayout: React.FC = () => {
           className={`flex-1 w-full flex flex-col relative z-10 ${
             isFocusMode
               ? 'h-full max-h-[100dvh] overflow-hidden p-0 m-0'
-              : 'h-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 lg:pb-8'
+              : 'h-full px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-28 lg:pb-8'
           }`}
         >
           <Outlet />
@@ -471,8 +471,8 @@ export const KidsLayout: React.FC = () => {
       {/* 3. TABLET & MOBILE BOTTOM NAVIGATION (Quick shortcuts)                    */}
       {/* ========================================================================= */}
       {!isFocusMode && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-3 py-2 shadow-2xl kid-mobile-safe-bottom">
-          <div className="w-full max-w-md sm:max-w-xl mx-auto flex items-center justify-around gap-1">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-1 sm:px-2 py-1.5 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] pb-[max(0.4rem,env(safe-area-inset-bottom))]">
+          <div className="w-full max-w-md sm:max-w-xl mx-auto flex items-center justify-around gap-0.5 sm:gap-1">
             {navItems.map((item) => {
               const isActive =
                 item.exact
@@ -483,14 +483,16 @@ export const KidsLayout: React.FC = () => {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={`flex flex-col items-center justify-center py-2 px-3 rounded-2xl transition-all duration-200 min-h-[58px] min-w-[62px] active:scale-95 touch-manipulation cursor-pointer ${
+                  className={`flex flex-col items-center justify-center py-1 sm:py-1.5 px-1 sm:px-2 rounded-2xl transition-all duration-200 min-h-[48px] flex-1 max-w-[64px] active:scale-95 touch-manipulation cursor-pointer ${
                     isActive
-                      ? 'bg-amber-100/90 text-amber-950 font-black shadow-sm border-2 border-amber-300 -translate-y-1'
-                      : 'bg-transparent text-slate-600 font-bold hover:text-slate-900 border-2 border-transparent'
+                      ? 'bg-amber-100/90 text-amber-950 font-black shadow-xs border border-amber-300 -translate-y-0.5'
+                      : 'bg-transparent text-slate-500 font-bold hover:text-slate-900 border border-transparent'
                   }`}
                 >
-                  <item.icon size={22} className={isActive ? 'text-amber-600 stroke-[2.5]' : 'text-slate-500'} />
-                  <span className="text-[11px] font-black mt-1 leading-tight tracking-tight">{item.label}</span>
+                  <item.icon size={19} className={isActive ? 'text-amber-600 stroke-[2.5]' : 'text-slate-500'} />
+                  <span className="text-[10px] font-black mt-0.5 leading-tight tracking-tight truncate max-w-full text-center">
+                    {item.label}
+                  </span>
                 </NavLink>
               );
             })}

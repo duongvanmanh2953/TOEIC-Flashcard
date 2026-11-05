@@ -43,75 +43,75 @@ export const KidsParentDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 space-y-4 sm:space-y-5 animate-fadeIn select-none">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-2xl sm:rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-3 sm:p-6 lg:p-7 space-y-3.5 sm:space-y-5 animate-fadeIn select-none">
       {/* Top Header */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 border-2 border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 text-purple-600" />
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border-2 border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
           </div>
           <div>
-            <div className="inline-flex items-center gap-1 text-xs font-black text-purple-700 uppercase tracking-wider mb-0.5">
+            <div className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-black text-purple-700 uppercase tracking-wider mb-0.5">
               <span>Trung Tâm Phụ Huynh</span>
             </div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900">Báo Cáo Tiến Độ Của Bé</h1>
-            <p className="text-xs md:text-sm text-slate-600 font-bold">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-slate-900 leading-tight">Báo Cáo Tiến Độ Của Bé</h1>
+            <p className="text-[11px] sm:text-xs md:text-sm text-slate-600 font-bold mt-0.5">
               Theo dõi phát âm tiếng Anh, khả năng ghi nhớ từ vựng và chuỗi ngày chăm chỉ của bé.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => navigate('/kids')}
-            className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition-all cursor-pointer"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition-all cursor-pointer text-center"
           >
-            ← Về Góc Bé Học
+            ← Góc Bé Học
           </button>
           <button
             onClick={() => navigate('/dashboard')}
-            className="px-4 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-black text-xs transition-all cursor-pointer flex items-center gap-1.5"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
-            <span>🎓 Về Màn Học Viên</span>
+            <span>🎓 Màn Học Viên</span>
           </button>
         </div>
       </div>
 
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-3xl p-5 border-2 border-amber-200/80">
-          <div className="text-xs font-black text-slate-600 uppercase mb-1">Số Sao Tích Lũy</div>
-          <div className="text-2xl md:text-3xl font-black text-amber-500 flex items-center gap-1.5">
-            <Star className="w-6 h-6 fill-amber-400 text-amber-500" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border-2 border-amber-200/80">
+          <div className="text-[10px] sm:text-xs font-black text-slate-600 uppercase mb-0.5 sm:mb-1">Số Sao Tích Lũy</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-black text-amber-500 flex items-center gap-1.5">
+            <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-amber-400 text-amber-500" />
             <span>{progress.totalStars}</span>
           </div>
-          <div className="text-[11px] text-slate-600 font-bold mt-1">Từ bài học & mini-game</div>
+          <div className="text-[10px] sm:text-[11px] text-slate-600 font-bold mt-1">Từ bài học & mini-game</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-emerald-200/80">
-          <div className="text-xs font-black text-slate-600 uppercase mb-1">Bài Đã Hoàn Thành</div>
-          <div className="text-2xl md:text-3xl font-black text-emerald-600">
-            {completedLessonsCount} <span className="text-sm font-bold text-slate-700">/ {totalCurriculumLessons}</span>
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border-2 border-emerald-200/80">
+          <div className="text-[10px] sm:text-xs font-black text-slate-600 uppercase mb-0.5 sm:mb-1">Bài Đã Hoàn Thành</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-black text-emerald-600">
+            {completedLessonsCount} <span className="text-xs sm:text-sm font-bold text-slate-700">/ {totalCurriculumLessons}</span>
           </div>
-          <div className="text-[11px] text-slate-600 font-bold mt-1">{progressPercent}% lộ trình toàn bộ</div>
+          <div className="text-[10px] sm:text-[11px] text-slate-600 font-bold mt-1">{progressPercent}% lộ trình toàn bộ</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-sky-200/80">
-          <div className="text-xs font-black text-slate-600 uppercase mb-1">Độ Chuẩn Phát Âm</div>
-          <div className="text-2xl md:text-3xl font-black text-sky-600">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border-2 border-sky-200/80">
+          <div className="text-[10px] sm:text-xs font-black text-slate-600 uppercase mb-0.5 sm:mb-1">Độ Chuẩn Phát Âm</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-black text-sky-600">
             {averageAccuracy}%
           </div>
-          <div className="text-[11px] text-slate-600 font-bold mt-1">Độ chính xác luyện nói & nghe</div>
+          <div className="text-[10px] sm:text-[11px] text-slate-600 font-bold mt-1">Độ chính xác nói & nghe</div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border-2 border-rose-200/80">
-          <div className="text-xs font-black text-slate-600 uppercase mb-1">Thói Quen Mỗi Ngày</div>
-          <div className="text-2xl md:text-3xl font-black text-rose-500 flex items-center gap-1.5">
-            <Flame className="w-6 h-6 text-rose-500" />
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border-2 border-rose-200/80">
+          <div className="text-[10px] sm:text-xs font-black text-slate-600 uppercase mb-0.5 sm:mb-1">Thói Quen Mỗi Ngày</div>
+          <div className="text-xl sm:text-2xl md:text-3xl font-black text-rose-500 flex items-center gap-1.5">
+            <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-rose-500" />
             <span>{progress.streakDays}</span>
-            <span className="text-sm font-bold text-slate-600">ngày</span>
+            <span className="text-xs sm:text-sm font-bold text-slate-600">ngày</span>
           </div>
-          <div className="text-[11px] text-slate-600 font-bold mt-1">Chuỗi ngày học liên tục</div>
+          <div className="text-[10px] sm:text-[11px] text-slate-600 font-bold mt-1">Chuỗi ngày học liên tục</div>
         </div>
       </div>
 

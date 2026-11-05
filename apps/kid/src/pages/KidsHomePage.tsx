@@ -94,33 +94,33 @@ export const KidsHomePage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-5 lg:p-6 flex flex-col lg:flex-row items-stretch gap-4 sm:gap-5 select-none animate-fadeIn">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-2xl sm:rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-3 sm:p-5 lg:p-6 flex flex-col lg:flex-row items-stretch gap-4 sm:gap-5 select-none animate-fadeIn">
       {/* ===================================================================== */}
       {/* LEFT & CENTER MAIN LEARNING STREAM (Flex-1)                           */}
       {/* ===================================================================== */}
-      <div className="flex-1 min-w-0 w-full flex flex-col space-y-4 sm:space-y-5">
+      <div className="flex-1 min-w-0 w-full flex flex-col space-y-3.5 sm:space-y-5">
         {/* 1. LARGE HERO BANNER: "Cùng khám phá thế giới từ vựng!" */}
-        <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-sky-200/80 via-sky-100/90 to-emerald-100/70 backdrop-blur-xl border border-white/90 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-5">
+        <div className="rounded-2xl sm:rounded-3xl p-4 sm:p-6 bg-gradient-to-r from-sky-200/80 via-sky-100/90 to-emerald-100/70 backdrop-blur-xl border border-white/90 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-5">
           {/* Subtle clouds background */}
           <div className="absolute top-3 left-10 w-24 h-12 bg-white/60 rounded-full blur-xs pointer-events-none" />
           <div className="absolute bottom-4 left-1/3 w-36 h-14 bg-white/40 rounded-full blur-xs pointer-events-none" />
 
           {/* Left Text Block */}
-          <div className="relative z-10 max-w-md space-y-2 text-left">
-            <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-[#17345B] tracking-tight leading-snug">
-              Cùng khám phá<br />thế giới từ vựng!
+          <div className="relative z-10 max-w-md space-y-1.5 sm:space-y-2 text-center md:text-left">
+            <h1 className="text-xl sm:text-3xl lg:text-[34px] font-black text-[#17345B] tracking-tight leading-snug">
+              Cùng khám phá<br className="hidden sm:inline" /> thế giới từ vựng!
             </h1>
-            <p className="text-sm sm:text-base font-bold text-[#64748B] pt-1">
+            <p className="text-xs sm:text-base font-bold text-[#64748B] pt-0.5 sm:pt-1">
               Mỗi ngày một từ mới, tiến bộ từng chút một!
             </p>
 
-            <div className="pt-3">
+            <div className="pt-2 sm:pt-3 flex justify-center md:justify-start">
               <button
                 onClick={handleStartLearn}
-                className="px-7 py-3 rounded-full bg-gradient-to-r from-[#FFD866] to-[#F59E0B] hover:brightness-105 text-[#431407] font-black text-sm sm:text-base shadow-md active:scale-95 flex items-center gap-2.5 cursor-pointer transition-all"
+                className="px-6 sm:px-7 py-2.5 sm:py-3 rounded-full bg-gradient-to-r from-[#FFD866] to-[#F59E0B] hover:brightness-105 text-[#431407] font-black text-xs sm:text-base shadow-md active:scale-95 flex items-center gap-2 cursor-pointer transition-all"
               >
-                <div className="w-6 h-6 rounded-full bg-white/40 flex items-center justify-center">
-                  <Play className="w-3.5 h-3.5 fill-[#431407] text-[#431407] ml-0.5" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/40 flex items-center justify-center">
+                  <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-[#431407] text-[#431407] ml-0.5" />
                 </div>
                 <span>Bắt đầu học</span>
               </button>
@@ -128,7 +128,7 @@ export const KidsHomePage: React.FC = () => {
           </div>
 
           {/* Right Cropped Asset (Vivi Fox with Backpack & Wooden Signpost) */}
-          <div className="w-full md:w-[300px] lg:w-[340px] h-[200px] sm:h-[220px] relative shrink-0 flex items-center justify-center">
+          <div className="w-full max-w-[280px] sm:max-w-none md:w-[300px] lg:w-[340px] h-[180px] sm:h-[220px] relative shrink-0 flex items-center justify-center">
             <img
               src={kidAsset('/kid/ui/hero-mascot-signpost.png')}
               alt="Vivi and wooden signpost"
@@ -137,30 +137,30 @@ export const KidsHomePage: React.FC = () => {
               onError={(e) => { (e.target as HTMLImageElement).src = '/kid/mascot/vivi-wave.png'; }}
             />
             {/* Interactive signpost click areas aligned directly with the 4 wooden arrows */}
-            <div className="absolute right-1 sm:right-2 top-3 bottom-4 w-28 sm:w-32 flex flex-col justify-between py-1 z-20 pointer-events-auto">
+            <div className="absolute right-1 sm:right-2 top-2 bottom-3 sm:top-3 sm:bottom-4 w-24 sm:w-32 flex flex-col justify-between py-1 z-20 pointer-events-auto">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('words'); }}
                 title="Words • Học từ vựng"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
+                className="w-full h-8 sm:h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('listening'); }}
                 title="Listening • Luyện nghe"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
+                className="w-full h-8 sm:h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('speaking'); }}
                 title="Speaking • Luyện nói"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
+                className="w-full h-8 sm:h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); handleSignClick('test'); }}
                 title="Test • Trò chơi vui nhộn"
-                className="w-full h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
+                className="w-full h-8 sm:h-9 rounded-xl hover:bg-amber-400/25 active:scale-95 transition-all cursor-pointer border border-transparent hover:border-amber-300/60"
               />
             </div>
           </div>
@@ -172,28 +172,28 @@ export const KidsHomePage: React.FC = () => {
         <BrightFoxActivityCards />
 
         {/* 2. QUICK ACCESS DESTINATION TILES */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
           {/* Card 1: Học từ vựng */}
           <div
             onClick={() => {
               soundManager.playPop();
               navigate('/kids/flashcards');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-sky-50/85 backdrop-blur-xl border border-sky-200/90 hover:border-sky-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-sky-50/85 backdrop-blur-xl border border-sky-200/90 hover:border-sky-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[120px] sm:min-h-[140px]"
           >
-            <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center">
-              <BookOpen className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
+              <h2 className="text-xs sm:text-base font-black text-[#17345B]">
                 Học từ vựng
               </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
+              <p className="text-[10px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug line-clamp-2">
                 Flashcard thông minh, ghi nhớ lâu hơn
               </p>
             </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-sky-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/90 text-sky-600 flex items-center justify-center self-end shadow-2xs">
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
 
@@ -203,21 +203,21 @@ export const KidsHomePage: React.FC = () => {
               soundManager.playPop();
               navigate('/kids/world');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-purple-50/85 backdrop-blur-xl border border-purple-200/90 hover:border-purple-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-purple-50/85 backdrop-blur-xl border border-purple-200/90 hover:border-purple-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[120px] sm:min-h-[140px]"
           >
-            <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
-              <Headphones className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
+              <Headphones className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
+              <h2 className="text-xs sm:text-base font-black text-[#17345B]">
                 Luyện nghe nói
               </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
+              <p className="text-[10px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug line-clamp-2">
                 Nghe chuẩn – Nói hay cùng AI
               </p>
             </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-purple-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/90 text-purple-600 flex items-center justify-center self-end shadow-2xs">
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
 
@@ -227,21 +227,21 @@ export const KidsHomePage: React.FC = () => {
               soundManager.playPop();
               navigate('/kids/games');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-emerald-50/85 backdrop-blur-xl border border-emerald-200/90 hover:border-emerald-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-emerald-50/85 backdrop-blur-xl border border-emerald-200/90 hover:border-emerald-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[120px] sm:min-h-[140px]"
           >
-            <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              <ClipboardList className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
+              <h2 className="text-xs sm:text-base font-black text-[#17345B]">
                 Trò chơi vui nhộn
               </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
-                Làm quen dạng bài TOEIC, thật tự tin
+              <p className="text-[10px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug line-clamp-2">
+                Mini-game phản xạ & đố vui
               </p>
             </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-emerald-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/90 text-emerald-600 flex items-center justify-center self-end shadow-2xs">
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
 
@@ -251,21 +251,21 @@ export const KidsHomePage: React.FC = () => {
               soundManager.playPop();
               navigate('/kids/parent');
             }}
-            className="p-4 sm:p-5 rounded-3xl bg-amber-50/85 backdrop-blur-xl border border-amber-200/90 hover:border-amber-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[140px]"
+            className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-amber-50/85 backdrop-blur-xl border border-amber-200/90 hover:border-amber-400 hover:-translate-y-1 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[120px] sm:min-h-[140px]"
           >
-            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
-              <Star className="w-5 h-5 fill-current" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-black text-[#17345B]">
+              <h2 className="text-xs sm:text-base font-black text-[#17345B]">
                 Tiến độ học tập
               </h2>
-              <p className="text-[11px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug">
+              <p className="text-[10px] sm:text-xs font-bold text-[#64748B] mt-0.5 leading-snug line-clamp-2">
                 Xem kết quả, nhận huy hiệu
               </p>
             </div>
-            <div className="w-6 h-6 rounded-full bg-white/90 text-amber-600 flex items-center justify-center self-end shadow-2xs">
-              <ChevronRight className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/90 text-amber-600 flex items-center justify-center self-end shadow-2xs">
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
           </div>
         </div>

@@ -307,19 +307,19 @@ export const KidsMyWorldPage: React.FC = () => {
   const currentZoneObj = ISLAND_ZONES.find((z) => z.id === activeZone) || ISLAND_ZONES[0];
 
   return (
-    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-4 sm:p-6 lg:p-7 flex flex-col space-y-4 sm:space-y-5 animate-fadeIn select-none">
+    <div className="w-full min-h-[calc(100vh-140px)] flex-1 bg-white/75 backdrop-blur-2xl rounded-2xl sm:rounded-[36px] border border-white/90 shadow-[0_12px_40px_rgba(0,0,0,0.06)] p-3 sm:p-6 lg:p-7 flex flex-col space-y-3.5 sm:space-y-5 animate-fadeIn select-none">
       {/* ================================================================ */}
       {/* 1. CONCEPT BANNER: HÀNH TINH KỲ THÚ - ĐẢO CỦA BÉ                */}
       {/* ================================================================ */}
-      <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 rounded-3xl p-6 sm:p-8 text-white flex flex-col items-stretch gap-6 border-2 border-emerald-400 shadow-sm relative overflow-hidden">
-        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-          <KidsMascot mood="happy" size={90} speechText="Chào mừng bé đến Hành Tinh Kỳ Thú!" />
+      <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 rounded-2xl sm:rounded-3xl p-4 sm:p-8 text-white flex flex-col items-stretch gap-4 sm:gap-6 border-2 border-emerald-400 shadow-sm relative overflow-hidden">
+        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-center sm:text-left">
+          <KidsMascot mood="happy" size={72} speechText="Chào mừng bé đến Hành Tinh Kỳ Thú!" />
           <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 text-xs font-black uppercase mb-1.5 border border-white/30 text-white">
-              <Compass className="w-4 h-4 text-yellow-300" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/20 text-[11px] font-black uppercase mb-1 border border-white/30 text-white">
+              <Compass className="w-3.5 h-3.5 text-yellow-300" />
               <span>Hành Tinh Kỳ Thú • Đảo Của Bé</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white">Thế Giới Khám Phá & Học Tập Tương Tác</h1>
+            <h1 className="text-lg sm:text-2xl font-black text-white leading-tight">Thế Giới Khám Phá & Học Tập Tương Tác</h1>
             <p className="text-emerald-100 text-xs sm:text-sm font-bold mt-1 max-w-xl">
               Khám phá 6 phân khu kỳ diệu: nghe từ vựng tự động, trò chuyện hàng ngày và xây dựng vương quốc riêng của bé!
             </p>
@@ -327,12 +327,12 @@ export const KidsMyWorldPage: React.FC = () => {
         </div>
 
         {/* 4 Mode Tabs with Equal Touch Targets */}
-        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 items-center gap-3 bg-white/20 backdrop-blur-lg p-2.5 rounded-3xl border border-white/40 w-full shadow-inner">
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 items-center gap-2 sm:gap-3 bg-white/20 backdrop-blur-lg p-1.5 sm:p-2.5 rounded-2xl sm:rounded-3xl border border-white/40 w-full shadow-inner">
           <button
             onClick={() => setActiveTab('zones')}
-            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
+            className={`px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'zones'
-                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.02]'
                 : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
@@ -341,9 +341,9 @@ export const KidsMyWorldPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('phrases')}
-            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
+            className={`px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'phrases'
-                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.02]'
                 : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
@@ -352,9 +352,9 @@ export const KidsMyWorldPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('island')}
-            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
+            className={`px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'island'
-                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.02]'
                 : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
@@ -363,9 +363,9 @@ export const KidsMyWorldPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('badges')}
-            className={`px-3 sm:px-4 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 min-h-[48px] ${
+            className={`px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] sm:min-h-[48px] ${
               activeTab === 'badges'
-                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.03]'
+                ? 'bg-white/70 backdrop-blur-xl border border-white text-slate-900 shadow-[0_8px_16px_rgba(0,0,0,0.1)] scale-[1.02]'
                 : 'text-white hover:bg-white/20 border border-transparent'
             }`}
           >
@@ -393,7 +393,7 @@ export const KidsMyWorldPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4">
           {ISLAND_ZONES.map((zone) => {
             const isCurrent = activeZone === zone.id;
             const zoneWordsCount = COMPREHENSIVE_VOCABULARY.filter(
@@ -404,16 +404,16 @@ export const KidsMyWorldPage: React.FC = () => {
               <button
                 key={zone.id}
                 onClick={() => handleSelectZone(zone)}
-                className={`relative p-4 sm:p-5 rounded-[28px] flex flex-col items-center text-center gap-2.5 transition-all duration-300 cursor-pointer select-none overflow-hidden ${
+                className={`relative p-3 sm:p-5 rounded-2xl sm:rounded-[28px] flex flex-col items-center text-center gap-2 sm:gap-2.5 transition-all duration-300 cursor-pointer select-none overflow-hidden ${
                   isCurrent
-                    ? `bg-white shadow-[0_16px_32px_-6px_rgba(20,40,70,0.18)] scale-[1.04] -translate-y-1.5 ring-4 ${zone.activeRing}`
-                    : 'bg-white hover:bg-slate-50/80 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:shadow-md hover:-translate-y-1 border border-slate-100'
+                    ? `bg-white shadow-[0_16px_32px_-6px_rgba(20,40,70,0.18)] scale-[1.03] -translate-y-1 ring-3 sm:ring-4 ${zone.activeRing}`
+                    : 'bg-white hover:bg-slate-50/80 shadow-[0_6px_20px_-4px_rgba(20,40,70,0.06)] hover:shadow-md hover:-translate-y-0.5 border border-slate-100'
                 }`}
               >
                 {/* Soft background aura tint */}
                 <div
-                  className={`w-16 h-16 sm:w-18 sm:h-18 rounded-2xl ${zone.tintBg} flex items-center justify-center p-2.5 transform transition-transform duration-300 ${
-                    isCurrent ? 'scale-110 filter drop-shadow-md' : 'hover:scale-105'
+                  className={`w-12 h-12 sm:w-18 sm:h-18 rounded-xl sm:rounded-2xl ${zone.tintBg} flex items-center justify-center p-2 sm:p-2.5 transform transition-transform duration-300 ${
+                    isCurrent ? 'scale-105 filter drop-shadow-md' : 'hover:scale-105'
                   }`}
                 >
                   <KidsIllustration
@@ -430,7 +430,7 @@ export const KidsMyWorldPage: React.FC = () => {
                   >
                     {zone.nameVi}
                   </p>
-                  <span className="text-[10px] font-bold text-slate-400 block mt-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 block mt-0.5 truncate">
                     {zone.nameEn}
                   </span>
                 </div>
@@ -438,7 +438,7 @@ export const KidsMyWorldPage: React.FC = () => {
                 {/* Word count pill */}
                 <div className="mt-auto">
                   <span
-                    className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    className={`text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full ${
                       isCurrent ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
                     }`}
                   >
@@ -992,8 +992,8 @@ export const KidsMyWorldPage: React.FC = () => {
       {/* WORD DETAIL MODAL WITH AUTOMATIC PRONUNCIATION (Requirement #4)  */}
       {/* ================================================================ */}
       {activeWordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="max-w-md w-full bg-white rounded-3xl border-2 border-sky-300 p-6 sm:p-8 space-y-6 animate-scale-up shadow-2xl relative">
+        <div className="fixed inset-0 z-[200] w-screen h-screen min-h-[100dvh] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn select-none">
+          <div className="max-w-md w-full my-auto bg-white rounded-3xl border-2 border-sky-300 p-6 sm:p-8 space-y-6 animate-scale-up shadow-2xl relative">
             <button
               onClick={handleCloseWord}
               className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer min-h-[36px]"
@@ -1002,8 +1002,12 @@ export const KidsMyWorldPage: React.FC = () => {
             </button>
 
             <div className="text-center space-y-2">
-              <div className="w-20 h-20 mx-auto rounded-3xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600 animate-gentle-float">
-                <Sparkles className="w-10 h-10" />
+              <div className="w-24 h-24 mx-auto rounded-3xl bg-sky-50 border border-sky-200 flex items-center justify-center p-2.5 animate-gentle-float shadow-inner">
+                <KidsIllustration
+                  name={activeWordModal.word.toLowerCase()}
+                  className="w-full h-full object-contain filter drop-shadow-sm"
+                  alt={activeWordModal.word}
+                />
               </div>
 
               <div>

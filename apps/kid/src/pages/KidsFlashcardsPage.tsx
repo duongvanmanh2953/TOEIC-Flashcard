@@ -28,7 +28,6 @@ import {
   Shuffle,
   Heart,
 } from 'lucide-react';
-import { CustomSelect } from '../components/common/CustomSelect';
 
 interface CategoryOption {
   id: string;
@@ -195,38 +194,38 @@ export const KidsFlashcardsPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. TOP HEADER (BALANCED, CLEAN, NO OVERCROWDED TABS)                      */}
       {/* ========================================================================= */}
-      <header className="flex-shrink-0 w-full max-w-4xl mx-auto px-4 pt-3 pb-1 flex items-center justify-between gap-3">
+      <header className="flex-shrink-0 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-1 flex items-center justify-between gap-2 sm:gap-3">
         {/* Left: Back Button & Title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={() => {
               soundManager.playPop();
               navigate('/kids');
             }}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95"
+            className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95 shrink-0"
             title="Quay lại thế giới trẻ thơ"
           >
             <ArrowLeft className="w-4 h-4 text-slate-600" />
-            <span>Thoát</span>
+            <span className="hidden xs:inline">Thoát</span>
           </button>
 
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
-              Magic Learning Cards
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h1 className="text-xs sm:text-base font-black text-slate-900 tracking-tight truncate">
+              Magic Flashcards
             </h1>
-            <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/80 text-[10px] font-black">
+            <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/80 text-[10px] font-black">
               Thẻ Thông Minh
             </span>
           </div>
         </div>
 
         {/* Center: Progress Counter (01 / 75) */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs sm:text-sm font-black text-slate-700 font-mono">
-            {String(currentIndex + 1).padStart(2, '0')} / {String(totalCards).padStart(2, '0')}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <span className="text-[11px] sm:text-sm font-black text-slate-700 font-mono">
+            {String(currentIndex + 1).padStart(2, '0')}/{String(totalCards).padStart(2, '0')}
           </span>
-          <div className="w-14 sm:w-20 h-1.5 rounded-full bg-slate-200/80 overflow-hidden">
+          <div className="w-10 sm:w-20 h-1.5 rounded-full bg-slate-200/80 overflow-hidden">
             <div
               className="h-full bg-amber-500 rounded-full transition-all duration-300"
               style={{ width: `${totalCards > 0 ? ((currentIndex + 1) / totalCards) * 100 : 0}%` }}
@@ -235,11 +234,11 @@ export const KidsFlashcardsPage: React.FC = () => {
         </div>
 
         {/* Right: Sound & Shuffle Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setIsMuted((prev) => !prev)}
-            className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-600 cursor-pointer transition-colors shadow-2xs"
+            className="p-1.5 sm:p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-600 cursor-pointer transition-colors shadow-2xs"
             title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
           >
             {isMuted ? <VolumeX className="w-4 h-4 text-rose-500" /> : <Volume2 className="w-4 h-4 text-slate-700" />}
@@ -248,7 +247,7 @@ export const KidsFlashcardsPage: React.FC = () => {
           <button
             type="button"
             onClick={handleShuffle}
-            className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-600 cursor-pointer transition-colors shadow-2xs"
+            className="p-1.5 sm:p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/80 text-slate-600 cursor-pointer transition-colors shadow-2xs"
             title="Trộn bộ thẻ"
           >
             <Shuffle className="w-4 h-4" />
@@ -257,54 +256,53 @@ export const KidsFlashcardsPage: React.FC = () => {
       </header>
 
       {/* ========================================================================= */}
-      {/* 2. DEDICATED CATEGORY SELECT (COMPACT, HIGH CONTRAST, ZERO OVERCROWD)    */}
+      {/* 2. DEDICATED CATEGORY BAR (ORGANIZED, CENTERED, CLEAN)                   */}
       {/* ========================================================================= */}
-      <div className="flex-shrink-0 w-full max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-            Chủ đề thẻ:
-          </span>
-          <CustomSelect
-            value={selectedCategory}
-            onChange={(val) => {
-              soundManager.playClick();
-              setSelectedCategory(val);
-              setCurrentIndex(0);
-              setIsFlipped(false);
-              if (swiperRef.current) {
-                swiperRef.current.slideTo(0);
-              }
-            }}
-            options={CATEGORY_TABS.map((cat) => ({
-              value: cat.id,
-              label: cat.label,
-              icon: cat.icon,
-            }))}
-            size="sm"
-            className="w-52 sm:w-60"
-          />
-        </div>
+      <div className="flex-shrink-0 w-full max-w-4xl mx-auto px-3 sm:px-4 py-1.5 flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none">
+        {CATEGORY_TABS.map((cat) => {
+          const isSelected = selectedCategory === cat.id;
 
-        <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 bg-white px-3 py-1.5 rounded-xl border-2 border-slate-900 shadow-2xs">
-          <span>{filteredDeck.length} thẻ</span>
-        </div>
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                soundManager.playClick();
+                setSelectedCategory(cat.id);
+                setCurrentIndex(0);
+                setIsFlipped(false);
+                if (swiperRef.current) {
+                  swiperRef.current.slideTo(0);
+                }
+              }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-black text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-all duration-200 active:scale-95 border shrink-0 ${
+                isSelected
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200/90 hover:bg-slate-50 shadow-2xs'
+              }`}
+            >
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. CARD STAGE (LARGER, HIGH CONTRAST, ZERO OVER-ROUNDED BUBBLES)          */}
+      {/* 3. CARD STAGE (CENTERED, PASTEL TABLE TINT, ZERO SCREEN-SHIFT)            */}
       {/* ========================================================================= */}
-      <main className="flex-1 min-h-0 w-full px-3 sm:px-6 py-2 flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-[900px] h-full max-h-[calc(100dvh-150px)] rounded-[20px] bg-white border-3 border-slate-900 shadow-[4px_6px_0px_#0f172a] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+      <main className="flex-1 min-h-0 w-full px-3 sm:px-6 py-1 flex items-center justify-center overflow-hidden">
+        <div className="w-full max-w-[820px] h-full max-h-[calc(100dvh-150px)] rounded-[28px] sm:rounded-[36px] kids-bright-game-table flex flex-col items-center justify-center p-3 sm:p-5 relative overflow-hidden">
           {/* Subtle Ambient Decorative Sparkles */}
-          <div className="absolute inset-0 pointer-events-none opacity-20">
+          <div className="absolute inset-0 pointer-events-none opacity-30">
             <div className="absolute top-8 left-12 w-2 h-2 rounded-full bg-amber-400 blur-2xs" />
             <div className="absolute top-14 right-16 w-3 h-3 rounded-full bg-sky-300 blur-2xs" />
             <div className="absolute bottom-10 left-16 w-2.5 h-2.5 rounded-full bg-emerald-400 blur-2xs" />
             <div className="absolute bottom-12 right-20 w-2 h-2 rounded-full bg-rose-300 blur-2xs" />
           </div>
 
-          {/* SWIPER CONTAINER WITH EFFECT="CARDS" (LARGER FOR PRESCHOOL/ELEMENTARY KIDS) */}
-          <div className="relative flex items-center justify-center w-full max-w-[340px] sm:max-w-[420px] lg:max-w-[460px] h-[440px] sm:h-[500px]">
+          {/* SWIPER CONTAINER WITH EFFECT="CARDS" (FLUID 60FPS SWIPING, ZERO JUMP-BACK) */}
+          <div className="relative flex items-center justify-center w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[380px]">
             {filteredDeck.length === 0 ? (
               <div className="text-center py-16 space-y-2 text-slate-400">
                 <Heart className="w-10 h-10 mx-auto text-slate-300" />
@@ -373,13 +371,13 @@ export const KidsFlashcardsPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* 4. BOTTOM ACTION BAR (CLEAN, SPACED, TOUCH-FRIENDLY)                      */}
       {/* ========================================================================= */}
-      <footer className="flex-shrink-0 w-full max-w-xl mx-auto px-4 pb-3 pt-1 flex items-center justify-between gap-3">
+      <footer className="flex-shrink-0 w-full max-w-xl mx-auto px-3 sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 flex items-center justify-between gap-2 sm:gap-3">
         {/* Previous Button */}
         <button
           type="button"
           onClick={handlePrev}
           disabled={currentIndex === 0}
-          className="flex-1 py-2.5 sm:py-3 px-3 rounded-xl bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-bold text-xs sm:text-sm border border-slate-200/80 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-2xs"
+          className="flex-1 py-2 sm:py-3 px-2 sm:px-3 rounded-xl bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-bold text-xs sm:text-sm border border-slate-200/80 flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer active:scale-95 shadow-2xs min-h-[44px]"
         >
           <ChevronLeft className="w-4 h-4 text-slate-600" />
           <span>Trước</span>
@@ -389,7 +387,7 @@ export const KidsFlashcardsPage: React.FC = () => {
         <button
           type="button"
           onClick={handleFlip}
-          className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
+          className="flex-[1.5] py-2 sm:py-3 px-3 sm:px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 min-h-[44px]"
         >
           <RotateCw className="w-4 h-4" />
           <span>{isFlipped ? 'Mặt trước' : 'Lật xem câu'}</span>
@@ -400,7 +398,7 @@ export const KidsFlashcardsPage: React.FC = () => {
           type="button"
           onClick={handleNext}
           disabled={currentIndex >= totalCards - 1}
-          className="flex-1 py-2.5 sm:py-3 px-3 rounded-xl bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-bold text-xs sm:text-sm border border-slate-200/80 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-2xs"
+          className="flex-1 py-2 sm:py-3 px-2 sm:px-3 rounded-xl bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-bold text-xs sm:text-sm border border-slate-200/80 flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer active:scale-95 shadow-2xs min-h-[44px]"
         >
           <span>Tiếp</span>
           <ChevronRight className="w-4 h-4 text-slate-600" />
