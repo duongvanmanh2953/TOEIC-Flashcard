@@ -447,16 +447,16 @@ export const AdminSupportPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Filter Pills on mobile are full width and horizontally scrollable */}
-        <div className="flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-bold overflow-x-auto scrollbar-none flex-nowrap shrink-0 w-full sm:w-auto">
+        {/* Quick Filter as CSS Grid (4 columns) */}
+        <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-[10px] font-bold shrink-0 w-full sm:w-80">
           {(['ALL', 'OPEN', 'WAITING', 'RESOLVED'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className={`flex-1 sm:flex-none px-2.5 py-1 rounded-md transition text-center whitespace-nowrap ${
+              className={`w-full px-2 py-1 rounded-md transition text-center truncate cursor-pointer ${
                 activeFilter === f
                   ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {f === 'ALL' ? 'Tất cả' : f === 'OPEN' ? 'Chờ nhận' : f === 'WAITING' ? 'Đã trả lời' : 'Đã xong'}

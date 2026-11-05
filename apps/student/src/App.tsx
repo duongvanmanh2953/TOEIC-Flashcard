@@ -28,6 +28,7 @@ const LeaderboardPage = React.lazy(() => import('./pages/LeaderboardPage').then(
 const AICoachStudioPage = React.lazy(() => import('./pages/AICoachStudioPage').then((m) => ({ default: m.AICoachStudioPage })));
 const AIInterviewStudioPage = React.lazy(() => import('./pages/AIInterviewStudioPage').then((m) => ({ default: m.AIInterviewStudioPage })));
 const GrammarMasteryPage = React.lazy(() => import('./pages/grammar/GrammarMasteryPage').then((m) => ({ default: m.GrammarMasteryPage })));
+const ForgottenWordsPage = React.lazy(() => import('./pages/ForgottenWordsPage').then((m) => ({ default: m.ForgottenWordsPage })));
 
 // Exam Bank & Evaluation Engine Pages
 const ExamBankPage = React.lazy(() => import('./pages/exams/ExamBankPage').then((m) => ({ default: m.ExamBankPage })));

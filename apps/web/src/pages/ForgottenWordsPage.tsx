@@ -184,7 +184,7 @@ export const ForgottenWordsPage: React.FC = () => {
       {/* Filter Tabs & Search Bar */}
       <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 w-full md:w-auto">
           {[
             { key: 'ALL', label: 'Tất cả' },
             { key: 'RECENTLY_FORGOTTEN', label: 'Mới quên gần đây' },
@@ -289,7 +289,7 @@ export const ForgottenWordsPage: React.FC = () => {
                       {item.phonetic}
                     </span>
                   )}
-                  <SpeechButton text={item.word} languageId={activeLanguage?.id || 'en'} size="sm" />
+                  <SpeechButton text={item.word} lang={activeLanguage?.id || 'en'} size="sm" />
                 </div>
 
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 line-clamp-1">

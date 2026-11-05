@@ -76,6 +76,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   romaji,
   pinyin,
   languageId = 'ja',
+  showGuide = true,
   onWordComplete,
   onNextWord,
 }) => {
@@ -123,6 +124,38 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
 
   const activeMorphRef = useRef<MorphController | null>(null);
   const animationTimerRef = useRef<number | null>(null);
+
+  // Clear Canvas (Delete)
+  const clearCanvas = useCallback(() => {
+    if (activeMorphRef.current) {
+      activeMorphRef.current.cancel();
+      activeMorphRef.current = null;
+    }
+    if (wrongClearTimerRef.current) {
+      clearTimeout(wrongClearTimerRef.current);
+      wrongClearTimerRef.current = null;
+    }
+    wrongStrokeRef.current = null;
+    drawnStrokesRef.current = [];
+    displayStrokesRef.current = [];
+    currentStrokePointsRef.current = [];
+    redoStackRef.current = [];
+    setStrokeCountDisplay(0);
+    setLastStrokeEval(null);
+    setCharEvaluation(null);
+    setCharState('READY');
+    setIsPlayingAnimation(false);
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid(ctx, LOGICAL_CANVAS_SIZE, LOGICAL_CANVAS_SIZE);
+      }
+    }
+  }, [drawGrid]);
+
 
   // Reset when word changes
   useEffect(() => {
@@ -649,37 +682,6 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     }
     renderCanvas();
   }, [charReference, runCharacterEvaluation, renderCanvas]);
-
-  // Clear Canvas (Delete)
-  const clearCanvas = useCallback(() => {
-    if (activeMorphRef.current) {
-      activeMorphRef.current.cancel();
-      activeMorphRef.current = null;
-    }
-    if (wrongClearTimerRef.current) {
-      clearTimeout(wrongClearTimerRef.current);
-      wrongClearTimerRef.current = null;
-    }
-    wrongStrokeRef.current = null;
-    drawnStrokesRef.current = [];
-    displayStrokesRef.current = [];
-    currentStrokePointsRef.current = [];
-    redoStackRef.current = [];
-    setStrokeCountDisplay(0);
-    setLastStrokeEval(null);
-    setCharEvaluation(null);
-    setCharState('READY');
-    setIsPlayingAnimation(false);
-
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawGrid(ctx, LOGICAL_CANVAS_SIZE, LOGICAL_CANVAS_SIZE);
-      }
-    }
-  }, [drawGrid]);
 
   // Keyboard Shortcuts (Section E1)
   useEffect(() => {
