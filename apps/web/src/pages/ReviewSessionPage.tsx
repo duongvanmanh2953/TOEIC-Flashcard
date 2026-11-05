@@ -295,6 +295,21 @@ export function getLevenshteinDistance(a: string, b: string): number {
 
 export type ReviewStudyMode = 'auto' | 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting';
 
+export interface BufferedReview {
+  vocabularyId: string;
+  word: string;
+  rating: 'AGAIN' | 'HARD' | 'GOOD' | 'EASY';
+  confidence: number;
+  isCorrect: boolean;
+  responseTimeMs: number;
+  reviewedAt: number;
+  updatedInterval: number;
+  updatedStability: number;
+  updatedDifficulty: number;
+  updatedDueAt: number;
+  nextStatus: string;
+}
+
 /**
  * FSRS Auto Review Orchestrator: Dynamically selects the optimal exercise per word
  */
@@ -518,6 +533,11 @@ export const ReviewSessionPage: React.FC = () => {
     setFeedback(null);
     setTransitionNotice(null);
     setSessionStats({ again: 0, hard: 0, good: 0, easy: 0, xpEarned: 0 });
+    setBufferedReviews([]);
+    bufferedReviewsRef.current = [];
+    setIsSubmittingBatch(false);
+    setIsSessionSaved(false);
+    setShowExitConfirmModal(false);
 
     try {
       // 1. MEMORY RESCUE
@@ -725,15 +745,15 @@ export const ReviewSessionPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [studyMode, isFlipped, currentItem, feedback, summary, currentIndex, items]);
 
-  // Handle Flashcard Rating & SRS Interval Update
-  const handleRateFlashcard = async (rating: 'AGAIN' | 'HARD' | 'GOOD' | 'EASY') => {
+  // Handle Flashcard Rating & SRS Interval Update with Local Buffering (No blocking API calls)
+  const handleRateFlashcard = (rating: 'AGAIN' | 'HARD' | 'GOOD' | 'EASY') => {
     if (!currentItem) return;
 
     const qualityMap = { AGAIN: 1, HARD: 2, GOOD: 4, EASY: 5 };
     const xpMap = { AGAIN: 5, HARD: 10, GOOD: 15, EASY: 20 };
     const xp = xpMap[rating];
 
-    // Optimistic stats
+    // Optimistic stats update
     setSessionStats((prev) => ({
       ...prev,
       [rating.toLowerCase()]: (prev as any)[rating.toLowerCase()] + 1,
@@ -741,25 +761,24 @@ export const ReviewSessionPage: React.FC = () => {
     }));
 
     const now = Date.now();
-    let updatedInterval = currentItem.interval;
-    let updatedStability = currentItem.stability;
-    let updatedDifficulty = currentItem.difficulty;
-    let updatedConsecutiveCorrect = currentItem.consecutiveCorrect;
-    let updatedConsecutiveWrong = currentItem.consecutiveWrong;
-    let updatedWrongCount = currentItem.wrongCount;
-    let updatedCorrectCount = currentItem.correctCount;
-    let updatedDueAt = currentItem.dueAt;
+    let updatedInterval = currentItem.interval || 1;
+    let updatedStability = currentItem.stability || 1.0;
+    let updatedDifficulty = currentItem.difficulty || 5.0;
+    let updatedConsecutiveCorrect = currentItem.consecutiveCorrect || 0;
+    let updatedConsecutiveWrong = currentItem.consecutiveWrong || 0;
+    let updatedWrongCount = currentItem.wrongCount || 0;
+    let updatedCorrectCount = currentItem.correctCount || 0;
+    let updatedDueAt = currentItem.dueAt || now;
     let nextStatus = 'LEARNING';
 
     if (rating === 'AGAIN') {
-      // User forgot or failed recall: re-queue card
       updatedWrongCount += 1;
       updatedConsecutiveWrong += 1;
       updatedConsecutiveCorrect = 0;
       updatedStability = Math.max(0.5, updatedStability * 0.5);
       updatedDifficulty = Math.min(10.0, updatedDifficulty + 1.0);
       updatedInterval = 1;
-      updatedDueAt = now + 10 * 60 * 1000; // repeat soon
+      updatedDueAt = now + 10 * 60 * 1000;
       nextStatus = 'LEARNING';
     } else if (rating === 'HARD') {
       updatedCorrectCount += 1;
@@ -788,40 +807,49 @@ export const ReviewSessionPage: React.FC = () => {
       nextStatus = 'MASTERED';
     }
 
-    // Persist locally in IndexedDB
+    // Buffer the review record locally (DO NOT call API immediately)
+    const reviewRecord: BufferedReview = {
+      vocabularyId: currentItem.vocabularyId,
+      word: currentItem.word,
+      rating,
+      confidence: qualityMap[rating],
+      isCorrect: rating !== 'AGAIN',
+      responseTimeMs: Math.max(50, Date.now() - startTimeRef.current),
+      reviewedAt: now,
+      updatedInterval,
+      updatedStability,
+      updatedDifficulty,
+      updatedDueAt,
+      nextStatus,
+    };
+
+    bufferedReviewsRef.current.push(reviewRecord);
+    setBufferedReviews([...bufferedReviewsRef.current]);
+
+    // Optimistic background save to IndexedDB (non-blocking)
     if (currentItem.vocabularyId) {
-      await idbUpdateWordProgress(currentItem.vocabularyId, {
-        dueAt: updatedDueAt,
-        lastReviewedAt: now,
-        reviewCount: (currentItem.reviewCount || 0) + 1,
-        correctCount: updatedCorrectCount,
-        wrongCount: updatedWrongCount,
-        consecutiveCorrect: updatedConsecutiveCorrect,
-        consecutiveWrong: updatedConsecutiveWrong,
-        interval: updatedInterval,
-        stability: updatedStability,
-        difficulty: updatedDifficulty,
-        status: nextStatus,
-      });
-    }
-
-    // Record study activity in multi-language LearningContext
-    recordStudyActivity(1, rating !== 'AGAIN', 1);
-
-    // Post review answer if cloud session exists
-    if (session?.id) {
       try {
-        await api.post(`/reviews/${session.id}/answer`, {
-          vocabularyId: currentItem.vocabularyId,
-          answer: currentItem.word,
-          confidence: qualityMap[rating],
-          responseTimeMs: Date.now() - startTimeRef.current,
+        idbUpdateWordProgress(currentItem.vocabularyId, {
+          dueAt: updatedDueAt,
+          lastReviewedAt: now,
+          reviewCount: (currentItem.reviewCount || 0) + 1,
+          correctCount: updatedCorrectCount,
+          wrongCount: updatedWrongCount,
+          consecutiveCorrect: updatedConsecutiveCorrect,
+          consecutiveWrong: updatedConsecutiveWrong,
+          interval: updatedInterval,
+          stability: updatedStability,
+          difficulty: updatedDifficulty,
+          status: nextStatus,
+        }).catch((err) => {
+          console.warn('Background IDB word progress save warning:', err);
         });
-      } catch {
-        // continue optimistically
+      } catch (_) {
+        // Ignored
       }
     }
 
+    // Always reset card flip & timer immediately
     setIsFlipped(false);
     startTimeRef.current = Date.now();
 
@@ -839,47 +867,101 @@ export const ReviewSessionPage: React.FC = () => {
       difficulty: updatedDifficulty,
     };
 
-    // QUEUE LOGIC: If AGAIN, re-insert card 2-3 positions ahead in the active queue
+    // QUEUE LOGIC:
+    // If AGAIN: append card to the end of active queue so it is reinforced before finishing!
     if (rating === 'AGAIN') {
-      const newItems = [...items];
-      newItems.splice(currentIndex, 1);
-      const reInsertPos = Math.min(currentIndex + 2, newItems.length);
-      newItems.splice(reInsertPos, 0, updatedCurrentItem);
-      setItems(newItems);
-      // Stay at currentIndex which now points to the next item
+      setItems((prev) => [...prev, updatedCurrentItem]);
+      setCurrentIndex((prev) => prev + 1);
       return;
     }
 
-    // If HARD, GOOD, EASY: card is cleared from current queue!
+    // If HARD, GOOD, EASY: advance to next item
     if (currentIndex + 1 < items.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
-      // Finished current deck/topic! Check if another deck has reviewable words
-      const nextDeckInfo = await findNextReviewableDeck(selectedTopic);
-      if (nextDeckInfo) {
-        setTransitionNotice(
-          `🎉 Hoàn thành kho "${currentItem.deckTitle || selectedTopic}"! Tự động chuyển tiếp sang kho "${nextDeckInfo.deck.title}" còn ${nextDeckInfo.words.length} từ...`
-        );
-        setTimeout(() => setTransitionNotice(null), 4000);
-        const nextQueue = nextDeckInfo.words.map((w) => mapToReviewItem(w, nextDeckInfo.deck.title, 'DECK'));
-        nextQueue.sort((a, b) => b.priorityScore - a.priorityScore);
-        setItems(enrichItemsWithOptions(nextQueue));
-        setCurrentIndex(0);
-        setSelectedTopic(`deck_${nextDeckInfo.deck.id}`);
-        return;
-      }
-
-      // Truly no reviewable words remain across all topics!
-      const totalReviews = sessionStats.again + sessionStats.hard + sessionStats.good + sessionStats.easy + 1;
+      // Reached the end of review queue!
+      const totalReviews = bufferedReviewsRef.current.length;
+      const correctCount = bufferedReviewsRef.current.filter((b) => b.isCorrect).length;
+      const accuracy = totalReviews > 0 ? Math.round((correctCount / totalReviews) * 100) : 100;
       setSummary({
         totalQuestions: totalReviews,
         xpEarned: sessionStats.xpEarned + xp,
-        accuracy: Math.round(((sessionStats.good + sessionStats.easy + 1) / totalReviews) * 100),
+        accuracy,
       });
-      if (session?.id) {
-        api.post(`/reviews/${session.id}/complete`).catch(() => { });
-      }
     }
+  };
+
+  /**
+   * Commit all buffered reviews in batch to server & record overall study activity
+   */
+  const handleCommitSession = async () => {
+    if (bufferedReviewsRef.current.length === 0 || isSubmittingBatch) return;
+    setIsSubmittingBatch(true);
+
+    try {
+      // 1. If backend study session ID exists, send answers batch & complete session
+      if (session?.id) {
+        for (const review of bufferedReviewsRef.current) {
+          try {
+            await api.post(`/reviews/${session.id}/answer`, {
+              vocabularyId: review.vocabularyId,
+              answer: review.word,
+              confidence: review.confidence,
+              responseTimeMs: review.responseTimeMs,
+            });
+          } catch (e) {
+            console.warn('Batch answer post warning:', e);
+          }
+        }
+
+        try {
+          await api.post(`/reviews/${session.id}/complete`);
+        } catch (e) {
+          console.warn('Session complete warning:', e);
+        }
+      }
+
+      // 2. Record overall study activity in LearningContext
+      const correctCount = bufferedReviewsRef.current.filter((b) => b.isCorrect).length;
+      const isMostlyCorrect = correctCount >= Math.ceil(bufferedReviewsRef.current.length / 2);
+      try {
+        await recordStudyActivity(
+          bufferedReviewsRef.current.length,
+          isMostlyCorrect,
+          sessionStats.xpEarned
+        );
+      } catch (err) {
+        console.warn('Record study activity warning:', err);
+      }
+
+      setIsSessionSaved(true);
+    } catch (err) {
+      console.error('Failed to commit session progress:', err);
+    } finally {
+      setIsSubmittingBatch(false);
+    }
+  };
+
+  /**
+   * Exit Request Handler: asks user to save if unsaved reviews exist
+   */
+  const handleRequestExit = () => {
+    if (bufferedReviewsRef.current.length > 0 && !isSessionSaved) {
+      setShowExitConfirmModal(true);
+    } else {
+      navigate('/word-bank');
+    }
+  };
+
+  const handleConfirmExitAndSave = async () => {
+    await handleCommitSession();
+    setShowExitConfirmModal(false);
+    navigate('/word-bank');
+  };
+
+  const handleConfirmExitWithoutSaving = () => {
+    setShowExitConfirmModal(false);
+    navigate('/word-bank');
   };
 
   const handleRating = (rating: 'again' | 'hard' | 'good' | 'easy') => {
@@ -1066,6 +1148,44 @@ export const ReviewSessionPage: React.FC = () => {
             )}
           </div>
 
+          {/* Commit Session Progress Action Card */}
+          {!isSessionSaved ? (
+            <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-left space-y-3">
+              <div>
+                <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Ghi nhận kết quả phiên học</span>
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Bạn đã hoàn thành <strong>{summary.totalQuestions} lượt từ</strong>. Hãy bấm nút dưới đây để đồng bộ điểm thưởng XP và cập nhật thuật toán Spaced Repetition vào hồ sơ của bạn.
+                </p>
+              </div>
+
+              <button
+                onClick={handleCommitSession}
+                disabled={isSubmittingBatch}
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-sm shadow-md shadow-indigo-500/25 transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isSubmittingBatch ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>Đang ghi nhận kết quả...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Ghi Nhận Kết Quả (+{summary.xpEarned} XP)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>✓ Đã ghi nhận và đồng bộ kết quả thành công vào hồ sơ!</span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <button
               onClick={() => loadStudyItems(selectedTopic)}
@@ -1217,7 +1337,7 @@ export const ReviewSessionPage: React.FC = () => {
             <span>+{sessionStats.xpEarned} XP</span>
           </div>
           <button
-            onClick={() => navigate('/word-bank')}
+            onClick={handleRequestExit}
             className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
           >
             ✕ Thoát
@@ -1741,6 +1861,71 @@ export const ReviewSessionPage: React.FC = () => {
             await handleRateFlashcard('GOOD');
           }}
         />
+      )}
+
+      {/* Exit Confirmation Modal */}
+      {showExitConfirmModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowExitConfirmModal(false)}
+        >
+          <div
+            className="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  Ghi nhận kết quả phiên học?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Bạn đã ôn tập được <strong className="text-indigo-600 dark:text-indigo-400">{bufferedReviews.length} từ</strong>.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Bạn có muốn ghi nhận kết quả này để cộng điểm XP và cập nhật tiến độ Spaced Repetition trước khi rời đi không?
+            </p>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={handleConfirmExitAndSave}
+                disabled={isSubmittingBatch}
+                className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isSubmittingBatch ? (
+                  <span>Đang lưu...</span>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Ghi nhận & Thoát (+{sessionStats.xpEarned} XP)</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmExitWithoutSaving}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs transition cursor-pointer"
+              >
+                Thoát không lưu
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowExitConfirmModal(false)}
+                className="w-full py-2 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+              >
+                Tiếp tục học
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* VocabFlow Word Diagnostic Modal */}
