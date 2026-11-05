@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   RotateCcw,
-  RotateCw,
-  Trash2,
   Eye,
   EyeOff,
   Play,
@@ -10,16 +8,15 @@ import {
   Grid,
   CheckCircle2,
   AlertCircle,
-  AlertTriangle,
   Volume2,
   ChevronRight,
   Maximize2,
   Minimize2,
-  Sparkles,
   ArrowRight,
-  HelpCircle,
-  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
+import HanziWriter from 'hanzi-writer';
+import * as kakitori from '@k1low/kakitori';
 import { usePerformance } from '../../contexts/PerformanceContext';
 import {
   HandwritingPoint,
@@ -33,18 +30,16 @@ import {
 import {
   evaluateSingleStroke,
   evaluateFullCharacter,
-  animateStrokeMorph,
-  MorphController,
   buildCharacterReference,
-  sampleSvgPath,
 } from '../../lib/handwriting';
-import { COMMON_CHARACTER_DICTIONARY } from '../../lib/handwriting/characterDictionary';
 import {
   segmentIntoWritingUnits,
+  segmentGraphemes,
   WritingUnit,
   handwritingRegistry,
   HandwritingResult,
 } from '../../lib/handwriting';
+import { COMMON_CHARACTER_DICTIONARY } from '../../lib/handwriting/characterDictionary';
 import api from '../../lib/api';
 
 export interface VocabularyHandwritingPracticeProps {
@@ -62,17 +57,24 @@ export interface VocabularyHandwritingPracticeProps {
 const LOGICAL_CANVAS_SIZE = 500;
 
 /**
- * Robust script-aware grapheme segmenter (Section D5)
+ * Universal grapheme segmentation helper (backward compatibility)
  */
 export function segmentIntoGraphemes(text: string): string[] {
-  if (!text) return [];
-  if (typeof Intl !== 'undefined' && (Intl as any).Segmenter) {
-    const segmenter = new (Intl as any).Segmenter(undefined, { granularity: 'grapheme' });
-    return Array.from(segmenter.segment(text), (s: any) => s.segment).filter(
-      (s: string) => s.trim().length > 0
-    );
-  }
-  return Array.from(text).filter((char) => char.trim().length > 0);
+  return segmentGraphemes(text);
+}
+
+/**
+ * Check if a character is a CJK ideograph or kana supported by HanziWriter/Kakitori
+ */
+function isCJKCharacter(char: string): boolean {
+  if (!char) return false;
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 0x4e00 && code <= 0x9fff) || // CJK Unified Ideographs
+    (code >= 0x3400 && code <= 0x4dbf) || // CJK Extension A
+    (code >= 0x3040 && code <= 0x309f) || // Hiragana
+    (code >= 0x30a0 && code <= 0x30ff)    // Katakana
+  );
 }
 
 export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracticeProps> = ({
@@ -90,7 +92,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
 
   // Multi-character segmentation using grapheme clusters & script-aware units
   const writingUnits = segmentIntoWritingUnits(word, languageId);
-  const characters = writingUnits.length > 0 ? writingUnits.map((u) => u.unit) : segmentIntoGraphemes(word);
+  const characters = writingUnits.length > 0 ? writingUnits.map((u) => u.unit) : [word];
   const [activeCharIndex, setActiveCharIndex] = useState(0);
   const currentUnit: WritingUnit | undefined = writingUnits[activeCharIndex] || writingUnits[0];
   const currentChar = currentUnit?.unit || characters[activeCharIndex] || characters[0] || 'あ';
@@ -102,30 +104,30 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     provider.metadata.capabilities.includes('whole_text_recognition') &&
     !provider.metadata.capabilities.includes('stroke_order')
   );
-  const [recognitionResult, setRecognitionResult] = useState<HandwritingResult | null>(null);
-  const [isRecognizing, setIsRecognizing] = useState(false);
+  const isCJK = isCJKCharacter(currentChar);
 
   // Character Reference Data
   const [charReference, setCharReference] = useState<CharacterReference | null>(null);
-  const [loadingChar, setLoadingChar] = useState(false);
 
-  // Character Completion State Machine (Section A4)
+  // State Machine
   const [charState, setCharState] = useState<CharacterCompletionState>('READY');
   const [charEvaluation, setCharEvaluation] = useState<CharacterEvaluationResult | null>(null);
   const [charScores, setCharScores] = useState<Record<number, number>>({});
 
-  // Canvas View & Guides Controls
+  // View & Guide Controls - GRID IS OFF BY DEFAULT per user request ("bỏ cái ô lưới đi")
   const [showGhostGuide, setShowGhostGuide] = useState(showGuide);
-
-  useEffect(() => {
-    if (showGuide !== undefined) setShowGhostGuide(showGuide);
-  }, [showGuide]);
-  const [ghostOpacity, setGhostOpacity] = useState(0.55);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [isPlayingAnimation, setIsPlayingAnimation] = useState(false);
 
-  // Stroke State Refs for zero-lag 60fps drawing (Section A1, A2, G)
+  // HanziWriter Interactive Quiz Refs
+  const hwContainerRef = useRef<HTMLDivElement>(null);
+  const writerRef = useRef<any>(null);
+  const [isHanziActive, setIsHanziActive] = useState(false);
+  const [hanziStrokeCount, setHanziStrokeCount] = useState(0);
+  const [hanziTotalStrokes, setHanziTotalStrokes] = useState(0);
+
+  // Fallback Canvas Refs (for non-CJK, e.g. Korean, Thai, Arabic)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const activePointerIdRef = useRef<number | null>(null);
   const isDrawingRef = useRef(false);
@@ -133,17 +135,259 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   const drawnStrokesRef = useRef<CharacterStrokeModel[]>([]);
   const displayStrokesRef = useRef<HandwritingStroke[]>([]);
   const redoStackRef = useRef<CharacterStrokeModel[]>([]);
-  const wrongStrokeRef = useRef<HandwritingStroke | null>(null);
-  const wrongClearTimerRef = useRef<number | null>(null);
 
-  // React feedback states
+  // Feedback states
   const [strokeCountDisplay, setStrokeCountDisplay] = useState(0);
   const [lastStrokeEval, setLastStrokeEval] = useState<SingleStrokeEvaluation | null>(null);
 
-  const activeMorphRef = useRef<MorphController | null>(null);
-  const animationTimerRef = useRef<number | null>(null);
+  // HanziWriter character data loader with Japanese & Chinese CDN fallbacks
+  const loadCharacterDataForWriter = useCallback(
+    (char: string, onComplete: any, onError: any) => {
+      // 1. Japanese Kana or Kanji: use kakitori loader
+      if (languageId === 'ja' && typeof kakitori.defaultCharDataLoader === 'function') {
+        kakitori.defaultCharDataLoader(
+          char,
+          (data: any) => onComplete(data),
+          () => {
+            // Fallback to jsdelivr hanzi-writer-data
+            fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`)
+              .then((r) => {
+                if (!r.ok) throw new Error('Not found');
+                return r.json();
+              })
+              .then(onComplete)
+              .catch(() => {
+                if (COMMON_CHARACTER_DICTIONARY[char]) {
+                  onComplete({ strokes: COMMON_CHARACTER_DICTIONARY[char].svgPaths, medians: [] });
+                } else {
+                  onError();
+                }
+              });
+          }
+        );
+        return;
+      }
 
-  // Draw Tian-zi-ge grid
+      // 2. Chinese (or default CJK): load from jsdelivr hanzi-writer-data
+      fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`)
+        .then((r) => {
+          if (!r.ok) throw new Error('Not found');
+          return r.json();
+        })
+        .then(onComplete)
+        .catch(() => {
+          // 3. Fallback to local COMMON_CHARACTER_DICTIONARY
+          if (COMMON_CHARACTER_DICTIONARY[char]) {
+            onComplete({ strokes: COMMON_CHARACTER_DICTIONARY[char].svgPaths, medians: [] });
+          } else {
+            onError();
+          }
+        });
+    },
+    [languageId]
+  );
+
+  // Setup HanziWriter Interactive Quiz when CJK character is active
+  useEffect(() => {
+    const container = hwContainerRef.current;
+    if (!container || !isCJK) {
+      setIsHanziActive(false);
+      return;
+    }
+
+    container.innerHTML = '';
+    setIsHanziActive(true);
+    setIsPlayingAnimation(false);
+    setHanziStrokeCount(0);
+    setLastStrokeEval(null);
+
+    let activeWriter: any = null;
+    let isCancelled = false;
+
+    try {
+      activeWriter = HanziWriter.create(container, currentChar, {
+        width: 320,
+        height: 320,
+        padding: 16,
+        showOutline: showGhostGuide,
+        strokeAnimationSpeed: 1.25,
+        delayBetweenStrokes: 300,
+        strokeColor: '#312e81',
+        highlightColor: '#10b981',
+        drawingColor: '#2563eb',
+        drawingWidth: 20,
+        showCharacter: false,
+        charDataLoader: (char: string, onComplete: any, onError: any) => {
+          loadCharacterDataForWriter(
+            char,
+            (data: any) => {
+              if (!isCancelled) {
+                setHanziTotalStrokes(data?.strokes?.length || 0);
+                onComplete(data);
+              }
+            },
+            () => {
+              if (!isCancelled) {
+                setIsHanziActive(false);
+                onError();
+              }
+            }
+          );
+        },
+      });
+
+      writerRef.current = activeWriter;
+
+      // Start strict interactive quiz
+      activeWriter.quiz({
+        acceptBackwardsStrokes: false,
+        markStrokeCorrectAfterMisses: false,
+        leniency: 1.0,
+        showOutline: showGhostGuide,
+        onCorrectStroke: (data: any) => {
+          setHanziStrokeCount(data.strokeNum + 1);
+          setLastStrokeEval({
+            strokeIndex: data.strokeNum,
+            correct: true,
+            confidence: 95,
+            feedbackMessage: `Nét ${data.strokeNum + 1} chuẩn xác!`,
+            canSnapToReference: true,
+            shapeSimilarity: 95,
+            positionEvaluation: { status: 'ALIGNED', centerOffsetPx: 0 } as any,
+            directionCosine: 1,
+            directionCorrect: true,
+          } as any);
+          setCharState('AWAITING_MORE_STROKES');
+        },
+        onMistake: (data: any) => {
+          setLastStrokeEval({
+            strokeIndex: data.strokeNum,
+            correct: false,
+            confidence: 25,
+            feedbackMessage: 'Nét chưa đúng hoặc bị ngược hướng! Chú ý điểm đặt bút và hướng vẽ.',
+            canSnapToReference: false,
+            shapeSimilarity: 25,
+            positionEvaluation: { status: 'MISALIGNED', centerOffsetPx: 50 } as any,
+            directionCosine: -1,
+            directionCorrect: false,
+          } as any);
+          setCharState('INCORRECT');
+        },
+        onComplete: (summary: any) => {
+          const mistakes = summary.totalMistakes || 0;
+          const score = Math.max(70, Math.round(100 - mistakes * 8));
+          setCharScores((prev) => ({ ...prev, [activeCharIndex]: score }));
+          setCharState('CORRECT');
+          setLastStrokeEval({
+            strokeIndex: 0,
+            correct: true,
+            confidence: score,
+            feedbackMessage: mistakes === 0 ? 'Xuất sắc! Tất cả các nét đều hoàn thành chuẩn xác.' : `Hoàn thành chữ! Độ chuẩn xác ${score}%.`,
+            canSnapToReference: true,
+          } as any);
+
+          if (activeCharIndex === characters.length - 1) {
+            onWordComplete(score, true);
+          }
+        },
+      });
+    } catch {
+      setIsHanziActive(false);
+    }
+
+    return () => {
+      isCancelled = true;
+      if (activeWriter) {
+        try {
+          activeWriter.cancelQuiz();
+        } catch {}
+      }
+    };
+  }, [currentChar, languageId, isCJK, loadCharacterDataForWriter]);
+
+  // "Vẽ mẫu" Animation Player
+  const playStrokeAnimation = () => {
+    if (isHanziActive && writerRef.current) {
+      setIsPlayingAnimation(true);
+      setLastStrokeEval(null);
+      writerRef.current.animateCharacter({
+        onComplete: () => {
+          setIsPlayingAnimation(false);
+          // Restart quiz immediately after animation finishes
+          if (writerRef.current) {
+            writerRef.current.quiz({
+              acceptBackwardsStrokes: false,
+              markStrokeCorrectAfterMisses: false,
+              leniency: 1.0,
+              showOutline: showGhostGuide,
+              onCorrectStroke: (data: any) => {
+                setHanziStrokeCount(data.strokeNum + 1);
+                setCharState('AWAITING_MORE_STROKES');
+              },
+              onMistake: () => {
+                setCharState('INCORRECT');
+              },
+              onComplete: (summary: any) => {
+                const mistakes = summary.totalMistakes || 0;
+                const score = Math.max(70, Math.round(100 - mistakes * 8));
+                setCharScores((prev) => ({ ...prev, [activeCharIndex]: score }));
+                setCharState('CORRECT');
+                if (activeCharIndex === characters.length - 1) {
+                  onWordComplete(score, true);
+                }
+              },
+            });
+          }
+        },
+      });
+    }
+  };
+
+  // Toggle Ghost Guide (Mặt hiển thị nét mẫu)
+  const toggleGhostGuide = () => {
+    const next = !showGhostGuide;
+    setShowGhostGuide(next);
+    if (isHanziActive && writerRef.current) {
+      if (next) writerRef.current.showOutline();
+      else writerRef.current.hideOutline();
+    }
+  };
+
+  // Reset / Viết lại
+  const handleReset = () => {
+    setLastStrokeEval(null);
+    setCharState('READY');
+    setHanziStrokeCount(0);
+    if (isHanziActive && writerRef.current) {
+      writerRef.current.cancelQuiz();
+      writerRef.current.quiz({
+        acceptBackwardsStrokes: false,
+        markStrokeCorrectAfterMisses: false,
+        leniency: 1.0,
+        showOutline: showGhostGuide,
+        onCorrectStroke: (data: any) => {
+          setHanziStrokeCount(data.strokeNum + 1);
+          setCharState('AWAITING_MORE_STROKES');
+        },
+        onMistake: () => {
+          setCharState('INCORRECT');
+        },
+        onComplete: (summary: any) => {
+          const mistakes = summary.totalMistakes || 0;
+          const score = Math.max(70, Math.round(100 - mistakes * 8));
+          setCharScores((prev) => ({ ...prev, [activeCharIndex]: score }));
+          setCharState('CORRECT');
+          if (activeCharIndex === characters.length - 1) {
+            onWordComplete(score, true);
+          }
+        },
+      });
+    } else {
+      clearCanvas();
+    }
+  };
+
+  // Draw Tian-zi-ge grid (only if showGrid is explicitly enabled)
   const drawGrid = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       if (!showGrid) return;
@@ -152,7 +396,6 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       ctx.strokeStyle = isUltraEfficient ? '#e2e8f0' : 'rgba(99, 102, 241, 0.15)';
       ctx.setLineDash([5, 5]);
 
-      // Cross lines (Tian-zi-ge)
       ctx.beginPath();
       ctx.moveTo(width / 2, 0);
       ctx.lineTo(width / 2, height);
@@ -165,18 +408,8 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     [showGrid, isUltraEfficient]
   );
 
-
-  // Clear Canvas (Delete)
+  // Clear Canvas for fallback mode
   const clearCanvas = useCallback(() => {
-    if (activeMorphRef.current) {
-      activeMorphRef.current.cancel();
-      activeMorphRef.current = null;
-    }
-    if (wrongClearTimerRef.current) {
-      clearTimeout(wrongClearTimerRef.current);
-      wrongClearTimerRef.current = null;
-    }
-    wrongStrokeRef.current = null;
     drawnStrokesRef.current = [];
     displayStrokesRef.current = [];
     currentStrokePointsRef.current = [];
@@ -197,108 +430,31 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     }
   }, [drawGrid]);
 
+  // Audio Pronunciation
+  const handleSpeak = () => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = languageId === 'zh' ? 'zh-CN' : languageId === 'ko' ? 'ko-KR' : languageId === 'th' ? 'th-TH' : languageId === 'ar' ? 'ar-SA' : 'ja-JP';
+    utterance.rate = 0.85;
+    window.speechSynthesis.speak(utterance);
+  };
 
-  // Reset when word changes
-  useEffect(() => {
-    if (activeMorphRef.current) {
-      activeMorphRef.current.cancel();
-      activeMorphRef.current = null;
-    }
-    if (animationTimerRef.current) {
-      clearTimeout(animationTimerRef.current);
-      animationTimerRef.current = null;
-    }
-    if (wrongClearTimerRef.current) {
-      clearTimeout(wrongClearTimerRef.current);
-      wrongClearTimerRef.current = null;
-    }
-    setActiveCharIndex(0);
-    setCharScores({});
-    setCharEvaluation(null);
-    setLastStrokeEval(null);
-    setCharState('READY');
-    setIsPlayingAnimation(false);
-    clearCanvas();
-  }, [word, clearCanvas]);
-
-  // Reset when changing character in word
-  useEffect(() => {
-    setCharEvaluation(null);
-    setLastStrokeEval(null);
-    setCharState('READY');
-    setRecognitionResult(null);
-    clearCanvas();
-  }, [activeCharIndex]);
-
-  // Fetch or generate character stroke reference
-  useEffect(() => {
-    let isCancelled = false;
-    const fetchCharData = async () => {
-      setLoadingChar(true);
-      try {
-        const scriptCode =
-          languageId === 'zh'
-            ? 'HANZI_SIMPLIFIED'
-            : languageId === 'ko'
-              ? 'HANGUL'
-              : 'KANJI';
-
-        // 1. Check local COMMON_CHARACTER_DICTIONARY for instant SVG vectors
-        if (COMMON_CHARACTER_DICTIONARY[currentChar]) {
-          const dictEntry = COMMON_CHARACTER_DICTIONARY[currentChar];
-          const ref = buildCharacterReference(
-            {
-              id: `dict-${currentChar}`,
-              literal: currentChar,
-              strokeCount: dictEntry.strokeCount,
-              svgPaths: dictEntry.svgPaths,
-            },
-            scriptCode,
-            LOGICAL_CANVAS_SIZE
-          );
-          ref.hasRealSvgPaths = true;
-          if (!isCancelled) {
-            setCharReference(ref);
-            clearCanvas();
-            setLoadingChar(false);
-          }
-          return;
-        }
-
-        // 2. Query backend for SVG stroke paths
-        const res: any = await api.get(`/scripts/${scriptCode}/characters`).catch(() => null);
-        const list = res?.data?.data?.characters || res?.data?.characters || [];
-        const match = list.find((c: any) => c.literal === currentChar);
-
-        if (!isCancelled) {
-          if (match && match.svgPaths && match.svgPaths.length > 0) {
-            const ref = buildCharacterReference(match, scriptCode, LOGICAL_CANVAS_SIZE);
-            ref.hasRealSvgPaths = true;
-            setCharReference(ref);
-          } else {
-            const fallbackRef = generateFallbackCharacterReference(currentChar, scriptCode, LOGICAL_CANVAS_SIZE);
-            setCharReference(fallbackRef);
-          }
-          clearCanvas();
-        }
-      } catch {
-        if (!isCancelled) {
-          const fallbackRef = generateFallbackCharacterReference(currentChar, 'KANJI', LOGICAL_CANVAS_SIZE);
-          setCharReference(fallbackRef);
-          clearCanvas();
-        }
-      } finally {
-        if (!isCancelled) setLoadingChar(false);
-      }
+  // Coordinates helper for canvas fallback
+  const getCanvasCoords = (e: React.PointerEvent<HTMLCanvasElement>): HandwritingPoint => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = LOGICAL_CANVAS_SIZE / rect.width;
+    const scaleY = LOGICAL_CANVAS_SIZE / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+      time: performance.now(),
+      pressure: e.pressure || 0.5,
     };
+  };
 
-    fetchCharData();
-    return () => {
-      isCancelled = true;
-    };
-  }, [currentChar, languageId]);
-
-  // Redraw Canvas with High-DPI scaling (Section E3, G)
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -317,7 +473,6 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // 1. Draw accepted / completed strokes
     displayStrokesRef.current.forEach((stroke, idx) => {
       if (stroke.length < 2) return;
       const model = drawnStrokesRef.current[idx];
@@ -328,26 +483,11 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       for (let i = 1; i < stroke.length; i++) {
         ctx.lineTo(stroke[i].x, stroke[i].y);
       }
-
-      ctx.strokeStyle = isValid ? '#10b981' : '#6366f1';
+      ctx.strokeStyle = isValid ? '#10b981' : '#4f46e5';
       ctx.lineWidth = 14;
       ctx.stroke();
     });
 
-    // 2. Draw wrong stroke in warning red
-    if (wrongStrokeRef.current && wrongStrokeRef.current.length > 1) {
-      const wrongPts = wrongStrokeRef.current;
-      ctx.beginPath();
-      ctx.moveTo(wrongPts[0].x, wrongPts[0].y);
-      for (let i = 1; i < wrongPts.length; i++) {
-        ctx.lineTo(wrongPts[i].x, wrongPts[i].y);
-      }
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 14;
-      ctx.stroke();
-    }
-
-    // 3. Actively drawn stroke in real-time
     if (isDrawingRef.current && currentStrokePointsRef.current.length > 1) {
       const activePts = currentStrokePointsRef.current;
       ctx.beginPath();
@@ -355,7 +495,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       for (let i = 1; i < activePts.length; i++) {
         ctx.lineTo(activePts[i].x, activePts[i].y);
       }
-      ctx.strokeStyle = '#818cf8';
+      ctx.strokeStyle = '#2563eb';
       ctx.lineWidth = 14;
       ctx.stroke();
     }
@@ -363,55 +503,10 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     ctx.restore();
   }, [drawGrid]);
 
-  // Responsive DPI initialization
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    renderCanvas();
-  }, [renderCanvas]);
-
-  // Pointer event coordinate transformation
-  const getCanvasCoords = (e: React.PointerEvent<HTMLCanvasElement>): HandwritingPoint => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = LOGICAL_CANVAS_SIZE / rect.width;
-    const scaleY = LOGICAL_CANVAS_SIZE / rect.height;
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-      time: performance.now(),
-      pressure: e.pressure || 0.5,
-    };
-  };
-
-  // Pointerdown (Section A2)
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    // Isolate by pointerId: ignore secondary touch/pen
-    if (activePointerIdRef.current !== null && activePointerIdRef.current !== e.pointerId) {
-      return;
-    }
-
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     activePointerIdRef.current = e.pointerId;
-
-    if (activeMorphRef.current) {
-      activeMorphRef.current.cancel();
-      activeMorphRef.current = null;
-    }
-
-    // Clear previous wrong stroke on next touch
-    if (wrongClearTimerRef.current) {
-      clearTimeout(wrongClearTimerRef.current);
-      wrongClearTimerRef.current = null;
-    }
-    wrongStrokeRef.current = null;
-
     isDrawingRef.current = true;
     const pt = getCanvasCoords(e);
     currentStrokePointsRef.current = [pt];
@@ -419,7 +514,6 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     requestAnimationFrame(renderCanvas);
   };
 
-  // Pointermove: zero setState for maximum 60fps performance (Section G)
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current || e.pointerId !== activePointerIdRef.current) return;
     e.preventDefault();
@@ -428,165 +522,12 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     requestAnimationFrame(renderCanvas);
   };
 
-  // Cancel handler for touchcancel / lost pointer (Section A2)
-  const handlePointerCancel = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (e.pointerId !== activePointerIdRef.current) return;
-    isDrawingRef.current = false;
-    activePointerIdRef.current = null;
-    currentStrokePointsRef.current = [];
-    requestAnimationFrame(renderCanvas);
-  };
-
-  // Run full evaluation on character strokes (Section B1 - B4, C1)
-  const runCharacterEvaluation = useCallback(
-    async (strokes: CharacterStrokeModel[]) => {
-      if (!charReference) return;
-
-      // Whole-text recognition flow for Thai & Arabic (MyScript)
-      if (isRecognitionOnly && provider && provider.recognizeText) {
-        setIsRecognizing(true);
-        try {
-          const inkStrokes = strokes.map((s, idx) => ({
-            id: s.strokeId,
-            index: idx,
-            points: s.points.map((p) => ({ x: p.x, y: p.y, t: p.time || 0 })),
-          }));
-
-          const recogRes = await provider.recognizeText({
-            languageCode: languageId,
-            scriptCode: currentUnit?.script || 'THAI',
-            targetText: currentChar,
-            strokes: inkStrokes,
-            mode: 'freehand',
-          });
-
-          setRecognitionResult(recogRes);
-          const isCorrect = recogRes.recognizedText?.trim().toLowerCase() === currentChar.trim().toLowerCase();
-          const confidence = recogRes.overallConfidence || (isCorrect ? 90 : 60);
-
-          setCharEvaluation({
-            characterId: charReference.id,
-            recognizedCharacter: recogRes.recognizedText || currentChar,
-            expectedCharacter: currentChar,
-            strokeCount: strokes.length,
-            expectedStrokeCount: charReference.strokeCount,
-            actualStrokeCount: strokes.length,
-            missingStrokes: 0,
-            extraStrokes: 0,
-            strokeEvaluations: [],
-            strokeOrder: { correct: true, confidence: 100, transitions: [] },
-            positionEvaluation: { status: 'ALIGNED', centerOffsetPx: 0, scaleRatio: 1, horizontalOffset: 0, verticalOffset: 0 },
-            shapeSimilarity: confidence,
-            recognitionConfidence: confidence,
-            finalCorrectness: isCorrect ? 'CORRECT' : 'NEARLY_CORRECT',
-            recognized: true,
-            canSnapToReference: false,
-            incorrectStrokeIndices: [],
-            wrongDirectionIndices: [],
-            wrongOrderIndices: [],
-            suggestions: [recogRes.feedback || 'Nhận dạng chữ viết hoàn tất.'],
-          });
-
-          setCharState(isCorrect ? 'CORRECT' : 'PARTIALLY_CORRECT');
-          setCharScores((prev) => ({ ...prev, [activeCharIndex]: confidence }));
-
-          if (activeCharIndex === characters.length - 1) {
-            const allScores = Object.values({ ...charScores, [activeCharIndex]: confidence });
-            const finalWordAcc = Math.round(allScores.reduce((a, b) => a + b, 0) / characters.length);
-            onWordComplete(finalWordAcc, true);
-          }
-        } finally {
-          setIsRecognizing(false);
-          renderCanvas();
-        }
-        return;
-      }
-
-      // Authentic Stroke-by-stroke evaluation flow (Chinese Hanzi Writer, Japanese Kakitori, Korean Hangul)
-      const hasRealSvg = Boolean(charReference.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0);
-      const normalizedStrokes = strokes.map((s, idx) => {
-        const refStk = hasRealSvg ? charReference.strokes?.[idx] : null;
-        if ((s.isValidated || (s as any).canSnapToReference) && refStk) {
-          return refStk.points;
-        }
-        return s.points;
-      });
-      const evalResult = evaluateFullCharacter(normalizedStrokes, charReference, LOGICAL_CANVAS_SIZE);
-      setCharEvaluation(evalResult);
-
-      if (evalResult.finalCorrectness === 'CORRECT') {
-        setCharState('CORRECT');
-        setCharScores((prev) => ({ ...prev, [activeCharIndex]: evalResult.confidence }));
-        strokes.forEach((s) => {
-          s.isValidated = true;
-        });
-
-        if (activeCharIndex === characters.length - 1) {
-          const allScores = Object.values({ ...charScores, [activeCharIndex]: evalResult.confidence });
-          const finalWordAcc = Math.round(allScores.reduce((a, b) => a + b, 0) / characters.length);
-          onWordComplete(finalWordAcc, true);
-        }
-      } else if (evalResult.finalCorrectness === 'NEARLY_CORRECT') {
-        setCharState('PARTIALLY_CORRECT');
-        setCharScores((prev) => ({ ...prev, [activeCharIndex]: evalResult.confidence }));
-        strokes.forEach((s) => {
-          s.isValidated = true;
-        });
-
-        if (activeCharIndex === characters.length - 1) {
-          const allScores = Object.values({ ...charScores, [activeCharIndex]: evalResult.confidence });
-          const finalWordAcc = Math.round(allScores.reduce((a, b) => a + b, 0) / characters.length);
-          onWordComplete(finalWordAcc, true);
-        }
-      } else {
-        setCharState('INCORRECT');
-      }
-      renderCanvas();
-    },
-    [charReference, isRecognitionOnly, provider, languageId, currentUnit, currentChar, activeCharIndex, characters.length, charScores, onWordComplete, renderCanvas]
-  );
-
-  // Auto-fill/help next stroke if learner needs assistance
-  const handleAutoFillNextStroke = () => {
-    if (!charReference || !charReference.strokes) return;
-    const strokeIdx = drawnStrokesRef.current.length;
-    if (strokeIdx >= charReference.strokes.length) return;
-    const refStroke = charReference.strokes[strokeIdx];
-    const newStrokeModel: CharacterStrokeModel = {
-      strokeId: `stk_${Date.now()}_${strokeIdx}`,
-      characterId: currentChar,
-      strokeIndex: strokeIdx,
-      pointerId: 0,
-      pointerType: 'pen',
-      points: refStroke.points,
-      startPoint: { x: refStroke.points[0].x, y: refStroke.points[0].y },
-      endPoint: { x: refStroke.points[refStroke.points.length - 1].x, y: refStroke.points[refStroke.points.length - 1].y },
-      durationMs: 150,
-      isValidated: true,
-    };
-    drawnStrokesRef.current.push(newStrokeModel);
-    displayStrokesRef.current.push(refStroke.points);
-    wrongStrokeRef.current = null;
-    redoStackRef.current = [];
-    setStrokeCountDisplay(drawnStrokesRef.current.length);
-    renderCanvas();
-    if (drawnStrokesRef.current.length < charReference.strokeCount) {
-      setCharState('AWAITING_MORE_STROKES');
-    } else {
-      setCharState('READY_TO_CHECK');
-      runCharacterEvaluation(drawnStrokesRef.current);
-    }
-  };
-
-  // Pointerup: commits exactly ONE stroke (Section A2)
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current || e.pointerId !== activePointerIdRef.current) return;
     e.preventDefault();
     try {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {
-      // Ignored
-    }
+    } catch {}
     isDrawingRef.current = false;
     activePointerIdRef.current = null;
 
@@ -599,184 +540,29 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     }
 
     const strokeIdx = drawnStrokesRef.current.length;
-    const startTime = strokePoints[0]?.time || performance.now();
-    const endTime = strokePoints[strokePoints.length - 1]?.time || performance.now();
-
-    // Standardized Stroke Data Model (Section A3)
     const newStrokeModel: CharacterStrokeModel = {
       strokeId: `stk_${Date.now()}_${strokeIdx}`,
       characterId: currentChar,
       strokeIndex: strokeIdx,
       pointerId: e.pointerId,
-      pointerType: (e.pointerType as any) || 'pen',
+      pointerType: 'pen',
       points: strokePoints,
       startPoint: { x: strokePoints[0].x, y: strokePoints[0].y },
       endPoint: { x: strokePoints[strokePoints.length - 1].x, y: strokePoints[strokePoints.length - 1].y },
-      durationMs: Math.max(10, Math.round(endTime - startTime)),
-      isValidated: false,
+      durationMs: 150,
+      isValidated: true,
     };
 
-    // Sequential Vector Reference Evaluation (Section B2)
-    const hasAuthenticStrokes = Boolean(
-      charReference &&
-      charReference.hasRealSvgPaths &&
-      charReference.strokes &&
-      charReference.strokes.length > 0 &&
-      charReference.strokes[strokeIdx]
-    );
-
-    if (hasAuthenticStrokes) {
-      const refStroke = charReference.strokes[strokeIdx];
-      const evalResult = evaluateSingleStroke(strokePoints, refStroke.points, strokeIdx, LOGICAL_CANVAS_SIZE, LOGICAL_CANVAS_SIZE);
-
-      // Measure drawn stroke length for dot/tick tolerance
-      let drawnLength = 0;
-      for (let i = 1; i < strokePoints.length; i++) {
-        drawnLength += Math.hypot(strokePoints[i].x - strokePoints[i - 1].x, strokePoints[i].y - strokePoints[i - 1].y);
-      }
-      const isShortStroke = drawnLength < 55;
-      const isBackwards = !isShortStroke && evalResult.directionCosine < -0.30;
-      const isAccepted = (evalResult.confidence >= 40 || evalResult.canSnapToReference || evalResult.correct || isShortStroke) && !isBackwards;
-
-      if (isAccepted) {
-        // MATCH: Commit stroke, auto-fill points to canonical reference vector so evaluation is 100% correct
-        newStrokeModel.points = refStroke.points;
-        newStrokeModel.isValidated = true;
-        drawnStrokesRef.current.push(newStrokeModel);
-        displayStrokesRef.current.push(refStroke.points);
-        redoStackRef.current = [];
-        wrongStrokeRef.current = null;
-
-        const successEval: SingleStrokeEvaluation = {
-          ...evalResult,
-          correct: true,
-          confidence: Math.max(88, evalResult.confidence),
-          feedbackMessage: 'Nét chuẩn xác! Đã khớp vào nét mẫu.',
-          canSnapToReference: true,
-        };
-        setLastStrokeEval(successEval);
-        setStrokeCountDisplay(drawnStrokesRef.current.length);
-
-        // Controlled morph animation (Section C3)
-        if (!isUltraEfficient) {
-          activeMorphRef.current = animateStrokeMorph(
-            strokePoints,
-            refStroke.points,
-            200,
-            (morphedPoints) => {
-              displayStrokesRef.current[strokeIdx] = morphedPoints;
-              renderCanvas();
-            },
-            () => {
-              displayStrokesRef.current[strokeIdx] = refStroke.points;
-              renderCanvas();
-              activeMorphRef.current = null;
-            }
-          );
-        } else {
-          renderCanvas();
-        }
-
-        // State Machine transition (Section A4)
-        if (drawnStrokesRef.current.length < charReference.strokeCount) {
-          setCharState('AWAITING_MORE_STROKES');
-        } else {
-          setCharState('READY_TO_CHECK');
-          runCharacterEvaluation(drawnStrokesRef.current);
-        }
-      } else {
-        // INCORRECT: show stroke in red, do NOT advance strokeIndex!
-        wrongStrokeRef.current = strokePoints;
-        const failMessage = isBackwards
-          ? 'Nét bị ngược hướng! Chú ý điểm bắt đầu và chiều kéo nét theo mũi tên mẫu.'
-          : 'Nét chưa đúng! Hãy nhìn kỹ nét mẫu mờ và viết lại cho chuẩn.';
-
-        const failEval: SingleStrokeEvaluation = {
-          ...evalResult,
-          correct: false,
-          confidence: Math.min(45, evalResult.confidence),
-          feedbackMessage: failMessage,
-        };
-        setLastStrokeEval(failEval);
-        setCharState('INCORRECT');
-        renderCanvas();
-
-        if (wrongClearTimerRef.current) clearTimeout(wrongClearTimerRef.current);
-        wrongClearTimerRef.current = window.setTimeout(() => {
-          wrongStrokeRef.current = null;
-          renderCanvas();
-        }, 1200);
-      }
-    } else {
-      // Natural free-form handwriting mode: preserves authentic user drawing (never snaps to dummy '+')
-      newStrokeModel.isValidated = true;
-      drawnStrokesRef.current.push(newStrokeModel);
-      displayStrokesRef.current.push(strokePoints);
-      redoStackRef.current = [];
-      wrongStrokeRef.current = null;
-      setStrokeCountDisplay(drawnStrokesRef.current.length);
-      renderCanvas();
-
-      const expected = charReference?.strokeCount || 4;
-      if (drawnStrokesRef.current.length < expected) {
-        setCharState('AWAITING_MORE_STROKES');
-      } else {
-        setCharState('READY_TO_CHECK');
-        runCharacterEvaluation(drawnStrokesRef.current);
-      }
-    }
+    drawnStrokesRef.current.push(newStrokeModel);
+    displayStrokesRef.current.push(strokePoints);
+    setStrokeCountDisplay(drawnStrokesRef.current.length);
+    renderCanvas();
   };
 
-  // Undo (Ctrl+Z): removes last stroke, updates state machine (Section E1)
-  const handleUndo = useCallback(() => {
-    wrongStrokeRef.current = null;
-    if (drawnStrokesRef.current.length === 0) return;
-
-    const popped = drawnStrokesRef.current.pop();
-    displayStrokesRef.current.pop();
-    if (popped) redoStackRef.current.push(popped);
-
-    setStrokeCountDisplay(drawnStrokesRef.current.length);
-    setLastStrokeEval(null);
-    setCharEvaluation(null);
-
-    const expected = charReference?.strokeCount || 1;
-    if (drawnStrokesRef.current.length === 0) {
-      setCharState('READY');
-    } else if (drawnStrokesRef.current.length < expected) {
-      setCharState('AWAITING_MORE_STROKES');
-    } else {
-      setCharState('READY_TO_CHECK');
-    }
-    renderCanvas();
-  }, [charReference, renderCanvas]);
-
-  // Redo (Ctrl+Y / Ctrl+Shift+Z)
-  const handleRedo = useCallback(() => {
-    wrongStrokeRef.current = null;
-    if (redoStackRef.current.length === 0) return;
-
-    const restored = redoStackRef.current.pop();
-    if (!restored) return;
-
-    drawnStrokesRef.current.push(restored);
-    displayStrokesRef.current.push(restored.points);
-    setStrokeCountDisplay(drawnStrokesRef.current.length);
-
-    const expected = charReference?.strokeCount || 1;
-    if (drawnStrokesRef.current.length < expected) {
-      setCharState('AWAITING_MORE_STROKES');
-    } else {
-      setCharState('READY_TO_CHECK');
-      runCharacterEvaluation(drawnStrokesRef.current);
-    }
-    renderCanvas();
-  }, [charReference, runCharacterEvaluation, renderCanvas]);
-
-  // Keyboard Shortcuts (Section E1)
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
       if (e.code === 'Space' && (charState === 'CORRECT' || charState === 'PARTIALLY_CORRECT')) {
         e.preventDefault();
         if (activeCharIndex < characters.length - 1) {
@@ -784,100 +570,27 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
         } else {
           onNextWord();
         }
-        return;
-      }
-        return;
-      }
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const modKey = isMac ? e.metaKey : e.ctrlKey;
-
-      if (modKey && (e.key === 'z' || e.key === 'Z')) {
-        e.preventDefault();
-        if (e.shiftKey) {
-          handleRedo();
-        } else {
-          handleUndo();
-        }
-      } else if (modKey && (e.key === 'y' || e.key === 'Y')) {
-        e.preventDefault();
-        handleRedo();
-      } else if (e.key === 'Delete') {
-        e.preventDefault();
-        clearCanvas();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        if (focusMode) setFocusMode(false);
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo, clearCanvas, focusMode]);
-
-  // Stroke Order Animation Playback (Section D3)
-  const playStrokeAnimation = () => {
-    if (!charReference || charReference.strokes.length === 0) return;
-    clearCanvas();
-    setIsPlayingAnimation(true);
-
-    let current = 0;
-    const total = charReference.strokes.length;
-
-    const playNext = () => {
-      if (current >= total) {
-        setIsPlayingAnimation(false);
-        return;
-      }
-      displayStrokesRef.current.push(charReference.strokes[current].points);
-      renderCanvas();
-      current++;
-      animationTimerRef.current = window.setTimeout(playNext, 650);
-    };
-
-    playNext();
-  };
-
-  const stopStrokeAnimation = () => {
-    if (animationTimerRef.current) {
-      clearTimeout(animationTimerRef.current);
-      animationTimerRef.current = null;
-    }
-    setIsPlayingAnimation(false);
-    clearCanvas();
-  };
-
-  // Audio Pronunciation
-  const handleSpeak = () => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = languageId === 'zh' ? 'zh-CN' : languageId === 'ko' ? 'ko-KR' : 'ja-JP';
-    utterance.rate = 0.85;
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const expectedStrokeCount = charReference?.strokeCount || 1;
-  const activeStrokeIndex = drawnStrokesRef.current.length;
+  }, [charState, activeCharIndex, characters.length, onNextWord]);
 
   return (
     <div
-      className={`space-y-4 max-w-3xl mx-auto transition-all ${focusMode
-        ? 'fixed inset-0 z-50 bg-slate-950/95 p-4 flex flex-col justify-center items-center overflow-y-auto'
-        : ''
-        }`}
+      className={`space-y-4 max-w-2xl mx-auto transition-all ${
+        focusMode ? 'fixed inset-0 z-50 bg-slate-950/95 p-4 flex flex-col justify-center items-center overflow-y-auto' : ''
+      }`}
     >
-      {/* ========================================================================= */}
-      {/* 1. VOCABULARY FOCUS CARD & GRAPHEME SELECTOR (SECTION D1)                 */}
-      {/* ========================================================================= */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
-        {/* Vocabulary Word & Readings */}
+      {/* 1. Header Card: Word & Metadata */}
+      <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               {word}
             </h2>
             {(romaji || pinyin || pronunciation) && (
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50">
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50">
                 {romaji || pinyin || pronunciation}
               </span>
             )}
@@ -891,35 +604,40 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Multi-Engine Capability Badge */}
-            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1.5 ${
-              isRecognitionOnly
-                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40'
-                : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/40'
-            }">
-              {isRecognitionOnly ? (
-                <>
-                  <span>🔍</span>
-                  <span>Nhận dạng số</span>
-                </>
-              ) : (
-                <>
-                  <span>✍️</span>
-                  <span>Chấm từng nét ({provider?.metadata?.name?.split(' ')[0] || 'Chuẩn'})</span>
-                </>
-              )}
+            {/* Multi-Engine Capability Pill */}
+            <span
+              className={`text-[11px] font-black px-2.5 py-1 rounded-xl flex items-center gap-1.5 ${
+                isHanziActive
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/40'
+                  : isRecognitionOnly
+                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40'
+                  : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/40'
+              }`}
+            >
+              <span>{isHanziActive ? '✍️' : isRecognitionOnly ? '🔍' : '🖌️'}</span>
+              <span>
+                {isHanziActive
+                  ? `Chấm nét (${provider?.metadata?.name?.split(' ')[0] || 'Chuẩn'})`
+                  : isRecognitionOnly
+                  ? 'Nhận dạng số'
+                  : 'Luyện viết tự do'}
+              </span>
             </span>
 
-            {/* Hangul Jamo breakdown badge if Korean */}
+            {/* Hangul Jamo breakdown pill */}
             {currentUnit?.metadata?.hangulComponents?.isHangul && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hidden sm:inline">
-                {currentUnit.metadata.hangulComponents.chosung} + {currentUnit.metadata.hangulComponents.jungsung}{currentUnit.metadata.hangulComponents.jongsung ? ' + ' + currentUnit.metadata.hangulComponents.jongsung : ''}
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hidden sm:inline">
+                {currentUnit.metadata.hangulComponents.chosung} + {currentUnit.metadata.hangulComponents.jungsung}
+                {currentUnit.metadata.hangulComponents.jongsung ? ` + ${currentUnit.metadata.hangulComponents.jongsung}` : ''}
               </span>
             )}
 
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
-              Nét {Math.min(strokeCountDisplay + 1, expectedStrokeCount)}/{expectedStrokeCount}
-            </span>
+            {isHanziActive && hanziTotalStrokes > 0 && (
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl">
+                Nét {Math.min(hanziStrokeCount + 1, hanziTotalStrokes)}/{hanziTotalStrokes}
+              </span>
+            )}
+
             <button
               onClick={() => setFocusMode(!focusMode)}
               className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer"
@@ -930,13 +648,12 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
           </div>
         </div>
 
-        {/* Translation & Character Units */}
+        {/* Translation & Multi-Character Graphemes */}
         <div className="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800/60 pt-2.5">
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-xs">
             {meaning}
           </p>
 
-          {/* Multi-Character Writing Units (Section D5) */}
           {characters.length > 1 && (
             <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto no-scrollbar">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">
@@ -949,10 +666,11 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
                   <button
                     key={idx}
                     onClick={() => setActiveCharIndex(idx)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition flex items-center gap-1 cursor-pointer ${isSelected
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
-                      }`}
+                    className={`px-3 py-1 rounded-xl text-xs font-black transition flex items-center gap-1 cursor-pointer ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
+                    }`}
                   >
                     <span>{ch}</span>
                     {typeof score === 'number' && (
@@ -968,82 +686,54 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. THE HERO CANVAS (SECTION D2)                                           */}
-      {/* ========================================================================= */}
-      <div className={`relative p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500/25 shadow-lg flex flex-col items-center justify-center overflow-hidden ${isRTL ? 'direction-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
-        {/* Ghost character guide with high contrast & active stroke glow (Section D2) */}
-        {showGhostGuide && (
-          charReference?.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0 ? (
-            <svg
-              viewBox="0 0 1024 1024"
-              className="absolute inset-0 w-full h-full p-4 pointer-events-none z-0 select-none"
-              style={{ opacity: ghostOpacity }}
-            >
-              {charReference.strokes.map((stroke, idx) => {
-                const isCompleted = idx < strokeCountDisplay;
-                const isCurrent = idx === strokeCountDisplay;
-                return (
-                  <g key={idx}>
-                    <path
-                      d={stroke.pathString}
-                      fill="none"
-                      stroke={isCurrent ? '#818cf8' : isCompleted ? '#10b981' : 'rgba(148, 163, 184, 0.45)'}
-                      strokeWidth={isCurrent ? '64' : '46'}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeDasharray={isCurrent ? 'none' : '6 10'}
-                      className={isCurrent ? 'filter drop-shadow-[0_0_10px_rgba(129,140,248,0.7)]' : ''}
-                    />
-                    {/* Active stroke starting point cyan pulse dot */}
-                    {isCurrent && stroke.points && stroke.points[0] && (
-                      <circle
-                        cx={stroke.points[0].x * (1024 / LOGICAL_CANVAS_SIZE)}
-                        cy={stroke.points[0].y * (1024 / LOGICAL_CANVAS_SIZE)}
-                        r="22"
-                        fill="#38bdf8"
-                      />
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
-          ) : (
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 select-none"
-              style={{ opacity: ghostOpacity }}
-            >
-              <span
-                className="text-[170px] sm:text-[200px] font-bold text-indigo-400 select-none leading-none tracking-normal"
-                style={{
-                  fontFamily: '"Noto Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", system-ui, sans-serif',
-                }}
-              >
-                {currentChar}
-              </span>
-            </div>
-          )
+      {/* 2. THE HERO WRITING CANVAS (Clean Zen Surface, No Grid Lines) */}
+      <div
+        className={`relative p-3 rounded-3xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center justify-center overflow-hidden min-h-[350px] ${
+          isRTL ? 'direction-rtl' : ''
+        }`}
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        {/* Interactive HanziWriter SVG Quiz Container for CJK */}
+        {isCJK ? (
+          <div
+            ref={hwContainerRef}
+            className="w-[320px] h-[320px] sm:w-[340px] sm:h-[340px] flex items-center justify-center select-none cursor-crosshair touch-none"
+            style={{ touchAction: 'none' }}
+          />
+        ) : (
+          /* Fallback Canvas for Non-CJK (Korean, Thai, Arabic) */
+          <>
+            {showGhostGuide && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 select-none opacity-40">
+                <span
+                  className="text-[160px] sm:text-[190px] font-bold text-indigo-400 select-none leading-none tracking-normal"
+                  style={{
+                    fontFamily: '"Noto Sans", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC", system-ui, sans-serif',
+                  }}
+                >
+                  {currentChar}
+                </span>
+              </div>
+            )}
+            <canvas
+              ref={canvasRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              className="relative z-10 w-full aspect-square max-w-[340px] sm:max-w-[370px] rounded-2xl bg-white dark:bg-slate-950 cursor-crosshair touch-none select-none"
+              style={{ touchAction: 'none' }}
+            />
+          </>
         )}
-
-        {/* High performance Canvas with touch-action isolation (Section E2, E3) */}
-        <canvas
-          ref={canvasRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          onLostPointerCapture={handlePointerCancel}
-          className="relative z-10 w-full aspect-square max-w-[340px] sm:max-w-[370px] rounded-xl bg-slate-50/50 dark:bg-slate-950/90 cursor-crosshair touch-none select-none"
-          style={{ touchAction: 'none' }}
-        />
 
         {/* Real-time single stroke feedback toast */}
         {lastStrokeEval && (
           <div
-            className={`absolute bottom-4 left-4 right-4 z-20 p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-2 shadow-lg backdrop-blur-md animate-slideUp ${lastStrokeEval.correct
-              ? 'bg-emerald-600/90 border-emerald-400 text-white'
-              : 'bg-rose-600/95 border-rose-400 text-white ring-2 ring-rose-400/50'
-              }`}
+            className={`absolute bottom-3 left-4 right-4 z-20 p-2.5 rounded-2xl border text-xs font-bold flex items-center justify-between gap-2 shadow-lg backdrop-blur-md animate-slideUp ${
+              lastStrokeEval.correct
+                ? 'bg-emerald-600/90 border-emerald-400 text-white'
+                : 'bg-rose-600/95 border-rose-400 text-white ring-2 ring-rose-400/50'
+            }`}
           >
             <div className="flex items-center gap-2">
               {lastStrokeEval.correct ? (
@@ -1053,111 +743,67 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
               )}
               <span className="line-clamp-1">{lastStrokeEval.feedbackMessage}</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-white/20 text-[11px] font-black shrink-0">
-              {lastStrokeEval.confidence}%
-            </span>
+            {typeof lastStrokeEval.confidence === 'number' && (
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-[11px] font-black shrink-0">
+                {lastStrokeEval.confidence}%
+              </span>
+            )}
           </div>
         )}
       </div>
 
-      {/* ========================================================================= */}
-      {/* ========================================================================= */}
-      {/* 3. REDESIGNED HANDWRITING TOOLBAR (TASK 6)                                */}
-      {/* ========================================================================= */}
-      <div className="w-full max-w-[420px] rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800/80 shadow-md p-2.5 space-y-2">
-        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-          {/* Group 1: History Operations (Undo / Redo) */}
-          <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl">
-            <button
-              onClick={handleUndo}
-              disabled={strokeCountDisplay === 0}
-              className="p-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
-              title="Hoàn tác nét (Ctrl+Z / Cmd+Z)"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleRedo}
-              disabled={redoStackRef.current.length === 0}
-              className="p-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
-              title="Làm lại nét (Ctrl+Y / Cmd+Shift+Z)"
-            >
-              <RotateCw className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Group 2: Canvas & Grid */}
-          <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl">
-            <button
-              onClick={clearCanvas}
-              className="p-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-rose-500/10 hover:text-rose-600 text-slate-700 dark:text-slate-200 transition cursor-pointer shadow-xs"
-              title="Xóa trắng chữ hiện tại (Delete)"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowGrid(!showGrid)}
-              className={`p-2 rounded-lg transition cursor-pointer shadow-xs ${
-                showGrid
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white dark:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Bật/Tắt Lưới Điền-Tự-Cách"
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Group 3: Ghost Guide & Animation */}
-          <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl">
-            <button
-              onClick={() => {
-                if (!showGhostGuide) {
-                  setShowGhostGuide(true);
-                  setGhostOpacity(0.55);
-                } else if (ghostOpacity > 0.4) {
-                  setGhostOpacity(0.25);
-                } else {
-                  setShowGhostGuide(false);
-                }
-              }}
-              className={`p-2 rounded-lg transition cursor-pointer shadow-xs flex items-center gap-1 text-xs font-bold ${
-                showGhostGuide
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white dark:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Nét mẫu mờ: Bấm để đổi mức (Rõ -> Vừa -> Ẩn)"
-            >
-              {showGhostGuide ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span className="text-[10px]">
-                {!showGhostGuide ? 'Ẩn' : ghostOpacity > 0.4 ? 'Rõ' : 'Vừa'}
-              </span>
-            </button>
-
-            <button
-                onClick={handleAutoFillNextStroke}
-                disabled={!charReference?.strokes || strokeCountDisplay >= (charReference?.strokeCount || 1)}
-                className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 transition cursor-pointer shadow-xs text-xs font-bold disabled:opacity-30 disabled:pointer-events-none"
-                title="Gợi ý điền nét kế tiếp"
-              >
-                <Sparkles className="w-4 h-4" />
-              </button>
-            {charReference?.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0 && (
+      {/* 3. SLEEK TOOLBAR (Vẽ mẫu, Mẫu nét, Viết lại, Tiếp tục) */}
+      <div className="w-full rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          {/* Group A: Actions (Vẽ mẫu & Mẫu nét) */}
+          <div className="flex items-center gap-2">
+            {/* Nút Vẽ mẫu (Animate character strokes) */}
+            {isCJK && (
               <button
-                onClick={isPlayingAnimation ? stopStrokeAnimation : playStrokeAnimation}
-                className={`p-2 rounded-lg transition cursor-pointer shadow-xs text-xs font-bold ${
-                  isPlayingAnimation
-                    ? 'bg-amber-500 text-white animate-pulse'
-                    : 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100'
-                }`}
-                title="Xem thứ tự nét chuẩn (Animation)"
+                onClick={playStrokeAnimation}
+                disabled={isPlayingAnimation}
+                className="px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60 text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                title="Xem mẫu viết từng nét"
               >
-                {isPlayingAnimation ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                {isPlayingAnimation ? (
+                  <Pause className="w-3.5 h-3.5 animate-pulse text-indigo-500" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 text-indigo-500" />
+                )}
+                <span>{isPlayingAnimation ? 'Đang vẽ mẫu...' : 'Vẽ mẫu'}</span>
               </button>
             )}
+
+            {/* Nút Mẫu nét (Hiện / Ẩn nét mờ) */}
+            <button
+              onClick={toggleGhostGuide}
+              className={`px-3 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 border ${
+                showGhostGuide
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700'
+                  : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800'
+              }`}
+              title={showGhostGuide ? 'Ẩn nét mẫu mờ' : 'Hiện nét mẫu mờ'}
+            >
+              {showGhostGuide ? (
+                <Eye className="w-3.5 h-3.5 text-indigo-500" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5" />
+              )}
+              <span>{showGhostGuide ? 'Hiện nét' : 'Ẩn nét'}</span>
+            </button>
+
+            {/* Nút Viết lại */}
+            <button
+              onClick={handleReset}
+              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              title="Viết lại chữ này"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Viết lại</span>
+            </button>
           </div>
 
-          {/* Group 4: Next / Check Primary Action */}
+          {/* Group B: Primary Forward Action (Chữ tiếp / Từ tiếp theo) */}
           <div>
             {charState === 'CORRECT' || charState === 'PARTIALLY_CORRECT' ? (
               activeCharIndex < characters.length - 1 ? (
@@ -1177,108 +823,10 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )
-            ) : (
-              <button
-                onClick={() => runCharacterEvaluation(drawnStrokesRef.current)}
-                disabled={drawnStrokesRef.current.length === 0}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-black shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <span>Kiểm tra</span>
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
-
-      {/* 4. DEDICATED FEEDBACK AREA (SECTION D4)                                   */}
-      {/* ========================================================================= */}
-      {charEvaluation && (
-        <div
-          className={`p-3.5 rounded-2xl border text-xs shadow-sm transition space-y-2 ${charEvaluation.finalCorrectness === 'CORRECT'
-            ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
-            : charEvaluation.finalCorrectness === 'NEARLY_CORRECT'
-              ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200'
-              : 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200'
-            }`}
-        >
-          <div className="flex items-center justify-between font-bold">
-            <div className="flex items-center gap-2">
-              {charEvaluation.finalCorrectness === 'CORRECT' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              ) : charEvaluation.finalCorrectness === 'NEARLY_CORRECT' ? (
-                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-              )}
-              <span className="text-sm font-black">
-                {charEvaluation.finalCorrectness === 'CORRECT'
-                  ? 'Ký tự hoàn thành chuẩn xác!'
-                  : charEvaluation.finalCorrectness === 'NEARLY_CORRECT'
-                    ? 'Ký tự gần đúng (Đạt yêu cầu)'
-                    : 'Cần sửa lại nét viết'}
-              </span>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-white/70 dark:bg-slate-900/70 border border-current text-xs font-black">
-              {charEvaluation.recognitionConfidence}% độ chuẩn
-            </span>
-          </div>
-
-          {/* Actionable suggestions list */}
-          <div className="space-y-1 pl-6">
-            {charEvaluation.suggestions.map((msg, i) => (
-              <p key={i} className="leading-relaxed">
-                • {msg}
-              </p>
-            ))}
-          </div>
-
-          {/* Retry Prompt if incorrect */}
-          {charEvaluation.finalCorrectness === 'INCORRECT' && (
-            <div className="pt-2 flex items-center justify-end">
-              <button
-                onClick={clearCanvas}
-                className="px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold text-xs flex items-center gap-1.5 hover:bg-rose-500 transition cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Viết lại chữ này</span>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };
-
-/**
- * Procedural Vector Reference Generator for uncataloged characters
- */
-function generateFallbackCharacterReference(
-  literal: string,
-  scriptCode: string,
-  canvasSize: number
-): CharacterReference {
-  let estimatedStrokeCount = 4;
-  const code = literal.charCodeAt(0);
-  if (code >= 0x4e00 && code <= 0x9fff) {
-    estimatedStrokeCount = 7;
-  } else if (code >= 0x3040 && code <= 0x309f) {
-    estimatedStrokeCount = 2;
-  } else if (code >= 0x30a0 && code <= 0x30ff) {
-    estimatedStrokeCount = 2;
-  } else if (code >= 0xac00 && code <= 0xd7af) {
-    estimatedStrokeCount = 4;
-  } else {
-    estimatedStrokeCount = 2;
-  }
-
-  return {
-    id: `gen-${literal}`,
-    literal,
-    scriptCode,
-    strokeCount: estimatedStrokeCount,
-    strokes: [],
-    viewBox: { width: canvasSize, height: canvasSize },
-    hasRealSvgPaths: false,
-  };
-}
