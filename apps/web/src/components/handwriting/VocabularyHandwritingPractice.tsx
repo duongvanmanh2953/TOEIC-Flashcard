@@ -48,6 +48,7 @@ export interface VocabularyHandwritingPracticeProps {
   romaji?: string;
   pinyin?: string;
   languageId?: string;
+  showGuide?: boolean;
   onWordComplete: (accuracy: number, isCorrect: boolean) => void;
   onNextWord: () => void;
 }
@@ -95,7 +96,11 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   const [charScores, setCharScores] = useState<Record<number, number>>({});
 
   // Canvas View & Guides Controls
-  const [showGhostGuide, setShowGhostGuide] = useState(true);
+  const [showGhostGuide, setShowGhostGuide] = useState(showGuide);
+
+  useEffect(() => {
+    if (showGuide !== undefined) setShowGhostGuide(showGuide);
+  }, [showGuide]);
   const [ghostOpacity, setGhostOpacity] = useState(0.55);
   const [showGrid, setShowGrid] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
@@ -121,13 +126,26 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
 
   // Reset when word changes
   useEffect(() => {
+    if (activeMorphRef.current) {
+      activeMorphRef.current.cancel();
+      activeMorphRef.current = null;
+    }
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
+      animationTimerRef.current = null;
+    }
+    if (wrongClearTimerRef.current) {
+      clearTimeout(wrongClearTimerRef.current);
+      wrongClearTimerRef.current = null;
+    }
     setActiveCharIndex(0);
     setCharScores({});
     setCharEvaluation(null);
     setLastStrokeEval(null);
     setCharState('READY');
+    setIsPlayingAnimation(false);
     clearCanvas();
-  }, [word]);
+  }, [word, clearCanvas]);
 
   // Reset when changing character in word
   useEffect(() => {
@@ -415,6 +433,38 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     [charReference, activeCharIndex, characters.length, charScores, onWordComplete, renderCanvas]
   );
 
+  // Auto-fill/help next stroke if learner needs assistance
+  const handleAutoFillNextStroke = () => {
+    if (!charReference || !charReference.strokes) return;
+    const strokeIdx = drawnStrokesRef.current.length;
+    if (strokeIdx >= charReference.strokes.length) return;
+    const refStroke = charReference.strokes[strokeIdx];
+    const newStrokeModel: CharacterStrokeModel = {
+      strokeId: `stk_${Date.now()}_${strokeIdx}`,
+      characterId: currentChar,
+      strokeIndex: strokeIdx,
+      pointerId: 0,
+      pointerType: 'pen',
+      points: refStroke.points,
+      startPoint: { x: refStroke.points[0].x, y: refStroke.points[0].y },
+      endPoint: { x: refStroke.points[refStroke.points.length - 1].x, y: refStroke.points[refStroke.points.length - 1].y },
+      durationMs: 150,
+      isValidated: true,
+    };
+    drawnStrokesRef.current.push(newStrokeModel);
+    displayStrokesRef.current.push(refStroke.points);
+    wrongStrokeRef.current = null;
+    redoStackRef.current = [];
+    setStrokeCountDisplay(drawnStrokesRef.current.length);
+    renderCanvas();
+    if (drawnStrokesRef.current.length < charReference.strokeCount) {
+      setCharState('AWAITING_MORE_STROKES');
+    } else {
+      setCharState('READY_TO_CHECK');
+      runCharacterEvaluation(drawnStrokesRef.current);
+    }
+  };
+
   // Pointerup: commits exactly ONE stroke (Section A2)
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current || e.pointerId !== activePointerIdRef.current) return;
@@ -458,10 +508,16 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       const refStroke = charReference.strokes[strokeIdx];
       const evalResult = evaluateSingleStroke(strokePoints, refStroke.points, strokeIdx, LOGICAL_CANVAS_SIZE, LOGICAL_CANVAS_SIZE);
 
-      const isBackwards = evalResult.directionCosine < -0.15;
-      const isNearlyCorrect = (evalResult.confidence >= 55 || evalResult.canSnapToReference || evalResult.correct) && !isBackwards;
+      // Measure drawn stroke length for dot/tick tolerance
+      let drawnLength = 0;
+      for (let i = 1; i < strokePoints.length; i++) {
+        drawnLength += Math.hypot(strokePoints[i].x - strokePoints[i - 1].x, strokePoints[i].y - strokePoints[i - 1].y);
+      }
+      const isShortStroke = drawnLength < 55;
+      const isBackwards = !isShortStroke && evalResult.directionCosine < -0.30;
+      const isAccepted = (evalResult.confidence >= 40 || evalResult.canSnapToReference || evalResult.correct || isShortStroke) && !isBackwards;
 
-      if (isNearlyCorrect) {
+      if (isAccepted) {
         // MATCH: Commit stroke, auto-fill points to canonical reference vector so evaluation is 100% correct
         newStrokeModel.points = refStroke.points;
         newStrokeModel.isValidated = true;
@@ -960,6 +1016,14 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
               </span>
             </button>
 
+            <button
+                onClick={handleAutoFillNextStroke}
+                disabled={!charReference?.strokes || strokeCountDisplay >= (charReference?.strokeCount || 1)}
+                className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 transition cursor-pointer shadow-xs text-xs font-bold disabled:opacity-30 disabled:pointer-events-none"
+                title="Gợi ý điền nét kế tiếp"
+              >
+                <Sparkles className="w-4 h-4" />
+              </button>
             {charReference?.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0 && (
               <button
                 onClick={isPlayingAnimation ? stopStrokeAnimation : playStrokeAnimation}

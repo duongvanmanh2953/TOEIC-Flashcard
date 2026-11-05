@@ -89,6 +89,60 @@ export const AppShell: React.FC = () => {
     location.pathname.startsWith('/notes');
   const isFullHeightChat = isFullHeightPage;
 
+  // Real-time animated Streak & XP stats in Topbar
+  const [headerStreak, setHeaderStreak] = useState<number>(() => {
+    return user?.streak?.currentStreak || activeProfile?.currentStreak || 1;
+  });
+  const [headerXP, setHeaderXP] = useState<number>(() => {
+    return user?.xp?.totalXP || activeProfile?.xp || 0;
+  });
+  const [xpBonusGlow, setXpBonusGlow] = useState(false);
+
+  useEffect(() => {
+    setHeaderStreak(user?.streak?.currentStreak || activeProfile?.currentStreak || 1);
+    setHeaderXP(user?.xp?.totalXP || activeProfile?.xp || 0);
+  }, [user?.streak?.currentStreak, user?.xp?.totalXP, activeProfile?.currentStreak, activeProfile?.xp]);
+
+  useEffect(() => {
+    const handleSessionCompleted = (e: any) => {
+      const data = e.detail;
+      if (data) {
+        if (typeof data.currentStreak === 'number') {
+          setHeaderStreak(data.currentStreak);
+        }
+        if (typeof data.totalXP === 'number') {
+          setHeaderXP(data.totalXP);
+        } else if (typeof data.xpAwarded === 'number') {
+          setHeaderXP((prev) => prev + data.xpAwarded);
+        }
+        setXpBonusGlow(true);
+        setTimeout(() => setXpBonusGlow(false), 2400);
+      }
+    };
+
+    window.addEventListener('VOCABFLOW_SESSION_COMPLETED', handleSessionCompleted);
+    return () => window.removeEventListener('VOCABFLOW_SESSION_COMPLETED', handleSessionCompleted);
+  }, []);
+
+  const renderStreakXpBadge = (isCompact = false) => (
+    <div
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-xs font-extrabold shadow-xs transition-all ${
+        xpBonusGlow ? 'ring-2 ring-indigo-500 scale-105 bg-indigo-50 dark:bg-indigo-950/50' : ''
+      }`}
+      title="Tiến trình học tập: Chuỗi ngày Streak và Điểm kinh nghiệm XP"
+    >
+      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+        <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500 shrink-0" />
+        <span>{headerStreak} {isCompact ? 'd' : 'ngày'}</span>
+      </div>
+      <div className="h-3 w-px bg-slate-300 dark:bg-slate-700" />
+      <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+        <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+        <span>{headerXP} XP</span>
+      </div>
+    </div>
+  );
+
   // Global Quick Note Modal State
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
 
@@ -967,6 +1021,7 @@ export const AppShell: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {renderStreakXpBadge(true)}
             <button
               onClick={togglePerformanceMode}
               title={isUltraEfficient ? 'Bật Giao diện Đầy đủ' : 'Bật Tiết kiệm GPU/RAM'}
@@ -1227,6 +1282,7 @@ export const AppShell: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 shrink-0">
+            {renderStreakXpBadge(false)}
             <NavLink
               to="/coach"
               title="Voice Coach"

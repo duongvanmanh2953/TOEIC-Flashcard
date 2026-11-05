@@ -179,6 +179,8 @@ export const App: React.FC = () => {
                   <Route path="/languages" element={<MyLanguagesPage />} />
                   <Route path="/review" element={<ReviewSessionPage />} />
                   <Route path="/handwriting" element={<Navigate to="/review?mode=handwriting" replace />} />
+                  <Route path="/forgotten-words" element={<ForgottenWordsPage />} />
+                  <Route path="/tu-hay-quen" element={<Navigate to="/forgotten-words" replace />} />
                   <Route path="/grammar" element={<GrammarMasteryPage />} />
                   <Route path="/vocabulary" element={<VocabularyExplorerPage />} />
                   <Route

@@ -294,7 +294,7 @@ export function getLevenshteinDistance(a: string, b: string): number {
   return d[m][n];
 }
 
-export type ReviewStudyMode = 'auto' | 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting';
+export type ReviewStudyMode = 'auto' | 'learn' | 'assess' | 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting' | 'handwriting_blind';
 
 export interface BufferedReview {
   vocabularyId: string;
@@ -379,7 +379,7 @@ export const ReviewSessionPage: React.FC = () => {
   const [studyMode, setStudyMode] = useState<ReviewStudyMode>(() => {
     if (
       initialModeParam &&
-      ['flashcard', 'quiz', 'typing', 'listening', 'speaking', 'handwriting'].includes(initialModeParam)
+      ['learn', 'assess', 'auto', 'flashcard', 'quiz', 'typing', 'listening', 'speaking', 'handwriting'].includes(initialModeParam)
     ) {
       return initialModeParam;
     }
@@ -817,10 +817,24 @@ export const ReviewSessionPage: React.FC = () => {
 
   const currentItem = items[currentIndex];
 
-  const effectiveExerciseMode: 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting' =
-    studyMode === 'auto'
-      ? (currentItem ? getAutoExerciseForWord(currentItem, activeLanguage?.id) : 'flashcard')
-      : studyMode;
+  const effectiveExerciseMode: 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting' | 'handwriting_blind' =
+    useMemo(() => {
+      if (studyMode === 'learn' || studyMode === 'flashcard') {
+        return 'flashcard';
+      }
+      if (studyMode === 'assess') {
+        const assessTypes: Array<'quiz' | 'typing' | 'listening' | 'handwriting_blind'> = ['quiz', 'typing', 'listening'];
+        if (isHandwritingSupportedForLanguage(activeLanguage?.id)) {
+          assessTypes.push('handwriting_blind');
+        }
+        const idx = (currentIndex + (currentItem?.word?.charCodeAt(0) || 0)) % assessTypes.length;
+        return assessTypes[idx];
+      }
+      if (studyMode === 'auto') {
+        return currentItem ? getAutoExerciseForWord(currentItem, activeLanguage?.id) : 'flashcard';
+      }
+      return studyMode as any;
+    }, [studyMode, currentIndex, currentItem, activeLanguage?.id]);
 
   // Helper for Cloze example
   const getClozeSentence = (sentence?: string, word?: string) => {
@@ -987,6 +1001,8 @@ export const ReviewSessionPage: React.FC = () => {
     // If AGAIN: append card to the end of active queue so it is reinforced before finishing!
     if (rating === 'AGAIN') {
       setItems((prev) => [...prev, updatedCurrentItem]);
+      setTransitionNotice('Thẻ chưa thuộc đã được đưa về cuối phiên để ôn củng cố');
+      setTimeout(() => setTransitionNotice(null), 2500);
       setCurrentIndex((prev) => prev + 1);
       return;
     }
@@ -1015,39 +1031,71 @@ export const ReviewSessionPage: React.FC = () => {
     setIsSubmittingBatch(true);
 
     try {
-      // 1. If backend study session ID exists, send answers batch & complete session
-      if (session?.id) {
-        for (const review of bufferedReviewsRef.current) {
-          try {
-            await api.post(`/reviews/${session.id}/answer`, {
-              vocabularyId: review.vocabularyId,
-              answer: review.word,
-              confidence: review.confidence,
-              responseTimeMs: review.responseTimeMs,
-            });
-          } catch (e) {
-            console.warn('Batch answer post warning:', e);
-          }
-        }
+      const langId = activeLanguage?.id || 'en';
+      const durationSeconds = Math.max(10, Math.round((Date.now() - sessionDurationRef.current) / 1000));
 
-        try {
-          await api.post(`/reviews/${session.id}/complete`);
-        } catch (e) {
-          console.warn('Session complete warning:', e);
-        }
+      const payload = {
+        sessionId: session?.id,
+        studyMode,
+        languageId: langId,
+        durationSeconds,
+        idempotencyKey: `session-${session?.id || Date.now()}-${bufferedReviewsRef.current.length}`,
+        reviews: bufferedReviewsRef.current.map((r) => ({
+          vocabularyId: r.vocabularyId,
+          word: r.word,
+          rating: r.rating,
+          isCorrect: r.isCorrect,
+          confidence: r.confidence,
+          responseTimeMs: r.responseTimeMs,
+        })),
+      };
+
+      let batchResponse: any = null;
+      try {
+        const res = await api.post('/reviews/batch', payload);
+        batchResponse = res?.data;
+      } catch (postErr) {
+        console.warn('Batch endpoint post failed, falling back gracefully:', postErr);
       }
 
-      // 2. Record overall study activity in LearningContext
+      // Record in local LearningContext
       const correctCount = bufferedReviewsRef.current.filter((b) => b.isCorrect).length;
       const isMostlyCorrect = correctCount >= Math.ceil(bufferedReviewsRef.current.length / 2);
+      const earnedXP = batchResponse?.xpAwarded ?? sessionStats.xpEarned;
+
       try {
         await recordStudyActivity(
           bufferedReviewsRef.current.length,
           isMostlyCorrect,
-          sessionStats.xpEarned
+          earnedXP
         );
       } catch (err) {
         console.warn('Record study activity warning:', err);
+      }
+
+      // Update summary stats with verified server values
+      if (batchResponse) {
+        setSummary((prev: any) => ({
+          ...prev,
+          xpEarned: batchResponse.xpAwarded ?? prev?.xpEarned,
+          accuracy: batchResponse.accuracy ?? prev?.accuracy,
+          totalQuestions: batchResponse.reviewedCount ?? prev?.totalQuestions,
+          currentStreak: batchResponse.currentStreak,
+          totalXP: batchResponse.totalXP,
+        }));
+      }
+
+      // Dispatch event to inform AppShell / Topbar to animate Streak and XP
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('VOCABFLOW_SESSION_COMPLETED', {
+            detail: {
+              xpAwarded: earnedXP,
+              totalXP: batchResponse?.totalXP,
+              currentStreak: batchResponse?.currentStreak,
+            },
+          })
+        );
       }
 
       setIsSessionSaved(true);
@@ -1420,41 +1468,48 @@ export const ReviewSessionPage: React.FC = () => {
         </div>
       )}
 
-      {/* Top Controls: Auto SRS Indicator & Topic Selector */}
+      {/* Top Controls: 3-Way Segmented Control (Learn vs Assess vs Auto SRS) & Topic Selector */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
-        {/* Auto SRS Indicator */}
-        {studyMode === 'auto' ? (
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-xs">
-            <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse shrink-0" />
-            <span>
-              Auto SRS:{' '}
-              {effectiveExerciseMode === 'flashcard'
-                ? 'Flashcard (Tái nạp trí nhớ)'
-                : effectiveExerciseMode === 'quiz'
-                ? 'Trắc nghiệm (Củng cố nhận diện)'
-                : effectiveExerciseMode === 'typing'
-                ? 'Luyện gõ (Hồi tưởng chủ động)'
-                : effectiveExerciseMode === 'listening'
-                ? 'Luyện nghe (Âm vị)'
-                : effectiveExerciseMode === 'speaking'
-                ? 'Phát âm (Khẩu hình & Ngữ điệu)'
-                : 'Tập viết (Nét chữ)'}
-            </span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">Cố định:</span>
-            <span className="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs uppercase">
-              {studyMode}
-            </span>
-            <button
-              onClick={() => setStudyMode('auto')}
-              className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-            >
-              (Bật lại Auto SRS)
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+          <button
+            onClick={() => setStudyMode('learn')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer ${
+              studyMode === 'learn' || studyMode === 'flashcard'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+            title="Học thẻ Flashcard kèm luyện viết cho ngôn ngữ hỗ trợ"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Học Thẻ (Learn)</span>
+          </button>
+
+          <button
+            onClick={() => setStudyMode('assess')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer ${
+              studyMode === 'assess' || ['quiz', 'typing', 'listening', 'speaking', 'handwriting'].includes(studyMode)
+                ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+            title="Kiểm tra sau học: Trắc nghiệm, Điền từ, Luyện gõ, Viết không gợi ý, Nghe"
+          >
+            <BrainCircuit className="w-3.5 h-3.5" />
+            <span>Đánh Giá (Assess)</span>
+          </button>
+
+          <button
+            onClick={() => setStudyMode('auto')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer ${
+              studyMode === 'auto'
+                ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+            title="Auto FSRS: Tự động chọn phương pháp phù hợp theo chu kỳ nhớ và độ khó"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Tự Động (Auto SRS)</span>
+          </button>
+        </div>
 
         {/* Topic Selector Custom Dropdown */}
         <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -1498,9 +1553,10 @@ export const ReviewSessionPage: React.FC = () => {
           </div>
           <button
             onClick={handleRequestExit}
-            className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
+            className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            title="Kết thúc phiên học và lưu kết quả"
           >
-            ✕ Thoát
+            <span>Kết thúc học</span>
           </button>
         </div>
       </div>
@@ -1519,6 +1575,7 @@ export const ReviewSessionPage: React.FC = () => {
         <div className="space-y-4">
           {/* Multi-Language Generic Flashcard */}
           <LanguageFlashcard
+            key={`fc-${currentItem.vocabularyId || currentItem.word}-${currentIndex}`}
             language={activeLanguage}
             item={{
               id: currentItem.vocabularyId,

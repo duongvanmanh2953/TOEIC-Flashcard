@@ -43,6 +43,7 @@ const AICoachStudioPage = lazy(() => import('./pages/AICoachStudioPage').then(m 
 const AIInterviewStudioPage = lazy(() => import('./pages/AIInterviewStudioPage').then(m => ({ default: m.AIInterviewStudioPage })));
 const GrammarMasteryPage = lazy(() => import('./pages/grammar/GrammarMasteryPage').then(m => ({ default: m.GrammarMasteryPage })));
 const HandwritingStudioPage = lazy(() => import('./pages/handwriting/HandwritingStudioPage').then(m => ({ default: m.HandwritingStudioPage })));
+const ForgottenWordsPage = lazy(() => import('./pages/ForgottenWordsPage').then(m => ({ default: m.ForgottenWordsPage })));
 
 // Exam Bank & Evaluation Engine Pages
 const ExamBankPage = lazy(() => import('./pages/exams/ExamBankPage').then(m => ({ default: m.ExamBankPage })));
@@ -233,6 +234,8 @@ export const App: React.FC = () => {
                 <Route path="/grammar" element={<GrammarMasteryPage />} />
                 <Route path="/grammar/:topicId" element={<GrammarMasteryPage />} />
                 <Route path="/handwriting" element={<Navigate to="/review?mode=handwriting" replace />} />
+                <Route path="/forgotten-words" element={<ForgottenWordsPage />} />
+                <Route path="/tu-hay-quen" element={<Navigate to="/forgotten-words" replace />} />
 
               <Route
                 path="/word-bank"
