@@ -320,24 +320,31 @@ describe('Section D5: Script-Aware Multi-Character Grapheme Segmentation', () =>
 });
 
 describe('Language Learning Capability Registry', () => {
-  it('enables handwriting board for Asian ideographic & syllable scripts (ja, zh, ko)', () => {
+  it('enables handwriting board for the 5 target Language Spaces (ja, zh, ko, th, ar)', () => {
     expect(isHandwritingSupportedForLanguage('ja')).toBe(true);
     expect(isHandwritingSupportedForLanguage('zh')).toBe(true);
     expect(isHandwritingSupportedForLanguage('ko')).toBe(true);
+    expect(isHandwritingSupportedForLanguage('th')).toBe(true);
+    expect(isHandwritingSupportedForLanguage('ar')).toBe(true);
 
     const jaScripts = getSupportedScriptsForLanguage('ja');
     expect(jaScripts.map((s) => s.scriptCode)).toEqual(['HIRAGANA', 'KATAKANA', 'KANJI']);
 
     const zhScripts = getSupportedScriptsForLanguage('zh');
     expect(zhScripts.map((s) => s.scriptCode)).toEqual(['HANZI_SIMPLIFIED']);
+
+    const thScripts = getSupportedScriptsForLanguage('th');
+    expect(thScripts.map((s) => s.scriptCode)).toEqual(['THAI']);
+
+    const arScripts = getSupportedScriptsForLanguage('ar');
+    expect(arScripts.map((s) => s.scriptCode)).toEqual(['ARABIC']);
   });
 
-  it('strictly disables handwriting board for Latin and pending scripts (en, es, fr, de, th)', () => {
+  it('strictly disables handwriting board for Latin scripts (en, es, fr, de)', () => {
     expect(isHandwritingSupportedForLanguage('en')).toBe(false);
     expect(isHandwritingSupportedForLanguage('es')).toBe(false);
     expect(isHandwritingSupportedForLanguage('fr')).toBe(false);
     expect(isHandwritingSupportedForLanguage('de')).toBe(false);
-    expect(isHandwritingSupportedForLanguage('th')).toBe(false);
 
     const enCaps = getLanguageCapabilities('en');
     expect(enCaps.handwriting.handwritingBoard).toBe(false);

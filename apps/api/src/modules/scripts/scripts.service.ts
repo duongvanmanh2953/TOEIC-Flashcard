@@ -446,5 +446,108 @@ export class ScriptsService {
       isSuccess,
     };
   }
-}
 
+  /**
+   * Secure Cloud Proxy for Digital Ink Recognition (MyScript / SELVAS)
+   * Avoids exposing API keys and HMAC secrets to browser client
+   */
+  async recognizeHandwriting(dto: {
+    languageCode: string;
+    locale?: string;
+    targetText?: string;
+    strokes: Array<{
+      id: string;
+      index: number;
+      points: Array<{ x: number; y: number; t?: number; pressure?: number }>;
+    }>;
+  }) {
+    const { languageCode, locale, targetText, strokes } = dto;
+    const myscriptAppKey = process.env.MYSCRIPT_APPLICATION_KEY;
+    const myscriptHmacKey = process.env.MYSCRIPT_HMAC_KEY;
+
+    if (!myscriptAppKey || !myscriptHmacKey) {
+      this.logger.warn(`Handwriting recognition requested for ${languageCode}, but MYSCRIPT credentials are not set.`);
+      return {
+        success: false,
+        status: 'unsupported',
+        errorCode: 'MYSCRIPT_NOT_CONFIGURED',
+        message: 'Máy chủ chưa cấu hình MYSCRIPT_APPLICATION_KEY và MYSCRIPT_HMAC_KEY.',
+      };
+    }
+
+    if (!strokes || strokes.length === 0) {
+      return {
+        success: false,
+        status: 'inconclusive',
+        message: 'Không có dữ liệu nét viết.',
+      };
+    }
+
+    try {
+      const strokeData = strokes.map((s) => ({
+        x: s.points.map((p) => Math.round(p.x)),
+        y: s.points.map((p) => Math.round(p.y)),
+        t: s.points.map((p) => Math.round(p.t || 0)),
+      }));
+
+      const recognitionLocale = locale || (languageCode === 'th' ? 'th_TH' : languageCode === 'ar' ? 'ar_SA' : 'en_US');
+      const payload = {
+        width: 500,
+        height: 500,
+        contentType: 'Text',
+        configuration: {
+          lang: recognitionLocale,
+        },
+        strokeGroups: [
+          {
+            strokes: strokeData,
+          },
+        ],
+      };
+
+      const crypto = await import('crypto');
+      const jsonBody = JSON.stringify(payload);
+      const hmac = crypto.createHmac('sha512', myscriptAppKey + myscriptHmacKey);
+      hmac.update(jsonBody);
+      const signature = hmac.digest('hex');
+
+      const response = await fetch('https://cloud.myscript.com/api/v4.0/iink/batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'applicationKey': myscriptAppKey,
+          'hmac': signature,
+        },
+        body: jsonBody,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(`MyScript API error: ${response.status} - ${errorText}`);
+        return {
+          success: false,
+          status: 'inconclusive',
+          message: `Dịch vụ MyScript phản hồi lỗi (${response.status}).`,
+        };
+      }
+
+      const result: any = await response.json();
+      const recognizedText = result?.result?.text || '';
+
+      return {
+        success: true,
+        status: 'recognition_only',
+        recognizedText,
+        confidence: Math.round((result?.result?.confidence || 0.85) * 100),
+        candidates: recognizedText ? [{ text: recognizedText, confidence: 90 }] : [],
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to process handwriting recognition: ${err?.message}`);
+      return {
+        success: false,
+        status: 'unsupported',
+        message: 'Lỗi trong quá trình kết nối với dịch vụ nhận dạng chữ viết tay.',
+      };
+    }
+  }
+}

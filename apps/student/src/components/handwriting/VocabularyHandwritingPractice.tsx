@@ -39,6 +39,12 @@ import {
   sampleSvgPath,
 } from '../../lib/handwriting';
 import { COMMON_CHARACTER_DICTIONARY } from '../../lib/handwriting/characterDictionary';
+import {
+  segmentIntoWritingUnits,
+  WritingUnit,
+  handwritingRegistry,
+  HandwritingResult,
+} from '../../lib/handwriting';
 import api from '../../lib/api';
 
 export interface VocabularyHandwritingPracticeProps {
@@ -82,10 +88,22 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
 }) => {
   const { isUltraEfficient } = usePerformance();
 
-  // Multi-character segmentation using grapheme clusters (Section D5)
-  const characters = segmentIntoGraphemes(word);
+  // Multi-character segmentation using grapheme clusters & script-aware units
+  const writingUnits = segmentIntoWritingUnits(word, languageId);
+  const characters = writingUnits.length > 0 ? writingUnits.map((u) => u.unit) : segmentIntoGraphemes(word);
   const [activeCharIndex, setActiveCharIndex] = useState(0);
-  const currentChar = characters[activeCharIndex] || characters[0] || 'あ';
+  const currentUnit: WritingUnit | undefined = writingUnits[activeCharIndex] || writingUnits[0];
+  const currentChar = currentUnit?.unit || characters[activeCharIndex] || characters[0] || 'あ';
+  const isRTL = Boolean(currentUnit?.isRTL);
+
+  const provider = handwritingRegistry.getProviderForLanguage(languageId);
+  const isRecognitionOnly = Boolean(
+    provider &&
+    provider.metadata.capabilities.includes('whole_text_recognition') &&
+    !provider.metadata.capabilities.includes('stroke_order')
+  );
+  const [recognitionResult, setRecognitionResult] = useState<HandwritingResult | null>(null);
+  const [isRecognizing, setIsRecognizing] = useState(false);
 
   // Character Reference Data
   const [charReference, setCharReference] = useState<CharacterReference | null>(null);
@@ -208,6 +226,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     setCharEvaluation(null);
     setLastStrokeEval(null);
     setCharState('READY');
+    setRecognitionResult(null);
     clearCanvas();
   }, [activeCharIndex]);
 
@@ -420,8 +439,70 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
 
   // Run full evaluation on character strokes (Section B1 - B4, C1)
   const runCharacterEvaluation = useCallback(
-    (strokes: CharacterStrokeModel[]) => {
+    async (strokes: CharacterStrokeModel[]) => {
       if (!charReference) return;
+
+      // Whole-text recognition flow for Thai & Arabic (MyScript)
+      if (isRecognitionOnly && provider && provider.recognizeText) {
+        setIsRecognizing(true);
+        try {
+          const inkStrokes = strokes.map((s, idx) => ({
+            id: s.strokeId,
+            index: idx,
+            points: s.points.map((p) => ({ x: p.x, y: p.y, t: p.time || 0 })),
+          }));
+
+          const recogRes = await provider.recognizeText({
+            languageCode: languageId,
+            scriptCode: currentUnit?.script || 'THAI',
+            targetText: currentChar,
+            strokes: inkStrokes,
+            mode: 'freehand',
+          });
+
+          setRecognitionResult(recogRes);
+          const isCorrect = recogRes.recognizedText?.trim().toLowerCase() === currentChar.trim().toLowerCase();
+          const confidence = recogRes.overallConfidence || (isCorrect ? 90 : 60);
+
+          setCharEvaluation({
+            characterId: charReference.id,
+            recognizedCharacter: recogRes.recognizedText || currentChar,
+            expectedCharacter: currentChar,
+            strokeCount: strokes.length,
+            expectedStrokeCount: charReference.strokeCount,
+            actualStrokeCount: strokes.length,
+            missingStrokes: 0,
+            extraStrokes: 0,
+            strokeEvaluations: [],
+            strokeOrder: { correct: true, confidence: 100, transitions: [] },
+            positionEvaluation: { status: 'ALIGNED', centerOffsetPx: 0, scaleRatio: 1, horizontalOffset: 0, verticalOffset: 0 },
+            shapeSimilarity: confidence,
+            recognitionConfidence: confidence,
+            finalCorrectness: isCorrect ? 'CORRECT' : 'NEARLY_CORRECT',
+            recognized: true,
+            canSnapToReference: false,
+            incorrectStrokeIndices: [],
+            wrongDirectionIndices: [],
+            wrongOrderIndices: [],
+            suggestions: [recogRes.feedback || 'Nhận dạng chữ viết hoàn tất.'],
+          });
+
+          setCharState(isCorrect ? 'CORRECT' : 'PARTIALLY_CORRECT');
+          setCharScores((prev) => ({ ...prev, [activeCharIndex]: confidence }));
+
+          if (activeCharIndex === characters.length - 1) {
+            const allScores = Object.values({ ...charScores, [activeCharIndex]: confidence });
+            const finalWordAcc = Math.round(allScores.reduce((a, b) => a + b, 0) / characters.length);
+            onWordComplete(finalWordAcc, true);
+          }
+        } finally {
+          setIsRecognizing(false);
+          renderCanvas();
+        }
+        return;
+      }
+
+      // Authentic Stroke-by-stroke evaluation flow (Chinese Hanzi Writer, Japanese Kakitori, Korean Hangul)
       const hasRealSvg = Boolean(charReference.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0);
       const normalizedStrokes = strokes.map((s, idx) => {
         const refStk = hasRealSvg ? charReference.strokes?.[idx] : null;
@@ -436,13 +517,10 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       if (evalResult.finalCorrectness === 'CORRECT') {
         setCharState('CORRECT');
         setCharScores((prev) => ({ ...prev, [activeCharIndex]: evalResult.confidence }));
-
-        // Mark all strokes validated
         strokes.forEach((s) => {
           s.isValidated = true;
         });
 
-        // Trigger word completion if this was the last character
         if (activeCharIndex === characters.length - 1) {
           const allScores = Object.values({ ...charScores, [activeCharIndex]: evalResult.confidence });
           const finalWordAcc = Math.round(allScores.reduce((a, b) => a + b, 0) / characters.length);
@@ -465,7 +543,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       }
       renderCanvas();
     },
-    [charReference, activeCharIndex, characters.length, charScores, onWordComplete, renderCanvas]
+    [charReference, isRecognitionOnly, provider, languageId, currentUnit, currentChar, activeCharIndex, characters.length, charScores, onWordComplete, renderCanvas]
   );
 
   // Auto-fill/help next stroke if learner needs assistance
@@ -813,6 +891,32 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Multi-Engine Capability Badge */}
+            <span className="text-[11px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1.5 ${
+              isRecognitionOnly
+                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/40'
+                : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/40'
+            }">
+              {isRecognitionOnly ? (
+                <>
+                  <span>🔍</span>
+                  <span>Nhận dạng số</span>
+                </>
+              ) : (
+                <>
+                  <span>✍️</span>
+                  <span>Chấm từng nét ({provider?.metadata?.name?.split(' ')[0] || 'Chuẩn'})</span>
+                </>
+              )}
+            </span>
+
+            {/* Hangul Jamo breakdown badge if Korean */}
+            {currentUnit?.metadata?.hangulComponents?.isHangul && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hidden sm:inline">
+                {currentUnit.metadata.hangulComponents.chosung} + {currentUnit.metadata.hangulComponents.jungsung}{currentUnit.metadata.hangulComponents.jongsung ? ' + ' + currentUnit.metadata.hangulComponents.jongsung : ''}
+              </span>
+            )}
+
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
               Nét {Math.min(strokeCountDisplay + 1, expectedStrokeCount)}/{expectedStrokeCount}
             </span>
@@ -867,7 +971,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       {/* ========================================================================= */}
       {/* 2. THE HERO CANVAS (SECTION D2)                                           */}
       {/* ========================================================================= */}
-      <div className="relative p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500/25 shadow-lg flex flex-col items-center justify-center overflow-hidden">
+      <div className={`relative p-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500/25 shadow-lg flex flex-col items-center justify-center overflow-hidden ${isRTL ? 'direction-rtl' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
         {/* Ghost character guide with high contrast & active stroke glow (Section D2) */}
         {showGhostGuide && (
           charReference?.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0 ? (

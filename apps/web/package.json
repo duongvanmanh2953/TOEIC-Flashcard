@@ -29,7 +29,10 @@
     "swiper": "^14.3.0",
     "tailwind-merge": "^2.2.2",
     "three": "^0.186.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "hanzi-writer": "^3.7.3",
+    "@k1low/kakitori": "^0.21.0",
+    "iink-ts": "^4.1.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

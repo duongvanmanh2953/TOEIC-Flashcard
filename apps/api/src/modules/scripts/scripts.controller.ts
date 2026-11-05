@@ -74,5 +74,26 @@ export class ScriptsController {
       data: result,
     };
   }
-}
 
+  @Public()
+  @Post('handwriting/recognize')
+  async recognizeHandwriting(
+    @Body()
+    body: {
+      languageCode: string;
+      locale?: string;
+      targetText?: string;
+      strokes: Array<{
+        id: string;
+        index: number;
+        points: Array<{ x: number; y: number; t?: number; pressure?: number }>;
+      }>;
+    },
+  ) {
+    const result = await this.scriptsService.recognizeHandwriting(body);
+    return {
+      success: result.success !== false,
+      data: result,
+    };
+  }
+}

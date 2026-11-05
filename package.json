@@ -28,5 +28,10 @@
     "english-learning"
   ],
   "author": "VocabFlow Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@k1low/kakitori": "^0.21.0",
+    "hanzi-writer": "^3.7.3",
+    "iink-ts": "^4.1.0"
+  }
 }
