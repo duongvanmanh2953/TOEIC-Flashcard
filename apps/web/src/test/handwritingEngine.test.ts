@@ -346,3 +346,44 @@ describe('Language Learning Capability Registry', () => {
   });
 });
 
+describe('Handwriting Engine: Authentic Vector & Fallback Freeform Invariants', () => {
+  it('contains authentic SVG stroke paths for common Chinese/Japanese characters without dummy cross', () => {
+    const ni = COMMON_CHARACTER_DICTIONARY['你'];
+    expect(ni).toBeDefined();
+    expect(ni.strokeCount).toBe(7);
+    expect(ni.svgPaths.length).toBe(7);
+
+    const hao = COMMON_CHARACTER_DICTIONARY['好'];
+    expect(hao).toBeDefined();
+    expect(hao.strokeCount).toBe(6);
+    expect(hao.svgPaths.length).toBe(6);
+
+    const shi = COMMON_CHARACTER_DICTIONARY['十'];
+    expect(shi).toBeDefined();
+    expect(shi.strokeCount).toBe(2);
+  });
+
+  it('evaluates freeform user strokes when no SVG paths exist without dummy cross snapping', () => {
+    const uncatalogedRef = {
+      id: 'gen-龙',
+      literal: '龙',
+      scriptCode: 'HANZI_SIMPLIFIED',
+      strokeCount: 5,
+      strokes: [],
+      viewBox: { width: 500, height: 500 },
+      hasRealSvgPaths: false,
+    };
+
+    const userStrokes = [
+      [{ x: 200, y: 200 }, { x: 300, y: 200 }],
+      [{ x: 250, y: 200 }, { x: 250, y: 350 }],
+      [{ x: 180, y: 350 }, { x: 320, y: 350 }],
+    ];
+
+    const result = evaluateFullCharacter(userStrokes, uncatalogedRef as any, 500);
+    expect(result.recognized).toBe(true);
+    expect(result.finalCorrectness).toBe('CORRECT');
+    expect(result.recognitionConfidence).toBeGreaterThanOrEqual(80);
+    expect(result.canSnapToReference).toBe(false);
+  });
+});

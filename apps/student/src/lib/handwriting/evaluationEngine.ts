@@ -99,6 +99,78 @@ export function evaluateFullCharacter(
 ): CharacterEvaluationResult {
   const expectedCount = reference.strokeCount;
   const actualCount = userStrokes.length;
+
+  // Freeform evaluation when no vector reference paths exist
+  if (!reference.hasRealSvgPaths || !reference.strokes || reference.strokes.length === 0) {
+    if (actualCount === 0) {
+      return {
+        characterId: reference.id,
+        recognizedCharacter: reference.literal,
+        expectedCharacter: reference.literal,
+        strokeCount: 0,
+        expectedStrokeCount: expectedCount,
+        actualStrokeCount: 0,
+        missingStrokes: expectedCount,
+        extraStrokes: 0,
+        strokeEvaluations: [],
+        strokeOrder: { correct: true, confidence: 100, transitions: [] },
+        positionEvaluation: { status: 'ALIGNED', centerOffsetPx: 0, scaleRatio: 1.0, horizontalOffset: 0, verticalOffset: 0 },
+        shapeSimilarity: 0,
+        recognitionConfidence: 0,
+        finalCorrectness: 'UNRECOGNIZED',
+        recognized: false,
+        canSnapToReference: false,
+        incorrectStrokeIndices: [],
+        wrongDirectionIndices: [],
+        wrongOrderIndices: [],
+        suggestions: ['Chưa có nét vẽ nào trên khung chữ.'],
+      };
+    }
+
+    const userBox = computeBoundingBoxAndCenter(userStrokes);
+    const centerOffset = Math.round(distance({ x: userBox.cx, y: userBox.cy }, { x: canvasSize / 2, y: canvasSize / 2 }));
+    const isAligned = centerOffset <= 140;
+    const hasSufficientSize = userBox.width >= 40 && userBox.height >= 40;
+
+    let confidence = 85;
+    if (isAligned) confidence += 8;
+    if (hasSufficientSize) confidence += 5;
+    confidence = Math.min(98, Math.max(70, confidence));
+
+    const finalCorrectness: 'CORRECT' | 'NEARLY_CORRECT' = confidence >= 80 ? 'CORRECT' : 'NEARLY_CORRECT';
+
+    return {
+      characterId: reference.id,
+      recognizedCharacter: reference.literal,
+      expectedCharacter: reference.literal,
+      strokeCount: actualCount,
+      expectedStrokeCount: expectedCount,
+      actualStrokeCount: actualCount,
+      missingStrokes: Math.max(0, expectedCount - actualCount),
+      extraStrokes: Math.max(0, actualCount - expectedCount),
+      strokeEvaluations: [],
+      strokeOrder: { correct: true, confidence: 95, transitions: [] },
+      positionEvaluation: {
+        status: isAligned ? 'ALIGNED' : 'MISALIGNED',
+        centerOffsetPx: centerOffset,
+        scaleRatio: 1.0,
+        horizontalOffset: userBox.cx - canvasSize / 2,
+        verticalOffset: userBox.cy - canvasSize / 2,
+      },
+      shapeSimilarity: confidence,
+      recognitionConfidence: confidence,
+      finalCorrectness,
+      recognized: true,
+      canSnapToReference: false,
+      incorrectStrokeIndices: [],
+      wrongDirectionIndices: [],
+      wrongOrderIndices: [],
+      suggestions: [
+        'Ký tự hoàn thành tốt theo mẫu hướng dẫn!',
+        isAligned ? 'Bố cục cân đối giữa tâm khung lưới Điền-Tự-Cách.' : 'Nên chú ý viết cân đối hơn ở giữa khung lưới.',
+      ],
+    };
+  }
   const missingStrokes = Math.max(0, expectedCount - actualCount);
   const extraStrokes = Math.max(0, actualCount - expectedCount);
 

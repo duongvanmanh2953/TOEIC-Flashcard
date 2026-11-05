@@ -422,8 +422,9 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   const runCharacterEvaluation = useCallback(
     (strokes: CharacterStrokeModel[]) => {
       if (!charReference) return;
+      const hasRealSvg = Boolean(charReference.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0);
       const normalizedStrokes = strokes.map((s, idx) => {
-        const refStk = charReference.strokes?.[idx];
+        const refStk = hasRealSvg ? charReference.strokes?.[idx] : null;
         if ((s.isValidated || (s as any).canSnapToReference) && refStk) {
           return refStk.points;
         }
@@ -538,7 +539,15 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
     };
 
     // Sequential Vector Reference Evaluation (Section B2)
-    if (charReference && charReference.strokes && charReference.strokes[strokeIdx]) {
+    const hasAuthenticStrokes = Boolean(
+      charReference &&
+      charReference.hasRealSvgPaths &&
+      charReference.strokes &&
+      charReference.strokes.length > 0 &&
+      charReference.strokes[strokeIdx]
+    );
+
+    if (hasAuthenticStrokes) {
       const refStroke = charReference.strokes[strokeIdx];
       const evalResult = evaluateSingleStroke(strokePoints, refStroke.points, strokeIdx, LOGICAL_CANVAS_SIZE, LOGICAL_CANVAS_SIZE);
 
@@ -621,14 +630,16 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
         }, 1200);
       }
     } else {
-      // Fallback evaluation for general characters without pre-computed SVG vectors
+      // Natural free-form handwriting mode: preserves authentic user drawing (never snaps to dummy '+')
+      newStrokeModel.isValidated = true;
       drawnStrokesRef.current.push(newStrokeModel);
       displayStrokesRef.current.push(strokePoints);
       redoStackRef.current = [];
+      wrongStrokeRef.current = null;
       setStrokeCountDisplay(drawnStrokesRef.current.length);
       renderCanvas();
 
-      const expected = charReference?.strokeCount || 2;
+      const expected = charReference?.strokeCount || 4;
       if (drawnStrokesRef.current.length < expected) {
         setCharState('AWAITING_MORE_STROKES');
       } else {
@@ -1143,28 +1154,26 @@ function generateFallbackCharacterReference(
   scriptCode: string,
   canvasSize: number
 ): CharacterReference {
-  const scale = canvasSize / 1024;
-  const syntheticPaths = [
-    'M 200 450 L 824 450',
-    'M 512 180 L 512 840',
-  ];
-
-  const strokes = syntheticPaths.map((pathStr, index) => {
-    const pts = sampleSvgPath(pathStr, 32, scale);
-    return {
-      index,
-      pathString: pathStr,
-      points: pts,
-      length: pts.length,
-    };
-  });
+  let estimatedStrokeCount = 4;
+  const code = literal.charCodeAt(0);
+  if (code >= 0x4e00 && code <= 0x9fff) {
+    estimatedStrokeCount = 7;
+  } else if (code >= 0x3040 && code <= 0x309f) {
+    estimatedStrokeCount = 2;
+  } else if (code >= 0x30a0 && code <= 0x30ff) {
+    estimatedStrokeCount = 2;
+  } else if (code >= 0xac00 && code <= 0xd7af) {
+    estimatedStrokeCount = 4;
+  } else {
+    estimatedStrokeCount = 2;
+  }
 
   return {
     id: `gen-${literal}`,
     literal,
     scriptCode,
-    strokeCount: syntheticPaths.length,
-    strokes,
+    strokeCount: estimatedStrokeCount,
+    strokes: [],
     viewBox: { width: canvasSize, height: canvasSize },
     hasRealSvgPaths: false,
   };
