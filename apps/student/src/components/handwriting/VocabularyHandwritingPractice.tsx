@@ -628,6 +628,15 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) {
+      if (e.code === 'Space' && (charState === 'CORRECT' || charState === 'PARTIALLY_CORRECT')) {
+        e.preventDefault();
+        if (activeCharIndex < characters.length - 1) {
+          setActiveCharIndex((prev) => prev + 1);
+        } else {
+          onNextWord();
+        }
+        return;
+      }
         return;
       }
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -877,120 +886,127 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. TOOLBAR BELOW CANVAS (SECTION D3)                                      */}
       {/* ========================================================================= */}
-      <div className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-        {/* Drawing Operations Group */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handleUndo}
-            disabled={strokeCountDisplay === 0}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition disabled:opacity-40 cursor-pointer"
-            title="Hoàn tác nét (Ctrl+Z)"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleRedo}
-            disabled={redoStackRef.current.length === 0}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition disabled:opacity-40 cursor-pointer"
-            title="Làm lại nét (Ctrl+Y)"
-          >
-            <RotateCw className="w-4 h-4" />
-          </button>
-          <button
-            onClick={clearCanvas}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/20 hover:text-rose-600 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
-            title="Xóa trắng chữ hiện tại (Delete)"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Guides & Stroke Playback Group */}
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setShowGhostGuide(!showGhostGuide)}
-            className={`p-1.5 sm:px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center gap-1 ${showGhostGuide
-              ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-400'
-              : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-              }`}
-            title="Bật/Tắt nét mẫu mờ"
-          >
-            {showGhostGuide ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            <span className="hidden md:inline">Nét mẫu</span>
-          </button>
-
-          {showGhostGuide && (
-            <input
-              type="range"
-              min="0.2"
-              max="1.0"
-              step="0.05"
-              value={ghostOpacity}
-              onChange={(e) => setGhostOpacity(parseFloat(e.target.value))}
-              className="w-12 sm:w-16 accent-indigo-600 cursor-pointer"
-              title="Độ rõ nét mẫu"
-            />
-          )}
-
-          <button
-            onClick={() => setShowGrid(!showGrid)}
-            className={`p-1.5 sm:px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center gap-1 ${showGrid
-              ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-400'
-              : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-              }`}
-            title="Khung lưới Điền-Tự-Cách"
-          >
-            <Grid className="w-4 h-4" />
-            <span className="hidden md:inline">Lưới</span>
-          </button>
-
-          {charReference?.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0 && (
+      {/* 3. REDESIGNED HANDWRITING TOOLBAR (TASK 6)                                */}
+      {/* ========================================================================= */}
+      <div className="w-full max-w-[420px] rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800/80 shadow-md p-2.5 space-y-2">
+        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+          {/* Group 1: History Operations (Undo / Redo) */}
+          <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl">
             <button
-              onClick={isPlayingAnimation ? stopStrokeAnimation : playStrokeAnimation}
-              className="p-1.5 sm:px-2.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-              title="Xem hoạt ảnh thứ tự nét chuẩn"
+              onClick={handleUndo}
+              disabled={strokeCountDisplay === 0}
+              className="p-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
+              title="Hoàn tác nét (Ctrl+Z / Cmd+Z)"
             >
-              {isPlayingAnimation ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              <span className="hidden md:inline">Mẫu động</span>
+              <RotateCcw className="w-4 h-4" />
             </button>
-          )}
-        </div>
+            <button
+              onClick={handleRedo}
+              disabled={redoStackRef.current.length === 0}
+              className="p-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer shadow-xs"
+              title="Làm lại nét (Ctrl+Y / Cmd+Shift+Z)"
+            >
+              <RotateCw className="w-4 h-4" />
+            </button>
+          </div>
 
-        {/* Primary Action Button (Section D3) */}
-        <div>
-          {charState === 'CORRECT' || charState === 'PARTIALLY_CORRECT' ? (
-            activeCharIndex < characters.length - 1 ? (
+          {/* Group 2: Canvas & Grid */}
+          <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl">
+            <button
+              onClick={clearCanvas}
+              className="p-2 rounded-lg bg-white dark:bg-slate-700 hover:bg-rose-500/10 hover:text-rose-600 text-slate-700 dark:text-slate-200 transition cursor-pointer shadow-xs"
+              title="Xóa trắng chữ hiện tại (Delete)"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowGrid(!showGrid)}
+              className={`p-2 rounded-lg transition cursor-pointer shadow-xs ${
+                showGrid
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white dark:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Bật/Tắt Lưới Điền-Tự-Cách"
+            >
+              <Grid className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Group 3: Ghost Guide & Animation */}
+          <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl">
+            <button
+              onClick={() => {
+                if (!showGhostGuide) {
+                  setShowGhostGuide(true);
+                  setGhostOpacity(0.55);
+                } else if (ghostOpacity > 0.4) {
+                  setGhostOpacity(0.25);
+                } else {
+                  setShowGhostGuide(false);
+                }
+              }}
+              className={`p-2 rounded-lg transition cursor-pointer shadow-xs flex items-center gap-1 text-xs font-bold ${
+                showGhostGuide
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white dark:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Nét mẫu mờ: Bấm để đổi mức (Rõ -> Vừa -> Ẩn)"
+            >
+              {showGhostGuide ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              <span className="text-[10px]">
+                {!showGhostGuide ? 'Ẩn' : ghostOpacity > 0.4 ? 'Rõ' : 'Vừa'}
+              </span>
+            </button>
+
+            {charReference?.hasRealSvgPaths && charReference.strokes && charReference.strokes.length > 0 && (
               <button
-                onClick={() => setActiveCharIndex(activeCharIndex + 1)}
-                className="px-3.5 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                onClick={isPlayingAnimation ? stopStrokeAnimation : playStrokeAnimation}
+                className={`p-2 rounded-lg transition cursor-pointer shadow-xs text-xs font-bold ${
+                  isPlayingAnimation
+                    ? 'bg-amber-500 text-white animate-pulse'
+                    : 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 hover:bg-slate-100'
+                }`}
+                title="Xem thứ tự nét chuẩn (Animation)"
               >
-                <span>Ký tự tiếp</span>
-                <ChevronRight className="w-4 h-4" />
+                {isPlayingAnimation ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </button>
+            )}
+          </div>
+
+          {/* Group 4: Next / Check Primary Action */}
+          <div>
+            {charState === 'CORRECT' || charState === 'PARTIALLY_CORRECT' ? (
+              activeCharIndex < characters.length - 1 ? (
+                <button
+                  onClick={() => setActiveCharIndex(activeCharIndex + 1)}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <span>Chữ tiếp [Space]</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={onNextWord}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <span>Từ tiếp theo [Space]</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )
             ) : (
               <button
-                onClick={onNextWord}
-                className="px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                onClick={() => runCharacterEvaluation(drawnStrokesRef.current)}
+                disabled={drawnStrokesRef.current.length === 0}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-black shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
-                <span>Từ tiếp theo</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>Kiểm tra</span>
               </button>
-            )
-          ) : (
-            <button
-              onClick={() => runCharacterEvaluation(drawnStrokesRef.current)}
-              disabled={drawnStrokesRef.current.length === 0}
-              className="px-3.5 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-black shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>Kiểm tra</span>
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
       {/* 4. DEDICATED FEEDBACK AREA (SECTION D4)                                   */}
       {/* ========================================================================= */}
       {charEvaluation && (
@@ -1059,12 +1075,28 @@ function generateFallbackCharacterReference(
   scriptCode: string,
   canvasSize: number
 ): CharacterReference {
+  const scale = canvasSize / 1024;
+  const syntheticPaths = [
+    'M 200 450 L 824 450',
+    'M 512 180 L 512 840',
+  ];
+
+  const strokes = syntheticPaths.map((pathStr, index) => {
+    const pts = sampleSvgPath(pathStr, 32, scale);
+    return {
+      index,
+      pathString: pathStr,
+      points: pts,
+      length: pts.length,
+    };
+  });
+
   return {
     id: `gen-${literal}`,
     literal,
     scriptCode,
-    strokeCount: 2,
-    strokes: [],
+    strokeCount: syntheticPaths.length,
+    strokes,
     viewBox: { width: canvasSize, height: canvasSize },
     hasRealSvgPaths: false,
   };

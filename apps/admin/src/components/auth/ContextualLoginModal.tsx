@@ -120,7 +120,7 @@ export const ContextualLoginModal: React.FC = () => {
             disabled={loadingProvider !== null}
             className="w-full py-3 px-4 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-3 transition disabled:opacity-50"
           >
-            <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 rounded-full object-contain shrink-0" />
+            <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 object-contain shrink-0" />
             <span>
               {loadingProvider === 'facebook' ? 'Đang kết nối Facebook...' : 'Tiếp tục với Facebook'}
             </span>

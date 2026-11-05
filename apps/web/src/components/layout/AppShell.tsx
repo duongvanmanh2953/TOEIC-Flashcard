@@ -1954,7 +1954,7 @@ export const AppShell: React.FC = () => {
                         <img
                           src="/facebook-logo.png"
                           alt="Facebook Logo"
-                          className="w-5 h-5 object-contain rounded-full"
+                          className="w-5 h-5 object-contain"
                         />
                         <span>Contact us on Facebook</span>
                       </div>

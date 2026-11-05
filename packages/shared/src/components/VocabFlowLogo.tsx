@@ -11,7 +11,6 @@ export interface VocabFlowLogoProps {
 export const VocabFlowLogo: React.FC<VocabFlowLogoProps> = ({
   className = '',
   size = 'md',
-  showContainer = false,
   alt = 'VocabFlow AI',
   onClick,
 }) => {
@@ -25,15 +24,20 @@ export const VocabFlowLogo: React.FC<VocabFlowLogoProps> = ({
 
   const hasCustomDimension = /\b(w-|h-)/.test(className);
   const sizeClass = hasCustomDimension ? '' : iconSizeClasses[size] || iconSizeClasses.md;
-  const hasCustomRounded = /\brounded-/.test(className);
-  const defaultRounded = hasCustomRounded ? '' : size === 'xs' || size === 'sm' ? 'rounded-lg' : 'rounded-2xl';
+
+  // TASK 2: Strict Brand Asset Hygiene - Never apply rounded-full or circular avatar-style clipping to the brand logo.
+  // Strip any accidental circular mask classes from parent callers while keeping authentic squircle aspect ratio.
+  const sanitizedClassName = className
+    .replace(/\brounded-full\b/g, '')
+    .replace(/\brounded-circle\b/g, '')
+    .trim();
 
   // Use appropriately-sized 64px asset for small/medium display sizes (16-36px), reserving 256px for large hero displays
   const isSmallDisplay = size === 'xs' || size === 'sm' || size === 'md';
   const logoSrc = isSmallDisplay ? '/vocabflow-logo-64.png' : '/vocabflow-logo-256.png';
   const logoDim = size === 'xs' ? 16 : size === 'sm' ? 32 : size === 'md' ? 36 : size === 'lg' ? 48 : 64;
 
-  // Luôn trả về trực tiếp thẻ <img> của logo với 0 padding, 0 margin, 0 viền
+  // Luôn trả về trực tiếp thẻ <img> của logo với object-fit: contain, bảo toàn tỷ lệ nguyên bản
   return (
     <img
       src={logoSrc}
@@ -42,7 +46,7 @@ export const VocabFlowLogo: React.FC<VocabFlowLogoProps> = ({
       height={logoDim}
       alt={alt}
       onClick={onClick}
-      className={`shrink-0 object-contain select-none p-0 m-0 border-0 ${defaultRounded} ${sizeClass} ${className}`.trim()}
+      className={`shrink-0 object-contain select-none p-0 m-0 border-0 ${sizeClass} ${sanitizedClassName}`.trim()}
       loading="eager"
       decoding="async"
       onError={(e) => {

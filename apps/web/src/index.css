@@ -1431,7 +1431,12 @@ button:not(.btn-multiline):not([data-multiline="true"]) > span,
   -webkit-transform-style: preserve-3d;
   transform-origin: 50% 50%;
   -webkit-transform-origin: 50% 50%;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flashcard-inner.ultra-fast,
+.ultra-efficient-mode .flashcard-inner {
+  transition: transform 0.15s ease-out !important;
 }
 
 .rotate-y-180,

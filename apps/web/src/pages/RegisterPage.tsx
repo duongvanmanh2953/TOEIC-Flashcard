@@ -188,7 +188,7 @@ export const RegisterPage: React.FC = () => {
             disabled={socialLoading !== null || loading}
             className="w-full py-2.5 px-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
           >
-            <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 rounded-full object-contain shrink-0" />
+            <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 object-contain shrink-0" />
             <span>{socialLoading === 'facebook' ? 'Đang vào...' : 'Facebook'}</span>
           </button>
         </div>

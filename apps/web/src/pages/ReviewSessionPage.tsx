@@ -293,7 +293,47 @@ export function getLevenshteinDistance(a: string, b: string): number {
   return d[m][n];
 }
 
-export type ReviewStudyMode = 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting';
+export type ReviewStudyMode = 'auto' | 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting';
+
+/**
+ * FSRS Auto Review Orchestrator: Dynamically selects the optimal exercise per word
+ */
+export function getAutoExerciseForWord(
+  item: ReviewQueueItem,
+  languageId?: string
+): 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting' {
+  if (!item) return 'flashcard';
+  const lang = languageId || item.languageId || 'en';
+  const reviewCount = item.reviewCount || 0;
+  const wrongCount = item.wrongCount || 0;
+  const consecutiveWrong = item.consecutiveWrong || 0;
+  const retrievability = item.retrievability || 1.0;
+
+  // Script languages check for handwriting
+  if (
+    isHandwritingSupportedForLanguage(lang) &&
+    (item.script === 'KANJI' || item.script === 'HANZI' || item.script === 'HANGUL' || ['ja', 'zh', 'ko'].includes(lang)) &&
+    (reviewCount % 3 === 2)
+  ) {
+    return 'handwriting';
+  }
+
+  // High slip risk or new word -> Flashcard
+  if (reviewCount === 0 || wrongCount >= 2 || consecutiveWrong > 0 || retrievability < 0.55) {
+    return 'flashcard';
+  }
+
+  // Early recall -> Multiple choice quiz
+  if (reviewCount <= 2) {
+    return 'quiz';
+  }
+
+  // High stability -> Typing or Listening
+  const cycle = (item.word.charCodeAt(0) + reviewCount) % 3;
+  if (cycle === 0) return 'typing';
+  if (cycle === 1 && item.pronunciation) return 'listening';
+  return 'quiz';
+}
 
 export const ReviewSessionPage: React.FC = () => {
   const [diagnosticWordId, setDiagnosticWordId] = useState<string | null>(null);
@@ -641,6 +681,11 @@ export const ReviewSessionPage: React.FC = () => {
 
   const currentItem = items[currentIndex];
 
+  const effectiveExerciseMode: 'flashcard' | 'quiz' | 'typing' | 'listening' | 'speaking' | 'handwriting' =
+    studyMode === 'auto'
+      ? (currentItem ? getAutoExerciseForWord(currentItem, activeLanguage?.id) : 'flashcard')
+      : studyMode;
+
   // Helper for Cloze example
   const getClozeSentence = (sentence?: string, word?: string) => {
     if (!sentence || !word) return '';
@@ -653,7 +698,7 @@ export const ReviewSessionPage: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (summary) return;
 
-      if (studyMode === 'flashcard') {
+      if (effectiveExerciseMode === 'flashcard') {
         if (e.code === 'Space') {
           e.preventDefault();
           setIsFlipped((prev) => !prev);
@@ -1095,86 +1140,44 @@ export const ReviewSessionPage: React.FC = () => {
         </div>
       )}
 
-      {/* Top Controls: Mode Switcher & Topic Selector */}
-      <div className="flex flex-col justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
-        {/* Mode Switcher: Sleek, compact segmented bar */}
-        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-0.5">
-          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
-            <button
-              onClick={() => setStudyMode('flashcard')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'flashcard'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-                }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Flashcard</span>
-            </button>
-            <button
-              onClick={() => setStudyMode('quiz')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'quiz'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-                }`}
-            >
-              <BrainCircuit className="w-3.5 h-3.5" />
-              <span>Trắc nghiệm</span>
-            </button>
-            <button
-              onClick={() => {
-                setStudyMode('typing');
-                setTypingInput('');
-                setTypingFeedback({ status: null, message: '' });
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'typing'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-                }`}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Luyện gõ</span>
-            </button>
-            <button
-              onClick={() => {
-                setStudyMode('listening');
-                setListenFeedback(null);
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'listening'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-                }`}
-            >
-              <Volume2 className="w-3.5 h-3.5" />
-              <span>Luyện nghe</span>
-            </button>
-            <button
-              onClick={() => setStudyMode('speaking')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'speaking'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-                }`}
-            >
-              <Mic className="w-3.5 h-3.5" />
-              <span>Phát âm</span>
-            </button>
-            {isHandwritingSupportedForLanguage(activeLanguage?.id) && (
-              <button
-                onClick={() => setStudyMode('handwriting')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${studyMode === 'handwriting'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs border border-slate-200/50 dark:border-slate-800/80'
-                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/40'
-                  }`}
-              >
-                <PenTool className="w-3.5 h-3.5" />
-                <span>Viết chữ</span>
-              </button>
-            )}
+      {/* Top Controls: Auto SRS Indicator & Topic Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
+        {/* Auto SRS Indicator */}
+        {studyMode === 'auto' ? (
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-xs">
+            <Sparkles className="w-4 h-4 text-indigo-500 animate-pulse shrink-0" />
+            <span>
+              Auto SRS:{' '}
+              {effectiveExerciseMode === 'flashcard'
+                ? 'Flashcard (Tái nạp trí nhớ)'
+                : effectiveExerciseMode === 'quiz'
+                ? 'Trắc nghiệm (Củng cố nhận diện)'
+                : effectiveExerciseMode === 'typing'
+                ? 'Luyện gõ (Hồi tưởng chủ động)'
+                : effectiveExerciseMode === 'listening'
+                ? 'Luyện nghe (Âm vị)'
+                : effectiveExerciseMode === 'speaking'
+                ? 'Phát âm (Khẩu hình & Ngữ điệu)'
+                : 'Tập viết (Nét chữ)'}
+            </span>
           </div>
-        </div>
-
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500">Cố định:</span>
+            <span className="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs uppercase">
+              {studyMode}
+            </span>
+            <button
+              onClick={() => setStudyMode('auto')}
+              className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+            >
+              (Bật lại Auto SRS)
+            </button>
+          </div>
+        )}
 
         {/* Topic Selector Custom Dropdown */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           <span className="text-[11px] font-bold uppercase text-slate-400 shrink-0">Chủ đề:</span>
           <CustomDropdown
             value={selectedTopic}
@@ -1187,25 +1190,10 @@ export const ReviewSessionPage: React.FC = () => {
               label: opt.label,
             }))}
             size="sm"
-            className="w-52 sm:w-64"
+            className="w-48 sm:w-60"
           />
         </div>
       </div>
-
-      {/* Memory Rescue Special Session Banner */}
-      {selectedTopic === 'MEMORY_RESCUE' && (
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-200 text-xs font-bold flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
-          <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>Phiên Giải Cứu Trí Nhớ (Memory Rescue) — Củng cố nơ-ron các từ vựng nguy cơ quên cao</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-600 dark:text-rose-300 text-[10px] uppercase font-black">
-              SRS ACTIVE
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Progress Bar & Counter */}
       <div className="flex items-center justify-between text-xs">
@@ -1247,7 +1235,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* MODE 1: TACTILE 3D FLASHCARD INTERACTIVE LEARNING                        */}
       {/* ========================================================================= */}
-      {studyMode === 'flashcard' && (
+      {effectiveExerciseMode === 'flashcard' && (
         <div className="space-y-4">
           {/* Multi-Language Generic Flashcard */}
           <LanguageFlashcard
@@ -1428,7 +1416,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* MODE 2: MULTIPLE CHOICE QUIZ & RESPONSE CHECKING                          */}
       {/* ========================================================================= */}
-      {studyMode === 'quiz' && (
+      {effectiveExerciseMode === 'quiz' && (
         <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <div className="flex items-center justify-between">
             <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
@@ -1510,7 +1498,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* MODE 3: TYPING / SPELLING TEST WITH LEVENSHTEIN FUZZY CHECK (PROMPT 3)   */}
       {/* ========================================================================= */}
-      {studyMode === 'typing' && (
+      {effectiveExerciseMode === 'typing' && (
         <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <div className="flex items-center justify-between">
             <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
@@ -1600,7 +1588,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* MODE 4: LISTENING COMPREHENSION WITH SPEED CONTROL (PROMPT 3)             */}
       {/* ========================================================================= */}
-      {studyMode === 'listening' && (
+      {effectiveExerciseMode === 'listening' && (
         <div className="p-6 md:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <div className="flex items-center justify-between">
             <span className="px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
@@ -1699,7 +1687,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* MODE 5: SPEAKING / PRONUNCIATION PRACTICE (PROMPT 3)                      */}
       {/* ========================================================================= */}
-      {studyMode === 'speaking' && (
+      {effectiveExerciseMode === 'speaking' && (
         <div className="space-y-4">
           <PronunciationPracticeCard
             word={currentItem.word}
@@ -1737,7 +1725,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* MODE 6: HANDWRITING / VOCABULARY WRITING PRACTICE (TASK 1 & 2)           */}
       {/* ========================================================================= */}
-      {studyMode === 'handwriting' && currentItem && (
+      {effectiveExerciseMode === 'handwriting' && currentItem && (
         <VocabularyHandwritingPractice
           key={`hw-${currentItem.vocabularyId || currentItem.word}`}
           word={currentItem.word}

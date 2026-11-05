@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { LanguageDefinition } from '../../config/languages';
 import { CountryFlag } from '../language/CountryFlag';
 import { audioEngine } from '../../lib/audioEngine';
+import { usePerformance } from '../../contexts/PerformanceContext';
 import {
   Volume2,
   RotateCw,
-  Sparkles,
   Heart,
   Eye,
   EyeOff,
   BookOpen,
-  Info,
-  CheckCircle2,
+  Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 
 export interface FlashcardItem {
@@ -27,8 +27,8 @@ export interface FlashcardItem {
   example?: string;
   exampleTranslation?: string;
   // Multi-language metadata
-  article?: string; // 'der' | 'die' | 'das' | 'el' | 'la'
-  gender?: string; // 'masculine' | 'feminine' | 'neuter'
+  article?: string;
+  gender?: string;
   pinyin?: string;
   tone?: string;
   romaji?: string;
@@ -54,9 +54,9 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
   onToggleFavorite,
   className = '',
 }) => {
+  const { isUltraEfficient } = usePerformance();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showPinyin, setShowPinyin] = useState(true);
-  const [showRomaji, setShowRomaji] = useState(true);
+  const [showScriptHelper, setShowScriptHelper] = useState(true);
 
   // Play audio for the target word using the language's native speech locale
   const handlePlayAudio = (e: React.MouseEvent) => {
@@ -64,7 +64,6 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
     if (isPlaying) return;
 
     setIsPlaying(true);
-    // If German noun with article, speak article + noun (e.g. "das Haus")
     const textToSpeak =
       language.id === 'de' && item.article
         ? `${item.article} ${item.word}`
@@ -79,89 +78,87 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
     });
   };
 
-  // German article color accents
   const getGermanArticleColor = (article?: string) => {
     switch ((article || '').toLowerCase()) {
       case 'der':
-        return 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40';
+        return 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30';
       case 'die':
-        return 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/40';
+        return 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30';
       case 'das':
-        return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40';
+        return 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30';
       default:
-        return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40';
+        return 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30';
     }
   };
+
+  const hasScriptHelper = Boolean(
+    (language.id === 'zh' && item.pinyin) ||
+    (language.id === 'ja' && item.romaji) ||
+    (language.id === 'ko' && item.transliteration) ||
+    (language.id === 'th' && item.transliteration)
+  );
+
+  const scriptHelperText =
+    language.id === 'zh'
+      ? item.pinyin
+      : language.id === 'ja'
+        ? item.romaji
+        : item.transliteration;
 
   return (
     <div
       onClick={onFlip}
-      className={`flashcard-container cursor-pointer select-none group ${className}`}
+      className={`flashcard-container cursor-pointer select-none group w-full max-w-2xl mx-auto ${className}`}
       title="Bấm để lật thẻ (hoặc nhấn phím Space)"
     >
       <div
-        className={`flashcard-inner ${isFlipped ? 'is-flipped' : ''}`}
-        style={{ minHeight: '340px' }}
+        className={`flashcard-inner ${isFlipped ? 'is-flipped' : ''} ${
+          isUltraEfficient ? 'ultra-fast' : ''
+        }`}
+        style={{ minHeight: '380px' }}
       >
         {/* ========================================================================= */}
-        {/* FRONT SIDE (Word, Pronunciation, Script Helpers, Audio)                  */}
+        {/* FRONT SIDE (Single Clear Hero Focus: Target Word + Audio + Script Helper)*/}
         {/* ========================================================================= */}
         <div
-          className={`flashcard-face flashcard-front p-6 sm:p-8 flex flex-col justify-between rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 ${
+          className={`flashcard-face flashcard-front p-5 sm:p-7 md:p-8 flex flex-col justify-between rounded-3xl shadow-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors ${
             isFlipped ? 'pointer-events-none' : ''
           }`}
         >
-          {/* Top Header: Language Tag, CEFR / Topic, Favorite */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
+          {/* Top Header: Language Badge, CEFR & Minimal Controls */}
+          <div className="flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 shrink-0">
                 <CountryFlag languageId={language.id} countryCode={language.countryCode} size="xs" />
-                <span>{language.name}</span>
+                <span className="truncate">{language.name}</span>
               </span>
 
               {item.cefrLevel && (
-                <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25">
+                <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
                   {item.cefrLevel}
                 </span>
               )}
 
-              {item.topic && (
-                <span className="hidden sm:inline px-2 py-0.5 rounded-lg text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100/60 dark:bg-slate-800/60">
-                  {item.topic}
+              {item.partOfSpeech && (
+                <span className="hidden sm:inline px-2 py-0.5 rounded-lg text-[10px] font-semibold text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 italic shrink-0">
+                  {item.partOfSpeech}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Chinese Pinyin Toggle Button */}
-              {language.features.supportsPinyin && item.pinyin && (
+            <div className="flex items-center gap-1 shrink-0">
+              {hasScriptHelper && (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowPinyin(!showPinyin);
+                    setShowScriptHelper(!showScriptHelper);
                   }}
-                  className="p-1.5 rounded-xl text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1"
-                  title={showPinyin ? 'Ẩn Pinyin (Chỉ hiển thị chữ Hán)' : 'Hiện Pinyin'}
+                  className="px-2 py-1 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1 cursor-pointer"
+                  title={showScriptHelper ? 'Ẩn phiên âm hỗ trợ' : 'Hiện phiên âm hỗ trợ'}
                 >
-                  {showPinyin ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span className="text-[10px] font-bold">Pinyin</span>
-                </button>
-              )}
-
-              {/* Japanese Romaji Toggle Button */}
-              {language.features.supportsRomaji && item.romaji && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowRomaji(!showRomaji);
-                  }}
-                  className="p-1.5 rounded-xl text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1"
-                  title={showRomaji ? 'Ẩn Romaji' : 'Hiện Romaji'}
-                >
-                  {showRomaji ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span className="text-[10px] font-bold">Romaji</span>
+                  {showScriptHelper ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  <span className="text-[10px] hidden sm:inline">Phiên âm</span>
                 </button>
               )}
 
@@ -172,7 +169,7 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
                     e.stopPropagation();
                     onToggleFavorite(item.id);
                   }}
-                  className={`p-2 rounded-xl transition ${
+                  className={`p-2 rounded-xl transition cursor-pointer ${
                     item.isFavorite
                       ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/40'
                       : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -185,27 +182,22 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
             </div>
           </div>
 
-          {/* Middle: Word Display & Script helpers */}
-          <div className="text-center py-4 sm:py-6 space-y-3">
-            {/* German Article & Gender Badge */}
+          {/* Center Stage: Target Word as Uncluttered Hero */}
+          <div className="my-auto py-6 text-center space-y-3">
+            {/* German/Spanish Article Badge if applicable */}
             {language.id === 'de' && item.article && (
               <div className="inline-flex items-center gap-1.5">
-                <span
-                  className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider border shadow-xs ${getGermanArticleColor(
-                    item.article
-                  )}`}
-                >
+                <span className={`px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider border ${getGermanArticleColor(item.article)}`}>
                   {item.article}
                 </span>
                 {item.gender && (
-                  <span className="text-xs font-medium text-slate-400 capitalize">
-                    • {item.gender}
+                  <span className="text-[11px] font-medium text-slate-400 capitalize">
+                    {item.gender}
                   </span>
                 )}
               </div>
             )}
 
-            {/* Spanish Article & Gender */}
             {language.id === 'es' && item.article && (
               <div className="inline-flex items-center gap-1.5">
                 <span className="px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
@@ -214,132 +206,112 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
               </div>
             )}
 
-            {/* Main Word / Expression */}
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            {/* Target Word Main Title */}
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight break-words px-2">
               {item.word}
             </h2>
 
-            {/* Chinese Pinyin with Tone indication */}
-            {language.id === 'zh' && item.pinyin && showPinyin && (
+            {/* Script Helper (Pinyin / Romaji / Transliteration) */}
+            {hasScriptHelper && showScriptHelper && scriptHelperText && (
               <div className="flex items-center justify-center gap-2">
-                <p className="text-base sm:text-xl font-semibold text-red-600 dark:text-red-400 tracking-wide font-mono truncate max-w-full px-2">
-                  {item.pinyin}
+                <p className="text-base sm:text-xl font-semibold text-indigo-600 dark:text-indigo-400 tracking-wide font-mono truncate max-w-full px-2">
+                  {scriptHelperText}
                 </p>
-                {item.tone && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+                {language.id === 'zh' && item.tone && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                     Tone {item.tone}
                   </span>
                 )}
               </div>
             )}
 
-            {/* Japanese Romaji */}
-            {language.id === 'ja' && item.romaji && showRomaji && (
-              <p className="text-sm sm:text-lg font-medium text-rose-500 dark:text-rose-400 italic truncate max-w-full px-2">
-                {item.romaji}
-              </p>
-            )}
-
-            {/* Korean Romanization */}
-            {language.id === 'ko' && item.transliteration && (
-              <p className="text-sm sm:text-lg font-medium text-sky-600 dark:text-sky-400 font-mono truncate max-w-full px-2">
-                {item.transliteration}
-              </p>
-            )}
-
-            {/* Thai Transliteration */}
-            {language.id === 'th' && item.transliteration && (
-              <p className="text-sm sm:text-lg font-medium text-amber-600 dark:text-amber-400 font-mono truncate max-w-full px-2">
-                {item.transliteration}
-              </p>
-            )}
-
-            {/* Phonetic / IPA representation */}
+            {/* Phonetic / IPA */}
             {(item.phonetic || item.pronunciation) && (
-              <p className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-500 tracking-wider truncate max-w-full px-2" title={item.phonetic || item.pronunciation}>
+              <p className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-500 tracking-wider truncate max-w-full px-2">
                 {item.phonetic || item.pronunciation}
               </p>
             )}
 
-            {/* Audio Button */}
+            {/* Pronunciation Audio CTA */}
             <div className="pt-2">
               <button
                 type="button"
                 onClick={handlePlayAudio}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition shadow-sm ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition shadow-xs cursor-pointer ${
                   isPlaying
                     ? 'bg-indigo-600 text-white scale-95 ring-2 ring-indigo-400'
-                    : 'bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'
+                    : 'bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
                 }`}
                 title="Nghe phát âm chuẩn bản xứ"
               >
                 <Volume2 className={`w-4 h-4 ${isPlaying ? 'animate-pulse' : ''}`} />
-                <span>{isPlaying ? 'Đang phát...' : 'Phát âm'}</span>
+                <span>{isPlaying ? 'Đang phát...' : 'Nghe phát âm'}</span>
               </button>
             </div>
           </div>
 
-          {/* Bottom Footer: Hint / Flip Prompt */}
-          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-            <span className="flex items-center gap-1">
+          {/* Bottom Footer: Visual Flip Prompt */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-400 shrink-0">
+            <span className="flex items-center gap-1.5 font-medium">
               <RotateCw className="w-3.5 h-3.5 text-indigo-500" />
               <span>Chạm thẻ để xem nghĩa & ví dụ</span>
             </span>
-            {item.partOfSpeech && (
-              <span className="italic font-medium text-slate-500">{item.partOfSpeech}</span>
-            )}
+            <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
+              [Phím Space]
+            </span>
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* BACK SIDE (Meaning, Examples, Explanations, Extra Grammar)              */}
+        {/* BACK SIDE (Meaning Hierarchy, Context Definition, Real Example & Note)   */}
         {/* ========================================================================= */}
         <div
-          className={`flashcard-face flashcard-back p-6 sm:p-8 flex flex-col justify-between rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 ${
+          className={`flashcard-face flashcard-back p-5 sm:p-7 md:p-8 flex flex-col justify-between rounded-3xl shadow-xl border border-indigo-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors ${
             !isFlipped ? 'pointer-events-none' : ''
           }`}
         >
           {/* Top Header */}
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+          <div className="flex items-center justify-between gap-2 shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Nghĩa & Ngữ cảnh</span>
+              <span>Ý nghĩa & Ngữ cảnh</span>
             </span>
 
             <button
               type="button"
               onClick={handlePlayAudio}
-              className="p-2 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition"
-              title="Nghe phát âm"
+              className="p-2 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition cursor-pointer"
+              title="Nghe lại phát âm"
             >
               <Volume2 className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Middle: Meaning and Example sentence */}
-          <div className="py-3 space-y-4 text-center sm:text-left">
+          {/* Center Stage: Ordered Information Hierarchy */}
+          <div className="my-auto py-4 space-y-4 text-left overflow-y-auto max-h-[260px] pr-1">
+            {/* 1. Primary Meaning */}
             <div>
-              <p className="text-xs font-black uppercase text-slate-400 tracking-wider mb-1">
-                Ý nghĩa chính
+              <p className="text-[10px] font-black uppercase text-indigo-500 tracking-wider mb-1">
+                Nghĩa tiếng Việt
               </p>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-snug">
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white leading-snug break-words">
                 {item.meaning}
               </h3>
               {item.definition && (
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 italic">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 italic leading-relaxed">
                   {item.definition}
                 </p>
               )}
             </div>
 
-            {/* Example sentence with translation */}
+            {/* 2. Example Sentence in Context with Translation */}
             {item.example && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-left space-y-1">
-                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 leading-relaxed">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-1.5">
+                <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 leading-relaxed break-words">
                   "{item.example}"
                 </p>
                 {item.exampleTranslation && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed break-words">
                     → {item.exampleTranslation}
                   </p>
                 )}
@@ -348,12 +320,14 @@ export const LanguageFlashcard: React.FC<LanguageFlashcardProps> = ({
           </div>
 
           {/* Bottom Footer */}
-          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-            <span className="flex items-center gap-1">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-400 shrink-0">
+            <span className="flex items-center gap-1.5 font-medium">
               <RotateCw className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Chạm thẻ để quay lại</span>
+              <span>Chạm thẻ để quay lại mặt trước</span>
             </span>
-            <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.word}</span>
+            <span className="font-extrabold text-indigo-600 dark:text-indigo-400 truncate max-w-[120px]">
+              {item.word}
+            </span>
           </div>
         </div>
       </div>

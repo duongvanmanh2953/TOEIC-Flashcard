@@ -13,6 +13,7 @@ import {
   Clock,
   XCircle,
   Lightbulb,
+  ThumbsUp,
 } from 'lucide-react';
 import { useAudioPronunciation } from '../../hooks/useAudioPronunciation';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
@@ -34,18 +35,25 @@ interface PronunciationPracticeCardProps {
   languageName?: string;
   languageFlag?: string;
   onScored?: (score: number) => void;
+  exampleSentence?: string;
+  onComplete?: () => void;
+  phonetic?: string;
 }
 
 export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps> = ({
   word,
   ipa,
+  phonetic,
   meaning,
   className = '',
   lang,
   languageName,
   languageFlag,
   onScored,
+  exampleSentence,
+  onComplete,
 }) => {
+  const displayIpa = ipa || phonetic;
   let learningContext: any = null;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -55,11 +63,9 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
   const activeLang = learningContext?.activeLanguage;
   const effectiveLocale = getSpeechLocale(lang || activeLang?.speechLocale || 'en-US');
   const effectiveName = languageName || activeLang?.name || 'English';
-  const effectiveFlag = languageFlag || activeLang?.flag || '🌐';
 
   const { speak, stop: stopNative, isPlaying: isPlayingNative } = useAudioPronunciation(effectiveLocale);
   const {
-    status: recordStatus,
     isRecording,
     recordedUrl,
     isPlayingRecording,
@@ -69,7 +75,6 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
     stopRecording,
     replayRecording,
     stopReplay,
-    resetRecording,
   } = useVoiceRecorder();
 
   const [evaluation, setEvaluation] = useState<PronunciationEvaluationResult | null>(null);
@@ -119,15 +124,41 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
     }
 
     const res = await stopRecording();
-    if (res && res.durationSec > 0.2) {
-      // Small pause to allow speechRecognition onresult to flush
-      setTimeout(() => {
-        const spoken = speechTranscriptRef.current;
-        const evalResult = evaluatePronunciation(word, spoken, 'adult');
-        setEvaluation(evalResult);
+    const duration = res?.durationSec || 0;
+
+    // Small pause to allow speechRecognition onresult to flush
+    setTimeout(() => {
+      const spoken = speechTranscriptRef.current;
+      if (duration < 0.25 && !spoken) {
+        // Handled as insufficient audio, no penalty
+        const notEnoughResult: PronunciationEvaluationResult = {
+          target: word,
+          spoken: '',
+          score: 0,
+          isPassing: false,
+          tier: 'not_enough_audio',
+          threshold: 55,
+          mode: 'adult',
+          status: 'empty',
+          feedback: 'Âm thanh thu được quá ngắn hoặc chưa rõ. Vui lòng bấm mic và nói to hơn gần micro (không bị trừ điểm).',
+          detailedDifferences: {
+            suggestion: 'Hãy giữ nút mic hoặc đợi nhịp thu âm bắt đầu trước khi phát âm.',
+          },
+        };
+        setEvaluation(notEnoughResult);
+        return;
+      }
+
+      const evalResult = evaluatePronunciation(word, spoken, 'adult');
+      setEvaluation(evalResult);
+
+      if (evalResult.tier !== 'not_enough_audio') {
         onScored?.(evalResult.score);
-      }, 150);
-    }
+        if (evalResult.isPassing) {
+          onComplete?.();
+        }
+      }
+    }, 150);
   };
 
   const handleToggleReplayRecording = () => {
@@ -148,9 +179,9 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h3 className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{word}</h3>
-            {ipa && (
+            {displayIpa && (
               <span className="text-sm font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg">
-                {ipa}
+                {displayIpa}
               </span>
             )}
             <span
@@ -163,46 +194,104 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
             </span>
           </div>
           {meaning && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{meaning}</p>}
+          {exampleSentence && (
+            <p className="text-xs text-slate-400 dark:text-slate-500 italic mt-0.5">"{exampleSentence}"</p>
+          )}
         </div>
 
         {evaluation && (
           <div
             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border font-bold text-xs self-start sm:self-auto ${
-              evaluation.isPassing
+              evaluation.tier === 'excellent'
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                : evaluation.tier === 'good'
+                ? 'bg-teal-500/10 border-teal-500/30 text-teal-700 dark:text-teal-300'
+                : evaluation.tier === 'understandable'
+                ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-700 dark:text-indigo-300'
+                : evaluation.tier === 'not_enough_audio'
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
                 : 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
             }`}
           >
-            {evaluation.isPassing ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+            {evaluation.tier === 'excellent' ? (
+              <Sparkles className="w-4 h-4 shrink-0 text-emerald-500" />
+            ) : evaluation.tier === 'good' ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-teal-500" />
+            ) : evaluation.tier === 'understandable' ? (
+              <ThumbsUp className="w-4 h-4 shrink-0 text-indigo-500" />
+            ) : evaluation.tier === 'not_enough_audio' ? (
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
             ) : (
               <XCircle className="w-4 h-4 shrink-0 text-rose-500" />
             )}
             <div>
-              <span className="font-extrabold">{evaluation.score}%</span>
-              <span className="ml-1 text-[11px] opacity-90">
-                {evaluation.isPassing ? '(Đạt chuẩn >90%)' : '(Chưa đạt, cần >90%)'}
-              </span>
+              {evaluation.tier === 'not_enough_audio' ? (
+                <span className="font-extrabold">Chưa nhận diện âm</span>
+              ) : (
+                <>
+                  <span className="font-extrabold">{evaluation.score}%</span>
+                  <span className="ml-1 text-[11px] opacity-90">
+                    {evaluation.tier === 'excellent'
+                      ? '(Xuất sắc)'
+                      : evaluation.tier === 'good'
+                      ? '(Đạt chuẩn)'
+                      : evaluation.tier === 'understandable'
+                      ? '(Dễ hiểu)'
+                      : '(Cần cải thiện)'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Evaluation Feedback Detail if available */}
+      {/* Evaluation Feedback Detail */}
       {evaluation && (
         <div
-          className={`p-3 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-            evaluation.isPassing
-              ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
-              : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300'
+          className={`p-3.5 rounded-2xl border text-xs space-y-2 ${
+            evaluation.tier === 'excellent'
+              ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200'
+              : evaluation.tier === 'good'
+              ? 'bg-teal-50/70 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800/40 text-teal-900 dark:text-teal-200'
+              : evaluation.tier === 'understandable'
+              ? 'bg-indigo-50/70 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800/40 text-indigo-900 dark:text-indigo-200'
+              : evaluation.tier === 'not_enough_audio'
+              ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200'
+              : 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/40 text-rose-900 dark:text-rose-200'
           }`}
         >
           <div>
-            <p className="font-semibold">{evaluation.feedback}</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Hệ thống nhận diện giọng đọc: <strong className="font-mono text-indigo-600 dark:text-indigo-400">"{evaluation.spoken || '(Không nghe thấy âm thanh)'}"</strong>
-            </p>
+            <p className="font-bold leading-relaxed">{evaluation.feedback}</p>
+            {evaluation.spoken && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Hệ thống nhận diện giọng đọc: <strong className="font-mono text-indigo-600 dark:text-indigo-400">"{evaluation.spoken}"</strong>
+              </p>
+            )}
           </div>
+
+          {/* Granular Sound Feedback Tags */}
+          {evaluation.detailedDifferences?.soundFeedback && evaluation.detailedDifferences.soundFeedback.length > 0 && (
+            <div className="pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-wrap gap-1.5 items-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">Chi tiết âm vị:</span>
+              {evaluation.detailedDifferences.soundFeedback.map((sf, idx) => (
+                <span
+                  key={idx}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 ${
+                    sf.type === 'good'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300'
+                      : sf.type === 'missing'
+                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300'
+                      : 'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300'
+                  }`}
+                  title={sf.tip}
+                >
+                  {sf.type === 'good' ? '✓ ' : '• '}
+                  {sf.sound}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -229,7 +318,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
             <button
               type="button"
               onClick={() => handlePlayNative(1.0)}
-              className={`flex-1 py-2.5 px-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs active:scale-95 ${
+              className={`flex-1 py-2.5 px-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs active:scale-95 cursor-pointer ${
                 isPlayingNative
                   ? 'bg-indigo-600 text-white shadow-indigo-500/25 ring-2 ring-indigo-400'
                   : 'bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-600'
@@ -242,7 +331,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
             <button
               type="button"
               onClick={() => handlePlayNative(0.75)}
-              className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-amber-500/10 text-slate-600 dark:text-slate-200 hover:text-amber-600 text-xs font-bold border border-slate-200 dark:border-slate-600 transition active:scale-95 flex items-center gap-1.5"
+              className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-amber-500/10 text-slate-600 dark:text-slate-200 hover:text-amber-600 text-xs font-bold border border-slate-200 dark:border-slate-600 transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
               title="Nghe lại ở tốc độ chậm 0.75x"
             >
               <Clock className="w-3.5 h-3.5 text-amber-500" />
@@ -277,16 +366,16 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
                 <button
                   type="button"
                   onClick={handleStopRecord}
-                  className="w-full py-2.5 px-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 transition active:scale-95 animate-pulse"
+                  className="w-full py-2.5 px-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 transition active:scale-95 animate-pulse cursor-pointer"
                 >
                   <Square className="w-4 h-4 fill-white" />
-                  <span>Dừng thu âm ({effectiveName} - {effectiveLocale})</span>
+                  <span>Dừng thu âm ({effectiveName})</span>
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleStartRecord}
-                  className="w-full py-2.5 px-3.5 rounded-xl btn-glass-primary text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 transition active:scale-95"
+                  className="w-full py-2.5 px-3.5 rounded-xl btn-glass-primary text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 transition active:scale-95 cursor-pointer"
                 >
                   <Mic className="w-4 h-4" />
                   <span>Thu âm giọng bạn ({effectiveName})</span>
@@ -299,7 +388,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
               <button
                 type="button"
                 onClick={handleToggleReplayRecording}
-                className={`flex-1 py-2.5 px-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs active:scale-95 ${
+                className={`flex-1 py-2.5 px-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs active:scale-95 cursor-pointer ${
                   isPlayingRecording
                     ? 'bg-emerald-600 text-white shadow-emerald-500/25 ring-2 ring-emerald-400'
                     : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
@@ -312,7 +401,7 @@ export const PronunciationPracticeCard: React.FC<PronunciationPracticeCardProps>
               <button
                 type="button"
                 onClick={handleStartRecord}
-                className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-600 transition active:scale-95"
+                className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-600 transition active:scale-95 cursor-pointer"
                 title="Thu âm lại"
               >
                 <RotateCcw className="w-4 h-4" />

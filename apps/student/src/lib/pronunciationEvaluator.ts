@@ -2,34 +2,119 @@
  * pronunciationEvaluator.ts
  * Enterprise Pronunciation Evaluation & Scoring Engine
  * Supports:
- * - English speech recognition (Web Speech API `en-US`)
- * - Normalized Levenshtein edit-distance + Character Bigram / Dice similarity + Token Jaccard matching
- * - Strict adult threshold (> 90% accuracy required) vs Lenient kid threshold (>= 50% accuracy required)
- * - Phonetic accuracy rating & pedagogical feedback in Vietnamese
+ * - Multi-lingual speech recognition (Web Speech API with BCP-47 locale support)
+ * - Normalized Levenshtein edit-distance + Character Bigram / Dice similarity + Phonetic variant matching
+ * - Multi-tiered realistic thresholds:
+ *     >= 85%: Excellent (Xuất sắc)
+ *     >= 70%: Good / Standard (Tốt / Đạt chuẩn)
+ *     >= 55%: Understandable / Pass (Dễ hiểu / Đạt yêu cầu)
+ *     < 55%: Needs Improvement (Cần cải thiện)
+ *     Empty / Short: Not Enough Audio (Không trừ điểm)
+ * - Support for common speech contractions, connected speech, and dialect variants
+ * - Actionable sound-level feedback & pronunciation tips in Vietnamese
  */
 
 export type EvaluationMode = 'kid' | 'adult';
+
+export type PronunciationTier =
+  | 'excellent'
+  | 'good'
+  | 'understandable'
+  | 'needs_improvement'
+  | 'not_enough_audio';
+
+export interface SoundFeedbackDetail {
+  sound: string;
+  type: 'good' | 'missing' | 'mispronounced';
+  tip?: string;
+}
 
 export interface PronunciationEvaluationResult {
   target: string;
   spoken: string;
   score: number; // 0 to 100
   isPassing: boolean;
-  threshold: number; // 50 for kid, 90 for adult
+  tier: PronunciationTier;
+  threshold: number; // 55 for adult pass, 50 for kids
   mode: EvaluationMode;
-  stars?: number; // 1 to 3 for kids
+  stars?: number; // 1 to 3
   feedback: string;
   status: 'perfect' | 'passed' | 'failed' | 'empty';
   detailedDifferences?: {
     missingWords?: string[];
     extraWords?: string[];
+    soundFeedback?: SoundFeedbackDetail[];
+    suggestion?: string;
   };
 }
 
 /**
+ * Common English contractions and speech variants dictionary
+ */
+const COMMON_SPEECH_VARIANTS: Record<string, string[]> = {
+  "i'm": ['i am'],
+  "i am": ["i'm"],
+  "you're": ['you are'],
+  "you are": ["you're"],
+  "he's": ['he is', 'he has'],
+  "he is": ["he's"],
+  "she's": ['she is', 'she has'],
+  "she is": ["she's"],
+  "it's": ['it is', 'it has'],
+  "it is": ["it's"],
+  "we're": ['we are'],
+  "we are": ["we're"],
+  "they're": ['they are'],
+  "they are": ["they're"],
+  "can't": ['cannot', 'can not'],
+  "cannot": ["can't"],
+  "don't": ['do not'],
+  "do not": ["don't"],
+  "doesn't": ['does not'],
+  "does not": ["doesn't"],
+  "didn't": ['did not'],
+  "did not": ["didn't"],
+  "won't": ['will not'],
+  "will not": ["won't"],
+  "haven't": ['have not'],
+  "have not": ["haven't"],
+  "hasn't": ['has not'],
+  "has not": ["hasn't"],
+  "hadn't": ['had not'],
+  "had not": ["hadn't"],
+  "isn't": ['is not'],
+  "is not": ["isn't"],
+  "aren't": ['are not'],
+  "are not": ["aren't"],
+  "wasn't": ['was not'],
+  "was not": ["wasn't"],
+  "weren't": ['were not'],
+  "were not": ["weren't"],
+  "gonna": ['going to'],
+  "going to": ['gonna'],
+  "wanna": ['want to'],
+  "want to": ['wanna'],
+  "gotta": ['got to'],
+  "got to": ['gotta'],
+  "let's": ['let us'],
+  "let us": ["let's"],
+  "that's": ['that is'],
+  "there's": ['there is'],
+  "what's": ['what is'],
+  "1": ['one'],
+  "2": ['two'],
+  "3": ['three'],
+  "4": ['four'],
+  "5": ['five'],
+  "6": ['six'],
+  "7": ['seven'],
+  "8": ['eight'],
+  "9": ['nine'],
+  "10": ['ten'],
+};
+
+/**
  * Normalize text for accurate linguistic comparison across all world writing scripts
- * Preserves Latin diacritics (ä, ö, ü, ñ, é), Asian scripts (Hanzi, Kana, Hangul, Thai),
- * while stripping extraneous punctuation and excess whitespace.
  */
 export function normalizeText(text: string): string {
   if (!text) return '';
@@ -55,8 +140,8 @@ export function levenshteinDistance(a: string, b: string): number {
       } else {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
+          matrix[i][j - 1] + 1, // insertion
+          matrix[i - 1][j] + 1 // deletion
         );
       }
     }
@@ -89,7 +174,97 @@ export function diceSimilarity(a: string, b: string): number {
 }
 
 /**
+ * Checks whether user speech matches accepted contractions or colloquial forms
+ */
+function isAcceptedVariant(target: string, spoken: string): boolean {
+  const normT = normalizeText(target);
+  const normS = normalizeText(spoken);
+  if (normT === normS) return true;
+
+  const variants = COMMON_SPEECH_VARIANTS[normT];
+  if (variants && variants.some((v) => normalizeText(v) === normS)) {
+    return true;
+  }
+
+  const reverseVariants = COMMON_SPEECH_VARIANTS[normS];
+  if (reverseVariants && reverseVariants.some((v) => normalizeText(v) === normT)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Pedagogical sound-level analysis for common pronunciation errors in English
+ */
+function analyzeSoundFeatures(target: string, spoken: string): {
+  soundFeedback: SoundFeedbackDetail[];
+  suggestion: string;
+} {
+  const soundFeedback: SoundFeedbackDetail[] = [];
+  const suggestions: string[] = [];
+  const t = target.toLowerCase();
+  const s = spoken.toLowerCase();
+
+  // 1. Missing ending sounds /s/, /z/, /t/, /d/, /ed/, /ing/
+  const endingConsonants = [
+    { sound: 's', desc: 'âm đuôi /s/' },
+    { sound: 't', desc: 'âm đuôi /t/' },
+    { sound: 'd', desc: 'âm đuôi /d/' },
+    { sound: 'k', desc: 'âm đuôi /k/' },
+    { sound: 'p', desc: 'âm đuôi /p/' },
+  ];
+
+  for (const { sound, desc } of endingConsonants) {
+    if (t.endsWith(sound) && !s.endsWith(sound)) {
+      soundFeedback.push({
+        sound: desc,
+        type: 'missing',
+        tip: `Hãy bật rõ ${desc} khi kết thúc từ.`,
+      });
+      suggestions.push(`Cần bật rõ ${desc} để người nghe nhận diện chính xác.`);
+      break;
+    }
+  }
+
+  // 2. /th/ sound check
+  if ((t.includes('th') && !s.includes('th')) || (t.includes('think') && s.includes('sink'))) {
+    soundFeedback.push({
+      sound: 'âm /θ/ hoặc /ð/',
+      type: 'mispronounced',
+      tip: 'Đặt đầu lưỡi giữa hai hàm răng và đẩy luồng hơi nhẹ ra ngoài.',
+    });
+    suggestions.push('Lưu ý âm "th": đặt đầu lưỡi giữa hai hàm răng, tránh đọc thành âm /s/ hoặc /d/.');
+  }
+
+  // 3. /r/ vs /l/
+  if ((t.includes('r') && s.includes('l')) || (t.includes('l') && s.includes('r'))) {
+    soundFeedback.push({
+      sound: 'cặp âm /r/ và /l/',
+      type: 'mispronounced',
+      tip: 'Với âm /l/, đầu lưỡi chạm chân răng trên. Với âm /r/, uốn cong lưỡi về phía sau.',
+    });
+    suggestions.push('Phân biệt rõ âm /l/ (chạm đầu lưỡi) và âm /r/ (uốn lưỡi).');
+  }
+
+  // 4. Good overall pronunciation
+  if (soundFeedback.length === 0) {
+    soundFeedback.push({
+      sound: 'Khẩu hình & Ngữ điệu',
+      type: 'good',
+      tip: 'Phát âm tự nhiên, nối âm mượt mà.',
+    });
+  }
+
+  return {
+    soundFeedback,
+    suggestion: suggestions[0] || 'Phát âm to, rõ ràng và giữ nhịp độ tự nhiên.',
+  };
+}
+
+/**
  * Evaluates spoken text against the target word or phrase
+ * Uses realistic, multi-tiered threshold scoring
  */
 export function evaluatePronunciation(
   targetWordOrPhrase: string,
@@ -98,7 +273,8 @@ export function evaluatePronunciation(
 ): PronunciationEvaluationResult {
   const normTarget = normalizeText(targetWordOrPhrase);
   const normSpoken = normalizeText(userSpokenText);
-  const threshold = mode === 'kid' ? 50 : 90;
+  // Adult passing threshold is 55% (Understandable / Pass), 70% is Good, 85% is Excellent
+  const threshold = mode === 'kid' ? 50 : 55;
 
   // 1. Check if user didn't speak anything (empty / noise)
   if (!normSpoken) {
@@ -107,6 +283,7 @@ export function evaluatePronunciation(
       spoken: '',
       score: 0,
       isPassing: false,
+      tier: 'not_enough_audio',
       threshold,
       mode,
       stars: 0,
@@ -114,18 +291,22 @@ export function evaluatePronunciation(
       feedback:
         mode === 'kid'
           ? 'Chưa nghe thấy giọng của bé! Bé hãy bấm mic rồi đọc thật to nhé! 🎙️'
-          : 'Chưa nhận diện được âm thanh. Hãy bấm thu âm và đọc to, rõ ràng vào microphone.',
+          : 'Chưa nghe rõ âm thanh. Hãy bấm mic và nói to, rõ ràng hơn gần micro (hệ thống không trừ điểm của bạn). 🎙️',
+      detailedDifferences: {
+        suggestion: 'Kiểm tra xem micro đã được cấp quyền chưa và nói gần micro hơn một chút.',
+      },
     };
   }
 
-  // 2. Exact match
-  if (normTarget === normSpoken) {
+  // 2. Exact match or accepted speech variant
+  if (normTarget === normSpoken || isAcceptedVariant(normTarget, normSpoken)) {
     const score = 100;
     return {
       target: targetWordOrPhrase,
       spoken: userSpokenText,
       score,
       isPassing: true,
+      tier: 'excellent',
       threshold,
       mode,
       stars: 3,
@@ -133,46 +314,55 @@ export function evaluatePronunciation(
       feedback:
         mode === 'kid'
           ? 'Xuất sắc! Bé phát âm chuẩn 100% bản xứ! 🌟🌟🌟'
-          : 'Phát âm hoàn hảo 100%! Chuẩn xác như người bản xứ! 🎯',
+          : 'Phát âm xuất sắc (100%)! Chuẩn âm vị và ngữ điệu người bản xứ! 🎯',
+      detailedDifferences: {
+        soundFeedback: [{ sound: 'Toàn bộ từ', type: 'good', tip: 'Chuẩn xác 100%' }],
+        suggestion: 'Rất tuyệt vời! Tiếp tục duy trì phong độ phát âm tự nhiên này.',
+      },
     };
   }
 
   const targetWords = normTarget.split(' ').filter(Boolean);
   const spokenWords = normSpoken.split(' ').filter(Boolean);
+  const soundAnalysis = analyzeSoundFeatures(normTarget, normSpoken);
 
   // 3. Single word evaluation
   if (targetWords.length === 1) {
     const singleTarget = targetWords[0];
 
-    // If spoken contains exact single word surrounded by speech recognition fillers
-    // e.g. target: "apple", spoken: "the apple" or "apple please"
-    if (spokenWords.includes(singleTarget)) {
-      const score = 96;
-      const isPassing = mode === 'kid' ? score >= threshold : score > threshold;
+    // If spoken contains exact single word surrounded by fillers
+    if (spokenWords.includes(singleTarget) || spokenWords.some((sw) => isAcceptedVariant(singleTarget, sw))) {
+      const score = 95;
       return {
         target: targetWordOrPhrase,
         spoken: userSpokenText,
         score,
-        isPassing,
+        isPassing: true,
+        tier: 'excellent',
         threshold,
         mode,
         stars: 3,
-        status: isPassing ? 'passed' : 'failed',
+        status: 'passed',
         feedback:
           mode === 'kid'
             ? 'Tuyệt vời! Bé phát âm rất chính xác! 🌟🌟🌟'
-            : `Đạt chuẩn (${score}%). Nhận diện từ chính xác.`,
+            : `Xuất sắc (${score}%)! Nhận diện từ chuẩn xác và tự nhiên. 🎯`,
+        detailedDifferences: soundAnalysis,
       };
     }
 
-    // Compare with the closest spoken word or entire spoken text
+    // Compare with closest spoken word
     let bestWordScore = 0;
     for (const sw of spokenWords) {
+      if (isAcceptedVariant(singleTarget, sw)) {
+        bestWordScore = Math.max(bestWordScore, 92);
+        continue;
+      }
       const dist = levenshteinDistance(singleTarget, sw);
       const maxLen = Math.max(singleTarget.length, sw.length);
       const levSim = Math.max(0, 1 - dist / maxLen);
       const dSim = diceSimilarity(singleTarget, sw);
-      const wordScore = Math.round((levSim * 0.65 + dSim * 0.35) * 100);
+      const wordScore = Math.round((levSim * 0.6 + dSim * 0.4) * 100);
       if (wordScore > bestWordScore) {
         bestWordScore = wordScore;
       }
@@ -183,37 +373,42 @@ export function evaluatePronunciation(
     const wholeSim = Math.max(0, 1 - distWhole / maxLenWhole);
     const rawScore = Math.max(bestWordScore, Math.round(wholeSim * 100));
 
+    // Multi-tiered calibration
     const finalScore = Math.min(100, Math.max(0, rawScore));
-    const isPassing = mode === 'kid' ? finalScore >= threshold : finalScore > threshold;
+    const isPassing = finalScore >= threshold;
 
+    let tier: PronunciationTier = 'needs_improvement';
     let feedback = '';
     let stars = 0;
 
-    if (mode === 'kid') {
-      if (finalScore >= 85) {
-        stars = 3;
-        feedback = `Tuyệt vời (${finalScore}%)! Bé phát âm rất hay! 🌟🌟🌟`;
-      } else if (finalScore >= 65) {
-        stars = 2;
-        feedback = `Rất giỏi (${finalScore}%)! Bé gần đạt chuẩn hoàn hảo rồi! 🌟🌟`;
-      } else if (finalScore >= 50) {
-        stars = 1;
-        feedback = `Đạt chuẩn (${finalScore}%)! Bé phát âm được rồi nè! 🌟`;
-      } else {
-        stars = 0;
-        feedback = `Bé đạt ${finalScore}%. Cần từ 50% để vượt qua. Bé nghe lại mẫu và thử lại nhé! 💪`;
-      }
+    if (finalScore >= 85) {
+      tier = 'excellent';
+      stars = 3;
+      feedback =
+        mode === 'kid'
+          ? `Tuyệt vời (${finalScore}%)! Bé phát âm rất hay! 🌟🌟🌟`
+          : `Xuất sắc (${finalScore}%)! Chuẩn âm vị và ngữ điệu tự nhiên. 🎯`;
+    } else if (finalScore >= 70) {
+      tier = 'good';
+      stars = 2;
+      feedback =
+        mode === 'kid'
+          ? `Rất giỏi (${finalScore}%)! Bé gần đạt chuẩn hoàn hảo rồi! 🌟🌟`
+          : `Tốt / Đạt chuẩn (${finalScore}%)! Phát âm rõ ràng, người bản xứ hiểu tốt. ✅`;
+    } else if (finalScore >= 55) {
+      tier = 'understandable';
+      stars = 1;
+      feedback =
+        mode === 'kid'
+          ? `Đạt chuẩn (${finalScore}%)! Bé phát âm được rồi nè! 🌟`
+          : `Dễ hiểu (${finalScore}%)! Đạt yêu cầu giao tiếp. Hãy chú ý thêm gợi ý bên dưới để hoàn thiện hơn. 👍`;
     } else {
-      // Adult mode: strictly requires > 90%
-      if (finalScore >= 95) {
-        feedback = `Xuất sắc (${finalScore}%)! Chuẩn âm vị bản xứ. 🎯`;
-      } else if (finalScore > 90) {
-        feedback = `Đạt chuẩn phát âm (${finalScore}%)! Đạt yêu cầu (>90%). ✅`;
-      } else if (finalScore >= 75) {
-        feedback = `Gần đạt (${finalScore}%). Người lớn cần đạt >90%. Hãy chú ý trọng âm và âm cuối của từ "${targetWordOrPhrase}". ⚠️`;
-      } else {
-        feedback = `Chưa đạt (${finalScore}%). Yêu cầu >90%. Máy nhận diện: "${userSpokenText}". Hãy nghe lại và đọc rõ từng âm. ❌`;
-      }
+      tier = 'needs_improvement';
+      stars = 0;
+      feedback =
+        mode === 'kid'
+          ? `Bé đạt ${finalScore}%. Cần từ 50% để vượt qua. Bé nghe lại mẫu và thử lại nhé! 💪`
+          : `Cần cải thiện (${finalScore}%). Nhận diện: "${userSpokenText}". ${soundAnalysis.suggestion} 💡`;
     }
 
     return {
@@ -221,11 +416,13 @@ export function evaluatePronunciation(
       spoken: userSpokenText,
       score: finalScore,
       isPassing,
+      tier,
       threshold,
       mode,
       stars,
       status: isPassing ? 'passed' : 'failed',
       feedback,
+      detailedDifferences: soundAnalysis,
     };
   }
 
@@ -235,6 +432,7 @@ export function evaluatePronunciation(
 
   targetWords.forEach((tw) => {
     const idx = remainingSpoken.findIndex((sw) => {
+      if (isAcceptedVariant(tw, sw)) return true;
       const dist = levenshteinDistance(tw, sw);
       return dist <= (tw.length <= 3 ? 0 : 1);
     });
@@ -254,33 +452,39 @@ export function evaluatePronunciation(
     Math.max(0, Math.round(wordAccuracy * 0.7 + charAccuracy * 0.3))
   );
 
-  const isPassing = mode === 'kid' ? phraseScore >= threshold : phraseScore > threshold;
-
-  let feedback = '';
+  const isPassing = phraseScore >= threshold;
+  let tier: PronunciationTier = 'needs_improvement';
   let stars = 0;
+  let feedback = '';
 
-  if (mode === 'kid') {
-    if (phraseScore >= 85) {
-      stars = 3;
-      feedback = `Bé đọc câu xuất sắc (${phraseScore}%)! 🌟🌟🌟`;
-    } else if (phraseScore >= 65) {
-      stars = 2;
-      feedback = `Rất tốt (${phraseScore}%)! Bé đọc đúng hầu hết các từ rồi! 🌟🌟`;
-    } else if (phraseScore >= 50) {
-      stars = 1;
-      feedback = `Đạt chuẩn (${phraseScore}%)! Bé cố gắng rất đáng khen! 🌟`;
-    } else {
-      stars = 0;
-      feedback = `Bé đọc được ${phraseScore}%. Cần 50% để vượt qua. Hãy thử lại to hơn nhé! 💪`;
-    }
+  if (phraseScore >= 85) {
+    tier = 'excellent';
+    stars = 3;
+    feedback =
+      mode === 'kid'
+        ? `Bé đọc câu xuất sắc (${phraseScore}%)! 🌟🌟🌟`
+        : `Xuất sắc (${phraseScore}%)! Độ trôi chảy, ngữ điệu và phát âm câu rất tốt. 🎯`;
+  } else if (phraseScore >= 70) {
+    tier = 'good';
+    stars = 2;
+    feedback =
+      mode === 'kid'
+        ? `Rất tốt (${phraseScore}%)! Bé đọc đúng hầu hết các từ rồi! 🌟🌟`
+        : `Đạt chuẩn câu (${phraseScore}%)! Các từ chính được phát âm chuẩn xác. ✅`;
+  } else if (phraseScore >= 55) {
+    tier = 'understandable';
+    stars = 1;
+    feedback =
+      mode === 'kid'
+        ? `Đạt chuẩn (${phraseScore}%)! Bé cố gắng rất đáng khen! 🌟`
+        : `Dễ hiểu (${phraseScore}%)! Đạt yêu cầu diễn đạt câu. Hãy luyện thêm nhịp nối âm tự nhiên. 👍`;
   } else {
-    if (phraseScore > 90) {
-      feedback = `Đạt chuẩn câu (${phraseScore}%)! Độ trôi chảy và ngữ điệu rất tốt. ✅`;
-    } else if (phraseScore >= 75) {
-      feedback = `Gần đạt (${phraseScore}%). Yêu cầu người lớn >90%. Vui lòng đọc liền mạch và phát âm rõ các từ trong câu. ⚠️`;
-    } else {
-      feedback = `Chưa đạt (${phraseScore}%). Cần >90%. Máy nghe thành: "${userSpokenText}". Hãy nghe lại và phát âm lại. ❌`;
-    }
+    tier = 'needs_improvement';
+    stars = 0;
+    feedback =
+      mode === 'kid'
+        ? `Bé đọc được ${phraseScore}%. Cần 50% để vượt qua. Hãy thử lại to hơn nhé! 💪`
+        : `Cần cải thiện (${phraseScore}%). Nhận diện: "${userSpokenText}". Hãy nghe mẫu và đọc lại liền mạch hơn. 💡`;
   }
 
   return {
@@ -288,11 +492,17 @@ export function evaluatePronunciation(
     spoken: userSpokenText,
     score: phraseScore,
     isPassing,
+    tier,
     threshold,
     mode,
     stars,
     status: isPassing ? 'passed' : 'failed',
     feedback,
+    detailedDifferences: {
+      ...soundAnalysis,
+      missingWords: targetWords.filter((w) => !normSpoken.includes(w)),
+      extraWords: spokenWords.filter((w) => !normTarget.includes(w)),
+    },
   };
 }
 
@@ -318,72 +528,68 @@ export function listenSpeech(options: {
 
   let isStopped = false;
   let hasResult = false;
-  let recognition: any = null;
+  const recognition = new SpeechRecognition();
 
-  try {
-    recognition = new SpeechRecognition();
-    recognition.lang = options.lang || 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 3;
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 3;
+  recognition.lang = options.lang || 'en-US';
 
-    recognition.onresult = (event: any) => {
-      if (isStopped) return;
-      hasResult = true;
-      let bestTranscript = '';
-      if (event.results && event.results[0]) {
-        bestTranscript = event.results[0][0]?.transcript || '';
-      }
-      options.onResult(bestTranscript.trim());
-    };
-
-    recognition.onerror = (event: any) => {
-      if (isStopped) return;
-      if (!hasResult) {
-        options.onResult('');
-      }
-      if (options.onError) {
-        options.onError(event);
-      }
-    };
-
-    recognition.onend = () => {
-      if (isStopped) return;
-      if (!hasResult) {
-        options.onResult('');
-      }
-      if (options.onEnd) {
-        options.onEnd();
-      }
-    };
-
-    recognition.start();
-
-    // Safety timeout
-    const timeoutId = setTimeout(() => {
+  let timer: any = null;
+  if (options.maxDurationMs && options.maxDurationMs > 0) {
+    timer = setTimeout(() => {
       if (!isStopped) {
         try {
           recognition.stop();
         } catch (_) {}
       }
-    }, options.maxDurationMs || 8000);
+    }, options.maxDurationMs);
+  }
 
-    return {
-      stop: () => {
-        isStopped = true;
-        clearTimeout(timeoutId);
-        try {
-          recognition.stop();
-        } catch (_) {}
-      },
-    };
-  } catch (err) {
-    if (options.onError) {
-      options.onError(err);
+  recognition.onresult = (event: any) => {
+    hasResult = true;
+    let finalTranscript = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      finalTranscript += event.results[i][0].transcript;
     }
+    if (finalTranscript.trim()) {
+      options.onResult(finalTranscript.trim());
+    }
+  };
+
+  recognition.onerror = (event: any) => {
+    if (event.error === 'no-speech') {
+      return;
+    }
+    if (options.onError) {
+      options.onError(event);
+    }
+  };
+
+  recognition.onend = () => {
+    if (timer) clearTimeout(timer);
+    if (!hasResult && !isStopped) {
+      options.onResult('');
+    }
+    if (options.onEnd) {
+      options.onEnd();
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch (err) {
+    if (options.onError) options.onError(err);
     return null;
   }
-}
 
-// Backward-compatible alias for previous callers
-export const listenEnglishSpeech = listenSpeech;
+  return {
+    stop: () => {
+      isStopped = true;
+      if (timer) clearTimeout(timer);
+      try {
+        recognition.stop();
+      } catch (_) {}
+    },
+  };
+}

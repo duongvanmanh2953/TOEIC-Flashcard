@@ -176,8 +176,8 @@ export function evaluateFullCharacter(
   // 5. Final Correctness Classification (Case 1 - 5)
   const avgStrokeScore = evalCount > 0 ? totalStrokeScore / evalCount : 0;
   const countPenalty = (missingStrokes + extraStrokes) * 18;
-  const orderPenalty = strokeOrderCorrect ? 0 : 20;
-  const positionPenalty = positionStatus === 'MISALIGNED' ? 12 : 0;
+  const orderPenalty = strokeOrderCorrect ? 0 : 10;
+  const positionPenalty = positionStatus === 'MISALIGNED' ? 6 : 0;
 
   const rawConfidence = Math.max(0, Math.min(100, Math.round(avgStrokeScore - countPenalty - orderPenalty - positionPenalty)));
 
@@ -185,25 +185,15 @@ export function evaluateFullCharacter(
 
   if (actualCount === 0 || evalCount === 0) {
     finalCorrectness = 'UNRECOGNIZED';
-  } else if (
-    missingStrokes === 0 &&
-    extraStrokes === 0 &&
-    wrongDirectionIndices.length === 0 &&
-    (rawConfidence >= 45 || strokeEvaluations.every((s) => s.canSnapToReference || s.correct))
-  ) {
+  } else if (missingStrokes > 0 || extraStrokes > 0 || wrongDirectionIndices.length > 0) {
+    finalCorrectness = 'INCORRECT';
+  } else if (rawConfidence >= 45 || strokeEvaluations.every((s) => s.canSnapToReference || s.correct)) {
     finalCorrectness = 'CORRECT';
-  } else if (
-    missingStrokes === 0 &&
-    extraStrokes === 0 &&
-    wrongDirectionIndices.length === 0
-  ) {
-    finalCorrectness = 'CORRECT';
-  } else if (missingStrokes === 0 && rawConfidence >= 40) {
+  } else if (rawConfidence >= 35) {
     finalCorrectness = 'NEARLY_CORRECT';
   } else {
     finalCorrectness = 'INCORRECT';
   }
-
   const recognized = finalCorrectness === 'CORRECT' || finalCorrectness === 'NEARLY_CORRECT';
 
   if (recognized && suggestions.length === 0) {

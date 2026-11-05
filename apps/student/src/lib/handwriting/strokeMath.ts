@@ -217,8 +217,8 @@ export function evaluateSingleStroke(
   const cosSim = cosineSimilarity(userDir, refDir);
 
   // Check reverse direction
-  const isBackwards = cosSim < -0.2;
-  const directionCorrect = cosSim >= 0.45;
+  const isBackwards = cosSim < -0.35;
+  const directionCorrect = cosSim >= 0.30;
 
   // 4. Mean Shape Distance (Normalized)
   let totalDist = 0;
@@ -230,11 +230,11 @@ export function evaluateSingleStroke(
 
   // Shape similarity score from 0 to 100
   // If normalized distance is 0, score is 100. If >= 0.35 of canvas diagonal, score is 0.
-  const shapeSimilarity = Math.max(0, Math.min(100, Math.round((1 - normalizedMeanDist / 0.35) * 100)));
+  const shapeSimilarity = Math.max(0, Math.min(100, Math.round((1 - normalizedMeanDist / 0.45) * 100)));
 
   // Endpoint tolerance score (allow natural handwriting variance up to 20% of canvas)
   const normEndpointDist = (startDist + endDist) / 2 / canvasDiagonal;
-  const endpointScore = Math.max(0, Math.min(100, Math.round((1 - normEndpointDist / 0.25) * 100)));
+  const endpointScore = Math.max(0, Math.min(100, Math.round((1 - normEndpointDist / 0.35) * 100)));
 
   // Direction score
   const dirScore = Math.max(0, Math.round(((cosSim + 1) / 2) * 100));
@@ -252,8 +252,8 @@ export function evaluateSingleStroke(
   // Smart tolerant threshold for natural mobile touchscreen drawing:
   // If stroke has correct general direction and shape is reasonably close (>= 45%),
   // auto-snap to the perfect reference stroke and consider it correct!
-  const canSnapToReference = confidence >= 45 && !isBackwards;
-  const correct = (confidence >= 45 || canSnapToReference) && !isBackwards;
+  const canSnapToReference = (confidence >= 40 || shapeSimilarity >= 55) && !isBackwards;
+  const correct = (confidence >= 40 || canSnapToReference) && !isBackwards;
 
   // Granular actionable feedback message
   let feedbackMessage = 'Nét vẽ chuẩn xác!';

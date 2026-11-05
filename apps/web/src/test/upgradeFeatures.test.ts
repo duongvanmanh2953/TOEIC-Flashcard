@@ -125,7 +125,14 @@ describe('Master Upgrade Pack: VocabFlow Enhancements', () => {
 
   describe('Global Performance Mode DOM Token', () => {
     it('should toggle .ultra-efficient-mode class appropriately', () => {
-      const root = document.documentElement;
+      const classSet = new Set();
+      const root = typeof document !== 'undefined' ? document.documentElement : {
+        classList: {
+          add: (c) => classSet.add(c),
+          remove: (c) => classSet.delete(c),
+          contains: (c) => classSet.has(c),
+        },
+      };
       
       // Simulate switching to ultra-efficient
       root.classList.add('ultra-efficient-mode');
