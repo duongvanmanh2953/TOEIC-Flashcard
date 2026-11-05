@@ -79,8 +79,8 @@ export class VocabularyController {
   @Public()
   @Get('topics')
   @ApiOperation({ summary: 'Get all vocabulary topics/categories' })
-  getTopics() {
-    return this.vocabularyService.getTopics();
+  getTopics(@Query('languageId') languageId?: string) {
+    return this.vocabularyService.getTopics(languageId);
   }
 
   @Public()

@@ -56,6 +56,13 @@ export interface VocabularyHandwritingPracticeProps {
 
 const LOGICAL_CANVAS_SIZE = 500;
 
+// Global in-memory cache for character stroke datasets to prevent redundant network fetches
+const charDataCache = new Map<string, any>();
+
+function isKanaChar(code: number): boolean {
+  return (code >= 0x3040 && code <= 0x309f) || (code >= 0x30a0 && code <= 0x30ff);
+}
+
 /**
  * Universal grapheme segmentation helper (backward compatibility)
  */
@@ -94,6 +101,9 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   const writingUnits = segmentIntoWritingUnits(word, languageId);
   const characters = writingUnits.length > 0 ? writingUnits.map((u) => u.unit) : [word];
   const [activeCharIndex, setActiveCharIndex] = useState(0);
+  const activeCharIndexRef = useRef(activeCharIndex);
+  activeCharIndexRef.current = activeCharIndex;
+
   const currentUnit: WritingUnit | undefined = writingUnits[activeCharIndex] || writingUnits[0];
   const currentChar = currentUnit?.unit || characters[activeCharIndex] || characters[0] || 'あ';
   const isRTL = Boolean(currentUnit?.isRTL);
@@ -123,6 +133,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   // HanziWriter Interactive Quiz Refs
   const hwContainerRef = useRef<HTMLDivElement>(null);
   const writerRef = useRef<any>(null);
+  const autoAdvanceTimerRef = useRef<any>(null);
   const [isHanziActive, setIsHanziActive] = useState(false);
   const [hanziStrokeCount, setHanziStrokeCount] = useState(0);
   const [hanziTotalStrokes, setHanziTotalStrokes] = useState(0);
@@ -140,51 +151,148 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
   const [strokeCountDisplay, setStrokeCountDisplay] = useState(0);
   const [lastStrokeEval, setLastStrokeEval] = useState<SingleStrokeEvaluation | null>(null);
 
-  // HanziWriter character data loader with Japanese & Chinese CDN fallbacks
+  // Cleanup auto advance timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimerRef.current) {
+        clearTimeout(autoAdvanceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Robust, script-aware HanziWriter character data loader with cache and verified stroke medians
   const loadCharacterDataForWriter = useCallback(
-    (char: string, onComplete: any, onError: any) => {
-      // 1. Japanese Kana or Kanji: use kakitori loader
-      if (languageId === 'ja' && typeof kakitori.defaultCharDataLoader === 'function') {
-        kakitori.defaultCharDataLoader(
-          char,
-          (data: any) => onComplete(data),
-          () => {
-            // Fallback to jsdelivr hanzi-writer-data
-            fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`)
-              .then((r) => {
-                if (!r.ok) throw new Error('Not found');
-                return r.json();
-              })
-              .then(onComplete)
-              .catch(() => {
-                if (COMMON_CHARACTER_DICTIONARY[char]) {
-                  onComplete({ strokes: COMMON_CHARACTER_DICTIONARY[char].svgPaths, medians: [] });
-                } else {
-                  onError();
-                }
-              });
-          }
-        );
+    async (char: string, onComplete: (data: any) => void, onError: () => void) => {
+      if (charDataCache.has(char)) {
+        onComplete(charDataCache.get(char));
         return;
       }
 
-      // 2. Chinese (or default CJK): load from jsdelivr hanzi-writer-data
-      fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`)
-        .then((r) => {
-          if (!r.ok) throw new Error('Not found');
-          return r.json();
-        })
-        .then(onComplete)
-        .catch(() => {
-          // 3. Fallback to local COMMON_CHARACTER_DICTIONARY
-          if (COMMON_CHARACTER_DICTIONARY[char]) {
-            onComplete({ strokes: COMMON_CHARACTER_DICTIONARY[char].svgPaths, medians: [] });
-          } else {
-            onError();
+      const code = char.charCodeAt(0);
+      const isKana = isKanaChar(code);
+
+      // Prioritize URLs based on script and active language
+      const candidateUrls: string[] = [];
+      if (isKana || languageId === 'ja') {
+        candidateUrls.push(`https://unpkg.com/@k1low/hanzi-writer-data-jp@latest/${encodeURIComponent(char)}.json`);
+        candidateUrls.push(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`);
+      } else {
+        candidateUrls.push(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`);
+        candidateUrls.push(`https://unpkg.com/@k1low/hanzi-writer-data-jp@latest/${encodeURIComponent(char)}.json`);
+      }
+
+      for (const url of candidateUrls) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            // Critical check: Strokes and medians MUST be valid non-empty arrays
+            if (
+              Array.isArray(data?.strokes) &&
+              data.strokes.length > 0 &&
+              Array.isArray(data?.medians) &&
+              data.medians.length > 0
+            ) {
+              charDataCache.set(char, data);
+              onComplete(data);
+              return;
+            }
           }
-        });
+        } catch {
+          // Fall through to next candidate url
+        }
+      }
+
+      // If no valid stroke + median data found, trigger onError to fallback cleanly to standard canvas
+      onError();
     },
     [languageId]
+  );
+
+  // Reusable Quiz Starter with Auto-Advance on Character Complete
+  const startQuiz = useCallback(
+    (writer: any) => {
+      if (!writer) return;
+      writer.quiz({
+        acceptBackwardsStrokes: false,
+        markStrokeCorrectAfterMisses: false,
+        leniency: 1.15,
+        showOutline: showGhostGuide,
+        onCorrectStroke: (data: any) => {
+          setHanziStrokeCount(data.strokeNum + 1);
+          setLastStrokeEval({
+            strokeIndex: data.strokeNum,
+            correct: true,
+            confidence: 96,
+            feedbackMessage: `Nét ${data.strokeNum + 1} chuẩn xác!`,
+            canSnapToReference: true,
+            shapeSimilarity: 95,
+            positionEvaluation: { status: 'ALIGNED', centerOffsetPx: 0 } as any,
+            directionCosine: 1,
+            directionCorrect: true,
+          } as any);
+          setCharState('AWAITING_MORE_STROKES');
+        },
+        onMistake: (data: any) => {
+          setLastStrokeEval({
+            strokeIndex: data.strokeNum,
+            correct: false,
+            confidence: 25,
+            feedbackMessage: 'Nét chưa chuẩn hoặc sai hướng! Quan sát nét mẫu và vẽ lại.',
+            canSnapToReference: false,
+            shapeSimilarity: 25,
+            positionEvaluation: { status: 'MISALIGNED', centerOffsetPx: 50 } as any,
+            directionCosine: -1,
+            directionCorrect: false,
+          } as any);
+          setCharState('INCORRECT');
+        },
+        onComplete: (summary: any) => {
+          const mistakes = summary?.totalMistakes || 0;
+          const score = Math.max(70, Math.round(100 - mistakes * 8));
+          const currentIndex = activeCharIndexRef.current;
+
+          setCharScores((prev) => ({ ...prev, [currentIndex]: score }));
+          setCharState('CORRECT');
+
+          const isLastChar = currentIndex >= characters.length - 1;
+          if (!isLastChar) {
+            setLastStrokeEval({
+              strokeIndex: 0,
+              correct: true,
+              confidence: score,
+              feedbackMessage: `✓ Ký tự hoàn thành (${score}%)! Tự động chuyển chữ tiếp...`,
+              canSnapToReference: true,
+            } as any);
+
+            // Auto-advance to next character after 600ms
+            if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+            autoAdvanceTimerRef.current = setTimeout(() => {
+              setActiveCharIndex((prev) => prev + 1);
+            }, 600);
+          } else {
+            // Whole word completed!
+            setCharScores((prev) => {
+              const all = { ...prev, [currentIndex]: score };
+              const values = Object.values(all);
+              const avg = values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : score;
+
+              setLastStrokeEval({
+                strokeIndex: 0,
+                correct: true,
+                confidence: avg,
+                feedbackMessage: `Xuất sắc! Toàn bộ từ "${word}" đã hoàn thành chuẩn nét (${avg}%).`,
+                canSnapToReference: true,
+              } as any);
+
+              onWordComplete(avg, true);
+              return all;
+            });
+          }
+        },
+      });
+    },
+    [showGhostGuide, characters.length, word, onWordComplete]
   );
 
   // Setup HanziWriter Interactive Quiz when CJK character is active
@@ -195,11 +303,23 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       return;
     }
 
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+    }
+
+    if (writerRef.current) {
+      try {
+        writerRef.current.cancelQuiz();
+      } catch {}
+      writerRef.current = null;
+    }
+
     container.innerHTML = '';
     setIsHanziActive(true);
     setIsPlayingAnimation(false);
     setHanziStrokeCount(0);
     setLastStrokeEval(null);
+    setCharState('READY');
 
     let activeWriter: any = null;
     let isCancelled = false;
@@ -208,14 +328,15 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       activeWriter = HanziWriter.create(container, currentChar, {
         width: 320,
         height: 320,
-        padding: 16,
+        padding: 20,
         showOutline: showGhostGuide,
         strokeAnimationSpeed: 1.25,
-        delayBetweenStrokes: 300,
-        strokeColor: '#312e81',
-        highlightColor: '#10b981',
+        delayBetweenStrokes: 220,
+        strokeColor: '#1e1b4b',
+        outlineColor: '#cbd5e1',
+        highlightColor: '#059669',
         drawingColor: '#2563eb',
-        drawingWidth: 20,
+        drawingWidth: 7,
         showCharacter: false,
         charDataLoader: (char: string, onComplete: any, onError: any) => {
           loadCharacterDataForWriter(
@@ -237,60 +358,7 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
       });
 
       writerRef.current = activeWriter;
-
-      // Start strict interactive quiz
-      activeWriter.quiz({
-        acceptBackwardsStrokes: false,
-        markStrokeCorrectAfterMisses: false,
-        leniency: 1.0,
-        showOutline: showGhostGuide,
-        onCorrectStroke: (data: any) => {
-          setHanziStrokeCount(data.strokeNum + 1);
-          setLastStrokeEval({
-            strokeIndex: data.strokeNum,
-            correct: true,
-            confidence: 95,
-            feedbackMessage: `Nét ${data.strokeNum + 1} chuẩn xác!`,
-            canSnapToReference: true,
-            shapeSimilarity: 95,
-            positionEvaluation: { status: 'ALIGNED', centerOffsetPx: 0 } as any,
-            directionCosine: 1,
-            directionCorrect: true,
-          } as any);
-          setCharState('AWAITING_MORE_STROKES');
-        },
-        onMistake: (data: any) => {
-          setLastStrokeEval({
-            strokeIndex: data.strokeNum,
-            correct: false,
-            confidence: 25,
-            feedbackMessage: 'Nét chưa đúng hoặc bị ngược hướng! Chú ý điểm đặt bút và hướng vẽ.',
-            canSnapToReference: false,
-            shapeSimilarity: 25,
-            positionEvaluation: { status: 'MISALIGNED', centerOffsetPx: 50 } as any,
-            directionCosine: -1,
-            directionCorrect: false,
-          } as any);
-          setCharState('INCORRECT');
-        },
-        onComplete: (summary: any) => {
-          const mistakes = summary.totalMistakes || 0;
-          const score = Math.max(70, Math.round(100 - mistakes * 8));
-          setCharScores((prev) => ({ ...prev, [activeCharIndex]: score }));
-          setCharState('CORRECT');
-          setLastStrokeEval({
-            strokeIndex: 0,
-            correct: true,
-            confidence: score,
-            feedbackMessage: mistakes === 0 ? 'Xuất sắc! Tất cả các nét đều hoàn thành chuẩn xác.' : `Hoàn thành chữ! Độ chuẩn xác ${score}%.`,
-            canSnapToReference: true,
-          } as any);
-
-          if (activeCharIndex === characters.length - 1) {
-            onWordComplete(score, true);
-          }
-        },
-      });
+      startQuiz(activeWriter);
     } catch {
       setIsHanziActive(false);
     }
@@ -303,40 +371,27 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
         } catch {}
       }
     };
-  }, [currentChar, languageId, isCJK, loadCharacterDataForWriter]);
+  }, [currentChar, activeCharIndex, languageId, isCJK, loadCharacterDataForWriter, startQuiz]);
 
   // "Vẽ mẫu" Animation Player
   const playStrokeAnimation = () => {
     if (isHanziActive && writerRef.current) {
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
       setIsPlayingAnimation(true);
       setLastStrokeEval(null);
+
+      try {
+        writerRef.current.cancelQuiz();
+      } catch {}
+
       writerRef.current.animateCharacter({
+        strokeAnimationSpeed: 1.2,
+        delayBetweenStrokes: 220,
         onComplete: () => {
           setIsPlayingAnimation(false);
           // Restart quiz immediately after animation finishes
           if (writerRef.current) {
-            writerRef.current.quiz({
-              acceptBackwardsStrokes: false,
-              markStrokeCorrectAfterMisses: false,
-              leniency: 1.0,
-              showOutline: showGhostGuide,
-              onCorrectStroke: (data: any) => {
-                setHanziStrokeCount(data.strokeNum + 1);
-                setCharState('AWAITING_MORE_STROKES');
-              },
-              onMistake: () => {
-                setCharState('INCORRECT');
-              },
-              onComplete: (summary: any) => {
-                const mistakes = summary.totalMistakes || 0;
-                const score = Math.max(70, Math.round(100 - mistakes * 8));
-                setCharScores((prev) => ({ ...prev, [activeCharIndex]: score }));
-                setCharState('CORRECT');
-                if (activeCharIndex === characters.length - 1) {
-                  onWordComplete(score, true);
-                }
-              },
-            });
+            startQuiz(writerRef.current);
           }
         },
       });
@@ -355,33 +410,15 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
 
   // Reset / Viết lại
   const handleReset = () => {
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     setLastStrokeEval(null);
     setCharState('READY');
     setHanziStrokeCount(0);
     if (isHanziActive && writerRef.current) {
-      writerRef.current.cancelQuiz();
-      writerRef.current.quiz({
-        acceptBackwardsStrokes: false,
-        markStrokeCorrectAfterMisses: false,
-        leniency: 1.0,
-        showOutline: showGhostGuide,
-        onCorrectStroke: (data: any) => {
-          setHanziStrokeCount(data.strokeNum + 1);
-          setCharState('AWAITING_MORE_STROKES');
-        },
-        onMistake: () => {
-          setCharState('INCORRECT');
-        },
-        onComplete: (summary: any) => {
-          const mistakes = summary.totalMistakes || 0;
-          const score = Math.max(70, Math.round(100 - mistakes * 8));
-          setCharScores((prev) => ({ ...prev, [activeCharIndex]: score }));
-          setCharState('CORRECT');
-          if (activeCharIndex === characters.length - 1) {
-            onWordComplete(score, true);
-          }
-        },
-      });
+      try {
+        writerRef.current.cancelQuiz();
+      } catch {}
+      startQuiz(writerRef.current);
     } else {
       clearCanvas();
     }
@@ -697,7 +734,9 @@ export const VocabularyHandwritingPractice: React.FC<VocabularyHandwritingPracti
         {isCJK ? (
           <div
             ref={hwContainerRef}
-            className="w-[320px] h-[320px] sm:w-[340px] sm:h-[340px] flex items-center justify-center select-none cursor-crosshair touch-none"
+            className={`w-[320px] h-[320px] flex items-center justify-center select-none cursor-crosshair touch-none ${
+              isPlayingAnimation ? 'pointer-events-none opacity-90' : ''
+            }`}
             style={{ touchAction: 'none' }}
           />
         ) : (

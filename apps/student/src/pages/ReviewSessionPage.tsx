@@ -34,6 +34,7 @@ import { PronunciationPracticeCard } from '../components/audio/PronunciationPrac
 import { getSeedDecksForLanguage } from '../data/seedDecks';
 import { VocabularyHandwritingPractice } from '../components/handwriting/VocabularyHandwritingPractice';
 import { isHandwritingSupportedForLanguage } from '../config/languages';
+import { mapToCefrEquivalent } from '../config/languageStandards';
 import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
 import { CountryFlag } from '../components/language/CountryFlag';
@@ -402,12 +403,15 @@ export const ReviewSessionPage: React.FC = () => {
   const [selectedListeningWord, setSelectedListeningWord] = useState<string | null>(null);
 
   // Topic & Deck Selection
+  const levelQuery = searchParams.get('level') || searchParams.get('cefrLevel');
   const initialTopic =
     searchParams.get('type') === 'MEMORY_RESCUE'
       ? 'MEMORY_RESCUE'
       : searchParams.get('deckId')
         ? `deck_${searchParams.get('deckId')}`
-        : searchParams.get('topic') || 'ALL';
+        : levelQuery
+          ? `level_${levelQuery}`
+          : searchParams.get('topic') || 'ALL';
 
   const [selectedTopic, setSelectedTopic] = useState<string>(initialTopic);
   const [topicOptions, setTopicOptions] = useState<any[]>(DEFAULT_TOPIC_OPTIONS);
@@ -483,6 +487,14 @@ export const ReviewSessionPage: React.FC = () => {
         { id: 'MY_WORDS', label: 'Kho từ của tôi (Tất cả)', icon: Bookmark },
       ];
 
+      if (levelQuery) {
+        opts.unshift({
+          id: `level_${levelQuery}`,
+          label: `🎯 Cấp độ: ${levelQuery}`,
+          icon: Award,
+        });
+      }
+
       if (decks.length > 0) {
         decks.forEach((d) => {
           opts.push({
@@ -494,19 +506,35 @@ export const ReviewSessionPage: React.FC = () => {
             type: 'DECK',
           });
         });
+      } else {
+        // Fallback to starter seed packs for this specific language space
+        const seedPacks = getSeedDecksForLanguage(langId);
+        seedPacks.forEach((sp) => {
+          opts.push({
+            id: `deck_${sp.id}`,
+            deckId: sp.id,
+            deckTitle: sp.title,
+            label: `${sp.title} (${sp.wordCount || sp.words?.length || 0} từ)`,
+            icon: BookOpen,
+            type: 'DECK',
+          });
+        });
       }
 
       if (sysTopics.length > 0) {
-        sysTopics.forEach((st: any) => {
-          opts.push({
-            id: `topic_${st.slug}`,
-            slug: st.slug,
-            name: st.name,
-            label: `${st.name} (${st._count?.items || 0} từ)`,
-            icon: Layers,
-            type: 'TOPIC',
+        // Only show topics that actually have words for this language space
+        sysTopics
+          .filter((st: any) => !st._count || st._count.items > 0)
+          .forEach((st: any) => {
+            opts.push({
+              id: `topic_${st.slug}`,
+              slug: st.slug,
+              name: st.name,
+              label: `${st.name} (${st._count?.items || 0} từ)`,
+              icon: Layers,
+              type: 'TOPIC',
+            });
           });
-        });
       }
 
       setTopicOptions(opts);
@@ -571,8 +599,63 @@ export const ReviewSessionPage: React.FC = () => {
     try {
       let finalItems: ReviewQueueItem[] = [];
 
+      // 0. LEVEL-SPECIFIC REVIEW
+      if (
+        topicKey.startsWith('level_') ||
+        (levelQuery && !topicKey.startsWith('deck_') && !topicKey.startsWith('topic_') && topicKey !== 'MEMORY_RESCUE' && topicKey !== 'MY_WORDS' && topicKey !== 'ALL')
+      ) {
+        const targetLevel = topicKey.startsWith('level_')
+          ? topicKey.replace('level_', '')
+          : (levelQuery || '');
+        const targetCefr = mapToCefrEquivalent(targetLevel);
+
+        // 1. Check local IDB words matching level
+        const allLocalWords = await withTimeout(idbGetWords(user?.id, langId), 1500, []);
+        let levelWords = allLocalWords.filter((w: any) => {
+          const wLevel = (w.cefrLevel || '').toUpperCase();
+          const tLevel = targetLevel.toUpperCase();
+          return wLevel === tLevel || wLevel.includes(tLevel) || (targetCefr !== 'ALL' && wLevel === targetCefr);
+        });
+
+        // 2. Query cloud API if local words are empty
+        if (levelWords.length === 0) {
+          const params: any = { limit: 100, languageId: langId };
+          if (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(targetCefr)) {
+            params.cefrLevel = targetCefr;
+          }
+          const res: any = await withTimeout(
+            api.get('/vocabulary', { params, timeout: 2500 } as any),
+            2500,
+            null
+          );
+          const raw = Array.isArray(res?.data) ? res.data : res?.data?.items || [];
+          levelWords = raw.filter((v: any) => !v.languageId || v.languageId === langId);
+        }
+
+        // 3. Fallback to seed words matching level
+        if (levelWords.length === 0) {
+          const seedPacks = getSeedDecksForLanguage(langId);
+          const allSeeds = seedPacks.flatMap((p) => p.words);
+          levelWords = allSeeds.filter((w: any) => {
+            const wLevel = (w.cefrLevel || '').toUpperCase();
+            const tLevel = targetLevel.toUpperCase();
+            return wLevel === tLevel || wLevel.includes(tLevel) || (targetCefr !== 'ALL' && wLevel === targetCefr);
+          });
+          if (levelWords.length === 0) {
+            levelWords = allSeeds;
+          }
+        }
+
+        if (levelWords.length > 0) {
+          const mapped = levelWords.map((item: any) =>
+            mapToReviewItem(item, `Cấp độ ${targetLevel}`, 'LEVEL')
+          );
+          mapped.sort((a, b) => b.priorityScore - a.priorityScore);
+          finalItems = enrichItemsWithOptions(mapped);
+        }
+      }
       // 1. MEMORY RESCUE
-      if (topicKey === 'MEMORY_RESCUE') {
+      else if (topicKey === 'MEMORY_RESCUE') {
         const res: any = await withTimeout(
           api.post('/reviews/memory-rescue/session', { languageId: langId }, { timeout: 2500 } as any),
           2500,
@@ -698,9 +781,16 @@ export const ReviewSessionPage: React.FC = () => {
             null
           );
           const serverItems = res?.data?.items || res?.items;
-          if (Array.isArray(serverItems) && serverItems.length > 0) {
+          const matchedServerItems = Array.isArray(serverItems)
+            ? serverItems.filter((item: any) => {
+                const itemLang = item.languageId || item.vocabulary?.languageId;
+                return !itemLang || itemLang === langId;
+              })
+            : [];
+
+          if (matchedServerItems.length > 0) {
             setSession(res?.data?.session || res?.session);
-            const mapped = serverItems.map((item: any) => mapToReviewItem(item, 'Smart Review', 'SYSTEM'));
+            const mapped = matchedServerItems.map((item: any) => mapToReviewItem(item, 'Smart Review', 'SYSTEM'));
             mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
             finalItems = enrichItemsWithOptions(mapped);
           } else {
@@ -710,8 +800,9 @@ export const ReviewSessionPage: React.FC = () => {
               null
             );
             const raw = Array.isArray(vocabRes?.data) ? vocabRes.data : vocabRes?.data?.items || [];
-            if (raw.length > 0) {
-              const mapped = raw.map((v: any) => mapToReviewItem(v, 'Vocabulary', 'VOCABULARY'));
+            const matchedRaw = raw.filter((v: any) => !v.languageId || v.languageId === langId);
+            if (matchedRaw.length > 0) {
+              const mapped = matchedRaw.map((v: any) => mapToReviewItem(v, 'Vocabulary', 'VOCABULARY'));
               mapped.sort((a: ReviewQueueItem, b: ReviewQueueItem) => b.priorityScore - a.priorityScore);
               finalItems = enrichItemsWithOptions(mapped);
             }
@@ -741,6 +832,7 @@ export const ReviewSessionPage: React.FC = () => {
           pack.words.map((w, idx) => ({
             id: `seed_${langId}_${pack.id}_${idx}`,
             word: w.word,
+            languageId: langId,
             meaning: w.meaning,
             definition: w.definition,
             phonetic: w.phonetic,
@@ -1299,8 +1391,8 @@ export const ReviewSessionPage: React.FC = () => {
                   key={m.id}
                   onClick={() => setSessionMood(m.id as any)}
                   className={`py-2 px-1 rounded-xl text-xs font-bold transition border ${sessionMood === m.id
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100'
                     }`}
                 >
                   {m.label}
@@ -1423,12 +1515,12 @@ export const ReviewSessionPage: React.FC = () => {
         <VictoryStarModal
           isOpen={true}
           title="HOÀN THÀNH PHIÊN ÔN TẬP SRS"
-          subtitle={`Bạn đã củng cố toàn bộ từ vựng ${activeLanguage?.name || 'tiếng Anh'} đến hạn ôn tập hôm nay vào trí nhớ dài hạn.`}
+          subtitle={`Bạn đã củng cố toàn bộ từ vựng ${activeLanguage?.name || 'ngôn ngữ này'} đến hạn ôn tập hôm nay vào trí nhớ dài hạn.`}
           stars={3}
           xpEarned={50}
           stats={[
             { label: 'Từ đã ôn', value: `${items.length} từ` },
-            { label: 'Ngôn ngữ', value: activeLanguage?.name || 'TOEIC' },
+            { label: 'Ngôn ngữ', value: activeLanguage?.name || 'Đa Ngôn Ngữ' },
             { label: 'Độ bền SRS', value: '> 85%' },
           ]}
           onPlayAgain={() => setSelectedTopic('ALL')}
@@ -1559,6 +1651,12 @@ export const ReviewSessionPage: React.FC = () => {
           {currentItem.deckTitle && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium">
               📁 {currentItem.deckTitle}
+            </span>
+          )}
+          {(currentItem.cefrLevel || levelQuery) && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1">
+              <Award className="w-3 h-3" />
+              <span>{currentItem.cefrLevel || levelQuery}</span>
             </span>
           )}
         </div>
@@ -1701,7 +1799,7 @@ export const ReviewSessionPage: React.FC = () => {
                 pronunciation={currentItem.pronunciation}
                 romaji={currentItem.romaji}
                 pinyin={currentItem.pinyin}
-                languageId={activeLanguage?.id}
+                languageId={currentItem.languageId || activeLanguage?.id || 'ja'}
                 showGuide={true}
                 onWordComplete={() => {}}
                 onNextWord={async () => {
@@ -1956,10 +2054,10 @@ export const ReviewSessionPage: React.FC = () => {
           {typingFeedback.status && (
             <div
               className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${typingFeedback.status === 'correct'
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
-                : typingFeedback.status === 'typo'
-                  ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-800 dark:text-amber-300'
-                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
+                  : typingFeedback.status === 'typo'
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-800 dark:text-amber-300'
+                    : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
                 }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
@@ -2002,8 +2100,8 @@ export const ReviewSessionPage: React.FC = () => {
                   key={spd}
                   onClick={() => setListenSpeed(spd)}
                   className={`px-2 py-0.5 rounded-lg transition ${listenSpeed === spd
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                     }`}
                 >
                   {spd}x
@@ -2055,8 +2153,8 @@ export const ReviewSessionPage: React.FC = () => {
           {listenFeedback !== null && (
             <div
               className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${listenFeedback
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
-                : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
                 }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
@@ -2125,17 +2223,18 @@ export const ReviewSessionPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* MODE 6: HANDWRITING / VOCABULARY WRITING PRACTICE (TASK 1 & 2)           */}
       {/* ========================================================================= */}
-      {effectiveExerciseMode === 'handwriting' && currentItem && (
+      {(effectiveExerciseMode === 'handwriting' || effectiveExerciseMode === 'handwriting_blind') && currentItem && (
         <VocabularyHandwritingPractice
-          key={`hw-${currentItem.vocabularyId || currentItem.word}`}
+          key={`hw-${currentItem.vocabularyId || currentItem.word}-${currentIndex}`}
           word={currentItem.word}
           meaning={currentItem.meaningVi || currentItem.meaning}
           pronunciation={currentItem.pronunciation}
           romaji={currentItem.romaji}
           pinyin={currentItem.pinyin}
-          languageId={activeLanguage?.id}
+          languageId={currentItem.languageId || activeLanguage?.id || 'ja'}
+          showGuide={effectiveExerciseMode !== 'handwriting_blind'}
           onWordComplete={(accuracy, isCorrect) => {
-            // Progress recorded on onNextWord
+            // Evaluated word
           }}
           onNextWord={async () => {
             await handleRateFlashcard('GOOD');

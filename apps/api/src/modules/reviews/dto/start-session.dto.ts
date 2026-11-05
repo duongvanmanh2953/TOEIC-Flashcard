@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsEnum, IsInt, Min, Max, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionType } from '@prisma/client';
 
@@ -14,4 +14,9 @@ export class StartSessionDto {
   @Min(5)
   @Max(50)
   limit?: number = 10;
+
+  @ApiPropertyOptional({ description: 'Filter review words by language space ID (e.g. en, zh, ja, ko)' })
+  @IsOptional()
+  @IsString()
+  languageId?: string;
 }

@@ -16,6 +16,8 @@ export class ReviewsService {
   async createSmartSession(userId: string, dto: StartSessionDto) {
     const limit = dto.limit || 10;
     const now = new Date();
+    const targetLang = dto.languageId;
+    const vocabLangFilter = targetLang ? { languageId: targetLang } : {};
 
     // 1. Fetch Due Words (up to 40%)
     const dueCount = Math.max(1, Math.round(limit * 0.4));
@@ -23,6 +25,7 @@ export class ReviewsService {
       where: {
         userId,
         nextReviewAt: { lte: now },
+        ...(targetLang ? { vocabulary: { languageId: targetLang } } : {}),
       },
       include: { vocabulary: { include: { meanings: true, examples: true } } },
       take: dueCount,
@@ -37,6 +40,7 @@ export class ReviewsService {
         userId,
         vocabularyId: { notIn: excludedIds },
         OR: [{ masteryScore: { lt: 50 } }, { isHard: true }],
+        ...(targetLang ? { vocabulary: { languageId: targetLang } } : {}),
       },
       include: { vocabulary: { include: { meanings: true, examples: true } } },
       take: weakCount,
@@ -51,6 +55,7 @@ export class ReviewsService {
       neededSlots > 0
         ? await this.prisma.vocabulary.findMany({
             where: {
+              ...vocabLangFilter,
               userVocabularies: {
                 none: { userId },
               },
@@ -72,6 +77,7 @@ export class ReviewsService {
     // Fallback if user has reviewed all and no new words found
     if (allCandidates.length === 0) {
       const fallback = await this.prisma.vocabulary.findMany({
+        where: vocabLangFilter,
         take: limit,
         include: { meanings: true, examples: true },
         orderBy: { word: 'asc' },
@@ -79,8 +85,9 @@ export class ReviewsService {
       allCandidates.push(...fallback.map((v) => ({ vocab: v, origin: 'REVIEW' })));
     }
 
-    // Fetch distractor vocabulary for multiple-choice options
+    // Fetch distractor vocabulary for multiple-choice options (in same language)
     const distractors = await this.prisma.vocabulary.findMany({
+      where: vocabLangFilter,
       take: 40,
       select: { word: true, shortDefinition: true },
     });

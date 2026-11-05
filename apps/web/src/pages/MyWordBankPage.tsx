@@ -229,15 +229,11 @@ export const MyWordBankPage: React.FC = () => {
     setDeckCefrInput(getDefaultLevelForLanguage(activeLanguage.id).name);
   }, [activeLanguage.id]);
 
-  // User-defined and preset deck categories with persistence
-  const DEFAULT_DECK_CATEGORIES = [
-    'Business English',
-    'TOEIC Test',
-    'IELTS Academic',
-    'Daily Communication',
-    'Technology',
-    'Culture & Travel',
-  ];
+  // Language-specific standard deck categories & user persistence
+  const languageCategories = useMemo(() => {
+    const cats = getCategoriesForLanguage(activeLanguage.id).map((c) => c.name);
+    return cats.length > 0 ? cats : ['Giao Tiếp Hàng Ngày', 'Kinh Doanh & Công Sở', 'Du Lịch & Văn Hóa'];
+  }, [activeLanguage.id]);
 
   const [customCategories, setCustomCategories] = useState<string[]>(() => {
     try {
@@ -249,7 +245,7 @@ export const MyWordBankPage: React.FC = () => {
   });
 
   const allDeckCategories = useMemo(() => {
-    const list = [...DEFAULT_DECK_CATEGORIES];
+    const list = [...languageCategories];
     customCategories.forEach((cat) => {
       if (!list.some((c) => c.toLowerCase() === cat.toLowerCase())) {
         list.push(cat);
@@ -261,7 +257,7 @@ export const MyWordBankPage: React.FC = () => {
       }
     });
     return list;
-  }, [customCategories, decks]);
+  }, [languageCategories, customCategories, decks]);
 
   const handleCreateCategory = (newCat: string) => {
     const trimmed = newCat.trim();

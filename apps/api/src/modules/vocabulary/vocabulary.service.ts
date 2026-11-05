@@ -160,11 +160,33 @@ export class VocabularyService {
     };
   }
 
-  async getTopics() {
+  async getTopics(languageId?: string) {
+    const where: Prisma.VocabularyTopicWhereInput = {};
+    if (languageId) {
+      where.items = {
+        some: {
+          vocabulary: {
+            languageId,
+          },
+        },
+      };
+    }
+
     return this.prisma.vocabularyTopic.findMany({
+      where,
       include: {
         _count: {
-          select: { items: true },
+          select: {
+            items: languageId
+              ? {
+                  where: {
+                    vocabulary: {
+                      languageId,
+                    },
+                  },
+                }
+              : true,
+          },
         },
       },
       orderBy: { name: 'asc' },
