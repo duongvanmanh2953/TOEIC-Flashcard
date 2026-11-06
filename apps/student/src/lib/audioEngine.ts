@@ -4,6 +4,9 @@
  * SpeechSynthesis GC bugs, and provides dual-tier (Dictionary Audio + Web Speech API) playback.
  */
 
+import { Capacitor } from '@capacitor/core';
+import { resolveApiBaseUrl } from './api';
+
 // Global registry preventing V8 / WebKit garbage collection from cutting off speech mid-sentence
 const activeSpeechUtterances = new Set<SpeechSynthesisUtterance>();
 
@@ -114,6 +117,20 @@ class AudioEngine {
     }
 
     return defaultLocale;
+  }
+
+  /**
+   * Resolves any relative API or TTS path into an absolute URL when running on Native Capacitor (Android/iOS)
+   * to prevent ERR_CONNECTION_REFUSED or 404 against localhost in WebView.
+   */
+  public resolveFullAudioUrl(url: string): string {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    const baseUrl = resolveApiBaseUrl();
+    const cleanPath = url.replace(/^\/?api\/v1\/?/, '').replace(/^\/+/, '');
+    return `${baseUrl}/${cleanPath}`;
   }
 
   /**
@@ -269,19 +286,37 @@ class AudioEngine {
       if (success) return;
     }
 
-    // 2. Direct instantaneous Web Speech API playback (Zero network latency)
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      this.playViaSpeechSynthesis(text, rate, lang, sessionId, options);
+    const cleanText = text.replace(/[*#_`]/g, '').trim();
+    if (!cleanText) {
+      this.isCurrentlyPlaying = false;
+      options.onEnd?.();
       return;
     }
 
-    // 3. Direct backend proxy TTS if Web Speech API is unavailable
-    const cleanText = text.replace(/[*#_`]/g, '').trim();
-    if (cleanText) {
-      const targetLocale = this.detectScriptLocale(cleanText, lang);
-      const fallbackUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(targetLocale)}`;
-      await this.playFromUrl(fallbackUrl, rate, sessionId, options);
+    const targetLocale = this.detectScriptLocale(cleanText, lang);
+    const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
+
+    // 2. On Native Mobile (Capacitor Android/iOS), WebView SpeechSynthesis often lacks voices or is silent.
+    // Directly stream from backend Google TTS proxy via HTML5 Audio for 100% reliable pronunciation.
+    if (isNative) {
+      const serverTtsUrl = this.resolveFullAudioUrl(
+        `/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(targetLocale)}`
+      );
+      const success = await this.playFromUrl(serverTtsUrl, rate, sessionId, options);
+      if (success) return;
     }
+
+    // 3. Direct instantaneous Web Speech API playback (Zero network latency on Desktop / Web Browsers)
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.playViaSpeechSynthesis(cleanText, rate, targetLocale, sessionId, options);
+      return;
+    }
+
+    // 4. Direct backend proxy TTS if Web Speech API is unavailable
+    const fallbackUrl = this.resolveFullAudioUrl(
+      `/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(targetLocale)}`
+    );
+    await this.playFromUrl(fallbackUrl, rate, sessionId, options);
   }
 
   /**
@@ -466,7 +501,7 @@ class AudioEngine {
         const hasViBlock = blocks.some((b) => b.isVi);
         if (hasViBlock && !viVoice) {
           // Fallback to server Edge Neural TTS
-          const url = `/api/v1/ai/tts?text=${encodeURIComponent(clean)}&voice=namminh&lang=vi`;
+          const url = this.resolveFullAudioUrl(`/ai/tts?text=${encodeURIComponent(clean)}&voice=namminh&lang=vi`);
           this.playFromUrl(url, 1.0, sessionId, callbacks);
           return;
         }
@@ -474,7 +509,7 @@ class AudioEngine {
         const hasNonViBlock = blocks.some((b) => !b.isVi);
         if (hasNonViBlock && !targetVoice) {
           // Fallback to server TTS for target language
-          const url = `/api/v1/vocabulary/tts?text=${encodeURIComponent(clean)}&lang=${encodeURIComponent(effectiveLocale)}`;
+          const url = this.resolveFullAudioUrl(`/vocabulary/tts?text=${encodeURIComponent(clean)}&lang=${encodeURIComponent(effectiveLocale)}`);
           this.playFromUrl(url, 1.0, sessionId, callbacks);
           return;
         }
@@ -527,7 +562,7 @@ class AudioEngine {
 
     // 2. Direct Server-Side Neural Male Stream Fallback
     const hasVi = /[àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i.test(clean);
-    const url = `/api/v1/ai/tts?text=${encodeURIComponent(clean)}&voice=namminh&lang=${hasVi ? 'vi' : targetLangPrefix}`;
+    const url = this.resolveFullAudioUrl(`/ai/tts?text=${encodeURIComponent(clean)}&voice=namminh&lang=${hasVi ? 'vi' : targetLangPrefix}`);
     this.playFromUrl(url, 1.0, sessionId, callbacks);
   }
 
@@ -643,12 +678,12 @@ class AudioEngine {
       }
       const chunk = chunks[chunkIdx++];
       // Use local server proxy /api/v1/ai/tts with crisp fast playbackRate
-      const url = `/api/v1/ai/tts?text=${encodeURIComponent(chunk)}&lang=vi`;
+      const url = this.resolveFullAudioUrl(`/ai/tts?text=${encodeURIComponent(chunk)}&lang=vi`);
       this.playFromUrl(url, rate, sessionId, {
         onEnd: playNextChunk,
         onError: () => {
           // Fallback direct URL if proxy fails
-          const fallbackUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(chunk)}&lang=vi`;
+          const fallbackUrl = this.resolveFullAudioUrl(`/vocabulary/tts?text=${encodeURIComponent(chunk)}&lang=vi`);
           this.playFromUrl(fallbackUrl, rate, sessionId, {
             onEnd: playNextChunk,
             onError: playNextChunk,
@@ -675,9 +710,9 @@ class AudioEngine {
         return;
       }
 
+      const fullUrl = this.resolveFullAudioUrl(url);
       const audio = this.getSharedAudio();
       audio.playbackRate = rate;
-      audio.src = url;
 
       let hasEnded = false;
       const cleanup = () => {
@@ -705,13 +740,21 @@ class AudioEngine {
       audio.addEventListener('ended', handleEnded);
       audio.addEventListener('error', handleError, { once: true });
 
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          cleanup();
-          callbacks.onError?.(err);
-          resolve(false);
-        });
+      try {
+        audio.src = fullUrl;
+        audio.load();
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            cleanup();
+            callbacks.onError?.(err);
+            resolve(false);
+          });
+        }
+      } catch (err) {
+        cleanup();
+        callbacks.onError?.(err);
+        resolve(false);
       }
     });
   }
@@ -743,7 +786,7 @@ class AudioEngine {
     const langPrefix = targetLocale.split(/[-_]/)[0].toLowerCase();
 
     const fallbackToServerTTS = () => {
-      const fallbackUrl = `/api/v1/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(targetLocale)}`;
+      const fallbackUrl = this.resolveFullAudioUrl(`/vocabulary/tts?text=${encodeURIComponent(cleanText)}&lang=${encodeURIComponent(targetLocale)}`);
       this.playFromUrl(fallbackUrl, rate, sessionId, callbacks);
     };
 
@@ -818,9 +861,25 @@ class AudioEngine {
       utterance.lang = targetLocale;
       utterance.voice = chosenVoice;
 
+      let hasStarted = false;
+      let watchdogTimer: any = null;
+
       activeSpeechUtterances.add(utterance);
 
+      const cleanupWatchdog = () => {
+        if (watchdogTimer) {
+          clearTimeout(watchdogTimer);
+          watchdogTimer = null;
+        }
+      };
+
+      utterance.onstart = () => {
+        hasStarted = true;
+        cleanupWatchdog();
+      };
+
       utterance.onend = () => {
+        cleanupWatchdog();
         activeSpeechUtterances.delete(utterance);
         if (this.currentSessionId === sessionId) {
           this.isCurrentlyPlaying = false;
@@ -829,6 +888,7 @@ class AudioEngine {
       };
 
       utterance.onerror = (e: any) => {
+        cleanupWatchdog();
         activeSpeechUtterances.delete(utterance);
         if (this.currentSessionId === sessionId) {
           if (e.error !== 'canceled' && e.error !== 'interrupted') {
@@ -841,12 +901,21 @@ class AudioEngine {
         }
       };
 
-      // Slight timeout to prevent Chromium cancel-speak collision bug
-      setTimeout(() => {
-        if (this.currentSessionId === sessionId) {
-          window.speechSynthesis.speak(utterance);
+      // Speak synchronously to preserve mobile touch activation context
+      window.speechSynthesis.speak(utterance);
+
+      // Watchdog: If speech synthesis does not start within 1500ms (silent/frozen WebView speech engine),
+      // fallback to server TTS stream
+      watchdogTimer = setTimeout(() => {
+        if (!hasStarted && this.currentSessionId === sessionId) {
+          console.warn('SpeechSynthesis hung without starting, falling back to server TTS');
+          activeSpeechUtterances.delete(utterance);
+          try {
+            window.speechSynthesis.cancel();
+          } catch (_) {}
+          fallbackToServerTTS();
         }
-      }, 10);
+      }, 1500);
     } catch (err) {
       console.warn('SpeechSynthesis failed, falling back to server TTS:', err);
       fallbackToServerTTS();
