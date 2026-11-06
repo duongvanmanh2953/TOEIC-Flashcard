@@ -43,7 +43,7 @@ export const LandingHeader: React.FC = React.memo(() => {
           </a>
           <a href="#download-app" className="hover:text-emerald-400 transition py-1 flex items-center gap-1 text-emerald-300 font-bold">
             <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Tải App Android</span>
+            <span>Tải App Android & iOS</span>
           </a>
           <a href="#pvp-arena" className="hover:text-cyan-400 transition py-1 flex items-center gap-1 text-violet-300">
             <Swords className="w-3.5 h-3.5 text-violet-400" />
@@ -112,20 +112,34 @@ export const LandingHeader: React.FC = React.memo(() => {
           />
 
           {/* Drawer Menu */}
-          <div className="relative z-50 lg:hidden border-t border-white/[0.08] bg-[#060813]/98 backdrop-blur-2xl px-4 py-4 space-y-3.5 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain shadow-2xl animate-in slide-in-from-top-2 duration-200">
-            {/* Quick APK Download Card */}
-            <a
-              href="/downloads/vocabflow.apk?v=1.1.0"
-              download="vocabflow.apk"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-extrabold active:scale-[0.99] transition-transform"
-            >
-              <div className="flex items-center gap-2.5">
-                <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-sm">Tải Ứng Dụng Android (APK v1.1.0)</span>
-              </div>
-              <Download className="w-4 h-4 text-emerald-400 shrink-0" />
-            </a>
+          <div className="relative z-50 lg:hidden border-t border-white/[0.08] bg-[#060813]/98 backdrop-blur-2xl px-4 py-4 space-y-3 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain shadow-2xl animate-in slide-in-from-top-2 duration-200">
+            {/* Quick OS Download Cards (Android & iOS) */}
+            <div className="grid grid-cols-1 gap-2">
+              <a
+                href="/downloads/vocabflow.apk?v=1.1.0"
+                download="vocabflow.apk"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-extrabold active:scale-[0.99] transition-transform"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs">Tải Android APK (v1.1.0)</span>
+                </div>
+                <Download className="w-4 h-4 text-emerald-400 shrink-0" />
+              </a>
+
+              <a
+                href="#download-app"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.07] border border-white/20 text-slate-200 font-extrabold active:scale-[0.99] transition-transform"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs">🍎</span>
+                  <span className="text-xs">Cài đặt iOS (iPhone & iPad)</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+              </a>
+            </div>
 
             {/* Navigation Links */}
             <div className="grid grid-cols-1 gap-1 text-sm font-semibold">

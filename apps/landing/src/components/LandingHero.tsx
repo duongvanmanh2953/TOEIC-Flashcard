@@ -81,12 +81,11 @@ export const LandingHero: React.FC<LandingHeroProps> = React.memo(
               </a>
 
               <a
-                href="/downloads/vocabflow.apk?v=1.1.0"
-                download="vocabflow.apk"
+                href="#download-app"
                 className="btn-glass-secondary !py-3.5 !px-5 text-sm font-bold flex items-center gap-2 border-emerald-500/30 text-emerald-300 hover:border-emerald-400/60 hover:bg-emerald-500/10 card-hover-smooth shadow-lg shadow-emerald-500/10"
               >
                 <Smartphone className="w-4 h-4 text-emerald-400" />
-                <span>Tải APK Android v1.1.0</span>
+                <span>Tải App (Android & iOS)</span>
               </a>
 
               <a
