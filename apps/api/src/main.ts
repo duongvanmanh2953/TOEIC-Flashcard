@@ -79,9 +79,41 @@ async function bootstrap() {
   // Register Global Exception Filter for standardized Vietnamese errors
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Enable CORS
+  // Enable CORS (supports Web, Localhost, and Mobile Capacitor apps)
+  const allowedOrigins = [
+    clientUrl,
+    process.env.STUDENT_CLIENT_URL,
+    process.env.KID_CLIENT_URL,
+    process.env.ADMIN_CLIENT_URL,
+    'https://app.vocalflow.site',
+    'https://kid.vocalflow.site',
+    'https://admin.vocalflow.site',
+    'https://vocalflow.site',
+    'http://localhost:3000',
+    'http://localhost:3100',
+    'http://localhost:4000',
+    'http://localhost:5173',
+    'https://localhost',
+    'http://localhost',
+    'capacitor://localhost',
+  ].filter(Boolean) as string[];
+
   app.enableCors({
-    origin: [clientUrl, 'http://localhost:3000', 'http://localhost:5173'],
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('vocalflow.site') ||
+        origin.endsWith('vocabflow.site') ||
+        origin.startsWith('https://localhost') ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('capacitor://')
+      ) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

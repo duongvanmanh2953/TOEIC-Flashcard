@@ -32,6 +32,9 @@ repositories {
 
 dependencies {
     constraints {
+        implementation("androidx.browser:browser:1.8.0") {
+            because("androidx.browser 1.9.0 requires compileSdk 36 which is not supported by AGP 8.7.2")
+        }
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22") {
             because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
         }

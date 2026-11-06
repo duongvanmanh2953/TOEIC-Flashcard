@@ -1,8 +1,30 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 
-function resolveApiBaseUrl(raw?: string): string {
-  if (!raw) return '/api/v1';
-  const clean = raw.replace(/\/+$/, '');
+export function resolveApiBaseUrl(raw?: string): string {
+  const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
+
+  // On Native Android/iOS, relative URLs or localhost URLs fail because the WebView
+  // cannot communicate with the server at localhost:443 or localhost:4000.
+  // Fall back to the live production Student API.
+  if (isNative && (!raw || raw.startsWith('/') || raw.includes('localhost') || raw.includes('127.0.0.1'))) {
+    const mobileProdUrl =
+      import.meta.env.VITE_STUDENT_API_BASE_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      'https://app-api.vocalflow.site/api';
+    if (!mobileProdUrl.includes('localhost') && !mobileProdUrl.includes('127.0.0.1')) {
+      return resolveApiBaseUrl(mobileProdUrl);
+    }
+    return 'https://app-api.vocalflow.site/api/v1';
+  }
+
+  const effectiveUrl =
+    raw ||
+    import.meta.env.VITE_STUDENT_API_BASE_URL ||
+    import.meta.env.VITE_API_BASE_URL;
+
+  if (!effectiveUrl) return '/api/v1';
+  const clean = effectiveUrl.replace(/\/+$/, '');
   if (clean.endsWith('/api/v1')) return clean;
   if (clean.endsWith('/api')) return `${clean}/v1`;
   return `${clean}/api/v1`;

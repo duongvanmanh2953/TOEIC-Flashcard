@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 import api from '../lib/api';
 import {
   signInAnonymously,
@@ -341,12 +344,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Deep Link listener for Native Mobile OAuth callback (vn.vocabflow.student://auth-callback)
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let cleanupHandle: any = null;
+
+    App.addListener('appUrlOpen', async (data: { url: string }) => {
+      try {
+        if (!data?.url) return;
+        if (data.url.includes('auth-callback') || data.url.startsWith('vn.vocabflow.student://')) {
+          await Browser.close().catch(() => {});
+
+          const urlObj = new URL(data.url);
+          const accessToken = urlObj.searchParams.get('access_token');
+          const refreshToken = urlObj.searchParams.get('refresh_token');
+          const rawUser = urlObj.searchParams.get('user');
+
+          if (accessToken) {
+            localStorage.setItem('vocabflow_access_token', accessToken);
+            if (refreshToken) {
+              localStorage.setItem('vocabflow_refresh_token', refreshToken);
+            }
+
+            let parsedUser = null;
+            if (rawUser) {
+              try {
+                parsedUser = JSON.parse(decodeURIComponent(rawUser));
+              } catch {}
+            }
+
+            if (parsedUser) {
+              setUser(normalizeUser({ ...parsedUser, isAnonymous: false }));
+              setAuthState('AUTHENTICATED');
+            } else {
+              const meRes: any = await api.get('/auth/me');
+              if (meRes?.success && meRes.data) {
+                setUser(normalizeUser({ ...meRes.data, isAnonymous: false }));
+                setAuthState('AUTHENTICATED');
+              }
+            }
+
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('VOCABFLOW_TOAST', {
+                  detail: {
+                    type: 'success',
+                    title: 'Đăng nhập thành công',
+                    message: 'Chào mừng bạn đã kết nối tài khoản thành công!',
+                  },
+                }),
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse OAuth deep link:', err);
+      }
+    }).then((handle) => {
+      cleanupHandle = handle;
+    });
+
+    return () => {
+      if (cleanupHandle?.remove) {
+        cleanupHandle.remove();
+      }
+    };
+  }, []);
+
   const loginWithGoogle = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const authUrl = 'https://app.vocalflow.site/login?mobile_auth=true&provider=google';
+      await Browser.open({ url: authUrl, windowName: '_system' });
+      return;
+    }
     const firebaseUser = await signInWithGoogle();
     try {
       const res: any = await api.post('/auth/oauth', {
         provider: 'google',
         providerId: firebaseUser.uid,
+        idToken: firebaseUser.accessToken,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         avatar: firebaseUser.photoURL,
@@ -376,11 +453,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithFacebook = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const authUrl = 'https://app.vocalflow.site/login?mobile_auth=true&provider=facebook';
+      await Browser.open({ url: authUrl, windowName: '_system' });
+      return;
+    }
     const firebaseUser = await signInWithFacebook();
     try {
       const res: any = await api.post('/auth/oauth', {
         provider: 'facebook',
         providerId: firebaseUser.uid,
+        idToken: firebaseUser.accessToken,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         avatar: firebaseUser.photoURL,

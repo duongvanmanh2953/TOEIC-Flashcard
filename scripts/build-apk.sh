@@ -9,7 +9,13 @@ export ANDROID_HOME="${ANDROID_HOME:-/home/duong/Android/Sdk}"
 export PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
 echo "Using ANDROID_HOME: ${ANDROID_HOME}"
 
-echo "=== [2/5] Building Student Web Application ==="
+echo "=== [1.5/5] Generating Android Launcher Icons and Brand Assets ==="
+python3 "${ROOT_DIR}/scripts/generate-android-assets.py"
+
+echo "=== [2/5] Building Student Web Application with Production API URL ==="
+VITE_API_BASE_URL="https://app-api.vocalflow.site/api" \
+VITE_STUDENT_API_BASE_URL="https://app-api.vocalflow.site/api" \
+VITE_WS_URL="https://app-api.vocalflow.site" \
 npm --prefix "${ROOT_DIR}" --workspace=apps/student run build
 
 echo "=== [3/5] Syncing Web Assets to Capacitor Android ==="

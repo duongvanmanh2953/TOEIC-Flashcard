@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Gamepad2,
@@ -120,7 +121,11 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
   // Setup Socket.IO connection
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '')?.replace('/api', '') || 'http://localhost:4000';
+    const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
+    const rawEnv = import.meta.env.VITE_WS_URL || import.meta.env.VITE_STUDENT_API_BASE_URL || import.meta.env.VITE_API_BASE_URL;
+    const socketUrl = isNative
+      ? (rawEnv && !rawEnv.includes('localhost') ? rawEnv.replace('/api/v1', '').replace('/api', '') : 'https://app-api.vocalflow.site')
+      : (rawEnv ? rawEnv.replace('/api/v1', '').replace('/api', '') : 'http://localhost:4000');
     const s = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,

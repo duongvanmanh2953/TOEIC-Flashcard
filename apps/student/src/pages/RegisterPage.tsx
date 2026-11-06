@@ -11,8 +11,20 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
-  const { register, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { user, register, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
+
+  const handlePostAuthRedirect = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mobile_auth') === 'true') {
+      const token = localStorage.getItem('vocabflow_access_token') || '';
+      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || '';
+      const callback = `vn.vocabflow.student://auth-callback?access_token=${encodeURIComponent(token)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+      window.location.href = callback;
+    } else {
+      navigate('/placement-test');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,8 +32,7 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
     try {
       await register({ displayName, email, password });
-      // Direct user into smart Placement Test!
-      navigate('/placement-test');
+      handlePostAuthRedirect();
     } catch (err: any) {
       setError(err?.message || 'Không thể tạo tài khoản. Vui lòng thử lại.');
     } finally {
@@ -140,7 +151,7 @@ export const RegisterPage: React.FC = () => {
               setSocialLoading('google');
               try {
                 await loginWithGoogle();
-                navigate('/placement-test');
+                handlePostAuthRedirect();
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Google.');
               } finally {
@@ -178,7 +189,7 @@ export const RegisterPage: React.FC = () => {
               setSocialLoading('facebook');
               try {
                 await loginWithFacebook();
-                navigate('/placement-test');
+                handlePostAuthRedirect();
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Facebook.');
               } finally {

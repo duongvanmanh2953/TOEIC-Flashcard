@@ -95,17 +95,29 @@ async function bootstrap() {
     res.status(200).json({ status: 'UP', service: 'vocabflow-app-api', timestamp: new Date().toISOString() });
   });
 
-  // Enable CORS for Student Domain
+  // Enable CORS for Student Domain (Web, Localhost, Mobile Capacitor apps)
   const allowedOrigins = [
     clientUrl,
     'https://app.vocalflow.site',
     'https://vocalflow.site',
     'http://localhost:3000',
+    'http://localhost:4000',
     'http://localhost:5173',
-  ];
+    'https://localhost',
+    'http://localhost',
+    'capacitor://localhost',
+  ].filter(Boolean) as string[];
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('vocalflow.site')) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('vocalflow.site') ||
+        origin.endsWith('vocabflow.site') ||
+        origin.startsWith('https://localhost') ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('capacitor://')
+      ) {
         callback(null, true);
       } else {
         callback(null, false);

@@ -18,7 +18,9 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
-  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const [mobileAuthRedirecting, setMobileAuthRedirecting] = useState(false);
+  const [mobileCallbackUrl, setMobileCallbackUrl] = useState('');
+  const { user, login, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -26,7 +28,46 @@ export const LoginPage: React.FC = () => {
     if (params.get('expired') === '1') {
       setError('Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục học tập.');
     }
-  }, []);
+
+    const isMobileAuth = params.get('mobile_auth') === 'true';
+    const provider = params.get('provider');
+
+    // If user is already authenticated and came for mobile auth, redirect back immediately
+    if (isMobileAuth && user && !user.isAnonymous) {
+      setMobileAuthRedirecting(true);
+      const token = localStorage.getItem('vocabflow_access_token') || '';
+      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || '';
+      const callback = `vn.vocabflow.student://auth-callback?access_token=${encodeURIComponent(token)}&refresh_token=${encodeURIComponent(refreshToken)}&user=${encodeURIComponent(JSON.stringify(user))}`;
+      setMobileCallbackUrl(callback);
+      window.location.href = callback;
+      return;
+    }
+
+    // Auto-trigger requested provider on user landing if specified
+    if (isMobileAuth && provider && !user) {
+      if (provider === 'google') {
+        setSocialLoading('google');
+        loginWithGoogle().finally(() => setSocialLoading(null));
+      } else if (provider === 'facebook') {
+        setSocialLoading('facebook');
+        loginWithFacebook().finally(() => setSocialLoading(null));
+      }
+    }
+  }, [user]);
+
+  const handlePostAuthRedirect = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mobile_auth') === 'true') {
+      const token = localStorage.getItem('vocabflow_access_token') || '';
+      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || '';
+      const callback = `vn.vocabflow.student://auth-callback?access_token=${encodeURIComponent(token)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+      setMobileAuthRedirecting(true);
+      setMobileCallbackUrl(callback);
+      window.location.href = callback;
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +76,7 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login({ email, password });
-      navigate('/dashboard');
+      handlePostAuthRedirect();
     } catch (err: any) {
       if (
         err?.code === 'DEVICE_LIMIT_EXCEEDED' ||
@@ -163,6 +204,23 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
+        {mobileAuthRedirecting && (
+          <div className="mb-6 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center space-y-3">
+            <Sparkles className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mx-auto animate-bounce" />
+            <p className="text-sm font-bold text-slate-900 dark:text-white">
+              Đăng nhập thành công! Đang chuyển tiếp về ứng dụng VocabFlow...
+            </p>
+            {mobileCallbackUrl && (
+              <a
+                href={mobileCallbackUrl}
+                className="inline-block px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition"
+              >
+                Mở lại ứng dụng VocabFlow
+              </a>
+            )}
+          </div>
+        )}
+
         {/* Social Login Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -172,7 +230,7 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('google');
               try {
                 await loginWithGoogle();
-                navigate('/dashboard');
+                handlePostAuthRedirect();
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Google.');
               } finally {
@@ -210,7 +268,7 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('facebook');
               try {
                 await loginWithFacebook();
-                navigate('/dashboard');
+                handlePostAuthRedirect();
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Facebook.');
               } finally {
