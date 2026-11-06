@@ -1008,7 +1008,7 @@ export const AppShell: React.FC = () => {
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightPage ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
         {/* Mobile Header — Clean, compact, never overflows or stretches */}
-        <header className="lg:hidden flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
+        <header className="lg:hidden flex items-center justify-between px-3.5 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
           <div className="flex items-center gap-2 min-w-0">
             <div
               onClick={() => navigate('/dashboard')}
@@ -1048,7 +1048,7 @@ export const AppShell: React.FC = () => {
 
         {/* Mobile Menu Overlay Drawer — FIXED OVERLAY, NEVER SCROLLS WITH PAGE */}
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-x-0 top-[53px] bottom-0 z-40 flex flex-col">
+          <div className="lg:hidden fixed inset-x-0 top-[calc(53px+env(safe-area-inset-top,0px))] bottom-0 z-40 flex flex-col">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/60 backdrop-blur-xs"

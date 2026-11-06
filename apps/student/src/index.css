@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  html, body {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
   /* Suppress Edge / Chromium native password reveal and clear buttons */
   ::-ms-reveal,
   ::-ms-clear {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Smartphone, Download } from 'lucide-react';
 
 export const LandingCTA: React.FC = React.memo(() => {
   return (
@@ -22,6 +22,15 @@ export const LandingCTA: React.FC = React.memo(() => {
           >
             <span>Bắt đầu học miễn phí</span>
             <ArrowRight className="w-4 h-4" />
+          </a>
+
+          <a
+            href="/downloads/vocabflow.apk"
+            download="vocabflow.apk"
+            className="btn-glass-secondary !py-3 !px-6 text-sm font-bold card-hover-smooth border-emerald-500/30 text-emerald-300 hover:border-emerald-400/60 hover:bg-emerald-500/10 flex items-center gap-2"
+          >
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <span>Tải App Android (APK)</span>
           </a>
 
           <a

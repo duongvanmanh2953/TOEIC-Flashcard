@@ -48,5 +48,14 @@ postgres_data/
 # Local data & spreadsheet files (migrated to PostgreSQL)
 /data/
 *.csv
+
+# Android Build Outputs & Gradle
+.gradle/
+**/android/.gradle/
+**/android/app/build/
+**/android/build/
+**/android/local.properties
+**/android/app/src/main/assets/public/
+*.apk
 *.xlsx
 !apps/web/src/kids/data/

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Compass, Volume2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, Compass, Volume2, CheckCircle2, Smartphone, Download } from 'lucide-react';
 import { GlassSurface } from './GlassSurface';
 import { CountryFlag } from './CountryFlag';
 import { LangSample, MULTI_LANG_SAMPLES } from '../data/multiLangSamples';
@@ -74,15 +74,24 @@ export const LandingHero: React.FC<LandingHeroProps> = React.memo(
             <div className="pt-2 flex flex-wrap items-center gap-3.5">
               <a
                 href="https://app.vocalflow.site/dashboard"
-                className="btn-glass-primary !py-3.5 !px-7 text-sm font-extrabold flex items-center gap-2 card-hover-smooth shadow-lg shadow-indigo-600/30"
+                className="btn-glass-primary !py-3.5 !px-6 sm:!px-7 text-sm font-extrabold flex items-center gap-2 card-hover-smooth shadow-lg shadow-indigo-600/30"
               >
                 <span>Bắt đầu học</span>
                 <ArrowRight className="w-4 h-4" />
               </a>
 
               <a
+                href="/downloads/vocabflow.apk"
+                download="vocabflow.apk"
+                className="btn-glass-secondary !py-3.5 !px-5 text-sm font-bold flex items-center gap-2 border-emerald-500/30 text-emerald-300 hover:border-emerald-400/60 hover:bg-emerald-500/10 card-hover-smooth shadow-lg shadow-emerald-500/10"
+              >
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Tải APK Android</span>
+              </a>
+
+              <a
                 href="#languages"
-                className="btn-glass-secondary !py-3.5 !px-5 text-sm font-bold flex items-center gap-2 card-hover-smooth"
+                className="btn-glass-secondary !py-3.5 !px-5 text-sm font-bold flex items-center gap-2 card-hover-smooth text-slate-300"
               >
                 <Compass className="w-4 h-4 text-slate-300" />
                 <span>Khám phá 7 ngôn ngữ</span>

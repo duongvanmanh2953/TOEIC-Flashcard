@@ -6,14 +6,23 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:add": "cap add android",
+    "cap:sync": "cap sync android",
+    "cap:build": "npm run build && cap sync android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^7.6.10",
+    "@capacitor/core": "^8.6.0",
+    "@k1low/kakitori": "^0.21.0",
     "@vocabflow/shared": "*",
     "axios": "^1.6.8",
     "clsx": "^2.1.0",
     "firebase": "^12.18.0",
     "google-tts-api": "^2.0.2",
+    "hanzi-writer": "^3.7.3",
+    "iink-ts": "^4.1.0",
     "jszip": "^3.10.2",
     "lucide-react": "^0.364.0",
     "mammoth": "^1.13.0",
@@ -23,10 +32,7 @@
     "react-router-dom": "^6.22.3",
     "socket.io-client": "^4.7.5",
     "tailwind-merge": "^2.2.2",
-    "xlsx": "^0.18.5",
-    "hanzi-writer": "^3.7.3",
-    "@k1low/kakitori": "^0.21.0",
-    "iink-ts": "^4.1.0"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/jszip": "^3.4.0",

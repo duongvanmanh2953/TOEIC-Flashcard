@@ -12,6 +12,7 @@ import { LandingWhatsNew } from './components/LandingWhatsNew';
 import { LandingLearningLoop } from './components/LandingLearningLoop';
 import { LandingQuickNotesDemo } from './components/LandingQuickNotesDemo';
 import { LandingPvPArena } from './components/LandingPvPArena';
+import { LandingAppDownload } from './components/LandingAppDownload';
 import { LandingFeatures } from './components/LandingFeatures';
 import { LandingReviews } from './components/LandingReviews';
 import { LandingCTA } from './components/LandingCTA';
@@ -115,6 +116,9 @@ export const App: React.FC = () => {
 
           {/* Realtime 1v1 PvP Arena */}
           <LandingPvPArena />
+
+          {/* Android App Direct Download & Mobile Showcase */}
+          <LandingAppDownload />
 
           {/* Smart Features */}
           <LandingFeatures />
