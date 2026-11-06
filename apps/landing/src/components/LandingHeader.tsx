@@ -64,13 +64,13 @@ export const LandingHeader: React.FC = React.memo(() => {
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Quick APK Download Pill (Desktop & Tablet) */}
           <a
-            href="/downloads/vocabflow.apk"
+            href="/downloads/vocabflow.apk?v=1.1.0"
             download="vocabflow.apk"
-            title="Tải ứng dụng Android (APK)"
+            title="Tải ứng dụng Android (APK v1.1.0)"
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/25 text-emerald-300 text-xs font-bold transition-all duration-200"
           >
             <Download className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Tải APK</span>
+            <span>Tải APK v1.1.0</span>
           </a>
 
           {/* Login button (Visible on sm+ screens, placed inside drawer on mobile) */}
@@ -115,14 +115,14 @@ export const LandingHeader: React.FC = React.memo(() => {
           <div className="relative z-50 lg:hidden border-t border-white/[0.08] bg-[#060813]/98 backdrop-blur-2xl px-4 py-4 space-y-3.5 max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain shadow-2xl animate-in slide-in-from-top-2 duration-200">
             {/* Quick APK Download Card */}
             <a
-              href="/downloads/vocabflow.apk"
+              href="/downloads/vocabflow.apk?v=1.1.0"
               download="vocabflow.apk"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-extrabold active:scale-[0.99] transition-transform"
             >
               <div className="flex items-center gap-2.5">
                 <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-sm">Tải Ứng Dụng Android (APK)</span>
+                <span className="text-sm">Tải Ứng Dụng Android (APK v1.1.0)</span>
               </div>
               <Download className="w-4 h-4 text-emerald-400 shrink-0" />
             </a>

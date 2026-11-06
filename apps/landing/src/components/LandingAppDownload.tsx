@@ -76,14 +76,14 @@ export const LandingAppDownload: React.FC = React.memo(() => {
           {/* Action Download Buttons */}
           <div className="pt-3 flex flex-wrap items-center gap-3.5">
             <a
-              href="/downloads/vocabflow.apk"
+              href="/downloads/vocabflow.apk?v=1.1.0"
               download="vocabflow.apk"
               className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-sm flex items-center gap-2.5 shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-98"
             >
               <Download className="w-5 h-5 text-slate-950" />
               <span>Tải file APK (Android)</span>
               <span className="text-[10px] font-black uppercase bg-black/20 text-slate-950 px-2 py-0.5 rounded-full ml-1">
-                25 MB
+                v1.1.0 • 27 MB
               </span>
             </a>
 
@@ -112,7 +112,7 @@ export const LandingAppDownload: React.FC = React.memo(() => {
                 </div>
               </div>
               <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                v1.0.0 Stable
+                v1.1.0 Mới Nhất
               </span>
             </div>
 
@@ -164,12 +164,12 @@ export const LandingAppDownload: React.FC = React.memo(() => {
             {/* Quick Direct Download Trigger Card */}
             <div className="pt-2">
               <a
-                href="/downloads/vocabflow.apk"
+                href="/downloads/vocabflow.apk?v=1.1.0"
                 download="vocabflow.apk"
                 className="w-full py-3 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-emerald-400/30 text-white font-bold text-xs flex items-center justify-center gap-2 transition"
               >
                 <Download className="w-4 h-4 text-emerald-400" />
-                <span>Bấm để tải ngay vocabflow.apk (25 MB)</span>
+                <span>Bấm để tải ngay vocabflow.apk v1.1.0 (27 MB)</span>
               </a>
             </div>
           </GlassSurface>

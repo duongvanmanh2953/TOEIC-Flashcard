@@ -151,6 +151,7 @@ export const DashboardPage: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider border border-indigo-500/20">
             <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
             <span>Không gian {activeLanguage.name} ({activeLanguage.nativeName}) • Trình độ {activeProfile.level}</span>
+            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px]">v1.1.0</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">

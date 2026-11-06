@@ -22,9 +22,9 @@ echo "=== [3/5] Syncing Web Assets to Capacitor Android ==="
 cd "${ROOT_DIR}/apps/student"
 npx cap sync android
 
-echo "=== [4/5] Building Android APK (assembleDebug) ==="
+echo "=== [4/5] Building Android APK (assembleDebug with Clean) ==="
 cd "${ROOT_DIR}/apps/student/android"
-./gradlew assembleDebug
+./gradlew clean assembleDebug
 
 APK_SOURCE="${ROOT_DIR}/apps/student/android/app/build/outputs/apk/debug/app-debug.apk"
 LANDING_PUBLIC="${ROOT_DIR}/apps/landing/public/downloads"
@@ -35,7 +35,7 @@ if [ ! -f "${APK_SOURCE}" ]; then
   exit 1
 fi
 
-echo "=== [5/5] Deploying APK to Landing Page Downloads ==="
+echo "=== [5/5] Deploying APK to Landing Page Downloads & Active Container ==="
 mkdir -p "${LANDING_PUBLIC}"
 cp -f "${APK_SOURCE}" "${LANDING_PUBLIC}/vocabflow.apk"
 cp -f "${APK_SOURCE}" "${LANDING_PUBLIC}/vocabflow-latest.apk"
@@ -43,6 +43,10 @@ cp -f "${APK_SOURCE}" "${LANDING_PUBLIC}/vocabflow-latest.apk"
 mkdir -p "${LANDING_DIST}"
 cp -f "${APK_SOURCE}" "${LANDING_DIST}/vocabflow.apk"
 cp -f "${APK_SOURCE}" "${LANDING_DIST}/vocabflow-latest.apk"
+
+# Hot-copy directly into running container if active
+docker cp "${APK_SOURCE}" vocabflow-landing:/usr/share/nginx/html/downloads/vocabflow.apk 2>/dev/null || true
+docker cp "${APK_SOURCE}" vocabflow-landing:/usr/share/nginx/html/downloads/vocabflow-latest.apk 2>/dev/null || true
 
 cd "${ROOT_DIR}"
 # Re-build landing to ensure production bundle integrity
