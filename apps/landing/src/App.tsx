@@ -4,6 +4,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 import { LiquidBackground } from './components/LiquidBackground';
+import { LandingLoadingScreen } from './components/LandingLoadingScreen';
 import { LandingHeader } from './components/LandingHeader';
 import { LandingHero } from './components/LandingHero';
 import { LandingLanguages } from './components/LandingLanguages';
@@ -75,6 +76,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen text-slate-100 flex flex-col overflow-x-hidden selection:bg-indigo-600 selection:text-white bg-[#060813] font-sans">
+      {/* 0. Branded Loading Splash Screen */}
+      <LandingLoadingScreen minDuration={700} />
+
       {/* 1. Static GPU-friendly Ambient Gradient Background */}
       <LiquidBackground />
 

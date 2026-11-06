@@ -17,6 +17,7 @@
     "@capacitor/browser": "^8.0.5",
     "@capacitor/cli": "^7.6.10",
     "@capacitor/core": "^8.6.0",
+    "@capacitor/ios": "^8.6.0",
     "@k1low/kakitori": "^0.21.0",
     "@vocabflow/shared": "*",
     "axios": "^1.6.8",

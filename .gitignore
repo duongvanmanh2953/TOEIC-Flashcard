@@ -57,5 +57,10 @@ postgres_data/
 **/android/local.properties
 **/android/app/src/main/assets/public/
 *.apk
+
+# iOS Build Outputs & Pods
+**/ios/App/App/public/
+**/ios/App/Pods/
+**/ios/DerivedData/
 *.xlsx
 !apps/web/src/kids/data/

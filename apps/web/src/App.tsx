@@ -9,6 +9,7 @@ import { AppShell } from './components/layout/AppShell';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
+import { AppLoadingScreen } from './components/common/AppLoadingScreen';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import { GlobalConfirmDialog } from './components/common/ConfirmDialog';
 import { GlobalApiLoadingBar } from './components/common/GlobalApiLoadingBar';
@@ -121,9 +122,7 @@ const RouteAudioWatcher: React.FC = () => {
 };
 
 const PageSuspenseFallback: React.FC = () => (
-  <div className="min-h-[50vh] flex items-center justify-center bg-transparent">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-  </div>
+  <AppLoadingScreen message="Đang tải giao diện học tập..." />
 );
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolean }> = ({
@@ -132,11 +131,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolea
 }) => {
   const { user, loading, isGuest, promptLogin } = useAuth();
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <AppLoadingScreen message="Đang xác thực thông tin học viên..." />;
   }
 
   // If page strictly requires a saved account (e.g. personal bank)

@@ -22,7 +22,29 @@
     />
   </head>
   <body class="bg-[#060813] text-slate-100 selection:bg-indigo-600 selection:text-white">
-    <div id="root"></div>
+    <div id="root">
+      <div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#060813;z-index:9999;font-family:system-ui,-apple-system,sans-serif;">
+        <div style="position:relative;width:80px;height:80px;border-radius:20px;background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(99,102,241,0.25);">
+          <img src="/vocabflow-logo-256.png" alt="VocabFlow" style="width:52px;height:52px;object-fit:contain;" />
+        </div>
+        <div style="margin-top:20px;font-weight:900;font-size:22px;letter-spacing:-0.5px;background:linear-gradient(135deg,#60a5fa,#a5b4fc,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+          VocabFlow
+        </div>
+        <div style="margin-top:6px;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;">
+          Smart Learning Platform
+        </div>
+        <div style="margin-top:24px;width:140px;height:4px;border-radius:999px;background:rgba(255,255,255,0.08);overflow:hidden;position:relative;">
+          <div style="width:50%;height:100%;border-radius:999px;background:linear-gradient(90deg,#3b82f6,#6366f1,#06b6d4);animation:vf-pulse 1.2s infinite ease-in-out;"></div>
+        </div>
+      </div>
+      <style>
+        @keyframes vf-pulse {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(50%); }
+          100% { transform: translateX(200%); }
+        }
+      </style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

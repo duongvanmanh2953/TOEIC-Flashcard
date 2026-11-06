@@ -9,6 +9,7 @@ import { LoginPage } from './pages/LoginPage';
 import { LandingPage } from './pages/LandingPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
 import { navigateToApp, SubApp } from './lib/sso';
+import { AppLoadingScreen } from './components/common/AppLoadingScreen';
 
 // Lazy-loaded routes for optimal initial bundle size and Core Web Vitals
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
@@ -61,9 +62,7 @@ import { ComplaintResolutionPage } from './pages/policies/ComplaintResolutionPag
 import { TermsOfServicePage } from './pages/policies/TermsOfServicePage';
 
 const PageLoadingFallback: React.FC = () => (
-  <div className="min-h-[50vh] flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-  </div>
+  <AppLoadingScreen message="Đang tải giao diện học tập..." />
 );
 
 import { ScrollToTop } from './components/common/ScrollToTop';
@@ -77,11 +76,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolea
 }) => {
   const { user, loading, isGuest, promptLogin } = useAuth();
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <AppLoadingScreen message="Đang xác thực thông tin học viên..." />;
   }
 
   if (requireAuth && isGuest) {
@@ -110,11 +105,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolea
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <AppLoadingScreen message="Đang xác thực thông tin học viên..." />;
   }
   return user ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 };
@@ -127,11 +118,7 @@ const ExternalRedirect: React.FC<{ to?: string; app?: SubApp; path?: string }> =
       window.location.href = to;
     }
   }, [to, app, path]);
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-    </div>
-  );
+  return <AppLoadingScreen message="Đang chuyển hướng..." />;
 };
 
 export const App: React.FC = () => {
