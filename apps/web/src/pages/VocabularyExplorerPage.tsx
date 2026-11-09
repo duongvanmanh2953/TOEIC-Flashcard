@@ -28,7 +28,7 @@ import {
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
-import { idbSetCache, idbGetCache, idbSaveWords } from '../lib/idb';
+import { idbSetCache, idbGetCache, idbSaveWords, idbGetWords } from '../lib/idb';
 import { audioEngine } from '../lib/audioEngine';
 import { useScrollLoad } from '../hooks/useScrollLoad';
 import { CountryFlag } from '../components/language/CountryFlag';
@@ -274,8 +274,20 @@ export const VocabularyExplorerPage: React.FC = () => {
           setLoadError(res?.message || 'Không thể tải danh sách từ vựng.');
         }
       } catch (err: any) {
-        console.error('Failed to load vocabulary', err);
-        setLoadError(err?.response?.data?.message || 'Lỗi kết nối máy chủ khi tải từ vựng.');
+        console.warn('Failed to load vocabulary (offline check):', err);
+        try {
+          const localWords = await idbGetWords(user?.id, activeLanguage.id);
+          if (localWords && localWords.length > 0) {
+            setWords(localWords);
+            setTotalPages(1);
+            setTotalCount(localWords.length);
+            setLoadError(null);
+          } else {
+            setLoadError('Đang ở chế độ ngoại tuyến. Hãy kết nối Internet để tải thêm từ vựng mới.');
+          }
+        } catch {
+          setLoadError('Đang ở chế độ ngoại tuyến.');
+        }
       } finally {
         setLoading(false);
         setLoadingMore(false);

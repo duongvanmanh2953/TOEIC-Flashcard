@@ -59,6 +59,7 @@ export interface ApiResponse<T = any> {
 
 export * from './components/VocabFlowLogo';
 export * from './components/VictoryStarModal';
+export * from './components/AppSplashScreen';
 export * from './config/languageStandards';
 export * from './config/languageCapabilities';
 export { default as enTranslations } from './locales/en.json';

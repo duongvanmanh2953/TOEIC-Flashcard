@@ -591,7 +591,10 @@ export async function idbSetCache(key: string, data: any, ttlMs: number = 360000
   }
 }
 
-export async function idbGetCache<T = any>(key: string): Promise<T | null> {
+export async function idbGetCache<T = any>(
+  key: string,
+  allowExpiredIfOffline: boolean = true,
+): Promise<T | null> {
   try {
     const db = await openDB();
     return new Promise((resolve) => {
@@ -600,7 +603,8 @@ export async function idbGetCache<T = any>(key: string): Promise<T | null> {
       const req = store.get(key);
       req.onsuccess = () => {
         const item = req.result;
-        if (item && item.expiresAt > Date.now()) {
+        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+        if (item && (item.expiresAt > Date.now() || (allowExpiredIfOffline && isOffline))) {
           resolve(item.data as T);
         } else {
           resolve(null);

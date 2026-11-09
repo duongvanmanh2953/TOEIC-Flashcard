@@ -1152,6 +1152,33 @@ export const ReviewSessionPage: React.FC = () => {
         console.warn('Batch endpoint post failed, falling back gracefully:', postErr);
       }
 
+      // 1. Immediately persist FSRS progress for all reviewed cards into local IndexedDB
+      bufferedReviewsRef.current.forEach((r) => {
+        if (r.vocabularyId) {
+          idbUpdateWordProgress(r.vocabularyId, r.isCorrect, r.rating).catch(() => {});
+        }
+      });
+
+      // 2. If offline or cloud request failed, enqueue to offline queue for later auto-sync
+      const isOfflineMode = !batchResponse || Boolean(batchResponse?.isOffline) || (typeof navigator !== 'undefined' && !navigator.onLine);
+      if (isOfflineMode) {
+        import('../lib/offlineSyncService').then(({ offlineSyncService }) => {
+          offlineSyncService.enqueueOfflineReviews(
+            bufferedReviewsRef.current.map((r) => ({
+              id: 'offline_' + Math.random().toString(36).substring(2, 9),
+              vocabularyId: r.vocabularyId,
+              rating: r.rating,
+              isCorrect: r.isCorrect,
+              confidence: r.confidence,
+              responseTimeMs: r.responseTimeMs,
+              reviewedAt: Date.now(),
+              languageId: langId,
+            })),
+            langId,
+          ).catch(() => {});
+        }).catch(() => {});
+      }
+
       // Record in local LearningContext
       const correctCount = bufferedReviewsRef.current.filter((b) => b.isCorrect).length;
       const isMostlyCorrect = correctCount >= Math.ceil(bufferedReviewsRef.current.length / 2);
@@ -1352,6 +1379,11 @@ export const ReviewSessionPage: React.FC = () => {
             <p className="text-xs text-slate-500 mt-1">
               Không còn từ vựng nào cần ôn lúc này. Các thẻ đã được cập nhật chu kỳ Spaced Repetition vào tương lai.
             </p>
+            {summary.isOffline && (
+              <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/20">
+                <span>☁️ Kết quả đã lưu an toàn trên máy và sẽ tự động đồng bộ khi có Internet.</span>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-3 py-4 border-y border-slate-100 dark:border-slate-800">

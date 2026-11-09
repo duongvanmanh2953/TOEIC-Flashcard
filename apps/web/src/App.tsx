@@ -13,6 +13,9 @@ import { ScrollToTop } from './components/common/ScrollToTop';
 import { GlobalConfirmDialog } from './components/common/ConfirmDialog';
 import { GlobalApiLoadingBar } from './components/common/GlobalApiLoadingBar';
 import { GlobalToastContainer } from './components/common/GlobalToastContainer';
+import { OfflineStatusBanner } from './components/offline/OfflineStatusBanner';
+import { OnlineOnlyFeatureGate } from './components/offline/OnlineOnlyFeatureGate';
+import { AppSplashScreen } from './components/common/AppSplashScreen';
 
 // Route-level code-splitting (Lazy loaded on demand)
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -195,6 +198,9 @@ export const App: React.FC = () => {
               <ContextualLoginModal />
               <GlobalConfirmDialog />
               <GlobalApiLoadingBar />
+              <GlobalToastContainer />
+              <OfflineStatusBanner />
+              <AppSplashScreen durationMs={1000} />
               <Suspense fallback={<PageSuspenseFallback />}>
                 <Routes>
 
@@ -320,18 +326,60 @@ export const App: React.FC = () => {
 
               <Route path="/custom-quiz" element={<CustomQuizPage />} />
               <Route path="/placement-test" element={<PlacementTestPage />} />
-              <Route path="/ai-tutor" element={<AICoachStudioPage />} />
+              <Route
+                path="/ai-tutor"
+                element={
+                  <OnlineOnlyFeatureGate featureName="Gia sư AI Tutor">
+                    <AICoachStudioPage />
+                  </OnlineOnlyFeatureGate>
+                }
+              />
               <Route path="/ai-turbo" element={<Navigate to="/ai-tutor" replace />} />
-              <Route path="/coach" element={<AICoachStudioPage />} />
-              <Route path="/interview" element={<AIInterviewStudioPage />} />
+              <Route
+                path="/coach"
+                element={
+                  <OnlineOnlyFeatureGate featureName="AI Huấn luyện viên">
+                    <AICoachStudioPage />
+                  </OnlineOnlyFeatureGate>
+                }
+              />
+              <Route
+                path="/interview"
+                element={
+                  <OnlineOnlyFeatureGate featureName="AI Luyện phỏng vấn">
+                    <AIInterviewStudioPage />
+                  </OnlineOnlyFeatureGate>
+                }
+              />
               <Route path="/interview-studio" element={<Navigate to="/interview" replace />} />
               <Route path="/games" element={<GameLobbyPage />} />
               <Route path="/games/word-match" element={<WordMatchGame />} />
               <Route path="/games/scramble" element={<WordScrambleGame />} />
-              <Route path="/games/room/:roomId" element={<RealtimeGameRoomPage />} />
-              <Route path="/leaderboard" element={<LeaderboardPage />} />
+              <Route
+                path="/games/room/:roomId"
+                element={
+                  <OnlineOnlyFeatureGate featureName="Đấu trường từ vựng trực tuyến">
+                    <RealtimeGameRoomPage />
+                  </OnlineOnlyFeatureGate>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <OnlineOnlyFeatureGate featureName="Bảng xếp hạng">
+                    <LeaderboardPage />
+                  </OnlineOnlyFeatureGate>
+                }
+              />
               <Route path="/progress" element={<ProgressAnalyticsPage />} />
-              <Route path="/upgrade" element={<SubscriptionUpgradePage />} />
+              <Route
+                path="/upgrade"
+                element={
+                  <OnlineOnlyFeatureGate featureName="Nâng cấp gói tài khoản">
+                    <SubscriptionUpgradePage />
+                  </OnlineOnlyFeatureGate>
+                }
+              />
               
               {/* User Support, Feedback & Notifications */}
               <Route path="/support" element={<Navigate to="/dashboard" replace />} />

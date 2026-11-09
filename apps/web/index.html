@@ -24,7 +24,24 @@
     </script>
   </head>
   <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen transition-colors duration-200">
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-splash" style="position:fixed;inset:0;background:#020617;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;z-index:9999999;user-select:none;">
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <div style="position:absolute;width:100px;height:100px;background:rgba(99,102,241,0.25);filter:blur(24px);border-radius:28px;"></div>
+          <div style="position:relative;padding:14px;background:rgba(15,23,42,0.85);border:1px solid rgba(51,65,85,0.7);border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
+            <img src="/vocabflow-logo-256.png" width="64" height="64" alt="VocabFlow AI" style="display:block;width:64px;height:64px;object-fit:contain;" />
+          </div>
+        </div>
+        <h1 style="color:#ffffff;font-size:22px;font-weight:900;letter-spacing:-0.5px;margin:0 0 6px 0;">VocabFlow AI</h1>
+        <p style="color:#94a3b8;font-size:12px;font-weight:600;margin:0 0 24px 0;">Học từ vựng thông minh cùng Spaced Repetition</p>
+        <div style="width:180px;height:4px;background:rgba(30,41,59,0.8);border-radius:9999px;overflow:hidden;">
+          <div style="width:100%;height:100%;background:linear-gradient(90deg,#6366f1,#38bdf8,#34d399);border-radius:9999px;animation:vfSplashBar 1s ease-out forwards;"></div>
+        </div>
+        <style>
+          @keyframes vfSplashBar { from { transform: translateX(-100%); } to { transform: translateX(0%); } }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
