@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AppSplashScreen } from '@vocabflow/shared';
 import { LearningProvider } from './contexts/LearningContext';
 import { I18nProvider } from './i18n';
 import { KidsLayout } from './components/KidsLayout';
@@ -24,6 +25,12 @@ export const App: React.FC = () => {
     <I18nProvider>
       <LearningProvider>
         <BrowserRouter>
+          <AppSplashScreen
+            durationMs={1000}
+            theme="kid"
+            title="VocabFlow Kids"
+            tagline="Thế giới học tiếng Anh vui nhộn cùng Vivi"
+          />
           <Suspense fallback={<KidLoadingFallback />}>
             <Routes>
             {/* Primary Routes */}
