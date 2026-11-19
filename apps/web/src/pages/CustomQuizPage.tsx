@@ -103,7 +103,10 @@ export const CustomQuizPage: React.FC = () => {
     }
   };
 
+  const [submittedAnswers, setSubmittedAnswers] = useState<Record<string, string>>({});
+
   const handleSelectOption = (questionId: string, option: string) => {
+    if (result) return;
     setAnswers((prev) => ({ ...prev, [questionId]: option }));
   };
 
@@ -118,6 +121,7 @@ export const CustomQuizPage: React.FC = () => {
 
       if (res?.success) {
         setResult(res.data);
+        setSubmittedAnswers(answers);
         if ((res.data?.accuracy || 0) >= 50) {
           playCorrectSound();
         } else {
@@ -129,6 +133,17 @@ export const CustomQuizPage: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const getOptionStyle = (opt: string, isCorrect?: boolean, isSelected?: boolean) => {
+    if (result) {
+      if (isCorrect) return 'border-2 border-emerald-500 bg-emerald-500/[0.1] text-emerald-700 dark:text-emerald-300';
+      if (isSelected && !isCorrect) return 'border-2 border-rose-500 bg-rose-500/[0.1] text-rose-700 dark:text-rose-300';
+      return 'border-slate-200 dark:border-slate-800 opacity-50';
+    }
+    return isSelected
+      ? 'border-2 border-brand-500 bg-brand-500/[0.08] dark:bg-brand-500/[0.16] text-brand-700 dark:text-brand-200'
+      : 'border-slate-200/60 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 bg-transparent';
   };
 
   // Result Summary View
@@ -314,17 +329,19 @@ export const CustomQuizPage: React.FC = () => {
           <div className="space-y-3">
             {currentQ.options?.map((opt: string, idx: number) => {
               const selected = answers[currentQ.id] === opt;
+              const isCorrect = result && opt === currentQ.correctAnswer;
               return (
                 <button
                   key={idx}
                   onClick={() => handleSelectOption(currentQ.id, opt)}
-                  className={`w-full p-4 rounded-2xl border text-left font-semibold text-sm transition flex items-center justify-between ${
-                    selected
-                      ? 'border-2 border-brand-500 bg-brand-500/[0.08] dark:bg-brand-500/[0.16] text-brand-700 dark:text-brand-200'
-                      : 'border-slate-200/60 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 bg-transparent'
-                  }`}
+                  className={`w-full p-4 rounded-2xl border text-left font-semibold text-sm transition flex items-center justify-between ${getOptionStyle(opt, isCorrect, selected)}`}
                 >
                   <span>{opt}</span>
+                  {result && (
+                    <span className="text-xs font-bold">
+                      {isCorrect ? '✓ Đúng' : selected ? '✗ Sai' : ''}
+                    </span>
+                  )}
                   <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs tabular-nums font-bold text-slate-400">
                     {idx + 1}
                   </span>

@@ -69,9 +69,9 @@ export const SUPPORTED_LANGUAGES: LanguageDefinition[] = [
     direction: 'ltr',
     speechLocale: 'en-US',
     secondaryLocales: [
-      { id: 'en-US', label: 'American English (US)', speechLocale: 'en-US' },
-      { id: 'en-GB', label: 'British English (UK)', speechLocale: 'en-GB' },
-      { id: 'en-AU', label: 'Australian English (AU)', speechLocale: 'en-AU' },
+      { id: 'en-US', label: '🇺🇸 American English', speechLocale: 'en-US' },
+      { id: 'en-GB', label: '🇬🇧 British English', speechLocale: 'en-GB' },
+      { id: 'en-AU', label: '🇦🇺 Australian English', speechLocale: 'en-AU' },
     ],
     accentColor: {
       primary: '#3b82f6',

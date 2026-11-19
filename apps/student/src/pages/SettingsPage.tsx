@@ -942,9 +942,9 @@ export const SettingsPage: React.FC = () => {
                     value={voiceAccent}
                     onChange={(val) => setVoiceAccent(val as any)}
                     options={[
-                      { value: 'en-US', label: 'Tiếng Anh - Giọng Mỹ (US)' },
-                      { value: 'en-GB', label: 'Tiếng Anh - Giọng Anh (UK)' },
-                      { value: 'en-AU', label: 'Tiếng Anh - Giọng Úc (AU)' },
+                      { value: 'en-US', label: '🇺🇸 Tiếng Anh - Giọng Mỹ' },
+                      { value: 'en-GB', label: '🇬🇧 Tiếng Anh - Giọng Anh' },
+                      { value: 'en-AU', label: '🇦🇺 Tiếng Anh - Giọng Úc' },
                     ]}
                     size="sm"
                     className="w-full"

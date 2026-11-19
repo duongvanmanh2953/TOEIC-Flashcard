@@ -13,5 +13,6 @@ export * from './ArenaLeaderboard';
 export * from './ActivityFeed';
 export * from './RoundResultModal';
 export * from './WinnerCelebration';
+export * from './ArenaTrophyArtwork';
 export * from './MissionCard';
 export * from './AchievementCard';

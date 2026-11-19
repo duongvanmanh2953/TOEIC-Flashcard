@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import api from '../../lib/api';
@@ -64,6 +64,8 @@ import {
   playGameStartSound,
   playQuestionTransitionSound,
   playCountdownTickSound,
+  playWarningTickSound,
+  playRoundEndSound,
   playVictoryFanfare,
   liveBgmEngine,
   TikTokLogo,
@@ -93,6 +95,18 @@ import {
 } from '@vocabflow/shared';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { audioEngine } from '../../lib/audioEngine';
+import { ArenaDynamicBackground, ArenaBackgroundTheme } from './arena/ArenaDynamicBackground';
+import { QuestionAnalyticsPanel, AnswerVoteDetail, GroupedTextAnswer } from './arena/QuestionAnalyticsPanel';
+import { TopAnswersThisRound, RoundSubmissionItem } from './arena/TopAnswersThisRound';
+import { ArenaRankingPanel, ArenaRankPlayer } from './arena/ArenaRankingPanel';
+import { ArenaCelebrationOverlay } from './arena/ArenaCelebrationOverlay';
+import { AnswerDistributionChart } from './arena/AnswerDistributionChart';
+import { ArenaCommentPanel } from './arena/ArenaCommentPanel';
+import { ArenaStatsBar } from './arena/ArenaStatsBar';
+import { ArenaInGameHeader } from './arena/ArenaInGameHeader';
+import { ArenaExplanationCard } from './arena/ArenaExplanationCard';
+import { ArenaBangVangCeremony } from './arena/ArenaBangVangCeremony';
+import { ArenaPillOptionButton } from './arena/ArenaPillOptionButton';
 
 interface RoomPlayer {
   userId: string;
@@ -267,6 +281,126 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [isHost, setIsHost] = useState(false);
   const [savedWordsNotice, setSavedWordsNotice] = useState<string | null>(null);
 
+  // Arena Theme & Dynamic Background
+  const [arenaTheme, setArenaTheme] = useState<ArenaBackgroundTheme>('esports');
+  // Round Valid Submissions (Top Answers This Round & Question Analytics)
+  const [roundSubmissions, setRoundSubmissions] = useState<RoundSubmissionItem[]>([]);
+  // Responsive Tab for Mobile Screen
+  const [mobileArenaTab, setMobileArenaTab] = useState<'stage' | 'analytics' | 'round_top' | 'arena_ranking' | 'comments'>('stage');
+  // 9:16 Vertical Live Mobile Broadcast Tab
+  const [mobileLiveTab, setMobileLiveTab] = useState<'stage' | 'analytics' | 'ranking' | 'comments'>('stage');
+  // Desktop Right Sidebar Tab Switcher
+  const [rightPanelTab, setRightPanelTab] = useState<'ranking' | 'comments'>('ranking');
+  // Mobile Floating Drawer State
+  const [isMobileCommentDrawerOpen, setIsMobileCommentDrawerOpen] = useState<boolean>(false);
+  // Sound popover
+  const [showSoundPopover, setShowSoundPopover] = useState<boolean>(false);
+  // Correct Answer Celebration Particles & Banner State
+  const [celebrationData, setCelebrationData] = useState<{
+    show: boolean;
+    score: number;
+    streak: number;
+    speedMs: number | null;
+  }>({
+    show: false,
+    score: 0,
+    streak: 0,
+    speedMs: null,
+  });
+
+  // Calculate combined votes per option (A, B, C, D)
+  const combinedVotes = useMemo(() => {
+    const votes: Record<string, number> = { A: 0, B: 0, C: 0, D: 0 };
+    ['A', 'B', 'C', 'D'].forEach((letter) => {
+      const subCount = roundSubmissions.filter(
+        (s) => (s.answer || '').trim().toUpperCase() === letter,
+      ).length;
+      const liveCount = optionVotes[letter] || 0;
+      votes[letter] = Math.max(subCount, liveCount);
+    });
+    return votes;
+  }, [roundSubmissions, optionVotes]);
+
+  // Derived Top Commenters Leaderboard for ArenaRankingPanel
+  const arenaRankCommenters: ArenaRankPlayer[] = useMemo(() => {
+    const map = new Map<string, { username: string; displayName: string; avatar: string; score: number; correctCount: number }>();
+    liveComments.forEach((c) => {
+      const key = c.username || c.displayName;
+      const existing = map.get(key) || {
+        username: key,
+        displayName: c.displayName || c.username,
+        avatar: c.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${key}`,
+        score: 0,
+        correctCount: 0,
+      };
+      if (c.scoreAdded) existing.score += c.scoreAdded;
+      if (c.isCorrect) existing.correctCount += 1;
+      map.set(key, existing);
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.score - a.score || b.correctCount - a.correctCount)
+      .map((c, idx) => ({
+        userId: `commenter-${c.username}`,
+        displayName: c.displayName,
+        avatar: c.avatar,
+        score: c.score,
+        streak: 0,
+        bestStreak: 0,
+        correctCount: c.correctCount,
+        rank: idx + 1,
+        isCommenter: true,
+      }));
+  }, [liveComments]);
+
+  // Handle send comment from ArenaCommentPanel
+  const handleSendArenaComment = (text: string) => {
+    if (!socket || !text.trim()) return;
+    const myName = (user as any)?.name || user?.displayName || myPlayer?.displayName || 'Khán giả';
+    socket.emit('room:send_mock_comment', {
+      roomCode,
+      username: myName,
+      displayName: myName,
+      commentText: text.trim(),
+    });
+  };
+
+  // Calculate realtime percentage of any option based on player submissions + live audience votes
+  const getOptionPercentage = useCallback((letter: string): number | undefined => {
+    const norm = (letter || '').trim().toUpperCase();
+    const subCount = roundSubmissions.filter(
+      (s) => (s.answer || '').trim().toUpperCase() === norm,
+    ).length;
+    const liveCount = optionVotes[norm] || 0;
+    const count = Math.max(subCount, liveCount);
+
+    const totalSubs = roundSubmissions.filter((s) =>
+      ['A', 'B', 'C', 'D'].includes((s.answer || '').trim().toUpperCase()),
+    ).length;
+    const totalVotes = Object.values(optionVotes).reduce((a, b) => a + b, 0);
+    const total = Math.max(totalSubs, totalVotes);
+
+    if (total <= 0) return undefined;
+    return (count / total) * 100;
+  }, [roundSubmissions, optionVotes]);
+
+  // Auto-theme mapping when question category changes
+  useEffect(() => {
+    if (question?.category) {
+      const cat = question.category.toLowerCase();
+      if (cat.includes('business') || cat.includes('toeic') || cat.includes('work') || cat.includes('finance')) {
+        setArenaTheme('business');
+      } else if (cat.includes('science') || cat.includes('tech') || cat.includes('academic') || cat.includes('stem')) {
+        setArenaTheme('science');
+      } else if (cat.includes('travel') || cat.includes('culture') || cat.includes('world') || cat.includes('country')) {
+        setArenaTheme('travel');
+      } else if (cat.includes('nature') || cat.includes('animal') || cat.includes('environment') || cat.includes('life')) {
+        setArenaTheme('nature');
+      } else {
+        setArenaTheme('esports');
+      }
+    }
+  }, [question?.category]);
+
   // Dynamic game type detection
   const isListeningGame = useMemo(() => {
     return (
@@ -288,6 +422,99 @@ export const RealtimeGameRoomPage: React.FC = () => {
     );
   }, [gameMode, question]);
 
+  // Question Analytics: Option Breakdown
+  const optionsAnalytics: AnswerVoteDetail[] = useMemo(() => {
+    if (!question?.options || question.options.length < 2) return [];
+    const totalVotes = roundSubmissions.length;
+
+    return ['A', 'B', 'C', 'D'].slice(0, question.options.length).map((letter, idx) => {
+      const respondents = roundSubmissions.filter(
+        (s) => s.answer.toUpperCase() === letter,
+      );
+      const count = respondents.length;
+      const percentage = totalVotes > 0 ? (count / totalVotes) * 100 : 0;
+      const isCorrect = typeof question.correctOptionIndex === 'number'
+        ? question.correctOptionIndex === idx
+        : roundSummary?.correctOptionIndex === idx;
+
+      return {
+        optionLetter: letter,
+        text: question.options?.[idx] ? question.options[idx].replace(/^[ABCD][\.\:]\s*/i, '') : '',
+        count,
+        percentage,
+        isCorrect,
+        respondents: respondents.map((r) => ({
+          userId: r.userId,
+          displayName: r.displayName,
+          avatarUrl: r.avatarUrl,
+          isCorrect: r.isCorrect,
+          speedMs: r.responseTimeMs,
+        })),
+      };
+    });
+  }, [question, roundSubmissions, roundSummary]);
+
+  // Question Analytics: Text Grouped Breakdown (Fill in blank)
+  const textAnalytics: GroupedTextAnswer[] = useMemo(() => {
+    if (!isFillBlankGame) return [];
+    const groups = new Map<string, RoundSubmissionItem[]>();
+
+    roundSubmissions.forEach((sub) => {
+      const normalized = sub.answer.trim().toLowerCase().replace(/[.,!?;:]/g, '');
+      if (!groups.has(normalized)) {
+        groups.set(normalized, []);
+      }
+      groups.get(normalized)!.push(sub);
+    });
+
+    const total = roundSubmissions.length;
+    const target = (question?.targetWord || '').toLowerCase().trim();
+
+    return Array.from(groups.entries()).map(([word, items]) => ({
+      normalizedWord: word,
+      count: items.length,
+      percentage: total > 0 ? (items.length / total) * 100 : 0,
+      isCorrect: target ? word === target : items.some((i) => i.isCorrect),
+      respondents: items.map((r) => ({
+        userId: r.userId,
+        displayName: r.displayName,
+        avatarUrl: r.avatarUrl,
+        speedMs: r.responseTimeMs,
+      })),
+    }));
+  }, [isFillBlankGame, roundSubmissions, question]);
+
+  // Round KPIs
+  const roundCorrectCount = useMemo(
+    () => roundSubmissions.filter((s) => s.isCorrect === true).length,
+    [roundSubmissions],
+  );
+  const roundIncorrectCount = useMemo(
+    () => roundSubmissions.filter((s) => s.isCorrect === false).length,
+    [roundSubmissions],
+  );
+  const roundAccuracy = useMemo(() => {
+    const evaluated = roundCorrectCount + roundIncorrectCount;
+    return evaluated > 0 ? (roundCorrectCount / evaluated) * 100 : 0;
+  }, [roundCorrectCount, roundIncorrectCount]);
+
+  // Match Leaderboard mapping
+  const arenaRankPlayers: ArenaRankPlayer[] = useMemo(() => {
+    return players.map((p, idx) => ({
+      userId: p.userId,
+      displayName: p.displayName,
+      avatar: p.avatar,
+      score: p.score,
+      streak: p.streak,
+      bestStreak: p.bestStreak || p.streak,
+      correctCount: p.correctCount,
+      totalAnswered: (p.correctCount || 0) + (p.roundScore === 0 ? 1 : 0),
+      rank: p.rank || idx + 1,
+      rankChange: 0,
+      level: Math.floor(p.score / 1000) + 1,
+    }));
+  }, [players]);
+
   // Language definition
   const currentLangDef = useMemo(() => {
     return getLanguage(question?.languageCode || roomLanguageId) || activeLanguage;
@@ -296,12 +523,12 @@ export const RealtimeGameRoomPage: React.FC = () => {
   // Auto-unlock audio engine on user interaction
   useEffect(() => {
     const unlock = () => {
-      audioEngine.unlockAudio();
+      audioEngine.unlock();
     };
     window.addEventListener('click', unlock, { once: true });
     window.addEventListener('keydown', unlock, { once: true });
     window.addEventListener('touchstart', unlock, { once: true });
-    audioEngine.unlockAudio();
+    audioEngine.unlock();
     return () => {
       window.removeEventListener('click', unlock);
       window.removeEventListener('keydown', unlock);
@@ -424,6 +651,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
     s.on('round_started', (data: any) => {
       setRoomStatus('IN_ROUND');
       setCountdown(null);
+      playQuestionTransitionSound();
       setCurrentRound(data.round);
       setTotalRounds(data.totalRounds);
       setQuestion(data.question);
@@ -437,6 +665,8 @@ export const RealtimeGameRoomPage: React.FC = () => {
       setEvaluation(null);
       setRoundSummary(null);
       setRoundAnswerCount(0);
+      setRoundSubmissions([]);
+      setMobileArenaTab('stage');
       setOptionVotes({ A: 0, B: 0, C: 0, D: 0 });
       setShowWordPeek(false);
       setShowHint(false);
@@ -506,11 +736,38 @@ export const RealtimeGameRoomPage: React.FC = () => {
         ...prev.slice(0, 19),
       ]);
 
-      if (comment.parsedOption && ['A', 'B', 'C', 'D'].includes(comment.parsedOption)) {
+      if (comment.parsedOption && ['A', 'B', 'C', 'D'].includes(comment.parsedOption.toUpperCase())) {
+        const opt = comment.parsedOption.toUpperCase();
         setOptionVotes((prev) => ({
           ...prev,
-          [comment.parsedOption!]: (prev[comment.parsedOption!] || 0) + 1,
+          [opt]: (prev[opt] || 0) + 1,
         }));
+
+        const uId = comment.username || `c-${Date.now()}`;
+        const isOptCorrect = typeof question?.correctOptionIndex === 'number'
+          ? opt === OPTION_LETTERS[question.correctOptionIndex]
+          : Boolean(comment.isCorrect);
+
+        setRoundSubmissions((prev) => {
+          if (prev.some((s) => s.userId === uId || s.displayName === comment.displayName)) {
+            return prev;
+          }
+          return [
+            ...prev,
+            {
+              userId: uId,
+              displayName: comment.displayName || `@${comment.username}`,
+              avatarUrl: comment.avatarUrl,
+              answer: opt,
+              isCorrect: isOptCorrect,
+              scoreEarned: isOptCorrect ? (comment.scoreAdded || 600) : 0,
+              responseTimeMs: Math.floor(Math.random() * 2500 + 600),
+              streak: isOptCorrect ? 1 : 0,
+              rank: prev.length + 1,
+              timestamp: comment.timestamp || Date.now(),
+            },
+          ];
+        });
       }
     });
 
@@ -530,8 +787,30 @@ export const RealtimeGameRoomPage: React.FC = () => {
       setTimeout(() => {
         setIsCheckingAnswer(false);
         setEvaluation(data.evaluation);
+
+        const myId = user?.id || myPlayer?.userId || 'me';
+        setRoundSubmissions((prev) =>
+          prev.map((s) =>
+            s.userId === myId
+              ? {
+                  ...s,
+                  isCorrect: data.evaluation?.isCorrect,
+                  scoreEarned: data.evaluation?.score || s.scoreEarned,
+                  streak: data.currentStreak ?? s.streak,
+                }
+              : s,
+          ),
+        );
+
         if (data.evaluation?.isCorrect) {
-          playCorrectSound();
+          const streak = (data.currentStreak ?? myPlayer?.streak ?? 0) + 1;
+          playCorrectSound(streak);
+          setCelebrationData({
+            show: true,
+            score: data.evaluation?.score || 850,
+            streak,
+            speedMs: submissionReflexMs,
+          });
         } else {
           playWrongSound();
           if (question) {
@@ -568,14 +847,39 @@ export const RealtimeGameRoomPage: React.FC = () => {
     // Round Ended Summary
     s.on('round_ended', (data: any) => {
       setRoomStatus('ROUND_END');
-      setRoundSummary(data.summary);
+      setRoundSummary(data.summary || data);
       if (data.ranking) setPlayers(data.ranking);
+      playRoundEndSound();
     });
 
     // Ranking Update
     s.on('live_ranking_update', (data: any) => {
       if (data.ranking) setPlayers(data.ranking);
       if (data.roundAnswerCount !== undefined) setRoundAnswerCount(data.roundAnswerCount);
+      if (data.lastAnsweredBy && data.lastAnsweredBy.displayName) {
+        const pName = data.lastAnsweredBy.displayName;
+        const myName = (user as any)?.name || user?.displayName || myPlayer?.displayName || 'Bạn';
+        if (pName !== myName) {
+          setRoundSubmissions((prev) => {
+            if (prev.some((s) => s.displayName === pName)) return prev;
+            return [
+              ...prev,
+              {
+                userId: `p-${Date.now()}-${Math.random()}`,
+                displayName: pName,
+                avatarUrl: undefined,
+                answer: data.lastAnsweredBy.isCorrect ? 'A' : 'B',
+                isCorrect: data.lastAnsweredBy.isCorrect,
+                scoreEarned: data.lastAnsweredBy.scoreAdded || 0,
+                responseTimeMs: Math.floor(Math.random() * 2000 + 800),
+                streak: data.lastAnsweredBy.streak || 0,
+                rank: prev.length + 1,
+                timestamp: Date.now(),
+              },
+            ];
+          });
+        }
+      }
     });
 
     // Game Finished
@@ -599,23 +903,36 @@ export const RealtimeGameRoomPage: React.FC = () => {
     };
   }, [roomId, gameMode, urlLang, activeLanguage?.id]);
 
-  // Round Timer countdown
+  // Round Timer countdown with dynamic urgent BGM pacing
   useEffect(() => {
-    if (roomStatus !== 'IN_ROUND') return;
+    if (roomStatus !== 'IN_ROUND') {
+      liveBgmEngine.setUrgent(false);
+      return;
+    }
     const timer = setInterval(() => {
       setTimerRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
+          liveBgmEngine.setUrgent(false);
           return 0;
         }
-        if (prev === 4) {
+        if (prev <= 4) {
+          liveBgmEngine.setUrgent(true);
+          playWarningTickSound(prev - 1);
+        } else if (prev <= 6) {
+          liveBgmEngine.setUrgent(true);
           playCountdownTickSound();
+        } else {
+          liveBgmEngine.setUrgent(false);
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      liveBgmEngine.setUrgent(false);
+    };
   }, [roomStatus]);
 
   // Keyboard Navigation: 1/2/3/4 or A/B/C/D to answer, Space for audio
@@ -701,9 +1018,54 @@ export const RealtimeGameRoomPage: React.FC = () => {
     const elapsedMs = Math.max(250, (roundDuration - timerRemaining) * 1000);
     setSubmissionReflexMs(elapsedMs);
 
+    const isKnownCorrect = typeof question?.correctOptionIndex === 'number'
+      ? question.correctOptionIndex === index
+      : undefined;
+
+    const myId = user?.id || myPlayer?.userId || 'me';
+    const myName = (user as any)?.name || user?.displayName || myPlayer?.displayName || 'Bạn';
+    const myAvatar = user?.avatar || myPlayer?.avatar;
+    const initialScore = isKnownCorrect ? 700 + Math.max(0, Math.round((1 - elapsedMs / 15000) * 300)) : 0;
+
+    if (isKnownCorrect === true) {
+      playCorrectSound((myPlayer?.streak || 0) + 1);
+      setCelebrationData({
+        show: true,
+        score: initialScore,
+        streak: (myPlayer?.streak || 0) + 1,
+        speedMs: elapsedMs,
+      });
+    } else if (isKnownCorrect === false) {
+      playWrongSound();
+    }
+
+    setOptionVotes((prev) => ({
+      ...prev,
+      [chosenLetter]: (prev[chosenLetter] || 0) + 1,
+    }));
+
+    setRoundSubmissions((prev) => {
+      if (prev.some((s) => s.userId === myId)) return prev;
+      return [
+        {
+          userId: myId,
+          displayName: myName,
+          avatarUrl: myAvatar,
+          answer: chosenLetter,
+          isCorrect: isKnownCorrect,
+          scoreEarned: initialScore,
+          responseTimeMs: elapsedMs,
+          streak: (myPlayer?.streak || 0) + (isKnownCorrect ? 1 : 0),
+          rank: prev.length + 1,
+          timestamp: Date.now(),
+        },
+        ...prev,
+      ];
+    });
+
     socket.emit('submit_answer', {
       roomCode,
-      userId: user?.id || myPlayer?.userId,
+      userId: myId,
       answer: chosenLetter,
     });
   };
@@ -718,9 +1080,48 @@ export const RealtimeGameRoomPage: React.FC = () => {
     const elapsedMs = Math.max(250, (roundDuration - timerRemaining) * 1000);
     setSubmissionReflexMs(elapsedMs);
 
+    const myId = user?.id || myPlayer?.userId || 'me';
+    const myName = (user as any)?.name || user?.displayName || myPlayer?.displayName || 'Bạn';
+    const myAvatar = user?.avatar || myPlayer?.avatar;
+
+    const normalizedInput = answerInput.trim().toLowerCase();
+    const targetWord = (question?.targetWord || '').toLowerCase().trim();
+    const isKnownCorrect = targetWord ? normalizedInput === targetWord : undefined;
+
+    if (isKnownCorrect === true) {
+      playCorrectSound((myPlayer?.streak || 0) + 1);
+      setCelebrationData({
+        show: true,
+        score: 800,
+        streak: (myPlayer?.streak || 0) + 1,
+        speedMs: elapsedMs,
+      });
+    } else if (isKnownCorrect === false) {
+      playWrongSound();
+    }
+
+    setRoundSubmissions((prev) => {
+      if (prev.some((s) => s.userId === myId)) return prev;
+      return [
+        {
+          userId: myId,
+          displayName: myName,
+          avatarUrl: myAvatar,
+          answer: answerInput.trim(),
+          isCorrect: isKnownCorrect,
+          scoreEarned: isKnownCorrect ? 800 : 0,
+          responseTimeMs: elapsedMs,
+          streak: (myPlayer?.streak || 0) + (isKnownCorrect ? 1 : 0),
+          rank: prev.length + 1,
+          timestamp: Date.now(),
+        },
+        ...prev,
+      ];
+    });
+
     socket.emit('submit_answer', {
       roomCode,
-      userId: user?.id || myPlayer?.userId,
+      userId: myId,
       answer: answerInput.trim(),
     });
   };
@@ -889,19 +1290,28 @@ export const RealtimeGameRoomPage: React.FC = () => {
   return (
     <div
       ref={roomPageRef}
-      className={`h-screen max-h-screen overflow-hidden text-slate-100 relative flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white ${
-        isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen' : ''
+      className={`min-h-screen h-fit max-h-none overflow-visible overflow-x-hidden text-slate-100 relative flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white ${
+        isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen overflow-y-auto' : ''
       } bg-gradient-to-br from-[#0c1228] via-[#090d1e] to-[#050711]`}
     >
       {/* ======================================================== */}
-      {/* LUMINOUS STUDIO ARENA AMBIENT BACKGROUND                 */}
+      {/* DYNAMIC PROCEDURAL ARENA BACKGROUND                      */}
       {/* ======================================================== */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 -left-40 w-[36rem] h-[36rem] bg-indigo-600/15 rounded-full blur-[140px] animate-pulse" />
-        <div className="absolute top-1/4 -right-40 w-[34rem] h-[34rem] bg-rose-600/15 rounded-full blur-[160px] animate-pulse delay-1000" />
-        <div className="absolute -bottom-40 left-1/3 w-[32rem] h-[32rem] bg-cyan-600/10 rounded-full blur-[150px] animate-pulse delay-700" />
-        <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-80" />
-      </div>
+      <ArenaDynamicBackground
+        theme={arenaTheme}
+        category={question?.category}
+        languageId={roomLanguageId}
+        gameState={roomStatus}
+      />
+
+      {/* Correct Answer Celebration Confetti & Hero Banner */}
+      <ArenaCelebrationOverlay
+        show={celebrationData.show}
+        score={celebrationData.score}
+        streak={celebrationData.streak}
+        speedMs={celebrationData.speedMs}
+        onComplete={() => setCelebrationData((prev) => ({ ...prev, show: false }))}
+      />
 
       {/* Floating Saved Word Toast */}
       {savedWordsNotice && (
@@ -946,6 +1356,24 @@ export const RealtimeGameRoomPage: React.FC = () => {
                   <CountryFlag languageId={currentLangDef?.id || roomLanguageId} size="xs" />
                   <span className="hidden sm:inline">{currentLangDef?.name || 'Từ vựng'}</span>
                 </span>
+
+                {/* Procedural Dynamic Theme Selector */}
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#12182B] border border-white/10 text-xs font-bold text-slate-300 shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-[#947AFF]" />
+                  <span className="hidden sm:inline text-[#929CB4] text-[10px] uppercase font-bold">Theme:</span>
+                  <select
+                    value={arenaTheme}
+                    onChange={(e) => setArenaTheme(e.target.value as ArenaBackgroundTheme)}
+                    className="bg-transparent text-white font-bold text-xs outline-none cursor-pointer"
+                    title="Đổi chủ đề nền đấu trường"
+                  >
+                    <option value="esports" className="bg-[#12182B] text-white">⚡ Esports</option>
+                    <option value="business" className="bg-[#12182B] text-white">💼 Business</option>
+                    <option value="science" className="bg-[#12182B] text-white">🔬 Science</option>
+                    <option value="travel" className="bg-[#12182B] text-white">✈️ Travel</option>
+                    <option value="nature" className="bg-[#12182B] text-white">🌿 Nature</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold pt-0.5">
@@ -1048,18 +1476,56 @@ export const RealtimeGameRoomPage: React.FC = () => {
               </button>
             )}
 
-            {/* BGM Toggle */}
-            <button
-              onClick={toggleBgm}
-              className={`p-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                isBgmActive
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/20'
-                  : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
-              }`}
-              title={isBgmActive ? 'Tắt nhạc nền BGM' : 'Bật nhạc nền sống động (BGM)'}
-            >
-              {isBgmActive ? <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
-            </button>
+            {/* BGM Toggle & Volume Control */}
+            <div className="relative flex items-center">
+              <button
+                onClick={toggleBgm}
+                className={`p-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                  isBgmActive
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/20'
+                    : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
+                }`}
+                title={isBgmActive ? 'Tắt nhạc nền BGM' : 'Bật nhạc nền sống động (BGM)'}
+              >
+                {isBgmActive ? <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSoundPopover((prev) => !prev)}
+                className="p-1.5 text-slate-400 hover:text-white transition cursor-pointer"
+                title="Cài đặt âm lượng"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+              </button>
+              {showSoundPopover && (
+                <div className="absolute right-0 top-full mt-2 w-48 p-3 rounded-2xl bg-slate-900 border border-white/10 shadow-2xl z-50 space-y-2 backdrop-blur-xl">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
+                    <span>Âm lượng BGM</span>
+                    <span className="font-mono text-emerald-400">{Math.round(bgmVolume * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={bgmVolume}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      setBgmVolume(v);
+                      liveBgmEngine.setVolume(v);
+                      if (v > 0 && !isBgmActive) {
+                        liveBgmEngine.start();
+                        setIsBgmActive(true);
+                      } else if (v === 0 && isBgmActive) {
+                        liveBgmEngine.stop();
+                        setIsBgmActive(false);
+                      }
+                    }}
+                    className="w-full accent-emerald-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Fullscreen Button */}
             <button
@@ -1287,9 +1753,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 /* ======================================================== */
                 <div className="max-w-[420px] w-full mx-auto h-[calc(100vh-110px)] max-h-[820px] flex flex-col justify-between relative bg-slate-950/95 border-2 border-rose-500/40 rounded-3xl shadow-[0_0_60px_rgba(244,63,94,0.35)] p-3.5 overflow-hidden backdrop-blur-2xl animate-fade-in my-auto">
                   {/* 1. Mobile Live Header Overlay */}
-                  <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="relative shrink-0">
                         <img
                           src={myPlayer?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=host'}
                           alt="Host"
@@ -1299,124 +1765,275 @@ export const RealtimeGameRoomPage: React.FC = () => {
                           LIVE
                         </span>
                       </div>
-                      <div className="min-w-0">
-                        <span className="font-bold text-xs text-white truncate block max-w-[100px]">
-                          {roomTitle}
-                        </span>
-                        <span className="text-[10px] text-rose-300 font-semibold flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-                          👁️ {players.length * 15 + 180} xem
-                        </span>
-                      </div>
+                      <span className="font-black text-xs text-white truncate max-w-[110px] block">
+                        {roomTitle}
+                      </span>
                     </div>
 
-                    {/* Prominent Legible Room PIN Banner */}
+                    {/* Viewers & Comments Stats with Clean Spacing (Not Cramped) */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[10px] font-mono font-black text-rose-300 flex items-center gap-1 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                        <span>👁️ {players.length * 15 + 180}</span>
+                      </span>
+                      <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-[10px] font-mono font-black text-indigo-300 flex items-center gap-1 shadow-sm">
+                        <span>💬 {liveComments.length}</span>
+                      </span>
+
+                      {/* Prominent Legible Room PIN Banner */}
+                      <button
+                        type="button"
+                        onClick={copyRoomCode}
+                        className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400/60 text-amber-300 font-mono font-black text-xs flex items-center gap-1 shadow-md transition cursor-pointer"
+                        title="Nhấn để sao chép mã PIN vào phòng"
+                      >
+                        <span className="text-[9px] uppercase text-amber-400 font-sans font-black">PIN:</span>
+                        <span className="text-white font-bold">#{roomCode}</span>
+                        {isCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Top Mobile Mode Navigation Tabs */}
+                  <div className="flex items-center bg-slate-900/90 p-1 rounded-2xl border border-white/10 shrink-0 my-1 gap-1">
                     <button
                       type="button"
-                      onClick={copyRoomCode}
-                      className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400/60 text-amber-300 font-mono font-black text-xs flex items-center gap-1 shadow-md transition cursor-pointer"
-                      title="Nhấn để sao chép mã PIN vào phòng"
+                      onClick={() => setMobileLiveTab('stage')}
+                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition cursor-pointer ${
+                        mobileLiveTab === 'stage'
+                          ? 'bg-rose-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
                     >
-                      <span className="text-[9px] uppercase text-amber-400 font-sans font-black">PIN:</span>
-                      <span className="text-white font-bold">#{roomCode}</span>
-                      {isCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
+                      🎯 CÂU HỎI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileLiveTab('analytics')}
+                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1 cursor-pointer ${
+                        mobileLiveTab === 'analytics'
+                          ? 'bg-rose-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>📊 TỶ LỆ</span>
+                      {roundSubmissions.length > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 text-[9px] font-mono">
+                          {roundSubmissions.length}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileLiveTab('ranking')}
+                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1 cursor-pointer ${
+                        mobileLiveTab === 'ranking'
+                          ? 'bg-rose-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>🏆 BXH</span>
+                      <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-300 text-[9px] font-mono">
+                        {players.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileLiveTab('comments')}
+                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1 cursor-pointer ${
+                        mobileLiveTab === 'comments'
+                          ? 'bg-rose-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>💬 CHAT</span>
+                      {liveComments.length > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-300 text-[9px] font-mono">
+                          {liveComments.length}
+                        </span>
+                      )}
                     </button>
                   </div>
 
-                  {/* 2. Question Centerpiece & Fast Reflex Timer */}
-                  <div className="flex-1 flex flex-col justify-center py-2 space-y-2 overflow-hidden">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono font-black px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px]">
-                        CÂU {currentRound}/{totalRounds}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <CountdownRing
-                          remainingSec={timerRemaining}
-                          totalSec={roundDuration}
-                          size={36}
-                          strokeWidth={3}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => playQuestionAudio(displayWord)}
-                          className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 transition cursor-pointer"
-                          title="Phát âm từ vựng"
-                        >
-                          <Volume2 className={`w-4 h-4 text-indigo-300 ${isPlayingAudio ? 'animate-spin' : ''}`} />
-                        </button>
-                      </div>
+                  {/* Content Area Based on Tab */}
+                  {mobileLiveTab === 'analytics' ? (
+                    <div className="flex-1 overflow-y-auto py-2 space-y-3 pr-1 text-xs">
+                      <QuestionAnalyticsPanel
+                        totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
+                        roundAnswerCount={roundSubmissions.length}
+                        correctCount={roundCorrectCount}
+                        incorrectCount={roundIncorrectCount}
+                        accuracy={roundAccuracy}
+                        optionsAnalytics={optionsAnalytics}
+                        textAnalytics={textAnalytics}
+                        isFillInTheBlank={Boolean(isFillBlankGame)}
+                        correctOptionIndex={question.correctOptionIndex}
+                      />
                     </div>
+                  ) : mobileLiveTab === 'ranking' ? (
+                    <div className="flex-1 overflow-y-auto py-2 space-y-3 pr-1 text-xs">
+                      <ArenaRankingPanel
+                        players={arenaRankPlayers}
+                        currentUserId={user?.id || myPlayer?.userId}
+                        totalParticipants={players.length}
+                      />
+                    </div>
+                  ) : mobileLiveTab === 'comments' ? (
+                    <div className="flex-1 overflow-hidden py-1">
+                      <ArenaCommentPanel
+                        comments={liveComments}
+                        totalCommenters={arenaRankCommenters.length}
+                        isConnected={isConnected}
+                        onSendComment={handleSendArenaComment}
+                        className="h-full"
+                      />
+                    </div>
+                  ) : (
+                    /* 3. Question Centerpiece & Fast Reflex Timer (STAGE) */
+                    <div className="flex-1 flex flex-col justify-center py-1 space-y-2 overflow-hidden">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono font-black px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px]">
+                          CÂU {currentRound}/{totalRounds}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <CountdownRing
+                            remainingSec={timerRemaining}
+                            totalSec={roundDuration}
+                            size={36}
+                            strokeWidth={3}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => playQuestionAudio(displayWord)}
+                            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 transition cursor-pointer"
+                            title="Phát âm từ vựng"
+                          >
+                            <Volume2 className={`w-4 h-4 text-indigo-300 ${isPlayingAudio ? 'animate-spin' : ''}`} />
+                          </button>
+                        </div>
+                      </div>
 
-                    {/* Target Word Showcase */}
-                    <div className="text-center space-y-1 bg-slate-900/80 p-2.5 rounded-2xl border border-white/10">
-                      {displayWord && (
-                        <h2 className="font-black text-4xl sm:text-5xl text-white tracking-wide drop-shadow">
-                          {displayWord}
-                        </h2>
-                      )}
-                      {question.phonetic && (
-                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-indigo-300 font-mono text-[11px] font-bold border border-white/10">
-                          <span>/{question.phonetic}/</span>
+                      {/* Target Word Showcase */}
+                      <div className="text-center space-y-1 bg-slate-900/80 p-2.5 rounded-2xl border border-white/10">
+                        {displayWord && (
+                          <h2 className="font-black text-4xl sm:text-5xl text-white tracking-wide drop-shadow">
+                            {displayWord}
+                          </h2>
+                        )}
+                        {question.phonetic && (
+                          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-indigo-300 font-mono text-[11px] font-bold border border-white/10">
+                            <span>/{question.phonetic}/</span>
+                          </div>
+                        )}
+                        <p className="text-xs sm:text-sm font-bold text-slate-200 leading-snug line-clamp-2">
+                          {question.prompt}
+                        </p>
+                      </div>
+
+                      {/* Options 4-Choice Cards (2:2 Grid on Mobile) */}
+                      {question.options && question.options.length >= 2 && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          {question.options.map((optText, idx) => {
+                            const letter = OPTION_LETTERS[idx] || 'A';
+                            const isSelected = selectedOptionIndex === idx;
+                            const cleanText = optText.replace(/^[ABCD][\.\:]\s*/i, '');
+                            const percent = getOptionPercentage(letter);
+
+                            const isKnownCorrect = typeof question.correctOptionIndex === 'number'
+                              ? question.correctOptionIndex === idx
+                              : roundSummary?.correctOptionIndex === idx;
+
+                            let cardState: AnswerCardState = 'idle';
+                            if (evaluation || roundSummary) {
+                              if (isSelected && (evaluation?.isCorrect || isKnownCorrect)) {
+                                cardState = 'correct';
+                              } else if (isSelected && (!evaluation?.isCorrect && !isKnownCorrect)) {
+                                cardState = 'incorrect';
+                              } else if (isKnownCorrect) {
+                                cardState = 'correct';
+                              } else {
+                                cardState = 'disabled';
+                              }
+                            } else if (hasSubmitted) {
+                              cardState = isSelected ? 'selected' : 'locked';
+                            } else if (isSelected) {
+                              cardState = 'selected';
+                            }
+
+                            return (
+                              <AnswerCard
+                                key={idx}
+                                optionLetter={letter}
+                                text={cleanText}
+                                state={cardState}
+                                percentVote={percent}
+                                onClick={() => handleSelectOption(idx)}
+                                disabled={hasSubmitted || isEliminated}
+                              />
+                            );
+                          })}
                         </div>
                       )}
-                      <p className="text-xs sm:text-sm font-bold text-slate-200 leading-snug line-clamp-2">
-                        {question.prompt}
-                      </p>
+
+                      {/* Real-time Answer Percentage Bar (Live Distribution) */}
+                      {question.options && question.options.length >= 2 && (
+                        <div className="p-2 rounded-xl bg-slate-900/90 border border-white/10 space-y-1 shrink-0">
+                          <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
+                            <span className="flex items-center gap-1 text-indigo-300">
+                              <BarChart3 className="w-3 h-3 text-indigo-400" />
+                              <span>Tỷ Lệ Đáp Án Trực Tiếp</span>
+                            </span>
+                            <span className="text-emerald-400 font-mono font-bold">
+                              {roundSubmissions.length} bình chọn
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1 text-center font-mono font-bold text-[11px]">
+                            {['A', 'B', 'C', 'D'].slice(0, question.options.length).map((letter) => {
+                              const pct = Math.round(getOptionPercentage(letter) || 0);
+                              return (
+                                <div key={letter} className="bg-slate-950/80 py-0.5 px-1 rounded-lg border border-white/5 flex items-center justify-between">
+                                  <span className="text-slate-400 text-[10px]">{letter}:</span>
+                                  <span className="text-white">{pct}%</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Compact Live Leaderboard Bar */}
+                      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-[11px] shrink-0">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span className="font-bold text-slate-300 truncate">
+                            Top 1: <strong className="text-amber-300">{top1?.displayName || 'Đang đấu'}</strong> ({top1?.score || 0} XP)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMobileLiveTab('ranking')}
+                          className="text-[10px] font-black text-indigo-300 hover:text-white underline shrink-0 cursor-pointer"
+                        >
+                          Xem BXH ›
+                        </button>
+                      </div>
+
+                      {/* Evaluation result */}
+                      {evaluation && (
+                        <div className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-between ${
+                          evaluation.isCorrect ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-200' : 'bg-rose-950/70 border-rose-500/40 text-rose-200'
+                        }`}>
+                          <span>{evaluation.feedbackText}</span>
+                          <span className="font-mono font-black text-amber-300">+{evaluation.score} XP</span>
+                        </div>
+                      )}
                     </div>
+                  )}
 
-                    {/* Options 4-Choice Cards */}
-                    {question.options && question.options.length >= 2 && (
-                      <div className="grid grid-cols-1 gap-1.5 pt-0.5">
-                        {question.options.map((optText, idx) => {
-                          const letter = OPTION_LETTERS[idx] || 'A';
-                          const isSelected = selectedOptionIndex === idx;
-                          const cleanText = optText.replace(/^[ABCD][\.\:]\s*/i, '');
-                          const votes = optionVotes[letter] || 0;
-                          const totalVotes = Object.values(optionVotes).reduce((a, b) => a + b, 0);
-                          const percent = totalVotes > 0 ? (votes / totalVotes) * 100 : undefined;
-
-                          let cardState: AnswerCardState = 'idle';
-                          if (evaluation) {
-                            if (evaluation.isCorrect && isSelected) cardState = 'correct';
-                            else if (!evaluation.isCorrect && isSelected) cardState = 'incorrect';
-                            else if (roundSummary?.correctOptionIndex === idx) cardState = 'correct';
-                            else cardState = 'disabled';
-                          } else if (hasSubmitted) {
-                            cardState = isSelected ? 'selected' : 'locked';
-                          } else if (isSelected) {
-                            cardState = 'selected';
-                          }
-
-                          return (
-                            <AnswerCard
-                              key={idx}
-                              optionLetter={letter}
-                              text={cleanText}
-                              state={cardState}
-                              percentVote={percent}
-                              onClick={() => handleSelectOption(idx)}
-                              disabled={hasSubmitted || isEliminated}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Evaluation result */}
-                    {evaluation && (
-                      <div className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-between ${
-                        evaluation.isCorrect ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-200' : 'bg-rose-950/70 border-rose-500/40 text-rose-200'
-                      }`}>
-                        <span>{evaluation.feedbackText}</span>
-                        <span className="font-mono font-black text-amber-300">+{evaluation.score} XP</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 3. Floating Live Comments Feed (TikTok Style) */}
-                  <div className="shrink-0 h-32 overflow-y-auto space-y-1 p-2 rounded-2xl bg-black/60 border border-white/10 text-xs">
+                  {/* 4. Floating Live Comments Feed (TikTok Style) */}
+                  <div className="shrink-0 h-28 overflow-y-auto space-y-1 p-2 rounded-2xl bg-black/60 border border-white/10 text-xs">
                     {liveComments.length === 0 ? (
-                      <div className="text-center py-5 text-slate-500 text-[11px] italic">
+                      <div className="text-center py-4 text-slate-500 text-[11px] italic">
                         Chưa có bình luận nào. Khán giả gõ A, B, C, D để bình chọn!
                       </div>
                     ) : (
@@ -1437,7 +2054,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
                   {/* Host Quick Controls */}
                   {isHost && (
-                    <div className="flex items-center gap-1.5 pt-2 shrink-0">
+                    <div className="flex items-center gap-1.5 pt-1.5 shrink-0">
                       <button
                         onClick={handleSimulateAudience}
                         className="flex-1 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-[11px] font-bold transition flex items-center justify-center gap-1"
@@ -1454,27 +2071,175 @@ export const RealtimeGameRoomPage: React.FC = () => {
                       </button>
                     </div>
                   )}
+
+                  {/* Popup Dịch Nghĩa & Giải Thích Trong Chế Độ Mobile Live */}
+                  {roundSummary && (
+                    <RoundResultModal
+                      result={{
+                        isCorrect: evaluation?.isCorrect || false,
+                        correctAnswerLetter:
+                          typeof roundSummary.correctOptionIndex === 'number'
+                            ? OPTION_LETTERS[roundSummary.correctOptionIndex] || 'A'
+                            : 'A',
+                        correctAnswerText: roundSummary.correctAnswer || '',
+                        explanation: roundSummary.explanation,
+                        phonetic: question.phonetic,
+                        exampleSentence: question.hint,
+                        earnedPoints: evaluation?.score || 0,
+                        basePoints: 700,
+                        speedBonus: evaluation?.speedBonus || 0,
+                        streakBonus: evaluation?.streakBonus || 0,
+                        roundMultiplier:
+                          gameMode === 'BOSS_ROUND'
+                            ? 2.0
+                            : gameMode === 'FINAL_SHOWDOWN'
+                            ? 3.0
+                            : 1.0,
+                        newStreak: myPlayer?.streak || 0,
+                        currentRank: myPlayer?.rank,
+                        onPlayAudio: () => playQuestionAudio(question.targetWord),
+                      }}
+                      countdownSec={countdown || undefined}
+                    />
+                  )}
                 </div>
               );
             }
 
             return (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* ---------------------------------------------------- */}
-            {/* MAIN GAME STAGE (Center Arena)                       */}
-            {/* ---------------------------------------------------- */}
-            <div
-              className={`${
-                roomMode === 'LIVE' ? 'lg:col-span-8' : 'lg:col-span-8 max-w-4xl mx-auto w-full'
-              } space-y-4 transition-all`}
-            >
-              {/* Question Stage Card (Sleek Glassmorphic Studio Screen) */}
-              <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/85 border border-white/10 shadow-2xl backdrop-blur-2xl space-y-5 relative overflow-hidden">
+              <div className="w-full flex flex-col gap-4">
+                {/* Mobile Responsive Arena Tab Switcher (Consolidated 4 Spacious Tabs) */}
+                <div className="lg:hidden flex items-center bg-[#12182B]/95 p-1 rounded-2xl border border-white/10 sticky top-0 z-30 shadow-2xl backdrop-blur-xl gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setMobileArenaTab('stage')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+                      mobileArenaTab === 'stage'
+                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🎯 ĐẤU TRƯỜNG
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileArenaTab('analytics')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1 cursor-pointer ${
+                      mobileArenaTab === 'analytics'
+                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>📊 TỶ LỆ</span>
+                    {roundSubmissions.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold">
+                        {roundSubmissions.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileArenaTab('arena_ranking')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1 cursor-pointer ${
+                      mobileArenaTab === 'arena_ranking'
+                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>🏆 XẾP HẠNG</span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-300 text-[10px] font-mono font-bold">
+                      {players.length}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileArenaTab('comments')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1 cursor-pointer ${
+                      mobileArenaTab === 'comments'
+                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>💬 BÌNH LUẬN</span>
+                    {liveComments.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-rose-500/30 text-rose-300 text-[10px] font-mono font-bold">
+                        {liveComments.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Mobile Analytics Tab View */}
+                {mobileArenaTab === 'analytics' && (
+                  <div className="lg:hidden space-y-4">
+                    <QuestionAnalyticsPanel
+                      totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
+                      roundAnswerCount={roundSubmissions.length}
+                      correctCount={roundCorrectCount}
+                      incorrectCount={roundIncorrectCount}
+                      accuracy={roundAccuracy}
+                      optionsAnalytics={optionsAnalytics}
+                      textAnalytics={textAnalytics}
+                      isFillInTheBlank={Boolean(isFillBlankGame)}
+                      correctOptionIndex={question.correctOptionIndex}
+                    />
+                  </div>
+                )}
+
+                {/* Mobile Comments Tab View */}
+                {mobileArenaTab === 'comments' && (
+                  <div className="lg:hidden h-[480px]">
+                    <ArenaCommentPanel
+                      comments={liveComments}
+                      totalCommenters={arenaRankCommenters.length}
+                      isConnected={isConnected}
+                      onSendComment={handleSendArenaComment}
+                      className="h-full"
+                    />
+                  </div>
+                )}
+
+                <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                  {/* ---------------------------------------------------- */}
+                  {/* MAIN GAME STAGE (Center Arena)                       */}
+                  {/* ---------------------------------------------------- */}
+                  <div
+                    className={`lg:col-span-8 space-y-4 transition-all ${
+                      mobileArenaTab !== 'stage' ? 'hidden lg:block' : ''
+                    }`}
+                  >
+              {/* Image 2 Top Arena Header: LIVE pill, Viewers, Neon Circular Countdown Timer, Score, Players, Settings */}
+              <ArenaInGameHeader
+                isLive={roomMode === 'LIVE'}
+                viewerCount={players.length > 50 ? `${(players.length / 1000).toFixed(1)}K` : '1.2K'}
+                remainingSeconds={timerRemaining}
+                totalDuration={roundDuration}
+                score={myPlayer?.score || top1?.score || 12850}
+                playerCount={players.length > 0 ? `${players.length}` : '1.2K'}
+                onOpenSettings={() => setIsLiveModalOpen(true)}
+              />
+
+              {/* Fast Statistics Bar (Participants, Round Answers, Correct, Leader) */}
+              <ArenaStatsBar
+                totalParticipants={players.length}
+                roundAnswerCount={roundAnswerCount || roundSubmissions.length}
+                correctCommentersCount={
+                  roundSummary?.correctCommentersCount ||
+                  liveComments.filter((c) => c.isCorrect).length
+                }
+                topPlayerName={top1?.displayName}
+                topPlayerScore={top1?.score}
+                myStreak={myPlayer?.streak}
+                myScore={myPlayer?.score}
+              />
+
+              {/* Question Stage Card (Sleek Glassmorphic Studio Screen with Neon Cyan Glow) */}
+              <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/90 border-2 border-cyan-400/80 shadow-[0_0_35px_rgba(6,182,212,0.35)] backdrop-blur-2xl space-y-5 relative overflow-hidden">
                 {/* Top Info Bar inside card */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                      CÂU {currentRound}/{totalRounds}
+                    <span className="font-mono text-xs font-black px-4 py-1 rounded-full bg-gradient-to-r from-indigo-950 via-purple-900 to-indigo-950 border border-cyan-400 text-cyan-200 tracking-wider uppercase shadow-md">
+                      CÂU HỎI {currentRound} / {totalRounds}
                     </span>
 
                     {/* Category pill */}
@@ -1690,42 +2455,93 @@ export const RealtimeGameRoomPage: React.FC = () => {
                     </form>
                   </div>
                 ) : question.options && question.options.length >= 2 ? (
-                  /* 4 Multiple Choice Options with Esports AnswerCard */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                  /* 4 Multiple Choice Options with Sleek Capsule Pills (Matching Image 2 Reference) */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-2">
                     {question.options.map((optText, idx) => {
                       const letter = OPTION_LETTERS[idx] || 'A';
                       const isSelected = selectedOptionIndex === idx;
                       const cleanText = optText.replace(/^[ABCD][\.\:]\s*/i, '');
-                      const votes = optionVotes[letter] || 0;
-                      const totalVotes = Object.values(optionVotes).reduce((a, b) => a + b, 0);
-                      const percent = totalVotes > 0 ? (votes / totalVotes) * 100 : undefined;
 
-                      let cardState: AnswerCardState = 'idle';
-                      if (evaluation) {
-                        if (evaluation.isCorrect && isSelected) cardState = 'correct';
-                        else if (!evaluation.isCorrect && isSelected) cardState = 'incorrect';
-                        else if (roundSummary?.correctOptionIndex === idx) cardState = 'correct';
-                        else cardState = 'disabled';
-                      } else if (hasSubmitted) {
-                        cardState = isSelected ? 'selected' : 'locked';
-                      } else if (isSelected) {
-                        cardState = 'selected';
-                      }
+                      const isKnownCorrect = typeof question.correctOptionIndex === 'number'
+                        ? question.correctOptionIndex === idx
+                        : roundSummary?.correctOptionIndex === idx;
+
+                      const isCorrect = Boolean(evaluation || roundSummary) && isKnownCorrect;
+                      const isIncorrect = Boolean(evaluation || roundSummary) && isSelected && !isKnownCorrect;
 
                       return (
-                        <AnswerCard
+                        <ArenaPillOptionButton
                           key={idx}
-                          optionLetter={letter}
+                          letter={letter}
                           text={cleanText}
-                          state={cardState}
-                          percentVote={roomMode === 'LIVE' ? percent : undefined}
-                          onClick={() => handleSelectOption(idx)}
+                          isSelected={isSelected}
+                          isCorrect={isCorrect}
+                          isIncorrect={isIncorrect}
                           disabled={hasSubmitted || isEliminated}
+                          onClick={() => handleSelectOption(idx)}
                         />
                       );
                     })}
                   </div>
                 ) : null}
+
+                {/* Image 2 Split Section: Left (📊 Thống kê lựa chọn) + Right (✅ Đáp án đúng & Giới thiệu) */}
+                {question.options && question.options.length >= 2 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                    <AnswerDistributionChart
+                      questionId={question.id || `q-${currentRound}`}
+                      options={question.options}
+                      totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
+                      roundAnswerCount={roundAnswerCount || roundSubmissions.length}
+                      votes={combinedVotes}
+                      revealed={Boolean(evaluation || roundSummary)}
+                      correctOptionIndex={
+                        typeof question.correctOptionIndex === 'number'
+                          ? question.correctOptionIndex
+                          : roundSummary?.correctOptionIndex
+                      }
+                      selectedOptionIndex={selectedOptionIndex}
+                    />
+
+                    <ArenaExplanationCard
+                      correctLetter={
+                        typeof question.correctOptionIndex === 'number'
+                          ? OPTION_LETTERS[question.correctOptionIndex]
+                          : roundSummary?.correctOptionIndex !== undefined
+                          ? OPTION_LETTERS[roundSummary.correctOptionIndex]
+                          : 'B'
+                      }
+                      correctText={
+                        typeof question.correctOptionIndex === 'number' && question.options
+                          ? question.options[question.correctOptionIndex]?.replace(/^[ABCD][\.\:]\s*/i, '')
+                          : question.targetWord || 'Paris'
+                      }
+                      explanation={
+                        question.hint ||
+                        (evaluation?.feedbackText ? `${evaluation.feedbackText}. ` : '') +
+                          (question.prompt || 'Paris là thủ đô của Pháp, là một trong những thành phố nổi tiếng nhất thế giới.')
+                      }
+                      landmarkSilhouette="eiffel"
+                    />
+                  </div>
+                )}
+
+                {/* Mobile Quick Rank Bar */}
+                <div className="lg:hidden flex items-center justify-between p-3 rounded-2xl bg-indigo-950/70 border border-indigo-500/30 text-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="font-bold text-slate-200 truncate">
+                      Hạng của bạn: <strong className="text-amber-300">#{myPlayer?.rank || 1}</strong> ({myPlayer?.score || 0} XP)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMobileArenaTab('arena_ranking')}
+                    className="font-black text-indigo-300 hover:text-white underline shrink-0 cursor-pointer"
+                  >
+                    Xem BXH ›
+                  </button>
+                </div>
 
                 {/* Checking Spinner */}
                 {isCheckingAnswer && (
@@ -1790,49 +2606,35 @@ export const RealtimeGameRoomPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* TikTok Live Mode: Live Audience Voting Distribution Meter */}
-                {roomMode === 'LIVE' && question.options && question.options.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-white/10 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                      <span className="flex items-center gap-1.5 text-rose-400">
-                        <TikTokColorLogo className="w-3.5 h-3.5" />
-                        <span>TỶ LỆ KHÁN GIẢ LIVESTREAM CHỌN (TIKTOK LIVE)</span>
-                      </span>
-                      <span className="text-slate-400">
-                        {liveComments.filter((c) => c.parsedOption).length} lượt bình luận
-                      </span>
+                {/* Explanation Banner (Only shown if explanation is present & non-empty) */}
+                {roundSummary?.explanation && roundSummary.explanation.trim().length > 0 && (
+                  <div className="p-4 rounded-2xl bg-indigo-950/70 border border-indigo-500/40 text-indigo-100 flex items-start gap-3 shadow-xl backdrop-blur-md animate-fade-in">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5">
+                      <Lightbulb className="w-4 h-4 text-amber-400" />
                     </div>
-
-                    <div className="grid grid-cols-4 gap-2 pt-1">
-                      {['A', 'B', 'C', 'D'].map((opt) => {
-                        const count = liveComments.filter((c) => c.parsedOption === opt).length;
-                        const total = liveComments.filter((c) => c.parsedOption).length || 1;
-                        const pct = Math.round((count / total) * 100);
-                        const colors: Record<string, string> = {
-                          A: 'from-blue-500 to-indigo-600',
-                          B: 'from-emerald-500 to-teal-600',
-                          C: 'from-amber-500 to-orange-600',
-                          D: 'from-rose-500 to-pink-600',
-                        };
-
-                        return (
-                          <div key={opt} className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px] font-bold">
-                              <span className="text-slate-300 font-mono">[{opt}]</span>
-                              <span className="text-white font-mono">{pct}%</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full bg-gradient-to-r ${colors[opt]} transition-all duration-300`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <div className="space-y-1">
+                      <span className="font-bold text-amber-300 block text-xs uppercase tracking-wider">
+                        Giải Thích Chi Tiết
+                      </span>
+                      <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
+                        {roundSummary.explanation}
+                      </p>
                     </div>
                   </div>
                 )}
+
+                {/* AREA A: QUESTION ANALYTICS */}
+                <QuestionAnalyticsPanel
+                  totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
+                  roundAnswerCount={roundSubmissions.length}
+                  correctCount={roundCorrectCount}
+                  incorrectCount={roundIncorrectCount}
+                  accuracy={roundAccuracy}
+                  optionsAnalytics={optionsAnalytics}
+                  textAnalytics={textAnalytics}
+                  isFillInTheBlank={Boolean(isFillBlankGame)}
+                  correctOptionIndex={question.correctOptionIndex}
+                />
               </div>
 
               {/* Round Summary & Context Sentence (Screen D: Round Result) */}
@@ -1865,189 +2667,132 @@ export const RealtimeGameRoomPage: React.FC = () => {
                   countdownSec={countdown || undefined}
                 />
               )}
+
+              {/* Mobile Floating Drawer on Stage */}
+              <div className="lg:hidden">
+                <ArenaCommentPanel
+                  comments={liveComments}
+                  totalCommenters={arenaRankCommenters.length}
+                  isConnected={isConnected}
+                  onSendComment={handleSendArenaComment}
+                  isMobileDrawerOpen={isMobileCommentDrawerOpen}
+                  onToggleMobileDrawer={() => setIsMobileCommentDrawerOpen((prev) => !prev)}
+                  className="hidden"
+                />
+              </div>
             </div>
 
             {/* ---------------------------------------------------- */}
-            {/* SIDEBAR (MODE DEPENDENT: STUDY STATS VS TIKTOK LIVE) */}
+            {/* RIGHT SIDEBAR: RANKING / COMMENTS / HOST CONTROLS    */}
             {/* ---------------------------------------------------- */}
-            <div className="lg:col-span-4 space-y-4">
-              {/* Leaderboard (Present in both modes) */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-white/10 shadow-xl backdrop-blur-xl space-y-3">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <h3 className="font-black text-xs uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                    <span>BẢNG XẾP HẠNG TRẬN ĐẤU</span>
-                  </h3>
-                  <span className="text-xs text-slate-400">{players.length} người</span>
-                </div>
-
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                  {players.slice(0, 6).map((p, idx) => (
-                    <div
-                      key={p.userId}
-                      className={`p-2 rounded-xl flex items-center justify-between border transition ${
-                        idx === 0
-                          ? 'bg-amber-500/10 border-amber-500/40 text-white'
-                          : idx === 1
-                          ? 'bg-slate-800/60 border-slate-400/30 text-white'
-                          : idx === 2
-                          ? 'bg-amber-950/20 border-amber-700/30 text-white'
-                          : 'bg-slate-950/40 border-white/5 text-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className={`w-5 text-center font-black text-xs ${
-                            idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-slate-300' : 'text-slate-500'
-                          }`}
-                        >
-                          #{idx + 1}
-                        </span>
-                        <img src={p.avatar} alt={p.displayName} className="w-7 h-7 rounded-lg bg-slate-800" />
-                        <div className="min-w-0">
-                          <span className="font-bold text-xs truncate max-w-[110px] block">
-                            {p.displayName} {p.userId === user?.id && '(Bạn)'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <span className="font-mono font-black text-xs text-amber-400">
-                          {p.score.toLocaleString()} XP
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <div
+              className={`lg:col-span-4 space-y-4 ${
+                mobileArenaTab === 'stage' ? 'hidden lg:block' : ''
+              }`}
+            >
+              {/* Desktop Sidebar Switcher Tab */}
+              <div className="flex items-center bg-[#12182B]/90 p-1 rounded-2xl border border-white/10 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab('ranking')}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    rightPanelTab === 'ranking'
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>Xếp Hạng</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightPanelTab('comments')}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    rightPanelTab === 'comments'
+                      ? 'bg-gradient-to-r from-rose-600 to-pink-500 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Bình Luận</span>
+                  {liveComments.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-white text-[10px] font-mono font-bold">
+                      {liveComments.length}
+                    </span>
+                  )}
+                </button>
               </div>
 
-              {/* MODE A: HỌC THƯỜNG — FOCUSED STUDY COMPASS (NO LIVE CHAT!) */}
-              {roomMode === 'STUDY' && (
-                <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-white/10 shadow-xl backdrop-blur-xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <span className="text-xs font-black uppercase text-indigo-400 flex items-center gap-1.5">
-                      <GraduationCap className="w-4 h-4" />
-                      <span>GHI CHÚ HỌC TẬP</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-400 font-bold">Chế độ Tập Trung</span>
-                  </div>
+              {rightPanelTab === 'ranking' ? (
+                <>
+                  {/* AREA B: TOP ANSWERS THIS ROUND */}
+                  {(mobileArenaTab === 'round_top' || mobileArenaTab === 'stage') && (
+                    <TopAnswersThisRound
+                      submissions={roundSubmissions}
+                      currentUserId={user?.id || myPlayer?.userId}
+                      totalSubmissions={roundSubmissions.length}
+                    />
+                  )}
 
-                  <div className="space-y-2 text-xs text-slate-300">
-                    <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-1">
-                      <div className="font-bold text-white flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Mẹo Phản Xạ Thần Tốc:</span>
-                      </div>
-                      <p className="text-slate-400 leading-relaxed text-[11px]">
-                        Nhấn phím <strong>1, 2, 3, 4</strong> hoặc <strong>A, B, C, D</strong> trên bàn phím để chọn đáp án ngay trong 3 giây đầu tiên nhằm nhận tối đa <strong>+200 XP thưởng tốc độ</strong>!
-                      </p>
-                    </div>
-
-                    <div className="p-3 rounded-2xl bg-slate-950/60 border border-white/5 space-y-1">
-                      <div className="font-bold text-white flex items-center gap-1.5">
-                        <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Luyện Âm & Bắt Tai:</span>
-                      </div>
-                      <p className="text-slate-400 leading-relaxed text-[11px]">
-                        Nhấn phím <strong>Space (khoảng trắng)</strong> bất cứ lúc nào để nghe lại phát âm bản xứ của từ vựng hiện tại.
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleBookmarkCurrentWord}
-                    className="w-full py-2.5 rounded-2xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  >
-                    <Bookmark className="w-3.5 h-3.5" />
-                    <span>Lưu Từ Này Vào Sổ Từ Vựng</span>
-                  </button>
-                </div>
+                  {/* AREA C: ARENA RANKING (MATCH LEADERBOARD) */}
+                  {(mobileArenaTab === 'arena_ranking' || mobileArenaTab === 'stage') && (
+                    <ArenaRankingPanel
+                      players={arenaRankPlayers}
+                      commenters={arenaRankCommenters}
+                      currentUserId={user?.id || myPlayer?.userId}
+                      totalParticipants={players.length}
+                    />
+                  )}
+                </>
+              ) : (
+                <ArenaCommentPanel
+                  comments={liveComments}
+                  totalCommenters={arenaRankCommenters.length}
+                  isConnected={isConnected}
+                  onSendComment={handleSendArenaComment}
+                  isMobileDrawerOpen={isMobileCommentDrawerOpen}
+                  onToggleMobileDrawer={() => setIsMobileCommentDrawerOpen((prev) => !prev)}
+                  className="h-[520px]"
+                />
               )}
 
-              {/* MODE B: TIKTOK LIVE ACTIVITY STREAM (ONLY IN LIVE MODE) */}
-              {roomMode === 'LIVE' && (
-                <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-white/10 shadow-xl backdrop-blur-xl space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <h3 className="font-black text-xs uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
-                      <TikTokColorLogo className="w-4 h-4" />
-                      <span>BÌNH LUẬN TIKTOK LIVE</span>
-                    </h3>
-                    <span className="text-[10px] text-slate-400">
-                      {liveStatus.status === 'CONNECTED' ? 'Đã kết nối' : 'Mock Dev Mode'}
+              {/* Host Quick Comment Simulator Bar (Only in Live Mode for Host) */}
+              {roomMode === 'LIVE' && isHost && (
+                <div className="p-3.5 rounded-3xl bg-[#12182B]/90 border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                    <span className="flex items-center gap-1.5 text-rose-400">
+                      <TikTokColorLogo className="w-3.5 h-3.5" />
+                      <span>GIẢ LẬP KHÁN GIẢ TIKTOK LIVE</span>
                     </span>
+                    <button
+                      type="button"
+                      onClick={handleSimulateAudience}
+                      className="px-2 py-0.5 rounded-lg bg-indigo-600/40 hover:bg-indigo-600 text-indigo-200 text-[10px] font-bold transition cursor-pointer"
+                    >
+                      +8 Khán Giả
+                    </button>
                   </div>
-
-                  {/* Comments feed container */}
-                  <div className="h-64 sm:h-72 overflow-y-auto space-y-2 pr-1 text-xs">
-                    {liveComments.length === 0 ? (
-                      <div className="text-center py-10 text-slate-500 italic text-xs space-y-2">
-                        <p>Chưa có bình luận nào.</p>
-                        {isHost && (
-                          <p className="text-[11px] text-indigo-400 not-italic">
-                            Nhấn nút "Giả Lập 8 Khán Giả" để kiểm tra luồng comment!
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      liveComments.map((c) => (
-                        <div
-                          key={c.eventId}
-                          className="p-2 rounded-xl bg-slate-950/70 border border-white/5 flex items-start gap-2.5 animate-fade-in"
-                        >
-                          <img
-                            src={c.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=viewer'}
-                            alt={c.username}
-                            className="w-7 h-7 rounded-lg bg-slate-800 shrink-0 mt-0.5"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-[11px] text-slate-300 truncate">
-                                {c.displayName || `@${c.username}`}
-                              </span>
-                              {c.parsedOption && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-600 text-white font-mono">
-                                  {c.parsedOption}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-white font-medium break-words mt-0.5">
-                              {c.commentText}
-                            </p>
-                            {c.isCorrect && (
-                              <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 pt-0.5">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Đúng! +{c.scoreAdded || 200} XP</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Host Quick Comment Simulator Bar */}
-                  {isHost && (
-                    <form onSubmit={handleSendCustomComment} className="flex items-center gap-1.5 pt-1">
-                      <input
-                        type="text"
-                        value={customCommentText}
-                        onChange={(e) => setCustomCommentText(e.target.value)}
-                        placeholder="Test comment: ví dụ A hoặc đáp án..."
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!customCommentText.trim()}
-                        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition disabled:opacity-40 cursor-pointer"
-                      >
-                        Gửi
-                      </button>
-                    </form>
-                  )}
+                  <form onSubmit={handleSendCustomComment} className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={customCommentText}
+                      onChange={(e) => setCustomCommentText(e.target.value)}
+                      placeholder="Gửi test comment: A, B, C, D..."
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!customCommentText.trim()}
+                      className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition disabled:opacity-40 cursor-pointer"
+                    >
+                      Gửi
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
           </div>
+        </div>
             );
           })()
         )}
@@ -2068,6 +2813,20 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 streak: p.streak,
                 rank: p.rank || i + 1,
               })),
+              fullLeaderboard: (finalResult?.ranking || players).map((p, i) => ({
+                id: p.userId,
+                name: p.displayName,
+                avatar: p.avatar,
+                score: p.score,
+                streak: p.streak,
+                rank: p.rank || i + 1,
+              })),
+              correctCommentersCount:
+                (finalResult as any)?.correctCommentersCount ||
+                liveComments.filter((c) => c.isCorrect).length,
+              totalCommentersCount:
+                (finalResult as any)?.totalCommentersCount ||
+                arenaRankCommenters.length,
               personalStats: myPlayer
                 ? {
                     finalRank: myPlayer.rank || 1,

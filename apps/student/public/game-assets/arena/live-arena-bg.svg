@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Background Base Gradient -->
+    <radialGradient id="arenaDeepGlow" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#141E3D" stop-opacity="0.85" />
+      <stop offset="45%" stop-color="#0B1124" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#04060E" stop-opacity="1" />
+    </radialGradient>
+
+    <!-- Stadium Spotlight Left (Cyan / Indigo) -->
+    <linearGradient id="spotlightLeft" x1="0%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.38" />
+      <stop offset="40%" stop-color="#6366F1" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#04060E" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Stadium Spotlight Right (Magenta / Violet) -->
+    <linearGradient id="spotlightRight" x1="100%" y1="0%" x2="30%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899" stop-opacity="0.32" />
+      <stop offset="45%" stop-color="#8B5CF6" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#04060E" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Top Overhead Center Beam (Championship Gold) -->
+    <linearGradient id="overheadGold" x1="50%" y1="0%" x2="50%" y2="80%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.25" />
+      <stop offset="50%" stop-color="#D97706" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#04060E" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Floor Perspective Grid Gradient -->
+    <linearGradient id="floorFade" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" stop-opacity="0" />
+      <stop offset="35%" stop-color="#334155" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0.38" />
+    </linearGradient>
+
+    <!-- Hexagon Pattern -->
+    <pattern id="arenaHexPattern" width="60" height="103.92" patternUnits="userSpaceOnUse" patternTransform="scale(1.2)">
+      <path d="M 30,0 L 60,17.32 L 60,51.96 L 30,69.28 L 0,51.96 L 0,17.32 Z M 0,103.92 L 30,86.6 L 60,103.92" 
+            fill="none" stroke="#475569" stroke-width="0.8" stroke-opacity="0.12" />
+    </pattern>
+
+    <!-- Glow Filter for Lighting Effects -->
+    <filter id="luminousGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="35" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- 1. Deep Arena Atmosphere Base -->
+  <rect width="1920" height="1080" fill="url(#arenaDeepGlow)" />
+
+  <!-- 2. Cyber Hexagonal Structural Grid (Upper Stage Dome) -->
+  <rect width="1920" height="720" fill="url(#arenaHexPattern)" opacity="0.75" />
+
+  <!-- 3. Stadium Overhead Trusses & Girders (Esports Arena Architecture) -->
+  <g opacity="0.35" stroke="#334155" stroke-width="1.5">
+    <!-- Top Horizontal Rafters -->
+    <line x1="0" y1="40" x2="1920" y2="40" />
+    <line x1="0" y1="75" x2="1920" y2="75" />
+    <line x1="0" y1="110" x2="1920" y2="110" />
+
+    <!-- Cross Rafter Bracing -->
+    <path d="M 0,40 L 80,75 L 160,40 L 240,75 L 320,40 L 400,75 L 480,40 L 560,75 L 640,40 L 720,75 L 800,40 L 880,75 L 960,40 L 1040,75 L 1120,40 L 1200,75 L 1280,40 L 1360,75 L 1440,40 L 1520,75 L 1600,40 L 1680,75 L 1760,40 L 1840,75 L 1920,40" />
+    <path d="M 0,75 L 80,110 L 160,75 L 240,110 L 320,75 L 400,110 L 480,75 L 560,110 L 640,75 L 720,110 L 800,75 L 880,110 L 960,75 L 1040,110 L 1120,75 L 1200,110 L 1280,75 L 1360,110 L 1440,75 L 1520,110 L 1600,75 L 1680,110 L 1760,75 L 1840,110 L 1920,75" />
+
+    <!-- Angled Stage Columns -->
+    <line x1="120" y1="0" x2="280" y2="600" stroke-width="2" />
+    <line x1="1800" y1="0" x2="1640" y2="600" stroke-width="2" />
+  </g>
+
+  <!-- 4. Volumetric Light Beams (Spotlights) -->
+  <!-- Left Side Projector Beams -->
+  <polygon points="120,40 680,1080 320,1080 80,40" fill="url(#spotlightLeft)" />
+  <polygon points="260,40 920,1080 620,1080 220,40" fill="url(#spotlightLeft)" opacity="0.6" />
+
+  <!-- Right Side Projector Beams -->
+  <polygon points="1800,40 1240,1080 1600,1080 1840,40" fill="url(#spotlightRight)" />
+  <polygon points="1660,40 1000,1080 1300,1080 1700,40" fill="url(#spotlightRight)" opacity="0.6" />
+
+  <!-- Overhead Center Golden Stage Light Cone -->
+  <polygon points="960,0 1320,850 600,850" fill="url(#overheadGold)" filter="url(#luminousGlow)" />
+
+  <!-- 5. Stage Floodlight Fixture Glows (Pinnacle Light Orbs) -->
+  <circle cx="120" cy="45" r="32" fill="#38BDF8" opacity="0.7" filter="url(#luminousGlow)" />
+  <circle cx="120" cy="45" r="8" fill="#FFFFFF" opacity="0.95" />
+
+  <circle cx="260" cy="45" r="26" fill="#6366F1" opacity="0.65" filter="url(#luminousGlow)" />
+  <circle cx="260" cy="45" r="6" fill="#FFFFFF" opacity="0.9" />
+
+  <circle cx="960" cy="35" r="38" fill="#F59E0B" opacity="0.65" filter="url(#luminousGlow)" />
+  <circle cx="960" cy="35" r="10" fill="#FFFBEB" opacity="0.95" />
+
+  <circle cx="1660" cy="45" r="26" fill="#8B5CF6" opacity="0.65" filter="url(#luminousGlow)" />
+  <circle cx="1660" cy="45" r="6" fill="#FFFFFF" opacity="0.9" />
+
+  <circle cx="1800" cy="45" r="32" fill="#EC4899" opacity="0.7" filter="url(#luminousGlow)" />
+  <circle cx="1800" cy="45" r="8" fill="#FFFFFF" opacity="0.95" />
+
+  <!-- 6. Esports Stage Ground Grid (Perspective Depth) -->
+  <g fill="none" stroke="url(#floorFade)" stroke-width="1.2">
+    <!-- Horizon Horizon Line -->
+    <line x1="0" y1="780" x2="1920" y2="780" stroke="#38BDF8" stroke-opacity="0.25" stroke-width="1.5" />
+    <line x1="0" y1="830" x2="1920" y2="830" />
+    <line x1="0" y1="890" x2="1920" y2="890" />
+    <line x1="0" y1="960" x2="1920" y2="960" stroke-width="1.8" />
+    <line x1="0" y1="1040" x2="1920" y2="1040" stroke-width="2.2" />
+
+    <!-- Vanishing Lines to Center Horizon (960, 780) -->
+    <line x1="960" y1="780" x2="120" y2="1080" />
+    <line x1="960" y1="780" x2="360" y2="1080" />
+    <line x1="960" y1="780" x2="600" y2="1080" />
+    <line x1="960" y1="780" x2="800" y2="1080" />
+    <line x1="960" y1="780" x2="960" y2="1080" stroke-width="1.5" />
+    <line x1="960" y1="780" x2="1120" y2="1080" />
+    <line x1="960" y1="780" x2="1320" y2="1080" />
+    <line x1="960" y1="780" x2="1560" y2="1080" />
+    <line x1="960" y1="780" x2="1800" y2="1080" />
+  </g>
+
+  <!-- 7. Bottom Stage Silhouette & Atmospheric Fog -->
+  <path d="M 0,840 Q 480,810 960,825 T 1920,840 L 1920,1080 L 0,1080 Z" fill="#04060E" opacity="0.65" />
+  <rect x="0" y="760" width="1920" height="320" fill="url(#arenaDeepGlow)" opacity="0.55" />
+
+  <!-- 8. Subtle Bokeh / Crowd Light Glows at Horizon -->
+  <g opacity="0.4" filter="url(#luminousGlow)">
+    <circle cx="480" cy="790" r="14" fill="#38BDF8" />
+    <circle cx="580" cy="800" r="10" fill="#6366F1" />
+    <circle cx="720" cy="795" r="12" fill="#818CF8" />
+    <circle cx="1200" cy="795" r="12" fill="#C084FC" />
+    <circle cx="1340" cy="800" r="10" fill="#E879F9" />
+    <circle cx="1440" cy="790" r="14" fill="#EC4899" />
+  </g>
+</svg>

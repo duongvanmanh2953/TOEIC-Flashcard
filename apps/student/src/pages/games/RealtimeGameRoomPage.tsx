@@ -64,6 +64,8 @@ import {
   playGameStartSound,
   playQuestionTransitionSound,
   playCountdownTickSound,
+  playWarningTickSound,
+  playRoundEndSound,
   playVictoryFanfare,
   liveBgmEngine,
   TikTokLogo,
@@ -93,6 +95,13 @@ import {
 } from '@vocabflow/shared';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { audioEngine } from '../../lib/audioEngine';
+import { ArenaInGameHeader } from './arena/ArenaInGameHeader';
+import { ArenaExplanationCard } from './arena/ArenaExplanationCard';
+import { ArenaBangVangCeremony } from './arena/ArenaBangVangCeremony';
+import { ArenaPillOptionButton } from './arena/ArenaPillOptionButton';
+import { AnswerDistributionChart } from './arena/AnswerDistributionChart';
+import { ArenaCommentPanel } from './arena/ArenaCommentPanel';
+import { ArenaDynamicBackground } from './arena/ArenaDynamicBackground';
 
 interface RoomPlayer {
   userId: string;
@@ -572,8 +581,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
     // Round Ended Summary
     s.on('round_ended', (data: any) => {
       setRoomStatus('ROUND_END');
-      setRoundSummary(data.summary);
+      setRoundSummary(data.summary || data);
       if (data.ranking) setPlayers(data.ranking);
+      playRoundEndSound();
     });
 
     // Ranking Update
@@ -612,7 +622,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
           clearInterval(timer);
           return 0;
         }
-        if (prev === 4) {
+        if (prev <= 4) {
+          playWarningTickSound(prev - 1);
+        } else if (prev <= 6) {
           playCountdownTickSound();
         }
         return prev - 1;
@@ -893,8 +905,8 @@ export const RealtimeGameRoomPage: React.FC = () => {
   return (
     <div
       ref={roomPageRef}
-      className={`h-screen max-h-screen overflow-hidden text-slate-100 relative flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white ${
-        isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen' : ''
+      className={`min-h-screen h-fit max-h-none overflow-visible overflow-x-hidden text-slate-100 relative flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white ${
+        isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen overflow-y-auto' : ''
       } bg-gradient-to-br from-[#0c1228] via-[#090d1e] to-[#050711]`}
     >
       {/* ======================================================== */}
@@ -1291,9 +1303,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 /* ======================================================== */
                 <div className="max-w-[420px] w-full mx-auto h-[calc(100vh-110px)] max-h-[820px] flex flex-col justify-between relative bg-slate-950/95 border-2 border-rose-500/40 rounded-3xl shadow-[0_0_60px_rgba(244,63,94,0.35)] p-3.5 overflow-hidden backdrop-blur-2xl animate-fade-in my-auto">
                   {/* 1. Mobile Live Header Overlay */}
-                  <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="relative shrink-0">
                         <img
                           src={myPlayer?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=host'}
                           alt="Host"
@@ -1303,28 +1315,30 @@ export const RealtimeGameRoomPage: React.FC = () => {
                           LIVE
                         </span>
                       </div>
-                      <div className="min-w-0">
-                        <span className="font-bold text-xs text-white truncate block max-w-[100px]">
-                          {roomTitle}
-                        </span>
-                        <span className="text-[10px] text-rose-300 font-semibold flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-                          👁️ {players.length * 15 + 180} xem
-                        </span>
-                      </div>
+                      <span className="font-black text-xs text-white truncate max-w-[110px] block">
+                        {roomTitle}
+                      </span>
                     </div>
 
-                    {/* Prominent Legible Room PIN Banner */}
-                    <button
-                      type="button"
-                      onClick={copyRoomCode}
-                      className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400/60 text-amber-300 font-mono font-black text-xs flex items-center gap-1 shadow-md transition cursor-pointer"
-                      title="Nhấn để sao chép mã PIN vào phòng"
-                    >
-                      <span className="text-[9px] uppercase text-amber-400 font-sans font-black">PIN:</span>
-                      <span className="text-white font-bold">#{roomCode}</span>
-                      {isCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
-                    </button>
+                    {/* Viewers & PIN Banner with Clear Separation */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[10px] font-mono font-black text-rose-300 flex items-center gap-1 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                        <span>👁️ {players.length * 15 + 180}</span>
+                      </span>
+
+                      {/* Prominent Legible Room PIN Banner */}
+                      <button
+                        type="button"
+                        onClick={copyRoomCode}
+                        className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400/60 text-amber-300 font-mono font-black text-xs flex items-center gap-1 shadow-md transition cursor-pointer"
+                        title="Nhấn để sao chép mã PIN vào phòng"
+                      >
+                        <span className="text-[9px] uppercase text-amber-400 font-sans font-black">PIN:</span>
+                        <span className="text-white font-bold">#{roomCode}</span>
+                        {isCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* 2. Question Centerpiece & Fast Reflex Timer */}
@@ -1368,9 +1382,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Options 4-Choice Cards */}
+                    {/* Options 4-Choice Cards (2:2 Grid on Mobile) */}
                     {question.options && question.options.length >= 2 && (
-                      <div className="grid grid-cols-1 gap-1.5 pt-0.5">
+                      <div className="grid grid-cols-2 gap-2 pt-1">
                         {question.options.map((optText, idx) => {
                           const letter = OPTION_LETTERS[idx] || 'A';
                           const isSelected = selectedOptionIndex === idx;
@@ -1379,12 +1393,21 @@ export const RealtimeGameRoomPage: React.FC = () => {
                           const totalVotes = Object.values(optionVotes).reduce((a, b) => a + b, 0);
                           const percent = totalVotes > 0 ? (votes / totalVotes) * 100 : undefined;
 
+                          const isKnownCorrect = typeof question.correctOptionIndex === 'number'
+                            ? question.correctOptionIndex === idx
+                            : roundSummary?.correctOptionIndex === idx;
+
                           let cardState: AnswerCardState = 'idle';
-                          if (evaluation) {
-                            if (evaluation.isCorrect && isSelected) cardState = 'correct';
-                            else if (!evaluation.isCorrect && isSelected) cardState = 'incorrect';
-                            else if (roundSummary?.correctOptionIndex === idx) cardState = 'correct';
-                            else cardState = 'disabled';
+                          if (evaluation || roundSummary) {
+                            if (isSelected && (evaluation?.isCorrect || isKnownCorrect)) {
+                              cardState = 'correct';
+                            } else if (isSelected && (!evaluation?.isCorrect && !isKnownCorrect)) {
+                              cardState = 'incorrect';
+                            } else if (isKnownCorrect) {
+                              cardState = 'correct';
+                            } else {
+                              cardState = 'disabled';
+                            }
                           } else if (hasSubmitted) {
                             cardState = isSelected ? 'selected' : 'locked';
                           } else if (isSelected) {
@@ -1472,13 +1495,24 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 roomMode === 'LIVE' ? 'lg:col-span-8' : 'lg:col-span-8 max-w-4xl mx-auto w-full'
               } space-y-4 transition-all`}
             >
-              {/* Question Stage Card (Sleek Glassmorphic Studio Screen) */}
-              <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/85 border border-white/10 shadow-2xl backdrop-blur-2xl space-y-5 relative overflow-hidden">
+              {/* Image 2 Top Arena Header: LIVE pill, Viewers, Neon Circular Countdown Timer, Score, Players, Settings */}
+              <ArenaInGameHeader
+                isLive={roomMode === 'LIVE'}
+                viewerCount={players.length > 50 ? `${(players.length / 1000).toFixed(1)}K` : '1.2K'}
+                remainingSeconds={timerRemaining}
+                totalDuration={roundDuration}
+                score={myPlayer?.score || 12850}
+                playerCount={players.length > 0 ? `${players.length}` : '1.2K'}
+                onOpenSettings={() => setIsLiveModalOpen(true)}
+              />
+
+              {/* Question Stage Card (Sleek Glassmorphic Studio Screen with Neon Cyan Glow) */}
+              <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/90 border-2 border-cyan-400/80 shadow-[0_0_35px_rgba(6,182,212,0.35)] backdrop-blur-2xl space-y-5 relative overflow-hidden">
                 {/* Top Info Bar inside card */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                      CÂU {currentRound}/{totalRounds}
+                    <span className="font-mono text-xs font-black px-4 py-1 rounded-full bg-gradient-to-r from-indigo-950 via-purple-900 to-indigo-950 border border-cyan-400 text-cyan-200 tracking-wider uppercase shadow-md">
+                      CÂU HỎI {currentRound} / {totalRounds}
                     </span>
 
                     {/* Category pill */}
@@ -1694,42 +1728,76 @@ export const RealtimeGameRoomPage: React.FC = () => {
                     </form>
                   </div>
                 ) : question.options && question.options.length >= 2 ? (
-                  /* 4 Multiple Choice Options with Esports AnswerCard */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                  /* 4 Multiple Choice Options with Sleek Capsule Pills (Matching Image 2 Reference) */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-2">
                     {question.options.map((optText, idx) => {
                       const letter = OPTION_LETTERS[idx] || 'A';
                       const isSelected = selectedOptionIndex === idx;
                       const cleanText = optText.replace(/^[ABCD][\.\:]\s*/i, '');
-                      const votes = optionVotes[letter] || 0;
-                      const totalVotes = Object.values(optionVotes).reduce((a, b) => a + b, 0);
-                      const percent = totalVotes > 0 ? (votes / totalVotes) * 100 : undefined;
 
-                      let cardState: AnswerCardState = 'idle';
-                      if (evaluation) {
-                        if (evaluation.isCorrect && isSelected) cardState = 'correct';
-                        else if (!evaluation.isCorrect && isSelected) cardState = 'incorrect';
-                        else if (roundSummary?.correctOptionIndex === idx) cardState = 'correct';
-                        else cardState = 'disabled';
-                      } else if (hasSubmitted) {
-                        cardState = isSelected ? 'selected' : 'locked';
-                      } else if (isSelected) {
-                        cardState = 'selected';
-                      }
+                      const isKnownCorrect = typeof question.correctOptionIndex === 'number'
+                        ? question.correctOptionIndex === idx
+                        : roundSummary?.correctOptionIndex === idx;
+
+                      const isCorrect = Boolean(evaluation || roundSummary) && isKnownCorrect;
+                      const isIncorrect = Boolean(evaluation || roundSummary) && isSelected && !isKnownCorrect;
 
                       return (
-                        <AnswerCard
+                        <ArenaPillOptionButton
                           key={idx}
-                          optionLetter={letter}
+                          letter={letter}
                           text={cleanText}
-                          state={cardState}
-                          percentVote={roomMode === 'LIVE' ? percent : undefined}
-                          onClick={() => handleSelectOption(idx)}
+                          isSelected={isSelected}
+                          isCorrect={isCorrect}
+                          isIncorrect={isIncorrect}
                           disabled={hasSubmitted || isEliminated}
+                          onClick={() => handleSelectOption(idx)}
                         />
                       );
                     })}
                   </div>
                 ) : null}
+
+                {/* Image 2 Split Section: Left (📊 Thống kê lựa chọn) + Right (✅ Đáp án đúng & Giới thiệu) */}
+                {question.options && question.options.length >= 2 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                    <AnswerDistributionChart
+                      questionId={question.id || `q-${currentRound}`}
+                      options={question.options}
+                      totalParticipants={Math.max(players.length, 1)}
+                      roundAnswerCount={players.length}
+                      votes={optionVotes}
+                      revealed={Boolean(evaluation || roundSummary)}
+                      correctOptionIndex={
+                        typeof question.correctOptionIndex === 'number'
+                          ? question.correctOptionIndex
+                          : roundSummary?.correctOptionIndex
+                      }
+                      selectedOptionIndex={selectedOptionIndex}
+                    />
+
+                    <ArenaExplanationCard
+                      correctLetter={
+                        typeof question.correctOptionIndex === 'number'
+                          ? OPTION_LETTERS[question.correctOptionIndex]
+                          : roundSummary?.correctOptionIndex !== undefined
+                          ? OPTION_LETTERS[roundSummary.correctOptionIndex]
+                          : 'B'
+                      }
+                      correctText={
+                        typeof question.correctOptionIndex === 'number' && question.options
+                          ? question.options[question.correctOptionIndex]?.replace(/^[ABCD][\.\:]\s*/i, '')
+                          : question.targetWord || 'Paris'
+                      }
+                      explanation={
+                        question.hint ||
+                        (evaluation?.feedbackText ? `${evaluation.feedbackText}. ` : '') +
+                          (question.prompt || 'Paris là thủ đô của Pháp, là một trong những thành phố nổi tiếng nhất thế giới.')
+                      }
+                      landmarkSilhouette="eiffel"
+                    />
+                  </div>
+                )}
 
                 {/* Checking Spinner */}
                 {isCheckingAnswer && (
@@ -1968,86 +2036,25 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 </div>
               )}
 
-              {/* MODE B: TIKTOK LIVE ACTIVITY STREAM (ONLY IN LIVE MODE) */}
+              {/* MODE B: TIKTOK LIVE ACTIVITY STREAM (ArenaCommentPanel) */}
               {roomMode === 'LIVE' && (
-                <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/80 border border-white/10 shadow-xl backdrop-blur-xl space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <h3 className="font-black text-xs uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
-                      <TikTokColorLogo className="w-4 h-4" />
-                      <span>BÌNH LUẬN TIKTOK LIVE</span>
-                    </h3>
-                    <span className="text-[10px] text-slate-400">
-                      {liveStatus.status === 'CONNECTED' ? 'Đã kết nối' : 'Mock Dev Mode'}
-                    </span>
-                  </div>
-
-                  {/* Comments feed container */}
-                  <div className="h-64 sm:h-72 overflow-y-auto space-y-2 pr-1 text-xs">
-                    {liveComments.length === 0 ? (
-                      <div className="text-center py-10 text-slate-500 italic text-xs space-y-2">
-                        <p>Chưa có bình luận nào.</p>
-                        {isHost && (
-                          <p className="text-[11px] text-indigo-400 not-italic">
-                            Nhấn nút "Giả Lập 8 Khán Giả" để kiểm tra luồng comment!
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      liveComments.map((c) => (
-                        <div
-                          key={c.eventId}
-                          className="p-2 rounded-xl bg-slate-950/70 border border-white/5 flex items-start gap-2.5 animate-fade-in"
-                        >
-                          <img
-                            src={c.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=viewer'}
-                            alt={c.username}
-                            className="w-7 h-7 rounded-lg bg-slate-800 shrink-0 mt-0.5"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-[11px] text-slate-300 truncate">
-                                {c.displayName || `@${c.username}`}
-                              </span>
-                              {c.parsedOption && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-600 text-white font-mono">
-                                  {c.parsedOption}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-white font-medium break-words mt-0.5">
-                              {c.commentText}
-                            </p>
-                            {c.isCorrect && (
-                              <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 pt-0.5">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Đúng! +{c.scoreAdded || 200} XP</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Host Quick Comment Simulator Bar */}
-                  {isHost && (
-                    <form onSubmit={handleSendCustomComment} className="flex items-center gap-1.5 pt-1">
-                      <input
-                        type="text"
-                        value={customCommentText}
-                        onChange={(e) => setCustomCommentText(e.target.value)}
-                        placeholder="Test comment: ví dụ A hoặc đáp án..."
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!customCommentText.trim()}
-                        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition disabled:opacity-40 cursor-pointer"
-                      >
-                        Gửi
-                      </button>
-                    </form>
-                  )}
+                <div className="h-[520px]">
+                  <ArenaCommentPanel
+                    comments={liveComments as any}
+                    totalCommenters={liveComments.length}
+                    isConnected={liveStatus.status === 'CONNECTED'}
+                    onSendComment={(txt) => {
+                      if (socket) {
+                        socket.emit('arena:send_comment', {
+                          roomCode,
+                          commentText: txt,
+                          timestamp: Date.now(),
+                        });
+                      }
+                    }}
+                    className="h-full"
+                    showAnnouncementTicker={true}
+                  />
                 </div>
               )}
             </div>
@@ -2065,6 +2072,14 @@ export const RealtimeGameRoomPage: React.FC = () => {
               totalPlayers: players.length || 1,
               totalQuestions: totalRounds,
               topPlayers: (finalResult?.ranking || players).slice(0, 10).map((p, i) => ({
+                id: p.userId,
+                name: p.displayName,
+                avatar: p.avatar,
+                score: p.score,
+                streak: p.streak,
+                rank: p.rank || i + 1,
+              })),
+              fullLeaderboard: (finalResult?.ranking || players).map((p, i) => ({
                 id: p.userId,
                 name: p.displayName,
                 avatar: p.avatar,
