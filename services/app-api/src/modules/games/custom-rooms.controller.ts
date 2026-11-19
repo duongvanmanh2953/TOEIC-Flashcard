@@ -93,5 +93,71 @@ export class CustomRoomsController {
       message: 'Đã gửi lời mời tham gia phòng thi đấu!',
     };
   }
+
+  @Public()
+  @Get(':roomCode/live/status')
+  getLiveStatus(@Param('roomCode') roomCode: string) {
+    const status = this.customRoomsService.getLiveStatus(roomCode);
+    return {
+      success: true,
+      data: status,
+    };
+  }
+
+  @Public()
+  @Post(':roomCode/live/connect')
+  async connectLive(
+    @Param('roomCode') roomCode: string,
+    @Body() body: { provider?: 'MOCK' | 'TIKTOK_LIVE'; channelName?: string },
+  ) {
+    const result = await this.customRoomsService.connectLive(
+      roomCode,
+      body.provider || 'MOCK',
+      body.channelName || 'demo_stream',
+    );
+    return {
+      success: result.success,
+      data: result,
+      message: result.message,
+    };
+  }
+
+  @Public()
+  @Post(':roomCode/live/disconnect')
+  async disconnectLive(@Param('roomCode') roomCode: string) {
+    await this.customRoomsService.disconnectLive(roomCode);
+    return {
+      success: true,
+      message: 'Đã ngắt kết nối Live Integration.',
+    };
+  }
+
+  @Public()
+  @Post(':roomCode/live/mock-comment')
+  sendMockComment(
+    @Param('roomCode') roomCode: string,
+    @Body() body: { username?: string; displayName?: string; commentText: string },
+  ) {
+    const event = this.customRoomsService.sendMockComment(roomCode, body);
+    return {
+      success: true,
+      data: event,
+      message: 'Đã gửi comment mô phỏng.',
+    };
+  }
+
+  @Public()
+  @Post(':roomCode/live/simulate-batch')
+  simulateBatch(
+    @Param('roomCode') roomCode: string,
+    @Body('count') count?: number,
+  ) {
+    const events = this.customRoomsService.simulateBatch(roomCode, count || 8);
+    return {
+      success: true,
+      data: { count: events.length },
+      message: `Đã kích hoạt mô phỏng ${events.length} comment khán giả.`,
+    };
+  }
 }
 

@@ -14,6 +14,8 @@ export interface LearnerMemoryContext {
   ragContext?: string[];
   conversationHistory?: string;
   targetLangName?: string;
+  targetLangCode?: string;
+  coachPersonality?: string;
 }
 
 @Injectable()
@@ -51,7 +53,22 @@ Follow the teaching method: Teach concisely -> Provide a clear contextual exampl
    */
   buildPersonalizedTutorPrompt(userMessage: string, ctx: LearnerMemoryContext): string {
     const lang = ctx.targetLangName || 'English';
+    const langCode = (ctx.targetLangCode || 'en').toLowerCase();
     const name = ctx.userName || 'Học viên';
+    const persona = ctx.coachPersonality || 'Dedicated Native Language Coach';
+
+    const defaultGoalMap: Record<string, string> = {
+      zh: 'HSK 4+ & Giao tiếp phản xạ tiếng Trung',
+      ja: 'JLPT N3-N2 & Giao tiếp phản xạ tiếng Nhật',
+      ko: 'TOPIK II & Giao tiếp phản xạ tiếng Hàn',
+      fr: 'DELF B2 & Giao tiếp tiếng Pháp chuẩn',
+      de: 'Goethe-Zertifikat B2 & Tiếng Đức đời sống/công sở',
+      es: 'DELE B2 & Giao tiếp tiếng Tây Ban Nha lưu loát',
+      en: 'TOEIC 850+ & Business English Communication',
+    };
+    const defaultGoal = defaultGoalMap[langCode] || 'Giao tiếp phản xạ và làm chủ ngôn ngữ';
+    const primaryGoal = ctx.primaryGoal || defaultGoal;
+
     const atRiskStr = ctx.atRiskWords && ctx.atRiskWords.length > 0
       ? ctx.atRiskWords.map((w) => `"${w.word}" (nguy cơ quên: ${(w.slipRisk * 100).toFixed(0)}%${w.meaning ? ` - ${w.meaning}` : ''})`).join(', ')
       : 'Hiện tại chưa có từ nào có nguy cơ quên cao.';
@@ -66,12 +83,13 @@ Follow the teaching method: Teach concisely -> Provide a clear contextual exampl
 
     const ragKnowledgeStr = ctx.ragContext && ctx.ragContext.length > 0
       ? ctx.ragContext.join('\n- ')
-      : 'Kho từ vựng chuẩn TOEIC & Giao tiếp kinh doanh.';
+      : `Kho từ vựng và phản xạ chuẩn mục tiêu ${primaryGoal}.`;
 
-    return `You are VocabFlow AI 1-on-1 Dedicated Personal Language Tutor (Gia sư AI đồng hành cá nhân hoá).
-You are tutoring: ${name}
-Target Language: ${lang}
-Current Mastery (CEFR): ${ctx.cefrLevel} | Target Goal: ${ctx.targetLevel || 'C1'} (${ctx.primaryGoal || 'TOEIC 850+'})
+    return `You are VocabFlow AI Dedicated 1-on-1 Personal Language Coach & Tutor (Huấn luyện viên AI đồng hành cá nhân hoá).
+Coach Persona: ${persona}
+You are coaching: ${name}
+Target Language: ${lang} (${langCode})
+Current Mastery (CEFR): ${ctx.cefrLevel} | Target Goal: ${ctx.targetLevel || 'C1'} (${primaryGoal})
 Current Learning Streak: ${ctx.streakDays || 1} ngày liên tục.
 
 === HỒ SƠ TRÍ NHỚ HỌC VIÊN (FSRS MEMORY STATE) ===
@@ -86,29 +104,25 @@ ${ctx.conversationHistory || 'Bắt đầu phiên học mới hôm nay.'}
 
 Learner's Current Input: "${userMessage}"
 
-=== CHỈ DẪN SƯ PHẠM ĐỘC QUYỀN (PEDAGOGICAL DIRECTIVES) ===
-1. ADAPTIVE LEVEL CALIBRATION:
-   - Level A1-A2: Giải thích bằng tiếng Việt thân thiện, tỉ mỉ, động viên. Dùng câu ngắn, phân tích từng thành phần từ.
-   - Level B1-B2: Hướng dẫn song ngữ, đào sâu vào TOEIC Collocations, ngữ cảnh văn phòng kinh doanh, các bẫy Part 5 & 6.
-   - Level C1-C2: Đàm thoại chuyên sâu, tập trung vào sắc thái biểu đạt (nuances), thành ngữ tự nhiên (idiomatic expressions).
+=== CHỈ DẪN SƯ PHẠM VÀ NGÔN NGỮ BẮT BUỘC (CRITICAL MANDATORY DIRECTIVES) ===
+1. STRICT TARGET LANGUAGE ONLY:
+   - You MUST converse, guide, and respond primarily in the Target Language: ${lang}.
+   - If Target Language is Chinese (zh/中文), speak in natural Mandarin Chinese (普通话).
+   - If Target Language is Japanese (ja/日本語), speak in natural Japanese (日本語).
+   - If Target Language is Korean (ko/한국어), speak in natural Korean (한국어).
+   - If Target Language is French (fr), German (de), Spanish (es), or English (en), speak strictly in that language.
+   - Do NOT reply in Vietnamese or switch to English when coaching ${lang}. Automatic Vietnamese translation is handled for the student by the application UI.
 
-2. OPPORTUNISTIC ACTIVE RECALL (Cứu viện trí nhớ ngắt quãng):
-   - Nếu tự nhiên và phù hợp ngữ cảnh, hãy khéo léo lồng ghép 1 từ trong danh sách "Từ có nguy cơ quên" vào lời giải thích hoặc ví dụ thực tế để kích thích học viên ghi nhớ lại (Active Recall).
+2. AUTHENTIC COACH PERSONA:
+   - Stay deeply in character as "${persona}".
+   - Use warm, engaging, and culturally authentic speech matching this coach's background and specialty.
 
-3. STRICT RESPONSE STRUCTURE (Định dạng Markdown đẹp mắt, chuẩn mực):
-   ### 💡 [Lời chào thân thiện & Tiêu đề bài học ngắn gọn]
+3. VOICE & SPEECH-FRIENDLY DIALOGUE (TTS READY):
+   - Keep your responses conversational, spoken-style, and fluid so they sound delightful when read aloud by Text-To-Speech (TTS).
+   - Avoid robotic markdown headers or rigid numbered lists (e.g., do NOT output "### 💡 Tiêu đề" or "1. 📌 Giải thích:"). Speak directly to the student as in a live 1:1 voice call.
 
-   1. 📌 **Giải thích & Ngữ cảnh (Core Explanation):**
-      [Giải thích trực diện, rõ ràng câu hỏi của học viên, đối chiếu ngữ cảnh thực tế]
-
-   2. 🌐 🇻🇳 **Ví dụ thực tế song ngữ (Bilingual Real-world Examples):**
-      🌐 *"[Câu ví dụ tự nhiên theo chuẩn mục tiêu ${ctx.primaryGoal || 'TOEIC'}]"*
-      🇻🇳 *"[Bản dịch tiếng Việt mượt mà, chuẩn văn phong]"*
-
-   3. 🔗 **Từ vựng & Cụm từ liên quan (High-Yield Collocations):**
-      - **Cụm từ / Điểm ngữ pháp**: Giải thích ứng dụng
-
-   4. 🎯 **Thử thách phản xạ nhanh (Active Recall Challenge):**
-      [Đặt đúng 1 câu hỏi tương tác trắc nghiệm A/B/C hoặc điền từ ngắn để học viên trả lời ngay]`;
+4. ENGAGING ACTIVE EXCHANGE:
+   - Naturally reinforce 1 word or pattern from the memory state if appropriate.
+   - Conclude with a friendly, interactive question or conversational prompt in ${lang} so the student can reply verbally immediately.`;
   }
 }

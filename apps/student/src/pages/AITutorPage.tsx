@@ -5,6 +5,7 @@ import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { RichAIMessageRenderer } from '../components/ai/RichAIMessageRenderer';
 import { VocabFlowLogo } from '@vocabflow/shared';
 import { CountryFlag } from '../components/language/CountryFlag';
@@ -792,44 +793,36 @@ export const AITutorPage: React.FC = () => {
 
           {/* Bottom Composer with Real-time Token Cost Estimator */}
           <div className="shrink-0 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            {/* Curated Suggestion Chips (Kho tri thức ⚡ 0 Token) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar">
+            {/* Curated Suggestion Selector using CustomSelect (Kho tri thức ⚡ 0 Token) */}
+            <div className="flex items-center gap-1.5 py-1">
               <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 shrink-0 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                <span>Gợi ý 0 Token:</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Gợi ý 0 Token:</span>
               </span>
-              <button
-                type="button"
-                onClick={() => handleSendMessage('Hãy đố tôi 1 câu hỏi phản xạ từ vựng', 'quiz')}
-                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
-              >
-                <span>🎯 Đố 1 câu phản xạ</span>
-                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage('Cho tôi 1 ví dụ câu giao tiếp thực tế')}
-                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
-              >
-                <span>💡 Ví dụ giao tiếp</span>
-                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage('So sánh cặp từ dễ nhầm lẫn trong TOEIC', 'compare')}
-                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
-              >
-                <span>⚖️ So sánh Economic vs Economical</span>
-                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSendMessage('Lộ trình học 600 từ vựng TOEIC hiệu quả')}
-                className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 text-[11px] font-semibold whitespace-nowrap border border-slate-200/80 dark:border-slate-700/80 shrink-0 flex items-center gap-1.5 transition"
-              >
-                <span>📚 Chiến lược 600 từ TOEIC</span>
-                <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-mono">⚡ 0 tok</span>
-              </button>
+              <div className="flex-1 min-w-0">
+                <CustomSelect
+                  value=""
+                  onChange={(val) => {
+                    const suggestions = [
+                      { id: 'quiz', text: 'Hãy đố tôi 1 câu hỏi phản xạ từ vựng', type: 'quiz' },
+                      { id: 'example', text: 'Cho tôi 1 ví dụ câu giao tiếp thực tế' },
+                      { id: 'compare', text: 'So sánh cặp từ dễ nhầm lẫn trong TOEIC', type: 'compare' },
+                      { id: 'strategy', text: 'Lộ trình học 600 từ vựng TOEIC hiệu quả' },
+                    ];
+                    const opt = suggestions.find((s) => s.id === val);
+                    if (opt) handleSendMessage(opt.text, opt.type as any);
+                  }}
+                  size="sm"
+                  placeholder="⚡ Chọn câu hỏi gợi ý 0 Token..."
+                  options={[
+                    { value: 'quiz', label: '🎯 Đố 1 câu phản xạ từ vựng', badge: '⚡ 0 tok', description: 'Đố câu hỏi trắc nghiệm phản xạ' },
+                    { value: 'example', label: '💡 Ví dụ câu giao tiếp thực tế', badge: '⚡ 0 tok', description: 'Ví dụ mẫu câu thực tế chuẩn văn phòng' },
+                    { value: 'compare', label: '⚖️ So sánh Economic vs Economical', badge: '⚡ 0 tok', description: 'Phân biệt cặp từ dễ nhầm lẫn trong TOEIC' },
+                    { value: 'strategy', label: '📚 Chiến lược 600 từ TOEIC', badge: '⚡ 0 tok', description: 'Lộ trình học 600 từ vựng TOEIC hiệu quả' },
+                  ]}
+                  className="w-full"
+                />
+              </div>
             </div>
             {input.trim() && (
               <div className="flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] animate-fade-in">

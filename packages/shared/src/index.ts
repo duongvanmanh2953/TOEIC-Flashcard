@@ -58,6 +58,7 @@ export interface ApiResponse<T = any> {
 }
 
 export * from './components/VocabFlowLogo';
+export * from './components/TikTokLogo';
 export * from './components/VictoryStarModal';
 export * from './components/AppSplashScreen';
 export * from './config/languageStandards';
@@ -65,4 +66,9 @@ export * from './config/languageCapabilities';
 export { default as enTranslations } from './locales/en.json';
 export { default as viTranslations } from './locales/vi.json';
 export * from './interview';
+export * from './utils/feedbackSound';
+export * from './arena/arenaTheme';
+export * from './arena/scoringEngine';
+export * from './components/arena';
+
 

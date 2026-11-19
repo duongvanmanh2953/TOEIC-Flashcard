@@ -36,8 +36,8 @@ export const TermsOfServicePage: React.FC = () => {
       subtitle="Quy định pháp lý điều chỉnh quyền, nghĩa vụ và trách nhiệm của học viên khi tham gia học tập trên nền tảng VocabFlow."
       currentPath="/terms-of-service"
       toc={TOC_ITEMS}
-      lastUpdated="15/10/2026"
-      effectiveDate="15/10/2026"
+      lastUpdated="10/11/2026"
+      effectiveDate="10/11/2026"
     >
       {/* Intro alert */}
       <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
@@ -59,10 +59,10 @@ export const TermsOfServicePage: React.FC = () => {
         </h2>
         <div className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
           <p>
-            Văn bản này cấu thành thỏa thuận pháp lý có giá trị ràng buộc giữa học viên (người sử dụng dịch vụ) và chủ quản nền tảng {LEGAL_CONFIG.platformName}.
+            Văn bản này cấu thành thỏa thuận pháp lý có giá trị ràng buộc giữa học viên (người sử dụng dịch vụ) và chủ quản nền tảng {LEGAL_CONFIG.platformName} theo quy định của Luật Giao dịch điện tử số 20/2023/QH15 và Luật Thương mại điện tử số 122/2025/QH15.
           </p>
           <p>
-            Đối tượng sử dụng dịch vụ: Mọi cá nhân từ đủ 13 tuổi trở lên có nhu cầu học tiếng Anh. Đối với học sinh dưới 13 tuổi (hoặc người chưa thành niên theo quy định pháp luật), việc đăng ký tài khoản và thanh toán phải có sự giám sát, đồng ý từ cha mẹ hoặc người đại diện hợp pháp (có thể thông qua phân hệ Trải nghiệm trẻ em / Kids Portal).
+            <strong>Độ tuổi sử dụng:</strong> Nền tảng phục vụ cá nhân từ đủ 16 tuổi trở lên có nhu cầu học ngoại ngữ. Đối với người học dưới 16 tuổi (đặc biệt trẻ em từ đủ 7 tuổi theo Điều 24 Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15), việc tạo tài khoản, xử lý dữ liệu và thanh toán gói cước bắt buộc phải có sự đồng ý xác nhận từ cha mẹ hoặc người đại diện hợp pháp (thông qua phân hệ Kids Mode có lớp bảo vệ phụ huynh).
           </p>
         </div>
       </section>

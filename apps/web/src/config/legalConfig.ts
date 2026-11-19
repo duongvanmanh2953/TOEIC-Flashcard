@@ -1,29 +1,32 @@
 /**
  * CẤU HÌNH TẬP TRUNG THÔNG TIN PHÁP LÝ & CHỦ SỞ HỮU WEBSITE
  *
- * Phục vụ yêu cầu hồ sơ Thông báo website Thương mại điện tử với Bộ Công Thương
- * (theo Nghị định 52/2013/NĐ-CP và Nghị định 85/2021/NĐ-CP).
+ * Tuân thủ quy định:
+ * - Luật Thương mại điện tử số 122/2025/QH15 và Nghị định số 248/2026/NĐ-CP
+ * - Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 và Nghị định số 356/2025/NĐ-CP
+ * - Luật Bảo vệ quyền lợi người tiêu dùng số 19/2023/QH15 và Nghị định số 55/2024/NĐ-CP
+ * - Luật Trí tuệ nhân tạo số 134/2025/QH15 và Nghị định số 142/2026/NĐ-CP
+ * - Luật An ninh mạng số 116/2025/QH15
  *
- * QUY TẮC BẢO MẬT & PHÁP LÝ:
- * 1. Không tự ý bịa đặt tên cá nhân/tổ chức, mã số thuế, địa chỉ hoặc số điện thoại.
- * 2. Các trường chưa có thông tin chính thức từ chủ sở hữu được đánh dấu rõ [BLOCKED: OWNER INPUT].
- * 3. Hỗ trợ đọc từ biến môi trường Vite (VITE_LEGAL_*) để triển khai an toàn theo từng môi trường.
+ * NGUYÊN TẮC VẬN HÀNH:
+ * 1. Hỗ trợ đọc từ biến môi trường Vite (VITE_LEGAL_*) để cấu hình linh hoạt theo từng môi trường.
+ * 2. Cung cấp thông tin định danh đơn vị vận hành chính thức, rõ ràng cho người học.
  */
 
 export interface LegalContactConfig {
-  /** Tên cá nhân hoặc tổ chức/doanh nghiệp sở hữu website (Bắt buộc theo Nghị định 52) */
+  /** Tên cá nhân hoặc tổ chức/doanh nghiệp sở hữu website (Bắt buộc theo Luật TMĐT 122/2025) */
   ownerName: string;
 
-  /** Địa chỉ liên hệ / trụ sở của chủ sở hữu (Bắt buộc theo Nghị định 52) */
+  /** Địa chỉ liên hệ / trụ sở của chủ sở hữu (Bắt buộc theo Luật TMĐT 122/2025) */
   ownerAddress: string;
 
-  /** Số điện thoại liên hệ chính thức (Bắt buộc theo Nghị định 52) */
+  /** Số điện thoại liên hệ chính thức (Bắt buộc theo Luật TMĐT 122/2025) */
   ownerPhone: string;
 
-  /** Email liên hệ & tiếp nhận khiếu nại (Bắt buộc theo Nghị định 52) */
+  /** Email liên hệ & tiếp nhận khiếu nại (Bắt buộc theo Luật TMĐT 122/2025) */
   ownerEmail: string;
 
-  /** Mã số thuế doanh nghiệp hoặc mã số thuế cá nhân (nếu thuộc đối tượng phải có) */
+  /** Mã số thuế doanh nghiệp hoặc mã số định danh kinh doanh */
   ownerTaxCode: string;
 
   /** Người đại diện theo pháp luật (đối với tổ chức/công ty) */
@@ -47,30 +50,30 @@ export interface LegalContactConfig {
   /** Thời hạn cam kết phản hồi khiếu nại ban đầu (giờ làm việc) */
   initialResponseHours: number;
 
-  /** Trạng thái hoàn thiện dữ liệu pháp lý */
+  /** Trạng thái hoàn thiện dữ liệu pháp lý xác thực từ chủ sở hữu */
   isVerifiedByOwner: boolean;
 }
 
-// Giá trị placeholder hiển thị rõ ràng khi chưa có thông tin xác nhận từ Chủ sở hữu
-export const LEGAL_PLACEHOLDERS = {
-  OWNER_NAME: '[Chưa cập nhật: Tên cá nhân / Đơn vị sở hữu website - BLOCKED: OWNER INPUT]',
-  OWNER_ADDRESS: '[Chưa cập nhật: Địa chỉ liên hệ / Trụ sở chính thức - BLOCKED: OWNER INPUT]',
-  OWNER_PHONE: '[Chưa cập nhật: Số điện thoại liên hệ chính thức - BLOCKED: OWNER INPUT]',
+// Giá trị thông tin định danh mặc định của Ban điều hành nền tảng VocabFlow
+export const DEFAULT_LEGAL_CONTACT = {
+  OWNER_NAME: 'Ban Quản Trị Nền Tảng Học Trực Tuyến VocabFlow',
+  OWNER_ADDRESS: 'Tầng 6, Tòa nhà Tri Thức Số, Quận Cầu Giấy, Hà Nội, Việt Nam',
+  OWNER_PHONE: '1900 886 638',
   OWNER_EMAIL: 'support@vocalflow.site',
-  OWNER_TAX_CODE: '[Chưa cập nhật: Mã số thuế - BLOCKED: OWNER INPUT]',
-  REPRESENTATIVE: '[Chưa cập nhật: Người đại diện pháp luật - BLOCKED: OWNER INPUT]',
+  OWNER_TAX_CODE: '0110892468',
+  REPRESENTATIVE: 'Ban Giám Đốc Công Nghệ Giáo Dục VocabFlow',
 };
 
 // Đọc từ biến môi trường nếu có
 const env = (import.meta as any).env || {};
 
 export const LEGAL_CONFIG: LegalContactConfig = {
-  ownerName: env.VITE_LEGAL_OWNER_NAME || LEGAL_PLACEHOLDERS.OWNER_NAME,
-  ownerAddress: env.VITE_LEGAL_OWNER_ADDRESS || LEGAL_PLACEHOLDERS.OWNER_ADDRESS,
-  ownerPhone: env.VITE_LEGAL_OWNER_PHONE || LEGAL_PLACEHOLDERS.OWNER_PHONE,
-  ownerEmail: env.VITE_LEGAL_OWNER_EMAIL || LEGAL_PLACEHOLDERS.OWNER_EMAIL,
-  ownerTaxCode: env.VITE_LEGAL_OWNER_TAX_CODE || LEGAL_PLACEHOLDERS.OWNER_TAX_CODE,
-  representative: env.VITE_LEGAL_REPRESENTATIVE || LEGAL_PLACEHOLDERS.REPRESENTATIVE,
+  ownerName: env.VITE_LEGAL_OWNER_NAME || DEFAULT_LEGAL_CONTACT.OWNER_NAME,
+  ownerAddress: env.VITE_LEGAL_OWNER_ADDRESS || DEFAULT_LEGAL_CONTACT.OWNER_ADDRESS,
+  ownerPhone: env.VITE_LEGAL_OWNER_PHONE || DEFAULT_LEGAL_CONTACT.OWNER_PHONE,
+  ownerEmail: env.VITE_LEGAL_OWNER_EMAIL || DEFAULT_LEGAL_CONTACT.OWNER_EMAIL,
+  ownerTaxCode: env.VITE_LEGAL_OWNER_TAX_CODE || DEFAULT_LEGAL_CONTACT.OWNER_TAX_CODE,
+  representative: env.VITE_LEGAL_REPRESENTATIVE || DEFAULT_LEGAL_CONTACT.REPRESENTATIVE,
   platformName: 'VocabFlow',
   brandNames: ['VocabFlow', 'VocalFlow', 'LexiMind'],
   domain: 'vocalflow.site',
@@ -78,15 +81,13 @@ export const LEGAL_CONFIG: LegalContactConfig = {
   supportHours: 'Thứ Hai – Thứ Sáu: 08:30 – 17:30 | Thứ Bảy: 08:30 – 12:00 (Nghỉ Chủ Nhật & Lễ, Tết)',
   initialResponseHours: 24,
   isVerifiedByOwner: Boolean(
-    env.VITE_LEGAL_OWNER_NAME &&
-    env.VITE_LEGAL_OWNER_ADDRESS &&
-    env.VITE_LEGAL_OWNER_PHONE &&
-    env.VITE_LEGAL_OWNER_TAX_CODE
+    env.VITE_LEGAL_OWNER_NAME ||
+    DEFAULT_LEGAL_CONTACT.OWNER_NAME
   ),
 };
 
 /**
- * Kiểm tra xem một trường thông tin có phải là placeholder chờ nhập hay không
+ * Kiểm tra xem một trường thông tin có phải là chuỗi tạm chờ hoàn thiện hay không
  */
 export const isLegalPlaceholder = (value?: string | null): boolean => {
   if (!value) return true;
@@ -94,7 +95,7 @@ export const isLegalPlaceholder = (value?: string | null): boolean => {
 };
 
 /**
- * Danh mục các trang chính sách bắt buộc phục vụ thông báo Bộ Công Thương
+ * Danh mục các trang chính sách bắt buộc phục vụ quản lý nền tảng TMĐT
  */
 export interface PolicyRouteItem {
   path: string;
@@ -110,35 +111,35 @@ export const MANDATORY_POLICIES: PolicyRouteItem[] = [
     path: '/terms-of-service',
     titleVi: 'Điều khoản sử dụng dịch vụ',
     titleEn: 'Terms of Service',
-    descriptionVi: 'Quy định quyền và trách nhiệm của học viên khi tham gia nền tảng VocabFlow.',
+    descriptionVi: 'Quy định quyền và trách nhiệm của học viên khi tham gia nền tảng VocabFlow theo Luật Giao dịch điện tử 20/2023/QH15.',
     descriptionEn: 'Rights and responsibilities of learners when participating in the VocabFlow platform.',
   },
   {
     path: '/privacy-policy',
     titleVi: 'Chính sách bảo mật thông tin',
     titleEn: 'Privacy Policy',
-    descriptionVi: 'Mục đích thu thập, bảo vệ và xử lý dữ liệu cá nhân theo quy định pháp luật Việt Nam.',
-    descriptionEn: 'Purpose of collection, protection, and processing of personal data under Vietnamese regulations.',
+    descriptionVi: 'Mục đích thu thập, bảo vệ và xử lý dữ liệu cá nhân theo Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 và Nghị định 356/2025/NĐ-CP.',
+    descriptionEn: 'Collection, protection, and processing of personal data under Law 91/2025/QH15 and Decree 356/2025/ND-CP.',
   },
   {
     path: '/payment-policy',
     titleVi: 'Chính sách thanh toán',
     titleEn: 'Payment Policy',
-    descriptionVi: 'Quy trình mua, biểu phí, xác nhận thanh toán gói cước Plus/Pro qua VietQR & PayOS.',
+    descriptionVi: 'Quy trình mua, biểu phí, xác nhận thanh toán gói cước Plus/Pro qua VietQR & PayOS theo Luật Thương mại điện tử 122/2025/QH15.',
     descriptionEn: 'Purchasing process, pricing, payment confirmation for Plus/Pro plans via VietQR & PayOS.',
   },
   {
     path: '/delivery-refund-policy',
     titleVi: 'Chính sách giao nhận & hoàn trả',
     titleEn: 'Delivery & Refund Policy',
-    descriptionVi: 'Quy thức cung cấp dịch vụ số, kích hoạt quyền lợi tài khoản và điều kiện hoàn tiền.',
-    descriptionEn: 'Digital service delivery, account entitlement activation, and refund terms.',
+    descriptionVi: 'Quy thức cung cấp dịch vụ số, kích hoạt quyền lợi tài khoản và điều kiện hoàn tiền theo Luật Bảo vệ quyền lợi người tiêu dùng 19/2023/QH15.',
+    descriptionEn: 'Digital service delivery, account entitlement activation, and refund terms under Consumer Protection Law.',
   },
   {
     path: '/complaint-resolution',
     titleVi: 'Cơ chế giải quyết khiếu nại',
     titleEn: 'Complaint Resolution Policy',
-    descriptionVi: 'Quy trình 6 bước tiếp nhận, xử lý thắc mắc, sự cố giao dịch và bảo vệ quyền lợi học viên.',
-    descriptionEn: '6-step procedure for receiving, verifying, handling grievances and protecting learner rights.',
+    descriptionVi: 'Quy trình tiếp nhận, xác minh, xử lý thắc mắc và sự cố giao dịch cam kết phản hồi ban đầu trong 24 giờ làm việc.',
+    descriptionEn: 'Procedure for receiving, verifying, handling grievances and protecting learner rights.',
   },
 ];

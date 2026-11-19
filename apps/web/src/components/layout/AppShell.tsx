@@ -51,6 +51,9 @@ import {
   PenTool,
   BookCheck,
   Briefcase,
+  Wifi,
+  WifiOff,
+  RefreshCw,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LanguageSwitcher } from '../language/LanguageSwitcher';
@@ -63,6 +66,8 @@ import { VirtualChatPane } from '../chat/VirtualChatPane';
 import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
+import { DataSyncModal } from '../offline/DataSyncModal';
+import { useNetworkStatus } from '../../lib/offlineSyncService';
 import { VocabFlowLogo } from '@vocabflow/shared';
 import { navigateToApp, buildSsoUrl } from '../../lib/sso';
 import { RichAIMessageRenderer } from '../ai/RichAIMessageRenderer';
@@ -145,6 +150,10 @@ export const AppShell: React.FC = () => {
 
   // Global Quick Note Modal State
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
+
+  // Global Network Status & Offline Sync Modal State
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const { isOnline, pendingCount, isSyncing } = useNetworkStatus();
 
   useEffect(() => {
     const handleOpenQuickNote = () => setQuickNoteOpen(true);
@@ -313,6 +322,48 @@ export const AppShell: React.FC = () => {
   const [tutorSuggestions, setTutorSuggestions] = useState<ChatSuggestion[]>([]);
   const [showTutorSuggestions, setShowTutorSuggestions] = useState(false);
   const [searchingSuggestions, setSearchingSuggestions] = useState(false);
+
+  // Live Arena operating status (Live from 20:00 to 22:00 VN time or when lobby indicates open)
+  const [isArenaLive, setIsArenaLive] = useState<boolean>(() => {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: 'numeric',
+        hour12: false,
+      });
+      const hour = parseInt(formatter.format(new Date()), 10);
+      return hour >= 20 && hour < 22;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const checkLiveStatus = async () => {
+      try {
+        const res: any = await api.get('/games/lobby');
+        const isOpen = res?.data?.hoursStatus?.isOpen || res?.hoursStatus?.isOpen || false;
+        const testMode = res?.data?.hoursStatus?.testMode || res?.hoursStatus?.testMode || false;
+        setIsArenaLive(Boolean(isOpen || testMode));
+      } catch (_) {
+        try {
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            hour: 'numeric',
+            hour12: false,
+          });
+          const hour = parseInt(formatter.format(new Date()), 10);
+          setIsArenaLive(hour >= 20 && hour < 22);
+        } catch {
+          setIsArenaLive(false);
+        }
+      }
+    };
+
+    checkLiveStatus();
+    const interval = setInterval(checkLiveStatus, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Debounced search for similar DB questions & vocabulary suggestions as user types
   useEffect(() => {
@@ -686,7 +737,7 @@ export const AppShell: React.FC = () => {
       title: 'CỘNG ĐỒNG & THỬ THÁCH',
       items: [
         { to: '/community-knowledge', label: 'Bảng tin cộng đồng', icon: Sparkles, badge: 'HOT' },
-        { to: '/games', label: 'Đấu trường phản xạ 24/7', icon: Gamepad2, badge: 'LIVE' },
+        { to: '/games', label: 'Đấu trường phản xạ 24/7', icon: Gamepad2, badge: 'LIVE', isLive: isArenaLive },
         { to: '/leaderboard', label: 'Bảng xếp hạng Fair-Play', icon: Trophy },
         { to: '/community', label: t('nav.community', 'Cộng đồng chia sẻ kho từ'), icon: Share2 },
         { to: '/languages', label: 'Không gian đa ngữ', icon: Globe },
@@ -818,6 +869,17 @@ export const AppShell: React.FC = () => {
                           <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950 shrink-0" />
                           <span className="whitespace-nowrap">{item.badge === 'VIP' ? 'VIP' : 'PRO'}</span>
                         </span>
+                      ) : item.badge === 'LIVE' ? (
+                        (item as any).isLive ? (
+                          <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-rose-600 text-white rounded-md whitespace-nowrap animate-pulse shadow-md shadow-rose-600/40 flex items-center gap-1 border border-rose-500">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                            <span>LIVE</span>
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-md whitespace-nowrap border border-slate-200 dark:border-slate-700">
+                            LIVE
+                          </span>
+                        )
                       ) : (
                         <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md whitespace-nowrap">
                           {item.badge}
@@ -1033,6 +1095,41 @@ export const AppShell: React.FC = () => {
             >
               <Zap className={`w-4 h-4 ${isUltraEfficient ? 'fill-amber-500 text-amber-500' : ''}`} />
             </button>
+            {/* Mobile WiFi Status & Data Sync Trigger */}
+            <button
+              type="button"
+              onClick={() => setSyncModalOpen(true)}
+              title={
+                !isOnline
+                  ? `Ngoại tuyến • ${pendingCount} mục lưu trên máy (Bấm để xem)`
+                  : isSyncing
+                  ? 'Đang đồng bộ dữ liệu...'
+                  : pendingCount > 0
+                  ? `Trực tuyến • ${pendingCount} mục chờ đồng bộ`
+                  : 'Trực tuyến • Đã kết nối mạng'
+              }
+              className={`relative p-2 rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 ${
+                !isOnline
+                  ? 'text-amber-500 bg-amber-500/10 ring-1 ring-amber-500/30'
+                  : isSyncing
+                  ? 'text-sky-500 bg-sky-500/10'
+                  : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+              }`}
+              aria-label="Trạng thái mạng và đồng bộ dữ liệu"
+            >
+              {isSyncing ? (
+                <RefreshCw className="w-4 h-4 animate-spin text-sky-500" />
+              ) : !isOnline ? (
+                <WifiOff className="w-4 h-4 text-amber-500" />
+              ) : (
+                <Wifi className="w-4 h-4 text-emerald-500" />
+              )}
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 px-1 min-w-[14px] h-3.5 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
+            </button>
             <NotificationBell />
 
             <button
@@ -1231,6 +1328,17 @@ export const AppShell: React.FC = () => {
                               <Crown className="w-2.5 h-2.5 fill-slate-950 text-slate-950 shrink-0" />
                               <span className="whitespace-nowrap">{item.badge}</span>
                             </span>
+                          ) : item.badge === 'LIVE' ? (
+                            (item as any).isLive ? (
+                              <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-2 py-0.5 bg-rose-600 text-white rounded-md whitespace-nowrap animate-pulse shadow-md shadow-rose-600/40 flex items-center gap-1 border border-rose-500">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                <span>LIVE</span>
+                              </span>
+                            ) : (
+                              <span className="shrink-0 text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-md whitespace-nowrap border border-slate-200 dark:border-slate-700">
+                                LIVE
+                              </span>
+                            )
                           ) : (
                             <span className="shrink-0 text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 bg-indigo-600 text-white rounded-md whitespace-nowrap">
                               {item.badge}
@@ -1360,6 +1468,45 @@ export const AppShell: React.FC = () => {
             >
               <Zap className={`w-3.5 h-3.5 ${isUltraEfficient ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
               <span className="hidden xl:inline">{isUltraEfficient ? 'Tiết kiệm GPU' : 'Hiệu năng'}</span>
+            </button>
+
+            {/* Desktop WiFi & Data Sync Button */}
+            <button
+              type="button"
+              onClick={() => setSyncModalOpen(true)}
+              title={
+                !isOnline
+                  ? `Ngoại tuyến • ${pendingCount} mục lưu trên máy (Bấm để xem chi tiết)`
+                  : isSyncing
+                  ? 'Đang đồng bộ dữ liệu...'
+                  : pendingCount > 0
+                  ? `Trực tuyến • ${pendingCount} mục chờ đồng bộ (Bấm để xem)`
+                  : 'Trực tuyến • Đã kết nối mạng (Bấm để kiểm tra)'
+              }
+              className={`h-8 px-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer active:scale-95 ${
+                !isOnline
+                  ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-100'
+                  : isSyncing
+                  ? 'bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-500/40'
+                  : 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+              }`}
+              aria-label="Trạng thái mạng và đồng bộ dữ liệu"
+            >
+              {isSyncing ? (
+                <RefreshCw className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 animate-spin" />
+              ) : !isOnline ? (
+                <WifiOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              ) : (
+                <Wifi className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              )}
+              <span className="hidden xl:inline">
+                {!isOnline ? 'Offline' : isSyncing ? 'Đang đồng bộ' : 'Online'}
+              </span>
+              {pendingCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-black">
+                  {pendingCount}
+                </span>
+              )}
             </button>
 
             {/* Notification Bell with Badge & Dropdown */}
@@ -2145,6 +2292,12 @@ export const AppShell: React.FC = () => {
       <QuickNoteModal
         isOpen={quickNoteOpen}
         onClose={() => setQuickNoteOpen(false)}
+      />
+
+      {/* Global Data Sync & Connection Modal */}
+      <DataSyncModal
+        isOpen={syncModalOpen}
+        onClose={() => setSyncModalOpen(false)}
       />
     </div>
   );

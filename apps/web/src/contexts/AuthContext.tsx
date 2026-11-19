@@ -347,6 +347,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res: any = await api.post('/auth/oauth', {
         provider: 'google',
         providerId: firebaseUser.uid,
+        idToken: firebaseUser.accessToken,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         avatar: firebaseUser.photoURL,
@@ -381,6 +382,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res: any = await api.post('/auth/oauth', {
         provider: 'facebook',
         providerId: firebaseUser.uid,
+        idToken: firebaseUser.accessToken,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,
         avatar: firebaseUser.photoURL,

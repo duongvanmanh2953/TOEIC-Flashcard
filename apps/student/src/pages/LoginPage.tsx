@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LogIn, AlertCircle, ShieldCheck, Sparkles, Lightbulb } from 'lucide-react';
 import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
 import { VocabFlowLogo } from '@vocabflow/shared';
+import { Capacitor } from '@capacitor/core';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -47,10 +48,14 @@ export const LoginPage: React.FC = () => {
     if (isMobileAuth && provider && !user) {
       if (provider === 'google') {
         setSocialLoading('google');
-        loginWithGoogle().finally(() => setSocialLoading(null));
+        loginWithGoogle()
+          .catch((err: any) => setError(err?.message || 'Không thể đăng nhập bằng Google.'))
+          .finally(() => setSocialLoading(null));
       } else if (provider === 'facebook') {
         setSocialLoading('facebook');
-        loginWithFacebook().finally(() => setSocialLoading(null));
+        loginWithFacebook()
+          .catch((err: any) => setError(err?.message || 'Không thể đăng nhập bằng Facebook.'))
+          .finally(() => setSocialLoading(null));
       }
     }
   }, [user]);
@@ -230,7 +235,9 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('google');
               try {
                 await loginWithGoogle();
-                handlePostAuthRedirect();
+                if (!Capacitor.isNativePlatform()) {
+                  handlePostAuthRedirect();
+                }
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Google.');
               } finally {
@@ -268,7 +275,9 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('facebook');
               try {
                 await loginWithFacebook();
-                handlePostAuthRedirect();
+                if (!Capacitor.isNativePlatform()) {
+                  handlePostAuthRedirect();
+                }
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Facebook.');
               } finally {

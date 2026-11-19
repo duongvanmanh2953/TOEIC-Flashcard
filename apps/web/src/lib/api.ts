@@ -196,6 +196,7 @@ api.interceptors.response.use(
     if (isNetworkError) {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('VOCABFLOW_NETWORK_OFFLINE_DETECTED'));
+        // Do not spam transient 3s toasts when offline; network status is persistently indicated by the WiFi icon in the header.
       }
 
       // If this was a GET request, attempt to serve from local IndexedDB cache!

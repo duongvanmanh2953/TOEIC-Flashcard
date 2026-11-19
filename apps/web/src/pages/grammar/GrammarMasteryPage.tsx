@@ -9,13 +9,16 @@ import {
   Lightbulb,
   AlertTriangle,
   Award,
+  ChevronLeft,
   ChevronRight,
   Clock,
   HelpCircle,
   Compass,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { CustomSelect } from '../../components/ui/CustomSelect';
 import { useAuth } from '../../contexts/AuthContext';
+import { playCorrectSound, playWrongSound } from '@vocabflow/shared';
 import {
   JAPANESE_GRAMMAR_CATEGORIES,
   JAPANESE_GRAMMAR_TOPIC_DETAILS,
@@ -205,10 +208,16 @@ export const GrammarMasteryPage: React.FC = () => {
           explanationMd: ex.explanationMd,
         };
       });
+      const accuracyScore = Math.round((correctCount / exList.length) * 100);
+      if (accuracyScore >= 60) {
+        playCorrectSound();
+      } else {
+        playWrongSound();
+      }
       setSubmittedResults({
         correctCount,
         totalCount: exList.length,
-        accuracyScore: Math.round((correctCount / exList.length) * 100),
+        accuracyScore,
         results,
       });
       return;
@@ -226,6 +235,12 @@ export const GrammarMasteryPage: React.FC = () => {
       });
       const data = res?.data?.data || res?.data || res;
       setSubmittedResults(data);
+      const acc = data?.summary?.accuracy || data?.accuracyScore || 0;
+      if (acc >= 60) {
+        playCorrectSound();
+      } else {
+        playWrongSound();
+      }
     } catch (err: any) {
       console.error('Failed to submit exercise:', err);
       alert(err?.response?.data?.message || 'Không thể nộp bài tập. Vui lòng thử lại!');
@@ -287,33 +302,71 @@ export const GrammarMasteryPage: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Category Tabs (Only if categories exist) */}
-      {categories.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {categories.map((cat) => {
-            const isSelected = selectedCategory?.id === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setSelectedCategory(cat);
-                  if (cat.topics && cat.topics.length > 0) {
-                    fetchTopicDetail(cat.topics[0].id);
+      {/* 3. Category Selector with Prev/Next buttons & CustomSelect (No overflow scroll) */}
+      {categories.length > 0 && (() => {
+        const currentCategoryIndex = categories.findIndex((c) => c.id === selectedCategory?.id);
+        const handlePrevCat = () => {
+          if (currentCategoryIndex > 0) {
+            const prev = categories[currentCategoryIndex - 1];
+            setSelectedCategory(prev);
+            if (prev.topics && prev.topics.length > 0) fetchTopicDetail(prev.topics[0].id);
+          }
+        };
+        const handleNextCat = () => {
+          if (currentCategoryIndex < categories.length - 1) {
+            const next = categories[currentCategoryIndex + 1];
+            setSelectedCategory(next);
+            if (next.topics && next.topics.length > 0) fetchTopicDetail(next.topics[0].id);
+          }
+        };
+
+        return (
+          <div className="flex items-center gap-2 pb-2">
+            <button
+              type="button"
+              onClick={handlePrevCat}
+              disabled={currentCategoryIndex <= 0}
+              className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition shrink-0 shadow-xs"
+              title="Chuyên đề trước"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <div className="flex-1 min-w-0">
+              <CustomSelect
+                value={selectedCategory?.id || ''}
+                onChange={(val) => {
+                  const cat = categories.find((c) => c.id === val);
+                  if (cat) {
+                    setSelectedCategory(cat);
+                    if (cat.topics && cat.topics.length > 0) {
+                      fetchTopicDetail(cat.topics[0].id);
+                    }
                   }
                 }}
-                className={`px-4 py-2.5 rounded-2xl text-xs font-black transition whitespace-nowrap flex items-center gap-2 cursor-pointer ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
-                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-emerald-500/50'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>{cat.titleVi}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+                icon={BookOpen}
+                options={categories.map((cat, idx) => ({
+                  value: cat.id,
+                  label: cat.titleVi,
+                  badge: `${cat.topics?.length || 0} bài`,
+                  description: `${idx + 1}/${categories.length} • ${cat.title || ''}`,
+                }))}
+                className="w-full"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNextCat}
+              disabled={currentCategoryIndex >= categories.length - 1}
+              className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition shrink-0 shadow-xs"
+              title="Chuyên đề tiếp theo"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      })()}
 
       {/* 4. Main Workspace: Topics Sidebar + Topic Detail View */}
       {categories.length > 0 && (
@@ -559,16 +612,24 @@ export const GrammarMasteryPage: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {ex.options.map((opt) => {
                                 const isSelected = userAnswers[ex.id] === opt;
+                                let btnStyle = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400';
+                                if (res) {
+                                  if (opt === res.correctAnswer) {
+                                    btnStyle = 'bg-emerald-600 border-emerald-400 text-white font-extrabold shadow-md shadow-emerald-600/30';
+                                  } else if (isSelected) {
+                                    btnStyle = 'bg-rose-600 border-rose-400 text-white font-extrabold shadow-md shadow-rose-600/30 animate-shake';
+                                  }
+                                } else if (isSelected) {
+                                  btnStyle = 'bg-indigo-600 text-white border-indigo-600 shadow-sm';
+                                }
+
                                 return (
                                   <button
                                     key={opt}
                                     type="button"
+                                    disabled={!!submittedResults}
                                     onClick={() => handleSelectOption(ex.id, opt)}
-                                    className={`p-2.5 rounded-xl text-left border text-xs font-bold transition cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
-                                    }`}
+                                    className={`p-2.5 rounded-xl text-left border text-xs font-bold transition cursor-pointer ${btnStyle}`}
                                   >
                                     {opt}
                                   </button>
@@ -584,21 +645,31 @@ export const GrammarMasteryPage: React.FC = () => {
                                 onChange={(e) => handleFillBlankChange(ex.id, e.target.value)}
                                 placeholder="Gõ câu trả lời chính xác..."
                                 disabled={!!submittedResults}
-                                className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-bold transition ${
+                                  res
+                                    ? res.isCorrect
+                                      ? 'border-2 border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-extrabold'
+                                      : 'border-2 border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300 font-extrabold animate-shake'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500'
+                                }`}
                               />
                             </div>
                           )}
 
                           {/* Explanation feedback */}
                           {res && (
-                            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300 space-y-1">
-                              <div>
-                                <strong>Đáp án chuẩn:</strong>{' '}
-                                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            <div className="p-4 rounded-2xl bg-blue-950 border-2 border-blue-500/60 text-white shadow-xl shadow-blue-950/40 text-xs space-y-1.5 animate-fade-in">
+                              <div className="flex items-center gap-1.5 text-blue-200 font-bold text-xs">
+                                <span>💡 Đáp án chuẩn:</span>
+                                <span className="font-extrabold text-emerald-300">
                                   {res.correctAnswer}
                                 </span>
                               </div>
-                              {res.explanation && <div>{res.explanation}</div>}
+                              {res.explanation && (
+                                <p className="text-slate-100 font-medium leading-relaxed pt-1">
+                                  {res.explanation}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>

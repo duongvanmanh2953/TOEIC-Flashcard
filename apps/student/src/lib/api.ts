@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Capacitor } from '@capacitor/core';
+import { idbGetCache, idbSetCache } from './idb';
 
 export function resolveApiBaseUrl(raw?: string): string {
   const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
@@ -186,6 +187,20 @@ api.interceptors.response.use(
       }
     }
 
+    // Cache successful GET responses in IndexedDB for resilient offline learning
+    if (response.config?.method?.toUpperCase() === 'GET' && response.config?.url) {
+      const url = response.config.url;
+      if (
+        url.startsWith('/vocabulary') ||
+        url.startsWith('/languages') ||
+        url.startsWith('/community/my-decks') ||
+        url.startsWith('/community/my-words') ||
+        url.startsWith('/dashboard')
+      ) {
+        idbSetCache(url, response.data, 7 * 24 * 3600000).catch(() => {});
+      }
+    }
+
     return response.data;
   },
   async (error) => {
@@ -198,9 +213,74 @@ api.interceptors.response.use(
       console.warn(`[HTTP ERR] ${error.response?.status || 'FAIL'} ${error.config?.url}`, error.response?.data || error.message);
     }
 
-    // Auto-dispatch error toast for failed requests (except 401 which will be retried)
     const originalRequest = error.config;
     const is401 = error.response?.status === 401;
+
+    // Detect offline / network failure gracefully
+    const isNetworkError =
+      !error.response ||
+      error.code === 'ERR_NETWORK' ||
+      error.message?.includes('Network Error') ||
+      (typeof navigator !== 'undefined' && !navigator.onLine);
+
+    if (isNetworkError) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('VOCABFLOW_NETWORK_OFFLINE_DETECTED'));
+        // Do not spam transient 3s toasts when offline; network status is persistently indicated by the WiFi icon in the header.
+      }
+
+      // If this was a GET request, attempt to serve from local IndexedDB cache!
+      if (originalRequest?.method?.toUpperCase() === 'GET' && originalRequest?.url) {
+        try {
+          const cached = await idbGetCache(originalRequest.url, true);
+          if (cached) {
+            if (import.meta.env.DEV) {
+              console.debug(`[HTTP OFFLINE FALLBACK] Served cached data for ${originalRequest.url}`);
+            }
+            return cached;
+          }
+        } catch {
+          // Continue to graceful offline rejection
+        }
+      }
+
+      // If this was an offline review submission, enqueue it silently
+      if (
+        originalRequest?.url?.includes('/reviews/batch') ||
+        originalRequest?.url?.includes('/reviews/session')
+      ) {
+        try {
+          const payloadData =
+            typeof originalRequest.data === 'string'
+              ? JSON.parse(originalRequest.data)
+              : originalRequest.data;
+          if (payloadData?.reviews && Array.isArray(payloadData.reviews)) {
+            const { offlineSyncService } = await import('./offlineSyncService');
+            await offlineSyncService.enqueueOfflineReviews(payloadData.reviews);
+            return {
+              data: {
+                success: true,
+                isOffline: true,
+                xpAwarded: payloadData.reviews.length * 5,
+                accuracy: 100,
+                reviewedCount: payloadData.reviews.length,
+                message: 'Đã lưu tiến trình ôn tập ngoại tuyến vào máy.',
+              },
+            };
+          }
+        } catch (queueErr) {
+          console.warn('Failed to queue offline reviews:', queueErr);
+        }
+      }
+
+      return Promise.reject({
+        isOffline: true,
+        message: 'Không có kết nối mạng',
+        originalError: error,
+      });
+    }
+
+    // Auto-dispatch error toast for failed requests (except 401 which will be retried)
 
     if (!is401 && !(error.config as any)?.skipGlobalToast) {
       const errMsg =

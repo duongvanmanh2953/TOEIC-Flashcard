@@ -325,15 +325,18 @@ export async function clearFirebaseConfig(): Promise<void> {
  * Maps raw Firebase error codes to friendly, human-readable notifications.
  */
 export function formatFirebaseAuthError(errorCode: string): string {
+  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
   switch (errorCode) {
     case 'auth/popup-closed-by-user':
-      return 'Quá trình đăng nhập đã được hủy bỏ (Bạn đã đóng cửa sổ đăng nhập).';
+      return 'Quá trình đăng nhập đã được hủy bỏ (cửa sổ đăng nhập đã bị đóng trước khi hoàn tất).';
     case 'auth/cancelled-popup-request':
-      return 'Cửa sổ đăng nhập trước đó đã được thay thế.';
+      return 'Cửa sổ đăng nhập trước đó đã được thay thế hoặc bị hủy.';
     case 'auth/popup-blocked':
-      return 'Trình duyệt đã chặn cửa sổ đăng nhập (Popup). Vui lòng cho phép popup cho VocabFlow.';
+      return 'Trình duyệt đã chặn cửa sổ đăng nhập (Pop-up). Vui lòng nhấn vào biểu tượng Pop-up trên thanh địa chỉ trình duyệt để Cho phép (Always allow pop-ups) rồi thử lại.';
     case 'auth/unauthorized-domain':
-      return 'Tên miền hiện tại chưa được cấp phép trong Firebase Console. Vui lòng thêm localhost/domain vào Firebase Authentication > Settings > Authorized domains.';
+      return `Tên miền hiện tại (${currentHost || 'domain'}) chưa được cấp phép trong Firebase Console. Vui lòng thêm tên miền này vào Firebase Console > Authentication > Settings > Authorized domains hoặc sử dụng form đăng ký Email.`;
+    case 'auth/operation-not-allowed':
+      return 'Phương thức đăng nhập này (Google/Facebook) chưa được kích hoạt trong Firebase Console > Authentication > Sign-in method.';
     case 'auth/account-exists-with-different-credential':
       return 'Email này đã liên kết với một phương thức đăng nhập khác. Hãy đăng nhập bằng phương thức gốc.';
     case 'auth/credential-already-in-use':
@@ -355,8 +358,23 @@ export function formatFirebaseAuthError(errorCode: string): string {
     case 'auth/network-request-failed':
       return 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
     default:
-      return `Lỗi xác thực Firebase (${errorCode}). Vui lòng kiểm tra cấu hình Firebase OAuth.`;
+      return `Lỗi xác thực Firebase (${errorCode}). Vui lòng kiểm tra cấu hình Firebase OAuth hoặc đăng ký bằng form Email.`;
   }
+}
+
+/**
+ * Wraps a promise with a timeout to prevent hanging UI (e.g. when popup is blocked or hangs)
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timer);
+  });
 }
 
 // Local storage key for persistent anonymous guest identification
@@ -428,7 +446,11 @@ export async function signInWithGoogle(): Promise<FirebaseUserToken> {
     provider.addScope('email');
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    const userCredential = await signInWithPopup(firebaseAuth, provider);
+    const userCredential = await withTimeout(
+      signInWithPopup(firebaseAuth, provider),
+      35000,
+      `Quá thời gian chờ xác thực Google (35 giây). Cửa sổ Popup có thể đã bị trình duyệt chặn hoặc tên miền (${typeof window !== 'undefined' ? window.location.hostname : ''}) chưa được cấp phép trong Firebase. Vui lòng cho phép Pop-up hoặc sử dụng form đăng ký Email bên trên.`,
+    );
     const user: FirebaseUser = userCredential.user;
     const token = await user.getIdToken();
 
@@ -469,7 +491,11 @@ export async function signInWithFacebook(): Promise<FirebaseUserToken> {
     provider.addScope('email');
     provider.addScope('public_profile');
 
-    const userCredential = await signInWithPopup(firebaseAuth, provider);
+    const userCredential = await withTimeout(
+      signInWithPopup(firebaseAuth, provider),
+      35000,
+      `Quá thời gian chờ xác thực Facebook (35 giây). Cửa sổ Popup có thể đã bị trình duyệt chặn hoặc nhà cung cấp Facebook chưa được thiết lập trên Firebase. Vui lòng cho phép Pop-up hoặc sử dụng form đăng ký Email bên trên.`,
+    );
     const user: FirebaseUser = userCredential.user;
     const token = await user.getIdToken();
 

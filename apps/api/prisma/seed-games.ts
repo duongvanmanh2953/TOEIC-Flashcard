@@ -417,6 +417,108 @@ async function seedGames() {
     }
   }
   console.log(`✅ Seeded ${added} new Game Questions (Total pool: ${questions.length})`);
+
+  // 3. Dynamic Expansion from English Vocabularies
+  try {
+    const vocabs = await prisma.vocabulary.findMany({
+      where: { word: { mode: 'insensitive', not: '' } },
+      include: { meanings: true, examples: true },
+      take: 400,
+    });
+    const englishVocabs = vocabs.filter(
+      (v) => /^[a-zA-Z]{3,}/.test(v.word) && (v.meanings?.[0]?.meaning || v.definition),
+    );
+
+    let dynamicAdded = 0;
+    for (const v of englishVocabs.slice(0, 100)) {
+      const meaning = (v.meanings?.[0]?.meaning || v.shortDefinition || v.definition || '').trim();
+      if (!meaning) continue;
+      const cleanMeaning = meaning.split(';')[0].split(',')[0].trim().toLowerCase();
+
+      const dynamicList: any[] = [
+        {
+          gameMode: GameModeType.TRANSLATION_RUSH,
+          prompt: v.word,
+          direction: 'EN_VI',
+          correctAnswer: cleanMeaning,
+          acceptedAnswers: [cleanMeaning, meaning.toLowerCase()],
+          explanation: `${v.word} (${v.partOfSpeech || 'từ vựng'}): ${meaning}`,
+          difficulty: v.difficulty || 3.0,
+          cefrLevel: v.cefrLevel || CefrLevel.B1,
+          category: 'Vocabulary',
+          status: 'PUBLISHED',
+        },
+        {
+          gameMode: GameModeType.TRANSLATION_RUSH,
+          prompt: cleanMeaning,
+          direction: 'VI_EN',
+          correctAnswer: v.word.toLowerCase(),
+          acceptedAnswers: [v.word.toLowerCase()],
+          explanation: `Từ tiếng Anh chính xác: ${v.word}`,
+          difficulty: v.difficulty || 3.0,
+          cefrLevel: v.cefrLevel || CefrLevel.B1,
+          category: 'Vocabulary',
+          status: 'PUBLISHED',
+        },
+        {
+          gameMode: GameModeType.WORD_BLITZ,
+          prompt: v.word.toUpperCase(),
+          direction: 'MEANING',
+          correctAnswer: cleanMeaning,
+          acceptedAnswers: [cleanMeaning],
+          explanation: `Phiên âm: ${v.pronunciation || ''} - Nghĩa: ${cleanMeaning}`,
+          difficulty: v.difficulty || 3.0,
+          cefrLevel: v.cefrLevel || CefrLevel.B1,
+          category: 'Speed Reflection',
+          status: 'PUBLISHED',
+        },
+        {
+          gameMode: GameModeType.LISTENING_RUSH,
+          prompt: `Bắt âm [ ${v.pronunciation || v.word} ]: "${cleanMeaning}"`,
+          direction: 'AUDIO_DICTATION',
+          correctAnswer: v.word.toLowerCase(),
+          acceptedAnswers: [v.word.toLowerCase()],
+          explanation: `Từ khóa: ${v.word} (${v.pronunciation || ''})`,
+          difficulty: v.difficulty || 3.0,
+          cefrLevel: v.cefrLevel || CefrLevel.B1,
+          category: 'Listening',
+          status: 'PUBLISHED',
+        },
+      ];
+
+      if (v.examples && v.examples.length > 0) {
+        const sentence = v.examples[0].sentence || '';
+        const regex = new RegExp(`\\b${v.word}\\b`, 'i');
+        if (regex.test(sentence)) {
+          dynamicList.push({
+            gameMode: GameModeType.MISSING_WORD,
+            prompt: sentence.replace(regex, '_____'),
+            direction: 'FILL_BLANK',
+            correctAnswer: v.word.toLowerCase(),
+            acceptedAnswers: [v.word.toLowerCase()],
+            explanation: `Câu hoàn chỉnh: ${sentence}`,
+            difficulty: v.difficulty || 3.0,
+            cefrLevel: v.cefrLevel || CefrLevel.B1,
+            category: 'Cloze',
+            status: 'PUBLISHED',
+          });
+        }
+      }
+
+      for (const dq of dynamicList) {
+        const exist = await prisma.gameQuestion.findFirst({
+          where: { gameMode: dq.gameMode, prompt: dq.prompt },
+        });
+        if (!exist) {
+          await prisma.gameQuestion.create({ data: dq });
+          dynamicAdded++;
+        }
+      }
+    }
+    console.log(`✅ Dynamically generated ${dynamicAdded} extra questions from Vocabulary pool.`);
+  } catch (err: any) {
+    console.warn('Notice during dynamic question expansion:', err?.message);
+  }
 }
 
 seedGames()

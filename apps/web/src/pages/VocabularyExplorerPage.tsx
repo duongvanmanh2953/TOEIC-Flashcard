@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Compass,
   GraduationCap,
+  ChevronLeft,
   ChevronRight,
   BarChart2,
   Volume2,
@@ -28,6 +29,7 @@ import {
 import { SpeechButton } from '../components/common/SpeechButton';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { idbSetCache, idbGetCache, idbSaveWords, idbGetWords } from '../lib/idb';
 import { audioEngine } from '../lib/audioEngine';
 import { useScrollLoad } from '../hooks/useScrollLoad';
@@ -46,7 +48,7 @@ import { isHandwritingSupportedForLanguage } from '../config/languages';
 export const VocabularyExplorerPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isGuest } = useAuth();
+  const { user, isGuest } = useAuth();
   const { activeLanguage, switchLanguage, availableLanguages } = useLearningContext();
 
   // Language Standards & Certificates
@@ -416,7 +418,7 @@ export const VocabularyExplorerPage: React.FC = () => {
               >
                 {availableLanguages.map((lang) => (
                   <option key={lang.id} value={lang.id}>
-                    {lang.flag} {lang.name}
+                    {lang.name} ({lang.nativeName})
                   </option>
                 ))}
               </select>
@@ -477,32 +479,32 @@ export const VocabularyExplorerPage: React.FC = () => {
 
       {/* Certificate Selector (When Language has multiple certificates like HSK/TOCFL or TOEIC/IELTS) */}
       {certificates.length > 1 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-400 shrink-0 flex items-center gap-1">
-            <GraduationCap className="w-3.5 h-3.5" />
+            <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
             <span>Chứng chỉ:</span>
           </span>
-          {certificates.map((cert) => (
-            <button
-              key={cert.id}
-              onClick={() => {
-                setSelectedCertificateId(cert.id);
+          <div className="flex-1 max-w-xs">
+            <CustomSelect
+              value={selectedCertificateId}
+              onChange={(val) => {
+                setSelectedCertificateId(String(val));
                 setSelectedLevelId('');
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
-                selectedCertificateId === cert.id
-                  ? 'bg-brand-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-brand-500/50'
-              }`}
-            >
-              <span>{cert.name}</span>
-            </button>
-          ))}
+              size="sm"
+              options={certificates.map((cert) => ({
+                value: cert.id,
+                label: cert.name,
+                description: cert.description || '',
+              }))}
+              className="w-full"
+            />
+          </div>
         </div>
       )}
 
-      {/* Level Classification Tabs / Pills Bar */}
+      {/* Level Classification using CustomSelect & Prev/Next (No horizontal scroll) */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-1.5">
@@ -522,53 +524,68 @@ export const VocabularyExplorerPage: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-none">
-          {/* All Levels Option */}
-          <button
-            onClick={() => {
-              setSelectedLevelId('');
-              setPage(1);
-            }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 shrink-0 ${
-              !selectedLevelId || selectedLevelId === 'ALL'
-                ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-md shadow-brand-500/20'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-brand-400/50'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Tất cả ({activeCertificate.name})</span>
-          </button>
+        {(() => {
+          const allOptions = [
+            { value: '', label: `Tất cả cấp độ (${activeCertificate.name})`, badge: 'ALL', description: 'Hiển thị toàn bộ từ vựng' },
+            ...activeLevels.map((lvl, idx) => ({
+              value: lvl.id,
+              label: `${lvl.badge} - ${lvl.name.split('(')[0].trim()}`,
+              badge: lvl.badge,
+              description: `Cấp độ ${idx + 1}/${activeLevels.length}`,
+            })),
+          ];
 
-          {/* Level Pills */}
-          {activeLevels.map((lvl) => {
-            const isSelected = selectedLevelId === lvl.id || selectedLevelId === lvl.badge;
-            return (
+          const currentIdx = allOptions.findIndex((o) => o.value === selectedLevelId);
+          const handlePrevLvl = () => {
+            if (currentIdx > 0) {
+              setSelectedLevelId(allOptions[currentIdx - 1].value);
+              setPage(1);
+            }
+          };
+          const handleNextLvl = () => {
+            if (currentIdx < allOptions.length - 1) {
+              setSelectedLevelId(allOptions[currentIdx + 1].value);
+              setPage(1);
+            }
+          };
+
+          return (
+            <div className="flex items-center gap-2 pb-1">
               <button
-                key={lvl.id}
-                onClick={() => {
-                  setSelectedLevelId(lvl.id);
-                  setPage(1);
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 shrink-0 ${
-                  isSelected
-                    ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20 ring-2 ring-brand-500/30'
-                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:border-brand-500/40 hover:bg-slate-50 dark:hover:bg-slate-850'
-                }`}
+                type="button"
+                onClick={handlePrevLvl}
+                disabled={currentIdx <= 0}
+                className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition shrink-0 shadow-2xs"
+                title="Cấp độ trước"
               >
-                <span
-                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase ${
-                    isSelected
-                      ? 'bg-white/20 text-white'
-                      : 'bg-brand-500/10 text-brand-600 dark:text-brand-400'
-                  }`}
-                >
-                  {lvl.badge}
-                </span>
-                <span>{lvl.name.split('(')[0].trim()}</span>
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            );
-          })}
-        </div>
+
+              <div className="flex-1 min-w-0">
+                <CustomSelect
+                  value={selectedLevelId}
+                  onChange={(val) => {
+                    setSelectedLevelId(String(val));
+                    setPage(1);
+                  }}
+                  size="sm"
+                  options={allOptions}
+                  className="w-full"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextLvl}
+                disabled={currentIdx >= allOptions.length - 1}
+                className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition shrink-0 shadow-2xs"
+                title="Cấp độ tiếp theo"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Elevated Active Level Banner / Quick Review Action Card */}

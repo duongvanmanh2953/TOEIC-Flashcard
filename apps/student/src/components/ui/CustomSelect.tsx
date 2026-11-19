@@ -28,6 +28,7 @@ export interface CustomSelectProps<T = string | number> {
   align?: 'auto' | 'left' | 'right';
   className?: string;
   menuClassName?: string;
+  buttonClassName?: string;
 }
 
 export function CustomSelect<T extends string | number>({
@@ -46,6 +47,7 @@ export function CustomSelect<T extends string | number>({
   align = 'auto',
   className = '',
   menuClassName = '',
+  buttonClassName = '',
 }: CustomSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -258,12 +260,16 @@ export function CustomSelect<T extends string | number>({
           onClick={() => setIsOpen(!isOpen)}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          className={`w-full flex items-center justify-between gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-left border ${
-            error
-              ? 'border-rose-500/80 ring-1 ring-rose-500/30'
-              : isOpen
-              ? 'border-indigo-500 ring-2 ring-indigo-500/20'
-              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+          className={`w-full flex items-center justify-between gap-2 text-left border ${
+            buttonClassName
+              ? `${buttonClassName} ${isOpen ? 'ring-2 ring-indigo-500/20 border-indigo-500' : ''}`
+              : `bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                  error
+                    ? 'border-rose-500/80 ring-1 ring-rose-500/30'
+                    : isOpen
+                    ? 'border-indigo-500 ring-2 ring-indigo-500/20'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                }`
           } transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -271,7 +277,11 @@ export function CustomSelect<T extends string | number>({
             {renderIcon(SelectedIcon, 'w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0')}
             <span
               className={`truncate font-medium ${
-                selectedOption ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-400'
+                selectedOption
+                  ? buttonClassName
+                    ? 'text-inherit'
+                    : 'text-slate-900 dark:text-slate-100'
+                  : 'text-slate-400 dark:text-slate-400'
               }`}
             >
               {selectedOption ? selectedOption.label : placeholder}

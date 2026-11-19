@@ -19,10 +19,17 @@ export interface GameQuestionPayload {
   direction: string;
   correctAnswer: string;
   acceptedAnswers: string[];
+  options?: string[];
+  correctOptionIndex?: number;
   explanation?: string;
   difficulty: number;
   category: string;
   audioUrl?: string;
+  languageCode?: string;
+  questionType?: string;
+  phonetic?: string;
+  targetWord?: string;
+  hint?: string;
 }
 
 export interface IGameMode {

@@ -19,9 +19,31 @@ class AudioEngine {
   private activeStopCallback: (() => void) | null = null;
   private preferredVoiceLang: 'vi' | 'en' | 'auto' = 'vi'; // Default to Vietnamese voice
   private preferredVoiceGender: 'male' | 'female' = 'male'; // Default: Giọng Nam chuẩn bản xứ
+  private preferredVoiceURI: string | null = null;
 
   constructor() {
     this.initAutoUnlock();
+  }
+
+  public setPreferredVoiceURI(uri: string | null) {
+    this.preferredVoiceURI = uri;
+    try {
+      if (uri) {
+        localStorage.setItem('vocabflow_preferred_voice_uri', uri);
+      } else {
+        localStorage.removeItem('vocabflow_preferred_voice_uri');
+      }
+    } catch (_) {}
+  }
+
+  public getPreferredVoiceURI(): string | null {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('vocabflow_preferred_voice_uri');
+      if (saved) {
+        this.preferredVoiceURI = saved;
+      }
+    }
+    return this.preferredVoiceURI;
   }
 
   public setPreferredVoiceGender(gender: 'male' | 'female') {
@@ -436,40 +458,62 @@ class AudioEngine {
           enVoice = voices.find((v) => v.lang.toLowerCase().startsWith('en'));
         }
 
+        const isLangMatch = (vLang: string, prefix: string) => {
+          const l = (vLang || '').toLowerCase().replace('_', '-');
+          if (prefix === 'zh') return l.startsWith('zh') || l.startsWith('cmn');
+          return l.startsWith(prefix);
+        };
+
         // Find Target Language voice matching language prefix & gender
-        let targetVoice = voices.find((v) => {
-          const isTargetLang = v.lang.toLowerCase().replace('_', '-').startsWith(targetLangPrefix);
-          if (!isTargetLang) return false;
-          const name = v.name.toLowerCase();
-          if (genderPref === 'male') {
-            return (
-              !name.includes('female') &&
-              !name.includes('woman') &&
-              (name.includes('male') ||
-                name.includes('guy') ||
-                name.includes('christopher') ||
-                name.includes('david') ||
-                name.includes('brian') ||
-                name.includes('stefan') ||
-                name.includes('keita') ||
-                name.includes('yunxi') ||
-                name.includes('martin'))
-            );
-          } else {
-            return (
-              name.includes('female') ||
-              name.includes('woman') ||
-              name.includes('zira') ||
-              name.includes('samantha') ||
-              name.includes('kyoko') ||
-              name.includes('xiaoxiao') ||
-              name.includes('katja') ||
-              name.includes('monica')
-            );
-          }
-        });
+        let targetVoice: SpeechSynthesisVoice | undefined;
+        const preferredURI = this.getPreferredVoiceURI();
+        if (preferredURI) {
+          targetVoice = voices.find(
+            (v) => (v.voiceURI === preferredURI || v.name === preferredURI) &&
+              isLangMatch(v.lang, targetLangPrefix)
+          );
+        }
+
         if (!targetVoice) {
-          targetVoice = voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(targetLangPrefix));
+          targetVoice = voices.find((v) => {
+            const matchesLang = isLangMatch(v.lang, targetLangPrefix);
+            if (!matchesLang) return false;
+            const name = v.name.toLowerCase();
+            if (genderPref === 'male') {
+              return (
+                !name.includes('female') &&
+                !name.includes('woman') &&
+                (name.includes('male') ||
+                  name.includes('guy') ||
+                  name.includes('christopher') ||
+                  name.includes('david') ||
+                  name.includes('brian') ||
+                  name.includes('stefan') ||
+                  name.includes('keita') ||
+                  name.includes('yunxi') ||
+                  name.includes('kangkang') ||
+                  name.includes('zhiwei') ||
+                  name.includes('yunjian') ||
+                  name.includes('martin'))
+              );
+            } else {
+              return (
+                name.includes('female') ||
+                name.includes('woman') ||
+                name.includes('zira') ||
+                name.includes('samantha') ||
+                name.includes('kyoko') ||
+                name.includes('xiaoxiao') ||
+                name.includes('yaoyao') ||
+                name.includes('huihui') ||
+                name.includes('katja') ||
+                name.includes('monica')
+              );
+            }
+          });
+        }
+        if (!targetVoice) {
+          targetVoice = voices.find((v) => isLangMatch(v.lang, targetLangPrefix));
         }
         if (!targetVoice && targetLangPrefix === 'en') {
           targetVoice = enVoice;
@@ -810,42 +854,51 @@ class AudioEngine {
         const genderPref = this.getPreferredVoiceGender(); // 'male' | 'female'
 
         if (matchingVoices.length > 0) {
-          if (genderPref === 'female') {
-            chosenVoice = matchingVoices.find((v) => {
-              const n = v.name.toLowerCase();
-              return (
-                n.includes('female') ||
-                n.includes('woman') ||
-                n.includes('zira') ||
-                n.includes('samantha') ||
-                n.includes('kyoko') ||
-                n.includes('yuna') ||
-                n.includes('xiaoxiao') ||
-                n.includes('huihui') ||
-                n.includes('katja') ||
-                n.includes('monica')
-              );
-            });
-          } else {
-            chosenVoice = matchingVoices.find((v) => {
-              const n = v.name.toLowerCase();
-              return (
-                n.includes('male') ||
-                n.includes('guy') ||
-                n.includes('christopher') ||
-                n.includes('david') ||
-                n.includes('brian') ||
-                n.includes('stefan') ||
-                n.includes('nam') ||
-                n.includes('yunxi') ||
-                n.includes('kangkang') ||
-                n.includes('jorge')
-              );
-            });
+          const preferredURI = this.getPreferredVoiceURI();
+          if (preferredURI) {
+            chosenVoice = matchingVoices.find(
+              (v) => v.voiceURI === preferredURI || v.name === preferredURI
+            );
           }
 
           if (!chosenVoice) {
-            chosenVoice = matchingVoices[0];
+            if (genderPref === 'female') {
+              chosenVoice = matchingVoices.find((v) => {
+                const n = v.name.toLowerCase();
+                return (
+                  n.includes('female') ||
+                  n.includes('woman') ||
+                  n.includes('zira') ||
+                  n.includes('samantha') ||
+                  n.includes('kyoko') ||
+                  n.includes('yuna') ||
+                  n.includes('xiaoxiao') ||
+                  n.includes('huihui') ||
+                  n.includes('katja') ||
+                  n.includes('monica')
+                );
+              });
+            } else {
+              chosenVoice = matchingVoices.find((v) => {
+                const n = v.name.toLowerCase();
+                return (
+                  n.includes('male') ||
+                  n.includes('guy') ||
+                  n.includes('christopher') ||
+                  n.includes('david') ||
+                  n.includes('brian') ||
+                  n.includes('stefan') ||
+                  n.includes('nam') ||
+                  n.includes('yunxi') ||
+                  n.includes('kangkang') ||
+                  n.includes('jorge')
+                );
+              });
+            }
+
+            if (!chosenVoice) {
+              chosenVoice = matchingVoices[0];
+            }
           }
         }
       }

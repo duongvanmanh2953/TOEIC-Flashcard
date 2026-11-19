@@ -37,6 +37,7 @@ class OfflineSyncService {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => this.handleOnline());
       window.addEventListener('offline', () => this.handleOffline());
+      window.addEventListener('VOCABFLOW_NETWORK_OFFLINE_DETECTED', () => this.handleOffline());
     }
   }
 

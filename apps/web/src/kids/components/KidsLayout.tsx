@@ -62,6 +62,24 @@ export const KidsLayout: React.FC = () => {
   const [parentModalTitle, setParentModalTitle] = useState<string>('Khu Vực Phụ Huynh');
   const [parentModalDesc, setParentModalDesc] = useState<string>('Nhấn và giữ nút tròn bên dưới để mở khóa.');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [parentConsentOpen, setParentConsentOpen] = useState(() => {
+    try {
+      return !localStorage.getItem('vocabflow_kids_parental_consent');
+    } catch {
+      return false;
+    }
+  });
+
+  const handleAcceptParentConsent = () => {
+    try {
+      localStorage.setItem('vocabflow_kids_parental_consent', JSON.stringify({
+        agreed: true,
+        timestamp: new Date().toISOString(),
+        version: '2026.11',
+      }));
+    } catch {}
+    setParentConsentOpen(false);
+  };
 
   // Immediately cancel any previous page voice narration whenever route changes
   useEffect(() => {
@@ -505,6 +523,43 @@ export const KidsLayout: React.FC = () => {
         title={parentModalTitle}
         description={parentModalDesc}
       />
+
+      {/* Parental Consent & Child Protection Overlay (Điều 24 Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15) */}
+      {parentConsentOpen && (
+        <div className="fixed inset-0 z-[210] w-screen h-screen min-h-[100dvh] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 select-none">
+          <div className="kids-modal bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border-2 border-emerald-400 shadow-2xl text-center space-y-4 animate-scale-up my-auto">
+            <div className="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl font-black shadow-inner">
+              🛡️ 👶
+            </div>
+            <h3 className="text-xl font-black text-slate-950">
+              Không Gian Học An Toàn Cho Bé
+            </h3>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              Theo Điều 24 Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15, VocabFlow cam kết bảo vệ dữ liệu trẻ em: không thu thập thông tin định danh nhạy cảm, không có quảng cáo thương mại và toàn bộ tiến độ được lưu giữ an toàn.
+            </p>
+            <p className="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-left">
+              Phụ huynh xác nhận đồng ý cho bé tham gia học từ vựng và lưu giữ huy hiệu tiến độ trên thiết bị này.
+            </p>
+            <div className="pt-2 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={handleAcceptParentConsent}
+                className="w-full py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs sm:text-sm transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Phụ huynh xác nhận & Bắt đầu</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition cursor-pointer"
+              >
+                Trở về Dashboard chính
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Unsupported Language Switch Prompt Overlay */}
       {!isSupported && (

@@ -206,8 +206,9 @@ export class AIController {
   makeMeSoundBetter(
     @Body('sentence') sentence: string,
     @Body('topic') topic?: string,
+    @Body('language') language?: string,
   ) {
-    return this.aiService.makeMeSoundBetter(sentence, topic);
+    return this.aiService.makeMeSoundBetter(sentence, topic, language || 'en');
   }
 
   @UseGuards(JwtAuthGuard)
@@ -219,8 +220,9 @@ export class AIController {
     @Body('scenarioId') scenarioId: string,
     @Body('message') message: string,
     @Body('history') history?: Array<{ role: string; content: string }>,
+    @Body('language') language?: string,
   ) {
-    return this.aiService.roleplayStep(userId, scenarioId, message, history);
+    return this.aiService.roleplayStep(userId, scenarioId, message, history, language || 'en');
   }
 
   @UseGuards(JwtAuthGuard)

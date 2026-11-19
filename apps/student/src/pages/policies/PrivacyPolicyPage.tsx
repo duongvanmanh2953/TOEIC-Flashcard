@@ -24,7 +24,7 @@ export const PrivacyPolicyPage: React.FC = () => {
     if (metaDescription) {
       metaDescription.setAttribute(
         'content',
-        `Chính sách bảo mật thông tin cá nhân của ${LEGAL_CONFIG.platformName} theo quy định pháp luật Việt Nam và Nghị định 13/2023/NĐ-CP.`
+        `Chính sách bảo mật thông tin cá nhân của ${LEGAL_CONFIG.platformName} theo quy định pháp luật Việt Nam, Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 và Nghị định 356/2025/NĐ-CP.`
       );
     }
   }, []);
@@ -32,11 +32,11 @@ export const PrivacyPolicyPage: React.FC = () => {
   return (
     <PolicyLayout
       title="Chính Sách Bảo Mật Thông Tin Cá Nhân"
-      subtitle="Cam kết minh bạch về thu thập, sử dụng, lưu trữ và bảo vệ dữ liệu học viên theo Nghị định 52/2013/NĐ-CP và Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân."
+      subtitle="Cam kết minh bạch về thu thập, sử dụng, lưu trữ và bảo vệ dữ liệu học viên theo Luật Thương mại điện tử 122/2025/QH15, Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 và Nghị định 356/2025/NĐ-CP."
       currentPath="/privacy-policy"
       toc={TOC_ITEMS}
-      lastUpdated="15/10/2026"
-      effectiveDate="15/10/2026"
+      lastUpdated="10/11/2026"
+      effectiveDate="10/11/2026"
     >
       {/* Intro box */}
       <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-2">
@@ -101,7 +101,10 @@ export const PrivacyPolicyPage: React.FC = () => {
             <strong>Dữ liệu học tập & tiến độ tiếp thu:</strong> Danh sách từ vựng cá nhân đã lưu trữ, trạng thái ghi nhớ của từ (New, Learning, Familiar, Review, Strong, Mastered), các hệ số thuật toán Spaced Repetition (SRS), chuỗi ngày học Streak, điểm kinh nghiệm XP, lịch sử làm đề thi thử (Exam Bank) và ghi chú học tập.
           </li>
           <li>
-            <strong>Dữ liệu tương tác AI Tutor:</strong> Các câu hỏi ngữ pháp, câu lệnh trích xuất từ vựng và đoạn hội thoại trao đổi giữa học viên với trợ lý AI Tutor trong khuôn khổ nội dung học tập.
+            <strong>Dữ liệu tương tác AI Tutor:</strong> Các câu hỏi ngữ pháp, câu lệnh trích xuất từ vựng và đoạn hội thoại trao đổi giữa học viên với trợ lý AI Tutor trong khuôn khổ nội dung học tập (tuân thủ Luật Trí tuệ nhân tạo số 134/2025/QH15).
+          </li>
+          <li>
+            <strong>Dữ liệu người học nhỏ tuổi (Kids Mode):</strong> Đối với phân hệ giáo dục trẻ em, nền tảng tuân thủ Điều 24 Luật 91/2025/QH15. Hệ thống chỉ lưu giữ tên hiển thị và tiến độ hoạt hình giáo dục, không thu thập dữ liệu định danh nhạy cảm, đồng thời yêu cầu sự đồng ý xác nhận từ cha mẹ hoặc người giám hộ hợp pháp.
           </li>
           <li>
             <strong>Dữ liệu giao dịch và đơn hàng:</strong> Mã đơn thanh toán (<code>orderCode</code>), gói dịch vụ chọn mua (Plus hoặc Pro), số tiền thanh toán, thời gian giao dịch, trạng thái đơn hàng. <em>Lưu ý: Hệ thống không lưu trữ bất kỳ thông tin số thẻ tín dụng, mã CVV hay mật khẩu ngân hàng của học viên.</em>
@@ -259,17 +262,28 @@ export const PrivacyPolicyPage: React.FC = () => {
         <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
           <span>8. Quyền và nghĩa vụ của chủ thể dữ liệu</span>
         </h2>
-        <div className="space-y-2 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+        <div className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
           <p>
-            Căn cứ theo Nghị định số 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân, học viên có đầy đủ các quyền:
+            Căn cứ theo Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15 và Nghị định số 356/2025/NĐ-CP, học viên có đầy đủ 11 quyền hợp pháp của chủ thể dữ liệu:
           </p>
           <ul className="list-disc list-inside space-y-1.5 pl-1">
-            <li>Quyền được biết về hoạt động xử lý dữ liệu cá nhân của mình.</li>
-            <li>Quyền đồng ý hoặc không đồng ý cho phép xử lý dữ liệu cá nhân.</li>
-            <li>Quyền truy cập để xem, chỉnh sửa thông tin cá nhân trong mục Cài đặt tài khoản.</li>
-            <li>Quyền rút lại sự đồng ý hoặc yêu cầu xóa dữ liệu cá nhân.</li>
-            <li>Quyền khiếu nại, tố cáo khi phát hiện hành vi xâm phạm dữ liệu.</li>
+            <li><strong>Quyền được biết</strong> về toàn bộ hoạt động xử lý dữ liệu cá nhân của mình.</li>
+            <li><strong>Quyền đồng ý hoặc không đồng ý</strong> cho phép xử lý dữ liệu cá nhân một cách tự nguyện, minh bạch.</li>
+            <li><strong>Quyền truy cập, xem và chỉnh sửa</strong> thông tin cá nhân trong mục Cài đặt tài khoản.</li>
+            <li><strong>Quyền rút lại sự đồng ý</strong> hoặc phản đối việc tiếp tục xử lý dữ liệu.</li>
+            <li><strong>Quyền yêu cầu xóa hoặc hủy bỏ</strong> dữ liệu cá nhân khi không còn nhu cầu sử dụng.</li>
+            <li><strong>Quyền hạn chế xử lý dữ liệu</strong> và yêu cầu cung cấp bản sao dữ liệu cá nhân.</li>
+            <li><strong>Quyền khiếu nại, tố cáo và yêu cầu bồi thường thiệt hại</strong> theo quy định pháp luật.</li>
           </ul>
+
+          <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-xs space-y-1">
+            <p className="font-bold text-indigo-900 dark:text-indigo-300">
+              Cam kết thời hạn xử lý yêu cầu của chủ thể dữ liệu (Điều 5 Nghị định 356/2025/NĐ-CP):
+            </p>
+            <p>• Phản hồi xác nhận và hướng dẫn thủ tục: <strong>Chậm nhất trong 02 ngày làm việc</strong>.</p>
+            <p>• Cung cấp dữ liệu, xem hoặc chỉnh sửa thông tin: <strong>Trong vòng 10 ngày làm việc</strong> (gia hạn tối đa 10 ngày đối với trường hợp phức tạp).</p>
+            <p>• Xử lý yêu cầu rút đồng ý hoặc xóa dữ liệu: <strong>Trong vòng 15 – 20 ngày làm việc</strong>.</p>
+          </div>
         </div>
       </section>
 

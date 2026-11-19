@@ -46,9 +46,16 @@ export class CreateCustomRoomDto {
 
   @IsInt()
   @Min(2)
-  @Max(20)
   @IsOptional()
-  maxPlayers?: number = 8;
+  maxPlayers?: number = 10000;
+
+  @IsBoolean()
+  @IsOptional()
+  isLiveMode?: boolean = false;
+
+  @IsString()
+  @IsOptional()
+  liveProvider?: string = 'MOCK';
 
   @IsInt()
   @Min(5)

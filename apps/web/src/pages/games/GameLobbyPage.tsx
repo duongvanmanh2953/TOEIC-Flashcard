@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLearning } from '../../contexts/LearningContext';
 import api from '../../lib/api';
 import {
   Gamepad2,
@@ -27,11 +28,15 @@ import {
   Hash,
   KeyRound,
   RotateCw,
+  Video,
+  Globe2,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
-import { VocabFlowLogo } from '@vocabflow/shared';
+import { VocabFlowLogo, TikTokLogo, TikTokColorLogo } from '@vocabflow/shared';
 import { CreateCustomRoomModal } from '../../components/games/CreateCustomRoomModal';
 import { EnterRoomPasswordModal } from '../../components/games/EnterRoomPasswordModal';
+import { FilterSelect } from '../../components/ui/FilterSelect';
+import { CountryFlag } from '../../components/language/CountryFlag';
 
 interface ScheduleItem {
   gameMode: string;
@@ -67,6 +72,7 @@ interface LobbyData {
 
 export const GameLobbyPage: React.FC = () => {
   const { user, isGuest, promptLogin } = useAuth();
+  const { activeLanguage, availableLanguages, switchLanguage } = useLearning();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -105,6 +111,7 @@ export const GameLobbyPage: React.FC = () => {
   const [customRooms, setCustomRooms] = useState<any[]>([]);
   const [customRoomsLoading, setCustomRoomsLoading] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [createModalInitialType, setCreateModalInitialType] = useState<'PVP' | 'TIKTOK_LIVE'>('PVP');
   const [passwordModalData, setPasswordModalData] = useState<{
     isOpen: boolean;
     roomCode: string;
@@ -123,12 +130,13 @@ export const GameLobbyPage: React.FC = () => {
       fetchCustomRooms();
     }, 10000); // 10s sync
     return () => clearInterval(interval);
-  }, []);
+  }, [activeLanguage?.id]);
 
   const fetchCustomRooms = async () => {
     try {
       setCustomRoomsLoading(true);
-      const res: any = await api.get('/games/rooms');
+      const langParam = activeLanguage?.id ? `?languageId=${activeLanguage.id}` : '';
+      const res: any = await api.get(`/games/rooms${langParam}`);
       const list = res?.data?.data || res?.data || res;
       if (Array.isArray(list)) {
         setCustomRooms(list);
@@ -142,7 +150,8 @@ export const GameLobbyPage: React.FC = () => {
 
   const handleCreateRoomSuccess = (room: any) => {
     setIsCreateModalOpen(false);
-    navigate(`/games/room/${room.roomCode}?mode=${room.gameMode}`);
+    const liveQuery = room.isLiveMode ? '&live=1' : '';
+    navigate(`/games/room/${room.roomCode}?mode=${room.gameMode}&lang=${room.languageId || activeLanguage?.id || 'en'}${liveQuery}`);
   };
 
   const handleJoinCustomRoom = (room: any) => {
@@ -158,7 +167,8 @@ export const GameLobbyPage: React.FC = () => {
         gameMode: room.gameMode,
       });
     } else {
-      navigate(`/games/room/${room.roomCode}?mode=${room.gameMode}`);
+      const liveQuery = room.isLiveMode ? '&type=live' : '';
+      navigate(`/games/room/${room.roomCode}?mode=${room.gameMode}&lang=${room.languageId || activeLanguage?.id || 'en'}${liveQuery}`);
     }
   };
 
@@ -240,13 +250,49 @@ export const GameLobbyPage: React.FC = () => {
     }
     setJoining(true);
     const targetRoom = roomCode || `auto_${gameMode}`;
-    navigate(`/games/room/${targetRoom}?mode=${gameMode}`);
+    const langParam = activeLanguage?.id || 'en';
+    navigate(`/games/room/${targetRoom}?mode=${gameMode}&lang=${langParam}`);
   };
 
   const isOpen = lobbyData?.hoursStatus?.isOpen;
 
   return (
     <div className="space-y-8 pb-16 animate-fade-in">
+      {/* 0. Language Space Selector Bar */}
+      <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Globe2 className="w-4 h-4 text-indigo-500" />
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            Ngôn Ngữ Thi Đấu (Language Space):
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-black bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+            <CountryFlag languageId={activeLanguage?.id} countryCode={activeLanguage?.countryCode} size="xs" />
+            <span>{activeLanguage?.name || 'Đa Ngôn Ngữ'}</span>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {availableLanguages?.map((lang) => {
+            const isActive = lang.id === activeLanguage?.id;
+            return (
+              <button
+                key={lang.id}
+                onClick={() => switchLanguage(lang.id)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  isActive
+                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                    : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+                title={`Chuyển sang thi đấu ${lang.name}`}
+              >
+                <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="xs" />
+                <span>{lang.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 1. Hero Title Banner with Competitive Spirit & Dismiss X */}
       {showHeroBanner ? (
         <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-indigo-950/90 via-slate-900 to-purple-950/90 border border-indigo-500/30 text-white shadow-xl shadow-indigo-950/40 overflow-hidden animate-fade-in pr-12 backdrop-blur-xl">
@@ -260,18 +306,15 @@ export const GameLobbyPage: React.FC = () => {
           <div className="relative z-10 space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-300 text-xs font-black uppercase tracking-wider shadow-inner">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Đấu Trường Tiếng Anh Trực Tiếp • 20:00 – 22:00 Mỗi Ngày</span>
+              <span>Đấu Trường {activeLanguage?.name || 'Ngôn Ngữ'} Trực Tiếp • 20:00 – 22:00 Mỗi Ngày</span>
             </div>
 
             <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
-              {t('games.heroTitle', 'Đấu Trường Tiếng Anh Trực Tiếp')}
+              Đấu Trường {activeLanguage?.name || 'Ngôn Ngữ'} Trực Tiếp
             </h1>
 
             <p className="text-xs sm:text-sm text-slate-300 font-semibold leading-relaxed">
-              {t(
-                'games.heroSubtitle',
-                'Trực tiếp so tài phản xạ từ vựng, dịch thuật và ngữ pháp thời gian thực với hàng ngàn học viên.',
-              )}
+              Trực tiếp so tài phản xạ từ vựng {activeLanguage?.nativeName ? `(${activeLanguage.nativeName})` : ''}, dịch thuật và ngữ pháp thời gian thực với hàng ngàn học viên.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -306,6 +349,64 @@ export const GameLobbyPage: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* TOP PRIORITY ACTION HUB: TẠO PHÒNG ĐẤU 24/24 & VÀO NHANH */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-indigo-950/90 via-slate-900 to-indigo-950/90 border-2 border-indigo-500/40 shadow-xl shadow-indigo-950/50 backdrop-blur-xl flex flex-col lg:flex-row items-center justify-between gap-5">
+        <div className="space-y-1.5 text-center lg:text-left flex-1 min-w-0">
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              Mở Tự Do 24/24
+            </span>
+            <span className="text-[11px] font-bold text-indigo-300">
+              Phòng đấu riêng với bạn bè • Tùy biến bộ đề cá nhân & cộng đồng
+            </span>
+          </div>
+          <h2 className="text-lg sm:text-xl font-black text-white">
+            Tạo Phòng Đấu Tự Do 24/7 (Không Phụ Thuộc Khung Giờ Đấu Trường)
+          </h2>
+          <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+            Đấu Trường Chung mở định kỳ <strong className="text-indigo-300">20:00 – 22:00</strong>. Tuy nhiên bạn có thể tự tạo phòng đấu bạn bè hoặc cộng đồng hoạt động <strong className="text-emerald-300">24/24 bất cứ lúc nào</strong>, chọn bộ đề từ cộng đồng và tùy chỉnh cấu hình thời gian thi đấu!
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 shrink-0 w-full lg:w-auto">
+          <form onSubmit={handleQuickJoin} className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-44">
+              <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={quickJoinCode}
+                onChange={(e) => setQuickJoinCode(e.target.value.toUpperCase())}
+                placeholder="Mã phòng..."
+                maxLength={8}
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900/90 border border-indigo-500/30 text-xs font-mono font-bold uppercase tracking-wider text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={!quickJoinCode.trim()}
+              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer shrink-0 border border-slate-700"
+            >
+              Vào
+            </button>
+          </form>
+
+          <button
+            onClick={() => {
+              if (isGuest || !user) {
+                promptLogin('Đăng nhập để tạo phòng đấu riêng');
+                return;
+              }
+              setIsCreateModalOpen(true);
+            }}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs font-black shadow-lg shadow-indigo-600/40 transition flex items-center justify-center gap-2 cursor-pointer border border-indigo-400/40 hover:scale-[1.02] active:scale-95"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>TẠO PHÒNG ĐẤU (24/24)</span>
+          </button>
+        </div>
+      </div>
 
       {/* 2. Daily Operating Window & Countdown Card */}
       <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-xl">
@@ -408,82 +509,6 @@ export const GameLobbyPage: React.FC = () => {
         </div>
       )}
 
-      {/* 2.5. 24/7 MINI GAMES & SOLO PRACTICE SECTION */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <Gamepad2 className="w-5 h-5 text-purple-500" />
-              <span>MINI GAMES LUYỆN PHẢN XẠ 24/7 (CHƠI NGAY)</span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Rèn luyện phản xạ từ vựng TOEIC cấp tốc bất cứ lúc nào không cần chờ phiên đấu
-            </p>
-          </div>
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-            🟢 MỞ CỬA 24/7
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Card 1: Word Match Challenge */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/70 border border-indigo-500/30 hover:border-indigo-400 transition-all duration-300 space-y-4 shadow-lg group">
-            <div className="flex items-center justify-between">
-              <VocabFlowLogo size="md" showContainer={false} className="group-hover:scale-110 transition" />
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                Lật Thẻ Trí Nhớ
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-black text-white group-hover:text-indigo-300 transition">
-                Word Match Challenge
-              </h3>
-              <p className="text-xs text-slate-300 line-clamp-2">
-                Lật thẻ tìm đúng cặp từ vựng tiếng Anh và nghĩa tiếng Việt tương ứng. Tính điểm combo thần tốc và phát âm bản ngữ.
-              </p>
-            </div>
-
-            <button
-              onClick={() => navigate('/games/word-match')}
-              className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2"
-            >
-              <Gamepad2 className="w-4 h-4" />
-              <span>Chơi Ngay (Solo / Practice)</span>
-            </button>
-          </div>
-
-          {/* Card 2: Word Scramble Rush */}
-          <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-950/80 via-slate-900 to-emerald-950/70 border border-emerald-500/30 hover:border-emerald-400 transition-all duration-300 space-y-4 shadow-lg group">
-            <div className="flex items-center justify-between">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 group-hover:scale-110 transition">
-                <Zap className="w-6 h-6" />
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                Sắp Xếp Ký Tự
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-black text-white group-hover:text-emerald-300 transition">
-                Word Scramble Rush
-              </h3>
-              <p className="text-xs text-slate-300 line-clamp-2">
-                Giải mã các từ vựng TOEIC bị đảo lộn ký tự trong 25 giây. Rèn luyện chính tả, phiên âm và phản xạ nhớ từ sâu.
-              </p>
-            </div>
-
-            <button
-              onClick={() => navigate('/games/scramble')}
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-2"
-            >
-              <Gamepad2 className="w-4 h-4" />
-              <span>Chơi Ngay (Speed Run)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* 3. Tonights Games Schedule Matrix */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -584,9 +609,24 @@ export const GameLobbyPage: React.FC = () => {
             <button
               onClick={() => {
                 if (isGuest || !user) {
+                  promptLogin('Đăng nhập để tạo phòng TikTok Live');
+                  return;
+                }
+                setCreateModalInitialType('TIKTOK_LIVE');
+                setIsCreateModalOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 border border-rose-500/50 hover:border-rose-400 text-white text-xs font-black shadow-lg shadow-rose-950/40 transition flex items-center gap-2 cursor-pointer"
+            >
+              <TikTokColorLogo className="w-4 h-4" />
+              <span>Tạo Phòng TikTok Live</span>
+            </button>
+            <button
+              onClick={() => {
+                if (isGuest || !user) {
                   promptLogin('Đăng nhập để tạo phòng đấu riêng');
                   return;
                 }
+                setCreateModalInitialType('PVP');
                 setIsCreateModalOpen(true);
               }}
               className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
@@ -641,18 +681,23 @@ export const GameLobbyPage: React.FC = () => {
               />
             </div>
 
-            <select
+            <FilterSelect
               value={customRoomFilter}
-              onChange={(e) => setCustomRoomFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500"
-            >
-              <option value="ALL">Tất cả chế độ</option>
-              <option value="TRANSLATION_RUSH">Dịch Nhanh Song Ngữ</option>
-              <option value="WORD_BLITZ">Từ Vựng Cấp Tốc</option>
-              <option value="SENTENCE_SPRINT">Ghép Câu Siêu Tốc</option>
-              <option value="MISSING_WORD">Điền Từ Khuyết</option>
-              <option value="FOUR_SKILLS_ARENA">4 Kỹ Năng</option>
-            </select>
+              onChange={(val) => setCustomRoomFilter(String(val))}
+              size="xs"
+              options={[
+                { value: 'ALL', label: 'Tất cả chế độ' },
+                { value: 'CLASSIC_QUIZ', label: 'Đại Chiến Trắc Nghiệm' },
+                { value: 'SURVIVAL', label: 'Sinh Tồn 3 Mạng' },
+                { value: 'DUEL', label: 'Song Đấu 1vs1' },
+                { value: 'TEAM_BATTLE', label: 'Đại Chiến Bang Hội' },
+                { value: 'WORD_RUSH', label: 'Word Rush Giải Mã' },
+                { value: 'BOSS_ROUND', label: 'Vòng Đấu Trùm x2' },
+                { value: 'FINAL_SHOWDOWN', label: 'Chung Kết Quyết Đấu x3' },
+                { value: 'TRANSLATION_RUSH', label: 'Dịch Nhanh Song Ngữ' },
+                { value: 'LISTENING_RUSH', label: 'Luyện Nghe Bắt Âm' },
+              ]}
+            />
           </div>
         </div>
 
@@ -713,6 +758,18 @@ export const GameLobbyPage: React.FC = () => {
                             <Lock className="w-3 h-3" />
                           </span>
                         )}
+                        {room.isLiveMode && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[10px] font-black"
+                            title="Phòng thi đấu TikTok Live"
+                          >
+                            <TikTokLogo className="w-2.5 h-2.5" />
+                            <span>LIVE</span>
+                          </span>
+                        )}
+                        {room.languageId && (
+                          <CountryFlag languageId={room.languageId} size="xs" />
+                        )}
                       </div>
 
                       <span className="text-[11px] font-bold text-slate-400">
@@ -734,15 +791,25 @@ export const GameLobbyPage: React.FC = () => {
                     {/* Metadata tags */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {room.gameMode === 'TRANSLATION_RUSH'
-                          ? 'Dịch Nhanh'
-                          : room.gameMode === 'WORD_BLITZ'
-                            ? 'Từ Vựng'
-                            : room.gameMode === 'SENTENCE_SPRINT'
-                              ? 'Ghép Câu'
-                              : room.gameMode === 'MISSING_WORD'
-                                ? 'Điền Từ'
-                                : '4 Kỹ Năng'}
+                        {room.gameMode === 'CLASSIC_QUIZ'
+                          ? 'Trắc Nghiệm'
+                          : room.gameMode === 'SURVIVAL'
+                            ? 'Sinh Tồn 3 Mạng'
+                            : room.gameMode === 'DUEL'
+                              ? 'Song Đấu 1vs1'
+                              : room.gameMode === 'TEAM_BATTLE'
+                                ? 'Bang Hội'
+                                : room.gameMode === 'WORD_RUSH'
+                                  ? 'Word Rush'
+                                  : room.gameMode === 'BOSS_ROUND'
+                                    ? 'Đấu Trùm x2'
+                                    : room.gameMode === 'FINAL_SHOWDOWN'
+                                      ? 'Chung Kết x3'
+                                      : room.gameMode === 'TRANSLATION_RUSH'
+                                        ? 'Dịch Nhanh'
+                                        : room.gameMode === 'LISTENING_RUSH'
+                                          ? 'Luyện Nghe'
+                                          : 'Đấu Trường'}
                       </span>
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                         {room.questionCount || 10} câu
@@ -788,6 +855,7 @@ export const GameLobbyPage: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onRoomCreated={handleCreateRoomSuccess}
+        initialRoomType={createModalInitialType}
       />
 
       {passwordModalData && (

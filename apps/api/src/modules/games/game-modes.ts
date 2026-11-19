@@ -45,22 +45,107 @@ export function calculateSimilarity(s1: string, s2: string): number {
 }
 
 /**
- * Common speed and streak bonus calculation
+ * Universal option & text matching helper supporting A/B/C/D choices, numbers 1-4,
+ * exact target script (Kanji/Kana, Hangul, Hanzi, Thai) and Vietnamese meanings.
  */
-function calculateSpeedBonus(responseTimeMs: number, maxRoundDurationMs: number = 15000): number {
-  if (responseTimeMs <= 0) return 0;
-  // If answered in under 2 seconds: max 200 pts
-  if (responseTimeMs <= 2000) return 200;
-  // Linear decay between 2s and max round duration
-  const ratio = Math.max(0, (maxRoundDurationMs - responseTimeMs) / (maxRoundDurationMs - 2000));
-  return Math.round(ratio * 200);
+export function matchPlayerAnswer(
+  rawAnswer: string,
+  question: GameQuestionPayload,
+): { isMatch: boolean; similarity: number; matchedAnswer: string } {
+  const clean = rawAnswer?.trim() || '';
+  if (!clean) return { isMatch: false, similarity: 0, matchedAnswer: '' };
+
+  const letters = ['A', 'B', 'C', 'D'];
+  const upper = clean.toUpperCase();
+
+  // 1. Multiple-choice option letter/index matching
+  if (typeof question.correctOptionIndex === 'number' && question.correctOptionIndex >= 0 && question.correctOptionIndex < 4) {
+    const correctLetter = letters[question.correctOptionIndex];
+    // Check if player sent "A", "B", "C", "D" (or "A.", "A)", "đáp án A")
+    const letterMatch = upper.match(/^[ABCD]$/) || upper.match(/^([ABCD])[\.\:\)\s]/) || upper.match(/(?:ĐÁP ÁN|CHỌN|CÂU)\s*([ABCD])/);
+    if (letterMatch) {
+      const chosenLetter = letterMatch[1] || letterMatch[0];
+      if (chosenLetter === correctLetter) {
+        return { isMatch: true, similarity: 100, matchedAnswer: correctLetter };
+      } else {
+        return { isMatch: false, similarity: 0, matchedAnswer: chosenLetter };
+      }
+    }
+
+    // Check if player sent number 1, 2, 3, 4
+    const numberMatch = clean.match(/^[1234]$/);
+    if (numberMatch) {
+      const chosenIndex = parseInt(numberMatch[0], 10) - 1;
+      if (chosenIndex === question.correctOptionIndex) {
+        return { isMatch: true, similarity: 100, matchedAnswer: correctLetter };
+      } else {
+        return { isMatch: false, similarity: 0, matchedAnswer: letters[chosenIndex] || '' };
+      }
+    }
+  }
+
+  // 2. Direct match with target word or phonetic
+  if (question.targetWord && normalizeText(clean) === normalizeText(question.targetWord)) {
+    return { isMatch: true, similarity: 100, matchedAnswer: question.targetWord };
+  }
+  if (question.phonetic && normalizeText(clean) === normalizeText(question.phonetic)) {
+    return { isMatch: true, similarity: 100, matchedAnswer: question.phonetic };
+  }
+
+  // 3. Match against accepted answers and correct answer
+  const allAccepted = [question.correctAnswer, ...(question.acceptedAnswers || [])].filter(Boolean);
+  let bestSimilarity = 0;
+  let matchedAnswer = question.correctAnswer || '';
+
+  for (const target of allAccepted) {
+    const sim = calculateSimilarity(clean, target);
+    if (sim > bestSimilarity) {
+      bestSimilarity = sim;
+      matchedAnswer = target;
+    }
+  }
+
+  // 4. Also check against text of the correct option if options are present
+  if (question.options && typeof question.correctOptionIndex === 'number') {
+    const correctOptionText = question.options[question.correctOptionIndex];
+    if (correctOptionText) {
+      const optionContent = correctOptionText.replace(/^[ABCD][\.\:]\s*/i, '');
+      const optSim = calculateSimilarity(clean, optionContent);
+      if (optSim > bestSimilarity) {
+        bestSimilarity = optSim;
+        matchedAnswer = optionContent;
+      }
+    }
+  }
+
+  return {
+    isMatch: bestSimilarity >= 80,
+    similarity: bestSimilarity,
+    matchedAnswer,
+  };
 }
 
-function calculateStreakBonus(currentStreak: number): number {
-  if (currentStreak < 2) return 0;
-  if (currentStreak >= 10) return 150;
-  if (currentStreak >= 5) return 100;
-  return currentStreak * 15;
+/**
+ * Common speed and streak bonus calculation
+ */
+export function calculateSpeedBonus(
+  responseTimeMs: number,
+  maxRoundDurationMs: number = 15000,
+): number {
+  if (responseTimeMs <= 0) return 300;
+  if (responseTimeMs <= 2000) return 300;
+  if (responseTimeMs <= 4500) return 220;
+  if (responseTimeMs <= 8000) return 140;
+  if (responseTimeMs <= 12000) return 80;
+  return 40;
+}
+
+export function calculateStreakBonus(currentStreak: number): number {
+  if (currentStreak >= 7) return 200;
+  if (currentStreak >= 5) return 150;
+  if (currentStreak >= 3) return 100;
+  if (currentStreak >= 2) return 50;
+  return 0;
 }
 
 /**
@@ -90,43 +175,32 @@ export class TranslationRushMode implements IGameMode {
       };
     }
 
-    const allAccepted = [question.correctAnswer, ...(question.acceptedAnswers || [])];
-    let bestSimilarity = 0;
-    let matchedAnswer = question.correctAnswer;
-
-    for (const target of allAccepted) {
-      const sim = calculateSimilarity(rawAnswer, target);
-      if (sim > bestSimilarity) {
-        bestSimilarity = sim;
-        matchedAnswer = target;
-      }
-    }
-
-    // High accuracy if exact or similarity >= 85%
-    const isCorrect = bestSimilarity >= 80;
-    const accuracy = bestSimilarity;
-    const semanticSimilarity = bestSimilarity >= 90 ? 100 : bestSimilarity;
+    const matchResult = matchPlayerAnswer(rawAnswer, question);
+    const isCorrect = matchResult.isMatch;
+    const accuracy = matchResult.similarity;
+    const semanticSimilarity = accuracy >= 90 ? 100 : accuracy;
+    const matchedAnswer = matchResult.matchedAnswer || question.correctAnswer;
 
     let score = 0;
     let speedBonus = 0;
     let streakBonus = 0;
 
     if (isCorrect) {
-      // Balanced formula: accuracy base (up to 700) + speed bonus (up to 200) + streak bonus (up to 150)
+      // Balanced formula: accuracy base (up to 650) + speed bonus (up to 200) + streak bonus (up to 150)
       const baseScore = Math.round((accuracy / 100) * 650);
       speedBonus = calculateSpeedBonus(responseTimeMs);
       streakBonus = calculateStreakBonus(currentStreak);
       score = baseScore + speedBonus + streakBonus;
-    } else if (bestSimilarity >= 60) {
+    } else if (accuracy >= 60) {
       // Partial credit for close answers
-      score = Math.round((bestSimilarity / 100) * 200);
+      score = Math.round((accuracy / 100) * 200);
     }
 
     const feedbackText = isCorrect
       ? accuracy >= 95
         ? 'Chính xác hoàn hảo! Phản xạ xuất sắc.'
         : `Đúng nghĩa! (${matchedAnswer})`
-      : `Chưa chính xác. Đáp án chuẩn: "${question.correctAnswer}"`;
+      : `Chưa chính xác. Đáp án chuẩn: "${question.options?.[question.correctOptionIndex || 0] || question.correctAnswer}"`;
 
     return {
       isCorrect,
@@ -386,6 +460,245 @@ export class SynonymBattleMode implements IGameMode {
 }
 
 /**
+ * 7. GAME: Classic Quiz (Esports Standard 4-choice)
+ */
+export class ClassicQuizMode implements IGameMode {
+  readonly modeType = GameModeType.CLASSIC_QUIZ;
+  readonly name = 'Classic Quiz';
+  readonly defaultDurationSec = 15;
+
+  async evaluate(
+    question: GameQuestionPayload,
+    answer: string,
+    responseTimeMs: number,
+    currentStreak: number,
+  ): Promise<AnswerEvaluation> {
+    const match = matchPlayerAnswer(answer, question);
+    const speedBonus = match.isMatch ? calculateSpeedBonus(responseTimeMs, 15000) : 0;
+    const streakBonus = match.isMatch ? calculateStreakBonus(currentStreak) : 0;
+    const score = match.isMatch ? 700 + speedBonus + streakBonus : 0;
+
+    return {
+      isCorrect: match.isMatch,
+      accuracy: match.isMatch ? 100 : 0,
+      semanticSimilarity: match.similarity,
+      speedBonus,
+      streakBonus,
+      score,
+      feedbackText: match.isMatch
+        ? 'Chính xác! Phản xạ xuất sắc!'
+        : `Đáp án đúng là ${question.correctAnswer}. ${question.explanation || ''}`,
+      matchedAnswer: match.matchedAnswer,
+    };
+  }
+}
+
+/**
+ * 8. GAME: Survival Arena (3 Hearts / Lives Elimination)
+ */
+export class SurvivalMode implements IGameMode {
+  readonly modeType = GameModeType.SURVIVAL;
+  readonly name = 'Survival Arena';
+  readonly defaultDurationSec = 12;
+
+  async evaluate(
+    question: GameQuestionPayload,
+    answer: string,
+    responseTimeMs: number,
+    currentStreak: number,
+  ): Promise<AnswerEvaluation> {
+    const match = matchPlayerAnswer(answer, question);
+    const speedBonus = match.isMatch ? calculateSpeedBonus(responseTimeMs, 12000) : 0;
+    const streakBonus = match.isMatch ? calculateStreakBonus(currentStreak) : 0;
+    // Survival bonus multiplier 1.25x
+    const score = match.isMatch ? Math.round((700 + speedBonus + streakBonus) * 1.25) : 0;
+
+    return {
+      isCorrect: match.isMatch,
+      accuracy: match.isMatch ? 100 : 0,
+      semanticSimilarity: match.similarity,
+      speedBonus,
+      streakBonus,
+      score,
+      feedbackText: match.isMatch
+        ? 'Bảo toàn mạng sống thành công!'
+        : `Sai một câu mất 1 mạng! Đáp án đúng: ${question.correctAnswer}`,
+      matchedAnswer: match.matchedAnswer,
+    };
+  }
+}
+
+/**
+ * 9. GAME: 1vs1 Duel (Head-to-head match)
+ */
+export class DuelMode implements IGameMode {
+  readonly modeType = GameModeType.DUEL;
+  readonly name = '1vs1 Duel';
+  readonly defaultDurationSec = 12;
+
+  async evaluate(
+    question: GameQuestionPayload,
+    answer: string,
+    responseTimeMs: number,
+    currentStreak: number,
+  ): Promise<AnswerEvaluation> {
+    const match = matchPlayerAnswer(answer, question);
+    const speedBonus = match.isMatch ? calculateSpeedBonus(responseTimeMs, 12000) : 0;
+    const streakBonus = match.isMatch ? calculateStreakBonus(currentStreak) : 0;
+    const score = match.isMatch ? Math.round((700 + speedBonus + streakBonus) * 1.2) : 0;
+
+    return {
+      isCorrect: match.isMatch,
+      accuracy: match.isMatch ? 100 : 0,
+      semanticSimilarity: match.similarity,
+      speedBonus,
+      streakBonus,
+      score,
+      feedbackText: match.isMatch
+        ? 'Ra đòn chuẩn xác!'
+        : `Lỡ đòn! Đáp án chuẩn: ${question.correctAnswer}`,
+      matchedAnswer: match.matchedAnswer,
+    };
+  }
+}
+
+/**
+ * 10. GAME: Team Battle (Red vs Blue Faction War)
+ */
+export class TeamBattleMode implements IGameMode {
+  readonly modeType = GameModeType.TEAM_BATTLE;
+  readonly name = 'Team Battle';
+  readonly defaultDurationSec = 15;
+
+  async evaluate(
+    question: GameQuestionPayload,
+    answer: string,
+    responseTimeMs: number,
+    currentStreak: number,
+  ): Promise<AnswerEvaluation> {
+    const match = matchPlayerAnswer(answer, question);
+    const speedBonus = match.isMatch ? calculateSpeedBonus(responseTimeMs, 15000) : 0;
+    const streakBonus = match.isMatch ? calculateStreakBonus(currentStreak) : 0;
+    const score = match.isMatch ? Math.round((700 + speedBonus + streakBonus) * 1.1) : 0;
+
+    return {
+      isCorrect: match.isMatch,
+      accuracy: match.isMatch ? 100 : 0,
+      semanticSimilarity: match.similarity,
+      speedBonus,
+      streakBonus,
+      score,
+      feedbackText: match.isMatch
+        ? 'Ghi điểm vẻ vang cho đội!'
+        : `Đáp án đúng là: ${question.correctAnswer}`,
+      matchedAnswer: match.matchedAnswer,
+    };
+  }
+}
+
+/**
+ * 11. GAME: Word Rush (Scrambled & Typing Challenge)
+ */
+export class WordRushMode implements IGameMode {
+  readonly modeType = GameModeType.WORD_RUSH;
+  readonly name = 'Word Rush';
+  readonly defaultDurationSec = 20;
+
+  async evaluate(
+    question: GameQuestionPayload,
+    answer: string,
+    responseTimeMs: number,
+    currentStreak: number,
+  ): Promise<AnswerEvaluation> {
+    const match = matchPlayerAnswer(answer, question);
+    const speedBonus = match.isMatch ? calculateSpeedBonus(responseTimeMs, 20000) : 0;
+    const streakBonus = match.isMatch ? calculateStreakBonus(currentStreak) : 0;
+    const score = match.isMatch ? Math.round((700 + speedBonus + streakBonus) * 1.3) : 0;
+
+    return {
+      isCorrect: match.isMatch,
+      accuracy: match.isMatch ? 100 : 0,
+      semanticSimilarity: match.similarity,
+      speedBonus,
+      streakBonus,
+      score,
+      feedbackText: match.isMatch
+        ? 'Giải mã từ vựng thần tốc!'
+        : `Từ đúng: ${question.targetWord || question.correctAnswer}`,
+      matchedAnswer: match.matchedAnswer,
+    };
+  }
+}
+
+/**
+ * 12. GAME: Boss Round (Double Points x2)
+ */
+export class BossRoundMode implements IGameMode {
+  readonly modeType = GameModeType.BOSS_ROUND;
+  readonly name = 'Boss Round';
+  readonly defaultDurationSec = 25;
+
+  async evaluate(
+    question: GameQuestionPayload,
+    answer: string,
+    responseTimeMs: number,
+    currentStreak: number,
+  ): Promise<AnswerEvaluation> {
+    const match = matchPlayerAnswer(answer, question);
+    const speedBonus = match.isMatch ? calculateSpeedBonus(responseTimeMs, 25000) : 0;
+    const streakBonus = match.isMatch ? calculateStreakBonus(currentStreak) : 0;
+    const score = match.isMatch ? Math.round((700 + speedBonus + streakBonus) * 2.0) : 0;
+
+    return {
+      isCorrect: match.isMatch,
+      accuracy: match.isMatch ? 100 : 0,
+      semanticSimilarity: match.similarity,
+      speedBonus,
+      streakBonus,
+      score,
+      feedbackText: match.isMatch
+        ? 'HẠ GỤC TRÙM THÀNH CÔNG! Nhận x2 điểm thưởng!'
+        : `Trùm quá mạnh! Đáp án chính xác: ${question.correctAnswer}`,
+      matchedAnswer: match.matchedAnswer,
+    };
+  }
+}
+
+/**
+ * 13. GAME: Final Showdown (Championship Round x3 Points)
+ */
+export class FinalShowdownMode implements IGameMode {
+  readonly modeType = GameModeType.FINAL_SHOWDOWN;
+  readonly name = 'Final Showdown';
+  readonly defaultDurationSec = 20;
+
+  async evaluate(
+    question: GameQuestionPayload,
+    answer: string,
+    responseTimeMs: number,
+    currentStreak: number,
+  ): Promise<AnswerEvaluation> {
+    const match = matchPlayerAnswer(answer, question);
+    const speedBonus = match.isMatch ? calculateSpeedBonus(responseTimeMs, 20000) : 0;
+    const streakBonus = match.isMatch ? calculateStreakBonus(currentStreak) : 0;
+    const score = match.isMatch ? Math.round((700 + speedBonus + streakBonus) * 3.0) : 0;
+
+    return {
+      isCorrect: match.isMatch,
+      accuracy: match.isMatch ? 100 : 0,
+      semanticSimilarity: match.similarity,
+      speedBonus,
+      streakBonus,
+      score,
+      feedbackText: match.isMatch
+        ? 'ĐÒN QUYẾT ĐỊNH XUẤT THẦN! x3 Điểm Vương Giả!'
+        : `Hụt cơ hội quyết định! Đáp án: ${question.correctAnswer}`,
+      matchedAnswer: match.matchedAnswer,
+    };
+  }
+}
+
+/**
  * Game Mode Registry
  */
 export const GAME_MODE_REGISTRY: Record<GameModeType, IGameMode> = {
@@ -397,4 +710,11 @@ export const GAME_MODE_REGISTRY: Record<GameModeType, IGameMode> = {
   [GameModeType.SYNONYM_BATTLE]: new SynonymBattleMode(),
   [GameModeType.LISTENING_RUSH]: new TranslationRushMode(), // uses audio playback variant
   [GameModeType.GUESS_WORD]: new WordBlitzMode(),
+  [GameModeType.CLASSIC_QUIZ]: new ClassicQuizMode(),
+  [GameModeType.SURVIVAL]: new SurvivalMode(),
+  [GameModeType.DUEL]: new DuelMode(),
+  [GameModeType.TEAM_BATTLE]: new TeamBattleMode(),
+  [GameModeType.WORD_RUSH]: new WordRushMode(),
+  [GameModeType.BOSS_ROUND]: new BossRoundMode(),
+  [GameModeType.FINAL_SHOWDOWN]: new FinalShowdownMode(),
 };

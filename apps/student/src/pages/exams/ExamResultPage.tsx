@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { GlassCard } from '../../components/common/GlassCard';
+import { playCorrectSound, playWrongSound } from '@vocabflow/shared';
 import {
   NoteSelectableContent,
   TextSelectionNoteToolbar,
@@ -38,7 +39,13 @@ export const ExamResultPage: React.FC = () => {
       api
         .get(`/exams/attempts/${attemptId}`)
         .then((res: any) => {
-          setResult(res?.data?.data || res?.data || res);
+          const resData = res?.data?.data || res?.data || res;
+          setResult(resData);
+          if ((resData?.percentage || 0) >= 50) {
+            playCorrectSound();
+          } else {
+            playWrongSound();
+          }
         })
         .catch((err) => {
           alert(err?.response?.data?.message || 'Không thể tải kết quả bài thi.');
@@ -361,11 +368,11 @@ export const ExamResultPage: React.FC = () => {
                     return (
                       <div
                         key={opt.key}
-                        className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+                        className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 transition ${
                           isKeyCorrect
-                            ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500/50 text-emerald-950 dark:text-emerald-200 font-bold'
+                            ? 'bg-emerald-600/20 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-200 font-extrabold shadow-sm'
                             : isSelected
-                            ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-500/50 text-rose-950 dark:text-rose-200 font-bold'
+                            ? 'bg-rose-600/20 border-2 border-rose-500 text-rose-950 dark:text-rose-200 font-extrabold shadow-sm animate-shake'
                             : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                         }`}
                       >
@@ -383,18 +390,18 @@ export const ExamResultPage: React.FC = () => {
                   })}
                 </div>
 
-                {/* Detailed Explanation Block */}
+                {/* Detailed Explanation Block (Deep Blue with Crisp White Text) */}
                 {q.explanation && (
-                  <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 space-y-1.5">
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-indigo-700 dark:text-indigo-300">
-                      <HelpCircle className="w-3.5 h-3.5" />
+                  <div className="p-5 rounded-2xl bg-blue-950 border-2 border-blue-500/60 text-white shadow-xl shadow-blue-950/40 space-y-2">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-blue-200">
+                      <HelpCircle className="w-4 h-4 text-blue-400" />
                       <span>Giải thích chi tiết:</span>
                     </div>
-                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-medium">
                       {q.explanation}
                     </p>
                     {q.sourceExplanation && (
-                      <p className="text-[11px] text-slate-400 italic pt-1">
+                      <p className="text-[11px] text-blue-300 italic pt-1">
                         Nguồn tài liệu: {q.sourceExplanation}
                       </p>
                     )}

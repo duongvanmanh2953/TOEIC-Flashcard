@@ -208,9 +208,10 @@ export const SUPPORTED_LANGUAGES: LanguageDefinition[] = [
   {
     id: 'zh',
     code: 'zh',
-    name: 'Chinese (Mandarin)',
-    nativeName: '中文 (普通话)',
+    name: 'Tiếng Trung',
+    nativeName: '中文',
     flag: '🇨🇳',
+    countryCode: 'CN',
     region: 'Asia',
     script: 'Hanzi',
     direction: 'ltr',

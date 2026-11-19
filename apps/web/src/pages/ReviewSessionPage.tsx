@@ -39,6 +39,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLearningContext } from '../contexts/LearningContext';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { LanguageFlashcard } from '../components/flashcard/LanguageFlashcard';
+import { playCorrectSound, playWrongSound } from '@vocabflow/shared';
 
 import {
   idbGetLocalDecks,
@@ -1265,6 +1266,12 @@ export const ReviewSessionPage: React.FC = () => {
       cleanCorrect.includes(cleanUser) ||
       cleanUser.includes(cleanCorrect);
 
+    if (isCorrect) {
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
+
     setFeedback({
       isCorrect,
       correctAnswer: currentItem.correctAnswer || currentItem.meaningVi || currentItem.meaning,
@@ -1292,18 +1299,21 @@ export const ReviewSessionPage: React.FC = () => {
     const dist = getLevenshteinDistance(cleanInput, cleanWord);
 
     if (dist === 0) {
+      playCorrectSound();
       setTypingFeedback({
         status: 'correct',
         message: 'Hoàn hảo! Bạn đã nhớ chính xác 100% chính tả từ này. (+15 XP)',
         distance: 0,
       });
     } else if (dist === 1) {
+      playCorrectSound();
       setTypingFeedback({
         status: 'typo',
         message: `Gần chính xác! Chỉ khác 1 ký tự typo (Bạn gõ "${typingInput}", từ đúng là "${currentItem.word}").`,
         distance: 1,
       });
     } else {
+      playWrongSound();
       setTypingFeedback({
         status: 'wrong',
         message: `Chưa chính xác! Từ đúng là: "${currentItem.word}".`,
@@ -1343,6 +1353,11 @@ export const ReviewSessionPage: React.FC = () => {
   const handleListeningSelect = (opt: string) => {
     if (listenFeedback !== null || !currentItem) return;
     const isCorrect = opt.trim().toLowerCase() === currentItem.word.trim().toLowerCase();
+    if (isCorrect) {
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
     setSelectedListeningWord(opt);
     setListenFeedback(isCorrect);
   };
@@ -1596,10 +1611,10 @@ export const ReviewSessionPage: React.FC = () => {
 
       {/* Top Controls: Responsive Mode Selector & Topic Selector */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 border-b border-slate-200/80 dark:border-slate-800/80 pb-3 zen-mode-ambient">
-        <div className="grid grid-cols-3 sm:flex items-center gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 w-full sm:w-auto">
+        <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 w-full sm:w-auto">
           <button
             onClick={() => setStudyMode('learn')}
-            className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
               studyMode === 'learn' || studyMode === 'flashcard'
                 ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1607,13 +1622,13 @@ export const ReviewSessionPage: React.FC = () => {
             title="Học thẻ Flashcard kèm luyện viết cho ngôn ngữ hỗ trợ"
           >
             <BookOpen className="w-3.5 h-3.5 shrink-0" />
-            <span>Học Thẻ</span>
+            <span className="truncate">Học Thẻ</span>
           </button>
 
           {isHandwritingSupportedForLanguage(activeLanguage?.id) && (
             <button
               onClick={() => setStudyMode('handwriting')}
-              className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
                 studyMode === 'handwriting'
                   ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1621,13 +1636,13 @@ export const ReviewSessionPage: React.FC = () => {
               title="Luyện viết nét Hán tự / Chữ mẫu trên khung Tian-zi-ge"
             >
               <PenTool className="w-3.5 h-3.5 shrink-0" />
-              <span>Tập Viết</span>
+              <span className="truncate">Tập Viết</span>
             </button>
           )}
 
           <button
             onClick={() => setStudyMode('assess')}
-            className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
               studyMode === 'assess' || ['quiz', 'typing', 'listening', 'speaking'].includes(studyMode)
                 ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1635,12 +1650,12 @@ export const ReviewSessionPage: React.FC = () => {
             title="Kiểm tra sau học: Trắc nghiệm, Điền từ, Luyện gõ, Viết không gợi ý, Nghe"
           >
             <BrainCircuit className="w-3.5 h-3.5 shrink-0" />
-            <span>Đánh Giá</span>
+            <span className="truncate">Đánh Giá</span>
           </button>
 
           <button
             onClick={() => setStudyMode('auto')}
-            className={`w-full sm:w-auto px-2.5 py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 cursor-pointer min-w-0 ${
               studyMode === 'auto'
                 ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1648,7 +1663,7 @@ export const ReviewSessionPage: React.FC = () => {
             title="Auto FSRS: Tự động chọn phương pháp phù hợp theo chu kỳ nhớ và độ khó"
           >
             <Sparkles className="w-3.5 h-3.5 shrink-0" />
-            <span>Auto SRS</span>
+            <span className="truncate">Auto SRS</span>
           </button>
         </div>
 
@@ -1719,7 +1734,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* MODE 1: TACTILE 3D FLASHCARD INTERACTIVE LEARNING                        */}
       {/* ========================================================================= */}
       {effectiveExerciseMode === 'flashcard' && (
-        <div className="space-y-4">
+        <div className="space-y-4 pb-28 sm:pb-0">
           {/* Multi-Language Generic Flashcard */}
           <LanguageFlashcard
             key={`fc-${currentItem.vocabularyId || currentItem.word}-${currentIndex}`}
@@ -1841,103 +1856,105 @@ export const ReviewSessionPage: React.FC = () => {
             </div>
           )}
 
-          {/* SRS 4-Tier Evaluation Buttons */}
-          <div className="p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-md space-y-2">
-            <p className="text-center text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Đánh giá mức độ ghi nhớ (Spaced Repetition FSRS):
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {/* AGAIN */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRateFlashcard('AGAIN');
-                }}
-                className="p-3.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 transition text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
-                title="Chưa nhớ — Ôn lại trong phiên này"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs flex items-center gap-1">
-                    <RotateCcw className="w-3 h-3 text-rose-500" />
-                    Quên
+          {/* SRS 4-Tier Evaluation Buttons — Fixed Bottom Bar on Mobile for Instant One-Thumb Reach */}
+          <div className="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-30 px-3 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 shadow-[0_-8px_25px_rgba(0,0,0,0.12)] sm:static sm:bg-white/80 sm:dark:bg-slate-900/80 sm:rounded-3xl sm:border sm:border-slate-200 sm:dark:border-slate-800 sm:shadow-md sm:p-4 space-y-1.5 sm:space-y-2">
+            <div className="max-w-2xl mx-auto space-y-1.5 sm:space-y-2">
+              <p className="text-center text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Đánh giá mức độ ghi nhớ (Spaced Repetition FSRS):
+              </p>
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
+                {/* AGAIN */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRateFlashcard('AGAIN');
+                  }}
+                  className="p-1.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 transition text-center sm:text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
+                  title="Chưa nhớ — Ôn lại trong phiên này"
+                >
+                  <div className="flex sm:flex-row flex-col items-center justify-center sm:justify-between gap-0.5">
+                    <span className="font-bold text-[11px] sm:text-xs flex items-center gap-1">
+                      <RotateCcw className="w-3 h-3 text-rose-500 shrink-0" />
+                      <span>Quên</span>
+                    </span>
+                    <span className="hidden sm:inline-block text-[10px] px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">
+                      [1]
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] sm:text-[11px] text-rose-600/80 dark:text-rose-400/80 font-medium mt-0.5 block truncate">
+                    Ôn lại ngay
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">
-                    [1]
-                  </span>
-                </div>
-                <span className="text-[11px] text-rose-600/80 dark:text-rose-400/80 font-medium mt-0.5 block">
-                  Ôn lại ngay
-                </span>
-              </button>
+                </button>
 
-              {/* HARD */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRateFlashcard('HARD');
-                }}
-                className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/15 to-orange-500/10 hover:from-amber-500/25 hover:to-orange-500/20 dark:from-amber-500/20 dark:to-orange-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 transition text-left relative overflow-hidden backdrop-blur-md active:scale-95 shadow-sm group"
-                title="Khá khó nhớ — Ôn lại sau 1-2 ngày"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                    Khó
+                {/* HARD */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRateFlashcard('HARD');
+                  }}
+                  className="p-1.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500/15 to-orange-500/10 hover:from-amber-500/25 hover:to-orange-500/20 dark:from-amber-500/20 dark:to-orange-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 transition text-center sm:text-left relative overflow-hidden backdrop-blur-md active:scale-95 shadow-sm group"
+                  title="Khá khó nhớ — Ôn lại sau 1-2 ngày"
+                >
+                  <div className="flex sm:flex-row flex-col items-center justify-center sm:justify-between gap-0.5">
+                    <span className="font-bold text-[11px] sm:text-xs flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span>Khó</span>
+                    </span>
+                    <span className="hidden sm:inline-block text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/25 text-amber-800 dark:text-amber-200 font-black border border-amber-500/30">
+                      [2]
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] sm:text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5 block truncate">
+                    1 - 2 ngày
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/25 text-amber-800 dark:text-amber-200 font-black border border-amber-500/30">
-                    [2]
-                  </span>
-                </div>
-                <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5 block">
-                  1 - 2 ngày
-                </span>
-              </button>
+                </button>
 
-              {/* GOOD */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRateFlashcard('GOOD');
-                }}
-                className="p-3.5 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 dark:bg-indigo-500/15 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 transition text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
-                title="Nhớ tốt — Ôn lại sau 3-5 ngày"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs flex items-center gap-1">
-                    <Check className="w-3 h-3 text-indigo-500" />
-                    Nhớ tốt
+                {/* GOOD */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRateFlashcard('GOOD');
+                  }}
+                  className="p-1.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 dark:bg-indigo-500/15 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 transition text-center sm:text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
+                  title="Nhớ tốt — Ôn lại sau 3-5 ngày"
+                >
+                  <div className="flex sm:flex-row flex-col items-center justify-center sm:justify-between gap-0.5">
+                    <span className="font-bold text-[11px] sm:text-xs flex items-center gap-1">
+                      <Check className="w-3 h-3 text-indigo-500 shrink-0" />
+                      <span>Nhớ tốt</span>
+                    </span>
+                    <span className="hidden sm:inline-block text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold">
+                      [3]
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] sm:text-[11px] text-indigo-600/80 dark:text-indigo-400/80 font-medium mt-0.5 block truncate">
+                    3 - 5 ngày
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold">
-                    [3]
-                  </span>
-                </div>
-                <span className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80 font-medium mt-0.5 block">
-                  3 - 5 ngày
-                </span>
-              </button>
+                </button>
 
-              {/* EASY */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRateFlashcard('EASY');
-                }}
-                className="p-3.5 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 transition text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
-                title="Rất dễ — Ôn lại sau 7-14 ngày"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-emerald-500" />
-                    Rất dễ
+                {/* EASY */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRateFlashcard('EASY');
+                  }}
+                  className="p-1.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 transition text-center sm:text-left relative overflow-hidden backdrop-blur-sm active:scale-95 shadow-xs group"
+                  title="Rất dễ — Ôn lại sau 7-14 ngày"
+                >
+                  <div className="flex sm:flex-row flex-col items-center justify-center sm:justify-between gap-0.5">
+                    <span className="font-bold text-[11px] sm:text-xs flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-500 shrink-0" />
+                      <span>Rất dễ</span>
+                    </span>
+                    <span className="hidden sm:inline-block text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                      [4]
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] sm:text-[11px] text-emerald-600/80 dark:text-emerald-400/80 font-medium mt-0.5 block truncate">
+                    7 - 14 ngày
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
-                    [4]
-                  </span>
-                </div>
-                <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 font-medium mt-0.5 block">
-                  7 - 14 ngày
-                </span>
-              </button>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1977,10 +1994,10 @@ export const ReviewSessionPage: React.FC = () => {
               if (feedback) {
                 if (opt.toLowerCase().trim() === feedback.correctAnswer.toLowerCase().trim()) {
                   btnClass =
-                    'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold';
+                    'bg-emerald-600 border-emerald-400 text-white font-black scale-[1.02] shadow-lg shadow-emerald-600/30';
                 } else if (isSelected) {
                   btnClass =
-                    'bg-rose-50 dark:bg-rose-950/60 border-rose-500 text-rose-700 dark:text-rose-300';
+                    'bg-rose-600 border-rose-400 text-white font-black animate-shake shadow-lg shadow-rose-600/30';
                 }
               }
 
@@ -1992,7 +2009,7 @@ export const ReviewSessionPage: React.FC = () => {
                   className={`p-4 rounded-2xl border text-left text-xs sm:text-sm transition flex items-center justify-between ${btnClass}`}
                 >
                   <span>{opt}</span>
-                  <span className="text-xs tabular-nums font-bold text-slate-400">[{idx + 1}]</span>
+                  <span className={`text-xs tabular-nums font-bold ${isSelected || (feedback && opt.toLowerCase().trim() === feedback.correctAnswer.toLowerCase().trim()) ? 'text-white/80' : 'text-slate-400'}`}>[{idx + 1}]</span>
                 </button>
               );
             })}
@@ -2000,22 +2017,25 @@ export const ReviewSessionPage: React.FC = () => {
 
           {/* Feedback & Continue */}
           {feedback && (
-            <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 space-y-3 animate-in fade-in">
+            <div className="p-5 rounded-2xl bg-blue-950 border-2 border-blue-500/60 text-white space-y-3 animate-in fade-in shadow-xl shadow-blue-950/40">
               <div className="flex items-center gap-2 font-bold text-sm">
                 {feedback.isCorrect ? (
-                  <span className="text-emerald-600 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-5 h-5" /> Chính xác! +15 XP
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/25 border border-emerald-500/50 text-emerald-300 font-black">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" /> Chính xác! +15 XP
                   </span>
                 ) : (
-                  <span className="text-rose-600 flex items-center gap-1.5">
-                    <XCircle className="w-5 h-5" /> Chưa chính xác (thẻ sẽ được ôn lại)
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/25 border border-rose-500/50 text-rose-300 font-black">
+                    <XCircle className="w-5 h-5 text-rose-400" /> Chưa chính xác (thẻ sẽ được ôn lại)
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300">{feedback.explanation}</p>
+              <div className="text-xs sm:text-sm text-slate-100 font-medium leading-relaxed bg-white/5 p-3 rounded-xl border border-white/10">
+                <span className="text-blue-300 font-bold block mb-1">💡 Giải thích chi tiết:</span>
+                {feedback.explanation}
+              </div>
               <button
                 onClick={handleNextQuiz}
-                className="btn-glass-primary w-full !py-2.5 text-xs gap-2"
+                className="btn-glass-primary w-full !py-2.5 text-xs gap-2 font-black cursor-pointer shadow-md"
               >
                 <span>Câu tiếp theo</span>
                 <ArrowRight className="w-4 h-4" />
@@ -2085,27 +2105,44 @@ export const ReviewSessionPage: React.FC = () => {
           {/* Typing Feedback */}
           {typingFeedback.status && (
             <div
-              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${typingFeedback.status === 'correct'
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
+              className={`p-5 rounded-2xl border-2 space-y-3 animate-in fade-in bg-blue-950 text-white shadow-xl shadow-blue-950/40 ${
+                typingFeedback.status === 'correct'
+                  ? 'border-emerald-500/70'
                   : typingFeedback.status === 'typo'
-                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-800 dark:text-amber-300'
-                    : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
-                }`}
+                  ? 'border-amber-500/70'
+                  : 'border-rose-500/70 animate-shake'
+              }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
                 {typingFeedback.status === 'correct' ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/25 border border-emerald-500/50 text-emerald-300 font-black">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    <span>{typingFeedback.message}</span>
+                  </span>
                 ) : typingFeedback.status === 'typo' ? (
-                  <AlertCircle className="w-5 h-5 text-amber-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/25 border border-amber-500/50 text-amber-300 font-black">
+                    <AlertCircle className="w-5 h-5 text-amber-400" />
+                    <span>{typingFeedback.message}</span>
+                  </span>
                 ) : (
-                  <XCircle className="w-5 h-5 text-rose-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/25 border border-rose-500/50 text-rose-300 font-black">
+                    <XCircle className="w-5 h-5 text-rose-400" />
+                    <span>{typingFeedback.message}</span>
+                  </span>
                 )}
-                <span>{typingFeedback.message}</span>
+              </div>
+
+              <div className="text-xs sm:text-sm text-slate-100 font-medium leading-relaxed bg-white/5 p-3 rounded-xl border border-white/10">
+                <span className="text-blue-300 font-bold block mb-1">💡 Nghĩa chuẩn:</span>
+                "{currentItem.meaningVi || currentItem.meaning}"
+                {currentItem.example && (
+                  <span className="block mt-1 text-slate-300 italic">Ví dụ: {currentItem.example}</span>
+                )}
               </div>
 
               <button
                 onClick={handleNextTyping}
-                className="btn-glass-primary w-full !py-2.5 text-xs gap-2"
+                className="btn-glass-primary w-full !py-2.5 text-xs gap-2 font-black cursor-pointer shadow-md"
               >
                 <span>Từ tiếp theo</span>
                 <ArrowRight className="w-4 h-4" />
@@ -2163,9 +2200,9 @@ export const ReviewSessionPage: React.FC = () => {
               let btnClass = 'bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700';
               if (listenFeedback !== null) {
                 if (opt.toLowerCase().trim() === currentItem.word.toLowerCase().trim()) {
-                  btnClass = 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold';
+                  btnClass = 'bg-emerald-600 border-emerald-400 text-white font-black scale-[1.02] shadow-lg shadow-emerald-600/30';
                 } else if (isSelected) {
-                  btnClass = 'bg-rose-50 dark:bg-rose-950/60 border-rose-500 text-rose-700 dark:text-rose-300';
+                  btnClass = 'bg-rose-600 border-rose-400 text-white font-black animate-shake shadow-lg shadow-rose-600/30';
                 }
               }
               return (
@@ -2184,27 +2221,37 @@ export const ReviewSessionPage: React.FC = () => {
           {/* Feedback */}
           {listenFeedback !== null && (
             <div
-              className={`p-4 rounded-2xl border space-y-3 animate-in fade-in ${listenFeedback
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300'
-                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-300'
-                }`}
+              className={`p-5 rounded-2xl border-2 space-y-3 animate-in fade-in bg-blue-950 text-white shadow-xl shadow-blue-950/40 ${
+                listenFeedback
+                  ? 'border-emerald-500/70'
+                  : 'border-rose-500/70 animate-shake'
+              }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
                 {listenFeedback ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/25 border border-emerald-500/50 text-emerald-300 font-black">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    <span>Tuyệt vời! Bạn nghe rất chuẩn xác.</span>
+                  </span>
                 ) : (
-                  <XCircle className="w-5 h-5 text-rose-500" />
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/25 border border-rose-500/50 text-rose-300 font-black">
+                    <XCircle className="w-5 h-5 text-rose-400" />
+                    <span>Chưa đúng! Từ được phát âm là: "{currentItem.word}"</span>
+                  </span>
                 )}
-                <span>
-                  {listenFeedback
-                    ? 'Tuyệt vời! Bạn nghe rất chuẩn xác.'
-                    : `Chưa đúng! Từ được phát âm là: "${currentItem.word}" (${currentItem.meaningVi || currentItem.meaning})`}
-                </span>
+              </div>
+
+              <div className="text-xs sm:text-sm text-slate-100 font-medium leading-relaxed bg-white/5 p-3 rounded-xl border border-white/10">
+                <span className="text-blue-300 font-bold block mb-1">💡 Nghĩa từ vựng:</span>
+                "{currentItem.meaningVi || currentItem.meaning}"
+                {currentItem.example && (
+                  <span className="block mt-1 text-slate-300 italic">Ví dụ: {currentItem.example}</span>
+                )}
               </div>
 
               <button
                 onClick={handleNextListening}
-                className="btn-glass-primary w-full !py-2.5 text-xs gap-2"
+                className="btn-glass-primary w-full !py-2.5 text-xs gap-2 font-black cursor-pointer shadow-md"
               >
                 <span>Từ tiếp theo</span>
                 <ArrowRight className="w-4 h-4" />

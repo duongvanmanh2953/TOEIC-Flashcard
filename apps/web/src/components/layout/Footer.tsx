@@ -64,22 +64,22 @@ export const Footer: React.FC<FooterProps> = ({ className = '', showFullDetails 
               {t('footer.tagline', 'Nền tảng học từ vựng tiếng Anh cá nhân hóa với Spaced Repetition (SRS) và Trợ lý AI Tutor thông minh.')}
             </p>
 
-            {/* eCommerce Notice badge (Tuân thủ theo Nghị định 52/2013/NĐ-CP & Nghị định 85/2021/NĐ-CP) */}
+            {/* eCommerce Notice badge (Tuân thủ theo Luật Thương mại điện tử 122/2025/QH15 & Nghị định 248/2026/NĐ-CP) */}
             <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/40 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-indigo-700 dark:text-indigo-400">
                 <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
-                <span>Thông báo Website Thương Mại Điện Tử</span>
+                <span>Nền Tảng Thương Mại Điện Tử & Bảo Vệ Dữ Liệu</span>
               </div>
               <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
                 {t(
                   'footer.ecomNotificationNotice',
-                  'Website thương mại điện tử cung cấp dịch vụ số trực tuyến, đang thực hiện thủ tục thông báo với Bộ Công Thương theo quy định của pháp luật Việt Nam.'
+                  'Nền tảng cung cấp dịch vụ số trực tuyến, tuân thủ Luật Thương mại điện tử số 122/2025/QH15, Nghị định 248/2026/NĐ-CP và Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15.'
                 )}
               </p>
             </div>
           </div>
 
-          {/* Column 2: Thông tin chủ sở hữu (Bắt buộc theo Nghị định 52) (4 cols) */}
+          {/* Column 2: Thông tin chủ sở hữu (Bắt buộc theo Luật Thương mại điện tử 122/2025) (4 cols) */}
           <div className="lg:col-span-4 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-indigo-500" />

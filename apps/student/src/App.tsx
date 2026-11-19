@@ -10,6 +10,8 @@ import { LandingPage } from './pages/LandingPage';
 import { ContextualLoginModal } from './components/auth/ContextualLoginModal';
 import { navigateToApp, SubApp } from './lib/sso';
 import { AppLoadingScreen } from './components/common/AppLoadingScreen';
+import { CookieConsentBanner } from './components/common/CookieConsentBanner';
+import { OfflineStatusBanner } from './components/offline/OfflineStatusBanner';
 
 // Lazy-loaded routes for optimal initial bundle size and Core Web Vitals
 const RegisterPage = React.lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
@@ -51,8 +53,6 @@ const SavedPostsPage = React.lazy(() => import('./pages/community/SavedPostsPage
 // Games
 const GameLobbyPage = React.lazy(() => import('./pages/games/GameLobbyPage').then((m) => ({ default: m.GameLobbyPage })));
 const RealtimeGameRoomPage = React.lazy(() => import('./pages/games/RealtimeGameRoomPage').then((m) => ({ default: m.RealtimeGameRoomPage })));
-const WordMatchGame = React.lazy(() => import('./pages/games/WordMatchGame').then((m) => ({ default: m.WordMatchGame })));
-const WordScrambleGame = React.lazy(() => import('./pages/games/WordScrambleGame').then((m) => ({ default: m.WordScrambleGame })));
 
 // Mandatory E-Commerce Legal Policy Pages (Ministry of Industry and Trade Compliance)
 import { PrivacyPolicyPage } from './pages/policies/PrivacyPolicyPage';
@@ -133,6 +133,8 @@ export const App: React.FC = () => {
             <GlobalConfirmDialog />
             <GlobalApiLoadingBar />
             <GlobalToastContainer />
+            <CookieConsentBanner />
+            <OfflineStatusBanner />
             <Suspense fallback={<PageLoadingFallback />}>
               <Routes>
                 {/* Root entry point */}
@@ -281,8 +283,6 @@ export const App: React.FC = () => {
                   <Route path="/interview" element={<AIInterviewStudioPage />} />
                   <Route path="/interview-studio" element={<Navigate to="/interview" replace />} />
                   <Route path="/games" element={<GameLobbyPage />} />
-                  <Route path="/games/word-match" element={<WordMatchGame />} />
-                  <Route path="/games/scramble" element={<WordScrambleGame />} />
                   <Route path="/games/room/:roomId" element={<RealtimeGameRoomPage />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/progress" element={<ProgressAnalyticsPage />} />

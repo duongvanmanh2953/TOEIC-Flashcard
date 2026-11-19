@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import api from '../../lib/api';
 import { GlassCard } from '../../components/common/GlassCard';
+import { playCorrectSound, playWrongSound } from '@vocabflow/shared';
 
 export const WrongAnswerReviewPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -42,6 +43,12 @@ export const WrongAnswerReviewPage: React.FC = () => {
 
   const handleSelect = (key: string) => {
     if (showAnswer) return;
+    const isCorrect = key.toUpperCase() === String(currentQ.correctAnswer).toUpperCase();
+    if (isCorrect) {
+      playCorrectSound();
+    } else {
+      playWrongSound();
+    }
     setSelectedOption(key);
     setShowAnswer(true);
   };
@@ -139,12 +146,12 @@ export const WrongAnswerReviewPage: React.FC = () => {
             const isSelected = selectedOption === opt.key;
             const isKeyCorrect = opt.key.toUpperCase() === String(currentQ.correctAnswer).toUpperCase();
 
-            let optStyle = 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40';
+            let optStyle = 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-800 dark:text-slate-200';
             if (showAnswer) {
               if (isKeyCorrect) {
-                optStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 font-bold';
+                optStyle = 'border-2 border-emerald-400 bg-emerald-600 text-white font-extrabold shadow-lg shadow-emerald-600/30 scale-[1.01]';
               } else if (isSelected) {
-                optStyle = 'border-rose-500 bg-rose-50 dark:bg-rose-950/30 text-rose-950 dark:text-rose-200 font-bold';
+                optStyle = 'border-2 border-rose-400 bg-rose-600 text-white font-extrabold shadow-lg shadow-rose-600/30 animate-shake';
               }
             }
 
@@ -154,7 +161,7 @@ export const WrongAnswerReviewPage: React.FC = () => {
                 type="button"
                 disabled={showAnswer}
                 onClick={() => handleSelect(opt.key)}
-                className={`w-full p-4 rounded-2xl border text-left flex items-start gap-3 transition ${optStyle}`}
+                className={`w-full p-4 rounded-2xl border text-left flex items-start gap-3 transition cursor-pointer ${optStyle}`}
               >
                 <span className="font-extrabold text-xs w-5">{opt.key}.</span>
                 <span className="text-xs sm:text-sm flex-1">{opt.text}</span>
@@ -168,25 +175,25 @@ export const WrongAnswerReviewPage: React.FC = () => {
           <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
             <div className="flex items-center gap-2">
               {isCurrentCorrect ? (
-                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-                  <CheckCircle2 className="w-5 h-5" />
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-extrabold text-sm">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   <span>Chính xác! Lần này bạn đã chọn đúng.</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
-                  <XCircle className="w-5 h-5" />
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-400 font-extrabold text-sm">
+                  <XCircle className="w-5 h-5 text-rose-400" />
                   <span>Vẫn chưa đúng. Đáp án chính xác là: {currentQ.correctAnswer}</span>
                 </div>
               )}
             </div>
 
             {currentQ.explanation && (
-              <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
-                <div className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5" />
+              <div className="p-5 rounded-2xl bg-blue-950 border-2 border-blue-500/60 shadow-xl shadow-blue-950/40 space-y-2 text-xs text-slate-100">
+                <div className="font-bold text-blue-200 flex items-center gap-1.5 text-xs">
+                  <HelpCircle className="w-4 h-4 text-blue-400" />
                   <span>Giải thích chi tiết:</span>
                 </div>
-                <p className="leading-relaxed">{currentQ.explanation}</p>
+                <p className="leading-relaxed text-xs sm:text-sm font-medium">{currentQ.explanation}</p>
               </div>
             )}
 

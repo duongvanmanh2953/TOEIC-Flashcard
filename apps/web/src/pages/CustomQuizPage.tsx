@@ -6,6 +6,9 @@ import { GlassCard } from '../components/common/GlassCard';
 import { SpeechButton } from '../components/common/SpeechButton';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { idbGetDecks } from '../lib/idb';
+import { playCorrectSound, playWrongSound } from '@vocabflow/shared';
+import { useLearning } from '../contexts/LearningContext';
+import { CountryFlag } from '../components/language/CountryFlag';
 import {
   FileCheck2,
   Sparkles,
@@ -21,6 +24,7 @@ import {
 export const CustomQuizPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isGuest, promptLogin } = useAuth();
+  const { activeLanguage } = useLearning();
 
   // Generator Setup State
   const [sourceFilter, setSourceFilter] = useState<'FAVORITES' | 'WEAK_WORDS' | 'CEFR' | 'DECK'>('WEAK_WORDS');
@@ -75,6 +79,7 @@ export const CustomQuizPage: React.FC = () => {
         questionCount,
         cefrLevel: sourceFilter === 'CEFR' ? cefrLevel : undefined,
         deckId: sourceFilter === 'DECK' ? selectedDeckId : undefined,
+        languageId: activeLanguage?.id || 'en',
       });
 
       if (res?.success) {
@@ -113,6 +118,11 @@ export const CustomQuizPage: React.FC = () => {
 
       if (res?.success) {
         setResult(res.data);
+        if ((res.data?.accuracy || 0) >= 50) {
+          playCorrectSound();
+        } else {
+          playWrongSound();
+        }
       }
     } catch (err: any) {
       alert(err?.message || 'Lỗi khi nộp bài.');
@@ -123,8 +133,9 @@ export const CustomQuizPage: React.FC = () => {
 
   // Result Summary View
   if (result) {
+    const questions = activeQuiz?.questions || [];
     return (
-      <div className="max-w-lg mx-auto py-12 px-4 text-center">
+      <div className="max-w-2xl mx-auto py-10 px-4 text-center space-y-6 animate-fade-in">
         <GlassCard className="p-8 space-y-6 shadow-2xl">
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white mx-auto flex items-center justify-center shadow-lg shadow-brand-500/30">
             <Award className="w-8 h-8" />
@@ -155,18 +166,86 @@ export const CustomQuizPage: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setActiveQuiz(null)}
-              className="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 font-bold text-xs transition"
+              className="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 font-bold text-xs transition cursor-pointer"
             >
               Tạo đề khác
             </button>
             <button
               onClick={() => navigate('/dashboard')}
-              className="btn-glass-primary flex-1 !py-3 !rounded-2xl text-white font-extrabold text-xs shadow-md transition"
+              className="btn-glass-primary flex-1 !py-3 !rounded-2xl text-white font-extrabold text-xs shadow-md transition cursor-pointer"
             >
               Về Dashboard
             </button>
           </div>
         </GlassCard>
+
+        {/* Detailed Question Review Breakdown */}
+        {questions.length > 0 && (
+          <div className="space-y-4 text-left">
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white px-1">
+              Chi tiết câu hỏi & Đáp án:
+            </h3>
+            {questions.map((q: any, idx: number) => {
+              const userAns = (answers[q.id] || '').trim().toLowerCase();
+              const correctAns = (q.correctAnswer || '').trim().toLowerCase();
+              const isCorrect = userAns === correctAns || (correctAns.includes(userAns) && userAns.length > 2);
+
+              return (
+                <div
+                  key={q.id || idx}
+                  className={`p-5 rounded-2xl border-2 space-y-3 bg-white dark:bg-slate-900 shadow-md ${
+                    isCorrect
+                      ? 'border-emerald-500/50'
+                      : 'border-rose-500/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 rounded-lg text-xs font-black bg-indigo-600 text-white">
+                      Câu {idx + 1}
+                    </span>
+                    {isCorrect ? (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Chính xác (+10 XP)</span>
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-500 border border-rose-500/30 flex items-center gap-1">
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Chưa chính xác</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-base font-extrabold text-slate-900 dark:text-white">
+                    {q.word || q.prompt}
+                  </div>
+
+                  <div className="text-xs text-slate-500 font-medium">
+                    Bạn chọn:{' '}
+                    <span className={`font-bold ${isCorrect ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {answers[q.id] || '(Chưa chọn)'}
+                    </span>
+                  </div>
+
+                  {/* Deep Navy High-Contrast Explanation Box */}
+                  <div className="p-4 rounded-xl bg-blue-950 border-2 border-blue-500/60 text-white shadow-lg space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-blue-200 font-bold text-xs">
+                      <span>💡 Đáp án chính xác & Giải thích:</span>
+                    </div>
+                    <div className="text-sm font-black text-emerald-300">
+                      {q.correctAnswer}
+                    </div>
+                    {q.explanation && (
+                      <p className="text-xs text-slate-100 font-medium leading-relaxed pt-1">
+                        {q.explanation}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
@@ -303,6 +382,12 @@ export const CustomQuizPage: React.FC = () => {
 
       <GlassCard className="p-6 md:p-8 space-y-6">
         <div className="space-y-6">
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
+            <CountryFlag languageId={activeLanguage?.id || 'en'} size="xs" />
+            <span>Không gian ngôn ngữ bài thi: {activeLanguage?.name || 'Tiếng Anh'}</span>
+            <span className="text-[11px] opacity-75 font-normal ml-auto">Đề thi biên soạn theo đúng ngôn ngữ đang học</span>
+          </div>
+
           <div>
             <label className="block text-xs font-bold uppercase text-slate-400 mb-2">
               1. Chọn nguồn tạo đề thi

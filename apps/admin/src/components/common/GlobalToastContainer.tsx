@@ -76,7 +76,7 @@ export const GlobalToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-5 right-5 z-[999999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none select-none">
+    <div className="fixed top-[calc(env(safe-area-inset-top,0px)+3.75rem)] left-3 right-3 sm:left-auto sm:right-5 sm:top-5 z-[999999] flex flex-col gap-2.5 max-w-sm sm:w-full mx-auto sm:mx-0 pointer-events-none select-none">
       {toasts.map((toast) => {
         const isSuccess = toast.type === 'success';
         const isError = toast.type === 'error';

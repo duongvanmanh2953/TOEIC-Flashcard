@@ -388,7 +388,7 @@ export class SynonymBattleMode implements IGameMode {
 /**
  * Game Mode Registry
  */
-export const GAME_MODE_REGISTRY: Record<GameModeType, IGameMode> = {
+export const GAME_MODE_REGISTRY: Partial<Record<GameModeType, IGameMode>> = {
   [GameModeType.TRANSLATION_RUSH]: new TranslationRushMode(),
   [GameModeType.WORD_BLITZ]: new WordBlitzMode(),
   [GameModeType.SENTENCE_SPRINT]: new SentenceSprintMode(),

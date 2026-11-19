@@ -17,6 +17,7 @@ import { GlobalToastContainer } from './components/common/GlobalToastContainer';
 import { OfflineStatusBanner } from './components/offline/OfflineStatusBanner';
 import { OnlineOnlyFeatureGate } from './components/offline/OnlineOnlyFeatureGate';
 import { AppSplashScreen } from './components/common/AppSplashScreen';
+import { CookieConsentBanner } from './components/common/CookieConsentBanner';
 
 // Route-level code-splitting (Lazy loaded on demand)
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -91,8 +92,6 @@ const AdminGamesPage = lazy(() => import('./pages/admin/AdminGamesPage').then(m 
 const AdminFinancialReportsPage = lazy(() => import('./pages/admin/AdminFinancialReportsPage').then(m => ({ default: m.AdminFinancialReportsPage })));
 const GameLobbyPage = lazy(() => import('./pages/games/GameLobbyPage').then(m => ({ default: m.GameLobbyPage })));
 const RealtimeGameRoomPage = lazy(() => import('./pages/games/RealtimeGameRoomPage').then(m => ({ default: m.RealtimeGameRoomPage })));
-const WordMatchGame = lazy(() => import('./pages/games/WordMatchGame').then(m => ({ default: m.WordMatchGame })));
-const WordScrambleGame = lazy(() => import('./pages/games/WordScrambleGame').then(m => ({ default: m.WordScrambleGame })));
 const NotAuthorizedPage = lazy(() => import('./pages/NotAuthorizedPage').then(m => ({ default: m.NotAuthorizedPage })));
 const AdminFirebasePage = lazy(() => import('./pages/admin/AdminFirebasePage').then(m => ({ default: m.AdminFirebasePage })));
 const AdminLanguagePage = lazy(() => import('./pages/admin/AdminLanguagePage').then(m => ({ default: m.AdminLanguagePage })));
@@ -196,6 +195,7 @@ export const App: React.FC = () => {
               <GlobalToastContainer />
               <OfflineStatusBanner />
               <AppSplashScreen durationMs={1000} />
+              <CookieConsentBanner />
               <Suspense fallback={<PageSuspenseFallback />}>
                 <Routes>
 
@@ -348,8 +348,6 @@ export const App: React.FC = () => {
               />
               <Route path="/interview-studio" element={<Navigate to="/interview" replace />} />
               <Route path="/games" element={<GameLobbyPage />} />
-              <Route path="/games/word-match" element={<WordMatchGame />} />
-              <Route path="/games/scramble" element={<WordScrambleGame />} />
               <Route
                 path="/games/room/:roomId"
                 element={

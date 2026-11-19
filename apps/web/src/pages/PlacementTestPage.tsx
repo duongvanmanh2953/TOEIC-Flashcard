@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { Compass, CheckCircle, ArrowRight, Award, AlertCircle } from 'lucide-react';
+import { playCorrectSound } from '@vocabflow/shared';
+import { useLearning } from '../contexts/LearningContext';
+import { CountryFlag } from '../components/language/CountryFlag';
 
 export const PlacementTestPage: React.FC = () => {
   const navigate = useNavigate();
+  const { activeLanguage } = useLearning();
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<any[]>([]);
@@ -14,11 +18,20 @@ export const PlacementTestPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/placement-test/questions').then((res: any) => {
-      if (res?.success) setQuestions(res.data);
+    setLoading(true);
+    const langId = activeLanguage?.id || 'en';
+    api.get(`/placement-test/questions?languageId=${langId}`).then((res: any) => {
+      const qList = Array.isArray(res) ? res : res?.data || [];
+      setQuestions(qList);
+      setCurrentIndex(0);
+      setAnswers([]);
+      setSelectedOption('');
+      setResult(null);
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
-  }, []);
+  }, [activeLanguage?.id]);
 
   const handleNext = async () => {
     if (!selectedOption) return;
@@ -43,9 +56,16 @@ export const PlacementTestPage: React.FC = () => {
       // Submit Placement Test
       setSubmitting(true);
       try {
-        const res: any = await api.post('/placement-test/submit', { answers: newAnswers });
+        const res: any = await api.post('/placement-test/submit', {
+          answers: newAnswers,
+          languageId: activeLanguage?.id || 'en',
+        });
         if (res?.success) {
           setResult(res.data);
+          playCorrectSound();
+        } else if (res?.estimatedLevel) {
+          setResult(res);
+          playCorrectSound();
         }
       } catch (err) {
         console.error('Failed to submit test', err);
@@ -132,10 +152,10 @@ export const PlacementTestPage: React.FC = () => {
       {/* Header Info */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Compass className="w-4 h-4 text-brand-600" />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Placement Test
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-bold text-xs">
+            <CountryFlag languageId={activeLanguage?.id || 'en'} size="xs" />
+            <span>Bài Thi: {activeLanguage?.name || 'Tiếng Anh'}</span>
+          </div>
         </div>
         <span className="text-xs font-bold text-slate-500">
           Câu {currentIndex + 1} / {questions.length}

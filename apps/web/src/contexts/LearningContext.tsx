@@ -490,3 +490,5 @@ export const useLearningContext = () => {
   }
   return context;
 };
+
+export const useLearning = useLearningContext;

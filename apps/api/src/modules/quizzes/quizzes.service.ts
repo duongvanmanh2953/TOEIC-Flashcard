@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CefrLevel } from '@prisma/client';
+import { MULTILINGUAL_VOCABULARY_BANK } from '../games/multilingual-questions.data';
 
 export interface GenerateQuizDto {
   title?: string;
@@ -8,6 +9,7 @@ export interface GenerateQuizDto {
   sourceFilter: 'FAVORITES' | 'WEAK_WORDS' | 'CEFR' | 'DECK';
   cefrLevel?: CefrLevel;
   deckId?: string;
+  languageId?: string;
 }
 
 @Injectable()
@@ -16,6 +18,7 @@ export class QuizzesService {
 
   async generateQuiz(userId: string, dto: GenerateQuizDto) {
     const limit = dto.questionCount || 10;
+    const lang = (dto.languageId || 'en').toLowerCase().trim();
     let targetVocabIds: string[] = [];
 
     if (dto.sourceFilter === 'FAVORITES') {
@@ -35,7 +38,10 @@ export class QuizzesService {
       targetVocabIds = weak.map((w) => w.vocabularyId);
     } else if (dto.sourceFilter === 'CEFR') {
       const cefrVocabs = await this.prisma.vocabulary.findMany({
-        where: dto.cefrLevel ? { cefrLevel: dto.cefrLevel } : {},
+        where: {
+          ...(dto.cefrLevel ? { cefrLevel: dto.cefrLevel } : {}),
+          languageId: lang,
+        },
         select: { id: true },
         take: limit,
       });
@@ -114,18 +120,55 @@ export class QuizzesService {
       }
     }
 
-    // Fallback: If not enough target words, fetch from CEFR or general vocabulary
+    // Fallback: If not enough target words, fetch from CEFR or general vocabulary for this language
     const remaining = limit - targetVocabIds.length;
     if (remaining > 0) {
       const extra = await this.prisma.vocabulary.findMany({
         where: {
           id: { notIn: targetVocabIds },
+          languageId: lang,
           ...(dto.cefrLevel ? { cefrLevel: dto.cefrLevel } : {}),
         },
         select: { id: true },
         take: remaining,
       });
       targetVocabIds.push(...extra.map((e) => e.id));
+    }
+
+    // Multilingual Bank Fallback if DB doesn't have enough words for this non-English language yet
+    if (targetVocabIds.length === 0 && MULTILINGUAL_VOCABULARY_BANK[lang]) {
+      const bankItems = MULTILINGUAL_VOCABULARY_BANK[lang].slice(0, limit);
+      const questions = bankItems.map((item, index) => {
+        const options = [item.meaningVi, ...item.distractorsVi].sort(() => Math.random() - 0.5);
+        return {
+          id: `q-${index + 1}`,
+          vocabularyId: item.id,
+          word: item.targetWord,
+          prompt: `Nghĩa chính xác của từ「${item.targetWord}」${item.phonetic ? ` (${item.phonetic})` : ''} là gì?`,
+          phonetic: item.phonetic || '',
+          sentenceContext: item.exampleSentence || null,
+          options,
+          correctAnswer: item.meaningVi,
+          explanation: `${item.targetWord}: ${item.meaningVi}${item.exampleTranslation ? ` (Ví dụ: ${item.exampleTranslation})` : ''}`,
+        };
+      });
+
+      const quiz = await this.prisma.customQuiz.create({
+        data: {
+          userId,
+          title: dto.title || `Bài Kiểm Tra Tiếng ${lang.toUpperCase()} (${questions.length} câu)`,
+          sourceFilter: dto.sourceFilter,
+          questionCount: questions.length,
+          questions: questions as any,
+        },
+      });
+
+      return {
+        quizId: quiz.id,
+        title: quiz.title,
+        questionCount: questions.length,
+        questions,
+      };
     }
 
     const vocabs = await this.prisma.vocabulary.findMany({

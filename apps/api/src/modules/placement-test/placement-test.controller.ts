@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PlacementTestService, TestAnswerItem } from './placement-test.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -12,9 +12,10 @@ export class PlacementTestController {
 
   @Public()
   @Get('questions')
-  @ApiOperation({ summary: 'Get onboarding placement test questions' })
-  getQuestions() {
-    return this.placementService.getPlacementQuestions();
+  @ApiOperation({ summary: 'Get onboarding placement test questions by language space' })
+  @ApiQuery({ name: 'languageId', required: false, description: 'Target language code e.g. zh, ja, ko, en' })
+  getQuestions(@Query('languageId') languageId?: string) {
+    return this.placementService.getPlacementQuestions(languageId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -24,7 +25,8 @@ export class PlacementTestController {
   submitTest(
     @CurrentUser('id') userId: string,
     @Body('answers') answers: TestAnswerItem[],
+    @Body('languageId') languageId?: string,
   ) {
-    return this.placementService.evaluatePlacementTest(userId, answers);
+    return this.placementService.evaluatePlacementTest(userId, answers, languageId);
   }
 }

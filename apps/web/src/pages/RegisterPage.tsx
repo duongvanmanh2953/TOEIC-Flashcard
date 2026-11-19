@@ -8,18 +8,40 @@ export const RegisterPage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [hasAgreed, setHasAgreed] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
   const { register, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
 
+  const recordConsent = (source: string) => {
+    try {
+      localStorage.setItem(
+        'vocabflow_legal_consent',
+        JSON.stringify({
+          agreed: true,
+          agreedAt: new Date().toISOString(),
+          version: '2026.11',
+          source,
+        })
+      );
+    } catch {}
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!hasAgreed) {
+      setError('Vui lòng đọc và tích chọn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật trước khi tiếp tục.');
+      return;
+    }
+
     setLoading(true);
     try {
       await register({ displayName, email, password });
+      recordConsent('register_form');
       // Direct user into smart Placement Test!
       navigate('/placement-test');
     } catch (err: any) {
@@ -91,6 +113,41 @@ export const RegisterPage: React.FC = () => {
             />
           </div>
 
+          {/* Explicit Opt-in Consent Checkbox (Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 & NĐ 356/2025/NĐ-CP) */}
+          <div className="pt-2 pb-1">
+            <label className="flex items-start gap-2.5 cursor-pointer text-left select-none group">
+              <input
+                id="terms-consent-checkbox"
+                type="checkbox"
+                required
+                checked={hasAgreed}
+                onChange={(e) => setHasAgreed(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
+              />
+              <span className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Tôi xác nhận đã đọc, hiểu rõ và đồng ý với{' '}
+                <Link
+                  to="/terms-of-service"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500"
+                >
+                  Điều khoản dịch vụ
+                </Link>{' '}
+                và{' '}
+                <Link
+                  to="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500"
+                >
+                  Chính sách bảo mật
+                </Link>{' '}
+                của VocabFlow (bao gồm sự đồng ý cho phép xử lý dữ liệu học tập và tài khoản cá nhân).
+              </span>
+            </label>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -105,18 +162,6 @@ export const RegisterPage: React.FC = () => {
               </>
             )}
           </button>
-
-          <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 mt-2 leading-tight">
-            Bằng việc đăng ký, bạn xác nhận đồng ý với{' '}
-            <Link to="/terms-of-service" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
-              Điều khoản dịch vụ
-            </Link>{' '}
-            và{' '}
-            <Link to="/privacy-policy" className="text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-500">
-              Chính sách bảo mật
-            </Link>{' '}
-            của VocabFlow.
-          </p>
         </form>
 
         {/* OR Divider */}
@@ -137,9 +182,14 @@ export const RegisterPage: React.FC = () => {
             type="button"
             onClick={async () => {
               setError('');
+              if (!hasAgreed) {
+                setError('Vui lòng tích chọn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật trước khi đăng ký bằng Google.');
+                return;
+              }
               setSocialLoading('google');
               try {
                 await loginWithGoogle();
+                recordConsent('google_oauth');
                 navigate('/placement-test');
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Google.');
@@ -175,9 +225,14 @@ export const RegisterPage: React.FC = () => {
             type="button"
             onClick={async () => {
               setError('');
+              if (!hasAgreed) {
+                setError('Vui lòng tích chọn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật trước khi đăng ký bằng Facebook.');
+                return;
+              }
               setSocialLoading('facebook');
               try {
                 await loginWithFacebook();
+                recordConsent('facebook_oauth');
                 navigate('/placement-test');
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Facebook.');

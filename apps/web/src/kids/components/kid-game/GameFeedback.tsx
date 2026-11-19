@@ -3,8 +3,9 @@
 // Gentle GPU particles • Praise banner • Non-intrusive 60fps
 // ============================================================================
 
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
+import { playCorrectSound, playWrongSound } from '@vocabflow/shared';
 
 interface GameFeedbackProps {
   status: 'correct' | 'wrong' | null;
@@ -17,6 +18,14 @@ export const GameFeedback: React.FC<GameFeedbackProps> = memo(({
   praiseText,
   className = '',
 }) => {
+  useEffect(() => {
+    if (status === 'correct') {
+      playCorrectSound();
+    } else if (status === 'wrong') {
+      playWrongSound();
+    }
+  }, [status]);
+
   if (!status) return null;
 
   if (status === 'correct') {

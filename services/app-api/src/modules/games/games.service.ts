@@ -17,6 +17,9 @@ export interface GameScheduleItem {
   status: 'OPEN' | 'UPCOMING' | 'CLOSED';
 }
 
+import { QuestionProviderService } from './question-provider.service';
+import { QuestionSourceType } from '@prisma/client';
+
 @Injectable()
 export class GamesService implements OnModuleInit {
   private readonly logger = new Logger(GamesService.name);
@@ -29,6 +32,7 @@ export class GamesService implements OnModuleInit {
     public readonly prisma: PrismaService,
     private readonly rabbitMQ: RabbitMQService,
     private readonly redisCache: RedisCacheService,
+    private readonly questionProvider: QuestionProviderService,
   ) {}
 
   async onModuleInit() {
@@ -162,68 +166,46 @@ export class GamesService implements OnModuleInit {
     displayName: string,
     avatar: string,
     socketId: string,
+    languageId: string = 'en',
   ): Promise<{ room: GameRoom; player: RoomPlayer }> {
-    // Find active open waiting room with space
+    const targetLang = (languageId || 'en').toLowerCase().trim();
+    // Find active open waiting room with matching game mode and language
     let room = this.roomManager
       .getActiveRooms()
-      .find((r) => r.gameMode === gameMode && (r.status === 'WAITING' || r.status === 'STARTING') && r.players.size < 100);
+      .find((r) => r.gameMode === gameMode && r.languageId === targetLang && (r.status === 'WAITING' || r.status === 'STARTING') && r.players.size < 500);
 
     if (!room) {
-      // Query questions from Question Bank
-      const questionsRaw = await this.prisma.gameQuestion.findMany({
-        where: { gameMode, status: 'PUBLISHED' },
-        take: 25,
-      });
-
-      // Fallback if question pool is small
-      const questions: GameQuestionPayload[] = questionsRaw.length > 0
-        ? questionsRaw.map((q) => ({
-            id: q.id,
-            prompt: q.prompt,
-            direction: q.direction,
-            correctAnswer: q.correctAnswer,
-            acceptedAnswers: q.acceptedAnswers,
-            explanation: q.explanation || undefined,
-            difficulty: q.difficulty,
-            category: q.category,
-            audioUrl: q.audioUrl || undefined,
-          }))
-        : [
-            {
-              id: 'q1',
-              prompt: 'meet the deadline',
-              direction: 'EN_VI',
-              correctAnswer: 'hoàn thành đúng hạn',
-              acceptedAnswers: ['kịp hạn', 'đúng hạn', 'kịp thời hạn'],
-              explanation: 'Thành ngữ TOEIC chỉ hoàn thành trước kỳ hạn.',
-              difficulty: 3.0,
-              category: 'Business',
-            },
-            {
-              id: 'q2',
-              prompt: 'triển khai',
-              direction: 'VI_EN',
-              correctAnswer: 'implement',
-              acceptedAnswers: ['deploy', 'execute', 'conduct'],
-              explanation: 'Từ vựng hành động.',
-              difficulty: 3.0,
-              category: 'General',
-            },
-          ];
+      // Fetch authentic questions directly from QuestionProviderService matching the chosen language
+      const questions = await this.questionProvider.getQuestionsForRoom(
+        QuestionSourceType.SYSTEM_PRESET,
+        undefined,
+        15,
+        gameMode,
+        targetLang,
+      );
 
       // Shuffle questions
-      const shuffled = questions.sort(() => Math.random() - 0.5).slice(0, 15);
+      const shuffled = [...questions].sort(() => Math.random() - 0.5).slice(0, 15);
       const roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
 
       const config = await this.prisma.gameConfig.findUnique({ where: { gameMode } });
       const title = config?.title || `${gameMode.replace('_', ' ')}`;
+
+      // Enforce <= 15s for choice / quiz games as requested by user
+      const rawDuration = config?.durationMinutes
+        ? Math.round((config.durationMinutes * 60) / (shuffled.length || 10))
+        : 12;
+      const roundDurationSec = Math.min(15, Math.max(5, rawDuration));
 
       room = this.roomManager.createRoom(
         roomCode,
         gameMode,
         title,
         shuffled,
-        config?.durationMinutes ? Math.round((config.durationMinutes * 60) / shuffled.length) : 15,
+        roundDurationSec,
+        targetLang,
+        false,
+        true,
       );
     }
 

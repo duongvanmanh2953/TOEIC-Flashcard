@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 import { CustomSelect, SelectOption } from '../components/ui/CustomSelect';
@@ -48,6 +48,9 @@ import {
   Clock,
   Lightbulb,
   Key,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import { ModalPortal } from '../components/common/ModalPortal';
 import { audioEngine } from '../lib/audioEngine';
@@ -110,8 +113,51 @@ const LANGUAGE_PRACTICE_WORDS: Record<string, Array<{ word: string; ipa: string;
 };
 
 // ==============================================================================
+// 5 PHÒNG LUYỆN CHỨC NĂNG AI COACH STUDIO
+// ==============================================================================
+export type StudioTabType = 'voice' | 'pronunciation' | 'simulator' | 'error-bank' | 'sound-better';
+
+export interface StudioTabItem {
+  id: StudioTabType;
+  name: string;
+  shortName: string;
+  icon: any;
+  desc: string;
+}
+
+export const STUDIO_TABS: StudioTabItem[] = [
+  { id: 'voice', name: 'Voice Coach & Studio', shortName: 'Voice Coach', icon: Mic, desc: 'Đàm thoại 1:1 phản xạ giọng nói' },
+  { id: 'pronunciation', name: 'Phòng Luyện Phát Âm (Phoneme Lab)', shortName: 'Luyện Âm', icon: Volume2, desc: 'Chấm điểm âm vị & Shadowing' },
+  { id: 'simulator', name: 'Mô Phỏng Tình Huống (Roleplay)', shortName: 'Mô Phỏng', icon: Briefcase, desc: 'Phỏng vấn Tech & Công sở' },
+  { id: 'error-bank', name: 'Ngân Hàng Lỗi Sai (Error Heatmap)', shortName: 'Lỗi Sai', icon: BrainCircuit, desc: 'Bản đồ nhiệt & Sửa lỗi gốc' },
+  { id: 'sound-better', name: 'Make Me Sound Better (Bản Xứ Hóa)', shortName: 'Bản Xứ Hóa', icon: Sparkles, desc: 'Nâng cấp câu nói sang chuẩn bản xứ' },
+];
+
+export interface ScenarioItem {
+  id: string;
+  name: string;
+  shortName: string;
+  desc: string;
+}
+
+export const SIMULATOR_SCENARIOS: ScenarioItem[] = [
+  { id: 'job_interview', name: 'Phỏng Vấn Tech Job', shortName: 'Phỏng Vấn Tech', desc: 'Đối thoại với Giám đốc Kỹ thuật về kinh nghiệm và xử lý sự cố.' },
+  { id: 'bug_delay_meeting', name: 'Giải Trình Hoãn Release', shortName: 'Hoãn Release', desc: 'Thuyết phục VP Sản phẩm về việc lùi thời gian do bug nghiêm trọng.' },
+  { id: 'salary_negotiation', name: 'Đàm Phán Tăng Lương', shortName: 'Đàm Phán Lương', desc: 'Đưa ra luận điểm tăng 25% thu nhập dựa trên hiệu suất.' },
+  { id: 'dining_out', name: 'Gọi Món Nhà Hàng', shortName: 'Gọi Món', desc: 'Yêu cầu món ăn theo chế độ ăn uống và hỏi kỹ thành phần.' },
+];
+
+// ==============================================================================
 // CHỢ TRỢ LÝ GIA SƯ AI VOCABFLOW (TUTOR PERSONA MARKETPLACE)
 // ==============================================================================
+export interface TutorPersonaTheme {
+  chipActive: string;
+  chipInactive: string;
+  avatarBg: string;
+  ringColor: string;
+  dotColor: string;
+}
+
 export interface TutorPersona {
   id: string;
   name: string;
@@ -123,106 +169,633 @@ export interface TutorPersona {
   description: string;
   specialty: string[];
   greeting: string;
+  theme: TutorPersonaTheme;
+  languageId?: string;
+  preferredGender?: 'male' | 'female';
+  preferredLocale?: string;
 }
 
-export const TUTOR_PERSONA_MARKET: TutorPersona[] = [
-  {
-    id: 'Friendly Tutor',
-    name: 'Alex Johnson',
-    vietnameseTitle: 'Gia sư Thân Thiện',
-    avatar: '👨‍🏫',
-    tag: 'Phổ biến nhất',
-    badgeColor: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-    accent: 'US Neutral',
-    description: 'Kiên nhẫn, luôn động viên và cổ vũ bạn nói tự tin mà không sợ sai sót.',
-    specialty: ['Giao tiếp cơ bản', 'Sửa lỗi nhẹ nhàng', 'Tạo động lực học tập'],
-    greeting: 'Chào bạn! Mình là Alex. Hãy trò chuyện thật thoải mái nhé, đừng ngại nói sai!',
-  },
-  {
-    id: 'Strict Teacher',
-    name: 'Ms. Clara Vance',
-    vietnameseTitle: 'Giáo viên Nghiêm Khắc',
-    avatar: '👩‍🏫',
-    tag: 'Học thuật & Luyện thi',
-    badgeColor: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
-    accent: 'UK Academic',
-    description: 'Chỉnh lỗi ngữ pháp, thì và chia động từ nghiêm túc, đặt độ chính xác lên hàng đầu.',
-    specialty: ['Ngữ pháp chuyên sâu', 'Sửa lỗi từng câu', 'Chuẩn văn phong'],
-    greeting: 'Xin chào. Tôi là cô Clara. Tôi sẽ theo dõi sát sao từng lỗi phát âm và cấu trúc câu của bạn.',
-  },
-  {
-    id: 'Interview Coach',
-    name: 'David Chen',
-    vietnameseTitle: 'Chuyên gia Phỏng Vấn',
-    avatar: '🎯',
-    tag: 'Sự nghiệp & Việc làm',
-    badgeColor: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-    accent: 'US Corporate',
-    description: 'Chuyên rèn luyện phỏng vấn xin việc tiếng Anh, phương pháp STAR và đàm phán lương.',
-    specialty: ['Mock Interview', 'STAR Method', 'Business English'],
-    greeting: 'Chào bạn! Tôi là David. Hãy sẵn sàng cho buổi phỏng vấn thử thách năng lực thực tế.',
-  },
-  {
-    id: 'Casual Friend',
-    name: 'Chloe Miller',
-    vietnameseTitle: 'Bạn Tán Gẫu Bản Xứ',
-    avatar: '☕',
-    tag: 'Đời sống & Tiếng lóng',
-    badgeColor: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-    accent: 'US Casual',
-    description: 'Nói chuyện tự nhiên như bạn bè cafe, dùng tiếng lóng, thành ngữ đời thường.',
-    specialty: ['Daily Slang', 'Small Talk', 'Phản xạ đời sống'],
-    greeting: 'Hey there! Mình là Chloe. Hôm nay có chuyện gì thú vị kể mình nghe với nào?',
-  },
-  {
-    id: 'Work Colleague',
-    name: 'Marcus Sterling',
-    vietnameseTitle: 'Đồng Nghiệp Công Sở',
-    avatar: '💼',
-    tag: 'Văn phòng quốc tế',
-    badgeColor: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
-    accent: 'Global English',
-    description: 'Luyện viết email, thuyết trình và thảo luận dự án chuyên nghiệp với đồng nghiệp.',
-    specialty: ['Business Email', 'Họp trực tuyến', 'Đàm phán công việc'],
-    greeting: 'Hi colleague! Tôi là Marcus. Hôm nay dự án và cuộc họp của chúng ta tiến hành đến đâu rồi?',
-  },
-  {
-    id: 'American Coach',
-    name: 'Jack O\'Connor',
-    vietnameseTitle: 'Thầy Bản Xứ Mỹ',
-    avatar: '🇺🇸',
-    tag: 'General American',
-    badgeColor: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-    accent: 'US Native',
-    description: 'Ngữ điệu Mỹ chuẩn (General American), nuốt âm, nối âm tự nhiên như người bản xứ.',
-    specialty: ['Nối âm Linking', 'Flap T & Schwa', 'Phim ảnh Hollywood'],
-    greeting: 'What’s up! Tôi là Jack từ California. Hãy luyện ngữ điệu Mỹ thật tự nhiên cùng tôi nhé!',
-  },
-  {
-    id: 'British Coach',
-    name: 'Emma Watson-Hill',
-    vietnameseTitle: 'Cô Bản Xứ Anh',
-    avatar: '🇬🇧',
-    tag: 'Received Pronunciation',
-    badgeColor: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
-    accent: 'UK Royal RP',
-    description: 'Giọng Anh chuẩn Hoàng Gia quý phái, trọng âm và nhịp điệu tao nhã, chuẩn mực.',
-    specialty: ['RP Accent', 'Formal Vocab', 'IELTS Speaking'],
-    greeting: 'Good day! Tôi là Emma. Rất vui được đồng hành cùng bạn nâng tầm phát âm chuẩn Anh quốc.',
-  },
-  {
-    id: 'IELTS Master',
-    name: 'Dr. Gregory Hall',
-    vietnameseTitle: 'Giám Khảo Luyện Thi',
-    avatar: '🏆',
-    tag: 'Target Band 7.5+',
-    badgeColor: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
-    accent: 'Academic Exam',
-    description: 'Mô phỏng Speaking Part 1, 2, 3 và phân tích chi tiết tiêu chí Lexical Resource & Fluency.',
-    specialty: ['Speaking Part 1-3', 'Lexical Resource', 'Fluency & Coherence'],
-    greeting: 'Chào bạn, tôi là Dr. Gregory. Hãy bắt đầu phần thi mô phỏng để đo lường band điểm ngay hôm nay.',
-  },
-];
+export const LANGUAGE_TUTOR_PERSONAS: Record<string, TutorPersona[]> = {
+  // ==================== CHINESE (TIẾNG TRUNG) ====================
+  zh: [
+    {
+      id: 'zh_wang_laoshi',
+      name: 'Wang Laoshi (王老师)',
+      vietnameseTitle: 'Thầy Chuẩn Bắc Kinh',
+      avatar: '🇨🇳',
+      tag: 'Phổ biến nhất',
+      badgeColor: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30',
+      accent: 'Phổ Thông Bắc Kinh (Standard Mandarin)',
+      description: 'Phát âm chuẩn âm cuốn lưỡi, 4 thanh điệu chính xác, kiên nhẫn hướng dẫn giao tiếp khẩu ngữ.',
+      specialty: ['Phát âm Pinyin', 'Thanh điệu chuẩn', 'Khẩu ngữ hàng ngày'],
+      greeting: '你好！我是王老师。学好普通话，声调和发音是关键。让我们一起轻松开口说中文吧！',
+      languageId: 'zh',
+      preferredGender: 'male',
+      preferredLocale: 'zh-CN',
+      theme: {
+        chipActive: 'bg-red-600 text-white shadow-red-500/25',
+        chipInactive: 'bg-red-50/80 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-300/80 dark:border-red-800/70 hover:bg-red-100',
+        avatarBg: 'bg-red-100/90 dark:bg-red-950/70 border-red-300/80 dark:border-red-700',
+        ringColor: 'border-red-500 ring-2 ring-red-500/30',
+        dotColor: 'bg-red-500',
+      },
+    },
+    {
+      id: 'zh_li_na',
+      name: 'Li Na (李娜)',
+      vietnameseTitle: 'Bạn Tán Gẫu Bản Xứ',
+      avatar: '👩‍🏫',
+      tag: 'Đời sống & Khẩu ngữ',
+      badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      accent: 'Khẩu Ngữ Đời Thường',
+      description: 'Trò chuyện tự nhiên như bạn bè WeChat, chia sẻ từ lóng mạng và phản xạ giao tiếp đời sống.',
+      specialty: ['Khẩu ngữ đời sống', 'Từ lóng WeChat', 'Giao tiếp phản xạ'],
+      greeting: '嗨！我是李娜。今天过得怎么样？不用拘谨，有什么想聊的尽管和我说哦！',
+      languageId: 'zh',
+      preferredGender: 'female',
+      preferredLocale: 'zh-CN',
+      theme: {
+        chipActive: 'bg-emerald-600 text-white shadow-emerald-500/25',
+        chipInactive: 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-800/70 hover:bg-emerald-100',
+        avatarBg: 'bg-emerald-100/90 dark:bg-emerald-950/70 border-emerald-300/80 dark:border-emerald-700',
+        ringColor: 'border-emerald-500 ring-2 ring-emerald-500/30',
+        dotColor: 'bg-emerald-500',
+      },
+    },
+    {
+      id: 'zh_zhang_wei',
+      name: 'Zhang Wei (张伟)',
+      vietnameseTitle: 'Chuyên Gia Luyện Thi HSK',
+      avatar: '🎯',
+      tag: 'HSK 1-6 & Học thuật',
+      badgeColor: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+      accent: 'Học Thuật Chuẩn Mực',
+      description: 'Chuyên sâu ngữ pháp HSK, bổ ngữ kết quả, câu chữ 把/被 và sửa lỗi câu chuẩn mực.',
+      specialty: ['Ngữ pháp HSK', 'Bổ ngữ trạng thái', 'Sửa lỗi hành văn'],
+      greeting: '你好！我是张伟老师。无论你备考HSK几级，我都会帮你夯实语法基础，精准纠错。',
+      languageId: 'zh',
+      preferredGender: 'male',
+      preferredLocale: 'zh-CN',
+      theme: {
+        chipActive: 'bg-indigo-600 text-white shadow-indigo-500/25',
+        chipInactive: 'bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-300/80 dark:border-indigo-800/70 hover:bg-indigo-100',
+        avatarBg: 'bg-indigo-100/90 dark:bg-indigo-950/70 border-indigo-300/80 dark:border-indigo-700',
+        ringColor: 'border-indigo-500 ring-2 ring-indigo-500/30',
+        dotColor: 'bg-indigo-500',
+      },
+    },
+    {
+      id: 'zh_chen_jing',
+      name: 'Chen Jing (陈静)',
+      vietnameseTitle: 'Đồng Nghiệp Thương Mại',
+      avatar: '💼',
+      tag: 'Tiếng Trung Công Sở',
+      badgeColor: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30',
+      accent: 'Thương Mại & Đàm Phán',
+      description: 'Luyện giao tiếp văn phòng, đàm phán hợp đồng, xuất nhập khẩu và kỹ năng họp trực tuyến.',
+      specialty: ['Tiếng Trung Thương Mại', 'Đàm phán thương vụ', 'Email & Họp công sở'],
+      greeting: '您好！我是陈静。今天我们来模拟商务会议与业务洽谈，做好准备了吗？',
+      languageId: 'zh',
+      preferredGender: 'female',
+      preferredLocale: 'zh-CN',
+      theme: {
+        chipActive: 'bg-teal-600 text-white shadow-teal-500/25',
+        chipInactive: 'bg-teal-50/80 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-300/80 dark:border-teal-800/70 hover:bg-teal-100',
+        avatarBg: 'bg-teal-100/90 dark:bg-teal-950/70 border-teal-300/80 dark:border-teal-700',
+        ringColor: 'border-teal-500 ring-2 ring-teal-500/30',
+        dotColor: 'bg-teal-500',
+      },
+    },
+    {
+      id: 'zh_xiao_yu',
+      name: 'Xiao Yu (小雨)',
+      vietnameseTitle: 'Thần Tượng & C-Pop',
+      avatar: '✨',
+      tag: 'Văn hóa & Phim ảnh',
+      badgeColor: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+      accent: 'Giọng Nam Phương Nhẹ Nhàng',
+      description: 'Giọng điệu truyền cảm, luyện nói qua phim ảnh, bài hát C-Pop và văn hóa ẩm thực Trung Hoa.',
+      specialty: ['Học qua C-Pop', 'Hội thoại phim ảnh', 'Ngữ điệu tự nhiên'],
+      greeting: '哈喽！我是小雨。让我们一边聊喜欢的电影和音乐，一边快乐学中文吧！',
+      languageId: 'zh',
+      preferredGender: 'female',
+      preferredLocale: 'zh-CN',
+      theme: {
+        chipActive: 'bg-amber-600 text-white shadow-amber-500/25',
+        chipInactive: 'bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300/80 dark:border-amber-800/70 hover:bg-amber-100',
+        avatarBg: 'bg-amber-100/90 dark:bg-amber-950/70 border-amber-300/80 dark:border-amber-700',
+        ringColor: 'border-amber-500 ring-2 ring-amber-500/30',
+        dotColor: 'bg-amber-500',
+      },
+    },
+  ],
+
+  // ==================== JAPANESE (TIẾNG NHẬT) ====================
+  ja: [
+    {
+      id: 'ja_kenji_sato',
+      name: 'Kenji Sato (佐藤 健二)',
+      vietnameseTitle: 'Thầy Chuẩn Tokyo',
+      avatar: '🇯🇵',
+      tag: 'Phổ biến nhất',
+      badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+      accent: 'Tokyo Hyoujungo (Chuẩn Tokyo)',
+      description: 'Ngữ điệu chuẩn Tokyo, giải thích ngữ pháp tỉ mỉ, trọng âm cao thấp (pitch accent) rõ ràng.',
+      specialty: ['Pitch Accent Tokyo', 'Ngữ pháp sơ-trung cấp', 'Hội thoại tự nhiên'],
+      greeting: 'こんにちは！佐藤健二です。標準的な東京アクセントで、自然な日本語を身につけましょう！',
+      languageId: 'ja',
+      preferredGender: 'male',
+      preferredLocale: 'ja-JP',
+      theme: {
+        chipActive: 'bg-rose-600 text-white shadow-rose-500/25',
+        chipInactive: 'bg-rose-50/80 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-300/80 dark:border-rose-800/70 hover:bg-rose-100',
+        avatarBg: 'bg-rose-100/90 dark:bg-rose-950/70 border-rose-300/80 dark:border-rose-700',
+        ringColor: 'border-rose-500 ring-2 ring-rose-500/30',
+        dotColor: 'bg-rose-500',
+      },
+    },
+    {
+      id: 'ja_yumi_tanaka',
+      name: 'Yumi Tanaka (田中 由美)',
+      vietnameseTitle: 'Cô Giáo Lịch Sự Keigo',
+      avatar: '👩‍🏫',
+      tag: 'Hội thoại & Kính ngữ',
+      badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      accent: 'Nhẹ Nhàng & Lịch Thiệp',
+      description: 'Kiên nhẫn, chuyên về giao tiếp thường nhật, văn hóa ứng xử và kính ngữ Keigo.',
+      specialty: ['Keigo & Lịch sự', 'Hội thoại đời sống', 'Giao tiếp hàng ngày'],
+      greeting: 'はじめまして、田中由美です。日常会話から敬語まで、優しくサポートしますね。',
+      languageId: 'ja',
+      preferredGender: 'female',
+      preferredLocale: 'ja-JP',
+      theme: {
+        chipActive: 'bg-emerald-600 text-white shadow-emerald-500/25',
+        chipInactive: 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-800/70 hover:bg-emerald-100',
+        avatarBg: 'bg-emerald-100/90 dark:bg-emerald-950/70 border-emerald-300/80 dark:border-emerald-700',
+        ringColor: 'border-emerald-500 ring-2 ring-emerald-500/30',
+        dotColor: 'bg-emerald-500',
+      },
+    },
+    {
+      id: 'ja_daiki_takahashi',
+      name: 'Daiki Takahashi (高橋 大树)',
+      vietnameseTitle: 'Giám Khảo Luyện JLPT',
+      avatar: '🎯',
+      tag: 'JLPT N5-N1',
+      badgeColor: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+      accent: 'Học Thuật Chuyên Sâu',
+      description: 'Luyện thi JLPT thực chiến, phân tích ngữ pháp bẫy và kỹ năng nghe hiểu choukai.',
+      specialty: ['Luyện thi JLPT', 'Nghe hiểu Choukai', 'Đọc hiểu Dokkai'],
+      greeting: 'こんにちは、高橋です。JLPT合格に向けて、文法と聴解の要点を効率よくトレーニングしましょう。',
+      languageId: 'ja',
+      preferredGender: 'male',
+      preferredLocale: 'ja-JP',
+      theme: {
+        chipActive: 'bg-indigo-600 text-white shadow-indigo-500/25',
+        chipInactive: 'bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-300/80 dark:border-indigo-800/70 hover:bg-indigo-100',
+        avatarBg: 'bg-indigo-100/90 dark:bg-indigo-950/70 border-indigo-300/80 dark:border-indigo-700',
+        ringColor: 'border-indigo-500 ring-2 ring-indigo-500/30',
+        dotColor: 'bg-indigo-500',
+      },
+    },
+    {
+      id: 'ja_sakura_mori',
+      name: 'Sakura Mori (森 さくら)',
+      vietnameseTitle: 'Bạn Tán Gẫu Anime',
+      avatar: '🌸',
+      tag: 'Văn hóa Giới trẻ',
+      badgeColor: 'bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30',
+      accent: 'Trẻ Trung Tự Nhiên',
+      description: 'Nói chuyện vui vẻ, tự nhiên qua Anime, Manga, J-Pop và đời sống giới trẻ Nhật Bản.',
+      specialty: ['Tiếng lóng Anime', 'Văn hóa Manga', 'Phản xạ đời thường'],
+      greeting: 'やっほー！さくらです。アニメや日本の流行について、リラックスしておしゃべりしましょう！',
+      languageId: 'ja',
+      preferredGender: 'female',
+      preferredLocale: 'ja-JP',
+      theme: {
+        chipActive: 'bg-pink-600 text-white shadow-pink-500/25',
+        chipInactive: 'bg-pink-50/80 dark:bg-pink-950/40 text-pink-900 dark:text-pink-300 border-pink-300/80 dark:border-pink-800/70 hover:bg-pink-100',
+        avatarBg: 'bg-pink-100/90 dark:bg-pink-950/70 border-pink-300/80 dark:border-pink-700',
+        ringColor: 'border-pink-500 ring-2 ring-pink-500/30',
+        dotColor: 'bg-pink-500',
+      },
+    },
+  ],
+
+  // ==================== KOREAN (TIẾNG HÀN) ====================
+  ko: [
+    {
+      id: 'ko_kim_minjun',
+      name: 'Kim Min-jun (김민준)',
+      vietnameseTitle: 'Thầy Chuẩn Seoul',
+      avatar: '🇰🇷',
+      tag: 'Phổ biến nhất',
+      badgeColor: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30',
+      accent: 'Chuẩn Seoul (표준어)',
+      description: 'Giọng chuẩn Seoul thanh lịch, nhấn nhá đúng quy tắc biến âm và nối âm tiếng Hàn.',
+      specialty: ['Quy tắc biến âm', 'Chuẩn Seoul', 'Luyện phát âm Hangul'],
+      greeting: '안녕하세요! 김민준입니다. 정확한 표준어 발음과 자연스러운 억양을 함께 연습해 봐요.',
+      languageId: 'ko',
+      preferredGender: 'male',
+      preferredLocale: 'ko-KR',
+      theme: {
+        chipActive: 'bg-sky-600 text-white shadow-sky-500/25',
+        chipInactive: 'bg-sky-50/80 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-300/80 dark:border-sky-800/70 hover:bg-sky-100',
+        avatarBg: 'bg-sky-100/90 dark:bg-sky-950/70 border-sky-300/80 dark:border-sky-700',
+        ringColor: 'border-sky-500 ring-2 ring-sky-500/30',
+        dotColor: 'bg-sky-500',
+      },
+    },
+    {
+      id: 'ko_park_jieun',
+      name: 'Park Ji-eun (박지은)',
+      vietnameseTitle: 'Giao Tiếp K-Drama',
+      avatar: '👩‍🏫',
+      tag: 'Đời sống & K-Pop',
+      badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+      accent: 'Thân Thiện Hàng Ngày',
+      description: 'Học tiếng Hàn sinh động qua lời thoại phim truyền hình Hàn Quốc, K-Pop và đời sống thường nhật.',
+      specialty: ['Hội thoại K-Drama', 'Tiếng lóng giới trẻ', 'Giao tiếp đời sống'],
+      greeting: '반가워요! 박지은입니다. 드라마 속 생생한 대화로 한국어를 쉽고 재미있게 배워보세요!',
+      languageId: 'ko',
+      preferredGender: 'female',
+      preferredLocale: 'ko-KR',
+      theme: {
+        chipActive: 'bg-rose-600 text-white shadow-rose-500/25',
+        chipInactive: 'bg-rose-50/80 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-300/80 dark:border-rose-800/70 hover:bg-rose-100',
+        avatarBg: 'bg-rose-100/90 dark:bg-rose-950/70 border-rose-300/80 dark:border-rose-700',
+        ringColor: 'border-rose-500 ring-2 ring-rose-500/30',
+        dotColor: 'bg-rose-500',
+      },
+    },
+    {
+      id: 'ko_lee_seungwoo',
+      name: 'Lee Seung-woo (이승우)',
+      vietnameseTitle: 'Tiếng Hàn Công Sở',
+      avatar: '💼',
+      tag: 'Business & TOPIK',
+      badgeColor: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30',
+      accent: 'Trang Trọng & Phỏng Vấn',
+      description: 'Luyện đuôi câu kính trọng -ㅂ니다/습니다, giao tiếp nơi công sở và chuẩn bị phỏng vấn TOPIK.',
+      specialty: ['Kính ngữ công sở', 'Luyện thi TOPIK', 'Phỏng vấn xin việc'],
+      greeting: '안녕하십니까! 이승우입니다. 비즈니스 한국어와 면접 대비 실전 감각을 키워드리겠습니다.',
+      languageId: 'ko',
+      preferredGender: 'male',
+      preferredLocale: 'ko-KR',
+      theme: {
+        chipActive: 'bg-teal-600 text-white shadow-teal-500/25',
+        chipInactive: 'bg-teal-50/80 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-300/80 dark:border-teal-800/70 hover:bg-teal-100',
+        avatarBg: 'bg-teal-100/90 dark:bg-teal-950/70 border-teal-300/80 dark:border-teal-700',
+        ringColor: 'border-teal-500 ring-2 ring-teal-500/30',
+        dotColor: 'bg-teal-500',
+      },
+    },
+  ],
+
+  // ==================== FRENCH (TIẾNG PHÁP) ====================
+  fr: [
+    {
+      id: 'fr_pierre_dubois',
+      name: 'Pierre Dubois',
+      vietnameseTitle: 'Thầy Chuẩn Paris',
+      avatar: '🇫🇷',
+      tag: 'Phổ biến nhất',
+      badgeColor: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30',
+      accent: 'Parisian Standard French',
+      description: 'Giọng Paris chuẩn mực, thanh lịch, chỉnh âm mũi và nối âm liaison mượt mà.',
+      specialty: ['Âm mũi & Liaison', 'Ngữ pháp DELF', 'Văn phong học thuật'],
+      greeting: 'Bonjour ! Je m\'appelle Pierre. Travaillons ensemble votre français avec un accent parisien soigné et élégant.',
+      languageId: 'fr',
+      preferredGender: 'male',
+      preferredLocale: 'fr-FR',
+      theme: {
+        chipActive: 'bg-blue-600 text-white shadow-blue-500/25',
+        chipInactive: 'bg-blue-50/80 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-300/80 dark:border-blue-800/70 hover:bg-blue-100',
+        avatarBg: 'bg-blue-100/90 dark:bg-blue-950/70 border-blue-300/80 dark:border-blue-700',
+        ringColor: 'border-blue-500 ring-2 ring-blue-500/30',
+        dotColor: 'bg-blue-500',
+      },
+    },
+    {
+      id: 'fr_amelie_laurent',
+      name: 'Amélie Laurent',
+      vietnameseTitle: 'Bạn Tán Gẫu Đời Thường',
+      avatar: '👩‍🏫',
+      tag: 'Đời sống & Văn hóa',
+      badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+      accent: 'Giao Tiếp Tự Nhiên',
+      description: 'Trò chuyện cởi mở về văn hóa, ẩm thực Pháp, dùng từ ngữ thông dụng đời sống hàng ngày.',
+      specialty: ['Khẩu ngữ Pháp', 'Văn hóa ẩm thực', 'Phản xạ đời sống'],
+      greeting: 'Coucou ! Moi c\'est Amélie. Parlons de façon détendue et découvrons la richesse de la langue française au quotidien !',
+      languageId: 'fr',
+      preferredGender: 'female',
+      preferredLocale: 'fr-FR',
+      theme: {
+        chipActive: 'bg-rose-600 text-white shadow-rose-500/25',
+        chipInactive: 'bg-rose-50/80 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-300/80 dark:border-rose-800/70 hover:bg-rose-100',
+        avatarBg: 'bg-rose-100/90 dark:bg-rose-950/70 border-rose-300/80 dark:border-rose-700',
+        ringColor: 'border-rose-500 ring-2 ring-rose-500/30',
+        dotColor: 'bg-rose-500',
+      },
+    },
+  ],
+
+  // ==================== GERMAN (TIẾNG ĐỨC) ====================
+  de: [
+    {
+      id: 'de_lukas_weber',
+      name: 'Lukas Weber',
+      vietnameseTitle: 'Thầy Chuẩn Berlin',
+      avatar: '🇩🇪',
+      tag: 'Phổ biến nhất',
+      badgeColor: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+      accent: 'Standard Hochdeutsch (Berlin)',
+      description: 'Hochdeutsch chuẩn mực, rèn luyện cấu trúc câu phức, giống từ der/die/das và biến cách Kasus.',
+      specialty: ['Ngữ pháp Kasus', 'Giống danh từ', 'Goethe-Zertifikat'],
+      greeting: 'Hallo! Mein Name ist Lukas. Ich helfe dir dabei, fehlerfreies Hochdeutsch mit präziser Grammatik zu sprechen.',
+      languageId: 'de',
+      preferredGender: 'male',
+      preferredLocale: 'de-DE',
+      theme: {
+        chipActive: 'bg-amber-600 text-white shadow-amber-500/25',
+        chipInactive: 'bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300/80 dark:border-amber-800/70 hover:bg-amber-100',
+        avatarBg: 'bg-amber-100/90 dark:bg-amber-950/70 border-amber-300/80 dark:border-amber-700',
+        ringColor: 'border-amber-500 ring-2 ring-amber-500/30',
+        dotColor: 'bg-amber-500',
+      },
+    },
+    {
+      id: 'de_hanna_schmidt',
+      name: 'Hanna Schmidt',
+      vietnameseTitle: 'Giao Tiếp Cuộc Sống Đức',
+      avatar: '👩‍🏫',
+      tag: 'Đời sống & Hội thoại',
+      badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      accent: 'Thân Thiện Hàng Ngày',
+      description: 'Đồng hành luyện nói không áp lực, làm quen với đời sống du học và làm việc tại Đức.',
+      specialty: ['Giao tiếp đời sống', 'Đời sống du học sinh', 'Small Talk thường nhật'],
+      greeting: 'Guten Tag! Ich bin Hanna. Lass uns ganz ungezwungen Deutsch üben – Schritt für Schritt zum Erfolg!',
+      languageId: 'de',
+      preferredGender: 'female',
+      preferredLocale: 'de-DE',
+      theme: {
+        chipActive: 'bg-emerald-600 text-white shadow-emerald-500/25',
+        chipInactive: 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-800/70 hover:bg-emerald-100',
+        avatarBg: 'bg-emerald-100/90 dark:bg-emerald-950/70 border-emerald-300/80 dark:border-emerald-700',
+        ringColor: 'border-emerald-500 ring-2 ring-emerald-500/30',
+        dotColor: 'bg-emerald-500',
+      },
+    },
+  ],
+
+  // ==================== SPANISH (TIẾNG TÂY BAN NHA) ====================
+  es: [
+    {
+      id: 'es_carlos_rodriguez',
+      name: 'Carlos Rodriguez',
+      vietnameseTitle: 'Thầy Chuẩn Madrid',
+      avatar: '🇪🇸',
+      tag: 'Phổ biến nhất',
+      badgeColor: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30',
+      accent: 'Castilian Spanish (Madrid)',
+      description: 'Ngữ điệu Tây Ban Nha chính gốc Madrid, rèn luyện phát âm chữ R rung và ngữ pháp DELE.',
+      specialty: ['Âm R rung chuẩn', 'Ngữ pháp DELE', 'Giao tiếp chuẩn mực'],
+      greeting: '¡Hola! Soy Carlos de Madrid. Practiquemos español auténtico con excelente pronunciación y ritmo natural.',
+      languageId: 'es',
+      preferredGender: 'male',
+      preferredLocale: 'es-ES',
+      theme: {
+        chipActive: 'bg-red-600 text-white shadow-red-500/25',
+        chipInactive: 'bg-red-50/80 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-300/80 dark:border-red-800/70 hover:bg-red-100',
+        avatarBg: 'bg-red-100/90 dark:bg-red-950/70 border-red-300/80 dark:border-red-700',
+        ringColor: 'border-red-500 ring-2 ring-red-500/30',
+        dotColor: 'bg-red-500',
+      },
+    },
+    {
+      id: 'es_sofia_martinez',
+      name: 'Sofia Martinez',
+      vietnameseTitle: 'Bạn Tán Gẫu Mỹ Latin',
+      avatar: '🌮',
+      tag: 'Mỹ Latin Thân Thiện',
+      badgeColor: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+      accent: 'Latin American Spanish (Mexico)',
+      description: 'Giọng điệu Mỹ Latin vui tươi, gần gũi, nhiều biểu cảm đời thường sinh động.',
+      specialty: ['Español Latino', 'Hội thoại đời sống', 'Phản xạ vui tươi'],
+      greeting: '¡Hola a todos! Soy Sofía. Vamos a conversar alegremente y a dominar el español de la vida real.',
+      languageId: 'es',
+      preferredGender: 'female',
+      preferredLocale: 'es-MX',
+      theme: {
+        chipActive: 'bg-amber-600 text-white shadow-amber-500/25',
+        chipInactive: 'bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300/80 dark:border-amber-800/70 hover:bg-amber-100',
+        avatarBg: 'bg-amber-100/90 dark:bg-amber-950/70 border-amber-300/80 dark:border-amber-700',
+        ringColor: 'border-amber-500 ring-2 ring-amber-500/30',
+        dotColor: 'bg-amber-500',
+      },
+    },
+  ],
+
+  // ==================== ENGLISH (TIẾNG ANH) ====================
+  en: [
+    {
+      id: 'Friendly Tutor',
+      name: 'Alex Johnson',
+      vietnameseTitle: 'Gia sư Thân Thiện',
+      avatar: '👨‍🏫',
+      tag: 'Phổ biến nhất',
+      badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+      accent: 'US Neutral',
+      description: 'Kiên nhẫn, luôn động viên và cổ vũ bạn nói tự tin mà không sợ sai sót.',
+      specialty: ['Giao tiếp cơ bản', 'Sửa lỗi nhẹ nhàng', 'Tạo động lực học tập'],
+      greeting: 'Hello there! I am Alex. Let\'s practice speaking comfortably and build your confidence together!',
+      languageId: 'en',
+      preferredGender: 'male',
+      preferredLocale: 'en-US',
+      theme: {
+        chipActive: 'bg-emerald-600 text-white shadow-emerald-500/25',
+        chipInactive: 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-800/70 hover:bg-emerald-100',
+        avatarBg: 'bg-emerald-100/90 dark:bg-emerald-950/70 border-emerald-300/80 dark:border-emerald-700',
+        ringColor: 'border-emerald-500 ring-2 ring-emerald-500/30',
+        dotColor: 'bg-emerald-500',
+      },
+    },
+    {
+      id: 'Strict Teacher',
+      name: 'Ms. Clara Vance',
+      vietnameseTitle: 'Giáo viên Nghiêm Khắc',
+      avatar: '👩‍🏫',
+      tag: 'Học thuật & Luyện thi',
+      badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+      accent: 'UK Academic',
+      description: 'Chỉnh lỗi ngữ pháp, thì và chia động từ nghiêm túc, đặt độ chính xác lên hàng đầu.',
+      specialty: ['Ngữ pháp chuyên sâu', 'Sửa lỗi từng câu', 'Chuẩn văn phong'],
+      greeting: 'Good day. I am Ms. Clara. I will closely monitor your grammar, sentence structure, and vocabulary precision.',
+      languageId: 'en',
+      preferredGender: 'female',
+      preferredLocale: 'en-GB',
+      theme: {
+        chipActive: 'bg-rose-600 text-white shadow-rose-500/25',
+        chipInactive: 'bg-rose-50/80 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-300/80 dark:border-rose-800/70 hover:bg-rose-100',
+        avatarBg: 'bg-rose-100/90 dark:bg-rose-950/70 border-rose-300/80 dark:border-rose-700',
+        ringColor: 'border-rose-500 ring-2 ring-rose-500/30',
+        dotColor: 'bg-rose-500',
+      },
+    },
+    {
+      id: 'Interview Coach',
+      name: 'David Chen',
+      vietnameseTitle: 'Chuyên gia Phỏng Vấn',
+      avatar: '🎯',
+      tag: 'Sự nghiệp & Việc làm',
+      badgeColor: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30',
+      accent: 'US Corporate',
+      description: 'Chuyên rèn luyện phỏng vấn xin việc tiếng Anh, phương pháp STAR và đàm phán lương.',
+      specialty: ['Mock Interview', 'STAR Method', 'Business English'],
+      greeting: 'Welcome! I am David. Let\'s sharpen your interview storytelling and professional responses today.',
+      languageId: 'en',
+      preferredGender: 'male',
+      preferredLocale: 'en-US',
+      theme: {
+        chipActive: 'bg-indigo-600 text-white shadow-indigo-500/25',
+        chipInactive: 'bg-indigo-50/80 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border-indigo-300/80 dark:border-indigo-800/70 hover:bg-indigo-100',
+        avatarBg: 'bg-indigo-100/90 dark:bg-indigo-950/70 border-indigo-300/80 dark:border-indigo-700',
+        ringColor: 'border-indigo-500 ring-2 ring-indigo-500/30',
+        dotColor: 'bg-indigo-500',
+      },
+    },
+    {
+      id: 'Casual Friend',
+      name: 'Chloe Miller',
+      vietnameseTitle: 'Bạn Tán Gẫu Bản Xứ',
+      avatar: '☕',
+      tag: 'Đời sống & Tiếng lóng',
+      badgeColor: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+      accent: 'US Casual',
+      description: 'Nói chuyện tự nhiên như bạn bè cafe, dùng tiếng lóng, thành ngữ đời thường.',
+      specialty: ['Daily Slang', 'Small Talk', 'Phản xạ đời sống'],
+      greeting: 'Hey there! I am Chloe. Tell me what\'s on your mind today — let\'s keep it fun and casual!',
+      languageId: 'en',
+      preferredGender: 'female',
+      preferredLocale: 'en-US',
+      theme: {
+        chipActive: 'bg-amber-600 text-white shadow-amber-500/25',
+        chipInactive: 'bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300/80 dark:border-amber-800/70 hover:bg-amber-100',
+        avatarBg: 'bg-amber-100/90 dark:bg-amber-950/70 border-amber-300/80 dark:border-amber-700',
+        ringColor: 'border-amber-500 ring-2 ring-amber-500/30',
+        dotColor: 'bg-amber-500',
+      },
+    },
+    {
+      id: 'Work Colleague',
+      name: 'Marcus Sterling',
+      vietnameseTitle: 'Đồng Nghiệp Công Sở',
+      avatar: '💼',
+      tag: 'Văn phòng quốc tế',
+      badgeColor: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30',
+      accent: 'Global English',
+      description: 'Luyện viết email, thuyết trình và thảo luận dự án chuyên nghiệp với đồng nghiệp.',
+      specialty: ['Business Email', 'Họp trực tuyến', 'Đàm phán công việc'],
+      greeting: 'Hi colleague! I am Marcus. How are your current work deliverables and project meetings going?',
+      languageId: 'en',
+      preferredGender: 'male',
+      preferredLocale: 'en-US',
+      theme: {
+        chipActive: 'bg-teal-600 text-white shadow-teal-500/25',
+        chipInactive: 'bg-teal-50/80 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-300/80 dark:border-teal-800/70 hover:bg-teal-100',
+        avatarBg: 'bg-teal-100/90 dark:bg-teal-950/70 border-teal-300/80 dark:border-teal-700',
+        ringColor: 'border-teal-500 ring-2 ring-teal-500/30',
+        dotColor: 'bg-teal-500',
+      },
+    },
+    {
+      id: 'American Coach',
+      name: 'Jack O\'Connor',
+      vietnameseTitle: 'Thầy Bản Xứ Mỹ',
+      avatar: '🇺🇸',
+      tag: 'General American',
+      badgeColor: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30',
+      accent: 'US Native',
+      description: 'Ngữ điệu Mỹ chuẩn (General American), nuốt âm, nối âm tự nhiên như người bản xứ.',
+      specialty: ['Nối âm Linking', 'Flap T & Schwa', 'Phim ảnh Hollywood'],
+      greeting: 'What\'s up! I\'m Jack from California. Let\'s practice sounding authentic with genuine American rhythm!',
+      languageId: 'en',
+      preferredGender: 'male',
+      preferredLocale: 'en-US',
+      theme: {
+        chipActive: 'bg-sky-600 text-white shadow-sky-500/25',
+        chipInactive: 'bg-sky-50/80 dark:bg-sky-950/40 text-sky-800 dark:text-sky-300 border-sky-300/80 dark:border-sky-800/70 hover:bg-sky-100',
+        avatarBg: 'bg-sky-100/90 dark:bg-sky-950/70 border-sky-300/80 dark:border-sky-700',
+        ringColor: 'border-sky-500 ring-2 ring-sky-500/30',
+        dotColor: 'bg-sky-500',
+      },
+    },
+    {
+      id: 'British Coach',
+      name: 'Emma Watson-Hill',
+      vietnameseTitle: 'Cô Bản Xứ Anh',
+      avatar: '🇬🇧',
+      tag: 'Received Pronunciation',
+      badgeColor: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30',
+      accent: 'UK Royal RP',
+      description: 'Giọng Anh chuẩn Hoàng Gia quý phái, trọng âm và nhịp điệu tao nhã, chuẩn mực.',
+      specialty: ['RP Accent', 'Formal Vocab', 'IELTS Speaking'],
+      greeting: 'Good day! I am Emma. I am thrilled to accompany you on your journey towards polished British pronunciation.',
+      languageId: 'en',
+      preferredGender: 'female',
+      preferredLocale: 'en-GB',
+      theme: {
+        chipActive: 'bg-purple-600 text-white shadow-purple-500/25',
+        chipInactive: 'bg-purple-50/80 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-300/80 dark:border-purple-800/70 hover:bg-purple-100',
+        avatarBg: 'bg-purple-100/90 dark:bg-purple-950/70 border-purple-300/80 dark:border-purple-700',
+        ringColor: 'border-purple-500 ring-2 ring-purple-500/30',
+        dotColor: 'bg-purple-500',
+      },
+    },
+    {
+      id: 'IELTS Master',
+      name: 'Dr. Gregory Hall',
+      vietnameseTitle: 'Giám Khảo Luyện Thi',
+      avatar: '🏆',
+      tag: 'Target Band 7.5+',
+      badgeColor: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+      accent: 'Academic Exam',
+      description: 'Mô phỏng Speaking Part 1, 2, 3 và phân tích chi tiết tiêu chí Lexical Resource & Fluency.',
+      specialty: ['Speaking Part 1-3', 'Lexical Resource', 'Fluency & Coherence'],
+      greeting: 'Hello. I am Dr. Gregory. Let\'s begin your mock speaking examination and target Band 7.5+ performance.',
+      languageId: 'en',
+      preferredGender: 'male',
+      preferredLocale: 'en-GB',
+      theme: {
+        chipActive: 'bg-amber-600 text-white shadow-amber-500/25',
+        chipInactive: 'bg-amber-50/80 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300/80 dark:border-amber-800/70 hover:bg-amber-100',
+        avatarBg: 'bg-amber-100/90 dark:bg-amber-950/70 border-amber-300/80 dark:border-amber-700',
+        ringColor: 'border-amber-500 ring-2 ring-amber-500/30',
+        dotColor: 'bg-amber-500',
+      },
+    },
+  ],
+};
+
+export const getTutorsForLanguage = (langId: string): TutorPersona[] => {
+  const code = (langId || 'en').toLowerCase();
+  return LANGUAGE_TUTOR_PERSONAS[code] || LANGUAGE_TUTOR_PERSONAS.en;
+};
+
+export const TUTOR_PERSONA_MARKET: TutorPersona[] = LANGUAGE_TUTOR_PERSONAS.en;
+
+export const getAILanguageFallbackReply = (langId: string, langName: string): string => {
+  const fallbacks: Record<string, string> = {
+    zh: '我清楚听到你的回答了！让我们继续用中文练习吧。你接下来想探讨什么内容？',
+    ja: 'しっかり聞き取れましたよ！引き続き日本語で練習しましょう。次はどんなことについて話したいですか？',
+    ko: '잘 들었습니다! 계속해서 한국어로 연습해 볼까요? 다음으로 어떤 주제를 이야기하고 싶으신가요?',
+    fr: 'Je vous ai bien entendu ! Continuons à pratiquer en français. De quoi aimeriez-vous parler ensuite ?',
+    de: 'Ich habe dich gut verstanden! Lass uns weiter auf Deutsch üben. Was möchtest du als Nächstes ausprobieren?',
+    es: '¡Te escuché con claridad! Sigamos practicando en español. ¿Qué te gustaría explorar ahora?',
+    en: 'I heard you clearly! Let\'s continue practicing English. What would you like to explore next?',
+  };
+  return fallbacks[langId] || `I heard you clearly! Let's continue practicing ${langName}. What would you like to explore next?`;
+};
 
 export const AI_LANGUAGE_GREETINGS: Record<
   string,
@@ -268,6 +841,31 @@ export const AI_LANGUAGE_GREETINGS: Record<
     simulatorOpening: (sc) => `Hello, let's start the simulation for ${sc}. What is your proposal?`,
   },
 };
+
+// Strips Markdown headings, bullet title headers, and metadata to read clean spoken text without word limits
+export function stripHeadingsForSpeech(text: string): string {
+  if (!text) return '';
+  const lines = text.split('\n');
+  const cleanedLines = lines.filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    // Strip markdown headings (# Heading, ## Heading, ### Heading)
+    if (/^#{1,6}\s+/.test(trimmed)) return false;
+    // Strip numbered or bulleted title labels e.g. "1. 📌 **Giải thích:**" or "### 💡 Title"
+    if (/^(\d+\.\s*)?([📌💡🌐🇻🇳🎯🔗✨*_-]\s*)*\*\*[^:]+:\*\*\s*$/.test(trimmed)) return false;
+    if (/^\*\*(Tiêu đề|Title|Chủ đề|Topic|Context|Giải thích|Ví dụ):\*\*/i.test(trimmed)) return false;
+    return true;
+  });
+  let clean = cleanedLines.join(' ');
+  // Strip markdown formatting symbols
+  clean = clean.replace(/[*#_`~]/g, '');
+  // Strip URLs and markdown links [text](url) -> text
+  clean = clean.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  // Strip emojis that sound awkward in TTS
+  clean = clean.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+  clean = clean.replace(/\s+/g, ' ').trim();
+  return clean;
+}
 
 export const getAILanguageGreeting = (langId: string) => {
   return AI_LANGUAGE_GREETINGS[langId] || AI_LANGUAGE_GREETINGS.en;
@@ -346,7 +944,19 @@ export const AICoachStudioPage: React.FC = () => {
     });
   }, [activeLanguage.id]);
 
-  const [coachPersonality, setCoachPersonality] = useState('Friendly Tutor');
+  const availableTutors = useMemo(() => getTutorsForLanguage(activeLanguage.id), [activeLanguage.id]);
+  const [coachPersonality, setCoachPersonality] = useState<string>(() => {
+    const list = getTutorsForLanguage(activeLanguage.id);
+    return list[0]?.id || 'Friendly Tutor';
+  });
+
+  // Sync coach personality when language space changes
+  useEffect(() => {
+    if (!availableTutors.some((t) => t.id === coachPersonality)) {
+      setCoachPersonality(availableTutors[0]?.id || 'Friendly Tutor');
+    }
+  }, [availableTutors, coachPersonality]);
+
   const [tutorMarketModalOpen, setTutorMarketModalOpen] = useState(false);
   const [bilingualMode, setBilingualMode] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate');
   const [fearlessLevel, setFearlessLevel] = useState<number>(2);
@@ -360,6 +970,44 @@ export const AICoachStudioPage: React.FC = () => {
     setTutorMarketModalOpen(false);
     setMobileDrawerOpen(false);
 
+    // Apply preferred voice gender and locale for selected tutor
+    if (tutor.preferredGender) {
+      audioEngine.setPreferredVoiceGender(tutor.preferredGender);
+    }
+    const matchingVoice = availableVoices.find((v) => {
+      const vName = (v.name || '').toLowerCase();
+      const vLang = (v.lang || '').toLowerCase().replace('_', '-');
+      const matchesLocale = tutor.preferredLocale
+        ? vLang.startsWith(tutor.preferredLocale.toLowerCase().split('-')[0])
+        : vLang.startsWith((activeLanguage.id || 'en').toLowerCase());
+      if (!matchesLocale) return false;
+      if (tutor.preferredGender === 'male') {
+        return (
+          !vName.includes('female') &&
+          !vName.includes('woman') &&
+          (vName.includes('male') ||
+            vName.includes('guy') ||
+            vName.includes('yunxi') ||
+            vName.includes('kangkang') ||
+            vName.includes('zhiwei') ||
+            vName.includes('keita') ||
+            vName.includes('david'))
+        );
+      }
+      return (
+        vName.includes('female') ||
+        vName.includes('woman') ||
+        vName.includes('xiaoxiao') ||
+        vName.includes('yaoyao') ||
+        vName.includes('kyoko') ||
+        vName.includes('zira')
+      );
+    }) || availableVoices[0];
+
+    if (matchingVoice) {
+      handleSelectVoice(matchingVoice.voiceURI || matchingVoice.name);
+    }
+
     setMessages((prev) => [
       ...prev,
       {
@@ -370,6 +1018,7 @@ export const AICoachStudioPage: React.FC = () => {
         timestamp: new Date(),
       },
     ]);
+    speakText(tutor.greeting);
   };
 
   // User Voice & Speech Input Language Preference (Syncs with active learning language setting)
@@ -380,6 +1029,127 @@ export const AICoachStudioPage: React.FC = () => {
     return activeLanguage.speechLocale || 'en-US';
   });
   const [chatLanguageMode, setChatLanguageMode] = useState<'bilingual' | 'vi' | 'en'>('bilingual');
+
+  // System Voices strictly filtered for current target language space
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>(() => {
+    return audioEngine.getPreferredVoiceURI() || '';
+  });
+
+  // Auto-translate replies to Vietnamese (Configurable in Settings)
+  const [autoTranslateVi, setAutoTranslateVi] = useState<boolean>(() => {
+    return localStorage.getItem('vocabflow_coach_autotranslate') !== 'false';
+  });
+
+  // Auto-play initial coach greeting when entering the page
+  const hasAutoPlayedWelcomeRef = useRef<string | null>(null);
+
+  // Load and filter system voices strictly matching the active language space
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const loadVoices = () => {
+      const allVoices = window.speechSynthesis.getVoices();
+      if (!allVoices || allVoices.length === 0) return;
+
+      const langCode = (activeLanguage.id || 'en').toLowerCase();
+      // Match BCP-47 language prefix (e.g. en, ja, zh, cmn, fr, de, ko, es)
+      const matching = allVoices.filter((v) => {
+        const vLang = (v.lang || '').toLowerCase().replace('_', '-');
+        if (langCode === 'zh') {
+          return vLang.startsWith('zh') || vLang.startsWith('cmn');
+        }
+        return vLang.startsWith(langCode);
+      });
+
+      setAvailableVoices(matching);
+
+      const savedVoiceURI =
+        localStorage.getItem(`vocabflow_voice_uri_${activeLanguage.id}`) ||
+        audioEngine.getPreferredVoiceURI();
+      const exists = matching.find((v) => v.voiceURI === savedVoiceURI || v.name === savedVoiceURI);
+      if (exists) {
+        setSelectedVoiceURI(exists.voiceURI || exists.name);
+        audioEngine.setPreferredVoiceURI(exists.voiceURI || exists.name);
+      } else if (matching.length > 0) {
+        const defaultPick = matching.find((v) => v.default) || matching[0];
+        setSelectedVoiceURI(defaultPick.voiceURI || defaultPick.name);
+        audioEngine.setPreferredVoiceURI(defaultPick.voiceURI || defaultPick.name);
+      } else {
+        setSelectedVoiceURI('');
+        audioEngine.setPreferredVoiceURI(null);
+      }
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, [activeLanguage.id]);
+
+  const handleSelectVoice = (voiceURI: string) => {
+    setSelectedVoiceURI(voiceURI);
+    audioEngine.setPreferredVoiceURI(voiceURI);
+    try {
+      localStorage.setItem(`vocabflow_voice_uri_${activeLanguage.id}`, voiceURI);
+    } catch (_) { }
+  };
+
+  const handlePrevVoice = () => {
+    if (availableVoices.length === 0) return;
+    const currentIndex = availableVoices.findIndex((v) => (v.voiceURI || v.name) === selectedVoiceURI);
+    const prevIndex = currentIndex <= 0 ? availableVoices.length - 1 : currentIndex - 1;
+    const target = availableVoices[prevIndex];
+    if (target) {
+      handleSelectVoice(target.voiceURI || target.name);
+    }
+  };
+
+  const handleNextVoice = () => {
+    if (availableVoices.length === 0) return;
+    const currentIndex = availableVoices.findIndex((v) => (v.voiceURI || v.name) === selectedVoiceURI);
+    const nextIndex = currentIndex >= availableVoices.length - 1 ? 0 : currentIndex + 1;
+    const target = availableVoices[nextIndex];
+    if (target) {
+      handleSelectVoice(target.voiceURI || target.name);
+    }
+  };
+
+  const handleTestVoice = (voiceURI?: string) => {
+    const samplePhrases: Record<string, string> = {
+      en: "Hello! I am your AI Coach. How are you doing today?",
+      ja: "こんにちは！あなたのAI専属コーチです。今日の調子はいかがですか？",
+      zh: "你好！我是你的专属AI教练。今天学得怎么样？",
+      fr: "Bonjour ! Je suis votre coach personnel IA. Comment allez-vous aujourd'hui ?",
+      de: "Hallo! Ich bin dein persönlicher KI-Coach. Wie geht es dir heute?",
+      es: "¡Hola! Soy tu entrenador personal de IA. ¿Cómo estás hoy?",
+      ko: "안녕하세요! 저는 당신의 전담 AI 코치입니다. 오늘 기분은 어떠신가요?",
+    };
+    const sample = samplePhrases[activeLanguage.id] || `Hello! I am your AI Coach for ${activeLanguage.name}.`;
+    audioEngine.stop();
+    audioEngine.speak(sample, activeLanguage.speechLocale || 'en-US');
+  };
+
+  // Convert available voices for activeLanguage to CustomSelect options
+  const voiceSelectOptions: SelectOption<string>[] = availableVoices.length > 0
+    ? availableVoices.map((v, idx) => ({
+        value: v.voiceURI || v.name,
+        label: v.name.replace(/Microsoft |Google |Apple /g, ''),
+        badge: v.lang,
+        description: `${v.localService ? 'Ngoại tuyến (Offline)' : 'Neural'} • Giọng #${idx + 1}`,
+      }))
+    : [
+        {
+          value: 'default',
+          label: `Giọng Mặc Định (${activeLanguage.name})`,
+          badge: activeLanguage.speechLocale || activeLanguage.id,
+          description: 'Hệ thống tự động điều phối giọng chuẩn bản xứ',
+        },
+      ];
 
   // Synchronize target audio & mic recognition when user changes language
   useEffect(() => {
@@ -669,7 +1439,7 @@ export const AICoachStudioPage: React.FC = () => {
       });
 
       const data = res.data?.data || res.data || res;
-      const assistantReply = data?.reply || data?.content || data?.text || `That's an insightful point! How would you describe the next milestone?`;
+      const assistantReply = data?.reply || data?.content || data?.text || getAILanguageFallbackReply(activeLanguage.id, activeLanguage.name);
 
       const botMsg: ChatMessage & { provider?: string } = {
         id: String(Date.now() + 1),
@@ -681,24 +1451,35 @@ export const AICoachStudioPage: React.FC = () => {
 
       setMessages((prev) => [...prev, botMsg]);
       speakText(assistantReply);
+      if (autoTranslateVi) {
+        handleTranslateMessage(botMsg.id, assistantReply);
+      }
     } catch (err) {
-      const fallbackReply = `I heard you clearly! Let's continue practicing ${activeLanguage.name}. What would you like to explore next?`;
+      const fallbackReply = getAILanguageFallbackReply(activeLanguage.id, activeLanguage.name);
+      const fallbackId = String(Date.now() + 1);
       setMessages((prev) => [
         ...prev,
         {
-          id: String(Date.now() + 1),
+          id: fallbackId,
           role: 'assistant',
           content: fallbackReply,
           timestamp: new Date(),
         },
       ]);
       speakText(fallbackReply);
+      if (autoTranslateVi) {
+        handleTranslateMessage(fallbackId, fallbackReply);
+      }
     } finally {
       setCoachLoading(false);
     }
   };
 
-  const speakText = (text: string, rate = 1.1) => {
+  const speakText = (text: string, rate = 1.05) => {
+    // Strip markdown headings and title headers so only conversational text is spoken aloud without word limits
+    const cleanSpeech = stripHeadingsForSpeech(text);
+    if (!cleanSpeech) return;
+
     if (isCallActiveRef.current) {
       setCallStatus('speaking');
       try {
@@ -706,7 +1487,7 @@ export const AICoachStudioPage: React.FC = () => {
       } catch (_) { }
     }
 
-    audioEngine.playBilingualText(text, {
+    audioEngine.playBilingualText(cleanSpeech, {
       rate,
       targetLocale: activeLanguage.speechLocale,
       onEnd: () => {
@@ -727,6 +1508,18 @@ export const AICoachStudioPage: React.FC = () => {
       },
     });
   };
+
+  // Auto-read initial coach greeting when entering the page or changing language
+  useEffect(() => {
+    const welcomeMsg = messages.find((m) => m.role === 'assistant');
+    if (welcomeMsg && hasAutoPlayedWelcomeRef.current !== welcomeMsg.id) {
+      hasAutoPlayedWelcomeRef.current = welcomeMsg.id;
+      const timer = setTimeout(() => {
+        speakText(welcomeMsg.content);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [messages, activeLanguage.id]);
 
   // ==========================================
   // TAB 2: PRONUNCIATION LAB & SHADOWING
@@ -1022,6 +1815,7 @@ export const AICoachStudioPage: React.FC = () => {
         scenarioId: simulatorScenario,
         message: userMsg,
         history: newHistory,
+        language: activeLanguage.id,
       });
       const data = res.data?.data || res.data;
       if (data?.reply) {
@@ -1031,7 +1825,16 @@ export const AICoachStudioPage: React.FC = () => {
         speakText(data.reply);
       }
     } catch {
-      const reply = "I understand the technical debt issue. Can you guarantee stability if we push the rollout to tomorrow morning?";
+      const fallbackSimulatorReplies: Record<string, string> = {
+        zh: '我明白了你的顾虑。如果我们把发布时间推迟到明天早上，能确保系统的稳定性吗？',
+        ja: '技術的な課題は理解しました。リリースを明朝に延期した場合、システムの安定性は保証できますか？',
+        ko: '기술적 부채 이슈는 잘 이해했습니다. 출시를 내일 아침으로 연기한다면 시스템 안정성을 확보할 수 있나요?',
+        fr: 'Je comprends le problème technique. Pouvez-vous garantir la stabilité si nous reportons le déploiement à demain matin ?',
+        de: 'Ich verstehe die technischen Bedenken. Können Sie die Stabilität garantieren, wenn wir den Rollout auf morgen früh verschieben?',
+        es: 'Entiendo el problema técnico. ¿Puedes garantizar la estabilidad si posponemos el lanzamiento para mañana por la mañana?',
+        en: 'I understand the technical debt issue. Can you guarantee stability if we push the rollout to tomorrow morning?',
+      };
+      const reply = fallbackSimulatorReplies[activeLanguage.id] || fallbackSimulatorReplies.en;
       setSimulatorHistory((prev) => [...prev, { role: 'assistant', content: reply }]);
       speakText(reply);
     }
@@ -1094,17 +1897,49 @@ export const AICoachStudioPage: React.FC = () => {
     try {
       const res = await api.post('/ai/sound-better', {
         sentence: soundBetterInput,
+        language: activeLanguage.id,
       });
       setSoundBetterResult(res.data?.data || res.data);
     } catch {
-      setSoundBetterResult({
-        yourVersion: soundBetterInput,
-        corrected: 'I want to have a meeting with you to discuss the project.',
-        natural: 'Could we schedule a quick chat to sync up on the project?',
-        professional: 'I would like to arrange a brief meeting with you to review the project status and next steps.',
-        nativeStyle: 'Can we carve out 15 minutes to touch base on the project deliverables?',
-        grammarExplanation: 'Dùng động từ "discuss" thay cho "talk about" và cụm tự nhiên "schedule a quick chat / arrange a meeting".',
-      });
+      const soundBetterFallbacks: Record<string, any> = {
+        zh: {
+          yourVersion: soundBetterInput,
+          corrected: soundBetterInput.endsWith('。') ? soundBetterInput : `${soundBetterInput}。`,
+          natural: '我想和你聊聊这个项目的具体进展。',
+          professional: '我想与您安排一次简短会议，共同评估项目的最新推进情况与下一步规划。',
+          nativeStyle: '方便抽空对齐一下这个项目的进度吗？',
+          grammarExplanation: 'Đã chuẩn hóa viết hoa đầu câu, dấu câu và chọn lọc từ ngữ chính xác.',
+          pronunciationFocus: 'Chú ý thanh điệu tiếng Trung và ngắt nghỉ tự nhiên giữa các phân câu.',
+        },
+        ja: {
+          yourVersion: soundBetterInput,
+          corrected: soundBetterInput.endsWith('。') ? soundBetterInput : `${soundBetterInput}。`,
+          natural: 'プロジェクトの進捗について少しお話ししたいです。',
+          professional: 'プロジェクトの状況確認および今後の進め方について、お時間を頂戴できますでしょうか。',
+          nativeStyle: 'プロジェクトの件、少しすり合わせのお時間をいただけますか？',
+          grammarExplanation: 'Đã chuẩn hóa câu văn sang dạng kính ngữ lịch sự và tự nhiên.',
+          pronunciationFocus: 'Chú ý ngữ điệu lên xuống nhẹ nhàng và phát âm chuẩn các trường âm.',
+        },
+        ko: {
+          yourVersion: soundBetterInput,
+          corrected: soundBetterInput.endsWith('.') ? soundBetterInput : `${soundBetterInput}.`,
+          natural: '프로젝트 진행 상황에 대해 잠깐 이야기 나누고 싶어요.',
+          professional: '프로젝트 현황 점검 및 향후 일정 조율을 위해 짧은 미팅을 요청드리고자 합니다.',
+          nativeStyle: '프로젝트 건으로 잠깐 시간 내서 싱크 맞출 수 있을까요?',
+          grammarExplanation: 'Đã chuẩn hóa đuôi câu lịch sự và phong cách giao tiếp công sở.',
+          pronunciationFocus: 'Chú ý ngữ điệu nhẹ nhàng và nối âm chuẩn xác.',
+        },
+        en: {
+          yourVersion: soundBetterInput,
+          corrected: 'I want to have a meeting with you to discuss the project.',
+          natural: 'Could we schedule a quick chat to sync up on the project?',
+          professional: 'I would like to arrange a brief meeting with you to review the project status and next steps.',
+          nativeStyle: 'Can we carve out 15 minutes to touch base on the project deliverables?',
+          grammarExplanation: 'Dùng động từ "discuss" thay cho "talk about" và cụm tự nhiên "schedule a quick chat / arrange a meeting".',
+          pronunciationFocus: 'Chú ý nhấn mạnh vào Content Words và nối âm cuối câu.',
+        },
+      };
+      setSoundBetterResult(soundBetterFallbacks[activeLanguage.id] || soundBetterFallbacks.en);
     } finally {
       setSoundBetterLoading(false);
     }
@@ -1116,8 +1951,69 @@ export const AICoachStudioPage: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  // ==========================================
+  // NAVIGATION & STEPPER CONTROLS FOR MOBILE
+  // ==========================================
+  const currentTabIndex = Math.max(0, STUDIO_TABS.findIndex((t) => t.id === activeTab));
+  const activeTabMeta = STUDIO_TABS[currentTabIndex] || STUDIO_TABS[0];
+  const handlePrevTab = () => {
+    if (currentTabIndex > 0) {
+      setActiveTab(STUDIO_TABS[currentTabIndex - 1].id);
+    }
+  };
+  const handleNextTab = () => {
+    if (currentTabIndex < STUDIO_TABS.length - 1) {
+      setActiveTab(STUDIO_TABS[currentTabIndex + 1].id);
+    }
+  };
+
+  const currentTutorIndex = Math.max(0, availableTutors.findIndex((p) => p.id === coachPersonality));
+  const activeTutor = availableTutors[currentTutorIndex] || availableTutors[0];
+  const handlePrevTutor = () => {
+    const nextIdx = (currentTutorIndex - 1 + availableTutors.length) % availableTutors.length;
+    handleSelectTutor(availableTutors[nextIdx]);
+  };
+  const handleNextTutor = () => {
+    const nextIdx = (currentTutorIndex + 1) % availableTutors.length;
+    handleSelectTutor(availableTutors[nextIdx]);
+  };
+
+  const selectedWordIndex = Math.max(0, practiceWords.findIndex((w) => w.word === selectedWord));
+  const handlePrevWord = () => {
+    if (selectedWordIndex > 0) {
+      const prevWord = practiceWords[selectedWordIndex - 1];
+      setSelectedWord(prevWord.word);
+      evaluatePronunciationMatch(prevWord.word, prevWord.word);
+    }
+  };
+  const handleNextWord = () => {
+    if (selectedWordIndex < practiceWords.length - 1) {
+      const nextWord = practiceWords[selectedWordIndex + 1];
+      setSelectedWord(nextWord.word);
+      evaluatePronunciationMatch(nextWord.word, nextWord.word);
+    }
+  };
+
+  const currentScenarioIndex = Math.max(0, SIMULATOR_SCENARIOS.findIndex((s) => s.id === simulatorScenario));
+  const handlePrevScenario = () => {
+    if (currentScenarioIndex > 0) {
+      const prevSc = SIMULATOR_SCENARIOS[currentScenarioIndex - 1];
+      setSimulatorScenario(prevSc.id);
+      const greeting = getAILanguageGreeting(activeLanguage.id);
+      setSimulatorHistory([{ role: 'assistant', content: greeting.simulatorOpening(prevSc.name) }]);
+    }
+  };
+  const handleNextScenario = () => {
+    if (currentScenarioIndex < SIMULATOR_SCENARIOS.length - 1) {
+      const nextSc = SIMULATOR_SCENARIOS[currentScenarioIndex + 1];
+      setSimulatorScenario(nextSc.id);
+      const greeting = getAILanguageGreeting(activeLanguage.id);
+      setSimulatorHistory([{ role: 'assistant', content: greeting.simulatorOpening(nextSc.name) }]);
+    }
+  };
+
   return (
-    <div className="p-4 flex flex-col h-full min-h-0 flex-1 overflow-hidden space-y-1.5 sm:space-y-2.5">
+    <div className="flex flex-col h-full min-h-0 flex-1 overflow-hidden bg-slate-50/50 dark:bg-slate-950/40 p-0 sm:p-2.5 lg:p-4 space-y-0 sm:space-y-2">
       {/* Top Product Header (Compact & Streamlined with Dismiss X Button - Hidden on mobile to maximize chat space) */}
       {showHeroBanner ? (
         <div className="hidden md:flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-indigo-950/90 to-slate-900 text-white shadow-lg border border-indigo-500/20 relative overflow-hidden pr-12 animate-fade-in shrink-0">
@@ -1164,67 +2060,86 @@ export const AICoachStudioPage: React.FC = () => {
         </div>
       )}
 
-      {/* 5 Core Feature Tabs - Hidden on mobile (moved to secondary drawer), visible on tablet/desktop */}
-      <div className="hidden md:flex items-center gap-1.5 sm:gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-1.5 sm:pb-2.5 overflow-x-auto scrollbar-none shrink-0 -mx-1 px-1">
-        <button
-          onClick={() => setActiveTab('voice')}
-          className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'voice'
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
-            }`}
-        >
-          <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-          <span className="hidden sm:inline">Voice Coach & Real-Time Studio</span>
-          <span className="sm:hidden">Voice Coach</span>
-        </button>
+      {/* 5 Core Feature Navigation: Mobile Mode Stepper & Select vs Desktop Tab Bar */}
+      {/* MOBILE VIEW: No more horizontal scrolling chips! Premium Segmented Stepper + Dropdown */}
+      <div className="md:hidden px-2.5 py-1.5 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 shrink-0 space-y-1.5 shadow-2xs">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handlePrevTab}
+            disabled={currentTabIndex <= 0}
+            className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-25 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+            title="Chế độ trước"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
 
-        <button
-          onClick={() => setActiveTab('pronunciation')}
-          className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'pronunciation'
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
-            }`}
-        >
-          <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-          <span className="hidden sm:inline">Phòng Luyện Phát Âm (Phoneme Lab)</span>
-          <span className="sm:hidden">Luyện Âm</span>
-        </button>
+          <div className="flex-1 min-w-0">
+            <CustomSelect
+              value={activeTab}
+              onChange={(val) => setActiveTab(val as StudioTabType)}
+              size="sm"
+              options={STUDIO_TABS.map((t, idx) => ({
+                value: t.id,
+                label: t.name,
+                badge: `${idx + 1}/5`,
+                icon: t.icon,
+                description: t.desc,
+              }))}
+              className="w-full"
+            />
+          </div>
 
-        <button
-          onClick={() => setActiveTab('simulator')}
-          className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'simulator'
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
-            }`}
-        >
-          <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-          <span className="hidden sm:inline">Mô Phỏng Tình Huống (Roleplay Simulator)</span>
-          <span className="sm:hidden">Mô Phỏng</span>
-        </button>
+          <button
+            type="button"
+            onClick={handleNextTab}
+            disabled={currentTabIndex >= STUDIO_TABS.length - 1}
+            className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-25 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+            title="Chế độ tiếp theo"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
 
-        <button
-          onClick={() => setActiveTab('error-bank')}
-          className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'error-bank'
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
-            }`}
-        >
-          <BrainCircuit className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-          <span className="hidden sm:inline">Ngân Hàng Lỗi Sai (Error Heatmap)</span>
-          <span className="sm:hidden">Lỗi Sai</span>
-        </button>
+        {/* 5-Step Active Indicator Dots */}
+        <div className="flex items-center justify-center gap-1.5 pt-0.5">
+          {STUDIO_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setActiveTab(t.id)}
+              className={`h-1 rounded-full transition-all duration-300 ${
+                activeTab === t.id
+                  ? 'w-7 bg-indigo-600 dark:bg-indigo-400'
+                  : 'w-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300'
+              }`}
+              title={t.name}
+            />
+          ))}
+        </div>
+      </div>
 
-        <button
-          onClick={() => setActiveTab('sound-better')}
-          className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold sm:font-black text-[11px] sm:text-xs transition flex items-center gap-1.5 sm:gap-2 whitespace-nowrap shrink-0 ${activeTab === 'sound-better'
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
-            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-400'
-            }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
-          <span className="hidden sm:inline">Make Me Sound Better (Bản Xứ Hóa)</span>
-          <span className="sm:hidden">Bản Xứ Hóa</span>
-        </button>
+      {/* DESKTOP VIEW: Sleek Active Tab Pills */}
+      <div className="hidden md:flex items-center gap-2 border-b border-slate-200/80 dark:border-slate-800 pb-2 shrink-0 select-none">
+        {STUDIO_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3.5 py-2 rounded-2xl font-bold text-xs transition flex items-center gap-2 whitespace-nowrap shrink-0 active:scale-95 cursor-pointer ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-800'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              <span>{tab.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ======================================================== */}
@@ -1304,19 +2219,90 @@ export const AICoachStudioPage: React.FC = () => {
               </div>
             </div>
 
-            {/* AI Voice Info (Giọng Nam Bắc chuẩn - Nam Minh) */}
-            <div className="p-4 rounded-3xl bg-gradient-to-br from-indigo-500/10 via-blue-500/10 to-purple-500/10 border border-indigo-500/20 space-y-2">
+            {/* AI Voice Selection for Active Language Space */}
+            <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-indigo-800 dark:text-indigo-300 tracking-wider flex items-center gap-1.5">
+                <label className="text-xs font-black uppercase text-slate-700 dark:text-slate-300 tracking-wider flex items-center gap-1.5">
                   <Volume2 className="w-4 h-4 text-indigo-500" />
-                  Giọng Đọc AI Coach
-                </span>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-600 text-white font-black shadow-xs">
-                  Nam Minh (Bắc Chuẩn)
+                  <span>Giọng Đọc AI Coach</span>
+                </label>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200/80 dark:border-indigo-800/80 flex items-center gap-1">
+                  <CountryFlag languageId={activeLanguage.id} size="xs" />
+                  <span>{activeLanguage.name}</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                Đọc toàn bộ câu trả lời bằng <strong className="text-indigo-700 dark:text-indigo-300 font-extrabold">Giọng Nam Bắc chuẩn (Nam Minh)</strong>, đọc liền mạch không ngắt quãng giữa câu, phát âm chuẩn cả tiếng Anh và tiếng Việt với tốc độ nhanh, dứt khoát (+25%).
+
+              {/* Prev / Next controls + CustomSelect + Test Voice Button */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handlePrevVoice}
+                  disabled={availableVoices.length <= 1}
+                  className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                  title="Giọng trước"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="flex-1 min-w-0">
+                  <CustomSelect
+                    value={selectedVoiceURI || 'default'}
+                    onChange={(val) => handleSelectVoice(String(val))}
+                    size="sm"
+                    options={voiceSelectOptions}
+                    placeholder={`Chọn giọng ${activeLanguage.name}...`}
+                    className="w-full"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleNextVoice}
+                  disabled={availableVoices.length <= 1}
+                  className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                  title="Giọng tiếp theo"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTestVoice()}
+                  className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white flex items-center justify-center active:scale-90 transition border border-indigo-200/80 dark:border-indigo-800/80 shrink-0 shadow-2xs"
+                  title="Nghe thử giọng này"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                <span>{availableVoices.length > 0 ? `${availableVoices.length} giọng sẵn có trên máy` : 'Đang dùng giọng chuẩn hệ thống'}</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Không giới hạn từ</span>
+              </div>
+            </div>
+
+            {/* Translation Settings (Auto-translate to Vietnamese) */}
+            <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black uppercase text-slate-700 dark:text-slate-300 tracking-wider flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-emerald-500" />
+                  <span>Dịch Sang Tiếng Việt</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !autoTranslateVi;
+                    setAutoTranslateVi(next);
+                    localStorage.setItem('vocabflow_coach_autotranslate', String(next));
+                  }}
+                  className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${autoTranslateVi ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'}`}
+                  title={autoTranslateVi ? 'Đang bật dịch tự động sang Tiếng Việt' : 'Đang tắt dịch tự động'}
+                >
+                  <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+                </button>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Tự động dịch câu trả lời của Huấn luyện viên sang <strong className="text-slate-700 dark:text-slate-200 font-bold">Tiếng Việt</strong> ngay khi nhận được phản hồi.
               </p>
             </div>
 
@@ -1447,136 +2433,203 @@ export const AICoachStudioPage: React.FC = () => {
           </div>
 
           {/* Right Interactive Voice Chat Stage - Full width edge-to-edge on mobile, rounded card on desktop */}
-          <div className="lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-none sm:rounded-2xl lg:rounded-3xl border-0 sm:border border-slate-200/80 dark:border-slate-800 shadow-none sm:shadow-xl overflow-hidden flex-1 h-full min-h-0 w-full">
+          <div className="lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-none sm:rounded-2xl lg:rounded-3xl border-0 sm:border border-slate-200/80 dark:border-slate-800 shadow-none sm:shadow-lg overflow-hidden flex-1 h-full min-h-0 w-full">
             {/* Dedicated Sleek Chat Box Header */}
-            <div className="px-2.5 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-slate-50 via-white to-indigo-50/40 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-1.5 sm:gap-3 shrink-0">
-              <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
-                {/* Mobile Studio Secondary Drawer Button */}
-                <button
-                  onClick={() => setMobileDrawerOpen(true)}
-                  className="md:hidden flex items-center gap-1 px-2 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 font-black text-xs shrink-0 transition active:scale-95"
-                  title="Mở Studio & Cài đặt"
-                >
-                  <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                  <span className="font-extrabold text-[11px]">Studio</span>
-                </button>
+            {(() => {
+              const activeTutor = availableTutors.find((p) => p.id === coachPersonality) || availableTutors[0];
+              return (
+                <div className="px-3 sm:px-5 py-2 sm:py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div className="relative shrink-0">
+                      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-lg border shadow-xs transition-colors ${activeTutor.theme.avatarBg}`}>
+                        <span>{activeTutor.avatar}</span>
+                      </div>
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${activeTutor.theme.dotColor}`} title="AI Coach Sẵn Sàng" />
+                    </div>
 
-                <div className="relative shrink-0">
-                  <VocabFlowLogo size="md" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl shadow-md shadow-indigo-500/20" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 animate-pulse" title="AI Coach Sẵn Sàng" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate leading-tight">
+                          {activeTutor.name}
+                        </h3>
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold border shrink-0 ${activeTutor.badgeColor}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${activeTutor.theme.dotColor}`} />
+                          <span>{activeTutor.vietnameseTitle}</span>
+                          <span className="opacity-50">•</span>
+                          <span>{activeTutor.tag}</span>
+                        </span>
+                      </div>
+                      <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
+                        <CountryFlag languageId={activeLanguage.id} size="xs" />
+                        <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                          {bilingualMode === 'beginner' ? 'Song ngữ 50%' : bilingualMode === 'intermediate' ? 'Song ngữ 80%' : '100% Bản xứ'}
+                        </span>
+                        <span className="hidden sm:inline text-slate-400">• {activeTutor.accent}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Header Action Controls */}
+                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                    {/* Tutor Marketplace Open Button */}
+                    <button
+                      type="button"
+                      onClick={() => setTutorMarketModalOpen(true)}
+                      className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60 font-bold text-[11px] transition active:scale-95 shrink-0 cursor-pointer shadow-xs"
+                      title="Mở Chợ Trợ Lý Gia Sư AI"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span className="hidden xs:inline">Gia sư</span>
+                    </button>
+
+                    {/* 1:1 Call Mode Toggle */}
+                    <button
+                      type="button"
+                      onClick={toggleCallMode}
+                      className={`px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shadow-xs ${isCallActive
+                        ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                        : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
+                        }`}
+                      title={isCallActive ? 'Dừng cuộc gọi thoại' : 'Bật đàm thoại giọng nói 1:1'}
+                    >
+                      {isCallActive ? <PhoneOff className="w-3.5 h-3.5" /> : <PhoneCall className="w-3.5 h-3.5 text-emerald-500" />}
+                      <span className="hidden sm:inline">{isCallActive ? 'Dừng Gọi' : 'Gọi 1:1'}</span>
+                    </button>
+
+                    {/* Mobile Settings Drawer Button */}
+                    <button
+                      type="button"
+                      onClick={() => setMobileDrawerOpen(true)}
+                      className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition cursor-pointer"
+                      title="Cài đặt giọng nói & Huấn luyện viên"
+                    >
+                      <Settings2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+
+                    {/* Reset Chat Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Bạn có muốn làm mới cuộc trò chuyện này?')) {
+                          const greeting = getAILanguageGreeting(activeLanguage.id);
+                          setMessages([
+                            {
+                              id: 'welcome-' + Date.now(),
+                              role: 'assistant',
+                              content: greeting.content,
+                              viTranslation: greeting.viTranslation,
+                              timestamp: new Date(),
+                            },
+                          ]);
+                        }
+                      }}
+                      className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition cursor-pointer"
+                      title="Làm mới cuộc trò chuyện"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                  </div>
                 </div>
+              );
+            })()}
 
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <h3 className="font-extrabold text-xs sm:text-base text-slate-900 dark:text-white truncate leading-tight">
-                      {TUTOR_PERSONA_MARKET.find((p) => p.id === coachPersonality)?.name || 'VocabFlow AI Coach'}
-                    </h3>
-                    <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="hidden xs:inline">Live • </span>
-                      <span>{TUTOR_PERSONA_MARKET.find((p) => p.id === coachPersonality)?.vietnameseTitle || coachPersonality}</span>
+            {/* Quick Tutor Persona Selector: Mobile Stepper vs Desktop Horizontal Strip */}
+            {/* MOBILE VIEW: Active Tutor Stepper with Prev/Next Navigation Controls — No scrollbar */}
+            <div className="sm:hidden px-2.5 py-1.5 bg-slate-50/95 dark:bg-slate-900/95 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-1.5 shrink-0 shadow-2xs">
+              <button
+                type="button"
+                onClick={handlePrevTutor}
+                className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 active:scale-90 transition shrink-0 shadow-2xs"
+                title="Gia sư trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div
+                onClick={() => setTutorMarketModalOpen(true)}
+                className={`flex-1 flex items-center justify-between px-2.5 py-1 rounded-xl border cursor-pointer active:scale-98 transition min-w-0 shadow-2xs ${activeTutor.theme.chipActive} border-transparent`}
+                title="Bấm để đổi gia sư"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-sm leading-none shrink-0">{activeTutor.avatar}</span>
+                  <div className="min-w-0 text-left">
+                    <div className="flex items-center gap-1">
+                      <span className="font-extrabold text-[11px] text-white truncate">
+                        {activeTutor.name}
+                      </span>
+                      <span className="text-[8px] px-1 py-0.2 rounded bg-white/20 text-white font-extrabold shrink-0">
+                        {activeTutor.tag}
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-white/80 block truncate">
+                      {activeTutor.vietnameseTitle} ({currentTutorIndex + 1}/{availableTutors.length})
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    <span className="sm:hidden font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1">
-                      {bilingualMode === 'beginner' ? 'Song ngữ 50%' : bilingualMode === 'intermediate' ? 'Song ngữ 80%' : '100% Bản xứ'}
-                      <CountryFlag languageId={activeLanguage.id} size="xs" />
-                    </span>
-                    <span className="hidden sm:inline">Gia sư đàm thoại & sửa lỗi ngữ cảnh thời gian thực</span>
-                  </p>
                 </div>
+                <span className="text-[10px] text-white/90 font-bold shrink-0 pl-1 flex items-center gap-0.5">
+                  <span>Đổi</span>
+                  <ChevronDown className="w-3 h-3 opacity-80" />
+                </span>
               </div>
 
-              {/* Header Action Controls */}
-              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                {/* Tutor Marketplace Open Button */}
-                <button
-                  type="button"
-                  onClick={() => setTutorMarketModalOpen(true)}
-                  className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-indigo-500/15 to-purple-500/15 border border-amber-500/30 hover:border-amber-400 text-amber-700 dark:text-amber-300 font-extrabold text-[11px] sm:text-xs shadow-xs transition active:scale-95 shrink-0"
-                  title="Mở Chợ Trợ Lý Gia Sư AI"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span className="font-black">Chợ Gia Sư</span>
-                </button>
-
-                {/* AI Voice Badge: Giọng Nam Bắc Chuẩn (Hidden on tiny screens to avoid overflow) */}
-                <div
-                  className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 text-xs font-black shadow-xs select-none"
-                  title="AI đọc toàn bộ câu trả lời bằng giọng Nam Bắc chuẩn (Nam Minh) đọc nhanh dứt khoát 1.25x"
-                >
-                  <Volume2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                  <span>Nam Minh</span>
-                </div>
-
-                <button
-                  onClick={toggleCallMode}
-                  className={`px-2 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1 shadow-xs ${isCallActive
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
-                    : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40'
-                    }`}
-                  title={isCallActive ? 'Dừng cuộc gọi thoại' : 'Bật đàm thoại giọng nói 1:1'}
-                >
-                  {isCallActive ? <PhoneOff className="w-3.5 h-3.5" /> : <PhoneCall className="w-3.5 h-3.5 text-emerald-500" />}
-                  <span className="hidden sm:inline">{isCallActive ? 'Dừng Gọi' : 'Gọi 1:1'}</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (window.confirm('Bạn có muốn làm mới cuộc trò chuyện này?')) {
-                      const greeting = getAILanguageGreeting(activeLanguage.id);
-                      setMessages([
-                        {
-                          id: 'welcome-' + Date.now(),
-                          role: 'assistant',
-                          content: greeting.content,
-                          viTranslation: greeting.viTranslation,
-                          timestamp: new Date(),
-                        },
-                      ]);
-                    }
-                  }}
-                  className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition cursor-pointer"
-                  title="Làm mới cuộc trò chuyện"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleNextTutor}
+                className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 active:scale-90 transition shrink-0 shadow-2xs"
+                title="Gia sư tiếp theo"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Quick Tutor Persona Selector Strip (Chợ Trợ Lý Gia Sư Mini Touch Bar cho Mobile & Desktop) */}
-            <div className="px-2.5 sm:px-4 py-1.5 bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/70 dark:border-slate-800/80 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+            {/* DESKTOP VIEW: Quick Tutor Persona Selector Strip with Prev/Next Navigation (No scrollbar) */}
+            <div className="hidden sm:flex px-2.5 sm:px-4 py-1.5 bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/70 dark:border-slate-800/80 items-center justify-between gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrevTutor}
+                className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 active:scale-90 transition shrink-0 shadow-2xs hover:bg-slate-100"
+                title="Gia sư trước"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
               <button
                 type="button"
                 onClick={() => setTutorMarketModalOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 font-black text-[10px] uppercase tracking-wider shrink-0 transition active:scale-95"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 font-bold text-[10px] shrink-0 active:scale-95 transition shadow-2xs"
               >
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                <span>Chợ Trợ Lý</span>
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                <span>Tất cả</span>
               </button>
-              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 shrink-0" />
-              {TUTOR_PERSONA_MARKET.map((persona) => {
-                const isSelected = coachPersonality === persona.id;
-                return (
-                  <button
-                    key={persona.id}
-                    type="button"
-                    onClick={() => handleSelectTutor(persona)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap shrink-0 transition active:scale-95 cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/40'
-                        : 'bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-400'
-                    }`}
-                    title={`${persona.name} (${persona.vietnameseTitle}): ${persona.description}`}
-                  >
-                    <span className="text-xs">{persona.avatar}</span>
-                    <span className="font-extrabold">{persona.name.split(' ')[0]}</span>
-                    <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                      {persona.vietnameseTitle.replace('Gia sư ', '').replace('Giáo viên ', '').replace('Huấn luyện viên ', '').replace('Chuyên gia ', '').replace('Thầy ', '').replace('Cô ', '')}
-                    </span>
-                  </button>
-                );
-              })}
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 shrink-0 mx-0.5" />
+
+              <div className="flex-1 min-w-0">
+                <CustomSelect
+                  value={coachPersonality}
+                  onChange={(val) => {
+                    const tutor = availableTutors.find((p) => p.id === val);
+                    if (tutor) handleSelectTutor(tutor);
+                  }}
+                  size="sm"
+                  options={availableTutors.map((persona) => ({
+                    value: persona.id,
+                    label: `${persona.avatar} ${persona.name} (${persona.vietnameseTitle})`,
+                    badge: persona.tag,
+                    description: `${persona.accent} • ${persona.description}`,
+                  }))}
+                  placeholder="Chọn Huấn luyện viên AI..."
+                  className="w-full"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextTutor}
+                className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 active:scale-90 transition shrink-0 shadow-2xs hover:bg-slate-100"
+                title="Gia sư tiếp theo"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             {/* Call Mode Status Bar */}
@@ -1620,17 +2673,17 @@ export const AICoachStudioPage: React.FC = () => {
                         hideActions={true}
                         onSelectQuizOption={(opt) => handleSendMessage(opt)}
                       />
-                      {translatedMessages[msg.id] && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg flex items-center gap-1">
-                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <span>{translatedMessages[msg.id]}</span>
+                      {(translatedMessages[msg.id] || (autoTranslateVi && msg.viTranslation)) && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 italic bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl flex items-start gap-1.5 border border-slate-200/50 dark:border-slate-800/60">
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                          <span className="flex-1">{translatedMessages[msg.id] || msg.viTranslation}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-1.5 mt-1.5 ml-1">
                         <button
-                          onClick={() => audioEngine.playWord(msg.content, { lang: activeLanguage.id })}
+                          onClick={() => speakText(msg.content)}
                           className="p-1.5 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors"
-                          title="Phát âm (Đọc to)"
+                          title="Phát âm giọng AI Coach (Không giới hạn từ, bỏ tiêu đề)"
                         >
                           <Volume2 className="w-3.5 h-3.5" />
                         </button>
@@ -1656,7 +2709,7 @@ export const AICoachStudioPage: React.FC = () => {
             </div>
 
             {/* "What Should I Say?" Scaffolding Help Bar */}
-            <div className="px-3 sm:px-6 py-1 sm:py-2 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs overflow-x-auto scrollbar-none">
+            <div className="px-3 sm:px-6 py-1 sm:py-2 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between text-xs gap-1.5">
               <span className="text-slate-400 font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 mr-2 text-[11px]">
                 <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
                 <span>Bị bí từ?</span>
@@ -1806,12 +2859,14 @@ export const AICoachStudioPage: React.FC = () => {
                   {speechInputLang === 'vi-VN' ? (
                     <>
                       <CountryFlag languageId="vi" size="xs" />
-                      <span>Tiếng Việt</span>
+                      <span className="hidden sm:inline">Tiếng Việt</span>
+                      <span className="sm:hidden">VI</span>
                     </>
                   ) : (
                     <>
                       <CountryFlag languageId={activeLanguage.id} size="xs" />
-                      <span>{activeLanguage.name}</span>
+                      <span className="hidden sm:inline">{activeLanguage.name}</span>
+                      <span className="sm:hidden">{activeLanguage.id.toUpperCase()}</span>
                     </>
                   )}
                 </span>
@@ -1884,9 +2939,81 @@ export const AICoachStudioPage: React.FC = () => {
       {/* TAB 2: PRONUNCIATION LAB & SHADOWING                     */}
       {/* ======================================================== */}
       {activeTab === 'pronunciation' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Word list to test with Custom Add & Flashcard import */}
-          <div className="space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 lg:p-6 pb-24 space-y-4">
+          {/* Mobile Quick Word Selector: Stepper with Prev/Next Navigation Controls + CustomSelect — No horizontal scroll! */}
+          <div className="lg:hidden space-y-2 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+                <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Từ Luyện Âm ({selectedWordIndex + 1}/{practiceWords.length})</span>
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleLoadUserFlashcards}
+                  disabled={loadingFlashcards}
+                  className="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold transition flex items-center gap-1 whitespace-nowrap active:scale-95"
+                  title="Nạp từ vựng từ bộ thẻ Flashcard của bạn"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  <span>{loadingFlashcards ? '...' : 'Từ thẻ'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddWordModal(true)}
+                  className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white text-slate-600 dark:text-slate-300 transition active:scale-95"
+                  title="Thêm từ vựng riêng của bạn vào danh sách"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Navigation Control Bar: Prev Button + Select + Next Button */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handlePrevWord}
+                disabled={selectedWordIndex <= 0}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-25 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                title="Từ trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex-1 min-w-0">
+                <CustomSelect
+                  value={selectedWord}
+                  onChange={(val) => {
+                    setSelectedWord(String(val));
+                    evaluatePronunciationMatch(String(val), String(val));
+                  }}
+                  size="sm"
+                  options={practiceWords.map((item, idx) => ({
+                    value: item.word,
+                    label: item.word,
+                    badge: item.phoneme,
+                    description: `${idx + 1}/${practiceWords.length} • ${item.meaning}`,
+                  }))}
+                  className="w-full"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextWord}
+                disabled={selectedWordIndex >= practiceWords.length - 1}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-25 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                title="Từ tiếp theo"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Word list to test with Custom Add & Flashcard import */}
+            <div className="hidden lg:block space-y-3">
             <div className="flex items-center justify-between px-1">
               <span className="text-xs font-black uppercase tracking-wider text-slate-400">
                 Danh sách từ luyện âm
@@ -2221,112 +3348,166 @@ export const AICoachStudioPage: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* ======================================================== */}
       {/* TAB 3: REAL-WORLD SIMULATOR (ROLEPLAY)                   */}
       {/* ======================================================== */}
       {activeTab === 'simulator' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Scenario Chooser */}
-          <div className="space-y-3">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-400 block px-1">
-              Kịch Bản Tình Huống Thực Tế
-            </span>
-            <div className="space-y-2">
-              {[
-                { id: 'job_interview', name: 'Phỏng Vấn Tech Job', desc: 'Đối thoại với Giám đốc Kỹ thuật về kinh nghiệm và xử lý sự cố.' },
-                { id: 'bug_delay_meeting', name: 'Giải Trình Hoãn Release', desc: 'Thuyết phục VP Sản phẩm về việc lùi thời gian do bug nghiêm trọng.' },
-                { id: 'salary_negotiation', name: 'Đàm Phán Tăng Lương', desc: 'Đưa ra luận điểm tăng 25% thu nhập dựa trên hiệu suất.' },
-                { id: 'dining_out', name: 'Gọi Món Nhà Hàng', desc: 'Yêu cầu món ăn theo chế độ ăn uống và hỏi kỹ thành phần.' },
-              ].map((sc) => (
-                <div
-                  key={sc.id}
-                  onClick={() => {
-                    setSimulatorScenario(sc.id);
-                    const greeting = getAILanguageGreeting(activeLanguage.id);
-                    setSimulatorHistory([{ role: 'assistant', content: greeting.simulatorOpening(sc.name) }]);
-                  }}
-                  className={`p-4 rounded-2xl border transition cursor-pointer ${simulatorScenario === sc.id
-                    ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 shadow-sm'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400'
-                    }`}
-                >
-                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{sc.name}</h3>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{sc.desc}</p>
-                </div>
-              ))}
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 lg:p-6 pb-24 space-y-4">
+          {/* Mobile Quick Scenario Selector: Stepper with Prev/Next Navigation Controls + CustomSelect — No scrollbar */}
+          <div className="lg:hidden space-y-2 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Kịch Bản Tình Huống ({currentScenarioIndex + 1}/{SIMULATOR_SCENARIOS.length})</span>
+              </span>
             </div>
 
-            {/* Radar Scores Card */}
-            <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-              <span className="text-xs font-extrabold uppercase text-slate-400 tracking-wider block">
-                Bảng Điểm Radar Kỹ Năng
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
-                  <span className="text-[10px] text-slate-400 block font-bold">Giao Tiếp</span>
-                  <span className="text-base font-black text-indigo-600 dark:text-indigo-400">{simulatorRadar.communication}/100</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
-                  <span className="text-[10px] text-slate-400 block font-bold">Ngữ Pháp</span>
-                  <span className="text-base font-black text-indigo-600 dark:text-indigo-400">{simulatorRadar.grammar}/100</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
-                  <span className="text-[10px] text-slate-400 block font-bold">Từ Vựng</span>
-                  <span className="text-base font-black text-indigo-600 dark:text-indigo-400">{simulatorRadar.vocabulary}/100</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
-                  <span className="text-[10px] text-slate-400 block font-bold">Độ Tự Tin</span>
-                  <span className="text-base font-black text-emerald-600 dark:text-emerald-400">{simulatorRadar.confidence}/100</span>
-                </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handlePrevScenario}
+                disabled={currentScenarioIndex <= 0}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-25 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                title="Tình huống trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex-1 min-w-0">
+                <CustomSelect
+                  value={simulatorScenario}
+                  onChange={(val) => {
+                    setSimulatorScenario(String(val));
+                    const sc = SIMULATOR_SCENARIOS.find((s) => s.id === val);
+                    const greeting = getAILanguageGreeting(activeLanguage.id);
+                    setSimulatorHistory([{ role: 'assistant', content: greeting.simulatorOpening(sc?.name || '') }]);
+                  }}
+                  size="sm"
+                  options={SIMULATOR_SCENARIOS.map((sc, idx) => ({
+                    value: sc.id,
+                    label: sc.name,
+                    badge: `${idx + 1}/${SIMULATOR_SCENARIOS.length}`,
+                    description: sc.desc,
+                  }))}
+                  className="w-full"
+                />
               </div>
+
+              <button
+                type="button"
+                onClick={handleNextScenario}
+                disabled={currentScenarioIndex >= SIMULATOR_SCENARIOS.length - 1}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-25 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                title="Tình huống tiếp theo"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          {/* Roleplay Chat Window */}
-          <div className={`lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-300 ${showHeroBanner ? 'min-h-[560px] h-[calc(100vh-17rem)]' : 'min-h-[660px] h-[calc(100vh-10.5rem)]'
-            }`}>
-            <div className="flex-1 p-6 overflow-y-auto space-y-4">
-              {simulatorHistory.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-3 ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Scenario Chooser - Desktop */}
+            <div className="hidden lg:block space-y-3">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400 block px-1">
+                Kịch Bản Tình Huống Thực Tế
+              </span>
+              <div className="space-y-2">
+                {[
+                  { id: 'job_interview', name: 'Phỏng Vấn Tech Job', desc: 'Đối thoại với Giám đốc Kỹ thuật về kinh nghiệm và xử lý sự cố.' },
+                  { id: 'bug_delay_meeting', name: 'Giải Trình Hoãn Release', desc: 'Thuyết phục VP Sản phẩm về việc lùi thời gian do bug nghiêm trọng.' },
+                  { id: 'salary_negotiation', name: 'Đàm Phán Tăng Lương', desc: 'Đưa ra luận điểm tăng 25% thu nhập dựa trên hiệu suất.' },
+                  { id: 'dining_out', name: 'Gọi Món Nhà Hàng', desc: 'Yêu cầu món ăn theo chế độ ăn uống và hỏi kỹ thành phần.' },
+                ].map((sc) => (
                   <div
-                    className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed ${item.role === 'user'
-                      ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                    key={sc.id}
+                    onClick={() => {
+                      setSimulatorScenario(sc.id);
+                      const greeting = getAILanguageGreeting(activeLanguage.id);
+                      setSimulatorHistory([{ role: 'assistant', content: greeting.simulatorOpening(sc.name) }]);
+                    }}
+                    className={`p-4 rounded-2xl border transition cursor-pointer ${simulatorScenario === sc.id
+                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 shadow-sm'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400'
                       }`}
                   >
-                    <p>{item.content}</p>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{sc.name}</h3>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{sc.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Radar Scores Card */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                <span className="text-xs font-extrabold uppercase text-slate-400 tracking-wider block">
+                  Bảng Điểm Radar Kỹ Năng
+                </span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
+                    <span className="text-[10px] text-slate-400 block font-bold">Giao Tiếp</span>
+                    <span className="text-base font-black text-indigo-600 dark:text-indigo-400">{simulatorRadar.communication}/100</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
+                    <span className="text-[10px] text-slate-400 block font-bold">Ngữ Pháp</span>
+                    <span className="text-base font-black text-indigo-600 dark:text-indigo-400">{simulatorRadar.grammar}/100</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
+                    <span className="text-[10px] text-slate-400 block font-bold">Từ Vựng</span>
+                    <span className="text-base font-black text-indigo-600 dark:text-indigo-400">{simulatorRadar.vocabulary}/100</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-center">
+                    <span className="text-[10px] text-slate-400 block font-bold">Độ Tự Tin</span>
+                    <span className="text-base font-black text-emerald-600 dark:text-emerald-400">{simulatorRadar.confidence}/100</span>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
 
-            {simulatorFeedback && (
-              <div className="p-4 bg-emerald-500/10 border-t border-emerald-500/20 text-xs text-emerald-900 dark:text-emerald-300">
-                <p><strong>Điểm cộng:</strong> {simulatorFeedback.greatPoint}</p>
-                <p className="mt-1"><strong>Nâng cấp gợi ý:</strong> {simulatorFeedback.betterWayToSay}</p>
+            {/* Roleplay Chat Window */}
+            <div className="lg:col-span-2 flex flex-col bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden min-h-[420px] sm:min-h-[540px]">
+              <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
+                {simulatorHistory.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-start gap-3 ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-md p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${item.role === 'user'
+                        ? 'bg-indigo-600 text-white rounded-br-none shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                        }`}
+                    >
+                      <p>{item.content}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
 
-            <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3">
-              <input
-                type="text"
-                value={simulatorInput}
-                onChange={(e) => setSimulatorInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSimulatorSend()}
-                placeholder="Ứng biến câu trả lời của bạn trong tình huống này..."
-                className="flex-1 px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <button
-                onClick={handleSimulatorSend}
-                className="btn-glass-primary !shadow-none px-5 py-3 rounded-2xl font-extrabold text-xs transition"
-              >
-                Phản xạ
-              </button>
+              {simulatorFeedback && (
+                <div className="p-3.5 sm:p-4 bg-emerald-500/10 border-t border-emerald-500/20 text-xs text-emerald-900 dark:text-emerald-300">
+                  <p><strong>Điểm cộng:</strong> {simulatorFeedback.greatPoint}</p>
+                  <p className="mt-1"><strong>Nâng cấp gợi ý:</strong> {simulatorFeedback.betterWayToSay}</p>
+                </div>
+              )}
+
+              <div className="p-3 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 sm:gap-3">
+                <input
+                  type="text"
+                  value={simulatorInput}
+                  onChange={(e) => setSimulatorInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSimulatorSend()}
+                  placeholder="Ứng biến câu trả lời của bạn trong tình huống này..."
+                  className="flex-1 px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={handleSimulatorSend}
+                  className="px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition active:scale-95 shrink-0"
+                >
+                  Phản xạ
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2336,11 +3517,11 @@ export const AICoachStudioPage: React.FC = () => {
       {/* TAB 4: ROOT-CAUSE ERROR BANK & HEATMAP                   */}
       {/* ======================================================== */}
       {activeTab === 'error-bank' && (
-        <div className="space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 lg:p-6 pb-24 space-y-4 sm:space-y-6">
           {/* Heatmap Bar */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <h2 className="text-lg font-black tracking-tight">Bản Đồ Nhiệt Điểm Yếu (English Weakness Heatmap)</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 sm:space-y-4">
+            <h2 className="text-base sm:text-lg font-black tracking-tight">Bản Đồ Nhiệt Điểm Yếu (English Weakness Heatmap)</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
               {[
                 { label: 'Ngữ Pháp', score: 68, color: 'text-amber-500', bar: 'w-[68%]' },
                 { label: 'Phát Âm', score: 72, color: 'text-indigo-500', bar: 'w-[72%]' },
@@ -2348,9 +3529,9 @@ export const AICoachStudioPage: React.FC = () => {
                 { label: 'Vốn Từ Vựng', score: 81, color: 'text-emerald-500', bar: 'w-[81%]' },
                 { label: 'Nghe Hiểu', score: 79, color: 'text-cyan-500', bar: 'w-[79%]' },
               ].map((item) => (
-                <div key={item.label} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
-                  <span className="text-xs text-slate-400 font-bold block">{item.label}</span>
-                  <span className={`text-2xl font-black ${item.color} mt-1 block`}>{item.score}/100</span>
+                <div key={item.label} className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-bold block">{item.label}</span>
+                  <span className={`text-xl sm:text-2xl font-black ${item.color} mt-0.5 sm:mt-1 block`}>{item.score}/100</span>
                   <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
                     <div className={`h-full bg-indigo-500 rounded-full ${item.bar}`} />
                   </div>
@@ -2360,12 +3541,12 @@ export const AICoachStudioPage: React.FC = () => {
           </div>
 
           {/* Error Bank Root Cause Cards */}
-          <div className="space-y-3">
+          <div className="space-y-2.5 sm:space-y-3">
             <span className="text-xs font-black uppercase tracking-wider text-slate-400 block px-1">
               Lỗi Sai Lặp Lại & Nguyên Nhân Gốc Rễ (Root Cause Analysis)
             </span>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {[
                 {
                   title: 'Ngôi thứ 3 số ít (He/She/It + V-s/es)',
@@ -2398,7 +3579,7 @@ export const AICoachStudioPage: React.FC = () => {
               ].map((err, idx) => (
                 <div
                   key={idx}
-                  className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2.5"
+                  className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-extrabold text-sm">{err.title}</h3>
@@ -2432,10 +3613,10 @@ export const AICoachStudioPage: React.FC = () => {
       {/* TAB 5: "MAKE ME SOUND BETTER" (BẢN XỨ HÓA)               */}
       {/* ======================================================== */}
       {activeTab === 'sound-better' && (
-        <div className="space-y-6">
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 lg:p-6 pb-24 space-y-4 sm:space-y-6">
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 sm:space-y-4">
             <div className="space-y-1">
-              <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-500" />
                 <span>"Make Me Sound Better" — Nâng Cấp Câu Nói Sang Chuẩn Bản Xứ</span>
               </h2>
@@ -2444,18 +3625,18 @@ export const AICoachStudioPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
               <input
                 type="text"
                 value={soundBetterInput}
                 onChange={(e) => setSoundBetterInput(e.target.value)}
                 placeholder="Nhập câu bạn muốn nói (ví dụ: I want to talk about project...)"
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
               <button
                 onClick={handleMakeMeSoundBetter}
                 disabled={soundBetterLoading || !soundBetterInput.trim()}
-                className="btn-glass-primary !shadow-none w-full sm:w-auto px-6 py-3 rounded-2xl disabled:opacity-50 font-extrabold text-xs transition shrink-0"
+                className="w-full sm:w-auto px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 font-bold text-xs transition active:scale-95 shrink-0"
               >
                 {soundBetterLoading ? 'Đang nâng cấp...' : 'Bản Xứ Hóa Ngay'}
               </button>
@@ -2640,37 +3821,85 @@ export const AICoachStudioPage: React.FC = () => {
                 Cài Đặt Huấn Luyện Viên
               </span>
 
-              {/* AI Voice Selection (Default: Giọng Việt / Ngọc Huyền) */}
-              <div className="space-y-1.5 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                <label className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <Volume2 className="w-3.5 h-3.5" />
-                    Giọng Nói AI Coach
+              {/* AI Voice Selection with CustomSelect & Prev/Next Navigation */}
+              <div className="space-y-2 p-3 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Giọng Nói AI Coach</span>
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black">
-                    {voiceLang === 'vi' ? 'Ngọc Huyền 2.0 (Mặc định)' : 'Native English'}
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                    <CountryFlag languageId={activeLanguage.id} size="xs" />
+                    <span>{activeLanguage.name}</span>
                   </span>
-                </label>
-                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                </div>
+
+                <div className="flex items-center gap-1.5">
                   <button
-                    onClick={() => handleVoiceLangChange('vi')}
-                    className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${voiceLang === 'vi'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                      }`}
+                    type="button"
+                    onClick={handlePrevVoice}
+                    disabled={availableVoices.length <= 1}
+                    className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                    title="Giọng trước"
                   >
-                    <span>Giọng Tiếng Việt</span>
+                    <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
+
+                  <div className="flex-1 min-w-0">
+                    <CustomSelect
+                      value={selectedVoiceURI || 'default'}
+                      onChange={(val) => handleSelectVoice(String(val))}
+                      size="sm"
+                      options={voiceSelectOptions}
+                      placeholder={`Chọn giọng ${activeLanguage.name}...`}
+                      className="w-full"
+                    />
+                  </div>
+
                   <button
-                    onClick={() => handleVoiceLangChange('en')}
-                    className={`py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 ${voiceLang === 'en'
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                      }`}
+                    type="button"
+                    onClick={handleNextVoice}
+                    disabled={availableVoices.length <= 1}
+                    className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition border border-slate-200/60 dark:border-slate-700/60 shrink-0"
+                    title="Giọng tiếp theo"
                   >
-                    <span>Giọng Tiếng Anh</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTestVoice()}
+                    className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white flex items-center justify-center active:scale-90 transition border border-indigo-200 dark:border-indigo-800 shrink-0 shadow-2xs"
+                    title="Nghe thử giọng này"
+                  >
+                    <Play className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              </div>
+
+              {/* Translation Settings (Auto-translate to Vietnamese) */}
+              <div className="space-y-1.5 p-3 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Dịch Sang Tiếng Việt</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !autoTranslateVi;
+                      setAutoTranslateVi(next);
+                      localStorage.setItem('vocabflow_coach_autotranslate', String(next));
+                    }}
+                    className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${autoTranslateVi ? 'bg-emerald-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'}`}
+                    title={autoTranslateVi ? 'Đang bật dịch tự động sang Tiếng Việt' : 'Đang tắt dịch tự động'}
+                  >
+                    <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-snug">
+                  Tự động dịch câu trả lời của Huấn luyện viên sang Tiếng Việt ngay dưới tin nhắn.
+                </p>
               </div>
 
               {/* Microphone Recording Language Selection */}
@@ -2832,14 +4061,14 @@ export const AICoachStudioPage: React.FC = () => {
                   <div>
                     <div className="flex items-center gap-1.5">
                       <h2 className="text-sm sm:text-base font-black tracking-tight">
-                        Chợ Trợ Lý Gia Sư AI
+                        Chợ Trợ Lý Gia Sư AI ({activeLanguage.name})
                       </h2>
                       <span className="px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black uppercase">
-                        {TUTOR_PERSONA_MARKET.length} Huấn luyện viên
+                        {availableTutors.length} Huấn luyện viên
                       </span>
                     </div>
                     <p className="text-[11px] text-indigo-200/80 line-clamp-1">
-                      Chọn người đồng hành phù hợp với mục tiêu: Giao tiếp, Phỏng vấn hay Ngữ điệu bản xứ
+                      Huấn luyện viên bản xứ đồng hành luyện phản xạ & phát âm chuẩn {activeLanguage.name}
                     </p>
                   </div>
                 </div>
@@ -2857,20 +4086,20 @@ export const AICoachStudioPage: React.FC = () => {
               {/* Tutor Cards Grid */}
               <div className="p-3.5 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-3 sm:space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                  {TUTOR_PERSONA_MARKET.map((tutor) => {
+                  {availableTutors.map((tutor) => {
                     const isSelected = coachPersonality === tutor.id;
                     return (
                       <div
                         key={tutor.id}
                         className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between relative group ${
                           isSelected
-                            ? 'bg-indigo-50/60 dark:bg-indigo-950/40 border-indigo-500 shadow-md ring-2 ring-indigo-500/30'
+                            ? `${tutor.theme.ringColor} bg-slate-50/80 dark:bg-slate-900/80 shadow-md`
                             : 'bg-white dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 hover:border-indigo-400 hover:shadow-md'
                         }`}
                       >
                         {/* Selected Indicator */}
                         {isSelected && (
-                          <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-emerald-500 text-white font-black text-[9px] flex items-center gap-1 shadow-xs">
+                          <span className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-white font-black text-[9px] flex items-center gap-1 shadow-xs ${tutor.theme.chipActive}`}>
                             <Check className="w-2.5 h-2.5" />
                             Đang Học
                           </span>
@@ -2879,7 +4108,7 @@ export const AICoachStudioPage: React.FC = () => {
                         <div className="space-y-2.5">
                           {/* Tutor Top Profile */}
                           <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-105 transition-transform border ${tutor.theme.avatarBg}`}>
                               {tutor.avatar}
                             </div>
                             <div className="min-w-0 flex-1 pr-12">
@@ -2890,7 +4119,7 @@ export const AICoachStudioPage: React.FC = () => {
                                 {tutor.vietnameseTitle}
                               </p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${tutor.badgeColor}`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold border ${tutor.badgeColor}`}>
                                   {tutor.tag}
                                 </span>
                                 <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">
@@ -2930,8 +4159,8 @@ export const AICoachStudioPage: React.FC = () => {
                             onClick={() => handleSelectTutor(tutor)}
                             className={`w-full py-2.5 px-3 rounded-xl font-black text-xs transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
                               isSelected
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-slate-100 hover:bg-indigo-600 hover:text-white dark:bg-slate-800 dark:hover:bg-indigo-600 text-slate-700 dark:text-slate-300'
+                                ? `${tutor.theme.chipActive} shadow-sm`
+                                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
                             }`}
                           >
                             {isSelected ? (
