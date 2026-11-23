@@ -1,5 +1,7 @@
+import { getOrCreateDeviceId } from '../../lib/api';
+import { CreateCustomRoomModal } from '../../components/games/CreateCustomRoomModal';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,6 +20,7 @@ import {
   RotateCcw,
   Sparkles,
   Award,
+  Star,
   Crown,
   Volume2,
   VolumeX,
@@ -33,11 +36,11 @@ import {
   Radio,
   Eye,
   EyeOff,
+  LogOut,
   Settings,
   Play,
   Pause,
   SkipForward,
-  QrCode,
   Maximize2,
   Minimize2,
   CheckCircle,
@@ -45,16 +48,15 @@ import {
   HelpCircle,
   TrendingUp,
   X,
-  Tv,
   Plus,
   Loader2,
   Lightbulb,
   BookOpen,
   GraduationCap,
-  Monitor,
-  Smartphone,
   Bookmark,
   Sliders,
+  Gift,
+  Heart,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import {
@@ -69,7 +71,6 @@ import {
   playVictoryFanfare,
   liveBgmEngine,
   TikTokLogo,
-  TikTokColorLogo,
   ArenaHeader,
   QuestionCard,
   AnswerCard,
@@ -84,7 +85,6 @@ import {
   ArenaLeaderboard,
   ActivityFeed,
   ActivityEvent,
-  RoundResultModal,
   WinnerCelebration,
   ArenaIconHeart,
   ArenaIconSwords,
@@ -98,15 +98,32 @@ import { audioEngine } from '../../lib/audioEngine';
 import { ArenaDynamicBackground, ArenaBackgroundTheme } from './arena/ArenaDynamicBackground';
 import { QuestionAnalyticsPanel, AnswerVoteDetail, GroupedTextAnswer } from './arena/QuestionAnalyticsPanel';
 import { TopAnswersThisRound, RoundSubmissionItem } from './arena/TopAnswersThisRound';
-import { ArenaRankingPanel, ArenaRankPlayer } from './arena/ArenaRankingPanel';
+import type { ArenaRankPlayer } from './arena/ArenaRankingPanel';
 import { ArenaCelebrationOverlay } from './arena/ArenaCelebrationOverlay';
 import { AnswerDistributionChart } from './arena/AnswerDistributionChart';
-import { ArenaCommentPanel } from './arena/ArenaCommentPanel';
 import { ArenaStatsBar } from './arena/ArenaStatsBar';
 import { ArenaInGameHeader } from './arena/ArenaInGameHeader';
 import { ArenaExplanationCard } from './arena/ArenaExplanationCard';
-import { ArenaBangVangCeremony } from './arena/ArenaBangVangCeremony';
 import { ArenaPillOptionButton } from './arena/ArenaPillOptionButton';
+import { ArenaBattleView } from './arena/ArenaBattleView';
+import { LiveFinalResults, TikTokLiveView, type LiveWinner } from './arena/TikTokLiveView';
+
+const INTERACTIVE_STAGE_STYLE = {
+  backgroundImage: 'url(/game-assets/arena/arena-main-background.webp)',
+  backgroundBlendMode: 'soft-light' as const,
+};
+
+const MATCH_PANELS = [
+  { id: 'comments', label: 'Bình luận' },
+  { id: 'ranking', label: 'Xếp hạng' },
+  { id: 'distribution', label: 'Bình chọn' },
+] as const;
+
+type MatchPanel = typeof MATCH_PANELS[number]['id'];
+
+const ARENA_STAGE_BANNER_STYLE = {
+  backgroundImage: 'url(/game-assets/arena/topbar-arena-banner.svg)',
+};
 
 interface RoomPlayer {
   userId: string;
@@ -117,11 +134,14 @@ interface RoomPlayer {
   streak: number;
   bestStreak: number;
   correctCount: number;
+  answeredCount?: number;
+  totalResponseTimeMs?: number;
   latencyMs: number;
   rank: number;
   lastResponseTimeMs: number;
   isReady?: boolean;
   isHost?: boolean;
+  isCommenter?: boolean;
 }
 
 interface QuestionData {
@@ -129,6 +149,7 @@ interface QuestionData {
   prompt: string;
   direction: string;
   category: string;
+  difficulty?: number;
   audioUrl?: string;
   options?: string[];
   correctOptionIndex?: number;
@@ -151,11 +172,17 @@ interface AnswerEvaluation {
 
 interface LiveCommentItem {
   eventId: string;
+  round?: number;
+  accepted?: boolean;
+  answer?: string;
+  liveTop3?: LiveWinner[];
+  commenterRanking?: RoomPlayer[];
   username: string;
   displayName: string;
   avatarUrl?: string;
   commentText: string;
   parsedOption?: string;
+  liveOptionVotes?: Record<string, number>;
   timestamp: number;
   isCorrect?: boolean;
   scoreAdded?: number;
@@ -163,12 +190,34 @@ interface LiveCommentItem {
   rank?: number;
 }
 
+export const GAME_MODE_TITLES: Record<string, string> = {
+  TRANSLATION_RUSH: 'Đấu Trường Dịch Nhanh',
+  WORD_BLITZ: 'Đấu Trường Phản Xạ Từ Vựng',
+  SENTENCE_SPRINT: 'Đấu Trường Tốc Độ Đặt Câu',
+  MISSING_WORD: 'Đấu Trường Điền Từ Khuyết',
+  LISTENING_RUSH: 'Đấu Trường Nghe Hiểu Cấp Tốc',
+  SYNONYM_BATTLE: 'Đấu Trí Từ Đồng Nghĩa',
+  FIX_SENTENCE: 'Đấu Trường Sửa Lỗi Câu',
+  GUESS_WORD: 'Đấu Trường Đoán Từ Bí Ẩn',
+  FOUR_SKILLS_ARENA: 'Đại Chiến 4 Kỹ Năng',
+  BOSS_ROUND: 'Đại Chiến Trùm Cuối',
+  FINAL_SHOWDOWN: 'Trận Chiến Quyết Định',
+};
+
 export const RealtimeGameRoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [searchParams] = useSearchParams();
   const gameMode = searchParams.get('mode') || 'TRANSLATION_RUSH';
   const urlLang = searchParams.get('lang');
   const viewParam = searchParams.get('view');
+  const isBroadcastView = viewParam === 'stream';
+  const isSpectator = isBroadcastView || viewParam === 'spectator';
+  const savedRoomPassword = (useLocation().state as { roomPassword?: string } | null)?.roomPassword;
+  const [roomPassword, setRoomPassword] = useState(savedRoomPassword || '');
+  const [passwordAttempt, setPasswordAttempt] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [nextRoomCode, setNextRoomCode] = useState('');
   const navigate = useNavigate();
   const { user, isGuest } = useAuth();
   const { activeLanguage } = useLearning();
@@ -176,13 +225,26 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomCode, setRoomCode] = useState<string>(roomId || '');
-  const [roomTitle, setRoomTitle] = useState<string>('VocabFlow Arena');
-  const [roomLanguageId, setRoomLanguageId] = useState<string>(urlLang || activeLanguage?.id || 'zh');
-  const [isLiveRoom, setIsLiveRoom] = useState<boolean>(false);
+  const [roomTitle, setRoomTitle] = useState<string>(
+    GAME_MODE_TITLES[gameMode] || 'Đấu Trường VocabFlow',
+  );
+  const [themeColor, setThemeColor] = useState<string>(searchParams.get('theme') || 'cyan');
+  const [networkLatency, setNetworkLatency] = useState<number>(32);
+  const [roomCreatedAt, setRoomCreatedAt] = useState<number>(Date.now());
+  const [roomUptime, setRoomUptime] = useState<number>(0);
+  const [roomLanguageId, setRoomLanguageId] = useState<string>(urlLang || activeLanguage.id);
   const [roomStatus, setRoomStatus] = useState<string>('WAITING');
   const [currentRound, setCurrentRound] = useState<number>(0);
   const [totalRounds, setTotalRounds] = useState<number>(10);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  const displayRoomCode = useMemo(() => {
+    if (!roomCode || roomCode.startsWith('auto_')) {
+      return 'GHÉP NHANH';
+    }
+    return `#${roomCode}`;
+  }, [roomCode]);
 
   // 2 Distinct Modes: 'STUDY' (Học Thường - Không comment, tập trung cao độ) vs 'LIVE' (TikTok Livestream Game Show)
   const isInitiallyLive =
@@ -192,13 +254,20 @@ export const RealtimeGameRoomPage: React.FC = () => {
     roomId?.toUpperCase().includes('TIKTOK');
 
   const [roomMode, setRoomMode] = useState<'STUDY' | 'LIVE'>(isInitiallyLive ? 'LIVE' : 'STUDY');
+  const [preferredMatchPanel, setPreferredMatchPanel] = useState<MatchPanel>('comments');
+  const [isAudienceRankingOpen, setIsAudienceRankingOpen] = useState(false);
 
-  // Stream Aspect Ratio preview: 9:16 Vertical (Mobile Live TikTok) vs 16:9 Landscape (Desktop Studio)
-  const [streamAspectRatio, setStreamAspectRatio] = useState<'16:9' | '9:16'>('9:16');
-  const [showLiveChatOverlay, setShowLiveChatOverlay] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Top Container ref for fullscreen handling
+  const roundDeadline = useRef(0);
+  const summaryDeadline = useRef(0);
+  const activeRound = useRef(0);
+  const activeQuestionId = useRef<string>();
+  const submittedRound = useRef<number | null>(null);
+  const [resultSeconds, setResultSeconds] = useState(0);
+  const [liveTop3, setLiveTop3] = useState<LiveWinner[]>([]);
+  const [skipped, setSkipped] = useState(false);
   const roomPageRef = useRef<HTMLDivElement>(null);
 
   // Audio & Word Hints
@@ -219,6 +288,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [evaluation, setEvaluation] = useState<AnswerEvaluation | null>(null);
   const [roundSummary, setRoundSummary] = useState<{
     correctAnswer?: string;
+    acceptedAnswers?: string[];
     correctOptionIndex?: number;
     explanation?: string;
   } | null>(null);
@@ -233,24 +303,23 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
   // TikTok Live Configuration & Adapter State
   const [liveStatus, setLiveStatus] = useState<{
-    status: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'MOCK_ACTIVE' | 'ERROR';
-    provider: 'MOCK' | 'TIKTOK_LIVE';
+    status: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
+    provider: 'TIKTOK_LIVE';
     channelName?: string;
     roomId?: string;
     message?: string;
   }>({
-    status: 'MOCK_ACTIVE',
-    provider: 'MOCK',
-    channelName: 'vocabflow_live',
-    message: 'Chế độ mô phỏng comment khán giả đang hoạt động.',
+    status: 'DISCONNECTED',
+    provider: 'TIKTOK_LIVE',
+    channelName: '',
+    message: '',
   });
+  const [viewerCount, setViewerCount] = useState<number | null>(null);
   const [liveComments, setLiveComments] = useState<LiveCommentItem[]>([]);
   const [isLiveModalOpen, setIsLiveModalOpen] = useState<boolean>(false);
   const [targetChannelInput, setTargetChannelInput] = useState<string>('');
   const [liveRoomIdInput, setLiveRoomIdInput] = useState<string>('');
   const [sessionTokenInput, setSessionTokenInput] = useState<string>('');
-  const [selectedLiveProvider, setSelectedLiveProvider] = useState<'MOCK' | 'TIKTOK_LIVE'>('TIKTOK_LIVE');
-  const [customCommentText, setCustomCommentText] = useState<string>('');
   const [isBgmActive, setIsBgmActive] = useState<boolean>(false);
   const [bgmVolume, setBgmVolume] = useState<number>(0.15);
 
@@ -266,6 +335,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
   // Final Results
   const [finalResult, setFinalResult] = useState<{
     ranking: RoomPlayer[];
+    playedRounds?: number;
     top3: { first: RoomPlayer | null; second: RoomPlayer | null; third: RoomPlayer | null };
   } | null>(null);
 
@@ -274,9 +344,6 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
   // Share & Copy states
   const [isCopiedCode, setIsCopiedCode] = useState(false);
-  const [isCopiedLink, setIsCopiedLink] = useState(false);
-  const [isCopiedStreamUrl, setIsCopiedStreamUrl] = useState(false);
-  const [showQRModal, setShowQRModal] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [savedWordsNotice, setSavedWordsNotice] = useState<string | null>(null);
@@ -285,14 +352,17 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [arenaTheme, setArenaTheme] = useState<ArenaBackgroundTheme>('esports');
   // Round Valid Submissions (Top Answers This Round & Question Analytics)
   const [roundSubmissions, setRoundSubmissions] = useState<RoundSubmissionItem[]>([]);
-  // Responsive Tab for Mobile Screen
-  const [mobileArenaTab, setMobileArenaTab] = useState<'stage' | 'analytics' | 'round_top' | 'arena_ranking' | 'comments'>('stage');
-  // 9:16 Vertical Live Mobile Broadcast Tab
-  const [mobileLiveTab, setMobileLiveTab] = useState<'stage' | 'analytics' | 'ranking' | 'comments'>('stage');
-  // Desktop Right Sidebar Tab Switcher
-  const [rightPanelTab, setRightPanelTab] = useState<'ranking' | 'comments'>('ranking');
   // Mobile Floating Drawer State
   const [isMobileCommentDrawerOpen, setIsMobileCommentDrawerOpen] = useState<boolean>(false);
+  const [isMobileBangVangOpen, setIsMobileBangVangOpen] = useState<boolean>(false);
+  const [mobileLikeCount, setMobileLikeCount] = useState<number>(1280);
+
+  // Auto-Continuous Rotation & Match Celebration States
+  const [celebrationCountdown, setCelebrationCountdown] = useState<number>(20);
+  const [nextRotationData, setNextRotationData] = useState<any>(null);
+  const [isWaitingForPublicGame, setIsWaitingForPublicGame] = useState<boolean>(false);
+  const [inAppRanking, setInAppRanking] = useState<RoomPlayer[]>([]);
+  const [commenterRanking, setCommenterRanking] = useState<RoomPlayer[]>([]);
   // Sound popover
   const [showSoundPopover, setShowSoundPopover] = useState<boolean>(false);
   // Correct Answer Celebration Particles & Banner State
@@ -308,32 +378,26 @@ export const RealtimeGameRoomPage: React.FC = () => {
     speedMs: null,
   });
 
-  // Calculate combined votes per option (A, B, C, D)
-  const combinedVotes = useMemo(() => {
-    const votes: Record<string, number> = { A: 0, B: 0, C: 0, D: 0 };
-    ['A', 'B', 'C', 'D'].forEach((letter) => {
-      const subCount = roundSubmissions.filter(
-        (s) => (s.answer || '').trim().toUpperCase() === letter,
-      ).length;
-      const liveCount = optionVotes[letter] || 0;
-      votes[letter] = Math.max(subCount, liveCount);
-    });
-    return votes;
-  }, [roundSubmissions, optionVotes]);
-
   // Derived Top Commenters Leaderboard for ArenaRankingPanel
   const arenaRankCommenters: ArenaRankPlayer[] = useMemo(() => {
+    if (commenterRanking.length > 0) {
+      return commenterRanking.map((player, index) => ({
+        ...player,
+        rank: index + 1,
+        isCommenter: true,
+      }));
+    }
     const map = new Map<string, { username: string; displayName: string; avatar: string; score: number; correctCount: number }>();
     liveComments.forEach((c) => {
       const key = c.username || c.displayName;
       const existing = map.get(key) || {
         username: key,
         displayName: c.displayName || c.username,
-        avatar: c.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${key}`,
+        avatar: (c.avatarUrl && !c.avatarUrl.includes('bottts')) ? c.avatarUrl : '',
         score: 0,
         correctCount: 0,
       };
-      if (c.scoreAdded) existing.score += c.scoreAdded;
+      existing.score = Math.max(existing.score, c.totalScore ?? 0);
       if (c.isCorrect) existing.correctCount += 1;
       map.set(key, existing);
     });
@@ -350,38 +414,12 @@ export const RealtimeGameRoomPage: React.FC = () => {
         rank: idx + 1,
         isCommenter: true,
       }));
-  }, [liveComments]);
+  }, [commenterRanking, liveComments]);
 
-  // Handle send comment from ArenaCommentPanel
-  const handleSendArenaComment = (text: string) => {
-    if (!socket || !text.trim()) return;
-    const myName = (user as any)?.name || user?.displayName || myPlayer?.displayName || 'Khán giả';
-    socket.emit('room:send_mock_comment', {
-      roomCode,
-      username: myName,
-      displayName: myName,
-      commentText: text.trim(),
-    });
-  };
-
-  // Calculate realtime percentage of any option based on player submissions + live audience votes
-  const getOptionPercentage = useCallback((letter: string): number | undefined => {
-    const norm = (letter || '').trim().toUpperCase();
-    const subCount = roundSubmissions.filter(
-      (s) => (s.answer || '').trim().toUpperCase() === norm,
-    ).length;
-    const liveCount = optionVotes[norm] || 0;
-    const count = Math.max(subCount, liveCount);
-
-    const totalSubs = roundSubmissions.filter((s) =>
-      ['A', 'B', 'C', 'D'].includes((s.answer || '').trim().toUpperCase()),
-    ).length;
-    const totalVotes = Object.values(optionVotes).reduce((a, b) => a + b, 0);
-    const total = Math.max(totalSubs, totalVotes);
-
-    if (total <= 0) return undefined;
-    return (count / total) * 100;
-  }, [roundSubmissions, optionVotes]);
+  const getOptionPercentage = useCallback((letter: string): number => {
+    const total = Object.values(optionVotes).reduce((sum, count) => sum + count, 0);
+    return total > 0 ? ((optionVotes[letter] ?? 0) / total) * 100 : 0;
+  }, [optionVotes]);
 
   // Auto-theme mapping when question category changes
   useEffect(() => {
@@ -498,9 +536,10 @@ export const RealtimeGameRoomPage: React.FC = () => {
     return evaluated > 0 ? (roundCorrectCount / evaluated) * 100 : 0;
   }, [roundCorrectCount, roundIncorrectCount]);
 
-  // Match Leaderboard mapping
+  // Match Leaderboard mapping - ALWAYS sorted by score descending
   const arenaRankPlayers: ArenaRankPlayer[] = useMemo(() => {
-    return players.map((p, idx) => ({
+    const sorted = players.filter((player) => !player.isCommenter).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    return sorted.map((p, idx) => ({
       userId: p.userId,
       displayName: p.displayName,
       avatar: p.avatar,
@@ -509,11 +548,161 @@ export const RealtimeGameRoomPage: React.FC = () => {
       bestStreak: p.bestStreak || p.streak,
       correctCount: p.correctCount,
       totalAnswered: (p.correctCount || 0) + (p.roundScore === 0 ? 1 : 0),
-      rank: p.rank || idx + 1,
+      rank: idx + 1,
       rankChange: 0,
       level: Math.floor(p.score / 1000) + 1,
     }));
   }, [players]);
+
+  // Tra cứu điểm trong phiên của từng commenter
+  const commenterScoreMap = useMemo(() => {
+    const map = new Map<string, number>();
+    arenaRankCommenters.forEach((p) => {
+      map.set(p.displayName, p.score);
+    });
+    return map;
+  }, [arenaRankCommenters]);
+
+  // Tên người dùng hiện tại
+  const myDisplayName = useMemo(() => {
+    return (user as any)?.name || user?.displayName || myPlayer?.displayName || '';
+  }, [user, myPlayer?.displayName]);
+
+  // Thứ hạng của bạn trong chế độ đấu thường
+  const myPlayerRank = useMemo(() => {
+    const myId = user?.id || myPlayer?.userId;
+    if (!myId) return 1;
+    const idx = arenaRankPlayers.findIndex((p) => p.userId === myId);
+    return idx >= 0 ? idx + 1 : 1;
+  }, [arenaRankPlayers, user?.id, myPlayer?.userId]);
+
+  // Điểm của user trong phiên live (lấy điểm player hoặc điểm cmt)
+  const myLiveScore = useMemo(() => {
+    const cScore = myDisplayName ? (commenterScoreMap.get(myDisplayName) || 0) : 0;
+    return Math.max(myPlayer?.score ?? 0, cScore);
+  }, [myPlayer?.score, commenterScoreMap, myDisplayName]);
+
+  // Thứ hạng của user trong danh sách commenter
+  const myCommenterRank = useMemo(() => {
+    if (!myDisplayName) return 0;
+    const idx = arenaRankCommenters.findIndex((c) => c.displayName === myDisplayName);
+    return idx >= 0 ? idx + 1 : 0;
+  }, [arenaRankCommenters, myDisplayName]);
+
+  // Top 1 phiên Live
+  const top1LiveScore = useMemo(() => {
+    return arenaRankCommenters[0]?.score ?? arenaRankPlayers[0]?.score ?? 0;
+  }, [arenaRankCommenters, arenaRankPlayers]);
+
+  const top1LiveName = useMemo(() => {
+    return arenaRankCommenters[0]?.displayName || arenaRankPlayers[0]?.displayName || 'Top 1';
+  }, [arenaRankCommenters, arenaRankPlayers]);
+
+  const top1LiveAvatar = useMemo(() => {
+    return arenaRankCommenters[0]?.avatar || arenaRankPlayers[0]?.avatar;
+  }, [arenaRankCommenters, arenaRankPlayers]);
+
+  // Danh sách Top BXH tổng hợp dạng LIST cho TikTok Live mobile (kết hợp cả người chơi và khán giả cmt)
+  const combinedLiveRanking = useMemo(() => {
+    const map = new Map<string, { displayName: string; avatar?: string; score: number; correctCount: number; isCommenter: boolean; userId: string }>();
+
+    arenaRankCommenters.forEach((c) => {
+      map.set(c.displayName, {
+        displayName: c.displayName,
+        avatar: c.avatar,
+        score: c.score,
+        correctCount: c.correctCount || 0,
+        isCommenter: true,
+        userId: c.userId,
+      });
+    });
+
+    arenaRankPlayers.forEach((p) => {
+      const existing = map.get(p.displayName);
+      if (existing) {
+        existing.score = Math.max(existing.score, p.score);
+        existing.correctCount = Math.max(existing.correctCount, p.correctCount || 0);
+        if (!existing.avatar && p.avatar) existing.avatar = p.avatar;
+      } else {
+        map.set(p.displayName, {
+          displayName: p.displayName,
+          avatar: p.avatar,
+          score: p.score,
+          correctCount: p.correctCount || 0,
+          isCommenter: false,
+          userId: p.userId,
+        });
+      }
+    });
+
+    return Array.from(map.values())
+      .sort((a, b) => b.score - a.score || b.correctCount - a.correctCount)
+      .map((item, idx) => ({
+        ...item,
+        rank: idx + 1,
+      }));
+  }, [arenaRankCommenters, arenaRankPlayers]);
+
+  const sortedBattlePlayers = useMemo(() => {
+    return players
+      .filter((p) => !p.isCommenter)
+      .map((p, idx) => ({
+        userId: p.userId,
+        displayName: p.displayName,
+        avatar: p.avatar,
+        score: p.score || 0,
+        rank: p.rank || idx + 1,
+        streak: p.streak || 0,
+        isCurrentUser: p.userId === (user?.id || myPlayer?.userId),
+      }))
+      .sort((a, b) => b.score - a.score);
+  }, [players, user?.id, myPlayer?.userId]);
+
+  const myBattlePlayer = useMemo(() => {
+    if (!myPlayer) return null;
+    return {
+      userId: myPlayer.userId,
+      displayName: myPlayer.displayName,
+      avatar: myPlayer.avatar,
+      score: myPlayer.score || 0,
+      rank: sortedBattlePlayers.find((player) => player.userId === myPlayer.userId)?.rank ?? myPlayer.rank,
+      streak: myPlayer.streak || 0,
+      isCurrentUser: true,
+    };
+  }, [myPlayer, sortedBattlePlayers]);
+
+  useEffect(() => {
+    if (roomStatus !== 'ROUND_END') return;
+    const timer = setInterval(() => {
+      setResultSeconds(Math.max(0, Math.ceil((summaryDeadline.current - Date.now()) / 1000)));
+    }, 125);
+    return () => clearInterval(timer);
+  }, [roomStatus]);
+
+  // Synchronized room uptime ticker
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRoomUptime(Math.max(0, Math.floor((Date.now() - roomCreatedAt) / 1000)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [roomCreatedAt]);
+
+  // Periodic round-trip network latency ping
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    const ping = () => {
+      const clientTime = Date.now();
+      socket.emit('ping_latency', { clientTime, roomCode, userId: user?.id }, (res?: any) => {
+        const rtt = res?.latencyMs ?? (Date.now() - clientTime);
+        if (typeof rtt === 'number' && !isNaN(rtt) && rtt >= 0) {
+          setNetworkLatency(Math.max(5, rtt));
+        }
+      });
+    };
+    ping();
+    const interval = setInterval(ping, 5000);
+    return () => clearInterval(interval);
+  }, [socket, isConnected, roomCode, user?.id]);
 
   // Language definition
   const currentLangDef = useMemo(() => {
@@ -537,11 +726,16 @@ export const RealtimeGameRoomPage: React.FC = () => {
   }, []);
 
   const copyRoomCode = () => {
-    if (!roomCode) return;
+    if (!roomCode || roomCode.startsWith('auto_')) return;
     navigator.clipboard.writeText(roomCode);
     setIsCopiedCode(true);
     setTimeout(() => setIsCopiedCode(false), 2000);
   };
+
+  useEffect(() => {
+    setLiveComments([]);
+    setCommenterRanking([]);
+  }, [roomId]);
 
   // Setup Socket.IO connection
   useEffect(() => {
@@ -553,53 +747,72 @@ export const RealtimeGameRoomPage: React.FC = () => {
     const s = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
+      auth: (cb) => cb({ token: localStorage.getItem('vocabflow_access_token'), deviceId: getOrCreateDeviceId() }),
     });
 
+    const handleJoin = (result: { status?: string; message?: string } | undefined) => {
+      if (result?.status === 'error') setJoinError(result.message || 'Không thể vào phòng.');
+    };
+    s.on('connect_error', () => setJoinError('Mất kết nối với máy chủ. Đang thử kết nối lại.'));
     s.on('connect', () => {
+      setJoinError('');
       setIsConnected(true);
       const isCustomRoom = roomId && !roomId.startsWith('auto_');
-      const targetLang = urlLang || activeLanguage?.id || 'zh';
+      const targetLang = urlLang || activeLanguage.id;
+
+      const cleanAvatar = user?.avatar && !user.avatar.includes('bottts') ? user.avatar : '';
 
       if (isCustomRoom) {
         s.emit('room:join_custom', {
           roomCode: roomId,
           userId: user?.id || `anon_${Math.random().toString(36).slice(2, 7)}`,
           displayName: user?.displayName || 'Learner',
-          avatar: user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.id || 'guest'}`,
+          avatar: cleanAvatar,
           languageId: targetLang,
-        });
+          spectator: isSpectator,
+          password: roomPassword || undefined,
+        }, handleJoin);
       } else {
         s.emit('join_game', {
           gameMode,
           userId: user?.id || `anon_${Math.random().toString(36).slice(2, 7)}`,
           displayName: user?.displayName || 'Learner',
-          avatar: user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user?.id || 'guest'}`,
+          avatar: cleanAvatar,
           languageId: targetLang,
-        });
+        }, handleJoin);
       }
     });
 
     s.on('disconnect', () => {
       setIsConnected(false);
+      setViewerCount(null);
     });
 
     // Custom Room Joined
     s.on('room:joined_success', (data: any) => {
+      setJoinError('');
       setRoomCode(data.roomCode);
-      setRoomTitle(data.title);
+      const cleanTitle =
+        data.title?.startsWith('auto_') ||
+        data.title === 'FIX_SENTENCE' ||
+        data.title === 'FIX SENTENCE'
+          ? GAME_MODE_TITLES[gameMode] || data.title.replace(/_/g, ' ')
+          : data.title || GAME_MODE_TITLES[gameMode] || 'Đấu Trường VocabFlow';
+      setRoomTitle(cleanTitle);
       setRoomStatus(data.status);
       setTotalRounds(data.totalRounds);
       setMyPlayer(data.player);
       if (data.languageId) setRoomLanguageId(data.languageId);
-      if (data.isLiveMode) {
-        setIsLiveRoom(true);
-        setRoomMode('LIVE');
-      }
+      setRoomMode(data.isLiveMode ? 'LIVE' : 'STUDY');
       if (data.liveStatus) setLiveStatus(data.liveStatus);
       if (data.players) setPlayers(data.players);
-      if (data.player?.isHost) setIsHost(true);
+      setCommenterRanking(data.commenterRanking ?? []);
+      setIsHost(Boolean(data.player?.isHost));
       if (data.roundAnswerCount) setRoundAnswerCount(data.roundAnswerCount);
+      setOptionVotes(data.liveOptionVotes ?? {});
     });
+
+    s.on('room:viewer_count', ({ count }: { count: number }) => setViewerCount(count));
 
     s.on('room:player_joined', (data: any) => {
       if (data.players) setPlayers(data.players);
@@ -630,10 +843,18 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
     s.on('joined_game_room', (data: any) => {
       setRoomCode(data.roomCode);
-      setRoomTitle(data.title);
+      const cleanTitle =
+        data.title?.startsWith('auto_') ||
+        data.title === 'FIX_SENTENCE' ||
+        data.title === 'FIX SENTENCE'
+          ? GAME_MODE_TITLES[gameMode] || data.title.replace(/_/g, ' ')
+          : data.title || GAME_MODE_TITLES[gameMode] || 'Đấu Trường VocabFlow';
+      setRoomTitle(cleanTitle);
       setRoomStatus(data.status);
       setTotalRounds(data.totalRounds);
       if (data.languageId) setRoomLanguageId(data.languageId);
+      if (data.createdAt) setRoomCreatedAt(data.createdAt);
+      if (data.themeColor) setThemeColor(data.themeColor);
       setMyPlayer(data.player);
       setPlayers(data.ranking || []);
     });
@@ -649,6 +870,13 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
     // Round Started
     s.on('round_started', (data: any) => {
+      activeRound.current = data.round;
+      activeQuestionId.current = data.question?.id;
+      submittedRound.current = data.alreadyAnswered ? data.round : null;
+      setSkipped(false);
+      setLiveComments([]);
+      setLiveTop3(data.liveTop3 ?? []);
+      if (typeof data.isLiveMode === 'boolean') setRoomMode(data.isLiveMode ? 'LIVE' : 'STUDY');
       setRoomStatus('IN_ROUND');
       setCountdown(null);
       playQuestionTransitionSound();
@@ -656,18 +884,22 @@ export const RealtimeGameRoomPage: React.FC = () => {
       setTotalRounds(data.totalRounds);
       setQuestion(data.question);
       if (data.question?.languageCode) setRoomLanguageId(data.question.languageCode);
-      const duration = Math.min(15, data.durationSec || 15);
+      const duration = data.durationSec ?? 15;
       setRoundDuration(duration);
-      setTimerRemaining(duration);
+      roundDeadline.current = Date.now() + (
+        typeof data.deadlineAt === 'number' && typeof data.serverTime === 'number'
+          ? Math.max(0, data.deadlineAt - data.serverTime)
+          : (data.remainingSec ?? duration) * 1000
+      );
+      setTimerRemaining(Math.max(0, Math.ceil((roundDeadline.current - Date.now()) / 1000)));
       setAnswerInput('');
       setSelectedOptionIndex(null);
-      setHasSubmitted(false);
+      setHasSubmitted(Boolean(data.alreadyAnswered));
       setEvaluation(null);
       setRoundSummary(null);
       setRoundAnswerCount(0);
       setRoundSubmissions([]);
-      setMobileArenaTab('stage');
-      setOptionVotes({ A: 0, B: 0, C: 0, D: 0 });
+      setOptionVotes(data.liveOptionVotes ?? {});
       setShowWordPeek(false);
       setShowHint(false);
       setIsCheckingAnswer(false);
@@ -697,7 +929,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
       const promptTarget = data.question?.targetWord || (data.question?.prompt?.match(/「([^」]+)」/)?.[1]);
       const target = promptTarget || (data.question?.prompt?.length < 35 ? data.question.prompt : '');
       const audioUrl = data.question?.audioUrl;
-      const lang = data.question?.languageCode || roomLanguageId || activeLanguage?.id || 'zh';
+      const lang = data.question?.languageCode || roomLanguageId || activeLanguage.id;
       if (target || audioUrl) {
         setTimeout(() => {
           setIsPlayingAudio(true);
@@ -719,56 +951,15 @@ export const RealtimeGameRoomPage: React.FC = () => {
       }, 100);
     });
 
-    // Live Comment Received (TikTok Live Feed - only active in Live Mode)
+    // Only round-scoped, server-validated responses feed the live panels.
     s.on('live_comment_received', (comment: LiveCommentItem) => {
-      setLiveComments((prev) => [comment, ...prev.slice(0, 49)]);
-
-      setActivityEvents((prev) => [
-        {
-          id: comment.eventId || `evt-${Date.now()}-${Math.random()}`,
-          type: comment.isCorrect ? 'CORRECT_ANSWER' : 'PLAYER_JOINED',
-          playerName: comment.displayName || comment.username || 'Khán giả',
-          detail: comment.isCorrect
-            ? `chọn đúng [${comment.parsedOption}] (+100 XP)`
-            : comment.commentText,
-          timestamp: Date.now(),
-        },
-        ...prev.slice(0, 19),
-      ]);
-
-      if (comment.parsedOption && ['A', 'B', 'C', 'D'].includes(comment.parsedOption.toUpperCase())) {
-        const opt = comment.parsedOption.toUpperCase();
-        setOptionVotes((prev) => ({
-          ...prev,
-          [opt]: (prev[opt] || 0) + 1,
-        }));
-
-        const uId = comment.username || `c-${Date.now()}`;
-        const isOptCorrect = typeof question?.correctOptionIndex === 'number'
-          ? opt === OPTION_LETTERS[question.correctOptionIndex]
-          : Boolean(comment.isCorrect);
-
-        setRoundSubmissions((prev) => {
-          if (prev.some((s) => s.userId === uId || s.displayName === comment.displayName)) {
-            return prev;
-          }
-          return [
-            ...prev,
-            {
-              userId: uId,
-              displayName: comment.displayName || `@${comment.username}`,
-              avatarUrl: comment.avatarUrl,
-              answer: opt,
-              isCorrect: isOptCorrect,
-              scoreEarned: isOptCorrect ? (comment.scoreAdded || 600) : 0,
-              responseTimeMs: Math.floor(Math.random() * 2500 + 600),
-              streak: isOptCorrect ? 1 : 0,
-              rank: prev.length + 1,
-              timestamp: comment.timestamp || Date.now(),
-            },
-          ];
-        });
-      }
+      if (comment.round !== activeRound.current) return;
+      setLiveComments((prev) => prev.some((entry) => entry.eventId === comment.eventId ||
+        (entry.accepted === false && comment.accepted === false && entry.username === comment.username))
+        ? prev : [comment, ...prev.slice(0, 49)]);
+      if (comment.liveOptionVotes) setOptionVotes(comment.liveOptionVotes);
+      if (comment.liveTop3) setLiveTop3(comment.liveTop3);
+      if (comment.commenterRanking) setCommenterRanking(comment.commenterRanking);
     });
 
     // Live Status Changed
@@ -783,78 +974,63 @@ export const RealtimeGameRoomPage: React.FC = () => {
     });
 
     // Answer Result (Local User)
-    s.on('answer_result', (data: any) => {
-      setTimeout(() => {
-        setIsCheckingAnswer(false);
-        setEvaluation(data.evaluation);
-
-        const myId = user?.id || myPlayer?.userId || 'me';
-        setRoundSubmissions((prev) =>
-          prev.map((s) =>
-            s.userId === myId
-              ? {
-                  ...s,
-                  isCorrect: data.evaluation?.isCorrect,
-                  scoreEarned: data.evaluation?.score || s.scoreEarned,
-                  streak: data.currentStreak ?? s.streak,
-                }
-              : s,
-          ),
-        );
-
-        if (data.evaluation?.isCorrect) {
-          const streak = (data.currentStreak ?? myPlayer?.streak ?? 0) + 1;
-          playCorrectSound(streak);
-          setCelebrationData({
-            show: true,
-            score: data.evaluation?.score || 850,
-            streak,
-            speedMs: submissionReflexMs,
-          });
-        } else {
-          playWrongSound();
-          if (question) {
-            setMatchVocabs((prev) =>
-              prev.map((v) => (v.id === question.id ? { ...v, isCorrect: false } : v)),
-            );
-          }
-          if (gameMode === 'SURVIVAL') {
-            setLives((prev) => {
-              const next = Math.max(0, prev - 1);
-              if (next === 0) setIsEliminated(true);
-              return next;
-            });
-          }
-        }
-      }, 250);
-
-      if (myPlayer) {
-        setMyPlayer((prev) =>
-          prev
-            ? {
-                ...prev,
-                score: data.currentScore,
-                roundScore: data.scoreEarned,
-                streak: data.streak,
-                bestStreak: Math.max(prev.bestStreak, data.streak),
-                correctCount: prev.correctCount + (data.evaluation?.isCorrect ? 1 : 0),
-              }
-            : null,
-        );
-      }
+    s.on('answer_result', (data: { round: number; skipped?: boolean; evaluation: AnswerEvaluation; currentScore: number; currentStreak: number; rank: number }) => {
+      if (data.round !== activeRound.current) return;
+      setHasSubmitted(true);
+      setIsCheckingAnswer(false);
+      setEvaluation(data.evaluation);
+      setSkipped(Boolean(data.skipped));
+      if (data.evaluation.isCorrect) playCorrectSound(data.currentStreak);
+      else if (!data.skipped) playWrongSound();
+      const questionId = activeQuestionId.current;
+      setMatchVocabs((prev) => prev.map((item) => item.id === questionId
+        ? { ...item, isCorrect: data.evaluation.isCorrect } : item));
+      setMyPlayer((prev) => prev && ({
+        ...prev,
+        score: data.currentScore,
+        roundScore: data.evaluation.score,
+        streak: data.currentStreak,
+        rank: data.rank,
+      }));
     });
 
     // Round Ended Summary
+    s.on('room:game_paused', ({ remainingSec }: { remainingSec: number }) => {
+      setTimerRemaining(remainingSec);
+      setRoomStatus('PAUSED');
+    });
+    s.on('room:game_resumed', ({ remainingSec }: { remainingSec: number }) => {
+      roundDeadline.current = Date.now() + remainingSec * 1000;
+      setTimerRemaining(remainingSec);
+      setRoomStatus('IN_ROUND');
+    });
+    s.on('room:time_extended', ({ newRemainingSec: remainingSec }: { newRemainingSec: number }) => {
+      roundDeadline.current = Date.now() + remainingSec * 1000;
+      setTimerRemaining(remainingSec);
+    });
+
     s.on('round_ended', (data: any) => {
+      if (data.round !== activeRound.current) return;
+      const remaining = typeof data.summaryEndsAt === 'number' && typeof data.serverTime === 'number'
+        ? Math.max(0, data.summaryEndsAt - data.serverTime) : 5000;
+      summaryDeadline.current = Date.now() + remaining;
+      setResultSeconds(Math.ceil(remaining / 1000));
+      setTimerRemaining(0);
+      if (data.liveOptionVotes) setOptionVotes(data.liveOptionVotes);
+      if (data.liveTop3) setLiveTop3(data.liveTop3);
       setRoomStatus('ROUND_END');
-      setRoundSummary(data.summary || data);
+      setRoundSummary(data);
       if (data.ranking) setPlayers(data.ranking);
+      if (data.inAppRanking) setInAppRanking(data.inAppRanking);
+      if (data.commenterRanking) setCommenterRanking(data.commenterRanking);
       playRoundEndSound();
     });
 
     // Ranking Update
     s.on('live_ranking_update', (data: any) => {
       if (data.ranking) setPlayers(data.ranking);
+      if (data.inAppRanking) setInAppRanking(data.inAppRanking);
+      if (data.commenterRanking) setCommenterRanking(data.commenterRanking);
       if (data.roundAnswerCount !== undefined) setRoundAnswerCount(data.roundAnswerCount);
       if (data.lastAnsweredBy && data.lastAnsweredBy.displayName) {
         const pName = data.lastAnsweredBy.displayName;
@@ -882,15 +1058,33 @@ export const RealtimeGameRoomPage: React.FC = () => {
       }
     });
 
-    // Game Finished
+    // Game Finished & Match Celebration
     s.on('game_finished', (data: any) => {
+      setJoinError('');
       setRoomStatus('FINISHED');
       setFinalResult(data);
+      if (data.inAppRanking) setInAppRanking(data.inAppRanking);
+      if (data.commenterRanking) setCommenterRanking(data.commenterRanking);
+      setCelebrationCountdown(data.celebrationDurationSec ?? 0);
       playVictoryFanfare();
       if (isBgmActive) {
         liveBgmEngine.stop();
         setIsBgmActive(false);
       }
+    });
+
+    // Auto-Continuous Rotation from server
+    s.on('match_rotation_started', (data: any) => {
+      setNextRotationData(data);
+      if (data?.nextRoomCode) {
+        setTimeout(() => {
+          navigate(`/games/room/${data.nextRoomCode}?mode=${gameMode}&lang=${roomLanguageId}`);
+        }, (data.countdownSec || 3) * 1000);
+      }
+    });
+
+    s.on('match_waiting_for_public_game', (data: any) => {
+      setIsWaitingForPublicGame(true);
     });
 
     setSocket(s);
@@ -901,7 +1095,16 @@ export const RealtimeGameRoomPage: React.FC = () => {
         liveBgmEngine.stop();
       } catch (_) {}
     };
-  }, [roomId, gameMode, urlLang, activeLanguage?.id]);
+  }, [roomId, gameMode, urlLang, activeLanguage?.id, user?.id, isSpectator, roomPassword]);
+
+  // Celebration 20-second countdown before auto-rotation
+  useEffect(() => {
+    if (roomStatus !== 'FINISHED' || celebrationCountdown <= 0) return;
+    const t = setInterval(() => {
+      setCelebrationCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [roomStatus, celebrationCountdown]);
 
   // Round Timer countdown with dynamic urgent BGM pacing
   useEffect(() => {
@@ -910,63 +1113,21 @@ export const RealtimeGameRoomPage: React.FC = () => {
       return;
     }
     const timer = setInterval(() => {
-      setTimerRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          liveBgmEngine.setUrgent(false);
-          return 0;
-        }
-        if (prev <= 4) {
-          liveBgmEngine.setUrgent(true);
-          playWarningTickSound(prev - 1);
-        } else if (prev <= 6) {
-          liveBgmEngine.setUrgent(true);
-          playCountdownTickSound();
-        } else {
-          liveBgmEngine.setUrgent(false);
-        }
-        return prev - 1;
+      const remaining = Math.max(0, Math.ceil((roundDeadline.current - Date.now()) / 1000));
+      setTimerRemaining((previous) => {
+        if (previous === remaining) return previous;
+        liveBgmEngine.setUrgent(remaining > 0 && remaining <= 5);
+        if (remaining > 0 && remaining <= 3) playWarningTickSound(remaining);
+        else if (remaining > 0 && remaining <= 5) playCountdownTickSound();
+        return remaining;
       });
-    }, 1000);
+    }, 250);
 
     return () => {
       clearInterval(timer);
       liveBgmEngine.setUrgent(false);
     };
   }, [roomStatus]);
-
-  // Keyboard Navigation: 1/2/3/4 or A/B/C/D to answer, Space for audio
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      if (e.code === 'Space' || e.key === 'r' || e.key === 'R') {
-        e.preventDefault();
-        playQuestionAudio();
-        return;
-      }
-
-      if (roomStatus !== 'IN_ROUND' || hasSubmitted) return;
-
-      const key = e.key.toUpperCase();
-      const index = ['A', 'B', 'C', 'D'].indexOf(key);
-      if (index >= 0 && question?.options && index < question.options.length) {
-        e.preventDefault();
-        handleSelectOption(index);
-      } else if (['1', '2', '3', '4'].includes(e.key)) {
-        const numIndex = parseInt(e.key, 10) - 1;
-        if (question?.options && numIndex < question.options.length) {
-          e.preventDefault();
-          handleSelectOption(numIndex);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [roomStatus, hasSubmitted, question, isListeningGame]);
 
   // Audio Playback & Pronunciation
   const playQuestionAudio = (forceTarget?: string) => {
@@ -976,7 +1137,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
     if (!text && !audioUrl) return;
 
     setIsPlayingAudio(true);
-    const lang = question?.languageCode || roomLanguageId || activeLanguage?.id || 'zh';
+    const lang = question?.languageCode || roomLanguageId || activeLanguage.id;
     audioEngine.playWord(text || '', {
       audioUrl,
       lang,
@@ -1006,136 +1167,43 @@ export const RealtimeGameRoomPage: React.FC = () => {
     }
   };
 
-  // Submit multiple choice option
-  const handleSelectOption = (index: number) => {
-    if (hasSubmitted || !socket || roomStatus !== 'IN_ROUND') return;
-    const letters = ['A', 'B', 'C', 'D'];
-    const chosenLetter = letters[index];
+  const submitBattleAnswer = (answer: string, index: number | null = null, skip = false) => {
+    if (isSpectator || !isConnected || Date.now() >= roundDeadline.current ||
+        submittedRound.current === currentRound || !socket || roomStatus !== 'IN_ROUND' || roomMode !== 'STUDY') return;
+    const round = currentRound;
+    submittedRound.current = round;
     setSelectedOptionIndex(index);
     setHasSubmitted(true);
-    setIsCheckingAnswer(true);
-
-    const elapsedMs = Math.max(250, (roundDuration - timerRemaining) * 1000);
-    setSubmissionReflexMs(elapsedMs);
-
-    const isKnownCorrect = typeof question?.correctOptionIndex === 'number'
-      ? question.correctOptionIndex === index
-      : undefined;
-
-    const myId = user?.id || myPlayer?.userId || 'me';
-    const myName = (user as any)?.name || user?.displayName || myPlayer?.displayName || 'Bạn';
-    const myAvatar = user?.avatar || myPlayer?.avatar;
-    const initialScore = isKnownCorrect ? 700 + Math.max(0, Math.round((1 - elapsedMs / 15000) * 300)) : 0;
-
-    if (isKnownCorrect === true) {
-      playCorrectSound((myPlayer?.streak || 0) + 1);
-      setCelebrationData({
-        show: true,
-        score: initialScore,
-        streak: (myPlayer?.streak || 0) + 1,
-        speedMs: elapsedMs,
-      });
-    } else if (isKnownCorrect === false) {
-      playWrongSound();
-    }
-
-    setOptionVotes((prev) => ({
-      ...prev,
-      [chosenLetter]: (prev[chosenLetter] || 0) + 1,
-    }));
-
-    setRoundSubmissions((prev) => {
-      if (prev.some((s) => s.userId === myId)) return prev;
-      return [
-        {
-          userId: myId,
-          displayName: myName,
-          avatarUrl: myAvatar,
-          answer: chosenLetter,
-          isCorrect: isKnownCorrect,
-          scoreEarned: initialScore,
-          responseTimeMs: elapsedMs,
-          streak: (myPlayer?.streak || 0) + (isKnownCorrect ? 1 : 0),
-          rank: prev.length + 1,
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ];
-    });
-
-    socket.emit('submit_answer', {
-      roomCode,
-      userId: myId,
-      answer: chosenLetter,
-    });
-  };
-
-  // Free text submit
-  const handleSubmitText = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!answerInput.trim() || hasSubmitted || !socket || roomStatus !== 'IN_ROUND') return;
-    setHasSubmitted(true);
-    setIsCheckingAnswer(true);
-
-    const elapsedMs = Math.max(250, (roundDuration - timerRemaining) * 1000);
-    setSubmissionReflexMs(elapsedMs);
-
-    const myId = user?.id || myPlayer?.userId || 'me';
-    const myName = (user as any)?.name || user?.displayName || myPlayer?.displayName || 'Bạn';
-    const myAvatar = user?.avatar || myPlayer?.avatar;
-
-    const normalizedInput = answerInput.trim().toLowerCase();
-    const targetWord = (question?.targetWord || '').toLowerCase().trim();
-    const isKnownCorrect = targetWord ? normalizedInput === targetWord : undefined;
-
-    if (isKnownCorrect === true) {
-      playCorrectSound((myPlayer?.streak || 0) + 1);
-      setCelebrationData({
-        show: true,
-        score: 800,
-        streak: (myPlayer?.streak || 0) + 1,
-        speedMs: elapsedMs,
-      });
-    } else if (isKnownCorrect === false) {
-      playWrongSound();
-    }
-
-    setRoundSubmissions((prev) => {
-      if (prev.some((s) => s.userId === myId)) return prev;
-      return [
-        {
-          userId: myId,
-          displayName: myName,
-          avatarUrl: myAvatar,
-          answer: answerInput.trim(),
-          isCorrect: isKnownCorrect,
-          scoreEarned: isKnownCorrect ? 800 : 0,
-          responseTimeMs: elapsedMs,
-          streak: (myPlayer?.streak || 0) + (isKnownCorrect ? 1 : 0),
-          rank: prev.length + 1,
-          timestamp: Date.now(),
-        },
-        ...prev,
-      ];
-    });
-
-    socket.emit('submit_answer', {
-      roomCode,
-      userId: myId,
-      answer: answerInput.trim(),
+    setSkipped(skip);
+    socket.emit('submit_answer', { roomCode, answer, round, skip }, (response: { status: string }) => {
+      if (response?.status === 'submitted' || activeRound.current !== round) return;
+      submittedRound.current = null;
+      setSelectedOptionIndex(null);
+      setHasSubmitted(false);
+      setSkipped(false);
     });
   };
 
   // Host Controls
   const handleHostStartGame = () => {
     if (!socket || !isHost) return;
+    if (roomMode === 'LIVE' && liveStatus.status !== 'CONNECTED') {
+      setIsLiveModalOpen(true);
+      return;
+    }
     playGameStartSound();
     if (!isBgmActive) {
       liveBgmEngine.setVolume(bgmVolume);
       liveBgmEngine.start();
       setIsBgmActive(true);
     }
-    socket.emit('room:host_start_game', { roomCode });
+    socket.emit('room:host_start_game', { roomCode }, (result: { status?: string; message?: string }) => {
+      if (result?.status === 'error') {
+        setJoinError(result.message || 'Không thể bắt đầu trận.');
+        liveBgmEngine.stop();
+        setIsBgmActive(false);
+      }
+    });
   };
 
   const handleHostPauseGame = () => {
@@ -1145,16 +1213,6 @@ export const RealtimeGameRoomPage: React.FC = () => {
     } else if (roomStatus === 'PAUSED') {
       socket.emit('room:host_resume_game', { roomCode });
     }
-  };
-
-  const handleHostNextRound = () => {
-    if (!socket || !isHost) return;
-    socket.emit('room:host_next_round', { roomCode });
-  };
-
-  const handleHostExtendTime = (extraSec: number = 5) => {
-    if (!socket || !isHost) return;
-    socket.emit('room:host_extend_time', { roomCode, extraSec });
   };
 
   const handleHostEndGame = () => {
@@ -1170,8 +1228,8 @@ export const RealtimeGameRoomPage: React.FC = () => {
     if (!socket) return;
     socket.emit('room:connect_live', {
       roomCode,
-      provider: selectedLiveProvider,
-      channelName: targetChannelInput.trim() || 'demo_stream',
+      provider: 'TIKTOK_LIVE',
+      channelName: targetChannelInput.trim(),
       roomId: liveRoomIdInput.trim() || undefined,
       sessionToken: sessionTokenInput.trim() || undefined,
     });
@@ -1181,28 +1239,6 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const handleDisconnectLive = () => {
     if (!socket) return;
     socket.emit('room:disconnect_live', { roomCode });
-  };
-
-  const handleSimulateAudience = () => {
-    if (!socket) return;
-    socket.emit('room:simulate_batch_comments', { roomCode, count: 8 });
-  };
-
-  const handleSendCustomComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customCommentText.trim() || !socket) return;
-    socket.emit('room:send_mock_comment', {
-      roomCode,
-      displayName: 'Khán giả TikTok ⚡',
-      commentText: customCommentText.trim(),
-    });
-    setCustomCommentText('');
-  };
-
-  const copyRoomLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setIsCopiedLink(true);
-    setTimeout(() => setIsCopiedLink(false), 2000);
   };
 
   const toggleBgm = () => {
@@ -1282,31 +1318,41 @@ export const RealtimeGameRoomPage: React.FC = () => {
     },
   ];
 
-  // Top 3 Podium
-  const top1 = players[0] || null;
-  const top2 = players[1] || null;
-  const top3 = players[2] || null;
+  // Top 3 Podium (Always use arenaRankPlayers sorted order)
+  const top1 = arenaRankPlayers[0] || null;
+  const top2 = arenaRankPlayers[1] || null;
+  const top3 = arenaRankPlayers[2] || null;
+
+  const hasVoteChoices = Boolean(question?.options?.length);
+  const matchPanel = preferredMatchPanel === 'distribution' && !hasVoteChoices ? 'comments' : preferredMatchPanel;
+
+  const activeMatch = !joinError && Boolean(question) && ['IN_ROUND', 'PAUSED', 'ROUND_END'].includes(roomStatus);
+  const liveFinished = roomMode === 'LIVE' && roomStatus === 'FINISHED';
+  const finalPlayer = finalResult?.ranking?.find((entry) => entry.userId === (user?.id || myPlayer?.userId));
+  const usesArenaShell = activeMatch || roomStatus === 'FINISHED';
+  const leaveArena = () => navigate('/games');
+  const playCurrentQuestionAudio = () => playQuestionAudio();
 
   return (
     <div
       ref={roomPageRef}
-      className={`min-h-screen h-fit max-h-none overflow-visible overflow-x-hidden text-slate-100 relative flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white ${
-        isFullscreen ? 'fixed inset-0 z-50 w-screen h-screen overflow-y-auto' : ''
-      } bg-gradient-to-br from-[#0c1228] via-[#090d1e] to-[#050711]`}
+      className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-slate-100 flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white bg-[#110f25]"
     >
       {/* ======================================================== */}
       {/* DYNAMIC PROCEDURAL ARENA BACKGROUND                      */}
       {/* ======================================================== */}
-      <ArenaDynamicBackground
-        theme={arenaTheme}
-        category={question?.category}
-        languageId={roomLanguageId}
-        gameState={roomStatus}
-      />
+      {isBroadcastView && !usesArenaShell && (
+        <ArenaDynamicBackground
+          theme={arenaTheme}
+          category={question?.category}
+          languageId={roomLanguageId}
+          gameState={roomStatus}
+        />
+      )}
 
       {/* Correct Answer Celebration Confetti & Hero Banner */}
       <ArenaCelebrationOverlay
-        show={celebrationData.show}
+        show={!activeMatch && celebrationData.show}
         score={celebrationData.score}
         streak={celebrationData.streak}
         speedMs={celebrationData.speedMs}
@@ -1322,9 +1368,35 @@ export const RealtimeGameRoomPage: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* 1. BROADCAST STUDIO HEADER & MODE SELECTOR               */}
+      {/* 1. BROADCAST STUDIO HEADER & MODE SELECTOR (Desktop Studio Only) */}
       {/* ======================================================== */}
-      <header className="relative z-20 shrink-0 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl px-4 py-2.5 sm:px-6">
+      {!isBroadcastView && !usesArenaShell && (
+        <header className="relative z-20 shrink-0 border-b border-indigo-400/25 bg-indigo-950 px-3 py-1.5 lg:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <Link to="/games" className="flex min-h-9 shrink-0 items-center px-1 text-xs font-semibold text-slate-300 hover:text-white">← Sảnh</Link>
+            <h1 className="min-w-0 flex-1 truncate text-sm font-bold text-white text-center">{roomTitle}</h1>
+            {!roomCode.startsWith('auto_') && roomCode && (
+              <button type="button" onClick={copyRoomCode} aria-label="Sao chép mã phòng"
+                className="min-h-9 rounded-lg px-2 text-xs font-mono font-bold bg-amber-500/15 border border-amber-400/40 text-amber-300 shrink-0">
+                {isCopiedCode ? 'Đã chép' : `PIN: ${displayRoomCode}`}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-x-2 pt-1 text-[11px] text-slate-400 border-t border-indigo-900/50 mt-1">
+            <span className="inline-flex items-center gap-1">
+              <CountryFlag languageId={currentLangDef.id} size="xs" />
+              <span>{currentLangDef.name}</span>
+            </span>
+            <span>{players.length} người chơi</span>
+            {roomMode === 'LIVE' ? (
+              <span className="inline-flex items-center gap-1 text-rose-300 font-semibold">
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" /> {viewerCount ?? '0'} xem
+              </span>
+            ) : <span>Phòng luyện tập</span>}
+          </div>
+        </header>
+      )}
+      {!usesArenaShell && <header className="hidden lg:block relative z-20 shrink-0 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl px-3 py-2 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Left: Branding & Room Info */}
           <div className="flex items-center gap-3 min-w-0">
@@ -1340,40 +1412,31 @@ export const RealtimeGameRoomPage: React.FC = () => {
                   {roomTitle}
                 </h1>
 
-                {/* Prominent Legible Room PIN Badge with 1-click copy */}
-                <button
-                  type="button"
-                  onClick={copyRoomCode}
-                  className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400/60 text-amber-300 font-mono font-black text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
-                  title="Nhấn để sao chép mã PIN phòng đấu"
-                >
-                  <span className="text-[10px] uppercase text-amber-400 font-sans font-black">PIN:</span>
-                  <span className="text-white font-bold">#{roomCode}</span>
-                  {isCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
-                </button>
+                {/* Prominent Legible Room PIN Badge with 1-click copy - only shown once roomCode is loaded */}
+                {roomCode && !roomCode.startsWith('auto_') ? (
+                  <button
+                    type="button"
+                    onClick={copyRoomCode}
+                    className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400/60 text-amber-300 font-mono font-black text-xs flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                    title="Nhấn để sao chép mã PIN hoặc link phòng đấu"
+                  >
+                    <span className="text-[10px] uppercase text-amber-400 font-sans font-black">
+                      PIN:
+                    </span>
+                    <span className="text-white font-bold">{displayRoomCode}</span>
+                    {isCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
+                  </button>
+                ) : (
+                  <div className="px-2.5 py-1 rounded-xl bg-indigo-500/10 border border-indigo-400/30 text-indigo-300 font-bold text-xs flex items-center gap-1.5 shadow-sm">
+                    <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                    <span className="hidden sm:inline">Đang tạo mã phòng...</span>
+                  </div>
+                )}
 
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
                   <CountryFlag languageId={currentLangDef?.id || roomLanguageId} size="xs" />
                   <span className="hidden sm:inline">{currentLangDef?.name || 'Từ vựng'}</span>
                 </span>
-
-                {/* Procedural Dynamic Theme Selector */}
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#12182B] border border-white/10 text-xs font-bold text-slate-300 shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 text-[#947AFF]" />
-                  <span className="hidden sm:inline text-[#929CB4] text-[10px] uppercase font-bold">Theme:</span>
-                  <select
-                    value={arenaTheme}
-                    onChange={(e) => setArenaTheme(e.target.value as ArenaBackgroundTheme)}
-                    className="bg-transparent text-white font-bold text-xs outline-none cursor-pointer"
-                    title="Đổi chủ đề nền đấu trường"
-                  >
-                    <option value="esports" className="bg-[#12182B] text-white">⚡ Esports</option>
-                    <option value="business" className="bg-[#12182B] text-white">💼 Business</option>
-                    <option value="science" className="bg-[#12182B] text-white">🔬 Science</option>
-                    <option value="travel" className="bg-[#12182B] text-white">✈️ Travel</option>
-                    <option value="nature" className="bg-[#12182B] text-white">🌿 Nature</option>
-                  </select>
-                </div>
               </div>
 
               <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold pt-0.5">
@@ -1383,77 +1446,15 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5 text-indigo-400" />
-                  <strong className="text-white">{players.length}</strong> {roomMode === 'LIVE' ? 'trên live' : 'người chơi'}
+                  <strong className="text-white">{arenaRankPlayers.length}</strong> người chơi
                 </span>
+                {roomMode === 'LIVE' && (
+                  <span className="flex items-center gap-1 text-rose-200">
+                    <Eye className="h-3.5 w-3.5" aria-hidden="true" /> {viewerCount ?? '—'} đang xem trên VocabFlow
+                  </span>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Center: DUAL-MODE TOGGLE & ASPECT RATIO SWITCHER */}
-          <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center bg-slate-900/90 p-1 rounded-2xl border border-white/15 shadow-inner">
-              <button
-                onClick={() => {
-                  setRoomMode('STUDY');
-                  setStreamAspectRatio('16:9');
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
-                  roomMode === 'STUDY'
-                    ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Chế độ tập trung học tập: Không comment, giao diện rộng rãi, âm thanh trực quan"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Chế Độ Học Thường</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setRoomMode('LIVE');
-                  setStreamAspectRatio('9:16');
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
-                  roomMode === 'LIVE'
-                    ? 'bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700 text-white shadow-md shadow-rose-600/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Chế độ Livestream TikTok: Cào bình luận trực tiếp, thống kê vote A/B/C/D, giao diện màn hình live"
-              >
-                <TikTokColorLogo className="w-3.5 h-3.5" />
-                <span>Chế Độ TikTok Live</span>
-              </button>
-            </div>
-
-            {/* In Live Mode: 9:16 Mobile vs 16:9 Studio View Switcher */}
-            {roomMode === 'LIVE' && (
-              <div className="hidden lg:flex items-center bg-slate-900/90 p-1 rounded-2xl border border-rose-500/30">
-                <button
-                  onClick={() => setStreamAspectRatio('9:16')}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                    streamAspectRatio === '9:16'
-                      ? 'bg-rose-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Giao diện điện thoại đứng 9:16 chuyên dụng cho Livestream TikTok"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>Mobile 9:16</span>
-                </button>
-                <button
-                  onClick={() => setStreamAspectRatio('16:9')}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                    streamAspectRatio === '16:9'
-                      ? 'bg-slate-700 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title="Giao diện màn hình ngang Desktop Studio"
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                  <span>Studio 16:9</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Right: Studio Controls */}
@@ -1545,15 +1546,15 @@ export const RealtimeGameRoomPage: React.FC = () => {
             </button>
           </div>
         </div>
-      </header>
+      </header>}
 
       {/* ======================================================== */}
       {/* 2. HOST QUICK TOOLBAR (ONLY FOR HOST USERS)              */}
       {/* ======================================================== */}
-      {isHost && (
+      {isHost && !usesArenaShell && (
         <div className="relative z-10 bg-indigo-950/40 border-b border-indigo-500/20 px-4 py-2 backdrop-blur-md">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
                 <Crown className="w-3.5 h-3.5 fill-amber-400" />
                 <span>Host:</span>
@@ -1561,71 +1562,25 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
               {roomStatus === 'WAITING' && (
                 <button
-                  onClick={handleHostStartGame}
-                  className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black transition flex items-center gap-1 shadow-sm cursor-pointer"
+                  onClick={() => handleHostStartGame()}
+                  className="min-h-11 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black transition flex items-center gap-1 shadow-sm cursor-pointer"
                 >
                   <Play className="w-3 h-3 fill-white" />
                   <span>Bắt Đầu Game</span>
                 </button>
               )}
 
-              {(roomStatus === 'IN_ROUND' || roomStatus === 'PAUSED') && (
-                <>
-                  <button
-                    onClick={handleHostPauseGame}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 font-bold transition flex items-center gap-1 cursor-pointer"
-                  >
-                    {roomStatus === 'PAUSED' ? <Play className="w-3 h-3 fill-current" /> : <Pause className="w-3 h-3" />}
-                    <span>{roomStatus === 'PAUSED' ? 'Tiếp tục' : 'Tạm dừng'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleHostExtendTime(5)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 font-bold transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>+5s Suy Nghĩ</span>
-                  </button>
-
-                  <button
-                    onClick={handleHostNextRound}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <SkipForward className="w-3 h-3" />
-                    <span>Chuyển câu</span>
-                  </button>
-                </>
-              )}
-
-              {roomMode === 'LIVE' && (
-                <button
-                  onClick={handleSimulateAudience}
-                  className="px-2.5 py-1 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 font-bold transition flex items-center gap-1 cursor-pointer"
-                  title="Giả lập 8 comment khán giả chọn đáp án"
-                >
-                  <Zap className="w-3 h-3 text-amber-400" />
-                  <span>Giả Lập 8 Khán Giả</span>
+              {!isBroadcastView && roomMode === 'LIVE' && (
+                <button type="button" onClick={() => setIsLiveModalOpen(true)}
+                  className="min-h-11 rounded-lg bg-slate-800 px-3 font-semibold text-slate-200 hover:bg-slate-700 lg:hidden">
+                  Kết nối TikTok
                 </button>
               )}
+
+
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={copyRoomLink}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition flex items-center gap-1 cursor-pointer"
-              >
-                {isCopiedLink ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                <span>{isCopiedLink ? 'Đã chép link' : 'Chép link'}</span>
-              </button>
 
-              <button
-                onClick={() => setShowQRModal(true)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-                title="Mã QR cho người xem"
-              >
-                <QrCode className="w-3.5 h-3.5" />
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -1633,11 +1588,31 @@ export const RealtimeGameRoomPage: React.FC = () => {
       {/* ======================================================== */}
       {/* 3. MAIN ARENA LAYOUT (STUDY VS LIVE BROADCAST)           */}
       {/* ======================================================== */}
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 py-2 sm:py-3 flex flex-col justify-start overflow-hidden">
+      <div className={`relative z-10 flex-1 min-h-0 w-full flex flex-col ${usesArenaShell ? "overflow-hidden" : "overflow-y-auto p-3 sm:p-5"}`}>
+        {joinError && (
+          <section className="mx-auto my-4 w-full max-w-lg space-y-3 rounded-xl bg-neutral-900 p-4" aria-label="Kết nối phòng">
+            <p role="alert">{joinError}</p>
+            {joinError === 'Cần mật khẩu phòng.' && (
+              <form className="flex flex-wrap gap-2" onSubmit={(event) => {
+                event.preventDefault();
+                if (passwordAttempt && passwordAttempt === roomPassword) socket?.disconnect().connect();
+                else setRoomPassword(passwordAttempt);
+              }}>
+                <input type="password" required aria-label="Mật khẩu phòng" value={passwordAttempt}
+                  onChange={(event) => setPasswordAttempt(event.target.value)}
+                  className="min-h-11 min-w-0 flex-1 rounded-md bg-neutral-800 px-3" />
+                <button className="min-h-11 rounded-md bg-white px-4 font-semibold text-black">Vào phòng</button>
+              </form>
+            )}
+            {!isSpectator && joinError.startsWith('Trận đã bắt đầu') && (
+              <button className="min-h-11 underline" onClick={() => navigate(`/games/room/${roomId}?view=spectator`, { state: { roomPassword } })}>Vào xem trực tiếp</button>
+            )}
+            <button className="min-h-11 underline" onClick={() => navigate('/games')}>Về sảnh đấu trường</button>
+          </section>
+        )}
         {/* VIEW A: WAITING / STARTING COUNTDOWN */}
-        {(roomStatus === 'WAITING' || roomStatus === 'STARTING') && (
-          <div className="my-auto max-w-3xl mx-auto w-full p-6 sm:p-10 rounded-3xl bg-slate-900/90 border border-white/10 text-center space-y-5 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-radial-gradient from-indigo-500/10 via-transparent to-transparent pointer-events-none" />
+        {!joinError && (roomStatus === 'WAITING' || roomStatus === 'STARTING') && (
+          <div className="my-auto max-w-3xl mx-auto w-full p-4 sm:p-8 rounded-2xl border border-indigo-400/30 bg-indigo-950 bg-cover bg-center text-center space-y-5 relative overflow-hidden" style={INTERACTIVE_STAGE_STYLE}>
 
             {countdown !== null && countdown > 0 ? (
               <div className="space-y-4 py-8 animate-fade-in relative z-10">
@@ -1655,35 +1630,45 @@ export const RealtimeGameRoomPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-5 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-rose-500 to-amber-400 mx-auto flex items-center justify-center shadow-xl shadow-indigo-500/30">
-                  <Gamepad2 className="w-7 h-7 text-white" />
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-950 text-indigo-300">
+                  <Gamepad2 className="h-6 w-6" />
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">
-                    {roomMode === 'LIVE' ? '🔴 SẢNH CHỜ PHÁT SÓNG LIVESTREAM TIKTOK' : '📖 SẢNH CHỜ PHÒNG ĐẤU TẬP TRUNG'}
+                  <span className="text-sm font-semibold text-cyan-200">
+                    {roomMode === 'LIVE' ? 'Sảnh chờ TikTok Live' : 'Sảnh chờ'}
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black text-white">{roomTitle}</h2>
 
-                  {/* Huge Prominent Room Code Box so anyone can see and join immediately */}
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-400/50 max-w-sm mx-auto flex items-center justify-between gap-3 shadow-inner my-2">
-                    <div className="text-left">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 block">MÃ PIN VÀO PHÒNG</span>
-                      <span className="font-mono text-2xl sm:text-3xl font-black text-white tracking-widest">#{roomCode}</span>
+                  {/* Huge Prominent Room Code Box - only shown once roomCode is loaded and ready */}
+                  {roomCode && !roomCode.startsWith('auto_') ? (
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-400/50 max-w-sm mx-auto flex items-center justify-between gap-3 shadow-inner my-2">
+                      <div className="text-left">
+                        <span className="text-[10px] font-semibold text-amber-300 block">
+                          Mã PIN vào phòng
+                        </span>
+                        <span className="break-all tabular-nums text-xl sm:text-3xl font-black text-white tracking-wide">{displayRoomCode}</span>
+                      </div>
+                      <button
+                        onClick={copyRoomCode}
+                        className="shrink-0 min-h-11 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                        title="Sao chép mã PIN vào phòng"
+                      >
+                        {isCopiedCode ? <Check className="w-4 h-4 text-slate-950" /> : <Copy className="w-4 h-4" />}
+                        <span>{isCopiedCode ? 'Đã Chép!' : 'Sao Chép'}</span>
+                      </button>
                     </div>
-                    <button
-                      onClick={copyRoomCode}
-                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md"
-                      title="Sao chép mã PIN vào phòng"
-                    >
-                      {isCopiedCode ? <Check className="w-4 h-4 text-slate-950" /> : <Copy className="w-4 h-4" />}
-                      <span>{isCopiedCode ? 'Đã Chép!' : 'Sao Chép'}</span>
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-indigo-500/10 border border-indigo-400/30 max-w-sm mx-auto flex items-center justify-center gap-2.5 my-2">
+                      <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
+                      <span className="text-xs font-bold text-indigo-200">Đang kết nối & nạp mã phòng đấu...</span>
+                    </div>
+                  )}
 
                   <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
-                    Ngôn ngữ: <strong className="text-white">{currentLangDef?.name}</strong> • Số câu:{' '}
-                    <strong className="text-white">{totalRounds} câu (15s/câu)</strong>
+                    <CountryFlag languageId={currentLangDef.id} countryCode={currentLangDef.countryCode} size="xs" />
+                    <strong className="ml-2 text-white">{currentLangDef.name}</strong> ·{' '}
+                    <strong className="text-white">{totalRounds} câu</strong>
                   </p>
                 </div>
 
@@ -1703,7 +1688,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                         key={p.userId}
                         className="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-white/10 flex items-center gap-2 text-xs font-bold text-white shadow-xs"
                       >
-                        <img src={p.avatar} alt={p.displayName} className="w-6 h-6 rounded-lg bg-slate-700" />
+                        <PlayerAvatar size="xs" avatarUrl={p.avatar} displayName={p.displayName} />
                         <span className="truncate max-w-[100px]">{p.displayName}</span>
                         {p.isHost && <Crown className="w-3 h-3 text-amber-400 fill-amber-400" />}
                       </div>
@@ -1711,30 +1696,78 @@ export const RealtimeGameRoomPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* TikTok Live Status / Scanner in Waiting Room */}
+                {roomMode === 'LIVE' && (
+                  <div className="max-w-md mx-auto p-3.5 rounded-2xl bg-slate-900/90 border border-rose-500/30 flex items-center justify-between gap-3 shadow-lg my-2">
+                    <div className="flex items-center gap-2.5 min-w-0 text-left">
+                      <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
+                        <TikTokLogo className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                          TikTok Live Scanner
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              liveStatus.status === 'CONNECTED'
+                                ? 'bg-emerald-400 animate-pulse'
+                                : liveStatus.status === 'CONNECTING'
+                                ? 'bg-amber-400 animate-ping'
+                                : 'bg-rose-500'
+                            }`}
+                          />
+                          <span className="text-xs font-bold text-white truncate">
+                            {liveStatus.status === 'CONNECTED'
+                              ? `Đã quét luồng: ${liveStatus.channelName || (liveStatus as any).targetChannel || '@tiktok'}`
+                              : liveStatus.status === 'CONNECTING'
+                              ? 'Đang quét luồng Live...'
+                              : 'Chưa quét kết nối luồng Live'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsLiveModalOpen(true)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer shrink-0 ${
+                        liveStatus.status === 'CONNECTED'
+                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10'
+                          : 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/30'
+                      }`}
+                    >
+                      {liveStatus.status === 'CONNECTED' ? 'Cấu Hình Lại' : 'Quét Luồng Ngay'}
+                    </button>
+                  </div>
+                )}
+
                 {/* Action buttons */}
                 <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                   {isHost ? (
-                    <button
-                      onClick={handleHostStartGame}
-                      className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-xl shadow-emerald-600/30 transition hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
-                    >
-                      <Play className="w-4 h-4 fill-white" />
-                      <span>Bắt Đầu Trận Đấu Ngay</span>
-                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-2.5">
+                      <button
+                        onClick={handleHostStartGame}
+                        className={`btn-glass-primary flex min-h-11 items-center gap-2 ${
+                          roomMode === 'LIVE' && liveStatus.status !== 'CONNECTED'
+                            ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-rose-600/30'
+                            : ''
+                        }`}
+                      >
+                        <Play className="w-4 h-4 fill-white" />
+                        <span>
+                          {roomMode === 'LIVE' && liveStatus.status !== 'CONNECTED'
+                            ? 'Quét TikTok & Bắt Đầu Live'
+                            : 'Bắt đầu trận'}
+                        </span>
+                      </button>
+                    </div>
                   ) : (
                     <div className="text-xs font-bold text-slate-400 flex items-center gap-2 animate-pulse">
                       <Clock className="w-4 h-4 text-indigo-400" />
                       <span>Đang đợi chủ phòng bắt đầu trận đấu...</span>
                     </div>
                   )}
-
-                  <button
-                    onClick={copyRoomLink}
-                    className="px-5 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-white/10 transition flex items-center gap-2 cursor-pointer"
-                  >
-                    {isCopiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    <span>{isCopiedLink ? 'Đã Chép Link' : 'Mời Bạn Bè'}</span>
-                  </button>
                 </div>
               </div>
             )}
@@ -1742,1137 +1775,120 @@ export const RealtimeGameRoomPage: React.FC = () => {
         )}
 
         {/* VIEW B: ACTIVE ROUND (IN_ROUND / PAUSED / ROUND_END) */}
-        {(roomStatus === 'IN_ROUND' || roomStatus === 'PAUSED' || roomStatus === 'ROUND_END') && question && (
-          (() => {
-            const displayWord = question.targetWord || (question.prompt.match(/「([^」]+)」/)?.[1]) || '';
-
-            if (roomMode === 'LIVE' && streamAspectRatio === '9:16') {
-              return (
-                /* ======================================================== */
-                /* TIKTOK LIVE VERTICAL MOBILE BROADCAST VIEW (9:16)        */
-                /* ======================================================== */
-                <div className="max-w-[420px] w-full mx-auto h-[calc(100vh-110px)] max-h-[820px] flex flex-col justify-between relative bg-slate-950/95 border-2 border-rose-500/40 rounded-3xl shadow-[0_0_60px_rgba(244,63,94,0.35)] p-3.5 overflow-hidden backdrop-blur-2xl animate-fade-in my-auto">
-                  {/* 1. Mobile Live Header Overlay */}
-                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/10 shrink-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="relative shrink-0">
-                        <img
-                          src={myPlayer?.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=host'}
-                          alt="Host"
-                          className="w-8 h-8 rounded-full border-2 border-rose-500 object-cover"
-                        />
-                        <span className="absolute -bottom-1 -right-1 px-1 rounded bg-[#FE2C55] text-white text-[8px] font-black uppercase tracking-wider animate-pulse">
-                          LIVE
-                        </span>
-                      </div>
-                      <span className="font-black text-xs text-white truncate max-w-[110px] block">
-                        {roomTitle}
-                      </span>
-                    </div>
-
-                    {/* Viewers & Comments Stats with Clean Spacing (Not Cramped) */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[10px] font-mono font-black text-rose-300 flex items-center gap-1 shadow-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-                        <span>👁️ {players.length * 15 + 180}</span>
-                      </span>
-                      <span className="px-2 py-0.5 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-[10px] font-mono font-black text-indigo-300 flex items-center gap-1 shadow-sm">
-                        <span>💬 {liveComments.length}</span>
-                      </span>
-
-                      {/* Prominent Legible Room PIN Banner */}
-                      <button
-                        type="button"
-                        onClick={copyRoomCode}
-                        className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400/60 text-amber-300 font-mono font-black text-xs flex items-center gap-1 shadow-md transition cursor-pointer"
-                        title="Nhấn để sao chép mã PIN vào phòng"
-                      >
-                        <span className="text-[9px] uppercase text-amber-400 font-sans font-black">PIN:</span>
-                        <span className="text-white font-bold">#{roomCode}</span>
-                        {isCopiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-300" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 2. Top Mobile Mode Navigation Tabs */}
-                  <div className="flex items-center bg-slate-900/90 p-1 rounded-2xl border border-white/10 shrink-0 my-1 gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setMobileLiveTab('stage')}
-                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition cursor-pointer ${
-                        mobileLiveTab === 'stage'
-                          ? 'bg-rose-600 text-white shadow-md'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      🎯 CÂU HỎI
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMobileLiveTab('analytics')}
-                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1 cursor-pointer ${
-                        mobileLiveTab === 'analytics'
-                          ? 'bg-rose-600 text-white shadow-md'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>📊 TỶ LỆ</span>
-                      {roundSubmissions.length > 0 && (
-                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 text-[9px] font-mono">
-                          {roundSubmissions.length}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMobileLiveTab('ranking')}
-                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1 cursor-pointer ${
-                        mobileLiveTab === 'ranking'
-                          ? 'bg-rose-600 text-white shadow-md'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>🏆 BXH</span>
-                      <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-300 text-[9px] font-mono">
-                        {players.length}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMobileLiveTab('comments')}
-                      className={`flex-1 py-1 rounded-xl text-[11px] font-black transition flex items-center justify-center gap-1 cursor-pointer ${
-                        mobileLiveTab === 'comments'
-                          ? 'bg-rose-600 text-white shadow-md'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      <span>💬 CHAT</span>
-                      {liveComments.length > 0 && (
-                        <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-300 text-[9px] font-mono">
-                          {liveComments.length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Content Area Based on Tab */}
-                  {mobileLiveTab === 'analytics' ? (
-                    <div className="flex-1 overflow-y-auto py-2 space-y-3 pr-1 text-xs">
-                      <QuestionAnalyticsPanel
-                        totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
-                        roundAnswerCount={roundSubmissions.length}
-                        correctCount={roundCorrectCount}
-                        incorrectCount={roundIncorrectCount}
-                        accuracy={roundAccuracy}
-                        optionsAnalytics={optionsAnalytics}
-                        textAnalytics={textAnalytics}
-                        isFillInTheBlank={Boolean(isFillBlankGame)}
-                        correctOptionIndex={question.correctOptionIndex}
-                      />
-                    </div>
-                  ) : mobileLiveTab === 'ranking' ? (
-                    <div className="flex-1 overflow-y-auto py-2 space-y-3 pr-1 text-xs">
-                      <ArenaRankingPanel
-                        players={arenaRankPlayers}
-                        currentUserId={user?.id || myPlayer?.userId}
-                        totalParticipants={players.length}
-                      />
-                    </div>
-                  ) : mobileLiveTab === 'comments' ? (
-                    <div className="flex-1 overflow-hidden py-1">
-                      <ArenaCommentPanel
-                        comments={liveComments}
-                        totalCommenters={arenaRankCommenters.length}
-                        isConnected={isConnected}
-                        onSendComment={handleSendArenaComment}
-                        className="h-full"
-                      />
-                    </div>
-                  ) : (
-                    /* 3. Question Centerpiece & Fast Reflex Timer (STAGE) */
-                    <div className="flex-1 flex flex-col justify-center py-1 space-y-2 overflow-hidden">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-mono font-black px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px]">
-                          CÂU {currentRound}/{totalRounds}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <CountdownRing
-                            remainingSec={timerRemaining}
-                            totalSec={roundDuration}
-                            size={36}
-                            strokeWidth={3}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => playQuestionAudio(displayWord)}
-                            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 transition cursor-pointer"
-                            title="Phát âm từ vựng"
-                          >
-                            <Volume2 className={`w-4 h-4 text-indigo-300 ${isPlayingAudio ? 'animate-spin' : ''}`} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Target Word Showcase */}
-                      <div className="text-center space-y-1 bg-slate-900/80 p-2.5 rounded-2xl border border-white/10">
-                        {displayWord && (
-                          <h2 className="font-black text-4xl sm:text-5xl text-white tracking-wide drop-shadow">
-                            {displayWord}
-                          </h2>
-                        )}
-                        {question.phonetic && (
-                          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 text-indigo-300 font-mono text-[11px] font-bold border border-white/10">
-                            <span>/{question.phonetic}/</span>
-                          </div>
-                        )}
-                        <p className="text-xs sm:text-sm font-bold text-slate-200 leading-snug line-clamp-2">
-                          {question.prompt}
-                        </p>
-                      </div>
-
-                      {/* Options 4-Choice Cards (2:2 Grid on Mobile) */}
-                      {question.options && question.options.length >= 2 && (
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          {question.options.map((optText, idx) => {
-                            const letter = OPTION_LETTERS[idx] || 'A';
-                            const isSelected = selectedOptionIndex === idx;
-                            const cleanText = optText.replace(/^[ABCD][\.\:]\s*/i, '');
-                            const percent = getOptionPercentage(letter);
-
-                            const isKnownCorrect = typeof question.correctOptionIndex === 'number'
-                              ? question.correctOptionIndex === idx
-                              : roundSummary?.correctOptionIndex === idx;
-
-                            let cardState: AnswerCardState = 'idle';
-                            if (evaluation || roundSummary) {
-                              if (isSelected && (evaluation?.isCorrect || isKnownCorrect)) {
-                                cardState = 'correct';
-                              } else if (isSelected && (!evaluation?.isCorrect && !isKnownCorrect)) {
-                                cardState = 'incorrect';
-                              } else if (isKnownCorrect) {
-                                cardState = 'correct';
-                              } else {
-                                cardState = 'disabled';
-                              }
-                            } else if (hasSubmitted) {
-                              cardState = isSelected ? 'selected' : 'locked';
-                            } else if (isSelected) {
-                              cardState = 'selected';
-                            }
-
-                            return (
-                              <AnswerCard
-                                key={idx}
-                                optionLetter={letter}
-                                text={cleanText}
-                                state={cardState}
-                                percentVote={percent}
-                                onClick={() => handleSelectOption(idx)}
-                                disabled={hasSubmitted || isEliminated}
-                              />
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Real-time Answer Percentage Bar (Live Distribution) */}
-                      {question.options && question.options.length >= 2 && (
-                        <div className="p-2 rounded-xl bg-slate-900/90 border border-white/10 space-y-1 shrink-0">
-                          <div className="flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
-                            <span className="flex items-center gap-1 text-indigo-300">
-                              <BarChart3 className="w-3 h-3 text-indigo-400" />
-                              <span>Tỷ Lệ Đáp Án Trực Tiếp</span>
-                            </span>
-                            <span className="text-emerald-400 font-mono font-bold">
-                              {roundSubmissions.length} bình chọn
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-1 text-center font-mono font-bold text-[11px]">
-                            {['A', 'B', 'C', 'D'].slice(0, question.options.length).map((letter) => {
-                              const pct = Math.round(getOptionPercentage(letter) || 0);
-                              return (
-                                <div key={letter} className="bg-slate-950/80 py-0.5 px-1 rounded-lg border border-white/5 flex items-center justify-between">
-                                  <span className="text-slate-400 text-[10px]">{letter}:</span>
-                                  <span className="text-white">{pct}%</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Compact Live Leaderboard Bar */}
-                      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-[11px] shrink-0">
-                        <div className="flex items-center gap-1.5 truncate">
-                          <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span className="font-bold text-slate-300 truncate">
-                            Top 1: <strong className="text-amber-300">{top1?.displayName || 'Đang đấu'}</strong> ({top1?.score || 0} XP)
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setMobileLiveTab('ranking')}
-                          className="text-[10px] font-black text-indigo-300 hover:text-white underline shrink-0 cursor-pointer"
-                        >
-                          Xem BXH ›
-                        </button>
-                      </div>
-
-                      {/* Evaluation result */}
-                      {evaluation && (
-                        <div className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-between ${
-                          evaluation.isCorrect ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-200' : 'bg-rose-950/70 border-rose-500/40 text-rose-200'
-                        }`}>
-                          <span>{evaluation.feedbackText}</span>
-                          <span className="font-mono font-black text-amber-300">+{evaluation.score} XP</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 4. Floating Live Comments Feed (TikTok Style) */}
-                  <div className="shrink-0 h-28 overflow-y-auto space-y-1 p-2 rounded-2xl bg-black/60 border border-white/10 text-xs">
-                    {liveComments.length === 0 ? (
-                      <div className="text-center py-4 text-slate-500 text-[11px] italic">
-                        Chưa có bình luận nào. Khán giả gõ A, B, C, D để bình chọn!
-                      </div>
-                    ) : (
-                      liveComments.slice(0, 15).map((c) => (
-                        <div key={c.eventId} className="flex items-center gap-1.5 p-1 rounded-lg bg-slate-900/70 text-[11px]">
-                          <img src={c.avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=viewer'} className="w-4 h-4 rounded-full" alt="" />
-                          <span className="font-bold text-slate-300 truncate max-w-[80px]">{c.displayName || c.username}:</span>
-                          <span className="text-white truncate flex-1">{c.commentText}</span>
-                          {c.parsedOption && (
-                            <span className="px-1.5 py-0.2 rounded bg-indigo-600 text-white font-mono font-bold text-[10px]">
-                              [{c.parsedOption}]
-                            </span>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Host Quick Controls */}
-                  {isHost && (
-                    <div className="flex items-center gap-1.5 pt-1.5 shrink-0">
-                      <button
-                        onClick={handleSimulateAudience}
-                        className="flex-1 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-[11px] font-bold transition flex items-center justify-center gap-1"
-                      >
-                        <Zap className="w-3 h-3 text-amber-400" />
-                        <span>+8 Vote Khán Giả</span>
-                      </button>
-                      <button
-                        onClick={handleHostNextRound}
-                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-bold transition flex items-center gap-1"
-                      >
-                        <SkipForward className="w-3 h-3" />
-                        <span>Qua câu</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Popup Dịch Nghĩa & Giải Thích Trong Chế Độ Mobile Live */}
-                  {roundSummary && (
-                    <RoundResultModal
-                      result={{
-                        isCorrect: evaluation?.isCorrect || false,
-                        correctAnswerLetter:
-                          typeof roundSummary.correctOptionIndex === 'number'
-                            ? OPTION_LETTERS[roundSummary.correctOptionIndex] || 'A'
-                            : 'A',
-                        correctAnswerText: roundSummary.correctAnswer || '',
-                        explanation: roundSummary.explanation,
-                        phonetic: question.phonetic,
-                        exampleSentence: question.hint,
-                        earnedPoints: evaluation?.score || 0,
-                        basePoints: 700,
-                        speedBonus: evaluation?.speedBonus || 0,
-                        streakBonus: evaluation?.streakBonus || 0,
-                        roundMultiplier:
-                          gameMode === 'BOSS_ROUND'
-                            ? 2.0
-                            : gameMode === 'FINAL_SHOWDOWN'
-                            ? 3.0
-                            : 1.0,
-                        newStreak: myPlayer?.streak || 0,
-                        currentRank: myPlayer?.rank,
-                        onPlayAudio: () => playQuestionAudio(question.targetWord),
-                      }}
-                      countdownSec={countdown || undefined}
-                    />
-                  )}
-                </div>
-              );
-            }
-
-            return (
-              <div className="w-full flex flex-col gap-4">
-                {/* Mobile Responsive Arena Tab Switcher (Consolidated 4 Spacious Tabs) */}
-                <div className="lg:hidden flex items-center bg-[#12182B]/95 p-1 rounded-2xl border border-white/10 sticky top-0 z-30 shadow-2xl backdrop-blur-xl gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setMobileArenaTab('stage')}
-                    className={`flex-1 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
-                      mobileArenaTab === 'stage'
-                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    🎯 ĐẤU TRƯỜNG
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileArenaTab('analytics')}
-                    className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1 cursor-pointer ${
-                      mobileArenaTab === 'analytics'
-                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <span>📊 TỶ LỆ</span>
-                    {roundSubmissions.length > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold">
-                        {roundSubmissions.length}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileArenaTab('arena_ranking')}
-                    className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1 cursor-pointer ${
-                      mobileArenaTab === 'arena_ranking'
-                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <span>🏆 XẾP HẠNG</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-300 text-[10px] font-mono font-bold">
-                      {players.length}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileArenaTab('comments')}
-                    className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1 cursor-pointer ${
-                      mobileArenaTab === 'comments'
-                        ? 'bg-gradient-to-r from-[#2041F6] to-[#947AFF] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <span>💬 BÌNH LUẬN</span>
-                    {liveComments.length > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full bg-rose-500/30 text-rose-300 text-[10px] font-mono font-bold">
-                        {liveComments.length}
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                {/* Mobile Analytics Tab View */}
-                {mobileArenaTab === 'analytics' && (
-                  <div className="lg:hidden space-y-4">
-                    <QuestionAnalyticsPanel
-                      totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
-                      roundAnswerCount={roundSubmissions.length}
-                      correctCount={roundCorrectCount}
-                      incorrectCount={roundIncorrectCount}
-                      accuracy={roundAccuracy}
-                      optionsAnalytics={optionsAnalytics}
-                      textAnalytics={textAnalytics}
-                      isFillInTheBlank={Boolean(isFillBlankGame)}
-                      correctOptionIndex={question.correctOptionIndex}
-                    />
-                  </div>
-                )}
-
-                {/* Mobile Comments Tab View */}
-                {mobileArenaTab === 'comments' && (
-                  <div className="lg:hidden h-[480px]">
-                    <ArenaCommentPanel
-                      comments={liveComments}
-                      totalCommenters={arenaRankCommenters.length}
-                      isConnected={isConnected}
-                      onSendComment={handleSendArenaComment}
-                      className="h-full"
-                    />
-                  </div>
-                )}
-
-                <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                  {/* ---------------------------------------------------- */}
-                  {/* MAIN GAME STAGE (Center Arena)                       */}
-                  {/* ---------------------------------------------------- */}
-                  <div
-                    className={`lg:col-span-8 space-y-4 transition-all ${
-                      mobileArenaTab !== 'stage' ? 'hidden lg:block' : ''
-                    }`}
-                  >
-              {/* Image 2 Top Arena Header: LIVE pill, Viewers, Neon Circular Countdown Timer, Score, Players, Settings */}
-              <ArenaInGameHeader
-                isLive={roomMode === 'LIVE'}
-                viewerCount={players.length > 50 ? `${(players.length / 1000).toFixed(1)}K` : '1.2K'}
-                remainingSeconds={timerRemaining}
-                totalDuration={roundDuration}
-                score={myPlayer?.score || top1?.score || 12850}
-                playerCount={players.length > 0 ? `${players.length}` : '1.2K'}
-                onOpenSettings={() => setIsLiveModalOpen(true)}
-              />
-
-              {/* Fast Statistics Bar (Participants, Round Answers, Correct, Leader) */}
-              <ArenaStatsBar
-                totalParticipants={players.length}
-                roundAnswerCount={roundAnswerCount || roundSubmissions.length}
-                correctCommentersCount={
-                  roundSummary?.correctCommentersCount ||
-                  liveComments.filter((c) => c.isCorrect).length
-                }
-                topPlayerName={top1?.displayName}
-                topPlayerScore={top1?.score}
-                myStreak={myPlayer?.streak}
-                myScore={myPlayer?.score}
-              />
-
-              {/* Question Stage Card (Sleek Glassmorphic Studio Screen with Neon Cyan Glow) */}
-              <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/90 border-2 border-cyan-400/80 shadow-[0_0_35px_rgba(6,182,212,0.35)] backdrop-blur-2xl space-y-5 relative overflow-hidden">
-                {/* Top Info Bar inside card */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-black px-4 py-1 rounded-full bg-gradient-to-r from-indigo-950 via-purple-900 to-indigo-950 border border-cyan-400 text-cyan-200 tracking-wider uppercase shadow-md">
-                      CÂU HỎI {currentRound} / {totalRounds}
-                    </span>
-
-                    {/* Category pill */}
-                    <span className="text-xs font-bold text-slate-400 px-2.5 py-1 rounded-xl bg-slate-800/80 border border-white/10">
-                      {question.category || 'Từ Vựng'}
-                    </span>
-
-                    {/* Survival Hearts */}
-                    {gameMode === 'SURVIVAL' && (
-                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-500/15 border border-rose-500/30">
-                        {[1, 2, 3].map((heartIdx) => (
-                          <ArenaIconHeart
-                            key={heartIdx}
-                            filled={heartIdx <= lives}
-                            className={`w-3.5 h-3.5 ${
-                              heartIdx <= lives ? 'text-rose-400 animate-pulse' : 'text-slate-600'
-                            }`}
-                          />
-                        ))}
-                        <span className="text-[10px] font-bold text-rose-300 ml-1">
-                          {lives > 0 ? `${lives} Mạng` : 'BỊ LOẠI'}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Multipliers */}
-                    {gameMode === 'BOSS_ROUND' && (
-                      <MultiplierBadge multiplier={2.0} label="BOSS" />
-                    )}
-                    {gameMode === 'FINAL_SHOWDOWN' && (
-                      <MultiplierBadge multiplier={3.0} label="CHUNG KẾT" />
-                    )}
-                  </div>
-
-                  {/* Reflex Timer & Countdown Ring */}
-                  <div className="flex items-center gap-3">
-                    <CountdownRing
-                      remainingSec={timerRemaining}
-                      totalSec={roundDuration}
-                      size={44}
-                      strokeWidth={4}
-                    />
-
-                    {question.targetWord && (
-                      <button
-                        type="button"
-                        onClick={handleBookmarkCurrentWord}
-                        className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-white/10 transition cursor-pointer"
-                        title="Lưu từ vựng này vào Sổ Từ để ôn tập sau"
-                      >
-                        <Bookmark className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Question Centerpiece */}
-                {isListeningGame ? (
-                  /* Specialized Listening Mode View */
-                  <div className="py-4 space-y-4 text-center bg-indigo-950/40 rounded-2xl p-5 border border-indigo-500/30">
-                    <div className="flex items-center justify-center gap-2 text-indigo-300 text-xs font-black uppercase tracking-wider">
-                      <Headphones className="w-4 h-4 text-indigo-400" />
-                      <span>Thử Thách Phản Xạ Nghe Phát Âm</span>
-                    </div>
-
-                    {/* Animated Equalizer Waveform */}
-                    <div className="flex items-center justify-center gap-1.5 py-2">
-                      {[12, 24, 36, 20, 32, 16, 28].map((h, i) => (
-                        <div
-                          key={i}
-                          className={`w-1.5 rounded-full bg-gradient-to-t from-indigo-500 via-rose-400 to-amber-300 transition-all ${
-                            isPlayingAudio ? 'animate-pulse' : 'opacity-40'
-                          }`}
-                          style={{
-                            height: isPlayingAudio ? `${h}px` : '8px',
-                            animationDelay: `${i * 100}ms`,
-                            animationDuration: '600ms',
-                          }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Audio Playback Controls */}
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => playQuestionAudio()}
-                        className={`px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition flex items-center gap-2 cursor-pointer shadow-xl ${
-                          isPlayingAudio
-                            ? 'bg-rose-600 text-white shadow-rose-600/40 ring-4 ring-rose-500/20 scale-105'
-                            : 'bg-gradient-to-r from-indigo-600 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white shadow-indigo-600/30'
-                        }`}
-                      >
-                        <Volume2 className={`w-4 h-4 ${isPlayingAudio ? 'animate-spin' : ''}`} />
-                        <span>{isPlayingAudio ? 'Đang phát...' : 'Phát Lại Âm Thanh [Space]'}</span>
-                      </button>
-
-                      {question.targetWord && (
-                        <button
-                          type="button"
-                          onClick={() => setShowWordPeek((prev) => !prev)}
-                          className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-white/10"
-                        >
-                          {showWordPeek ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-indigo-400" />}
-                          <span>{showWordPeek ? 'Ẩn mặt chữ' : 'Xem mặt chữ (Gợi ý)'}</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {showWordPeek && question.targetWord ? (
-                      <div className="pt-2 text-center animate-fade-in">
-                        <h2 className="text-3xl sm:text-5xl font-black text-white drop-shadow">
-                          {question.targetWord}
-                        </h2>
-                        {question.phonetic && (
-                          <span className="text-xs font-mono font-bold text-indigo-300">
-                            /{question.phonetic}/
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm font-bold text-indigo-200 italic">
-                        "🎧 Lắng nghe kỹ âm thanh phát âm và chọn đáp án chính xác bên dưới!"
-                      </p>
-                    )}
-
-                    <p className="text-sm sm:text-base font-bold text-white max-w-xl mx-auto">
-                      {question.prompt}
-                    </p>
-                  </div>
-                ) : (
-                  /* Standard Vocabulary Showcase View */
-                  <div className="py-2 sm:py-4 space-y-3 text-center">
-                    {displayWord ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <h2 className="font-black text-4xl sm:text-6xl text-white tracking-tight drop-shadow-[0_0_25px_rgba(255,255,255,0.2)]">
-                          {displayWord}
-                        </h2>
-                        <button
-                          type="button"
-                          onClick={() => playQuestionAudio(displayWord)}
-                          className={`p-3 rounded-2xl transition cursor-pointer ${
-                            isPlayingAudio
-                              ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/40 ring-4 ring-rose-500/20'
-                              : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10'
-                          }`}
-                          title="Phát âm thanh từ vựng [Space]"
-                        >
-                          <Volume2 className="w-5 h-5 text-indigo-300" />
-                        </button>
-                      </div>
-                    ) : null}
-
-                    {question.phonetic && (
-                      <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-800/80 text-indigo-300 border border-white/10 font-mono text-xs font-bold">
-                        <span>Phát âm:</span>
-                        <span className="text-white">/{question.phonetic}/</span>
-                      </div>
-                    )}
-
-                    <p className="text-base sm:text-xl font-bold text-slate-200 max-w-2xl mx-auto leading-relaxed">
-                      {question.prompt}
-                    </p>
-                  </div>
-                )}
-
-                {/* Options Grid / Cloze Input */}
-                {isFillBlankGame ? (
-                  /* Free-Text / Spelling Challenge */
-                  <div className="space-y-3 pt-2 max-w-lg mx-auto">
-                    {question.hint && (
-                      <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>Điền từ hoặc đáp án chính xác:</span>
-                        <button
-                          type="button"
-                          onClick={() => setShowHint((p) => !p)}
-                          className="text-amber-400 hover:underline flex items-center gap-1 font-bold"
-                        >
-                          <Lightbulb className="w-3.5 h-3.5" />
-                          <span>{showHint ? 'Ẩn gợi ý' : 'Xem gợi ý'}</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {showHint && question.hint && (
-                      <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold animate-fade-in">
-                        💡 Gợi ý: {question.hint}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleSubmitText} className="relative">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={answerInput}
-                        onChange={(e) => setAnswerInput(e.target.value)}
-                        disabled={hasSubmitted}
-                        placeholder={
-                          hasSubmitted
-                            ? 'Đã gửi đáp án! Đang kiểm tra kết quả...'
-                            : 'Gõ từ hoặc đáp án rồi nhấn Enter...'
-                        }
-                        className="w-full py-4 pl-5 pr-24 rounded-2xl text-base font-bold bg-slate-950/80 border-2 border-indigo-500/50 focus:border-rose-400 focus:ring-4 focus:ring-indigo-500/20 text-white placeholder-slate-500 outline-none transition-all shadow-inner"
-                      />
-                      <button
-                        type="submit"
-                        disabled={hasSubmitted || !answerInput.trim()}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs transition disabled:opacity-40 flex items-center gap-1 cursor-pointer shadow-md"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Gửi</span>
-                      </button>
-                    </form>
-                  </div>
-                ) : question.options && question.options.length >= 2 ? (
-                  /* 4 Multiple Choice Options with Sleek Capsule Pills (Matching Image 2 Reference) */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-2">
-                    {question.options.map((optText, idx) => {
-                      const letter = OPTION_LETTERS[idx] || 'A';
-                      const isSelected = selectedOptionIndex === idx;
-                      const cleanText = optText.replace(/^[ABCD][\.\:]\s*/i, '');
-
-                      const isKnownCorrect = typeof question.correctOptionIndex === 'number'
-                        ? question.correctOptionIndex === idx
-                        : roundSummary?.correctOptionIndex === idx;
-
-                      const isCorrect = Boolean(evaluation || roundSummary) && isKnownCorrect;
-                      const isIncorrect = Boolean(evaluation || roundSummary) && isSelected && !isKnownCorrect;
-
-                      return (
-                        <ArenaPillOptionButton
-                          key={idx}
-                          letter={letter}
-                          text={cleanText}
-                          isSelected={isSelected}
-                          isCorrect={isCorrect}
-                          isIncorrect={isIncorrect}
-                          disabled={hasSubmitted || isEliminated}
-                          onClick={() => handleSelectOption(idx)}
-                        />
-                      );
-                    })}
-                  </div>
-                ) : null}
-
-                {/* Image 2 Split Section: Left (📊 Thống kê lựa chọn) + Right (✅ Đáp án đúng & Giới thiệu) */}
-                {question.options && question.options.length >= 2 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
-                    <AnswerDistributionChart
-                      questionId={question.id || `q-${currentRound}`}
-                      options={question.options}
-                      totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
-                      roundAnswerCount={roundAnswerCount || roundSubmissions.length}
-                      votes={combinedVotes}
-                      revealed={Boolean(evaluation || roundSummary)}
-                      correctOptionIndex={
-                        typeof question.correctOptionIndex === 'number'
-                          ? question.correctOptionIndex
-                          : roundSummary?.correctOptionIndex
-                      }
-                      selectedOptionIndex={selectedOptionIndex}
-                    />
-
-                    <ArenaExplanationCard
-                      correctLetter={
-                        typeof question.correctOptionIndex === 'number'
-                          ? OPTION_LETTERS[question.correctOptionIndex]
-                          : roundSummary?.correctOptionIndex !== undefined
-                          ? OPTION_LETTERS[roundSummary.correctOptionIndex]
-                          : 'B'
-                      }
-                      correctText={
-                        typeof question.correctOptionIndex === 'number' && question.options
-                          ? question.options[question.correctOptionIndex]?.replace(/^[ABCD][\.\:]\s*/i, '')
-                          : question.targetWord || 'Paris'
-                      }
-                      explanation={
-                        question.hint ||
-                        (evaluation?.feedbackText ? `${evaluation.feedbackText}. ` : '') +
-                          (question.prompt || 'Paris là thủ đô của Pháp, là một trong những thành phố nổi tiếng nhất thế giới.')
-                      }
-                      landmarkSilhouette="eiffel"
-                    />
-                  </div>
-                )}
-
-                {/* Mobile Quick Rank Bar */}
-                <div className="lg:hidden flex items-center justify-between p-3 rounded-2xl bg-indigo-950/70 border border-indigo-500/30 text-xs">
-                  <div className="flex items-center gap-2 truncate">
-                    <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span className="font-bold text-slate-200 truncate">
-                      Hạng của bạn: <strong className="text-amber-300">#{myPlayer?.rank || 1}</strong> ({myPlayer?.score || 0} XP)
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setMobileArenaTab('arena_ranking')}
-                    className="font-black text-indigo-300 hover:text-white underline shrink-0 cursor-pointer"
-                  >
-                    Xem BXH ›
-                  </button>
-                </div>
-
-                {/* Checking Spinner */}
-                {isCheckingAnswer && (
-                  <div className="p-3.5 rounded-2xl bg-indigo-950/80 border border-indigo-400/40 flex items-center justify-center gap-2.5 text-indigo-200 animate-pulse">
-                    <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
-                    <span className="font-black text-xs uppercase tracking-wider">
-                      Đang kiểm tra phản xạ & chấm điểm...
-                    </span>
-                  </div>
-                )}
-
-                {/* Evaluated Reflex Performance Card */}
-                {evaluation && !isCheckingAnswer && (
-                  <div
-                    className={`p-4 rounded-2xl border transition-all animate-fade-in space-y-2 shadow-lg ${
-                      evaluation.isCorrect
-                        ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-200'
-                        : 'bg-rose-950/50 border-rose-500/40 text-rose-200'
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
-                      <div className="flex items-center gap-2 font-black text-sm sm:text-base text-white">
-                        {evaluation.isCorrect ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-rose-400" />
-                        )}
-                        <span>{evaluation.feedbackText}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {submissionReflexMs && (
-                          <span className="px-2 py-0.5 rounded-lg bg-white/10 text-xs font-mono font-bold text-amber-300">
-                            ⚡ {(submissionReflexMs / 1000).toFixed(1)}s
-                          </span>
-                        )}
-                        {evaluation.score > 0 && (
-                          <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500 text-white font-black text-xs">
-                            +{evaluation.score} XP
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
-                      <div className="p-1.5 rounded-xl bg-black/20">
-                        <span className="text-[10px] text-slate-400 block">Độ chính xác</span>
-                        <strong className="text-white">{evaluation.accuracy}%</strong>
-                      </div>
-                      <div className="p-1.5 rounded-xl bg-black/20">
-                        <span className="text-[10px] text-slate-400 block">Thưởng tốc độ</span>
-                        <strong className="text-amber-400">+{evaluation.speedBonus} XP</strong>
-                      </div>
-                      <div className="p-1.5 rounded-xl bg-black/20">
-                        <span className="text-[10px] text-slate-400 block">Chuỗi Streak</span>
-                        <strong className="text-rose-400 flex items-center justify-center gap-1">
-                          <Flame className="w-3.5 h-3.5 fill-rose-500" />
-                          {myPlayer?.streak || (evaluation.isCorrect ? 1 : 0)}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Explanation Banner (Only shown if explanation is present & non-empty) */}
-                {roundSummary?.explanation && roundSummary.explanation.trim().length > 0 && (
-                  <div className="p-4 rounded-2xl bg-indigo-950/70 border border-indigo-500/40 text-indigo-100 flex items-start gap-3 shadow-xl backdrop-blur-md animate-fade-in">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5">
-                      <Lightbulb className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="font-bold text-amber-300 block text-xs uppercase tracking-wider">
-                        Giải Thích Chi Tiết
-                      </span>
-                      <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
-                        {roundSummary.explanation}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* AREA A: QUESTION ANALYTICS */}
-                <QuestionAnalyticsPanel
-                  totalParticipants={Math.max(players.length, roundSubmissions.length, 1)}
-                  roundAnswerCount={roundSubmissions.length}
-                  correctCount={roundCorrectCount}
-                  incorrectCount={roundIncorrectCount}
-                  accuracy={roundAccuracy}
-                  optionsAnalytics={optionsAnalytics}
-                  textAnalytics={textAnalytics}
-                  isFillInTheBlank={Boolean(isFillBlankGame)}
-                  correctOptionIndex={question.correctOptionIndex}
-                />
-              </div>
-
-              {/* Round Summary & Context Sentence (Screen D: Round Result) */}
-              {roundSummary && (
-                <RoundResultModal
-                  result={{
-                    isCorrect: evaluation?.isCorrect || false,
-                    correctAnswerLetter:
-                      typeof roundSummary.correctOptionIndex === 'number'
-                        ? OPTION_LETTERS[roundSummary.correctOptionIndex] || 'A'
-                        : 'A',
-                    correctAnswerText: roundSummary.correctAnswer || '',
-                    explanation: roundSummary.explanation,
-                    phonetic: question.phonetic,
-                    exampleSentence: question.hint,
-                    earnedPoints: evaluation?.score || 0,
-                    basePoints: 700,
-                    speedBonus: evaluation?.speedBonus || 0,
-                    streakBonus: evaluation?.streakBonus || 0,
-                    roundMultiplier:
-                      gameMode === 'BOSS_ROUND'
-                        ? 2.0
-                        : gameMode === 'FINAL_SHOWDOWN'
-                        ? 3.0
-                        : 1.0,
-                    newStreak: myPlayer?.streak || 0,
-                    currentRank: myPlayer?.rank,
-                    onPlayAudio: () => playQuestionAudio(question.targetWord),
-                  }}
-                  countdownSec={countdown || undefined}
-                />
-              )}
-
-              {/* Mobile Floating Drawer on Stage */}
-              <div className="lg:hidden">
-                <ArenaCommentPanel
-                  comments={liveComments}
-                  totalCommenters={arenaRankCommenters.length}
-                  isConnected={isConnected}
-                  onSendComment={handleSendArenaComment}
-                  isMobileDrawerOpen={isMobileCommentDrawerOpen}
-                  onToggleMobileDrawer={() => setIsMobileCommentDrawerOpen((prev) => !prev)}
-                  className="hidden"
-                />
-              </div>
-            </div>
-
-            {/* ---------------------------------------------------- */}
-            {/* RIGHT SIDEBAR: RANKING / COMMENTS / HOST CONTROLS    */}
-            {/* ---------------------------------------------------- */}
-            <div
-              className={`lg:col-span-4 space-y-4 ${
-                mobileArenaTab === 'stage' ? 'hidden lg:block' : ''
-              }`}
-            >
-              {/* Desktop Sidebar Switcher Tab */}
-              <div className="flex items-center bg-[#12182B]/90 p-1 rounded-2xl border border-white/10 shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => setRightPanelTab('ranking')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    rightPanelTab === 'ranking'
-                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Trophy className="w-3.5 h-3.5" />
-                  <span>Xếp Hạng</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRightPanelTab('comments')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    rightPanelTab === 'comments'
-                      ? 'bg-gradient-to-r from-rose-600 to-pink-500 text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Bình Luận</span>
-                  {liveComments.length > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-white text-[10px] font-mono font-bold">
-                      {liveComments.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              {rightPanelTab === 'ranking' ? (
-                <>
-                  {/* AREA B: TOP ANSWERS THIS ROUND */}
-                  {(mobileArenaTab === 'round_top' || mobileArenaTab === 'stage') && (
-                    <TopAnswersThisRound
-                      submissions={roundSubmissions}
-                      currentUserId={user?.id || myPlayer?.userId}
-                      totalSubmissions={roundSubmissions.length}
-                    />
-                  )}
-
-                  {/* AREA C: ARENA RANKING (MATCH LEADERBOARD) */}
-                  {(mobileArenaTab === 'arena_ranking' || mobileArenaTab === 'stage') && (
-                    <ArenaRankingPanel
-                      players={arenaRankPlayers}
-                      commenters={arenaRankCommenters}
-                      currentUserId={user?.id || myPlayer?.userId}
-                      totalParticipants={players.length}
-                    />
-                  )}
-                </>
-              ) : (
-                <ArenaCommentPanel
-                  comments={liveComments}
-                  totalCommenters={arenaRankCommenters.length}
-                  isConnected={isConnected}
-                  onSendComment={handleSendArenaComment}
-                  isMobileDrawerOpen={isMobileCommentDrawerOpen}
-                  onToggleMobileDrawer={() => setIsMobileCommentDrawerOpen((prev) => !prev)}
-                  className="h-[520px]"
-                />
-              )}
-
-              {/* Host Quick Comment Simulator Bar (Only in Live Mode for Host) */}
-              {roomMode === 'LIVE' && isHost && (
-                <div className="p-3.5 rounded-3xl bg-[#12182B]/90 border border-white/10 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                    <span className="flex items-center gap-1.5 text-rose-400">
-                      <TikTokColorLogo className="w-3.5 h-3.5" />
-                      <span>GIẢ LẬP KHÁN GIẢ TIKTOK LIVE</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleSimulateAudience}
-                      className="px-2 py-0.5 rounded-lg bg-indigo-600/40 hover:bg-indigo-600 text-indigo-200 text-[10px] font-bold transition cursor-pointer"
-                    >
-                      +8 Khán Giả
-                    </button>
-                  </div>
-                  <form onSubmit={handleSendCustomComment} className="flex items-center gap-1.5">
-                    <input
-                      type="text"
-                      value={customCommentText}
-                      onChange={(e) => setCustomCommentText(e.target.value)}
-                      placeholder="Gửi test comment: A, B, C, D..."
-                      className="flex-1 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!customCommentText.trim()}
-                      className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition disabled:opacity-40 cursor-pointer"
-                    >
-                      Gửi
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-            );
-          })()
+        {activeMatch && question && (
+          roomMode === 'LIVE' ? (
+            <TikTokLiveView
+              gameMode={gameMode}
+              key={currentRound}
+              currentRound={currentRound}
+              totalRounds={totalRounds}
+              question={question}
+              duration={roundDuration}
+              seconds={timerRemaining}
+              resultSeconds={roomStatus === 'ROUND_END' ? resultSeconds : null}
+              paused={roomStatus === 'PAUSED'}
+              uptimeSec={roomUptime}
+              latencyMs={networkLatency}
+              themeColor={themeColor}
+              participants={commenterRanking}
+              comments={liveComments}
+              votes={optionVotes}
+              winners={liveTop3}
+              correctOptionIndex={roundSummary?.correctOptionIndex}
+              correctAnswer={roundSummary?.correctAnswer}
+              acceptedAnswers={roundSummary?.acceptedAnswers}
+              explanation={roundSummary?.explanation || (roundSummary as any)?.summary?.explanation || (question as any)?.explanation}
+              onAudio={question.audioUrl || question.targetWord ? playCurrentQuestionAudio : undefined}
+              onEnd={isHost ? handleHostEndGame : undefined}
+              onLeaveRoom={leaveArena}
+            />
+          ) : (
+            <ArenaBattleView
+              gameMode={gameMode}
+              key={currentRound}
+              currentRound={currentRound}
+              totalRounds={totalRounds}
+              question={question}
+              roundDurationSec={roundDuration}
+              seconds={timerRemaining}
+              closed={roomStatus === 'ROUND_END'}
+              paused={roomStatus === 'PAUSED'}
+              uptimeSec={roomUptime}
+              latencyMs={networkLatency}
+              themeColor={themeColor}
+              onResume={isHost && roomStatus === 'PAUSED' ? handleHostPauseGame : undefined}
+              disabled={isSpectator || !isConnected || hasSubmitted || timerRemaining <= 0 || roomStatus !== 'IN_ROUND'}
+              selectedOption={selectedOptionIndex}
+              evaluation={evaluation}
+              skipped={skipped}
+              correctOptionIndex={roundSummary?.correctOptionIndex}
+              correctAnswer={roundSummary?.correctAnswer}
+              explanation={roundSummary?.explanation || (roundSummary as any)?.summary?.explanation || (question as any)?.explanation}
+              players={sortedBattlePlayers}
+              myPlayer={myBattlePlayer}
+              onSelectOption={(index) => submitBattleAnswer(['A', 'B', 'C', 'D'][index], index)}
+              onSubmitText={submitBattleAnswer}
+              onSkipQuestion={() => submitBattleAnswer('', null, true)}
+              onAudio={question.audioUrl || question.targetWord ? playCurrentQuestionAudio : undefined}
+              onEnd={isHost ? handleHostEndGame : undefined}
+              onLeaveRoom={leaveArena}
+            />
+          )
         )}
 
         {/* VIEW C: FINISHED / FINAL VICTORY PODIUM */}
-        {roomStatus === 'FINISHED' && (
-          <WinnerCelebration
-            data={{
-              roomCode,
-              gameModeTitle: roomTitle,
-              totalPlayers: players.length || 1,
-              totalQuestions: totalRounds,
-              topPlayers: (finalResult?.ranking || players).slice(0, 10).map((p, i) => ({
-                id: p.userId,
-                name: p.displayName,
-                avatar: p.avatar,
-                score: p.score,
-                streak: p.streak,
-                rank: p.rank || i + 1,
-              })),
-              fullLeaderboard: (finalResult?.ranking || players).map((p, i) => ({
-                id: p.userId,
-                name: p.displayName,
-                avatar: p.avatar,
-                score: p.score,
-                streak: p.streak,
-                rank: p.rank || i + 1,
-              })),
-              correctCommentersCount:
-                (finalResult as any)?.correctCommentersCount ||
-                liveComments.filter((c) => c.isCorrect).length,
-              totalCommentersCount:
-                (finalResult as any)?.totalCommentersCount ||
-                arenaRankCommenters.length,
-              personalStats: myPlayer
-                ? {
-                    finalRank: myPlayer.rank || 1,
-                    totalScore: myPlayer.score,
-                    correctCount: myPlayer.correctCount,
-                    accuracyPercent:
-                      totalRounds > 0 ? (myPlayer.correctCount / totalRounds) * 100 : 100,
-                    maxStreak: myPlayer.bestStreak,
-                    xpEarned: Math.round(myPlayer.score * 0.5),
-                  }
-                : undefined,
-              reviewVocabs: matchVocabs,
-            }}
-            onRematch={() => {
-              if (socket && isHost) {
-                socket.emit('room:host_start_game', { roomCode });
-              } else {
-                window.location.reload();
-              }
-            }}
-            onReturnToLobby={() => navigate('/games')}
-            onSaveToNotebook={async (words) => {
-              try {
-                await api.post('/vocabulary/notebook/batch', {
-                  words: words.map((w) => ({
-                    word: w.word,
-                    meaning: w.meaning,
-                    languageId: roomLanguageId,
-                  })),
-                });
-              } catch (_) {}
-            }}
+        {liveFinished && (
+          <LiveFinalResults
+            playedRounds={finalResult?.playedRounds ?? currentRound}
+            totalRounds={totalRounds}
+            participants={commenterRanking}
+            uptimeSec={roomUptime}
+            latencyMs={networkLatency}
+            themeColor={themeColor}
+            onLeaveRoom={leaveArena}
+            onPlayAgain={() => setShowCreateRoom(true)}
+            onNextMatch={nextRotationData?.nextRoomCode ? () => navigate(`/games/room/${nextRotationData.nextRoomCode}?mode=${gameMode}&lang=${roomLanguageId}`) : undefined}
           />
         )}
-      </main>
+        {roomMode === 'STUDY' && roomStatus === 'FINISHED' && (
+          <LiveFinalResults
+            live={false}
+            playedRounds={finalResult?.playedRounds ?? currentRound}
+            totalRounds={totalRounds}
+            participants={(inAppRanking.length > 0 ? inAppRanking : finalResult?.ranking ?? arenaRankPlayers).map((player, index) => ({
+              ...player,
+              rank: player.rank || index + 1,
+              isCurrentUser: player.userId === (user?.id || myPlayer?.userId),
+            }))}
+            personalResult={finalPlayer}
+            countdown={celebrationCountdown}
+            nextMatchTitle={nextRotationData?.nextRoomTitle}
+            uptimeSec={roomUptime}
+            latencyMs={networkLatency}
+            themeColor={themeColor}
+            onPlayAgain={() => setShowCreateRoom(true)}
+            onLeaveRoom={leaveArena}
+            onNextMatch={nextRotationData?.nextRoomCode ? () => navigate(`/games/room/${nextRotationData.nextRoomCode}?mode=${gameMode}&lang=${roomLanguageId}`) : undefined}
+          />
+        )}
+      </div>
+      {showCreateRoom && (
+        <CreateCustomRoomModal isOpen initialRoomType={roomMode === 'LIVE' ? 'TIKTOK_LIVE' : 'PVP'} onClose={() => setShowCreateRoom(false)}
+          onRoomCreated={(room) => {
+            setShowCreateRoom(false);
+            navigate(`/games/room/${room.roomCode}?mode=${room.gameMode}&lang=${room.languageId}`);
+          }} />
+      )}
 
       {/* ======================================================== */}
       {/* 4. TIKTOK LIVE CONFIGURATION MODAL                       */}
       {/* ======================================================== */}
       {isLiveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in">
           <div className="w-full max-w-lg bg-slate-900 border border-rose-500/30 rounded-3xl p-6 space-y-5 text-white shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="font-black text-base flex items-center gap-2">
-                <TikTokColorLogo className="w-5 h-5" />
-                <span>Cấu Hình TikTok Live & Quay Chiếu</span>
+                <span>Kết nối TikTok Live</span>
               </h3>
               <button
                 onClick={() => setIsLiveModalOpen(false)}
@@ -2882,88 +1898,15 @@ export const RealtimeGameRoomPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Quay chiếu OBS / Stream Cast Link */}
-            <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Tv className="w-4 h-4 text-indigo-400" />
-                  <span>Nguồn Trình Duyệt Cho OBS / TikTok LIVE Studio:</span>
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold">
-                  1080p Stream
-                </span>
-              </div>
-
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                Sao chép link này dán vào <strong>Nguồn Trình Duyệt (Browser Source)</strong> hoặc mở toàn màn hình rồi chọn <strong>Quay Cửa Sổ (Window Capture)</strong>:
-              </p>
-
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="text"
-                  readOnly
-                  value={`${window.location.origin}/games/room/${roomCode}?type=live&view=stream`}
-                  className="flex-1 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-mono text-indigo-300 select-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/games/room/${roomCode}?type=live&view=stream`,
-                    );
-                    setIsCopiedStreamUrl(true);
-                    setTimeout(() => setIsCopiedStreamUrl(false), 2000);
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 shadow-sm"
-                >
-                  {isCopiedStreamUrl ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{isCopiedStreamUrl ? 'Đã sao chép' : 'Sao chép Link'}</span>
-                </button>
-              </div>
-            </div>
-
             {/* TikTok Live Connection Form */}
             <form onSubmit={handleConnectLive} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Phương Thức Cào Dữ Liệu</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedLiveProvider('TIKTOK_LIVE')}
-                    className={`p-3 rounded-2xl border text-left text-xs font-bold transition cursor-pointer ${
-                      selectedLiveProvider === 'TIKTOK_LIVE'
-                        ? 'bg-rose-600/30 border-rose-500 text-white'
-                        : 'bg-slate-800 border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <div className="text-rose-400 font-black flex items-center gap-1.5">
-                      <TikTokLogo className="w-3.5 h-3.5" />
-                      <span>TikTok Live Trực Tiếp</span>
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-normal">Tự động cào comment từ live stream</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedLiveProvider('MOCK')}
-                    className={`p-3 rounded-2xl border text-left text-xs font-bold transition cursor-pointer ${
-                      selectedLiveProvider === 'MOCK'
-                        ? 'bg-indigo-600/30 border-indigo-500 text-white'
-                        : 'bg-slate-800 border-slate-700 text-slate-400'
-                    }`}
-                  >
-                    <div className="text-emerald-400 font-black">Mô Phỏng Sandbox</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Giả lập comment để test trước giờ live</div>
-                  </button>
-                </div>
-              </div>
-
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300">
                   TikTok Username hoặc URL Livestream:
                 </label>
                 <input
                   type="text"
+                  required
                   value={targetChannelInput}
                   onChange={(e) => setTargetChannelInput(e.target.value)}
                   placeholder="Ví dụ: @tienganhmoingay hoặc https://www.tiktok.com/@user/live"
@@ -3007,53 +1950,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* 5. QR CODE MODAL                                         */}
-      {/* ======================================================== */}
-      {showQRModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-3xl p-6 text-center space-y-4 text-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="font-black text-sm flex items-center gap-2">
-                <QrCode className="w-4 h-4 text-indigo-400" />
-                <span>QR Quét Tham Gia Phòng Đấu</span>
-              </h3>
-              <button
-                onClick={() => setShowQRModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="p-4 bg-white rounded-2xl mx-auto inline-block shadow-xl">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                  window.location.href,
-                )}`}
-                alt="QR Code"
-                className="w-44 h-44 mx-auto"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <div className="font-mono font-black text-2xl text-amber-400 tracking-widest">
-                #{roomCode}
-              </div>
-              <p className="text-xs text-slate-400">
-                Khán giả quét mã QR bằng điện thoại để vào trực tiếp phòng đấu!
-              </p>
-            </div>
-
-            <button
-              onClick={() => setShowQRModal(false)}
-              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

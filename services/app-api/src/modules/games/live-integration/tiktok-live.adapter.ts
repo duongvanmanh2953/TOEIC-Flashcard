@@ -40,11 +40,10 @@ export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
       this.roomStatuses.set(code, 'CONNECTING');
       this.logger.log(`Connecting to TikTok Live channel @${cleanUsername || config?.roomId} for Room #${code}...`);
 
-      this.roomStatuses.set(code, 'CONNECTED');
       return {
         success: true,
-        status: 'CONNECTED',
-        message: `Đã kết nối luồng livestream TikTok kênh @${cleanUsername || config?.roomId}. Hệ thống đang tự động cào bình luận và chấm điểm theo thời gian thực!`,
+        status: 'CONNECTING',
+        message: 'Đang chờ nguồn bình luận TikTok gửi dữ liệu.',
         provider: 'TIKTOK_LIVE',
         channelOrUsername: cleanUsername || config?.roomId,
       };
@@ -83,23 +82,30 @@ export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
     roomCode: string,
     rawPayload: {
       uniqueId: string;
+      eventId?: string;
+      timestamp?: number;
       nickname: string;
       comment: string;
       profilePictureUrl?: string;
     },
   ): void {
-    const cleanUsername = (rawPayload.uniqueId || 'viewer').replace(/[^a-zA-Z0-9_\.]/g, '');
+    const code = roomCode.toUpperCase();
+    if (!this.roomStatuses.has(code)) return;
+    const cleanUsername = (rawPayload.uniqueId || '').replace(/[^a-zA-Z0-9_.]/g, '');
+    if (!cleanUsername) return;
+    this.roomStatuses.set(code, 'CONNECTED');
     const cleanDisplayName = (rawPayload.nickname || cleanUsername).slice(0, 32);
     const cleanComment = (rawPayload.comment || '').slice(0, 100).trim();
 
+    const timestamp = Number.isFinite(rawPayload.timestamp) ? rawPayload.timestamp! : Date.now();
     const event: LiveCommentEvent = {
-      eventId: `tt_${Date.now()}_${cleanUsername}`,
-      roomCode: roomCode.toUpperCase(),
+      eventId: `tt_${code}_${rawPayload.eventId || `${timestamp}_${cleanUsername}`}`,
+      roomCode: code,
       username: cleanUsername,
       displayName: cleanDisplayName,
       avatarUrl: rawPayload.profilePictureUrl,
       commentText: cleanComment,
-      timestamp: Date.now(),
+      timestamp,
       provider: 'TIKTOK_LIVE',
     };
 

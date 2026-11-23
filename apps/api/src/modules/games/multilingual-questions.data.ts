@@ -123,8 +123,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Ẩm thực',
       exampleSentence: 'このラーメンはとても美味しいです。',
       exampleTranslation: 'Món mì ramen này rất ngon.',
-      distractorsVi: ['Cay nồng', 'Đắt tiền', 'Khó chịu'],
-      distractorsTarget: ['辛い', '高い', '不味い'],
+      distractorsVi: ['Đắt đỏ', 'Nhạt nhẽo', 'Cay nóng'],
+      distractorsTarget: ['高い', '不味い', '辛い'],
     },
     {
       id: 'ja-8',
@@ -138,23 +138,23 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Thiên nhiên',
       exampleSentence: '春になると桜が咲きます。',
       exampleTranslation: 'Mùa xuân đến hoa anh đào sẽ nở rộ.',
-      distractorsVi: ['Hoa sen tuyết', 'Lá phong đỏ', 'Cây thông'],
-      distractorsTarget: ['蓮', '紅葉', '松'],
+      distractorsVi: ['Hoa hướng dương', 'Hoa cúc trắng', 'Cây tre xanh'],
+      distractorsTarget: ['ひまわり', '菊', '竹'],
     },
     {
       id: 'ja-9',
       languageCode: 'ja',
       targetWord: '約束',
       phonetic: 'yakusoku',
-      meaningVi: 'Lời hứa, hẹn ước',
+      meaningVi: 'Lời hứa, cuộc hẹn',
       meaningEn: 'Promise / Appointment',
       partOfSpeech: 'noun',
       level: 'JLPT N4',
       category: 'Giao tiếp',
       exampleSentence: '友達との約束を守ります。',
       exampleTranslation: 'Tôi giữ lời hứa với bạn bè.',
-      distractorsVi: ['Bí mật gia đình', 'Kế hoạch nghỉ mát', 'Tin nhắn khẩn'],
-      distractorsTarget: ['秘密', '計画', '連絡'],
+      distractorsVi: ['Lời khuyên', 'Kế hoạch', 'Thông báo'],
+      distractorsTarget: ['助言', '計画', '通知'],
     },
     {
       id: 'ja-10',
@@ -168,8 +168,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Động vật',
       exampleSentence: '公園に可愛い猫がいます。',
       exampleTranslation: 'Ở công viên có một chú mèo dễ thương.',
-      distractorsVi: ['Con chó cưng', 'Con chim bồ câu', 'Con cá vàng'],
-      distractorsTarget: ['犬', '鳥', '魚'],
+      distractorsVi: ['Con chó', 'Con chim', 'Con thỏ'],
+      distractorsTarget: ['犬', '鳥', 'うさぎ'],
     },
   ],
 
@@ -234,8 +234,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Cảm xúc',
       exampleSentence: '부모님의 사랑은 위대합니다.',
       exampleTranslation: 'Tình yêu của cha mẹ thật vĩ đại.',
-      distractorsVi: ['Nỗi buồn sâu sắc', 'Sự tức giận', 'Niềm kiêu hãnh'],
-      distractorsTarget: ['슬픔', '분노', '자랑'],
+      distractorsVi: ['Hy vọng', 'Tự tin', 'Lòng dũng cảm'],
+      distractorsTarget: ['희망', '자신감', '용기'],
     },
     {
       id: 'ko-5',
@@ -249,8 +249,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Cuộc sống',
       exampleSentence: '매일 작은 행복을 찾아요.',
       exampleTranslation: 'Mỗi ngày hãy tìm kiếm niềm hạnh phúc nhỏ.',
-      distractorsVi: ['Khổ đau', 'Cô đơn', 'Thất bại'],
-      distractorsTarget: ['고통', '외로움', '실패'],
+      distractorsVi: ['Bình an', 'Thành công', 'Vui mừng'],
+      distractorsTarget: ['평화', '성공', '기쁨'],
     },
     {
       id: 'ko-6',
@@ -264,8 +264,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Đồ uống',
       exampleSentence: '시원한 물 좀 주세요.',
       exampleTranslation: 'Xin cho tôi một cốc nước mát.',
-      distractorsVi: ['Sữa tươi', 'Cà phê đen', 'Bánh gạo'],
-      distractorsTarget: ['우유', '커피', '떡'],
+      distractorsVi: ['Sữa tươi', 'Cà phê đen', 'Bánh mì'],
+      distractorsTarget: ['우유', '커피', '빵'],
     },
     {
       id: 'ko-7',
@@ -279,8 +279,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Trường học',
       exampleSentence: '선생님, 질문이 있습니다.',
       exampleTranslation: 'Thưa thầy cô, em có câu hỏi ạ.',
-      distractorsVi: ['Học sinh', 'Bác sĩ', 'Luật sư'],
-      distractorsTarget: ['학생', '의사', '변호사'],
+      distractorsVi: ['Học sinh', 'Bác sĩ', 'Kỹ sư'],
+      distractorsTarget: ['학생', '의사', '기사'],
     },
     {
       id: 'ko-8',
@@ -294,8 +294,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Đời sống',
       exampleSentence: '오늘 저녁에 중요한 약속이 있어요.',
       exampleTranslation: 'Tối nay tôi có một cuộc hẹn quan trọng.',
-      distractorsVi: ['Kỳ nghỉ dài', 'Chuyến bay', 'Bài tập về nhà'],
-      distractorsTarget: ['휴가', '비행기', '숙제'],
+      distractorsVi: ['Kế hoạch', 'Lịch trình', 'Thông báo'],
+      distractorsTarget: ['계획', '일정', '안내'],
     },
   ],
 
@@ -540,8 +540,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Cảm xúc',
       exampleSentence: '我很喜欢学中国书法。',
       exampleTranslation: 'Tôi rất thích học thư pháp Trung Hoa.',
-      distractorsVi: ['Ghét bỏ chán nản', 'Sợ hãi kinh hãi', 'Từ chối dứt khoát'],
-      distractorsTarget: ['讨厌烦躁', '害怕恐惧', '坚决拒绝'],
+      distractorsVi: ['Quan tâm', 'Hy vọng', 'Đồng ý'],
+      distractorsTarget: ['关心', '希望', '同意'],
     },
     {
       id: 'zh-17',
@@ -555,8 +555,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Cảm xúc',
       exampleSentence: '认识大家我非常高兴。',
       exampleTranslation: 'Được quen biết mọi người tôi rất đỗi vui mừng.',
-      distractorsVi: ['Đau khổ khóc lóc', 'Tức tối nổi giận', 'Thất vọng buồn bã'],
-      distractorsTarget: ['痛苦痛哭', '火冒三丈', '伤心失望'],
+      distractorsVi: ['Ngạc nhiên', 'Tự tin', 'Bình tĩnh'],
+      distractorsTarget: ['惊讶', '自信', '冷静'],
     },
     {
       id: 'zh-18',
@@ -570,8 +570,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Miêu tả',
       exampleSentence: '这件旗袍真漂亮！',
       exampleTranslation: 'Chiếc áo sườn xám này thật là xinh đẹp!',
-      distractorsVi: ['Xấu xí thô kệch', 'Cũ kỹ rách nát', 'Tối tăm u ám'],
-      distractorsTarget: ['丑陋难看', '破旧破烂', '阴暗昏黑'],
+      distractorsVi: ['Thông minh', 'Dễ thương', 'Gọn gàng'],
+      distractorsTarget: ['聪明', '可爱', '整齐'],
     },
     {
       id: 'zh-19',
@@ -585,8 +585,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Mua sắm',
       exampleSentence: '请问这个苹果多少钱一斤？',
       exampleTranslation: 'Xin hỏi táo này bao nhiêu tiền một cân?',
-      distractorsVi: ['Mấy giờ rồi', 'Ở đâu thế này', 'Ai đấy bạn ơi'],
-      distractorsTarget: ['几点了', '在哪里呢', '你是谁啊'],
+      distractorsVi: ['Bao xa rồi', 'Bao nhiêu người', 'Mấy giờ rồi'],
+      distractorsTarget: ['有多远', '多少人', '几点了'],
     },
     {
       id: 'zh-20',
@@ -600,8 +600,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Đời sống',
       exampleSentence: '时间就是金钱，要好好珍惜。',
       exampleTranslation: 'Thời gian là vàng bạc, phải biết trân trọng.',
-      distractorsVi: ['Tiền bạc của cải', 'Không gian vũ trụ', 'Sức mạnh cơ bắp'],
-      distractorsTarget: ['财富金钱', '宇宙空间', '肌肉力量'],
+      distractorsVi: ['Địa điểm', 'Cơ hội', 'Kế hoạch'],
+      distractorsTarget: ['地点', '机会', '计划'],
     },
     {
       id: 'zh-21',
@@ -615,8 +615,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Tự nhiên',
       exampleSentence: '今天天气晴朗，阳光明媚。',
       exampleTranslation: 'Hôm nay thời tiết quang đãng, ánh nắng rực rỡ.',
-      distractorsVi: ['Giao thông ùn tắc', 'Bản đồ du lịch', 'Thời khóa biểu'],
-      distractorsTarget: ['交通拥堵', '旅游地图', '课程日程'],
+      distractorsVi: ['Khí hậu', 'Nhiệt độ', 'Môi trường'],
+      distractorsTarget: ['气候', '温度', '环境'],
     },
     {
       id: 'zh-22',
@@ -630,8 +630,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Thời gian',
       exampleSentence: '明天上午我们一起去图书馆。',
       exampleTranslation: 'Sáng ngày mai chúng mình cùng đi thư viện nhé.',
-      distractorsVi: ['Hôm qua vừa xong', 'Tuần trước đã qua', 'Năm ngoái xa xưa'],
-      distractorsTarget: ['昨天刚过', '上个星期', '去年往事'],
+      distractorsVi: ['Hôm nay', 'Hôm qua', 'Tuần sau'],
+      distractorsTarget: ['今天', '昨天', '下周'],
     },
     {
       id: 'zh-23',
@@ -645,8 +645,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Địa lý',
       exampleSentence: '我想去中国旅游看长城。',
       exampleTranslation: 'Tôi muốn đi du lịch Trung Quốc ngắm Vạn Lý Trường Thành.',
-      distractorsVi: ['Nước Mỹ xa xôi', 'Nước Pháp lãng mạn', 'Nước Úc thanh bình'],
-      distractorsTarget: ['美国遥远', '法国浪漫', '澳洲宁静'],
+      distractorsVi: ['Hàn Quốc', 'Nhật Bản', 'Việt Nam'],
+      distractorsTarget: ['韩国', '日本', '越南'],
     },
     {
       id: 'zh-24',
@@ -660,8 +660,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Sở thích',
       exampleSentence: '周末我喜欢在家里安静地看书。',
       exampleTranslation: 'Cuối tuần tôi thích ở nhà yên tĩnh đọc sách.',
-      distractorsVi: ['Chơi đá bóng', 'Hát karaoke', 'Chạy bộ thể dục'],
-      distractorsTarget: ['踢足球', '去唱KTV', '跑步锻炼'],
+      distractorsVi: ['Nghe nhạc', 'Nấu ăn', 'Xem phim'],
+      distractorsTarget: ['听音乐', '做饭', '看电影'],
     },
     {
       id: 'zh-25',
@@ -675,8 +675,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Gia đình',
       exampleSentence: '我家有四口人，生活很幸福。',
       exampleTranslation: 'Gia đình tôi có bốn người, cuộc sống rất đỗi hạnh phúc.',
-      distractorsVi: ['Công viên giải trí', 'Sân bay quốc tế', 'Siêu thị mua sắm'],
-      distractorsTarget: ['游乐公园', '国际机场', '购物超市'],
+      distractorsVi: ['Trường học', 'Bệnh viện', 'Công ty'],
+      distractorsTarget: ['学校', '医院', '公司'],
     },
   ],
 
@@ -726,8 +726,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Ẩm thực',
       exampleSentence: 'ต้มยำกุ้งจานนี้อร่อยมากครับ',
       exampleTranslation: 'Món Tom Yum này ngon tuyệt vời.',
-      distractorsVi: ['Cay nồng xé lưỡi', 'Đắt đỏ', 'Đắng ngắt'],
-      distractorsTarget: ['เผ็ดมาก', 'แพงมาก', 'ขมมาก'],
+      distractorsVi: ['Vị cay', 'Vị ngọt', 'Vị mặn'],
+      distractorsTarget: ['เผ็ด', 'หวาน', 'เค็ม'],
     },
     {
       id: 'th-4',
@@ -741,7 +741,7 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Mối quan hệ',
       exampleSentence: 'เราเป็นเพื่อนสนิทกันมานานแล้ว',
       exampleTranslation: 'Chúng tôi là bạn thân đã lâu năm.',
-      distractorsVi: ['Thầy cô', 'Người dưng', 'Hàng xóm'],
+      distractorsVi: ['Thầy cô', 'Người lạ', 'Hàng xóm'],
       distractorsTarget: ['ครู', 'คนแปลกหน้า', 'เพื่อนบ้าน'],
     },
   ],
@@ -762,8 +762,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Phẩm chất',
       exampleSentence: 'Người lãnh đạo cần kiên định với mục tiêu dài hạn.',
       exampleTranslation: 'A leader must be resolute with long-term goals.',
-      distractorsVi: ['Dễ dao động nản chí', 'Hay do dự thiếu tự tin', 'Bảo thủ cứng nhắc'],
-      distractorsTarget: ['Dao động', 'Do dự', 'Bảo thủ'],
+      distractorsVi: ['Linh hoạt', 'Cẩn trọng', 'Khiêm tốn'],
+      distractorsTarget: ['Linh hoạt', 'Cẩn trọng', 'Khiêm tốn'],
     },
     {
       id: 'vi-2',
@@ -777,8 +777,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Tư duy',
       exampleSentence: 'Thế hệ trẻ nuôi dưỡng hoài bão vươn ra biển lớn thế giới.',
       exampleTranslation: 'Youth nurture ambitions to reach out to the wider world.',
-      distractorsVi: ['Ảo tưởng thiếu thực tế', 'Nỗi lo sợ vô căn cứ', 'Sự hối hận muộn màng'],
-      distractorsTarget: ['Ảo tưởng', 'Nỗi sợ hãi', 'Hối tiếc'],
+      distractorsVi: ['Nghị lực', 'Kỳ vọng', 'Đam mê'],
+      distractorsTarget: ['Nghị lực', 'Kỳ vọng', 'Đam mê'],
     },
     {
       id: 'vi-3',
@@ -792,8 +792,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Hợp tác',
       exampleSentence: 'Cả tập thể đồng lòng vượt qua mọi thử thách.',
       exampleTranslation: 'The whole collective united to overcome all hurdles.',
-      distractorsVi: ['Chia rẽ bè phái', 'Tranh chấp quyền lợi', 'Thờ ơ bàng quan'],
-      distractorsTarget: ['Bè phái', 'Tranh chấp', 'Thờ ơ'],
+      distractorsVi: ['Độc lập', 'Gắn kết', 'Thấu hiểu'],
+      distractorsTarget: ['Độc lập', 'Gắn kết', 'Thấu hiểu'],
     },
   ],
 
@@ -813,8 +813,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Business English',
       exampleSentence: 'The two partners met to negotiate the contract terms.',
       exampleTranslation: 'Hai đối tác gặp nhau để thương lượng các điều khoản hợp đồng.',
-      distractorsVi: ['Hủy bỏ hợp đồng lập tức', 'Ký kết vô điều kiện', 'Phạt vi phạm quy chế'],
-      distractorsTarget: ['Cancel immediately', 'Sign blindly', 'Penalize heavily'],
+      distractorsVi: ['Cộng tác, hợp tác', 'Thỏa hiệp, nhượng bộ', 'Đánh giá, thẩm định'],
+      distractorsTarget: ['Collaborate', 'Compromise', 'Evaluate'],
     },
     {
       id: 'en-2',
@@ -828,8 +828,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Commercial',
       exampleSentence: 'This laptop comes with a comprehensive 2-year warranty.',
       exampleTranslation: 'Chiếc máy tính xách tay này đi kèm bảo hành toàn diện 2 năm.',
-      distractorsVi: ['Hóa đơn thanh toán VAT', 'Phiếu giảm giá khuyến mãi', 'Biên bản bàn giao kho'],
-      distractorsTarget: ['Payment invoice', 'Discount coupon', 'Delivery receipt'],
+      distractorsVi: ['Hợp đồng lao động', 'Hóa đơn thanh toán', 'Giấy phép kinh doanh'],
+      distractorsTarget: ['Employment contract', 'Payment invoice', 'Business license'],
     },
     {
       id: 'en-3',
@@ -843,8 +843,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'TOEIC Vocabulary',
       exampleSentence: 'The company recorded a substantial increase in quarterly profit.',
       exampleTranslation: 'Công ty đã ghi nhận mức tăng lợi nhuận quý đáng kể.',
-      distractorsVi: ['Không đáng kể, nhỏ nhặt', 'Tạm thời nhất thời', 'Khó tin, mông lung'],
-      distractorsTarget: ['Negligible and tiny', 'Temporary and brief', 'Unbelievable'],
+      distractorsVi: ['Liên tục, không ngừng', 'Tiềm năng, triển vọng', 'Toàn diện, tổng hợp'],
+      distractorsTarget: ['Continuous', 'Potential', 'Comprehensive'],
     },
     {
       id: 'en-4',
@@ -858,8 +858,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Productivity',
       exampleSentence: 'Together we can accomplish remarkable milestones.',
       exampleTranslation: 'Cùng nhau chúng ta có thể đạt được những cột mốc phi thường.',
-      distractorsVi: ['Trì hoãn kéo dài', 'Đầu hàng bỏ cuộc', 'Lãng phí thời gian'],
-      distractorsTarget: ['Delay endlessly', 'Give up prematurely', 'Waste valuable time'],
+      distractorsVi: ['Khởi xướng, bắt đầu', 'Duy trì, bảo toàn', 'Mở rộng, phát triển'],
+      distractorsTarget: ['Initiate', 'Maintain', 'Expand'],
     },
     {
       id: 'en-5',
@@ -873,8 +873,8 @@ export const MULTILINGUAL_VOCABULARY_BANK: Record<string, MultilingualSeedItem[]
       category: 'Project Management',
       exampleSentence: 'The board approved the plan after concluding it was financially feasible.',
       exampleTranslation: 'Hội đồng quản trị đã thông qua kế hoạch sau khi kết luận nó khả thi về mặt tài chính.',
-      distractorsVi: ['Vô lý và bất khả thi', 'Tốn kém quá mức chịu đựng', 'Rủi ro phá sản'],
-      distractorsTarget: ['Impossible and absurd', 'Unbearably expensive', 'Bankrupting'],
+      distractorsVi: ['Linh hoạt, uyển chuyển', 'Chính xác, chuẩn mực', 'Có lợi nhuận cao'],
+      distractorsTarget: ['Flexible', 'Accurate', 'Profitable'],
     },
   ],
 
@@ -1014,7 +1014,8 @@ export function buildMultipleChoiceQuestion(
     if (i === correctIndex) {
       optionTexts.push(correctAnswer);
     } else {
-      optionTexts.push(shuffledDistractors[dIdx] || `Lựa chọn ${letters[i]}`);
+      const fallback = rawDistractors[dIdx] || (isTargetPrompt ? `Nghĩa khác ${letters[i]}` : `Phương án ${letters[i]}`);
+      optionTexts.push(shuffledDistractors[dIdx] || fallback);
       dIdx++;
     }
   }
@@ -1033,18 +1034,23 @@ export function buildMultipleChoiceQuestion(
 
   let promptText = '';
   if (isTargetPrompt) {
-    promptText = `Chọn nghĩa đúng của từ「${item.targetWord}」${item.phonetic ? ` (${item.phonetic})` : ''}`;
+    promptText = `Chọn nghĩa đúng của từ「${item.targetWord}」${item.phonetic ? ` (${item.phonetic})` : ''}:`;
   } else if (questionType === 'LISTENING_CHALLENGE') {
     promptText = '🎧 Hãy lắng nghe phát âm và chọn đáp án chính xác:';
   } else if (questionType === 'MISSING_WORD' && item.exampleSentence) {
-    const blankSentence = item.exampleSentence.replace(item.targetWord, '______');
+    const escaped = item.targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const wordRegex = new RegExp(`\\b${escaped}\\b`, 'i');
+    const fallbackRegex = new RegExp(escaped, 'i');
+    const blankSentence = wordRegex.test(item.exampleSentence)
+      ? item.exampleSentence.replace(wordRegex, '______')
+      : item.exampleSentence.replace(fallbackRegex, '______');
     promptText = `Điền từ thích hợp vào chỗ trống: "${blankSentence}"`;
   } else {
     promptText = `Từ nào tương ứng với nghĩa: "${item.meaningVi}"?`;
   }
 
   const hint = item.exampleSentence
-    ? `Ngữ cảnh: ${item.exampleSentence.replace(item.targetWord, '______')}`
+    ? `Ngữ cảnh: ${item.exampleSentence.replace(new RegExp(item.targetWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '______')}`
     : item.partOfSpeech
     ? `Từ loại: ${item.partOfSpeech}`
     : undefined;

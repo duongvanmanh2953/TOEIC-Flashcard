@@ -6,23 +6,42 @@ export type AvatarTier = 'bronze' | 'silver' | 'gold' | 'diamond' | 'champion';
 export interface PlayerAvatarProps {
   avatarUrl?: string | null;
   displayName?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   tier?: AvatarTier;
   level?: number;
   isEliminated?: boolean;
   className?: string;
+  shape?: 'circle' | 'squircle';
 }
+
+const getInitialColor = (name: string = '') => {
+  const gradients = [
+    'from-indigo-600 to-violet-600',
+    'from-emerald-500 to-teal-600',
+    'from-amber-500 to-orange-600',
+    'from-rose-500 to-pink-600',
+    'from-sky-500 to-blue-600',
+    'from-purple-600 to-fuchsia-600',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+  }
+  return gradients[Math.abs(hash) % gradients.length];
+};
 
 export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   avatarUrl,
   displayName = 'Player',
   size = 'md',
-  tier = 'bronze',
+  tier,
   level,
   isEliminated = false,
   className = '',
+  shape = 'circle',
 }) => {
   const sizeMap = {
+    xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
     md: 'w-11 h-11 text-sm',
     lg: 'w-14 h-14 text-base',
@@ -38,38 +57,53 @@ export const PlayerAvatar: React.FC<PlayerAvatarProps> = ({
   };
 
   const initial = displayName ? displayName.trim().charAt(0).toUpperCase() : 'P';
+  const hasRealAvatar = Boolean(avatarUrl && avatarUrl.trim().length > 0);
+  const gradientClass = getInitialColor(displayName);
+  const roundedClass = shape === 'circle' ? 'rounded-full' : 'rounded-2xl';
+  const hasCustomDimension = className.includes('w-') && className.includes('h-');
 
   return (
-    <div className={`relative inline-block shrink-0 select-none ${className}`}>
+    <div
+      className={`relative inline-flex items-center justify-center shrink-0 select-none ${
+        hasCustomDimension ? className : `${sizeMap[size] || sizeMap.md} ${className}`
+      }`}
+    >
       <div
-        className={`rounded-2xl overflow-hidden bg-[#19213A] flex items-center justify-center font-black text-white ${
-          sizeMap[size]
-        } ${ringMap[tier]} ${isEliminated ? 'grayscale opacity-50' : ''}`}
+        className={`w-full h-full ${roundedClass} overflow-hidden bg-[#19213A] flex items-center justify-center font-black text-white ${
+          tier ? ringMap[tier] : ''
+        } ${isEliminated ? 'grayscale opacity-50' : ''}`}
       >
-        {avatarUrl ? (
+        {hasRealAvatar ? (
           <img
-            src={avatarUrl}
+            src={avatarUrl!}
             alt={displayName}
             className="w-full h-full object-cover"
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none';
+              const fallback = (e.target as HTMLElement).parentElement?.querySelector('.avatar-initial-fallback');
+              if (fallback) (fallback as HTMLElement).classList.remove('hidden');
             }}
           />
-        ) : (
-          <span>{initial}</span>
-        )}
+        ) : null}
+        <span
+          className={`avatar-initial-fallback w-full h-full flex items-center justify-center font-black text-white bg-gradient-to-br ${gradientClass} ${
+            hasRealAvatar ? 'hidden' : ''
+          }`}
+        >
+          {initial}
+        </span>
       </div>
 
       {/* Level Tag */}
       {typeof level === 'number' && (
-        <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-md bg-[#2041F6] text-[9px] font-black text-white border border-[#8B75FF] shadow-xs">
+        <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-md bg-[#2041F6] text-[9px] font-black text-white border border-[#8B75FF] shadow-xs pointer-events-none z-10">
           Lv.{level}
         </span>
       )}
 
       {/* Eliminated indicator */}
       {isEliminated && (
-        <span className="absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center text-[10px] font-black text-rose-400">
+        <span className={`absolute inset-0 ${roundedClass} bg-black/60 flex items-center justify-center text-[10px] font-black text-rose-400 z-10`}>
           OUT
         </span>
       )}

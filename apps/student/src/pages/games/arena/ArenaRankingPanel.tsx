@@ -110,9 +110,8 @@ export const ArenaRankingPanel: React.FC<ArenaRankingPanelProps> = ({
       <div className="flex-1">
         <ArenaBangVangCeremony
           topPlayers={bangVangPlayers}
-          totalPlayersCount={totalParticipants || players.length || '1.2K'}
-          accuracyRate="78%"
-          correctCommentsCount={commenters.length || '642'}
+          totalPlayersCount={totalParticipants || players.length}
+          correctCommentsCount={commenters.length > 0 ? commenters.length : undefined}
           showTable4To10={true}
         />
       </div>

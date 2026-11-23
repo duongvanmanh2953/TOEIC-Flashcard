@@ -2,8 +2,8 @@ import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenEx
 import { PrismaService } from '../../prisma/prisma.service';
 import { QuestionProviderService } from './question-provider.service';
 import { GamesService } from './games.service';
-import { CreateCustomRoomDto } from './dto/custom-room.dto';
-import { CustomRoomStatus, RoomVisibility, GameModeType, QuestionSourceType } from '@prisma/client';
+import { CreateCustomRoomDto, UpdateCustomRoomDto } from './dto/custom-room.dto';
+import { Prisma, CustomRoomStatus, RoomVisibility, GameModeType, QuestionSourceType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -27,6 +27,11 @@ export function getSystemPresetRooms(languageId: string = 'en') {
 
   const meta = langMetadata[lang] || langMetadata['en'];
 
+  const liveRooms = [
+    { key: 'REFLEX', title: 'Phản xạ từ vựng', gameMode: GameModeType.CLASSIC_QUIZ, count: 10 },
+    { key: 'LISTEN', title: 'Nghe và chọn', gameMode: GameModeType.LISTENING_RUSH, count: 8 },
+    { key: 'BLITZ', title: 'Dịch nhanh', gameMode: GameModeType.TRANSLATION_RUSH, count: 12 },
+  ];
   return [
     {
       roomCode: `${lang.toUpperCase()}-CLASSIC`,
@@ -41,7 +46,7 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       roundDurationSec: 15,
       allowLateJoin: true,
       isLiveMode: false,
-      playerCount: 12,
+      playerCount: 0,
       status: CustomRoomStatus.WAITING,
       visibility: RoomVisibility.PUBLIC,
       hasPassword: false,
@@ -65,7 +70,7 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       roundDurationSec: 12,
       allowLateJoin: true,
       isLiveMode: false,
-      playerCount: 8,
+      playerCount: 0,
       status: CustomRoomStatus.WAITING,
       visibility: RoomVisibility.PUBLIC,
       hasPassword: false,
@@ -89,7 +94,7 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       roundDurationSec: 12,
       allowLateJoin: false,
       isLiveMode: false,
-      playerCount: 1,
+      playerCount: 0,
       status: CustomRoomStatus.WAITING,
       visibility: RoomVisibility.PUBLIC,
       hasPassword: false,
@@ -113,7 +118,7 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       roundDurationSec: 15,
       allowLateJoin: true,
       isLiveMode: false,
-      playerCount: 6,
+      playerCount: 0,
       status: CustomRoomStatus.WAITING,
       visibility: RoomVisibility.PUBLIC,
       hasPassword: false,
@@ -137,7 +142,7 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       roundDurationSec: 20,
       allowLateJoin: true,
       isLiveMode: false,
-      playerCount: 4,
+      playerCount: 0,
       status: CustomRoomStatus.WAITING,
       visibility: RoomVisibility.PUBLIC,
       hasPassword: false,
@@ -161,7 +166,7 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       roundDurationSec: 25,
       allowLateJoin: true,
       isLiveMode: false,
-      playerCount: 18,
+      playerCount: 0,
       status: CustomRoomStatus.WAITING,
       visibility: RoomVisibility.PUBLIC,
       hasPassword: false,
@@ -185,7 +190,7 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       roundDurationSec: 20,
       allowLateJoin: true,
       isLiveMode: false,
-      playerCount: 25,
+      playerCount: 0,
       status: CustomRoomStatus.WAITING,
       visibility: RoomVisibility.PUBLIC,
       hasPassword: false,
@@ -196,6 +201,27 @@ export function getSystemPresetRooms(languageId: string = 'en') {
       },
       participants: [],
     },
+    ...liveRooms.map(({ key, title, gameMode, count }) => ({
+      roomCode: `${lang.toUpperCase()}-LIVE-${key}`,
+      title: `${title} · ${meta.name}`,
+      description: `${count} câu · ${meta.focus} · Trả lời qua bình luận Live.`,
+      languageId: lang,
+      gameMode,
+      sourceType: QuestionSourceType.SYSTEM_PRESET,
+      difficulty: 'INTERMEDIATE',
+      questionCount: count,
+      maxPlayers: 10000,
+      roundDurationSec: 20,
+      allowLateJoin: true,
+      isLiveMode: true,
+      playerCount: 0,
+      status: CustomRoomStatus.WAITING,
+      visibility: RoomVisibility.PUBLIC,
+      hasPassword: false,
+      host: null,
+      participants: [],
+    })),
+
   ];
 }
 
@@ -227,16 +253,20 @@ export class CustomRoomsService {
   /**
    * User creates their own game room
    */
-  async createRoom(hostUserId: string, dto: CreateCustomRoomDto) {
-    let roomCode = this.generateRoomCode();
-    let retries = 0;
-    while (retries < 5) {
-      const existing = await this.prisma.customGameRoom.findUnique({ where: { roomCode } });
-      if (!existing) break;
-      roomCode = this.generateRoomCode();
-      retries++;
+  private async createWithUniqueCode<T>(create: (code: string) => Promise<T>): Promise<T> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = this.generateRoomCode();
+      if (this.gamesService.roomManager.getRoom(code)) continue;
+      try {
+        return await create(code);
+      } catch (error) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error;
+      }
     }
+    throw new BadRequestException('Chưa thể tạo mã phòng. Vui lòng thử lại.');
+  }
 
+  async createRoom(hostUserId: string, dto: CreateCustomRoomDto) {
     let passwordHash: string | null = null;
     if (dto.password && dto.password.trim().length > 0) {
       passwordHash = await bcrypt.hash(dto.password.trim(), 10);
@@ -249,50 +279,61 @@ export class CustomRoomsService {
       dto.questionCount || 10,
       dto.gameMode,
       dto.languageId || 'en',
+      hostUserId,
     );
 
-    // 2. Persist room in PostgreSQL
-    const room = await this.prisma.customGameRoom.create({
-      data: {
-        roomCode,
-        hostUserId,
-        title: dto.title,
-        description: dto.description,
-        languageId: dto.languageId || 'en',
-        gameMode: dto.gameMode || 'TRANSLATION_RUSH',
-        visibility: dto.visibility || RoomVisibility.PUBLIC,
-        passwordHash,
-        status: CustomRoomStatus.WAITING,
-        sourceType: dto.sourceType || 'SYSTEM_PRESET',
-        sourceId: dto.sourceId,
-        difficulty: dto.difficulty || 'INTERMEDIATE',
-        questionCount: questions.length,
-        maxPlayers: dto.maxPlayers || (dto.isLiveMode ? 10000 : 8),
-        roundDurationSec: Math.min(15, Math.max(5, dto.roundDurationSec || 15)),
-        allowLateJoin: dto.isLiveMode ? true : dto.allowLateJoin || false,
-        penaltyForWrong: dto.penaltyForWrong || false,
-        shuffleQuestions: dto.shuffleQuestions !== false,
-        shuffleOptions: dto.shuffleOptions !== false,
-        showAnswerAfterEach: dto.showAnswerAfterEach !== false,
-        participants: {
-          create: {
-            userId: hostUserId,
-            isHost: true,
-            isReady: true,
+    const requestedCount = dto.questionCount || 10;
+    if (questions.length < requestedCount) {
+      throw new BadRequestException(`Bộ câu hỏi chỉ có ${questions.length} câu. Hãy giảm số câu hoặc chọn bộ khác.`);
+    }
+    // The database unique index arbitrates concurrent room creation.
+    const create = async (roomCode: string) => {
+      const room = await this.prisma.customGameRoom.create({
+        data: {
+          roomCode,
+          hostUserId,
+          title: dto.title,
+          description: dto.description,
+          languageId: dto.languageId || 'en',
+          gameMode: dto.gameMode || 'TRANSLATION_RUSH',
+          visibility: dto.visibility || RoomVisibility.PUBLIC,
+          passwordHash,
+          status: CustomRoomStatus.WAITING,
+          sourceType: dto.sourceType || 'SYSTEM_PRESET',
+          sourceId: dto.sourceId,
+          difficulty: dto.difficulty || 'INTERMEDIATE',
+          questionCount: questions.length,
+          maxPlayers: dto.maxPlayers || (dto.isLiveMode ? 10000 : 8),
+          roundDurationSec: Math.min(15, Math.max(5, dto.roundDurationSec || 15)),
+          allowLateJoin: dto.isLiveMode ? true : dto.allowLateJoin || false,
+          penaltyForWrong: dto.penaltyForWrong || false,
+          shuffleQuestions: dto.shuffleQuestions !== false,
+          shuffleOptions: dto.shuffleOptions !== false,
+          showAnswerAfterEach: dto.showAnswerAfterEach !== false,
+          participants: {
+            create: {
+              userId: hostUserId,
+              isHost: true,
+              isReady: true,
+            },
           },
         },
-      },
-      include: {
-        host: {
-          select: { id: true, displayName: true, avatar: true },
-        },
-        participants: {
-          include: {
-            user: { select: { id: true, displayName: true, avatar: true } },
+        include: {
+          host: {
+            select: { id: true, displayName: true, avatar: true },
+          },
+          participants: {
+            include: {
+              user: { select: { id: true, displayName: true, avatar: true } },
+            },
           },
         },
-      },
-    });
+      });
+      return room;
+    };
+
+    const room = await this.createWithUniqueCode(create);
+    const { roomCode } = room;
 
     // 3. Register in in-memory GameRoomManager for Socket.IO low latency loop
     this.gamesService.roomManager.createRoom(
@@ -344,17 +385,30 @@ export class CustomRoomsService {
     const activeLang = query?.languageId || 'en';
     const presetsForLang = getSystemPresetRooms(activeLang);
 
-    const matchingPresets = presetsForLang.filter((p) => {
-      if (query?.gameMode && p.gameMode !== query.gameMode) return false;
-      return true;
-    });
+    const matchingPresets = presetsForLang
+      .filter((preset) => !query?.gameMode || preset.gameMode === query.gameMode)
+      .map((preset) => {
+        const room = this.gamesService.roomManager.getRoom(preset.roomCode);
+        const host = room?.hostUserId ? room.players.get(room.hostUserId) : undefined;
+        return {
+          ...preset,
+          status: room?.status === 'FINISHED' ? CustomRoomStatus.COMPLETED
+            : room?.status === 'STARTING' ? CustomRoomStatus.STARTING
+            : room?.status === 'ROUND_SUMMARY' ? CustomRoomStatus.ROUND_SUMMARY
+            : room && room.status !== 'WAITING' ? CustomRoomStatus.IN_PROGRESS : preset.status,
+          host: host ? { id: host.userId, displayName: host.displayName, avatar: host.avatar } : null,
+          playerCount: room ? Array.from(room.players.values()).filter((player) =>
+            player.isConnected && !player.userId.startsWith('tt_')).length : 0,
+        };
+      });
 
     const userRooms = rooms.map((r) => {
       const { passwordHash, ...rest } = r;
       return {
         ...rest,
         hasPassword: !!passwordHash,
-        playerCount: r.participants.length,
+        playerCount: Array.from(this.gamesService.roomManager.getRoom(r.roomCode)?.players.values() ?? [])
+          .filter((player) => player.isConnected && !player.userId.startsWith('tt_')).length,
       };
     });
 
@@ -476,6 +530,15 @@ export class CustomRoomsService {
     return this.liveIntegration.getLiveStatus(roomCode);
   }
 
+  async assertLiveHost(roomCode: string, userId: string) {
+    const current = this.gamesService.roomManager.getRoom(roomCode);
+    const owner = current?.hostUserId ?? (await this.prisma.customGameRoom.findUnique({
+      where: { roomCode: roomCode.toUpperCase() },
+      select: { hostUserId: true },
+    }))?.hostUserId;
+    if (!userId || owner !== userId) throw new ForbiddenException('Chỉ chủ phòng quản lý được kết nối trực tiếp.');
+  }
+
   async connectLive(roomCode: string, provider: LiveProviderType, channelName: string) {
     const res = await this.liveIntegration.connectRoomLive(roomCode, provider, channelName);
     const room = this.gamesService.roomManager.getRoom(roomCode);
@@ -490,7 +553,7 @@ export class CustomRoomsService {
     await this.liveIntegration.disconnectRoomLive(roomCode);
     const room = this.gamesService.roomManager.getRoom(roomCode);
     if (room) {
-      room.isLiveMode = false;
+      room.liveProvider = undefined;
     }
   }
 
@@ -500,6 +563,103 @@ export class CustomRoomsService {
 
   simulateBatch(roomCode: string, count?: number) {
     return this.liveIntegration.simulateAudienceBatch(roomCode, count);
+  }
+
+  /**
+   * Host edits room settings (only allowed while in WAITING status)
+   */
+  async updateRoom(hostUserId: string, roomCode: string, dto: UpdateCustomRoomDto) {
+    const code = roomCode.toUpperCase();
+    const room = await this.prisma.customGameRoom.findUnique({
+      where: { roomCode: code },
+    });
+
+    if (!room) throw new NotFoundException('Phòng không tồn tại.');
+    if (room.hostUserId !== hostUserId) {
+      throw new ForbiddenException('Chỉ chủ phòng mới có quyền chỉnh sửa thông tin phòng.');
+    }
+    if (room.status !== CustomRoomStatus.WAITING) {
+      throw new BadRequestException('Chỉ có thể chỉnh sửa phòng khi đang ở trạng thái chờ.');
+    }
+
+    let passwordHash = room.passwordHash;
+    if (dto.password !== undefined) {
+      if (dto.password && dto.password.trim().length > 0) {
+        passwordHash = await bcrypt.hash(dto.password.trim(), 10);
+      } else {
+        passwordHash = null;
+      }
+    }
+
+    const updated = await this.prisma.customGameRoom.update({
+      where: { id: room.id },
+      data: {
+        title: dto.title !== undefined ? dto.title.trim() : room.title,
+        description: dto.description !== undefined ? dto.description?.trim() : room.description,
+        gameMode: dto.gameMode ?? room.gameMode,
+        visibility: dto.visibility ?? room.visibility,
+        passwordHash,
+        difficulty: dto.difficulty ?? room.difficulty,
+        maxPlayers: dto.maxPlayers ?? room.maxPlayers,
+        roundDurationSec: dto.roundDurationSec ? Math.min(15, Math.max(5, dto.roundDurationSec)) : room.roundDurationSec,
+        penaltyForWrong: dto.penaltyForWrong ?? room.penaltyForWrong,
+        shuffleQuestions: dto.shuffleQuestions ?? room.shuffleQuestions,
+        shuffleOptions: dto.shuffleOptions ?? room.shuffleOptions,
+        showAnswerAfterEach: dto.showAnswerAfterEach ?? room.showAnswerAfterEach,
+      },
+      include: {
+        host: {
+          select: { id: true, displayName: true, avatar: true },
+        },
+        participants: {
+          include: {
+            user: { select: { id: true, displayName: true, avatar: true } },
+          },
+        },
+      },
+    });
+
+    // Update in-memory room if present
+    const memRoom = this.gamesService.roomManager.getRoom(code);
+    if (memRoom) {
+      if (dto.title) memRoom.title = dto.title.trim();
+      if (dto.gameMode) memRoom.gameMode = dto.gameMode;
+      if (dto.roundDurationSec) memRoom.roundDurationSec = Math.min(15, Math.max(5, dto.roundDurationSec));
+    }
+
+    const { passwordHash: _, ...safeRoom } = updated;
+    return {
+      ...safeRoom,
+      hasPassword: !!updated.passwordHash,
+    };
+  }
+
+  /**
+   * Host deletes custom room
+   */
+  async deleteRoom(hostUserId: string, roomCode: string) {
+    const code = roomCode.toUpperCase();
+    const room = await this.prisma.customGameRoom.findUnique({
+      where: { roomCode: code },
+    });
+
+    if (!room) throw new NotFoundException('Phòng không tồn tại.');
+    if (room.hostUserId !== hostUserId) {
+      throw new ForbiddenException('Chỉ chủ phòng mới có quyền xóa phòng.');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.customRoomInvitation.deleteMany({ where: { roomId: room.id } }),
+      this.prisma.customRoomParticipant.deleteMany({ where: { roomId: room.id } }),
+      this.prisma.customGameRoom.delete({ where: { id: room.id } }),
+    ]);
+
+    this.gamesService.roomManager.removeRoom(code);
+
+    return {
+      success: true,
+      message: 'Đã xóa phòng đấu thành công.',
+    };
   }
 }
 

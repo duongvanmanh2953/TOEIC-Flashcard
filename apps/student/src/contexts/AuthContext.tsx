@@ -3,10 +3,13 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { App } from '@capacitor/app';
 import api from '../lib/api';
+import { readMobileOAuthCallback } from '../lib/mobileOAuthCallback';
 import {
   signInAnonymously,
   signInWithGoogle,
   signInWithFacebook,
+  getRedirectAuthResult,
+  FirebaseUserToken,
   getOrCreateAnonymousUid,
   isFirebaseConfigured as checkFirebaseConfigured,
   fetchRemoteFirebaseConfig,
@@ -344,151 +347,118 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Deep Link listener for Native Mobile OAuth callback (vn.vocabflow.student://auth-callback)
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    let cleanupHandle: any = null;
-
-    App.addListener('appUrlOpen', async (data: { url: string }) => {
-      try {
-        if (!data?.url) return;
-        if (data.url.includes('auth-callback') || data.url.startsWith('vn.vocabflow.student://')) {
-          await Browser.close().catch(() => {});
-
-          const urlObj = new URL(data.url);
-          const accessToken = urlObj.searchParams.get('access_token');
-          const refreshToken = urlObj.searchParams.get('refresh_token');
-          const rawUser = urlObj.searchParams.get('user');
-
-          if (accessToken) {
-            localStorage.setItem('vocabflow_access_token', accessToken);
-            if (refreshToken) {
-              localStorage.setItem('vocabflow_refresh_token', refreshToken);
-            }
-
-            let parsedUser = null;
-            if (rawUser) {
-              try {
-                parsedUser = JSON.parse(decodeURIComponent(rawUser));
-              } catch {}
-            }
-
-            if (parsedUser) {
-              setUser(normalizeUser({ ...parsedUser, isAnonymous: false }));
-              setAuthState('AUTHENTICATED');
-            } else {
-              const meRes: any = await api.get('/auth/me');
-              if (meRes?.success && meRes.data) {
-                setUser(normalizeUser({ ...meRes.data, isAnonymous: false }));
-                setAuthState('AUTHENTICATED');
-              }
-            }
-
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(
-                new CustomEvent('VOCABFLOW_TOAST', {
-                  detail: {
-                    type: 'success',
-                    title: 'Đăng nhập thành công',
-                    message: 'Chào mừng bạn đã kết nối tài khoản thành công!',
-                  },
-                }),
-              );
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Failed to parse OAuth deep link:', err);
+  const handleOAuthUserSuccess = async (firebaseUser: FirebaseUserToken) => {
+    const providerName = firebaseUser.providerId?.includes('facebook') ? 'facebook' : 'google';
+    const params = new URLSearchParams(window.location.search);
+    const state = params.get('state');
+    if (window.location.pathname === '/login' && params.get('mobile_auth') === 'true' && state) {
+      if (!/^[a-f0-9]{64}$/.test(state) || providerName !== params.get('provider') || !firebaseUser.accessToken) {
+        throw new Error('Phiên đăng nhập di động không hợp lệ. Hãy thử lại từ ứng dụng.');
       }
-    }).then((handle) => {
-      cleanupHandle = handle;
-    });
-
-    return () => {
-      if (cleanupHandle?.remove) {
-        cleanupHandle.remove();
-      }
-    };
-  }, []);
-
-  const loginWithGoogle = async () => {
-    if (Capacitor.isNativePlatform()) {
-      const authUrl = 'https://app.vocalflow.site/login?mobile_auth=true&provider=google';
-      await Browser.open({ url: authUrl, windowName: '_system' });
+      const fragment = new URLSearchParams({ state, idToken: firebaseUser.accessToken });
+      const callback = `vn.vocabflow.student://auth-callback#${fragment}`;
+      window.dispatchEvent(new CustomEvent('vocabflow:oauth-return', { detail: callback }));
+      window.location.assign(callback);
       return;
     }
-    const firebaseUser = await signInWithGoogle();
-    try {
-      const res: any = await api.post('/auth/oauth', {
-        provider: 'google',
-        providerId: firebaseUser.uid,
-        idToken: firebaseUser.accessToken,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        avatar: firebaseUser.photoURL,
-      });
+    const res: any = await api.post('/auth/oauth', {
+      provider: providerName,
+      providerId: firebaseUser.uid,
+      idToken: firebaseUser.accessToken,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      avatar: firebaseUser.photoURL,
+    });
 
-      if (res?.data || res?.user) {
-        const payload = res.data || res;
-        localStorage.setItem('vocabflow_access_token', payload.accessToken);
-        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
-        setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
-        setAuthState('AUTHENTICATED');
-        await migrateGuestData(payload.user.id);
-        refreshProfile().catch(() => {});
-      }
-    } catch {
-      // Local graceful fallback if API is in offline mode
-      setUser(normalizeUser({
-        id: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName || 'Google Learner',
-        avatar: firebaseUser.photoURL || undefined,
-        role: 'USER',
-        isAnonymous: false,
-      }));
+    if (res?.data || res?.user) {
+      const payload = res.data || res;
+      if (!payload.accessToken || !payload.refreshToken || !payload.user) throw new Error('Máy chủ chưa xác nhận phiên đăng nhập.');
+      localStorage.setItem('vocabflow_access_token', payload.accessToken);
+      localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
+      setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
       setAuthState('AUTHENTICATED');
+      await migrateGuestData(payload.user.id);
+      refreshProfile().catch(() => {});
+    } else {
+      throw new Error('Máy chủ chưa xác nhận phiên đăng nhập.');
     }
   };
 
-  const loginWithFacebook = async () => {
-    if (Capacitor.isNativePlatform()) {
-      const authUrl = 'https://app.vocalflow.site/login?mobile_auth=true&provider=facebook';
-      await Browser.open({ url: authUrl, windowName: '_system' });
+  const showNativeAuthError = (message: string) => {
+    window.dispatchEvent(new CustomEvent('VOCABFLOW_TOAST', {
+      detail: { type: 'error', title: 'Đăng nhập', message },
+    }));
+  };
+
+  // Handle both warm callbacks and links that launch the app.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      void fetchRemoteFirebaseConfig().catch(() => null).then(() => getRedirectAuthResult())
+        .then((result) => result && handleOAuthUserSuccess(result))
+        .catch((err) => showNativeAuthError(err?.message || 'Không thể hoàn tất đăng nhập.'));
       return;
     }
-    const firebaseUser = await signInWithFacebook();
-    try {
-      const res: any = await api.post('/auth/oauth', {
-        provider: 'facebook',
-        providerId: firebaseUser.uid,
-        idToken: firebaseUser.accessToken,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        avatar: firebaseUser.photoURL,
-      });
 
-      if (res?.data || res?.user) {
-        const payload = res.data || res;
-        localStorage.setItem('vocabflow_access_token', payload.accessToken);
-        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
-        setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
-        setAuthState('AUTHENTICATED');
-        await migrateGuestData(payload.user.id);
-        refreshProfile().catch(() => {});
+    const handleCallback = async (rawUrl: string) => {
+      try {
+        const pending = readMobileOAuthCallback(rawUrl, localStorage.getItem('vocabflow_native_oauth'));
+        if (!pending) return;
+        localStorage.removeItem('vocabflow_native_oauth');
+        await Browser.close().catch(() => {});
+        await handleOAuthUserSuccess({
+          accessToken: pending.idToken, uid: '', email: null, displayName: null, photoURL: null,
+          isAnonymous: false, providerId: pending.provider === 'facebook' ? 'facebook.com' : 'google.com',
+        });
+      } catch (err: any) {
+        showNativeAuthError(err?.message || 'Không thể hoàn tất đăng nhập. Vui lòng thử lại.');
       }
+    };
+
+    let cancelNotice: ReturnType<typeof setTimeout> | undefined;
+    const browserFinished = Browser.addListener('browserFinished', () => {
+      clearTimeout(cancelNotice);
+      cancelNotice = setTimeout(() => {
+        if (!localStorage.getItem('vocabflow_native_oauth')) return;
+        localStorage.removeItem('vocabflow_native_oauth');
+        showNativeAuthError('Bạn đã đóng trang đăng nhập. Hãy chọn Google hoặc Facebook để thử lại.');
+      }, 500);
+    });
+    const callback = App.addListener('appUrlOpen', ({ url }) => void handleCallback(url));
+    void callback.then(() => App.getLaunchUrl()).then((launch) => {
+      if (launch?.url) void handleCallback(launch.url);
+    }).catch(() => {});
+    return () => {
+      clearTimeout(cancelNotice);
+      void browserFinished.then((listener) => listener.remove()).catch(() => {});
+      void callback.then((listener) => listener.remove()).catch(() => {});
+    };
+  }, []);
+
+  const openNativeAuth = async (provider: 'google' | 'facebook') => {
+    const state = Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join('');
+    const origin = import.meta.env.VITE_MOBILE_AUTH_WEB_ORIGIN || 'https://app.vocalflow.site';
+    const url = new URL('/login', origin);
+    if (url.protocol !== 'https:') throw new Error('Trang xác thực di động phải sử dụng HTTPS.');
+    url.search = new URLSearchParams({ mobile_auth: 'true', provider, state }).toString();
+    localStorage.setItem('vocabflow_native_oauth', JSON.stringify({ state, provider, expiresAt: Date.now() + 10 * 60 * 1000 }));
+    try {
+      await Browser.open({ url: url.href, windowName: '_system' });
     } catch {
-      setUser(normalizeUser({
-        id: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName || 'Facebook Learner',
-        avatar: firebaseUser.photoURL || undefined,
-        role: 'USER',
-        isAnonymous: false,
-      }));
-      setAuthState('AUTHENTICATED');
+      localStorage.removeItem('vocabflow_native_oauth');
+      throw new Error('Không mở được trình duyệt để đăng nhập. Vui lòng thử lại.');
     }
+  };
+
+  const loginWithGoogle = async () => {
+    if (Capacitor.isNativePlatform()) return openNativeAuth('google');
+    const firebaseUser = await signInWithGoogle(new URLSearchParams(window.location.search).get('mobile_auth') === 'true');
+    if (firebaseUser) await handleOAuthUserSuccess(firebaseUser);
+  };
+
+  const loginWithFacebook = async () => {
+    if (Capacitor.isNativePlatform()) return openNativeAuth('facebook');
+    const firebaseUser = await signInWithFacebook(new URLSearchParams(window.location.search).get('mobile_auth') === 'true');
+    if (firebaseUser) await handleOAuthUserSuccess(firebaseUser);
   };
 
   const logout = async () => {

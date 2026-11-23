@@ -79,6 +79,9 @@ import {
   MessageSquare,
   X,
   MoreVertical,
+  ChevronDown,
+  PlusCircle,
+  Edit3,
 } from 'lucide-react';
 
 export const CommunityDecksPage: React.FC = () => {
@@ -952,14 +955,77 @@ export const CommunityDecksPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Create Deck Button */}
-          <button
-            onClick={handleOpenCreateModal}
-            className="w-full sm:w-auto h-10 px-4 rounded-xl btn-glass-primary text-xs font-bold gap-2 shadow-md cursor-pointer inline-flex items-center justify-center whitespace-nowrap shrink-0"
-          >
-            <Plus className="w-4 h-4 shrink-0" />
-            <span className="whitespace-nowrap">Tạo & Đóng góp bộ từ</span>
-          </button>
+          {/* Create Deck Button with More Options */}
+          <div className="relative group flex items-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-600/30 transition">
+            <button
+              onClick={handleOpenCreateModal}
+              className="h-10 px-4 rounded-l-xl text-xs font-bold gap-2 cursor-pointer inline-flex items-center justify-center whitespace-nowrap hover:bg-emerald-700/80 transition"
+              title="Tạo bộ từ vựng cá nhân hoặc đóng góp cho cộng đồng"
+            >
+              <PlusCircle className="w-4 h-4 shrink-0 text-emerald-200" />
+              <span className="whitespace-nowrap">Thêm bộ từ vựng</span>
+            </button>
+
+            <button
+              type="button"
+              className="h-10 px-2.5 rounded-r-xl border-l border-emerald-500/50 hover:bg-emerald-700/80 text-white cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+              title="Tùy chọn các hình thức thêm bộ từ / bộ đề (More)"
+            >
+              <span className="hidden sm:inline">More</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Dropdown for Deck & Exam Options */}
+            <div className="hidden group-hover:block absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-30 animate-fade-in text-slate-800 dark:text-slate-200">
+              <div className="px-3 py-1 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                Hình thức thêm bộ từ:
+              </div>
+              <button
+                type="button"
+                onClick={handleOpenCreateModal}
+                className="w-full px-3 py-2 text-left text-xs font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-emerald-600 dark:text-emerald-400"
+              >
+                <PlusCircle className="w-4 h-4 text-emerald-500" />
+                <div>
+                  <span className="block font-bold">Tạo bộ từ thủ công</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Nhập danh sách từ và chia sẻ</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/exams/editor')}
+                className="w-full px-3 py-2 text-left text-xs font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-indigo-600 dark:text-indigo-400"
+              >
+                <Edit3 className="w-4 h-4 text-indigo-500" />
+                <div>
+                  <span className="block font-bold">Soạn đề thi trắc nghiệm</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Trình tạo đề thi thử trực quan</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/exams?tab=my-exams')}
+                className="w-full px-3 py-2 text-left text-xs font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-sky-600 dark:text-sky-400"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-sky-500" />
+                <div>
+                  <span className="block font-bold">Nhập từ file (Excel/PPTX)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Tải lên bộ đề từ máy tính</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/my-words')}
+                className="w-full px-3 py-2 text-left text-xs font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer text-purple-600 dark:text-purple-400"
+              >
+                <Database className="w-4 h-4 text-purple-500" />
+                <div>
+                  <span className="block font-bold">Kho từ của tôi (IndexedDB)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Quản lý các bộ từ offline cá nhân</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1552,7 +1618,7 @@ export const CommunityDecksPage: React.FC = () => {
           const sampleWords = selectedDeck.words || [];
 
           return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/45 backdrop-blur-md animate-fade-in overflow-y-auto">
               <div
                 className="relative max-w-2xl w-full rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-auto max-h-[85vh] flex flex-col text-left"
                 onClick={(e) => e.stopPropagation()}

@@ -7,6 +7,7 @@ import { VocabFlowLogo } from '@vocabflow/shared';
 import { Capacitor } from '@capacitor/core';
 
 export const LoginPage: React.FC = () => {
+  const [appCallback, setAppCallback] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgot, setShowForgot] = useState(false);
@@ -19,10 +20,10 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
-  const [mobileAuthRedirecting, setMobileAuthRedirecting] = useState(false);
-  const [mobileCallbackUrl, setMobileCallbackUrl] = useState('');
-  const { user, login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
+  const params = new URLSearchParams(window.location.search);
+  const mobileProvider = params.get('mobile_auth') === 'true' ? params.get('provider') : null;
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -30,49 +31,12 @@ export const LoginPage: React.FC = () => {
       setError('Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục học tập.');
     }
 
-    const isMobileAuth = params.get('mobile_auth') === 'true';
-    const provider = params.get('provider');
+    const onOAuthReturn = (event: Event) => setAppCallback((event as CustomEvent<string>).detail);
+    window.addEventListener('vocabflow:oauth-return', onOAuthReturn);
+    return () => window.removeEventListener('vocabflow:oauth-return', onOAuthReturn);
+  }, []);
 
-    // If user is already authenticated and came for mobile auth, redirect back immediately
-    if (isMobileAuth && user && !user.isAnonymous) {
-      setMobileAuthRedirecting(true);
-      const token = localStorage.getItem('vocabflow_access_token') || '';
-      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || '';
-      const callback = `vn.vocabflow.student://auth-callback?access_token=${encodeURIComponent(token)}&refresh_token=${encodeURIComponent(refreshToken)}&user=${encodeURIComponent(JSON.stringify(user))}`;
-      setMobileCallbackUrl(callback);
-      window.location.href = callback;
-      return;
-    }
-
-    // Auto-trigger requested provider on user landing if specified
-    if (isMobileAuth && provider && !user) {
-      if (provider === 'google') {
-        setSocialLoading('google');
-        loginWithGoogle()
-          .catch((err: any) => setError(err?.message || 'Không thể đăng nhập bằng Google.'))
-          .finally(() => setSocialLoading(null));
-      } else if (provider === 'facebook') {
-        setSocialLoading('facebook');
-        loginWithFacebook()
-          .catch((err: any) => setError(err?.message || 'Không thể đăng nhập bằng Facebook.'))
-          .finally(() => setSocialLoading(null));
-      }
-    }
-  }, [user]);
-
-  const handlePostAuthRedirect = () => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('mobile_auth') === 'true') {
-      const token = localStorage.getItem('vocabflow_access_token') || '';
-      const refreshToken = localStorage.getItem('vocabflow_refresh_token') || '';
-      const callback = `vn.vocabflow.student://auth-callback?access_token=${encodeURIComponent(token)}&refresh_token=${encodeURIComponent(refreshToken)}`;
-      setMobileAuthRedirecting(true);
-      setMobileCallbackUrl(callback);
-      window.location.href = callback;
-    } else {
-      navigate('/dashboard');
-    }
-  };
+  const handlePostAuthRedirect = () => navigate('/dashboard');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +98,12 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
+        {appCallback && (
+          <a href={appCallback} className="mb-4 flex min-h-11 items-center justify-center rounded-lg bg-slate-900 px-4 text-white">
+            Quay lại ứng dụng LetStuN
+          </a>
+        )}
+
         {error && (
           <div className="mb-6 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -141,7 +111,7 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form hidden={Boolean(mobileProvider)} onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
               Email
@@ -209,23 +179,6 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {mobileAuthRedirecting && (
-          <div className="mb-6 p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center space-y-3">
-            <Sparkles className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mx-auto animate-bounce" />
-            <p className="text-sm font-bold text-slate-900 dark:text-white">
-              Đăng nhập thành công! Đang chuyển tiếp về ứng dụng VocabFlow...
-            </p>
-            {mobileCallbackUrl && (
-              <a
-                href={mobileCallbackUrl}
-                className="inline-block px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition"
-              >
-                Mở lại ứng dụng VocabFlow
-              </a>
-            )}
-          </div>
-        )}
-
         {/* Social Login Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -235,7 +188,7 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('google');
               try {
                 await loginWithGoogle();
-                if (!Capacitor.isNativePlatform()) {
+                if (!Capacitor.isNativePlatform() && !mobileProvider) {
                   handlePostAuthRedirect();
                 }
               } catch (err: any) {
@@ -244,8 +197,8 @@ export const LoginPage: React.FC = () => {
                 setSocialLoading(null);
               }
             }}
-            disabled={socialLoading !== null || loading}
-            className="w-full py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
+            disabled={socialLoading !== null || loading || (Boolean(mobileProvider) && mobileProvider !== 'google')}
+            className="w-full min-h-11 py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
           >
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
               <path
@@ -275,7 +228,7 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('facebook');
               try {
                 await loginWithFacebook();
-                if (!Capacitor.isNativePlatform()) {
+                if (!Capacitor.isNativePlatform() && !mobileProvider) {
                   handlePostAuthRedirect();
                 }
               } catch (err: any) {
@@ -284,8 +237,8 @@ export const LoginPage: React.FC = () => {
                 setSocialLoading(null);
               }
             }}
-            disabled={socialLoading !== null || loading}
-            className="w-full py-2.5 px-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
+            disabled={socialLoading !== null || loading || (Boolean(mobileProvider) && mobileProvider !== 'facebook')}
+            className="w-full min-h-11 py-2.5 px-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
           >
             <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 object-contain shrink-0" />
             <span>{socialLoading === 'facebook' ? 'Đang vào...' : 'Facebook'}</span>

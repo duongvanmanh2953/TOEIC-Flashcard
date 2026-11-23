@@ -372,11 +372,13 @@ class LiveBgmPlayer {
   private step = 0;
   private volume = 0.16; // Balanced default background volume
 
-  // Driving Arena minor progression: A2, C3, D3, F3
-  private bassNotes = [110.0, 130.81, 146.83, 174.61];
-  // Melodic arpeggio in A Minor: A4, C5, D5, E5, G5, A5
-  private melodyNotes = [440.0, 523.25, 587.33, 659.25, 783.99, 880.0];
-  // High tension countdown pitches
+  // Joyful, bouncy arcade pop progression: C Major (C3), F Major (F2), G Major (G2), A Minor (A2)
+  private bassNotes = [130.81, 87.31, 98.0, 110.0];
+  // Bright, cheerful major pentatonic melody (C5, D5, E5, G5, A5, C6)
+  private melodyNotes = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+  // Playful upbeat bell/chime harmonics (E5, G5, C6, D6, E6, G6)
+  private chimeNotes = [659.25, 783.99, 1046.5, 1174.66, 1318.51, 1567.98];
+  // High tension countdown pitches for urgent mode (last 5s)
   private tensionNotes = [659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51];
 
   public start() {
@@ -401,9 +403,9 @@ class LiveBgmPlayer {
     }
     if (!this.isPlaying) return;
 
-    // Normal tempo: ~135 BPM (220ms per step)
-    // Urgent tempo: ~195 BPM (140ms per step - dồn dập, hồi hộp, hối thúc!)
-    const stepDurationMs = this.isUrgent ? 140 : 220;
+    // Upbeat energetic tempo: ~136 BPM (165ms per 16th note step)
+    // Urgent tempo: ~190 BPM (115ms per step - hồi hộp, dồn dập, kịch tính!)
+    const stepDurationMs = this.isUrgent ? 115 : 165;
 
     this.intervalId = setInterval(() => {
       if (!this.isPlaying) return;
@@ -418,32 +420,52 @@ class LiveBgmPlayer {
 
     const barStep = this.step % 16;
 
-    // 1. KICK / HEARTBEAT DRUM
-    // In normal mode: beats 0 and 8. In urgent mode: beats 0, 4, 8, 12 (intense double-time pulse!)
+    // 1. BOUNCY POP KICK & SNARE
+    // Kick on 0, 8 (plus 4 in urgent)
     const isKickStep = this.isUrgent ? barStep % 4 === 0 : barStep === 0 || barStep === 8;
     if (isKickStep) {
       const kickOsc = ctx.createOscillator();
       const kickGain = ctx.createGain();
 
       kickOsc.type = 'sine';
-      kickOsc.frequency.setValueAtTime(this.isUrgent ? 160 : 130, now);
-      kickOsc.frequency.exponentialRampToValueAtTime(38, now + 0.12);
+      kickOsc.frequency.setValueAtTime(this.isUrgent ? 170 : 145, now);
+      kickOsc.frequency.exponentialRampToValueAtTime(42, now + 0.1);
 
       kickGain.gain.setValueAtTime(this.isUrgent ? 0.32 : 0.22, now);
-      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
       kickOsc.connect(kickGain);
       kickGain.connect(this.volumeNode);
 
       kickOsc.start(now);
-      kickOsc.stop(now + 0.16);
+      kickOsc.stop(now + 0.13);
     }
 
-    // 2. SYNTH BASSLINE
-    // Plucky electro bassline
+    // Snare / Cheerful Handclap on beats 4 and 12 (cheerful backbeat!)
+    if (barStep === 4 || barStep === 12) {
+      const snareOsc = ctx.createOscillator();
+      const snareGain = ctx.createGain();
+
+      snareOsc.type = 'triangle';
+      snareOsc.frequency.setValueAtTime(280, now);
+      snareOsc.frequency.exponentialRampToValueAtTime(80, now + 0.08);
+
+      snareGain.gain.setValueAtTime(0.12, now);
+      snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+      snareOsc.connect(snareGain);
+      snareGain.connect(this.volumeNode);
+
+      snareOsc.start(now);
+      snareOsc.stop(now + 0.1);
+    }
+
+    // 2. BOUNCY FUNKY BASSLINE (Joyful octave bounce)
     if (this.step % 2 === 0 || this.isUrgent) {
-      const bassIndex = Math.floor(barStep / 4) % this.bassNotes.length;
-      const bassFreq = this.bassNotes[bassIndex];
+      const chordIndex = Math.floor(barStep / 4) % this.bassNotes.length;
+      const baseFreq = this.bassNotes[chordIndex];
+      // Octave jump on off-beats for bouncy funk feel
+      const bassFreq = (barStep % 4 === 2) ? baseFreq * 2 : baseFreq;
 
       const bassOsc = ctx.createOscillator();
       const bassGain = ctx.createGain();
@@ -451,36 +473,35 @@ class LiveBgmPlayer {
       bassOsc.type = this.isUrgent ? 'sawtooth' : 'triangle';
       bassOsc.frequency.setValueAtTime(bassFreq, now);
 
-      bassGain.gain.setValueAtTime(this.isUrgent ? 0.18 : 0.14, now);
-      bassGain.gain.exponentialRampToValueAtTime(0.001, now + (this.isUrgent ? 0.18 : 0.28));
+      bassGain.gain.setValueAtTime(this.isUrgent ? 0.18 : 0.13, now);
+      bassGain.gain.exponentialRampToValueAtTime(0.001, now + (this.isUrgent ? 0.14 : 0.19));
 
       bassOsc.connect(bassGain);
       bassGain.connect(this.volumeNode);
 
       bassOsc.start(now);
-      bassOsc.stop(now + (this.isUrgent ? 0.2 : 0.3));
+      bassOsc.stop(now + 0.2);
     }
 
-    // 3. HI-HAT / CRISP TICK (Urgent ticking clock effect)
+    // 3. CRISP SHAKER / TAMBOURINE
     if (barStep % 2 === 1 || this.isUrgent) {
       const hatOsc = ctx.createOscillator();
       const hatGain = ctx.createGain();
 
       hatOsc.type = 'square';
-      // Urgent mode uses higher ticking pitch for intense clock ticking
-      hatOsc.frequency.setValueAtTime(this.isUrgent ? 2200 : 1200, now);
+      hatOsc.frequency.setValueAtTime(this.isUrgent ? 2600 : 1600, now);
 
-      hatGain.gain.setValueAtTime(this.isUrgent ? 0.08 : 0.035, now);
-      hatGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.03);
+      hatGain.gain.setValueAtTime(this.isUrgent ? 0.07 : 0.028, now);
+      hatGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.025);
 
       hatOsc.connect(hatGain);
       hatGain.connect(this.volumeNode);
 
       hatOsc.start(now);
-      hatOsc.stop(now + 0.035);
+      hatOsc.stop(now + 0.03);
     }
 
-    // 4. MELODIC ARPEGGIO & TENSION RISER
+    // 4. CHEERFUL MELODIC CHIPTUNE / MARIMBA ARPEGGIO
     if (this.isUrgent) {
       // Escalating tension arpeggio that climbs up the scale
       const tensionIdx = barStep % this.tensionNotes.length;
@@ -493,33 +514,57 @@ class LiveBgmPlayer {
       melOsc.frequency.setValueAtTime(freq, now);
 
       melGain.gain.setValueAtTime(0.12, now);
-      melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
 
       melOsc.connect(melGain);
       melGain.connect(this.volumeNode);
 
       melOsc.start(now);
-      melOsc.stop(now + 0.13);
+      melOsc.stop(now + 0.12);
     } else {
-      // Regular upbeat rhythmic ping
-      if (barStep % 4 === 1 || barStep % 4 === 3) {
-        const melIdx = (this.step * 2 + 1) % this.melodyNotes.length;
+      // Cheerful, bouncy game melody on steps 0, 3, 6, 9, 12, 14 (playful syncopation!)
+      const isMelodyStep = [0, 3, 6, 9, 12, 14].includes(barStep);
+      if (isMelodyStep) {
+        const chordIndex = Math.floor(barStep / 4) % this.bassNotes.length;
+        const melIdx = (this.step + chordIndex * 2) % this.melodyNotes.length;
         const melFreq = this.melodyNotes[melIdx];
 
         const melOsc = ctx.createOscillator();
         const melGain = ctx.createGain();
 
+        // Warm, cheerful chiptune sine wave with bell-like envelope
         melOsc.type = 'sine';
         melOsc.frequency.setValueAtTime(melFreq, now);
 
-        melGain.gain.setValueAtTime(0.09, now);
-        melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        melGain.gain.setValueAtTime(0.08, now);
+        melGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
 
         melOsc.connect(melGain);
         melGain.connect(this.volumeNode);
 
         melOsc.start(now);
-        melOsc.stop(now + 0.24);
+        melOsc.stop(now + 0.19);
+      }
+
+      // Sparkly chime accent on bar start
+      if (barStep === 0 || barStep === 8) {
+        const chimeIdx = Math.floor(this.step / 8) % this.chimeNotes.length;
+        const chimeFreq = this.chimeNotes[chimeIdx];
+
+        const chimeOsc = ctx.createOscillator();
+        const chimeGain = ctx.createGain();
+
+        chimeOsc.type = 'sine';
+        chimeOsc.frequency.setValueAtTime(chimeFreq, now);
+
+        chimeGain.gain.setValueAtTime(0.04, now);
+        chimeGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.28);
+
+        chimeOsc.connect(chimeGain);
+        chimeGain.connect(this.volumeNode);
+
+        chimeOsc.start(now);
+        chimeOsc.stop(now + 0.3);
       }
     }
 

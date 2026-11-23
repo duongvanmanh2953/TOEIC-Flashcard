@@ -8,6 +8,7 @@ import { idbGetWords } from '../lib/idb';
 import { GlassCard } from '../components/common/GlassCard';
 import { CountryFlag } from '../components/language/CountryFlag';
 import { MemoryRescueCard } from '../components/dashboard/MemoryRescueCard';
+import { StreakCalendarCard } from '../components/dashboard/StreakCalendarCard';
 import { QuotaMeter } from '../components/common/QuotaMeter';
 import { PremiumBadge } from '../components/common/PremiumBadge';
 import {
@@ -31,9 +32,11 @@ import {
   LockOpen,
   X,
   Crown,
+  Compass,
   BookCheck,
   PenTool,
   Gamepad2,
+  Headphones,
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
@@ -46,6 +49,7 @@ export const DashboardPage: React.FC = () => {
   const [heatmap, setHeatmap] = useState<any[]>([]);
   const [memoryRescue, setMemoryRescue] = useState<any>(null);
   const [quotas, setQuotas] = useState<any>(null);
+  const [roadmap, setRoadmap] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSpotlight, setShowSpotlight] = useState(() => {
     return localStorage.getItem('vocabflow_hide_dash_spotlight') !== 'true';
@@ -61,17 +65,19 @@ export const DashboardPage: React.FC = () => {
     const fetchDashboard = async () => {
       try {
         const quotaEndpoint = isGuest ? '/subscriptions/guest-quotas' : '/subscriptions/my-quotas';
-        const [dashRes, heatRes, rescueRes, quotaRes]: any = await Promise.all([
+        const [dashRes, heatRes, rescueRes, quotaRes, roadmapRes]: any = await Promise.all([
           api.get('/dashboard', { params: { language: activeLanguage.id } }).catch(() => ({ data: {} })),
           api.get('/dashboard/heatmap').catch(() => ({ data: [] })),
           api.get('/reviews/memory-rescue', { params: { language: activeLanguage.id } }).catch(() => ({ data: null })),
           api.get(quotaEndpoint).catch(() => ({ data: null })),
+          api.get('/learning-journey/roadmap', { params: { languageId: activeLanguage.id } }).catch(() => ({ data: null })),
         ]);
         if (!isMounted) return;
         setData(dashRes.data || dashRes || {});
         setHeatmap(heatRes.data || heatRes || []);
         setMemoryRescue(rescueRes?.data || rescueRes || null);
         setQuotas(quotaRes?.data || quotaRes || null);
+        setRoadmap(roadmapRes?.data || roadmapRes || null);
       } catch (err) {
         console.error('Error loading dashboard data', err);
       } finally {
@@ -631,6 +637,78 @@ export const DashboardPage: React.FC = () => {
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 font-medium">
             <strong className="font-bold text-slate-700 dark:text-slate-200">{user?.xp?.totalXP || 0} XP</strong> tích lũy
           </p>
+        </div>
+      </div>
+
+      {/* 2.5. MY LEARNING JOURNEY & STREAK ACTIVITY CALENDAR (User Explicit Request) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        {/* Left: Journey Progression Card (7 cols) */}
+        <div className="lg:col-span-7 p-5 sm:p-6 rounded-2xl border border-blue-200/80 dark:border-blue-900/60 bg-gradient-to-br from-blue-50/70 via-white to-indigo-50/50 dark:from-slate-900 dark:via-slate-900/95 dark:to-blue-950/30 shadow-sm flex flex-col justify-between space-y-4">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2041F6]/10 text-[#2041F6] dark:text-blue-400 text-xs font-black uppercase tracking-wider border border-[#2041F6]/20">
+                <Compass className="w-3.5 h-3.5" />
+                <span>My Learning Journey • {activeLanguage.name}</span>
+              </span>
+              <span className="text-xs font-bold text-slate-500">
+                Mục tiêu: {roadmap?.targetLevel || 'B1'}
+              </span>
+            </div>
+
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-snug">
+              {roadmap?.title || 'Lộ Trình Học Cá Nhân Hóa (Spaced Learning Trail)'}
+            </h2>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+              Bản đồ phiêu lưu tương tác với chặng kiểm tra Checkpoint và cơ chế mở khóa bài học theo từng kỹ năng: Từ vựng, Ngữ pháp, Nghe và Đọc hiểu.
+            </p>
+
+            {/* Journey Progress Bar */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-xs font-extrabold">
+                <span className="text-slate-500 dark:text-slate-400">Tiến trình chặng hiện tại</span>
+                <span className="text-[#2041F6] dark:text-blue-400">
+                  {roadmap ? Math.min(100, Math.round((roadmap.completedNodes / Math.max(1, roadmap.totalNodes)) * 100)) : 15}%
+                </span>
+              </div>
+              <div className="h-2.5 rounded-full bg-slate-200/80 dark:bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#2041F6] to-indigo-500 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${roadmap ? Math.min(100, Math.round((roadmap.completedNodes / Math.max(1, roadmap.totalNodes)) * 100)) : 15}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => navigate('/journey')}
+              className="px-5 py-2.5 rounded-xl bg-[#2041F6] hover:bg-[#1a35cc] text-white text-xs font-extrabold shadow-md shadow-[#2041F6]/25 transition flex items-center gap-2 cursor-pointer"
+            >
+              <span>Vào Bản Đồ Lộ Trình (My Journey)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => navigate('/listening')}
+              className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <Headphones className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Phòng Luyện Nghe Lab</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Right: Streak Activity Calendar (5 cols) */}
+        <div className="lg:col-span-5">
+          <StreakCalendarCard
+            currentStreak={data?.streak?.currentStreak || activeProfile.currentStreak || 0}
+            longestStreak={data?.streak?.longestStreak || activeProfile.longestStreak || 0}
+            lastStudyDate={data?.streak?.lastStudyDate}
+            className="h-full flex flex-col justify-between"
+          />
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QuestionSourceType, GameModeType } from '@prisma/client';
@@ -48,6 +49,7 @@ export class QuestionProviderService {
     count: number = 10,
     gameMode: GameModeType = GameModeType.TRANSLATION_RUSH,
     languageId: string = 'en',
+    ownerId?: string,
   ): Promise<GameQuestionPayload[]> {
     let results: GameQuestionPayload[] = [];
     const normalizedLang = (languageId || 'en').toLowerCase().trim();
@@ -55,11 +57,11 @@ export class QuestionProviderService {
     try {
       switch (sourceType) {
         case QuestionSourceType.VOCABULARY_DECK:
-          results = await this.fetchFromVocabulary(sourceId, count, normalizedLang, gameMode);
+          results = await this.fetchFromVocabulary(sourceId, count, normalizedLang, gameMode, ownerId);
           break;
 
         case QuestionSourceType.QUESTION_BANK:
-          results = await this.fetchFromExamBank(sourceId, count, normalizedLang, gameMode);
+          results = await this.fetchFromExamBank(sourceId, count, normalizedLang, gameMode, ownerId);
           break;
 
         case QuestionSourceType.GRAMMAR_EXERCISES:
@@ -76,16 +78,12 @@ export class QuestionProviderService {
           break;
       }
     } catch (err: any) {
-      this.logger.warn(
-        `Failed to fetch from ${sourceType} for [${normalizedLang}], falling back to multilingual preset: ${err.message}`,
-      );
+      this.logger.warn(`Failed to fetch from ${sourceType} for [${normalizedLang}]: ${err.message}`);
+      throw err;
     }
 
-    if (!results || results.length === 0) {
-      results = await this.fetchFromSystemPreset(gameMode, count, normalizedLang);
-    }
-
-    return results;
+    const unique = new Map(results.map((question) => [question.prompt.trim().toLowerCase(), question]));
+    return Array.from(unique.values()).slice(0, count);
   }
 
   /**
@@ -115,8 +113,15 @@ export class QuestionProviderService {
 
       const shuffledOthers = otherMeanings.sort(() => 0.5 - Math.random());
       const distractors = shuffledOthers.slice(0, 3);
-      while (distractors.length < 3) {
-        distractors.push(`Lựa chọn ${letters[distractors.length + 1] || 'khác'}`);
+      if (distractors.length < 3) {
+        // Fallback to authentic vocabulary distractors from bank instead of "Lựa chọn B"
+        const fallbackItems = MULTILINGUAL_VOCABULARY_BANK[languageId] || MULTILINGUAL_VOCABULARY_BANK['en'] || [];
+        for (const fb of fallbackItems) {
+          if (fb.meaningVi && fb.meaningVi !== w.meaning && !distractors.includes(fb.meaningVi)) {
+            distractors.push(fb.meaningVi);
+            if (distractors.length >= 3) break;
+          }
+        }
       }
 
       const correctIndex = Math.floor(Math.random() * 4);
@@ -166,7 +171,36 @@ export class QuestionProviderService {
     count: number,
     languageId: string,
     gameMode: GameModeType = GameModeType.TRANSLATION_RUSH,
+    ownerId?: string,
   ): Promise<GameQuestionPayload[]> {
+    if (deckId?.startsWith('progress:')) {
+      if (!ownerId) return [];
+      const now = new Date();
+      const filters: Record<string, Prisma.UserVocabularyWhereInput> = {
+        learned: { firstLearnedAt: { not: null } },
+        favorites: { isFavorite: true },
+        flagged: { isHard: true },
+        mistakes: { incorrectCount: { gt: 0 }, lastReviewedAt: { gte: new Date(now.getTime() - 30 * 86400000) } },
+        weak: { repetitionCount: { gt: 0 }, masteryScore: { lt: 80 } },
+        due: { nextReviewAt: { lte: now } },
+      };
+      const filter = filters[deckId.slice('progress:'.length)];
+      if (!filter) return [];
+      const progress = await this.prisma.userVocabulary.findMany({
+        where: { ...filter, userId: ownerId, vocabulary: { languageId } },
+        orderBy: [{ nextReviewAt: 'asc' }, { lastReviewedAt: 'desc' }],
+        take: count,
+        include: { vocabulary: { include: { meanings: { take: 1 } } } },
+      });
+      return this.buildMultipleChoiceFromWordList(progress.map(({ vocabulary }) => ({
+        id: vocabulary.id,
+        word: vocabulary.word,
+        meaning: vocabulary.meanings[0]?.meaning || vocabulary.shortDefinition || vocabulary.definition,
+        phonetic: vocabulary.phonetic || vocabulary.pronunciation,
+        partOfSpeech: vocabulary.partOfSpeech,
+      })), languageId, gameMode);
+    }
+
     if (deckId) {
       const cleanDeckId = String(deckId).replace(/^cloned_/, '');
       const communityDeck = await this.prisma.communityDeck.findUnique({
@@ -174,7 +208,10 @@ export class QuestionProviderService {
         include: { words: true },
       });
 
-      if (communityDeck && communityDeck.words.length > 0) {
+      if (communityDeck) {
+        const publicDeck = communityDeck.isPublic && !communityDeck.isProtected &&
+          (communityDeck.status === 'APPROVED' || communityDeck.isOfficial);
+        if (communityDeck.languageId !== languageId || (communityDeck.userId !== ownerId && !publicDeck)) return [];
         const words = [...communityDeck.words].sort(() => 0.5 - Math.random()).slice(0, count);
         return this.buildMultipleChoiceFromWordList(
           words.map((w) => ({
@@ -209,7 +246,7 @@ export class QuestionProviderService {
       },
     });
 
-    if (vocabs.length >= 4) {
+    if (vocabs.length) {
       const shuffled = vocabs.sort(() => 0.5 - Math.random()).slice(0, count);
       return this.buildMultipleChoiceFromWordList(
         shuffled.map((v) => ({
@@ -226,7 +263,7 @@ export class QuestionProviderService {
     }
 
     // When DB doesn't have sufficient words for this specific language, fetch from Multilingual Bank
-    return await this.fetchFromSystemPreset(gameMode, count, languageId);
+    return [];
   }
 
   /**
@@ -237,10 +274,20 @@ export class QuestionProviderService {
     count: number,
     languageId: string = 'en',
     gameMode: GameModeType = GameModeType.TRANSLATION_RUSH,
+    ownerId?: string,
   ): Promise<GameQuestionPayload[]> {
     if (examId) {
       const examQuestions = await this.prisma.examQuestion.findMany({
-        where: { examId },
+        where: {
+          examId,
+          exam: {
+            languageId,
+            OR: [
+              ...(ownerId ? [{ authorId: ownerId }] : []),
+              { status: 'PUBLISHED', moderationStatus: 'APPROVED', isProtected: false },
+            ],
+          },
+        },
         take: count,
         include: { options: true },
       });
@@ -275,7 +322,7 @@ export class QuestionProviderService {
       }
     }
 
-    return await this.fetchFromSystemPreset(gameMode, count, languageId);
+    return [];
   }
 
   /**
@@ -294,7 +341,7 @@ export class QuestionProviderService {
     });
 
     if (exercises.length === 0) {
-      return await this.fetchFromSystemPreset(gameMode, count, languageId);
+      return [];
     }
 
     return exercises.map((ex) => {
@@ -329,30 +376,53 @@ export class QuestionProviderService {
     languageId: string = 'en',
     gameMode: GameModeType = GameModeType.TRANSLATION_RUSH,
   ): Promise<GameQuestionPayload[]> {
-    const whereClause: any = resourceId ? { id: resourceId } : { status: 'PUBLISHED' };
+    const whereClause: any = { ...(resourceId ? { id: resourceId } : {}), status: 'PUBLISHED', language: languageId, isPremium: false };
     const resources = await this.prisma.learningResource.findMany({
       where: whereClause,
       take: count,
     });
 
     if (resources.length === 0) {
-      return await this.fetchFromSystemPreset(gameMode, count, languageId);
+      return [];
     }
 
-    return resources.map((r) => ({
-      id: r.id,
-      prompt: `[${r.title}] ${r.description || 'Tìm từ khóa chính xác:'}`,
-      direction: 'KNOWLEDGE_CONCEPT',
-      correctAnswer: 'A',
-      acceptedAnswers: ['a', r.title.toLowerCase().trim()],
-      options: [`A. ${r.title}`, 'B. Khái niệm khác', 'C. Phương án thay thế', 'D. Không xác định'],
-      correctOptionIndex: 0,
-      explanation: r.description || undefined,
-      difficulty: 3.0,
-      category: r.category || 'Knowledge',
-      languageCode: languageId,
-      questionType: 'WORD_RECOGNITION',
-    }));
+    const allTitles = resources.map((r) => r.title);
+    return resources.map((r) => {
+      const letters = ['A', 'B', 'C', 'D'];
+      const otherTitles = allTitles.filter((t) => t !== r.title);
+      const distractors = otherTitles.sort(() => 0.5 - Math.random()).slice(0, 3);
+      const fallbackThemes = ['Ngữ pháp ứng dụng', 'Phản xạ giao tiếp', 'Từ vựng cốt lõi', 'Phát âm chuẩn'];
+      for (const ft of fallbackThemes) {
+        if (distractors.length >= 3) break;
+        if (!distractors.includes(ft) && ft !== r.title) {
+          distractors.push(ft);
+        }
+      }
+      const correctIdx = Math.floor(Math.random() * 4);
+      const optionsText: string[] = [];
+      let dI = 0;
+      for (let i = 0; i < 4; i++) {
+        if (i === correctIdx) {
+          optionsText.push(r.title);
+        } else {
+          optionsText.push(distractors[dI++] || `Khái niệm ${letters[i]}`);
+        }
+      }
+      return {
+        id: r.id,
+        prompt: `Khái niệm hoặc chủ đề nào tương ứng với: "${r.description || r.title}"?`,
+        direction: 'KNOWLEDGE_CONCEPT',
+        correctAnswer: letters[correctIdx],
+        acceptedAnswers: [letters[correctIdx], letters[correctIdx].toLowerCase(), r.title.toLowerCase().trim()],
+        options: optionsText.map((t, i) => `${letters[i]}. ${t}`),
+        correctOptionIndex: correctIdx,
+        explanation: r.description || undefined,
+        difficulty: 3.0,
+        category: r.category || 'Knowledge',
+        languageCode: languageId,
+        questionType: 'WORD_RECOGNITION',
+      };
+    });
   }
 
   /**
@@ -400,24 +470,47 @@ export class QuestionProviderService {
 
       if (dbQuestions.length > 0) {
         const letters = ['A', 'B', 'C', 'D'];
+        const allCorrect = dbQuestions.map((dq) => dq.correctAnswer).filter(Boolean);
+        const enSeedWords = (MULTILINGUAL_VOCABULARY_BANK['en'] || []).map((s) => s.targetWord);
+
         return dbQuestions.slice(0, count).map((q) => {
           const accepted = q.acceptedAnswers || [];
-          const options = accepted.length >= 4
-            ? accepted.slice(0, 4).map((a, i) => `${letters[i]}. ${a}`)
-            : [
-                `A. ${q.correctAnswer}`,
-                'B. Incorrect Option 1',
-                'C. Incorrect Option 2',
-                'D. Incorrect Option 3',
-              ];
+          let options: string[] = [];
+          let correctIdx = 0;
+
+          if (accepted.length >= 4) {
+            options = accepted.slice(0, 4).map((a, i) => `${letters[i]}. ${a}`);
+            correctIdx = 0;
+          } else {
+            const pool = allCorrect.filter((c) => c !== q.correctAnswer).sort(() => 0.5 - Math.random());
+            const distractors = pool.slice(0, 3);
+            for (const sw of enSeedWords) {
+              if (distractors.length >= 3) break;
+              if (sw !== q.correctAnswer && !distractors.includes(sw)) {
+                distractors.push(sw);
+              }
+            }
+            correctIdx = Math.floor(Math.random() * 4);
+            const opts: string[] = [];
+            let p = 0;
+            for (let i = 0; i < 4; i++) {
+              if (i === correctIdx) {
+                opts.push(q.correctAnswer);
+              } else {
+                opts.push(distractors[p++] || `Lựa chọn ${letters[i]}`);
+              }
+            }
+            options = opts.map((opt, i) => `${letters[i]}. ${opt}`);
+          }
+
           return {
             id: q.id,
             prompt: q.prompt,
             direction: q.direction,
-            correctAnswer: 'A',
-            acceptedAnswers: ['a', q.correctAnswer.toLowerCase().trim(), ...accepted],
+            correctAnswer: letters[correctIdx],
+            acceptedAnswers: [letters[correctIdx], letters[correctIdx].toLowerCase(), q.correctAnswer.toLowerCase().trim(), ...accepted],
             options,
-            correctOptionIndex: 0,
+            correctOptionIndex: correctIdx,
             explanation: q.explanation || undefined,
             difficulty: q.difficulty || 3.0,
             category: q.category || 'General',

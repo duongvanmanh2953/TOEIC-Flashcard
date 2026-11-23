@@ -8,14 +8,26 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { normalizeLiveAnswer, type GameRoom } from './game-room.manager';
+import { CustomRoomsService } from './custom-rooms.service';
 import { GamesService } from './games.service';
 import { QuestionProviderService } from './question-provider.service';
 import { LiveIntegrationService } from './live-integration/live-integration.service';
 import { LiveProviderType } from './live-integration/live-adapter.interface';
-import { GameModeType } from '@prisma/client';
+import { DeviceStatus, GameModeType } from '@prisma/client';
 import { SYSTEM_PRESET_ROOMS, getSystemPresetRooms } from './custom-rooms.service';
+
+interface JoinRoomRequest {
+  roomCode: string;
+  displayName: string;
+  avatar: string;
+  spectator?: boolean;
+  password?: string;
+  languageId?: string;
+}
 
 @WebSocketGateway({
   cors: {
@@ -24,21 +36,29 @@ import { SYSTEM_PRESET_ROOMS, getSystemPresetRooms } from './custom-rooms.servic
   },
 })
 export class GamesGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleDestroy
 {
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(GamesGateway.name);
+  private scheduleTimer?: NodeJS.Timeout;
+  private lastScheduledDay?: string;
   private roomTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     private readonly gamesService: GamesService,
     private readonly questionProvider: QuestionProviderService,
     private readonly liveIntegration: LiveIntegrationService,
+    private readonly jwt: JwtService,
+    private readonly customRooms: CustomRoomsService,
   ) {}
 
   afterInit(server: Server) {
+    this.scheduleTimer = setInterval(() => {
+      void this.startScheduledEvent().catch((error) => this.logger.error('Không thể khởi động đấu trường định kỳ', error));
+    }, 1000);
+    this.scheduleTimer.unref();
     this.logger.log('Games WebSocket Gateway initialized for Realtime Battles & Live Integration');
 
     // Subscribe to live comments from TikTok Live & Mock adapters
@@ -47,50 +67,113 @@ export class GamesGateway
       const room = this.gamesService.roomManager.getRoom(code);
       if (!room) return;
 
-      const result = await this.gamesService.roomManager.submitLiveComment(code, event);
+      if (!room.isLiveMode || room.liveProvider !== event.provider || room.status !== 'IN_ROUND' ||
+          Date.now() >= room.roundStartedAt + room.roundDurationSec * 1000) return;
+      const result = this.gamesService.roomManager.submitLiveComment(code, event);
+      if (!result) return;
 
-      // 1. Broadcast comment to the Live Activity feed
+      const accepted = result.status === 'accepted';
+      const commenterRanking = accepted ? this.gamesService.roomManager.getCommenterLeaderboard(code) : undefined;
       this.server.to(`game_room_${code}`).emit('live_comment_received', {
         eventId: event.eventId,
         username: event.username,
         displayName: event.displayName,
         avatarUrl: event.avatarUrl,
         commentText: event.commentText,
-        parsedOption: event.parsedOption,
         timestamp: event.timestamp,
-        provider: event.provider,
-        isCorrect: result?.evaluation?.isCorrect,
-        scoreAdded: result?.evaluation?.score,
-        totalScore: result?.player?.score,
-        rank: result?.player?.rank,
-        streak: result?.player?.streak,
+        round: room.currentRound,
+        accepted,
+        answer: accepted ? result.answer : undefined,
+        scoreAdded: accepted ? result.score : undefined,
+        liveOptionVotes: accepted ? room.liveOptionVotes : undefined,
+        liveTop3: accepted ? room.questionCommentAwards?.get(room.currentRound) : undefined,
+        commenterRanking,
+        roundAnswerCount: room.roundAnswerCount,
+        correctCommentersCount: room.correctCommentersCount ?? 0,
       });
 
-      // 2. Broadcast updated leaderboard if answer was evaluated
-      if (result && result.isNewAnswer) {
-        this.server.to(`game_room_${code}`).emit('live_ranking_update', {
-          ranking: result.ranking,
-          roundAnswerCount: room.roundAnswerCount,
-          totalParticipants: room.players.size,
-          lastAnsweredBy: {
-            displayName: result.player.displayName,
-            scoreAdded: result.evaluation?.score || 0,
-            isCorrect: result.evaluation?.isCorrect || false,
-            streak: result.player.streak,
-          },
-        });
-      }
     });
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.scheduleTimer);
+    for (const timer of this.roomTimers.values()) clearTimeout(timer);
+    this.roomTimers.clear();
+  }
+
+  private async startScheduledEvent() {
+    if (!this.gamesService.getOperatingHoursStatus().serverTime.startsWith('19:00:')) return;
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'short' }).format(new Date());
+    if (this.lastScheduledDay === day) return;
+    this.lastScheduledDay = day;
+    const configs = await this.gamesService.getGameSchedule();
+    const languages = ['en', 'zh', 'ja', 'ko', 'de', 'fr', 'es', 'th', 'vi'];
+    await Promise.allSettled(configs.flatMap(({ gameMode }) => languages.map(async (languageId) => {
+      try {
+        const room = await this.gamesService.createScheduledRoom(gameMode, languageId);
+        this.scheduleGameStart(room.roomCode, 3);
+      } catch (error) {
+        this.logger.error(`Không thể mở đấu trường ${gameMode}/${languageId}`, error);
+      }
+    })));
   }
 
   handleConnection(client: Socket) {
     // Client connected
   }
 
+  private async authenticate(client: Socket): Promise<string | null> {
+    const token = client.handshake.auth?.token;
+    const secret = process.env.JWT_ACCESS_SECRET;
+    if (typeof token !== 'string' || !secret) return null;
+    try {
+      const { sub } = await this.jwt.verifyAsync<{ sub: string }>(token, { secret, algorithms: ['HS256'] });
+      if (typeof sub !== 'string' || !sub) return null;
+      const user = await this.gamesService.prisma.user.findUnique({
+        where: { id: sub },
+        select: { status: true, refreshToken: true },
+      });
+      if (user?.status !== 'ACTIVE' || !user.refreshToken) return null;
+      const deviceId = client.handshake.auth?.deviceId;
+      if (typeof deviceId === 'string' && deviceId) {
+        const device = await this.gamesService.prisma.userDevice.findUnique({
+          where: { userId_deviceId: { userId: sub, deviceId } },
+          select: { isAllowed: true, status: true },
+        });
+        if (device && (!device.isAllowed || device.status === DeviceStatus.BLOCKED)) return null;
+      }
+      return sub;
+    } catch {
+      return null;
+    }
+  }
+
+  private isHost(client: Socket, code: string): boolean {
+    const room = this.gamesService.roomManager.getRoom(code);
+    const player = room?.players.get(client.data.userId);
+    return client.data.roomCode === code && player?.socketId === client.id && player.isHost === true;
+  }
+
+  private hostDenied() {
+    return { status: 'error', message: 'Chỉ chủ phòng có quyền thực hiện.' };
+  }
+
+  private clearTimer(key: string) {
+    clearTimeout(this.roomTimers.get(key));
+    this.roomTimers.delete(key);
+  }
+
+  private broadcastViewerCount(roomCode: string) {
+    const count = this.server.sockets.adapter.rooms.get(`game_spectators_${roomCode}`)?.size ?? 0;
+    this.server.to(`game_room_${roomCode}`).emit('room:viewer_count', { count });
+  }
+
   handleDisconnect(client: Socket) {
     const userId = client.data?.userId;
     const roomCode = client.data?.roomCode;
-    if (roomCode && userId) {
+    if (roomCode && !userId) this.broadcastViewerCount(roomCode);
+    if (roomCode && userId &&
+        this.gamesService.roomManager.getRoom(roomCode)?.players.get(userId)?.socketId === client.id) {
       this.gamesService.roomManager.removePlayer(roomCode, userId);
       this.server.to(`game_room_${roomCode}`).emit('player_left', { userId });
       this.server.to(`game_room_${roomCode}`).emit('room:player_left', { userId });
@@ -108,8 +191,8 @@ export class GamesGateway
   ) {
     const serverTime = Date.now();
     const roundTrip = serverTime - (data.clientTime || serverTime);
-    if (data.roomCode && data.userId) {
-      this.gamesService.roomManager.updateLatency(data.roomCode, data.userId, roundTrip);
+    if (client.data.roomCode && client.data.userId) {
+      this.gamesService.roomManager.updateLatency(client.data.roomCode, client.data.userId, roundTrip);
     }
     return { clientTime: data.clientTime, serverTime, latencyMs: roundTrip };
   }
@@ -129,19 +212,24 @@ export class GamesGateway
       languageId?: string;
     },
   ) {
+    const userId = await this.authenticate(client);
+    if (!userId) return { status: 'error', message: 'Vui lòng đăng nhập lại để tham gia.' };
+    if (!this.gamesService.getOperatingHoursStatus().isOpen) {
+      return { status: 'error', message: 'Sự kiện mở lúc 19:00 (GMT+7).' };
+    }
     try {
       const mode = data.gameMode || GameModeType.TRANSLATION_RUSH;
       const lang = data.languageId || 'en';
       const { room, player } = await this.gamesService.joinOrCreateRoom(
         mode,
-        data.userId,
+        userId,
         data.displayName,
         data.avatar,
         client.id,
         lang,
       );
 
-      client.data.userId = data.userId;
+      client.data.userId = userId;
       client.data.roomCode = room.roomCode;
       client.join(`game_room_${room.roomCode}`);
 
@@ -154,6 +242,7 @@ export class GamesGateway
         currentRound: room.currentRound,
         totalRounds: room.totalRounds,
         languageId: room.languageId,
+        createdAt: room.createdAt,
         player,
         ranking: this.gamesService.roomManager.getLeaderboard(room.roomCode),
       });
@@ -166,22 +255,28 @@ export class GamesGateway
       });
 
       // If room is in WAITING state and has >= 1 player, trigger automatic starting countdown (5 seconds)
-      if (room.status === 'WAITING' && !this.roomTimers.has(`start_${room.roomCode}`)) {
+      if (room.status === 'WAITING' && this.gamesService.getOperatingHoursStatus().testMode && !this.roomTimers.has(`start_${room.roomCode}`)) {
         this.scheduleGameStart(room.roomCode, 5);
       }
 
+      if (room.status === 'FINISHED') client.emit('game_finished', this.getFinalResult(room));
+
       // If user rejoined an IN_ROUND game, send current question state immediately
-      if (room.status === 'IN_ROUND' && room.currentQuestion) {
+      if ((room.status === 'IN_ROUND' || room.status === 'PAUSED') && room.currentQuestion) {
         const elapsedMs = Date.now() - room.roundStartedAt;
-        const remainingSec = Math.max(1, Math.round((room.roundDurationSec * 1000 - elapsedMs) / 1000));
+        const remainingSec = Math.max(0, Math.ceil((room.roundDurationSec * 1000 - elapsedMs) / 1000));
         client.emit('round_started', {
           round: room.currentRound,
+          isLiveMode: room.isLiveMode,
+          liveOptionVotes: room.liveOptionVotes ?? {},
+          liveTop3: room.questionCommentAwards?.get(room.currentRound) ?? [],
           totalRounds: room.totalRounds,
           question: {
             id: room.currentQuestion.id,
             prompt: room.currentQuestion.prompt,
             direction: room.currentQuestion.direction,
             category: room.currentQuestion.category,
+            difficulty: room.currentQuestion.difficulty,
             audioUrl: room.currentQuestion.audioUrl,
             options: room.currentQuestion.options,
             languageCode: room.currentQuestion.languageCode,
@@ -190,7 +285,34 @@ export class GamesGateway
             targetWord: room.currentQuestion.targetWord,
             hint: room.currentQuestion.hint,
           },
-          durationSec: remainingSec,
+          durationSec: room.roundDurationSec,
+          remainingSec,
+          serverTime: Date.now(),
+          deadlineAt: room.roundStartedAt + room.roundDurationSec * 1000,
+          alreadyAnswered: player?.lastAnsweredRound === room.currentRound,
+          roundAnswerCount: room.roundAnswerCount,
+          totalParticipants: room.players.size,
+        });
+        if (room.status === 'PAUSED') client.emit('room:game_paused', { remainingSec: room.remainingOnPause ?? 0 });
+      } else if (room.status === 'ROUND_SUMMARY' && room.currentQuestion) {
+        const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(room.roomCode);
+        const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(room.roomCode);
+        client.emit('round_started', {
+          round: room.currentRound,
+          isLiveMode: room.isLiveMode,
+          liveOptionVotes: room.liveOptionVotes ?? {},
+          liveTop3: room.questionCommentAwards?.get(room.currentRound) ?? [],
+          totalRounds: room.totalRounds,
+          question: room.currentQuestion,
+          durationSec: room.roundDurationSec,
+          remainingSec: 0,
+        });
+        client.emit('round_ended', {
+          round: room.currentRound,
+          ...this.getRoundReveal(room),
+          ranking: inAppRanking,
+          inAppRanking,
+          commenterRanking,
           roundAnswerCount: room.roundAnswerCount,
           totalParticipants: room.players.size,
         });
@@ -207,23 +329,27 @@ export class GamesGateway
    * Player joins custom user-created room (supports both event names)
    */
   @SubscribeMessage('join_custom_room')
+  handleLegacyJoinCustomRoom(@ConnectedSocket() client: Socket, @MessageBody() data: JoinRoomRequest) {
+    return this.handleJoinCustomRoom(client, data);
+  }
+
   @SubscribeMessage('room:join_custom')
-  async handleJoinCustomRoom(
-    @ConnectedSocket() client: Socket,
-    @MessageBody()
-    data: {
-      roomCode: string;
-      userId: string;
-      displayName: string;
-      avatar: string;
-      isHost?: boolean;
-      languageId?: string;
-    },
-  ) {
+  async handleJoinCustomRoom(@ConnectedSocket() client: Socket, @MessageBody() data: JoinRoomRequest) {
     try {
       const code = data.roomCode.toUpperCase();
       let room = this.gamesService.roomManager.getRoom(code);
-      let isHost = !!data.isHost;
+      const userId = await this.authenticate(client);
+      if (!userId) return { status: 'error', message: 'Vui lòng đăng nhập lại để tham gia.' };
+      const dbRoom = await this.gamesService.prisma.customGameRoom.findUnique({ where: { roomCode: code } });
+      const isOwner = dbRoom?.hostUserId === userId;
+      const spectator = data.spectator === true;
+      if (dbRoom && ['COMPLETED', 'EXPIRED', 'CANCELLED'].includes(dbRoom.status) && !room) {
+        return { status: 'error', message: 'Phòng đã đóng.' };
+      }
+      if (dbRoom?.passwordHash && !isOwner && !room?.players.has(userId) &&
+          !(typeof data.password === 'string' && await this.customRooms.verifyPassword(code, data.password))) {
+        return { status: 'error', message: 'Cần mật khẩu phòng.' };
+      }
 
       if (!room) {
         // 1. Check if it's a predefined system preset room across all supported languages
@@ -258,18 +384,11 @@ export class GamesGateway
             preset.isLiveMode,
             preset.allowLateJoin,
           );
-          // If user created or joins system preset first, give them host controls
-          isHost = true;
+          // The first participating player hosts a preset room.
         } else {
           // 2. Fallback: load room from DB if not yet in memory
-          const dbRoom = await this.gamesService.prisma.customGameRoom.findUnique({
-            where: { roomCode: code },
-          });
           if (!dbRoom) {
             return { status: 'error', message: 'Phòng thi đấu không tồn tại.' };
-          }
-          if (dbRoom.hostUserId === data.userId) {
-            isHost = true;
           }
 
           const effectiveDbLang = dbRoom.languageId || targetLang || 'en';
@@ -279,6 +398,7 @@ export class GamesGateway
             dbRoom.questionCount || 10,
             dbRoom.gameMode,
             effectiveDbLang,
+            dbRoom.hostUserId,
           );
           const isLive = Boolean((dbRoom as any).isLiveMode || (dbRoom.maxPlayers && dbRoom.maxPlayers > 50));
           const dbDuration = Math.min(15, dbRoom.roundDurationSec || 12);
@@ -295,18 +415,36 @@ export class GamesGateway
         }
       }
 
-      const player = this.gamesService.roomManager.addPlayer(
+      if (room.status === 'FINISHED' && !room.players.has(userId) && !spectator) {
+        return { status: 'error', message: 'Phòng đã đóng.' };
+      }
+      if (!spectator && !room.players.has(userId) && room.status !== 'WAITING' && !room.allowLateJoin) {
+        return { status: 'error', message: 'Trận đã bắt đầu. Bạn có thể vào xem.' };
+      }
+      if (!spectator && dbRoom && !room.isLiveMode && !isOwner && !room.players.has(userId) &&
+          Array.from(room.players.values()).filter((player) => !player.isCommenter).length >= dbRoom.maxPlayers) {
+        return { status: 'error', message: 'Phòng đã đầy.' };
+      }
+      if (!spectator && !room.scheduled && !room.hostUserId) room.hostUserId = dbRoom?.hostUserId ?? userId;
+      if (client.data.roomCode && client.data.roomCode !== code) {
+        await client.leave(`game_spectators_${client.data.roomCode}`);
+        await client.leave(`game_room_${client.data.roomCode}`);
+        this.handleDisconnect(client);
+      }
+      const player = spectator ? null : this.gamesService.roomManager.addPlayer(
         code,
-        data.userId,
+        userId,
         data.displayName,
         data.avatar,
         client.id,
-        isHost,
+        room.hostUserId === userId,
       );
 
-      client.data.userId = data.userId;
+      client.data.userId = spectator ? undefined : userId;
       client.data.roomCode = code;
-      client.join(`game_room_${code}`);
+      await client.join(`game_room_${code}`);
+      if (spectator) await client.join(`game_spectators_${code}`);
+      else await client.leave(`game_spectators_${code}`);
 
       const liveStatus = this.liveIntegration.getLiveStatus(code);
 
@@ -324,27 +462,38 @@ export class GamesGateway
         player,
         players: Array.from(room.players.values()),
         roundAnswerCount: room.roundAnswerCount,
+        liveOptionVotes: room.liveOptionVotes ?? {},
+        commenterRanking: this.gamesService.roomManager.getCommenterLeaderboard(code),
       });
 
+      this.broadcastViewerCount(code);
+
       // Broadcast to all participants
-      this.server.to(`game_room_${code}`).emit('room:player_joined', {
+      if (player) this.server.to(`game_room_${code}`).emit('room:player_joined', {
         player,
         totalPlayers: room.players.size,
         players: Array.from(room.players.values()),
       });
 
+
+      if (room.status === 'FINISHED') client.emit('game_finished', this.getFinalResult(room));
+
       // If user rejoined an IN_ROUND game, send current question state immediately
-      if (room.status === 'IN_ROUND' && room.currentQuestion) {
+      if ((room.status === 'IN_ROUND' || room.status === 'PAUSED') && room.currentQuestion) {
         const elapsedMs = Date.now() - room.roundStartedAt;
-        const remainingSec = Math.max(1, Math.round((room.roundDurationSec * 1000 - elapsedMs) / 1000));
+        const remainingSec = Math.max(0, Math.ceil((room.roundDurationSec * 1000 - elapsedMs) / 1000));
         client.emit('round_started', {
           round: room.currentRound,
+          isLiveMode: room.isLiveMode,
+          liveOptionVotes: room.liveOptionVotes ?? {},
+          liveTop3: room.questionCommentAwards?.get(room.currentRound) ?? [],
           totalRounds: room.totalRounds,
           question: {
             id: room.currentQuestion.id,
             prompt: room.currentQuestion.prompt,
             direction: room.currentQuestion.direction,
             category: room.currentQuestion.category,
+            difficulty: room.currentQuestion.difficulty,
             audioUrl: room.currentQuestion.audioUrl,
             options: room.currentQuestion.options,
             languageCode: room.currentQuestion.languageCode,
@@ -353,7 +502,34 @@ export class GamesGateway
             targetWord: room.currentQuestion.targetWord,
             hint: room.currentQuestion.hint,
           },
-          durationSec: remainingSec,
+          durationSec: room.roundDurationSec,
+          remainingSec,
+          serverTime: Date.now(),
+          deadlineAt: room.roundStartedAt + room.roundDurationSec * 1000,
+          alreadyAnswered: player?.lastAnsweredRound === room.currentRound,
+          roundAnswerCount: room.roundAnswerCount,
+          totalParticipants: room.players.size,
+        });
+        if (room.status === 'PAUSED') client.emit('room:game_paused', { remainingSec: room.remainingOnPause ?? 0 });
+      } else if (room.status === 'ROUND_SUMMARY' && room.currentQuestion) {
+        const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(room.roomCode);
+        const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(room.roomCode);
+        client.emit('round_started', {
+          round: room.currentRound,
+          isLiveMode: room.isLiveMode,
+          liveOptionVotes: room.liveOptionVotes ?? {},
+          liveTop3: room.questionCommentAwards?.get(room.currentRound) ?? [],
+          totalRounds: room.totalRounds,
+          question: room.currentQuestion,
+          durationSec: room.roundDurationSec,
+          remainingSec: 0,
+        });
+        client.emit('round_ended', {
+          round: room.currentRound,
+          ...this.getRoundReveal(room),
+          ranking: inAppRanking,
+          inAppRanking,
+          commenterRanking,
           roundAnswerCount: room.roundAnswerCount,
           totalParticipants: room.players.size,
         });
@@ -375,8 +551,9 @@ export class GamesGateway
     @MessageBody() data: { roomCode: string; userId: string; isReady: boolean },
   ) {
     const code = data.roomCode.toUpperCase();
+    if (client.data.roomCode !== code || !client.data.userId) return { status: 'ignored' };
     this.server.to(`game_room_${code}`).emit('room:player_ready_changed', {
-      userId: data.userId,
+      userId: client.data.userId,
       isReady: data.isReady,
     });
     return { status: 'success' };
@@ -391,8 +568,9 @@ export class GamesGateway
     @MessageBody() data: { roomCode: string },
   ) {
     const code = data.roomCode.toUpperCase();
-    this.server.to(`game_room_${code}`).emit('room:starting_countdown', { countdownSec: 3 });
-    this.scheduleGameStart(code, 3);
+    if (!this.isHost(client, code)) return this.hostDenied();
+    if (!this.scheduleGameStart(code, 5)) return { status: 'error', message: 'Phòng đang chạy hoặc chưa có câu hỏi.' };
+    this.server.to(`game_room_${code}`).emit('room:starting_countdown', { countdownSec: 5 });
     return { status: 'starting' };
   }
 
@@ -400,8 +578,10 @@ export class GamesGateway
    * Host pauses current round
    */
   @SubscribeMessage('room:host_pause_game')
-  handleHostPauseGame(@MessageBody() data: { roomCode: string }) {
+  handleHostPauseGame(@ConnectedSocket() client: Socket, @MessageBody() data: { roomCode: string }) {
     const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
+    if (this.gamesService.roomManager.getRoom(code)?.isLiveMode) return { status: 'ignored' };
     const paused = this.gamesService.roomManager.pauseRound(code);
     if (paused) {
       const roundTimerKey = `round_${code}`;
@@ -420,8 +600,9 @@ export class GamesGateway
    * Host resumes current round
    */
   @SubscribeMessage('room:host_resume_game')
-  handleHostResumeGame(@MessageBody() data: { roomCode: string }) {
+  handleHostResumeGame(@ConnectedSocket() client: Socket, @MessageBody() data: { roomCode: string }) {
     const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
     const resumed = this.gamesService.roomManager.resumeRound(code);
     if (resumed) {
       const roundTimerKey = `round_${code}`;
@@ -442,20 +623,21 @@ export class GamesGateway
    */
   @SubscribeMessage('room:host_extend_time')
   handleHostExtendTime(
-    @MessageBody() data: { roomCode: string; extraSec?: number },
+    @ConnectedSocket() client: Socket, @MessageBody() data: { roomCode: string; extraSec?: number },
   ) {
     const code = data.roomCode.toUpperCase();
-    const extra = data.extraSec || 5;
+    if (!this.isHost(client, code)) return this.hostDenied();
+    if (this.gamesService.roomManager.getRoom(code)?.isLiveMode) return { status: 'ignored' };
+    const extra = Number.isFinite(data.extraSec) ? Math.max(1, Math.min(15, Math.trunc(data.extraSec!))) : 5;
     const res = this.gamesService.roomManager.extendRoundTime(code, extra);
     if (res) {
-      const roundTimerKey = `round_${code}`;
-      if (this.roomTimers.has(roundTimerKey)) {
-        clearTimeout(this.roomTimers.get(roundTimerKey)!);
+      const room = this.gamesService.roomManager.getRoom(code);
+      if (room?.status === 'IN_ROUND') {
+        const key = `round_${code}`;
+        this.clearTimer(key);
+        const remainingMs = Math.max(0, room.roundStartedAt + room.roundDurationSec * 1000 - Date.now());
+        this.roomTimers.set(key, setTimeout(() => this.endRound(code), remainingMs));
       }
-      const timer = setTimeout(() => {
-        this.endRound(code);
-      }, res.newRemainingSec * 1000);
-      this.roomTimers.set(roundTimerKey, timer);
 
       this.server.to(`game_room_${code}`).emit('room:time_extended', {
         extraSec: extra,
@@ -469,8 +651,10 @@ export class GamesGateway
    * Host advances immediately to next round
    */
   @SubscribeMessage('room:host_next_round')
-  handleHostNextRound(@MessageBody() data: { roomCode: string }) {
+  handleHostNextRound(@ConnectedSocket() client: Socket, @MessageBody() data: { roomCode: string }) {
     const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
+    if (this.gamesService.roomManager.getRoom(code)?.isLiveMode) return { status: 'ignored' };
     const roundTimerKey = `round_${code}`;
     if (this.roomTimers.has(roundTimerKey)) {
       clearTimeout(this.roomTimers.get(roundTimerKey)!);
@@ -484,8 +668,9 @@ export class GamesGateway
    * Host ends game immediately
    */
   @SubscribeMessage('room:host_end_game')
-  handleHostEndGame(@MessageBody() data: { roomCode: string }) {
+  handleHostEndGame(@ConnectedSocket() client: Socket, @MessageBody() data: { roomCode: string }) {
     const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
     const roundTimerKey = `round_${code}`;
     if (this.roomTimers.has(roundTimerKey)) {
       clearTimeout(this.roomTimers.get(roundTimerKey)!);
@@ -511,6 +696,7 @@ export class GamesGateway
     },
   ) {
     const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
     const res = await this.liveIntegration.connectRoomLive(
       code,
       data.provider || 'MOCK',
@@ -532,12 +718,13 @@ export class GamesGateway
    * Disconnect Live Integration
    */
   @SubscribeMessage('room:disconnect_live')
-  async handleDisconnectLive(@MessageBody() data: { roomCode: string }) {
+  async handleDisconnectLive(@ConnectedSocket() client: Socket, @MessageBody() data: { roomCode: string }) {
     const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
     await this.liveIntegration.disconnectRoomLive(code);
     const room = this.gamesService.roomManager.getRoom(code);
     if (room) {
-      room.isLiveMode = false;
+      room.liveProvider = undefined;
     }
     const res = {
       success: true,
@@ -554,7 +741,7 @@ export class GamesGateway
    */
   @SubscribeMessage('room:send_mock_comment')
   handleSendMockComment(
-    @MessageBody()
+    @ConnectedSocket() client: Socket, @MessageBody()
     data: {
       roomCode: string;
       username?: string;
@@ -562,6 +749,9 @@ export class GamesGateway
       commentText: string;
     },
   ) {
+    const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
+    if (this.gamesService.roomManager.getRoom(code)?.liveProvider !== 'MOCK') return { status: 'ignored' };
     const event = this.liveIntegration.sendMockComment(data.roomCode, data);
     return { status: 'sent', event };
   }
@@ -570,7 +760,10 @@ export class GamesGateway
    * Host triggers a burst of mock audience comments
    */
   @SubscribeMessage('room:simulate_batch_comments')
-  handleSimulateBatchComments(@MessageBody() data: { roomCode: string; count?: number }) {
+  handleSimulateBatchComments(@ConnectedSocket() client: Socket, @MessageBody() data: { roomCode: string; count?: number }) {
+    const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code)) return this.hostDenied();
+    if (this.gamesService.roomManager.getRoom(code)?.liveProvider !== 'MOCK') return { status: 'ignored' };
     const events = this.liveIntegration.simulateAudienceBatch(data.roomCode, data.count || 8);
     return { status: 'simulating', count: events.length };
   }
@@ -584,6 +777,7 @@ export class GamesGateway
     @MessageBody() data: { roomCode: string; targetUserId: string },
   ) {
     const code = data.roomCode.toUpperCase();
+    if (!this.isHost(client, code) || data.targetUserId === client.data.userId) return this.hostDenied();
     this.gamesService.roomManager.removePlayer(code, data.targetUserId);
     this.server.to(`game_room_${code}`).emit('room:player_kicked', {
       targetUserId: data.targetUserId,
@@ -609,12 +803,14 @@ export class GamesGateway
   ) {
     if (!data.message || !data.message.trim()) return;
     const code = data.roomCode.toUpperCase();
+    const player = this.gamesService.roomManager.getRoom(code)?.players.get(client.data.userId);
+    if (client.data.roomCode !== code || player?.socketId !== client.id || !player.isConnected) return;
     this.server.to(`game_room_${code}`).emit('room:chat_message', {
       id: Date.now().toString(),
-      userId: data.userId,
-      displayName: data.displayName,
-      avatar: data.avatar,
-      message: data.message.trim(),
+      userId: player.userId,
+      displayName: player.displayName,
+      avatar: player.avatar,
+      message: data.message.trim().slice(0, 500),
       timestamp: Date.now(),
     });
   }
@@ -633,10 +829,12 @@ export class GamesGateway
       avatar: string;
     },
   ) {
+    const userId = await this.authenticate(client);
+    if (!userId) return { status: 'error', message: 'Vui lòng đăng nhập lại để tham gia.' };
     try {
       const mode = data.gameMode || GameModeType.TRANSLATION_RUSH;
       const enqueued = await this.gamesService.enqueueMatchmaking(mode, {
-        userId: data.userId,
+        userId,
         displayName: data.displayName,
         avatar: data.avatar,
         socketId: client.id,
@@ -667,15 +865,10 @@ export class GamesGateway
   /**
    * Start game countdown immediately
    */
-  @SubscribeMessage('start_game_now')
-  handleStartGameNow(@MessageBody() data: { roomCode: string }) {
-    this.scheduleGameStart(data.roomCode.toUpperCase(), 3);
-  }
-
   private scheduleGameStart(roomCode: string, countdownSec: number) {
     let remaining = countdownSec;
     const room = this.gamesService.roomManager.getRoom(roomCode);
-    if (!room) return;
+    if (!room || room.status !== 'WAITING' || !room.totalRounds) return false;
 
     room.status = 'STARTING';
     const timerKey = `start_${roomCode}`;
@@ -684,20 +877,29 @@ export class GamesGateway
       clearInterval(this.roomTimers.get(timerKey)!);
     }
 
+    // Emit initial countdown immediately at t = 0 so players don't wait 1s before seeing countdown
+    this.server.to(`game_room_${roomCode}`).emit('game_starting_countdown', {
+      secondsRemaining: remaining,
+    });
+    remaining -= 1;
+
     const interval = setInterval(() => {
+      if (remaining < 0) {
+        clearInterval(interval);
+        this.roomTimers.delete(timerKey);
+        this.startNextRound(roomCode);
+        return;
+      }
+
       this.server.to(`game_room_${roomCode}`).emit('game_starting_countdown', {
         secondsRemaining: remaining,
       });
 
       remaining -= 1;
-      if (remaining < 0) {
-        clearInterval(interval);
-        this.roomTimers.delete(timerKey);
-        this.startNextRound(roomCode);
-      }
     }, 1000);
 
     this.roomTimers.set(timerKey, interval);
+    return true;
   }
 
   private startNextRound(roomCode: string) {
@@ -712,12 +914,14 @@ export class GamesGateway
 
     this.server.to(`game_room_${roomCode}`).emit('round_started', {
       round: roundData.round,
+      isLiveMode: room.isLiveMode,
       totalRounds: room.totalRounds,
       question: {
         id: roundData.question.id,
         prompt: roundData.question.prompt,
         direction: roundData.question.direction,
         category: roundData.question.category,
+        difficulty: roundData.question.difficulty,
         audioUrl: roundData.question.audioUrl,
         options: roundData.question.options,
         languageCode: roundData.question.languageCode,
@@ -727,6 +931,8 @@ export class GamesGateway
         hint: roundData.question.hint,
       },
       durationSec: room.roundDurationSec,
+      serverTime: Date.now(),
+      deadlineAt: room.roundStartedAt + room.roundDurationSec * 1000,
       roundAnswerCount: 0,
       totalParticipants: room.players.size,
     });
@@ -739,37 +945,68 @@ export class GamesGateway
     this.roomTimers.set(roundTimerKey, roundTimer);
   }
 
+  private getRoundReveal(room: GameRoom) {
+    const question = room.currentQuestion;
+    const correctOptionIndex = question?.correctOptionIndex;
+    const correctAnswer = (correctOptionIndex !== undefined ? question?.options?.[correctOptionIndex] : undefined)
+      ?? question?.correctAnswer ?? '';
+    const acceptedAnswers = room.isLiveMode && !question?.options?.length
+      ? [correctAnswer, ...(question?.acceptedAnswers ?? [])].filter(Boolean).map(normalizeLiveAnswer)
+      : undefined;
+    return {
+      correctAnswer,
+      correctOptionIndex,
+      acceptedAnswers,
+      explanation: question?.explanation ?? '',
+      serverTime: Date.now(),
+      summaryEndsAt: room.summaryEndsAt,
+      liveOptionVotes: room.liveOptionVotes ?? {},
+      liveTop3: room.questionCommentAwards?.get(room.currentRound) ?? [],
+    };
+  }
+
   private endRound(roomCode: string) {
     const room = this.gamesService.roomManager.getRoom(roomCode);
-    if (!room) return;
+    if (!room || (room.status !== 'IN_ROUND' && room.status !== 'PAUSED')) return;
+    this.clearTimer(`round_${roomCode}`);
 
     room.status = 'ROUND_SUMMARY';
-    const ranking = this.gamesService.roomManager.getLeaderboard(roomCode);
+    const summaryDurationMs = room.isLiveMode ? 10000 : 5000;
+    room.summaryEndsAt = Date.now() + summaryDurationMs;
+    const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(roomCode);
+    const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(roomCode);
 
-    // Full correct answer text
-    const correctDisplay =
-      room.currentQuestion?.options &&
-      typeof room.currentQuestion.correctOptionIndex === 'number'
-        ? room.currentQuestion.options[room.currentQuestion.correctOptionIndex]
-        : room.currentQuestion?.correctAnswer || '';
-
+    const reveal = this.getRoundReveal(room);
     this.server.to(`game_room_${roomCode}`).emit('round_ended', {
       round: room.currentRound,
-      correctAnswer: correctDisplay,
-      correctOptionIndex: room.currentQuestion?.correctOptionIndex,
-      explanation: room.currentQuestion?.explanation || '',
-      ranking,
+      ...reveal,
+      ranking: inAppRanking,
+      inAppRanking,
+      commenterRanking,
+      top3InApp: inAppRanking.slice(0, 3),
+      top3Commenters: commenterRanking.slice(0, 3),
       roundAnswerCount: room.roundAnswerCount,
+      correctCommentersCount: room.correctCommentersCount || 0,
       totalParticipants: room.players.size,
+      summary: {
+        round: room.currentRound,
+        correctAnswer: reveal.correctAnswer,
+        correctOptionIndex: room.currentQuestion?.correctOptionIndex,
+        explanation: room.currentQuestion?.explanation || '',
+      },
     });
 
-    setTimeout(() => {
+    const summaryKey = `summary_${roomCode}`;
+    const summaryTimer = setTimeout(() => {
+      this.roomTimers.delete(summaryKey);
+      if (room.status !== 'ROUND_SUMMARY') return;
       if (room.currentRound >= room.totalRounds) {
         this.finishGame(roomCode);
       } else {
         this.startNextRound(roomCode);
       }
-    }, 4000);
+    }, summaryDurationMs);
+    this.roomTimers.set(summaryKey, summaryTimer);
   }
 
   @SubscribeMessage('submit_answer')
@@ -780,13 +1017,22 @@ export class GamesGateway
       roomCode: string;
       userId: string;
       answer: string;
+      round: number;
+      skip?: boolean;
     },
   ) {
     const code = data.roomCode.toUpperCase();
+    const playerInRoom = this.gamesService.roomManager.getRoom(code)?.players.get(client.data.userId);
+    if (client.data.roomCode !== code || playerInRoom?.socketId !== client.id || !playerInRoom.isConnected || !Number.isInteger(data.round) ||
+        (data.skip !== true && (typeof data.answer !== 'string' || !data.answer.trim() || data.answer.length > 256))) {
+      return { status: 'ignored' };
+    }
     const result = await this.gamesService.roomManager.submitAnswer(
       code,
-      data.userId,
+      client.data.userId,
       data.answer,
+      data.round,
+      data.skip === true,
     );
 
     if (!result) {
@@ -796,6 +1042,8 @@ export class GamesGateway
     const { evaluation, player, ranking } = result;
 
     client.emit('answer_result', {
+      round: data.round,
+      skipped: data.skip === true,
       evaluation,
       currentScore: player.score,
       currentStreak: player.streak,
@@ -803,9 +1051,15 @@ export class GamesGateway
     });
 
     const room = this.gamesService.roomManager.getRoom(code);
+    const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(code);
+    const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(code);
 
     this.server.to(`game_room_${code}`).emit('live_ranking_update', {
-      ranking,
+      ranking: inAppRanking,
+      inAppRanking,
+      commenterRanking,
+      top3InApp: inAppRanking.slice(0, 3),
+      top3Commenters: commenterRanking.slice(0, 3),
       roundAnswerCount: room?.roundAnswerCount || 0,
       totalParticipants: room?.players.size || 0,
       lastAnsweredBy: {
@@ -816,9 +1070,9 @@ export class GamesGateway
       },
     });
 
-    if (room && room.status === 'IN_ROUND' && !room.isLiveMode && room.players.size <= 4) {
-      const allAnswered = Array.from(room.players.values()).every(
-        (p) => p.lastAnsweredRound === room.currentRound,
+    if (room && room.status === 'IN_ROUND' && !room.isLiveMode) {
+      const allAnswered = Array.from(room.players.values()).filter((p) => !p.isCommenter && p.isConnected && !p.isEliminated).every(
+        (p) => p.lastAnsweredRound === room.currentRound && Boolean(p.lastAnswerEvaluation),
       );
       if (allAnswered) {
         const roundTimerKey = `round_${code}`;
@@ -839,31 +1093,72 @@ export class GamesGateway
     if (!room || room.status === 'FINISHED') return;
 
     room.status = 'FINISHED';
-    const ranking = this.gamesService.roomManager.getLeaderboard(code);
+    room.finishedAt = Date.now();
+    this.clearTimer(`start_${code}`);
+    this.clearTimer(`round_${code}`);
+    this.clearTimer(`summary_${code}`);
+    this.server.to(`game_room_${code}`).emit('game_finished', this.getFinalResult(room));
 
-    this.server.to(`game_room_${code}`).emit('game_finished', {
+    const writes = await Promise.allSettled([
+      this.gamesService.prisma.customGameRoom.updateMany({
+        where: { roomCode: code, hostUserId: room.hostUserId ?? '' },
+        data: { status: 'COMPLETED', finishedAt: new Date(room.finishedAt) },
+      }),
+      this.gamesService.persistGameResults(code),
+    ]);
+    for (const write of writes) {
+      if (write.status === 'rejected') this.logger.error(`Could not persist result for room ${code}`, write.reason);
+    }
+  }
+
+  private getFinalResult(room: GameRoom) {
+    const code = room.roomCode;
+    const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(code);
+    const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(code);
+
+    return {
       roomCode: code,
       gameMode: room.gameMode,
       languageId: room.languageId,
       totalRounds: room.totalRounds,
+      playedRounds: room.currentRound,
       totalParticipants: room.players.size,
-      ranking,
-      top3: {
-        first: ranking[0] || null,
-        second: ranking[1] || null,
-        third: ranking[2] || null,
+      ranking: inAppRanking,
+      inAppRanking,
+      commenterRanking,
+      top3InApp: {
+        first: inAppRanking[0] || null,
+        second: inAppRanking[1] || null,
+        third: inAppRanking[2] || null,
       },
-    });
+      top3Commenters: {
+        first: commenterRanking[0] || null,
+        second: commenterRanking[1] || null,
+        third: commenterRanking[2] || null,
+      },
+      top3: {
+        first: inAppRanking[0] || null,
+        second: inAppRanking[1] || null,
+        third: inAppRanking[2] || null,
+      },
+      celebrationDurationSec: room.scheduled ? 20 : 0,
+    };
 
-    await this.gamesService.persistGameResults(code);
   }
+
 
   private broadcastRanking(roomCode: string) {
     const code = roomCode.toUpperCase();
     const room = this.gamesService.roomManager.getRoom(code);
-    const ranking = this.gamesService.roomManager.getLeaderboard(code);
+    const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(code);
+    const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(code);
+
     this.server.to(`game_room_${code}`).emit('live_ranking_update', {
-      ranking,
+      ranking: inAppRanking,
+      inAppRanking,
+      commenterRanking,
+      top3InApp: inAppRanking.slice(0, 3),
+      top3Commenters: commenterRanking.slice(0, 3),
       roundAnswerCount: room?.roundAnswerCount || 0,
       totalParticipants: room?.players.size || 0,
     });

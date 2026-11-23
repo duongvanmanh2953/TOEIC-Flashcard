@@ -66,10 +66,11 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
             </span>
 
             {/* Silver Pedestal Step */}
-            <div className="w-full h-20 sm:h-28 mt-2 rounded-t-2xl bg-gradient-to-t from-slate-950 via-slate-900/90 to-slate-700/50 border-t-2 border-x-2 border-slate-400/60 shadow-lg shadow-slate-900/60 flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="w-full h-20 sm:h-28 mt-2 rounded-t-2xl bg-gradient-to-t from-slate-950 via-slate-900/90 to-slate-800/80 border-t-3 sm:border-t-4 border-x border-slate-300/80 shadow-lg shadow-slate-900/60 flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-radial-gradient from-slate-300/15 to-transparent pointer-events-none" />
-              <span className="text-[9px] sm:text-xs font-bold text-slate-300 uppercase tracking-widest">Á QUÂN</span>
-              <span className="text-xl sm:text-3xl font-black text-slate-200 font-mono tracking-wider drop-shadow">2ND</span>
+              <span className="text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-300 font-mono tracking-wider drop-shadow">2ND</span>
+              <span className="text-[9px] sm:text-xs font-black text-slate-300 uppercase tracking-widest mt-0.5">Á QUÂN</span>
             </div>
           </div>
         ) : validPlayers.length >= 2 ? (
@@ -80,11 +81,11 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
         {/* RANK 1: GOLD QUÁN QUÂN (CENTER, HIGHEST DAIS)        */}
         {/* ---------------------------------------------------- */}
         {p1 && (
-          <div className="flex flex-col items-center flex-1 max-w-[125px] sm:max-w-[210px] animate-fade-in z-10 group">
+          <div className="flex flex-col items-center flex-1 max-w-[125px] sm:max-w-[210px] animate-fade-in z-10 group -mt-4 sm:-mt-6">
             <div className="relative mb-2.5">
               {/* Luminous Grand Aura */}
               <div className="absolute -inset-2.5 sm:-inset-4 rounded-full bg-gradient-to-tr from-amber-500 via-yellow-300 to-orange-500 opacity-60 blur-md animate-pulse" />
-              <ArenaIconCrown className="w-7 h-7 sm:w-10 sm:h-10 text-amber-300 absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 drop-shadow-[0_0_15px_rgba(251,191,36,0.9)] animate-bounce" />
+              <ArenaIconCrown className="w-7 h-7 sm:w-10 sm:h-10 text-amber-300 absolute -top-4 sm:-top-5 left-1/2 -translate-x-1/2 drop-shadow-[0_0_15px_rgba(251,191,36,0.9)] animate-bounce z-20 pointer-events-none" />
               <PlayerAvatar
                 avatarUrl={p1.avatar}
                 displayName={p1.name}
@@ -93,7 +94,7 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
                 level={p1.level}
                 className="w-14 h-14 sm:w-20 sm:h-20"
               />
-              <span className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center border-2 border-slate-900 shadow-xl">
+              <span className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center border-2 border-slate-900 shadow-xl z-20">
                 👑 1
               </span>
             </div>
@@ -110,10 +111,11 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
             </span>
 
             {/* Gold Champion Pedestal Step */}
-            <div className="w-full h-28 sm:h-40 mt-2 rounded-t-2xl bg-gradient-to-t from-slate-950 via-amber-950/80 to-amber-500/40 border-t-2 border-x-2 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.4)] flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="w-full h-32 sm:h-44 mt-2 rounded-t-2xl bg-gradient-to-t from-slate-950 via-amber-950/80 to-amber-900/50 border-t-4 border-x border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.5)] flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-yellow-200 to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-radial-gradient from-amber-400/25 to-transparent pointer-events-none" />
-              <span className="text-[10px] sm:text-xs font-black text-amber-300 uppercase tracking-widest drop-shadow">VÔ ĐỊCH</span>
-              <span className="text-2xl sm:text-4xl font-black text-amber-200 font-mono tracking-wider drop-shadow-[0_2px_15px_rgba(251,191,36,0.8)]">1ST</span>
+              <span className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-100 via-amber-300 to-amber-500 font-mono tracking-wider drop-shadow-[0_2px_15px_rgba(251,191,36,0.8)]">1ST</span>
+              <span className="text-[10px] sm:text-xs font-black text-amber-300 uppercase tracking-widest mt-0.5 drop-shadow">VÔ ĐỊCH</span>
             </div>
           </div>
         )}
@@ -146,10 +148,11 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
             </span>
 
             {/* Bronze Pedestal Step */}
-            <div className="w-full h-16 sm:h-24 mt-2 rounded-t-2xl bg-gradient-to-t from-slate-950 via-[#271207]/90 to-amber-700/50 border-t-2 border-x-2 border-amber-600/60 shadow-lg shadow-amber-950/60 flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="w-full h-14 sm:h-20 mt-2 rounded-t-2xl bg-gradient-to-t from-slate-950 via-[#271207]/90 to-amber-900/50 border-t-3 sm:border-t-4 border-x border-amber-600/80 shadow-lg shadow-amber-950/60 flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300/60 to-transparent pointer-events-none" />
               <div className="absolute inset-0 bg-radial-gradient from-amber-700/20 to-transparent pointer-events-none" />
-              <span className="text-[9px] sm:text-xs font-bold text-amber-400 uppercase tracking-widest">HẠNG BA</span>
-              <span className="text-xl sm:text-3xl font-black text-amber-300 font-mono tracking-wider drop-shadow">3RD</span>
+              <span className="text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-400 to-amber-600 font-mono tracking-wider drop-shadow">3RD</span>
+              <span className="text-[9px] sm:text-xs font-black text-amber-400 uppercase tracking-widest mt-0.5">HẠNG 3</span>
             </div>
           </div>
         ) : validPlayers.length >= 3 ? (

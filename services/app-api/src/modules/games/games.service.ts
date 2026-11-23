@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GameModeType, CefrLevel } from '@prisma/client';
@@ -25,8 +26,8 @@ export class GamesService implements OnModuleInit {
   private readonly logger = new Logger(GamesService.name);
   readonly roomManager = new GameRoomManager();
 
-  // Test mode allows running and playing games outside 20:00-22:00 for QA & Admin testing
-  private testModeEnabled: boolean = true;
+  // Test mode allows running and playing games outside 19:00-22:00 for QA & Admin testing
+  private testModeEnabled = false;
 
   constructor(
     public readonly prisma: PrismaService,
@@ -71,7 +72,7 @@ export class GamesService implements OnModuleInit {
   }
 
   /**
-   * Check whether daily game hours are open (20:00 to 22:00 VN time)
+   * Check whether daily game hours are open (19:00 to 22:00 VN time)
    */
   getOperatingHoursStatus(): {
     isOpen: boolean;
@@ -90,7 +91,7 @@ export class GamesService implements OnModuleInit {
       hour: 'numeric',
       minute: 'numeric',
       second: 'numeric',
-      hour12: false,
+      hourCycle: 'h23',
     });
 
     const parts = formatter.formatToParts(now);
@@ -99,7 +100,7 @@ export class GamesService implements OnModuleInit {
     const second = parseInt(parts.find((p) => p.type === 'second')?.value || '0', 10);
 
     const currentSeconds = hour * 3600 + minute * 60 + second;
-    const openSeconds = 20 * 3600; // 20:00:00
+    const openSeconds = 19 * 3600; // 19:00:00
     const closeSeconds = 22 * 3600; // 22:00:00
 
     let isOpen = currentSeconds >= openSeconds && currentSeconds < closeSeconds;
@@ -121,7 +122,7 @@ export class GamesService implements OnModuleInit {
     return {
       isOpen,
       serverTime: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`,
-      nextGameTime: '20:00',
+      nextGameTime: '19:00',
       countdownSeconds,
       testMode: this.testModeEnabled,
       timezone: tz,
@@ -148,7 +149,7 @@ export class GamesService implements OnModuleInit {
     return configs.map((c) => ({
       gameMode: c.gameMode,
       title: c.title,
-      scheduleTime: c.scheduleTime,
+      scheduleTime: opStatus.nextGameTime,
       durationMinutes: c.durationMinutes,
       questionCount: c.questionCount,
       difficulty: c.difficulty,
@@ -168,53 +169,69 @@ export class GamesService implements OnModuleInit {
     socketId: string,
     languageId: string = 'en',
   ): Promise<{ room: GameRoom; player: RoomPlayer }> {
+    if (!this.getOperatingHoursStatus().isOpen) throw new Error('Sự kiện mở lúc 19:00 (GMT+7).');
     const targetLang = (languageId || 'en').toLowerCase().trim();
-    // Find active open waiting room with matching game mode and language
-    let room = this.roomManager
-      .getActiveRooms()
-      .find((r) => r.gameMode === gameMode && r.languageId === targetLang && (r.status === 'WAITING' || r.status === 'STARTING') && r.players.size < 500);
+    const room = this.roomManager.getAllRooms().filter((candidate) =>
+      candidate.scheduled && candidate.gameMode === gameMode && candidate.languageId === targetLang &&
+      Date.now() - candidate.createdAt < 3 * 60 * 60 * 1000
+    ).sort((a, b) => b.createdAt - a.createdAt)[0] ||
+      (this.testModeEnabled ? await this.createScheduledRoom(gameMode, targetLang) : undefined);
 
-    if (!room) {
-      // Fetch authentic questions directly from QuestionProviderService matching the chosen language
-      const questions = await this.questionProvider.getQuestionsForRoom(
-        QuestionSourceType.SYSTEM_PRESET,
-        undefined,
-        15,
-        gameMode,
-        targetLang,
-      );
-
-      // Shuffle questions
-      const shuffled = [...questions].sort(() => Math.random() - 0.5).slice(0, 15);
-      const roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-      const config = await this.prisma.gameConfig.findUnique({ where: { gameMode } });
-      const title = config?.title || `${gameMode.replace('_', ' ')}`;
-
-      // Enforce <= 15s for choice / quiz games as requested by user
-      const rawDuration = config?.durationMinutes
-        ? Math.round((config.durationMinutes * 60) / (shuffled.length || 10))
-        : 12;
-      const roundDurationSec = Math.min(15, Math.max(5, rawDuration));
-
-      room = this.roomManager.createRoom(
-        roomCode,
-        gameMode,
-        title,
-        shuffled,
-        roundDurationSec,
-        targetLang,
-        false,
-        true,
-      );
-    }
-
+    if (!room) throw new Error('Trận định kỳ chưa sẵn sàng hoặc đã kết thúc.');
+    if (room.status === 'FINISHED' && !room.players.has(userId)) throw new Error('Trận định kỳ đã kết thúc.');
     const player = this.roomManager.addPlayer(room.roomCode, userId, displayName, avatar, socketId);
-    if (!player) {
-      throw new Error('Failed to join game room');
-    }
-
+    if (!player) throw new Error('Không thể vào phòng.');
     return { room, player };
+  }
+
+  async createScheduledRoom(gameMode: GameModeType, targetLang: string): Promise<GameRoom> {
+    const config = await this.prisma.gameConfig.findUnique({ where: { gameMode } });
+    // Fetch authentic questions directly from QuestionProviderService matching the chosen language
+    const questions = await this.questionProvider.getQuestionsForRoom(
+      QuestionSourceType.SYSTEM_PRESET,
+      undefined,
+      config?.questionCount || 15,
+      gameMode,
+      targetLang,
+    );
+
+    if (!questions.length) throw new Error('Không có câu hỏi cho trận định kỳ.');
+    let roomCode: string;
+    do {
+      roomCode = `A-${randomUUID().slice(0, 8).toUpperCase()}`;
+    } while (this.roomManager.getRoom(roomCode));
+
+    const friendlyTitles: Record<string, string> = {
+      TRANSLATION_RUSH: 'Đấu Trường Dịch Nhanh',
+      WORD_BLITZ: 'Đấu Trường Phản Xạ Từ Vựng',
+      SENTENCE_SPRINT: 'Đấu Trường Tốc Độ Đặt Câu',
+      MISSING_WORD: 'Đấu Trường Điền Từ Khuyết',
+      LISTENING_RUSH: 'Đấu Trường Nghe Hiểu Cấp Tốc',
+      SYNONYM_BATTLE: 'Đấu Trí Từ Đồng Nghĩa',
+      FIX_SENTENCE: 'Đấu Trường Sửa Lỗi Câu',
+      GUESS_WORD: 'Đấu Trường Đoán Từ Bí Ẩn',
+      FOUR_SKILLS_ARENA: 'Đại Chiến 4 Kỹ Năng',
+    };
+    const title = config?.title || friendlyTitles[gameMode] || `${gameMode.replace(/_/g, ' ')}`;
+
+    // Enforce <= 15s for choice / quiz games as requested by user
+    const rawDuration = config?.durationMinutes
+      ? Math.round((config.durationMinutes * 60) / questions.length)
+      : 12;
+    const roundDurationSec = Math.min(15, Math.max(5, rawDuration));
+
+    const room = this.roomManager.createRoom(
+      roomCode,
+      gameMode,
+      title,
+      questions,
+      roundDurationSec,
+      targetLang,
+      false,
+      true,
+    );
+    room.scheduled = true;
+    return room;
   }
 
   /**
@@ -231,7 +248,10 @@ export class GamesService implements OnModuleInit {
     }
     (room as any).isResultsQueued = true;
 
-    const ranking = this.roomManager.getLeaderboard(roomCode);
+    // Audience identities are scoped to Live and have no User foreign key.
+    const ranking = this.roomManager.getLeaderboard(roomCode)
+      .filter((player) => !player.isCommenter)
+      .map((player, index) => ({ ...player, rank: index + 1 }));
     const today = new Date().toISOString().slice(0, 10);
     const topPlayers = ranking.slice(0, 20); // Top 20 players
 

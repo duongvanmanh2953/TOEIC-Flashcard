@@ -2264,12 +2264,13 @@ export const MyWordBankPage: React.FC = () => {
     setEditingParsedItem({ ...parsedWords[idx] });
   };
 
-  const handleSaveEditParsed = (idx: number) => {
-    if (!editingParsedItem) return;
-    setParsedWords((prev) => prev.map((item, i) => (i === idx ? editingParsedItem : item)));
+  const handleSaveParsedEdit = () => {
+    if (!editingParsedItem || editingParsedIdx === null) return;
+    setParsedWords((prev) => prev.map((item, i) => (i === editingParsedIdx ? editingParsedItem : item)));
     setEditingParsedIdx(null);
     setEditingParsedItem(null);
   };
+  const handleSaveEditParsed = handleSaveParsedEdit;
 
   const handleCancelEditParsed = () => {
     if (editingParsedIdx !== null) {
@@ -2282,7 +2283,7 @@ export const MyWordBankPage: React.FC = () => {
     setEditingParsedItem(null);
   };
 
-  const handleDeleteParsed = (idx: number) => {
+  const handleDeleteParsedWord = (idx: number) => {
     setParsedWords((prev) => prev.filter((_, i) => i !== idx));
     if (editingParsedIdx === idx) {
       setEditingParsedIdx(null);
@@ -2291,6 +2292,7 @@ export const MyWordBankPage: React.FC = () => {
       setEditingParsedIdx(editingParsedIdx - 1);
     }
   };
+  const handleDeleteParsed = handleDeleteParsedWord;
 
   const handleClearAllParsed = () => {
     setParsedWords([]);

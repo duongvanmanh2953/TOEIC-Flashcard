@@ -1266,7 +1266,6 @@ export const SettingsPage: React.FC = () => {
         {/* OTP MODAL FOR LOGGING OUT ANOTHER DEVICE */}
         {otpModalOpen && targetDeviceToLogout && (
           <ModalPortal isOpen={otpModalOpen} onClose={() => setOtpModalOpen(false)}>
-            <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-xs">
               <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-scale-in text-slate-200">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2.5">
@@ -1438,7 +1437,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
           </ModalPortal>
         )}
 

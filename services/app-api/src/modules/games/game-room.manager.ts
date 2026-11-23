@@ -1,8 +1,12 @@
 import { Logger } from '@nestjs/common';
 import { GameModeType } from '@prisma/client';
 import { GameQuestionPayload, AnswerEvaluation } from './game-mode.interface';
-import { GAME_MODE_REGISTRY } from './game-modes';
+import { GAME_MODE_REGISTRY, normalizeText, scoreBattleAnswer, scoreLiveResponse } from './game-modes';
 import { LiveCommentEvent } from './live-integration/live-adapter.interface';
+
+export function normalizeLiveAnswer(answer: string): string {
+  return normalizeText(answer.normalize('NFKC'));
+}
 
 export interface RoomPlayer {
   userId: string;
@@ -14,6 +18,8 @@ export interface RoomPlayer {
   streak: number;
   bestStreak: number;
   correctCount: number;
+  answeredCount?: number;
+  totalResponseTimeMs?: number;
   lastAnsweredRound: number;
   lastResponseTimeMs: number;
   lastAnswerEvaluation?: AnswerEvaluation;
@@ -22,6 +28,7 @@ export interface RoomPlayer {
   fairPlayScore: number;
   rank: number;
   isHost?: boolean;
+  isCommenter?: boolean;
   lives?: number;
   isEliminated?: boolean;
   team?: 'RED' | 'BLUE';
@@ -35,6 +42,17 @@ export type RoomStatus =
   | 'ROUND_SUMMARY'
   | 'FINISHED';
 
+export interface QuestionCommentAward {
+  commenterId: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  rank: number; // 1, 2, 3, 4+
+  answer: string;
+  points: number; // 30, 20, 15, 0
+  receivedAt: number;
+}
+
 export interface GameRoom {
   roomCode: string;
   gameMode: GameModeType;
@@ -43,6 +61,8 @@ export interface GameRoom {
   isLiveMode: boolean;
   liveProvider?: 'MOCK' | 'TIKTOK_LIVE';
   allowLateJoin: boolean;
+  hostUserId?: string;
+  scheduled?: boolean;
   status: RoomStatus;
   currentRound: number;
   totalRounds: number;
@@ -50,10 +70,17 @@ export interface GameRoom {
   currentQuestion?: GameQuestionPayload;
   players: Map<string, RoomPlayer>;
   roundDurationSec: number;
+  baseRoundDurationSec: number;
   roundStartedAt: number;
   createdAt: number;
   finishedAt?: number;
   roundAnswerCount: number;
+  liveOptionVotes?: Record<string, number>;
+  correctCommentersCount?: number;
+  roundCommentCount?: number;
+  questionCommentAwards?: Map<number, QuestionCommentAward[]>;
+  liveAcceptedEvents?: Set<string>;
+  summaryEndsAt?: number;
   remainingOnPause?: number;
 }
 
@@ -63,7 +90,7 @@ export class GameRoomManager {
 
   constructor() {
     // Periodic TTL cleanup of stale/finished rooms older than 30 minutes
-    setInterval(() => this.cleanupStaleRooms(), 60000);
+    setInterval(() => this.cleanupStaleRooms(), 60000).unref();
   }
 
   getRoom(roomCode: string): GameRoom | undefined {
@@ -89,6 +116,8 @@ export class GameRoomManager {
     allowLateJoin: boolean = true,
   ): GameRoom {
     const code = roomCode.toUpperCase();
+    const existing = this.rooms.get(code);
+    if (existing) return existing;
     const room: GameRoom = {
       roomCode: code,
       gameMode,
@@ -102,6 +131,7 @@ export class GameRoomManager {
       questions,
       players: new Map(),
       roundDurationSec,
+      baseRoundDurationSec: roundDurationSec,
       roundStartedAt: 0,
       createdAt: Date.now(),
       roundAnswerCount: 0,
@@ -188,19 +218,21 @@ export class GameRoomManager {
 
   startRound(roomCode: string): { question: GameQuestionPayload; round: number } | null {
     const room = this.rooms.get(roomCode.toUpperCase());
-    if (!room) return null;
+    if (!room || (room.status !== 'STARTING' && room.status !== 'ROUND_SUMMARY')) return null;
 
+    const question = room.questions[room.currentRound];
+    if (!question) return null;
     room.currentRound += 1;
-    if (room.currentRound > room.totalRounds) {
-      room.status = 'FINISHED';
-      room.finishedAt = Date.now();
-      return null;
-    }
 
     room.status = 'IN_ROUND';
-    room.currentQuestion = room.questions[room.currentRound - 1];
+    room.currentQuestion = question;
+    room.roundDurationSec = room.isLiveMode ? 20 : room.baseRoundDurationSec;
     room.roundStartedAt = Date.now();
     room.roundAnswerCount = 0;
+    room.liveOptionVotes = Object.create(null);
+    room.summaryEndsAt = undefined;
+    room.correctCommentersCount = 0;
+    room.roundCommentCount = 0;
 
     // Reset last round evaluations & round-specific scores
     for (const player of room.players.values()) {
@@ -220,7 +252,7 @@ export class GameRoomManager {
 
     const elapsedMs = Date.now() - room.roundStartedAt;
     const remainingMs = Math.max(0, room.roundDurationSec * 1000 - elapsedMs);
-    room.remainingOnPause = Math.round(remainingMs / 1000);
+    room.remainingOnPause = Math.ceil(remainingMs / 1000);
     room.status = 'PAUSED';
     return { remainingSec: room.remainingOnPause };
   }
@@ -229,7 +261,7 @@ export class GameRoomManager {
     const room = this.rooms.get(roomCode.toUpperCase());
     if (!room || room.status !== 'PAUSED') return null;
 
-    const remainingSec = room.remainingOnPause || 5;
+    const remainingSec = room.remainingOnPause ?? 0;
     room.roundStartedAt = Date.now() - (room.roundDurationSec - remainingSec) * 1000;
     room.status = 'IN_ROUND';
     room.remainingOnPause = undefined;
@@ -263,9 +295,11 @@ export class GameRoomManager {
     roomCode: string,
     userId: string,
     answer: string,
+    round?: number,
+    skip = false,
   ): Promise<{ evaluation: AnswerEvaluation; player: RoomPlayer; ranking: RoomPlayer[] } | null> {
     const room = this.rooms.get(roomCode.toUpperCase());
-    if (!room || room.status !== 'IN_ROUND' || !room.currentQuestion) return null;
+    if (!room || room.isLiveMode || room.status !== 'IN_ROUND' || !room.currentQuestion) return null;
 
     const player = room.players.get(userId);
     if (!player) return null;
@@ -281,6 +315,12 @@ export class GameRoomManager {
     }
 
     const serverReceivedAt = Date.now();
+    const acceptedRound = room.currentRound;
+    if ((round !== undefined && round !== acceptedRound) ||
+        serverReceivedAt >= room.roundStartedAt + room.roundDurationSec * 1000) return null;
+
+    // Reserve the answer before awaiting the scoring engine.
+    player.lastAnsweredRound = acceptedRound;
     const responseTimeMs = Math.max(50, serverReceivedAt - room.roundStartedAt);
 
     // Anti-Cheat: Flag suspicious macro submission (< 200ms)
@@ -292,16 +332,24 @@ export class GameRoomManager {
     // Evaluate using Game Mode Engine
     const engine =
       GAME_MODE_REGISTRY[room.gameMode] || GAME_MODE_REGISTRY[GameModeType.TRANSLATION_RUSH];
-    const evaluation = await engine.evaluate(
-      room.currentQuestion,
-      answer,
-      responseTimeMs,
-      player.streak,
-    );
+    const evaluation: AnswerEvaluation = skip
+      ? { isCorrect: false, accuracy: 0, semanticSimilarity: 0, speedBonus: 0, streakBonus: 0, score: 0, feedbackText: 'Đã bỏ qua' }
+      : await engine.evaluate(
+        room.currentQuestion,
+        answer,
+        responseTimeMs,
+        player.streak,
+      );
+    evaluation.score = scoreBattleAnswer(evaluation.isCorrect, responseTimeMs);
+    evaluation.speedBonus = 0;
+    evaluation.streakBonus = 0;
+
+    if (room.status !== 'IN_ROUND' || room.currentRound !== acceptedRound) return null;
 
     // Update player stats
-    player.lastAnsweredRound = room.currentRound;
     player.lastResponseTimeMs = responseTimeMs;
+    player.answeredCount = (player.answeredCount ?? 0) + 1;
+    player.totalResponseTimeMs = (player.totalResponseTimeMs ?? 0) + responseTimeMs;
     player.lastAnswerEvaluation = evaluation;
     player.roundScore = evaluation.score;
 
@@ -312,7 +360,6 @@ export class GameRoomManager {
       player.bestStreak = Math.max(player.bestStreak, player.streak);
     } else {
       player.streak = 0;
-      player.score += evaluation.score; // partial credit
       if (room.gameMode === GameModeType.SURVIVAL) {
         if (typeof player.lives !== 'number') player.lives = 3;
         player.lives = Math.max(0, player.lives - 1);
@@ -333,66 +380,100 @@ export class GameRoomManager {
   /**
    * Live Comment integration ingestor: binds TikTok viewer to room & evaluates answer
    */
-  async submitLiveComment(
-    roomCode: string,
-    event: LiveCommentEvent,
-  ): Promise<{
-    evaluation?: AnswerEvaluation;
-    player: RoomPlayer;
-    ranking: RoomPlayer[];
-    isNewAnswer: boolean;
-  } | null> {
+  submitLiveComment(roomCode: string, event: LiveCommentEvent) {
     const room = this.rooms.get(roomCode.toUpperCase());
-    if (!room) return null;
+    const question = room?.currentQuestion;
+    const receivedAt = Date.now();
+    if (!room?.isLiveMode || !question || room.status !== 'IN_ROUND' ||
+        event.timestamp < room.roundStartedAt || receivedAt >= room.roundStartedAt + room.roundDurationSec * 1000) return null;
 
-    const commenterId = `tt_${event.username}`;
-    let player = room.players.get(commenterId);
-
-    if (!player) {
-      player = {
-        userId: commenterId,
-        displayName: event.displayName || `@${event.username}`,
-        avatar:
-          event.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${event.username}`,
-        socketId: '',
-        score: 0,
-        roundScore: 0,
-        streak: 0,
-        bestStreak: 0,
-        correctCount: 0,
-        lastAnsweredRound: -1,
-        lastResponseTimeMs: 0,
-        latencyMs: 35,
-        isConnected: true,
-        fairPlayScore: 100,
-        rank: room.players.size + 1,
-      };
-      room.players.set(commenterId, player);
+    const username = event.username.trim().toLowerCase();
+    if (!username) return null;
+    const commenterId = `tt_${username}`;
+    const existing = room.players.get(commenterId);
+    room.roundCommentCount = (room.roundCommentCount ?? 0) + 1;
+    const raw = typeof event.commentText === 'string' ? event.commentText.trim() : '';
+    if (!raw || raw.length > 100) return null;
+    const normalized = normalizeLiveAnswer(raw);
+    const letters = ['A', 'B', 'C', 'D'];
+    const isChoice = Boolean(question.options?.length);
+    const variations = [question.correctAnswer, ...(question.acceptedAnswers ?? [])]
+      .filter(Boolean).map(normalizeLiveAnswer);
+    let answer: string;
+    let isCorrect: boolean;
+    if (isChoice) {
+      const exactChoice = letters.indexOf(raw.toUpperCase());
+      const numberChoice = /^[1-4]$/.test(raw) ? Number(raw) - 1 : -1;
+      const optionText = question.options!.findIndex((value) =>
+        normalizeLiveAnswer(value.replace(/^[ABCD][.):]\s*/i, '')) === normalized);
+      const index = [exactChoice, numberChoice, optionText].find((value) => value >= 0) ?? -1;
+      if (!normalized || !letters[index] || !question.options?.[index]) return null;
+      answer = letters[index];
+      isCorrect = index === question.correctOptionIndex;
+    } else {
+      isCorrect = variations.includes(normalized);
+      // Accept short word answers (including wrong guesses) and exact accepted phrases.
+      if (!normalized || (!isCorrect && !/^[\p{L}\p{M}]+(?:[- ][\p{L}\p{M}]+){0,2}$/u.test(normalized))) return null;
+      answer = normalized;
     }
 
-    // If room is not actively in round, return registered player without evaluation
-    if (room.status !== 'IN_ROUND' || !room.currentQuestion) {
-      return { player, ranking: this.getLeaderboard(roomCode), isNewAnswer: false };
+    if (existing?.lastAnsweredRound === room.currentRound || room.liveAcceptedEvents?.has(event.eventId)) {
+      return { status: 'duplicate' as const };
     }
 
-    // Ignore if already submitted for this round
-    if (player.lastAnsweredRound === room.currentRound) {
-      return { player, ranking: this.getLeaderboard(roomCode), isNewAnswer: false };
-    }
-
-    // Evaluate parsed option ('A'/'B'/'C'/'D') or raw comment
-    const answerToEval = event.parsedOption || event.commentText;
-    const res = await this.submitAnswer(roomCode, commenterId, answerToEval);
-    if (!res) {
-      return { player, ranking: this.getLeaderboard(roomCode), isNewAnswer: false };
-    }
-
-    return {
-      evaluation: res.evaluation,
-      player: res.player,
-      ranking: res.ranking,
-      isNewAnswer: true,
+    const player: RoomPlayer = existing ?? {
+      userId: commenterId,
+      displayName: event.displayName || `@${username}`,
+      avatar: event.avatarUrl || '',
+      socketId: '',
+      score: 0,
+      streak: 0,
+      bestStreak: 0,
+      correctCount: 0,
+      lastAnsweredRound: -1,
+      lastResponseTimeMs: 0,
+      latencyMs: 0,
+      isConnected: true,
+      fairPlayScore: 100,
+      rank: 0,
+      isCommenter: true,
     };
+    room.players.set(commenterId, player);
+    (room.liveAcceptedEvents ??= new Set()).add(event.eventId);
+    player.lastAnsweredRound = room.currentRound;
+    player.lastResponseTimeMs = receivedAt - room.roundStartedAt;
+    const votes = room.liveOptionVotes ??= Object.create(null);
+    votes[answer] = (votes[answer] ?? 0) + 1;
+    room.roundAnswerCount++;
+    let score = 0;
+    if (isCorrect) {
+      const allAwards = room.questionCommentAwards ??= new Map<number, QuestionCommentAward[]>();
+      const awards = allAwards.get(room.currentRound) ?? [];
+      score = scoreLiveResponse(awards.length);
+      if (score > 0) {
+        awards.push({
+          commenterId,
+          username,
+          displayName: player.displayName,
+          avatarUrl: player.avatar,
+          rank: awards.length + 1,
+          answer,
+          points: score,
+          receivedAt,
+        });
+        allAwards.set(room.currentRound, awards);
+      }
+      player.score += score;
+      player.correctCount++;
+      player.streak++;
+      player.bestStreak = Math.max(player.bestStreak, player.streak);
+      room.correctCommentersCount = (room.correctCommentersCount ?? 0) + 1;
+    } else {
+      player.streak = 0;
+    }
+    player.roundScore = score;
+    this.updateRankings(room);
+    return { status: 'accepted' as const, player, answer, isCorrect, score };
   }
 
   updateRankings(room: GameRoom): void {
@@ -412,6 +493,25 @@ export class GameRoomManager {
     return Array.from(room.players.values()).sort((a, b) => a.rank - b.rank);
   }
 
+  getCommenterLeaderboard(roomCode: string): RoomPlayer[] {
+    const room = this.rooms.get(roomCode.toUpperCase());
+    if (!room) return [];
+    return Array.from(room.players.values())
+      .filter((p) => Boolean(p.isCommenter))
+      .sort((a, b) => {
+        const scoreA = a.score ?? 0;
+        const scoreB = b.score ?? 0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return a.lastResponseTimeMs - b.lastResponseTimeMs;
+      })
+      .map((p, idx) => ({ ...p, rank: idx + 1, score: p.score ?? 0 }));
+  }
+
+  removeRoom(roomCode: string): void {
+    const code = roomCode.toUpperCase();
+    this.rooms.delete(code);
+  }
+
   private cleanupStaleRooms(): void {
     const now = Date.now();
     const halfHour = 30 * 60 * 1000;
@@ -420,7 +520,7 @@ export class GameRoomManager {
       const isOld = now - room.createdAt > halfHour;
       const isFinishedOld =
         room.status === 'FINISHED' && room.finishedAt && now - room.finishedAt > 10 * 60 * 1000;
-      if (isFinishedOld || (isOld && room.players.size === 0)) {
+      if (isFinishedOld || (isOld && room.status === 'WAITING' && !Array.from(room.players.values()).some((player) => player.isConnected))) {
         this.rooms.delete(code);
         this.logger.log(`Room #${code} cleaned up.`);
       }

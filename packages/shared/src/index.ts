@@ -70,5 +70,6 @@ export * from './utils/feedbackSound';
 export * from './arena/arenaTheme';
 export * from './arena/scoringEngine';
 export * from './components/arena';
+export * from './config/curriculumData';
 
 

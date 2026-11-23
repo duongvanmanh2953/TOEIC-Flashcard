@@ -61,7 +61,6 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   const [status, setStatus] = useState<'PENDING' | 'PAID' | 'EXPIRED'>('PENDING');
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(15 * 60);
-  const [simulating, setSimulating] = useState(false);
 
   const pollTimerRef = useRef<any>(null);
   const countdownTimerRef = useRef<any>(null);
@@ -178,29 +177,6 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
-  };
-
-  // Nút mô phỏng thanh toán nhanh cho môi trường Test / Sandbox
-  const handleSimulatePayment = async () => {
-    if (!order) return;
-    setSimulating(true);
-    try {
-      const res: any = await api.post('/subscriptions/simulate-payment', {
-        orderCode: order.orderCode,
-      });
-      const data = res?.data || res;
-      if (data?.success || res?.success) {
-        setStatus('PAID');
-        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-        await refreshProfile();
-        if (onSuccess) onSuccess();
-      }
-    } catch (err: any) {
-      alert(err?.message || 'Lỗi mô phỏng thanh toán');
-    } finally {
-      setSimulating(false);
-    }
   };
 
   const formatCurrency = (val: number) => {
@@ -498,27 +474,15 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                 )
               )}
 
-              {/* Ticker trạng thái lắng nghe Webhook & Sandbox */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 dark:bg-indigo-950/30 border border-indigo-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-2.5 text-indigo-700 dark:text-indigo-300 font-semibold">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                  </span>
-                  <span>Hệ thống đang tự động lắng nghe Webhook ngân hàng 24/7...</span>
-                </div>
-
-                {/* Sandbox Mock Button */}
-                <button
-                  type="button"
-                  onClick={handleSimulatePayment}
-                  disabled={simulating || !order}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-xs flex items-center gap-2 transition shadow-sm hover:scale-105 active:scale-95 shrink-0"
-                  title="Bấm để kích hoạt nhanh mà không cần chuyển khoản thực tế (dành cho kiểm thử)"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{simulating ? 'Đang kích hoạt...' : 'Mô phỏng Sandbox'}</span>
-                </button>
+              {/* Ticker trạng thái lắng nghe Webhook */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 dark:bg-indigo-950/30 border border-indigo-500/20 flex items-center gap-3 text-xs sm:text-sm">
+                <span className="relative flex h-3 w-3 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                </span>
+                <span className="text-indigo-700 dark:text-indigo-300 font-semibold">
+                  Hệ thống đang tự động lắng nghe Webhook ngân hàng 24/7...
+                </span>
               </div>
 
               {/* PayOS link nếu có checkoutUrl */}

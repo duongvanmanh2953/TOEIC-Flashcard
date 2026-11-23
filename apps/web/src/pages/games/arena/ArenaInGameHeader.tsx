@@ -1,5 +1,6 @@
 import React from 'react';
 import { Eye, Users, Trophy, Settings, Radio } from 'lucide-react';
+import { TikTokColorLogo } from '@vocabflow/shared';
 
 export interface ArenaInGameHeaderProps {
   isLive?: boolean;
@@ -14,11 +15,11 @@ export interface ArenaInGameHeaderProps {
 
 export const ArenaInGameHeader: React.FC<ArenaInGameHeaderProps> = ({
   isLive = true,
-  viewerCount = '1.2K',
+  viewerCount = '0',
   remainingSeconds,
   totalDuration = 15,
-  score = 12850,
-  playerCount = '1.2K',
+  score = 0,
+  playerCount = '0',
   onOpenSettings,
   className = '',
 }) => {
@@ -34,19 +35,34 @@ export const ArenaInGameHeader: React.FC<ArenaInGameHeaderProps> = ({
     <header
       className={`relative z-20 flex items-center justify-between gap-3 px-3 sm:px-6 py-2.5 max-w-6xl mx-auto w-full ${className}`}
     >
-      {/* 1. LEFT PILLS: 🔴 LIVE + 👁️ VIEWER COUNT */}
+      {/* 1. LEFT PILLS: 🔴 LIVE + 👁️ VIEWER COUNT (CHỈ HIỆN KHI isLive) HOẶC ⚔️ PHÒNG ĐẤU */}
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {isLive && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_15px_rgba(239,68,68,0.6)]">
-            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-            <span>LIVE</span>
+        {isLive ? (
+          <>
+            <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-full bg-slate-900/95 border border-rose-500/60 shadow-[0_0_20px_rgba(244,63,94,0.4)] text-white">
+              <TikTokColorLogo className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-rose-600 text-white font-black text-[10px] sm:text-xs tracking-wider uppercase shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                <span>LIVE</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 border border-white/15 text-slate-200 text-xs sm:text-sm font-bold shadow-lg backdrop-blur-md">
+              <Eye className="w-4 h-4 text-slate-400" />
+              <span>{viewerCount}<span className="sr-only"> đang xem trên VocabFlow</span></span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-xs sm:text-sm font-black shadow-lg backdrop-blur-md border border-indigo-400/40">
+              <span>⚔️</span>
+              <span>PHÒNG ĐẤU</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-900/80 border border-white/15 text-slate-300 text-xs sm:text-sm font-bold shadow-lg backdrop-blur-md">
+              <Users className="w-3.5 h-3.5 text-indigo-400" />
+              <span>{playerCount} đấu thủ</span>
+            </div>
           </div>
         )}
-
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 border border-white/15 text-slate-200 text-xs sm:text-sm font-bold shadow-lg backdrop-blur-md">
-          <Eye className="w-4 h-4 text-slate-400" />
-          <span>{viewerCount}</span>
-        </div>
       </div>
 
       {/* 2. CENTER: GIANT NEON CIRCULAR COUNTDOWN TIMER */}
@@ -94,7 +110,7 @@ export const ArenaInGameHeader: React.FC<ArenaInGameHeaderProps> = ({
 
           {/* Large Countdown Digits inside ring */}
           <span
-            className={`absolute font-black font-mono text-xl sm:text-2xl text-white tracking-tighter ${
+            className={`absolute inset-0 flex items-center justify-center font-black font-mono text-xl sm:text-2xl text-white tracking-tighter leading-none text-center select-none pt-0.5 ${
               isLowTime ? 'text-rose-400 animate-pulse' : 'text-white drop-shadow-[0_0_10px_rgba(0,245,255,0.8)]'
             }`}
           >

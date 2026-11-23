@@ -58,7 +58,7 @@ export const VictoryStarModal: React.FC<VictoryStarModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in select-none"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in select-none"
       role="dialog"
       aria-modal="true"
     >

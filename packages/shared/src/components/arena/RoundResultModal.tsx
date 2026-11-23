@@ -9,6 +9,7 @@ import {
 } from './ArenaIcons';
 
 export interface RoundResultData {
+  hasAnswered?: boolean;
   isCorrect: boolean;
   correctAnswerLetter: string;
   correctAnswerText: string;
@@ -43,10 +44,14 @@ export const RoundResultModal: React.FC<RoundResultModalProps> = ({
   onClose,
   className = '',
 }) => {
+  const hasAnswered = result.hasAnswered !== false;
+
   const content = (
     <div
       className={`w-full max-w-lg mx-auto p-4 sm:p-6 rounded-3xl bg-[#0F1426]/95 border-2 ${
-        result.isCorrect
+        !hasAnswered
+          ? 'border-amber-400/70 shadow-[0_0_35px_rgba(245,158,11,0.3)]'
+          : result.isCorrect
           ? 'border-emerald-400/80 shadow-[0_0_40px_rgba(37,201,138,0.35)]'
           : 'border-rose-500/80 shadow-[0_0_35px_rgba(242,107,118,0.3)]'
       } space-y-4 animate-scale-up select-none backdrop-blur-2xl ${className}`}
@@ -56,21 +61,39 @@ export const RoundResultModal: React.FC<RoundResultModalProps> = ({
         <div className="flex items-center gap-3">
           <div
             className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center font-black shadow-lg ${
-              result.isCorrect ? 'bg-emerald-400 text-slate-950 shadow-emerald-400/30' : 'bg-rose-500 text-white shadow-rose-500/30'
+              !hasAnswered
+                ? 'bg-amber-400 text-slate-950 shadow-amber-400/30'
+                : result.isCorrect
+                ? 'bg-emerald-400 text-slate-950 shadow-emerald-400/30'
+                : 'bg-rose-500 text-white shadow-rose-500/30'
             }`}
           >
-            {result.isCorrect ? <ArenaIconCheck className="w-6 h-6 stroke-[3]" /> : <ArenaIconX className="w-6 h-6 stroke-[3]" />}
+            {!hasAnswered ? (
+              <ArenaIconSparkles className="w-6 h-6 stroke-[2.5]" />
+            ) : result.isCorrect ? (
+              <ArenaIconCheck className="w-6 h-6 stroke-[3]" />
+            ) : (
+              <ArenaIconX className="w-6 h-6 stroke-[3]" />
+            )}
           </div>
           <div>
             <h3
               className={`text-base sm:text-xl font-black tracking-tight ${
-                result.isCorrect ? 'text-emerald-400' : 'text-rose-400'
+                !hasAnswered
+                  ? 'text-amber-400'
+                  : result.isCorrect
+                  ? 'text-emerald-400'
+                  : 'text-rose-400'
               }`}
             >
-              {result.isCorrect ? 'CHÍNH XÁC! 🎉' : 'CHƯA CHÍNH XÁC 💡'}
+              {!hasAnswered ? 'HẾT THỜI GIAN - ĐÁP ÁN ĐÚNG' : result.isCorrect ? 'CHÍNH XÁC! 🎉' : 'CHƯA CHÍNH XÁC 💡'}
             </h3>
             <span className="text-xs text-slate-400 font-medium">
-              {result.isCorrect ? 'Phản xạ tuyệt vời, duy trì phong độ nhé!' : 'Quan sát đáp án đúng và lời giải thích bên dưới'}
+              {!hasAnswered
+                ? 'Bạn chưa chọn đáp án trong lượt này. Dưới đây là đáp án chính xác:'
+                : result.isCorrect
+                ? 'Phản xạ tuyệt vời, duy trì phong độ nhé!'
+                : 'Quan sát đáp án đúng và lời giải thích bên dưới'}
             </span>
           </div>
         </div>
@@ -200,7 +223,7 @@ export const RoundResultModal: React.FC<RoundResultModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in">
       <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {content}
       </div>

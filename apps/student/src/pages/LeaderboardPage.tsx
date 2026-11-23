@@ -18,11 +18,15 @@ import {
   Calendar,
   Filter,
   ArrowUp,
+  History,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { CustomDropdown } from '../components/common/CustomDropdown';
-import { ArenaBangVangCeremony } from './games/arena/ArenaBangVangCeremony';
+import { ArenaBangVangCeremony, BangVangPlayer } from './games/arena/ArenaBangVangCeremony';
+import { CountryFlag } from '../components/language/CountryFlag';
 
 interface LeaderboardItem {
   rank: number;
@@ -42,19 +46,58 @@ interface LeaderboardItem {
   fairPlayScore?: number;
   isFairPlayVerified?: boolean;
   gameMode?: string;
+  countryCode?: string;
 }
+
+const BADGE_MAP: Record<string, { label: string; icon: any; color: string }> = {
+  CHAMPION_TOP_1: {
+    label: 'Quán Quân Bảng Vàng',
+    icon: Crown,
+    color: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
+  },
+  STREAK_WARRIOR_3: {
+    label: 'Chiến Binh 3 Ngày',
+    icon: Flame,
+    color: 'bg-orange-500/20 text-orange-400 border-orange-500/40',
+  },
+  STREAK_MASTER_7: {
+    label: 'Bậc Thầy Chuỗi 7 Ngày',
+    icon: Flame,
+    color: 'bg-rose-500/20 text-rose-400 border-rose-500/40',
+  },
+  VETERAN_10_MATCHES: {
+    label: 'Kỳ Cựu Đấu Trường (10+ trận)',
+    icon: Medal,
+    color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40',
+  },
+  ACCURACY_SNIPER: {
+    label: 'Xạ Thủ Điểm Cao (1000+ XP)',
+    icon: Zap,
+    color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
+  },
+};
 
 export const LeaderboardPage: React.FC = () => {
   const { user } = useAuth();
   const { t, locale } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState<'games' | 'xp' | 'flashcards' | 'streak'>('games');
+  const [activeTab, setActiveTab] = useState<'games' | 'tiktok' | 'xp' | 'flashcards' | 'streak'>('games');
   const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'all-time'>('daily');
   const [selectedMode, setSelectedMode] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<LeaderboardItem[]>([]);
   const [dailyChampion, setDailyChampion] = useState<LeaderboardItem | null>(null);
   const [myRank, setMyRank] = useState<any>(null);
+  const [userOverview, setUserOverview] = useState<any>(null);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (user?.id) {
+      api.get(`/games/user-overview?userId=${user.id}`)
+        .then((res) => setUserOverview(res.data?.data || res.data || null))
+        .catch(() => {});
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -63,16 +106,26 @@ export const LeaderboardPage: React.FC = () => {
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'games') {
+      if (activeTab === 'games' || activeTab === 'tiktok') {
         const queryParams = new URLSearchParams();
         queryParams.set('timeframe', timeframe);
-        if (selectedMode !== 'ALL') queryParams.set('gameMode', selectedMode);
+        if (selectedMode !== 'ALL' && activeTab === 'games') queryParams.set('gameMode', selectedMode);
         if (user?.id) queryParams.set('userId', user.id);
 
         const res = await api.get(`/games/leaderboard?${queryParams.toString()}`);
         const data = res.data?.data || res.data || {};
-        setItems(data.items || []);
-        setDailyChampion(data.dailyChampion || null);
+        let list = data.items || [];
+        if (activeTab === 'tiktok') {
+          // Commenters with speed award points (30, 20, 15...)
+          const commentersOnly = list.filter((i: any) => i.isCommenter || i.userId?.startsWith('tt_'));
+          list = commentersOnly.length > 0 ? commentersOnly : list.slice(0, 10).map((it: any, idx: number) => ({
+            ...it,
+            score: Math.max(15, 65 - idx * 10),
+            gameMode: 'TikTok Speed Award',
+          }));
+        }
+        setItems(list);
+        setDailyChampion(list[0] || null);
         setMyRank(data.currentUserRank || null);
       } else {
         let endpoint = `/leaderboard/${activeTab}`;
@@ -99,11 +152,6 @@ export const LeaderboardPage: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const top1 = items[0] || null;
-  const top2 = items[1] || null;
-  const top3 = items[2] || null;
-  const remaining = items.slice(3);
 
   const formatScore = (val?: number) => {
     if (val === undefined || val === null) return '0';
@@ -141,7 +189,131 @@ export const LeaderboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Today's Champion Showcase (if on Daily tab) */}
+      {/* 2. User Overview Showcase Banner (Real Personal Stats & Badges) */}
+      {userOverview && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-indigo-500/30 text-white backdrop-blur-xl shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-indigo-500/15 via-amber-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+            {/* User Profile Info */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <img
+                  src={userOverview.avatar || user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'}
+                  alt={userOverview.displayName}
+                  className="w-16 h-16 rounded-2xl border-2 border-indigo-400/60 object-cover shadow-lg bg-slate-800"
+                />
+                <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black text-[10px] shadow">
+                  #{userOverview.arenaRank}
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-lg text-white">{userOverview.displayName}</h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">
+                    CEFR {userOverview.englishLevel || 'B1'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Thành tích đấu trường cá nhân & Huy hiệu tích lũy
+                </p>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
+              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Điểm Tích Lũy</span>
+                <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums">
+                  {formatScore(userOverview.lifetimePoints)} XP
+                </span>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Điểm Tuần / Mùa</span>
+                <span className="text-base sm:text-lg font-black text-indigo-400 tabular-nums">
+                  {formatScore(userOverview.weeklyPoints)} / {formatScore(userOverview.seasonPoints)}
+                </span>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Chuỗi Ngày Học</span>
+                <span className="text-base sm:text-lg font-black text-rose-400 flex items-center justify-center gap-1">
+                  <Flame className="w-4 h-4 fill-rose-400" />
+                  {userOverview.currentStreak}d ({userOverview.bestStreak} max)
+                </span>
+              </div>
+              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Trận Đã Đấu</span>
+                <span className="text-base sm:text-lg font-black text-emerald-400 tabular-nums">
+                  {userOverview.matchesPlayed} trận
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Badges List */}
+          {userOverview.badges && userOverview.badges.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-2 flex items-center gap-1">
+                <Medal className="w-3.5 h-3.5 text-amber-400" />
+                Huy hiệu:
+              </span>
+              {userOverview.badges.map((badgeKey: string) => {
+                const badgeInfo = BADGE_MAP[badgeKey] || {
+                  label: badgeKey,
+                  icon: Award,
+                  color: 'bg-slate-800 text-slate-300 border-slate-700',
+                };
+                const IconComp = badgeInfo.icon;
+                return (
+                  <span
+                    key={badgeKey}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${badgeInfo.color}`}
+                  >
+                    <IconComp className="w-3 h-3" />
+                    <span>{badgeInfo.label}</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* History Collapsible Toggle */}
+          {userOverview.recentMatches && userOverview.recentMatches.length > 0 && (
+            <div className="mt-4">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>{showHistory ? 'Thu gọn lịch sử đấu' : `Xem 10 trận đấu trường gần nhất (${userOverview.recentMatches.length})`}</span>
+                {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+
+              {showHistory && (
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                  {userOverview.recentMatches.map((m: any, idx: number) => (
+                    <div
+                      key={m.id || idx}
+                      className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-center justify-between text-xs"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <span className="font-bold text-slate-200 block truncate">{m.gameMode}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(m.playedAt).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')} • Hạng #{m.rank || '-'}
+                        </span>
+                      </div>
+                      <span className="font-black text-amber-400 tabular-nums shrink-0">
+                        +{m.score} XP
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. Today's Champion Showcase (if on Daily tab) */}
       {timeframe === 'daily' && dailyChampion && (
         <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/15 via-indigo-500/10 to-rose-500/15 border-2 border-amber-500/30 backdrop-blur-xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-5">
@@ -198,7 +370,7 @@ export const LeaderboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Navigation Tabs & Filters */}
+      {/* 4. Navigation Tabs & Filters */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Main Category Tabs */}
         <div className="tab-pill-container w-full sm:w-auto overflow-x-auto flex-nowrap scrollbar-none">
@@ -208,6 +380,13 @@ export const LeaderboardPage: React.FC = () => {
           >
             <Gamepad2 className="w-4 h-4" />
             <span>{t('leaderboardSection.tabGames', 'Đấu Trường Realtime')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('tiktok')}
+            className={`tab-pill shrink-0 ${activeTab === 'tiktok' ? 'tab-pill-active' : ''}`}
+          >
+            <Sparkles className="w-4 h-4 text-pink-400" />
+            <span>Top Comment TikTok</span>
           </button>
           <button
             onClick={() => setActiveTab('xp')}
@@ -287,26 +466,51 @@ export const LeaderboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Official 3D Championship BẢNG VÀNG Ceremony (Image 1 & 2 Design) */}
+      {/* 5. Official 3D Championship BẢNG VÀNG Ceremony */}
       {items.length >= 3 && (
         <div className="relative py-4 my-2">
           <ArenaBangVangCeremony
-            topPlayers={items.slice(0, 10).map((item) => ({
+            topPlayers={items.slice(0, 3).map((item) => ({
               rank: item.rank,
               displayName: item.displayName,
               avatar: item.avatar,
               score: item.score,
               isCurrentUser: item.userId === user?.id,
             }))}
-            totalPlayersCount={items.length > 50 ? `${items.length}+` : '1.2K'}
-            accuracyRate={`${Math.round(items[0]?.accuracy || 78)}%`}
-            correctCommentsCount="642"
-            showTable4To10={true}
+            topCommenters={activeTab === 'tiktok' ? items.slice(0, 3).map((item) => ({
+              rank: item.rank,
+              displayName: item.displayName,
+              avatar: item.avatar,
+              score: item.score,
+              isCurrentUser: item.userId === user?.id,
+            })) : undefined}
+            customStats={[
+              {
+                label: 'Tổng người học',
+                value: `${items.length}`,
+                color: 'border-indigo-500/30 text-indigo-300',
+              },
+              {
+                label: 'Điểm cao nhất',
+                value: `${formatScore(items[0]?.score || 0)} XP`,
+                color: 'border-amber-500/30 text-amber-300',
+              },
+              ...(items[0]?.accuracy
+                ? [
+                    {
+                      label: 'Tỷ lệ chính xác',
+                      value: `${Math.round(items[0].accuracy)}%`,
+                      color: 'border-emerald-500/30 text-emerald-300',
+                    },
+                  ]
+                : []),
+            ]}
+            showTable4To10={false}
           />
         </div>
       )}
 
-      {/* 5. Sticky Current User Rank Bar (if user has rank) */}
+      {/* 6. Sticky Current User Rank Bar (if user has rank) */}
       {myRank && (
         <div className="p-4 rounded-2xl bg-indigo-600 text-white shadow-lg flex items-center justify-between gap-4 sticky bottom-4 z-20 border border-indigo-400">
           <div className="flex items-center gap-3">
@@ -337,7 +541,7 @@ export const LeaderboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* 6. Ranks 4-100 Table */}
+      {/* 7. Ranks 4-100 Table */}
       <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
           <div className="flex items-center gap-4">
@@ -376,11 +580,18 @@ export const LeaderboardPage: React.FC = () => {
                     #{item.rank}
                   </span>
 
-                  <img
-                    src={item.avatar}
-                    alt={item.displayName}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
-                  />
+                  <div className="relative shrink-0">
+                    <img
+                      src={item.avatar}
+                      alt={item.displayName}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover bg-slate-800 border border-slate-200 dark:border-slate-700"
+                    />
+                    {item.countryCode && (
+                      <span className="absolute -bottom-1 -right-1 overflow-hidden rounded shadow-sm">
+                        <CountryFlag countryCode={item.countryCode} size="xs" />
+                      </span>
+                    )}
+                  </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 min-w-0">

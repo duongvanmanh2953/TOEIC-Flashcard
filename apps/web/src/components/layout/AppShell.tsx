@@ -7,6 +7,7 @@ import { LiquidBackground } from '../common/LiquidBackground';
 import { ModalPortal } from '../common/ModalPortal';
 import {
   LayoutDashboard,
+  Target,
   Sparkles,
   BookOpen,
   BrainCircuit,
@@ -67,6 +68,8 @@ import { ChatDrawer, ChatContextPayload } from '../chat/ChatDrawer';
 import { confirmModal } from '../common/ConfirmDialog';
 import { QuickNoteModal } from '../notes/QuickNoteModal';
 import { DataSyncModal } from '../offline/DataSyncModal';
+import { MiniFocusWidget } from '../focus/MiniFocusWidget';
+import { FullscreenFocusModal } from '../focus/FullscreenFocusModal';
 import { useNetworkStatus } from '../../lib/offlineSyncService';
 import { VocabFlowLogo } from '@vocabflow/shared';
 import { navigateToApp, buildSsoUrl } from '../../lib/sso';
@@ -323,7 +326,7 @@ export const AppShell: React.FC = () => {
   const [showTutorSuggestions, setShowTutorSuggestions] = useState(false);
   const [searchingSuggestions, setSearchingSuggestions] = useState(false);
 
-  // Live Arena operating status (Live from 20:00 to 22:00 VN time or when lobby indicates open)
+  // Live Arena operating status (Live from 19:00 to 22:00 VN time or when lobby indicates open)
   const [isArenaLive, setIsArenaLive] = useState<boolean>(() => {
     try {
       const formatter = new Intl.DateTimeFormat('en-US', {
@@ -671,8 +674,10 @@ export const AppShell: React.FC = () => {
       title: 'TỔNG QUAN',
       items: [
         { to: '/dashboard', label: t('nav.dashboard', 'Bảng điều khiển'), icon: LayoutDashboard },
+        { to: '/journey', label: 'Bản đồ lộ trình học', icon: Compass, badge: 'HOT' },
+        { to: '/listening', label: 'Phòng nghe & Focus Lab', icon: Headphones, badge: 'LAB' },
         { to: '/progress', label: 'Chỉ số UMS & Trí nhớ', icon: Award, badge: 'UMS' },
-        { to: '/placement-test', label: t('nav.placementTest', 'Kiểm tra năng lực CEFR'), icon: Compass },
+        { to: '/placement-test', label: t('nav.placementTest', 'Kiểm tra năng lực CEFR'), icon: Target },
       ],
     },
     {
@@ -770,6 +775,18 @@ export const AppShell: React.FC = () => {
     { to: '/coach', label: 'Gia sư AI', icon: Mic },
   ];
 
+  const isArenaRoom = location.pathname.startsWith('/games/room');
+
+  if (isArenaRoom) {
+    return (
+      <div className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-950 text-slate-100 font-sans selection:bg-rose-500/30 selection:text-white z-50">
+        <main className="w-full h-full p-0 m-0 overflow-hidden flex flex-col">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex bg-slate-50/20 dark:bg-transparent text-slate-900 dark:text-slate-100 font-sans antialiased relative selection:bg-indigo-500 selection:text-white">
       {/* Ambient Blurred Colored Blobs / Orbs */}
@@ -824,7 +841,8 @@ export const AppShell: React.FC = () => {
           data-sidebar-scroll="true"
           data-scroll-container="sidebar"
           onScroll={handleSidebarScroll}
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 pr-1 space-y-3.5"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y py-3 pr-1 space-y-3.5 scrollbar-thin"
+          style={{ overscrollBehavior: 'none', overscrollBehaviorY: 'none' }}
         >
           {navSections.map((section) => (
             <div key={section.title} className="space-y-1">
@@ -1070,24 +1088,25 @@ export const AppShell: React.FC = () => {
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightPage ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
         {/* Mobile Header — Clean, compact, never overflows or stretches */}
-        <header className="lg:hidden flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
-          <div className="flex items-center gap-2 min-w-0">
+        <header className="lg:hidden flex items-center justify-between px-3.5 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
+          <div className="flex items-center gap-2 shrink-0 min-w-max">
             <div
               onClick={() => navigate('/dashboard')}
               className="cursor-pointer flex items-center gap-2 group shrink-0"
               title="VocabFlow"
             >
-              <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform" />
-              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">VocabFlow</span>
+              <VocabFlowLogo size="xs" showContainer={false} className="group-hover:scale-105 transition-transform shrink-0" />
+              <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight whitespace-nowrap shrink-0">VocabFlow</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
             {renderStreakXpBadge(true)}
+            <MiniFocusWidget isMobile />
             <button
               onClick={togglePerformanceMode}
               title={isUltraEfficient ? 'Bật Giao diện Đầy đủ' : 'Bật Tiết kiệm GPU/RAM'}
-              className={`p-2 rounded-xl transition ${
+              className={`hidden sm:flex p-2 rounded-xl transition ${
                 isUltraEfficient
                   ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
                   : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -1095,7 +1114,7 @@ export const AppShell: React.FC = () => {
             >
               <Zap className={`w-4 h-4 ${isUltraEfficient ? 'fill-amber-500 text-amber-500' : ''}`} />
             </button>
-            {/* Mobile WiFi Status & Data Sync Trigger */}
+            {/* Mobile WiFi Status & Data Sync Trigger (Secondary, accessible in drawer) */}
             <button
               type="button"
               onClick={() => setSyncModalOpen(true)}
@@ -1108,7 +1127,7 @@ export const AppShell: React.FC = () => {
                   ? `Trực tuyến • ${pendingCount} mục chờ đồng bộ`
                   : 'Trực tuyến • Đã kết nối mạng'
               }
-              className={`relative p-2 rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 ${
+              className={`hidden xs:flex relative p-2 rounded-xl transition items-center justify-center cursor-pointer active:scale-95 ${
                 !isOnline
                   ? 'text-amber-500 bg-amber-500/10 ring-1 ring-amber-500/30'
                   : isSyncing
@@ -1134,7 +1153,7 @@ export const AppShell: React.FC = () => {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0"
               aria-label="Menu điều hướng"
               title="Menu điều hướng & Công cụ"
             >
@@ -1145,16 +1164,25 @@ export const AppShell: React.FC = () => {
 
         {/* Mobile Menu Overlay Drawer — FIXED OVERLAY, NEVER SCROLLS WITH PAGE */}
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-x-0 top-[53px] bottom-0 z-40 flex flex-col">
+          <div
+            className="lg:hidden fixed inset-x-0 top-[calc(53px+env(safe-area-inset-top,0px))] bottom-[calc(3.75rem+env(safe-area-inset-bottom,0px))] z-40 flex flex-col overscroll-none touch-none"
+            onTouchMove={(e) => {
+              if (e.target === e.currentTarget) {
+                e.preventDefault();
+              }
+            }}
+          >
             {/* Backdrop */}
             <div
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs overscroll-none touch-none"
               onClick={() => setMobileMenuOpen(false)}
+              onTouchMove={(e) => e.preventDefault()}
               aria-hidden="true"
             />
             {/* Drawer Menu Content */}
             <div
-              className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3.5 space-y-3.5 max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-top duration-200"
+              className="relative z-10 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 pt-3.5 pb-8 space-y-3.5 max-h-full overflow-y-auto overscroll-none touch-pan-y shadow-2xl animate-in slide-in-from-top duration-200"
+              style={{ overscrollBehavior: 'none', overscrollBehaviorY: 'none' }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* 1. Mobile Sidebar Top: User Profile & Streak */}
@@ -1377,7 +1405,7 @@ export const AppShell: React.FC = () => {
         )}
 
         {/* Desktop Top Header Bar — Sticky fixed at top, balanced & polished */}
-        <header className="hidden lg:flex items-center justify-between px-4 lg:px-6 xl:px-8 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
+        <header className={`hidden lg:flex items-center justify-between gap-2 px-4 lg:px-6 xl:px-8 ${location.pathname === '/games' ? 'min-h-14 py-2 flex-wrap' : 'h-14'} bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs`}>
           <div className="flex items-center gap-3 shrink-0">
             {/* Multi-Language Switcher */}
             <LanguageSwitcher variant="header" />
@@ -1389,8 +1417,9 @@ export const AppShell: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 shrink-0">
+          <div className={`flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 ${location.pathname === '/games' ? 'min-w-0 flex-1 flex-wrap justify-end' : 'shrink-0'}`}>
             {renderStreakXpBadge(false)}
+            <MiniFocusWidget />
             <NavLink
               to="/coach"
               title="Voice Coach"
@@ -1930,7 +1959,7 @@ export const AppShell: React.FC = () => {
                   </div>
 
                   {/* Messages Area (Spacious & with Citations) */}
-                  <div className="flex-1 min-h-0 bg-slate-950/60 rounded-2xl p-3 sm:p-3.5 overflow-y-auto space-y-3.5 text-xs border border-slate-800/80">
+                  <div className="flex-1 min-h-0 bg-slate-950/60 rounded-2xl p-3 sm:p-3.5 overflow-y-auto overscroll-contain space-y-3.5 text-xs border border-slate-800/80">
                     {tutorMessages.map((m) => (
                       <div
                         key={m.id}
@@ -2006,7 +2035,7 @@ export const AppShell: React.FC = () => {
                           <X className="w-3 h-3" />
                         </button>
                       </div>
-                      <div className="max-h-36 overflow-y-auto space-y-1 divide-y divide-slate-800/80 pr-0.5">
+                      <div className="max-h-36 overflow-y-auto overscroll-contain space-y-1 divide-y divide-slate-800/80 pr-0.5 custom-scrollbar">
                         {tutorSuggestions.map((item) => (
                           <button
                             key={item.id}
@@ -2299,6 +2328,9 @@ export const AppShell: React.FC = () => {
         isOpen={syncModalOpen}
         onClose={() => setSyncModalOpen(false)}
       />
+
+      {/* Global Fullscreen Focus Immersion Mode */}
+      <FullscreenFocusModal />
     </div>
   );
 };

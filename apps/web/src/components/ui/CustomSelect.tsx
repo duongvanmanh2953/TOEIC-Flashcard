@@ -272,7 +272,7 @@ export function CustomSelect<T extends string | number>({
                 }`
           } transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
         >
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
             {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0')}
             {renderIcon(SelectedIcon, 'w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0')}
             <span
@@ -288,7 +288,7 @@ export function CustomSelect<T extends string | number>({
             </span>
             {selectedOption?.badge !== undefined && (
               <span
-                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 ${
+                className={`hidden lg:inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 truncate max-w-[65px] ${
                   selectedOption.badgeColor || 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30'
                 }`}
               >
@@ -339,7 +339,7 @@ export function CustomSelect<T extends string | number>({
                 display: 'flex',
                 flexDirection: 'column',
               }}
-              className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
+              className={`bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl p-1.5 text-xs shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
             >
               {/* Search Input */}
               {shouldSearch && (
@@ -366,7 +366,7 @@ export function CustomSelect<T extends string | number>({
               <ul
                 ref={listboxRef}
                 role="listbox"
-                className="overflow-y-auto p-0.5 space-y-0.5 chat-scrollbar flex-1 min-h-0 bg-transparent"
+                className="overflow-y-auto p-0.5 space-y-0.5 chat-scrollbar flex-1 min-h-0 bg-white dark:bg-slate-900"
                 style={{ maxHeight: shouldSearch ? '220px' : '260px' }}
               >
                 {filteredOptions.length === 0 ? (

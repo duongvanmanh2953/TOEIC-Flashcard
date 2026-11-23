@@ -249,11 +249,10 @@ export const AdminMergeDecksModal: React.FC<AdminMergeDecksModalProps> = ({
 
   return (
     <ModalPortal isOpen={isOpen} onClose={onClose}>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in">
-        <div
-          className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div
+        className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
           {/* MODAL HEADER */}
           <div className="px-6 py-4 bg-gradient-to-r from-indigo-950/90 via-slate-900 to-purple-950/90 border-b border-slate-800 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
@@ -710,7 +709,6 @@ export const AdminMergeDecksModal: React.FC<AdminMergeDecksModalProps> = ({
             </div>
           </div>
         </div>
-      </div>
-    </ModalPortal>
+      </ModalPortal>
   );
 };

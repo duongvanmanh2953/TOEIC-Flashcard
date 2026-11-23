@@ -111,7 +111,7 @@ export const VocabularyCaptureModal: React.FC<VocabularyCaptureModalProps> = ({
   const selectedCount = candidates.filter((c) => c.selected).length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 bg-slate-950/45 flex items-center justify-center p-4 backdrop-blur-md">
       <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-2xl w-full p-6 text-slate-200 shadow-2xl animate-scale-in max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
@@ -227,7 +227,7 @@ export const VocabularyCaptureModal: React.FC<VocabularyCaptureModalProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
+              <div className="space-y-2.5">
                 {candidates.map((c, idx) => (
                   <div
                     key={idx}

@@ -100,3 +100,4 @@ Các báo cáo kiểm toán kỹ thuật toàn diện được lưu trữ tại 
 - ❌ Cấm tự ý đổi framework (Vite -> Next.js, NestJS -> Express thuần, PostgreSQL -> MongoDB).
 - ❌ Cấm thay đổi cấu trúc API contract mà không cập nhật đồng bộ các ứng dụng frontend.
 - ❌ Cấm xóa hoặc ghi đè mã nguồn do người dùng đang sửa đổi dở dang.
+- ❌ Không hiển thị country code dạng chữ trong UI; sử dụng flag component theo mapping chuẩn. Machine code vẫn được phép tồn tại trong data/API.

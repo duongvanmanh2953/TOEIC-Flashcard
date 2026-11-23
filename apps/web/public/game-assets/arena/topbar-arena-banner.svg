@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 240" width="100%" height="100%" preserveAspectRatio="none">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="topbarBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E1330" />
+      <stop offset="50%" stop-color="#181D45" />
+      <stop offset="100%" stop-color="#0A0E24" />
+    </linearGradient>
+
+    <!-- Golden Rim Gradient -->
+    <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.3" />
+      <stop offset="50%" stop-color="#FDE68A" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#D97706" stop-opacity="0.3" />
+    </linearGradient>
+
+    <!-- Neon Cyber Beam Left -->
+    <linearGradient id="neonBeamLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Neon Cyber Beam Right -->
+    <linearGradient id="neonBeamRight" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#EC4899" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Radial Central Spotlight -->
+    <radialGradient id="centerAura" cx="50%" cy="0%" r="70%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#4F46E5" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+  </defs>
+
+  <!-- Base Card Rect -->
+  <rect x="0" y="0" width="1080" height="240" rx="36" fill="url(#topbarBg)" />
+
+  <!-- Center Aura -->
+  <ellipse cx="540" cy="0" rx="420" ry="200" fill="url(#centerAura)" />
+
+  <!-- Angle Beams -->
+  <polygon points="0,0 350,0 200,240 0,240" fill="url(#neonBeamLeft)" opacity="0.4" />
+  <polygon points="1080,0 730,0 880,240 1080,240" fill="url(#neonBeamRight)" opacity="0.35" />
+
+  <!-- Stadium Structural Cross Struts -->
+  <g stroke="#818CF8" stroke-width="1.2" opacity="0.25">
+    <line x1="80" y1="20" x2="1000" y2="20" />
+    <line x1="120" y1="50" x2="960" y2="50" />
+    <line x1="180" y1="20" x2="220" y2="50" />
+    <line x1="340" y1="20" x2="380" y2="50" />
+    <line x1="500" y1="20" x2="540" y2="50" />
+    <line x1="700" y1="20" x2="740" y2="50" />
+    <line x1="860" y1="20" x2="900" y2="50" />
+  </g>
+
+  <!-- Glowing Bottom Border Line -->
+  <line x1="40" y1="238" x2="1040" y2="238" stroke="url(#goldRim)" stroke-width="2.5" stroke-linecap="round" />
+</svg>

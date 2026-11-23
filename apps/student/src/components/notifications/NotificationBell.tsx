@@ -184,7 +184,7 @@ export const NotificationBell: React.FC = () => {
             )}
           </div>
 
-          <div className="max-h-[340px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+          <div className="max-h-[340px] overflow-y-auto overscroll-contain divide-y divide-slate-100 dark:divide-slate-800/60 custom-scrollbar">
             {loading ? (
               <div className="py-6 text-center text-slate-400 text-xs">Đang tải thông báo...</div>
             ) : recentNotifications.length === 0 ? (

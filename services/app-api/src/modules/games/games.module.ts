@@ -1,3 +1,4 @@
+import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { GamesController } from './games.controller';
 import { GameAssetsController } from './game-assets.controller';
@@ -12,7 +13,7 @@ import { LiveIntegrationService } from './live-integration/live-integration.serv
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, JwtModule.register({})],
   controllers: [GamesController, GameAssetsController, CustomRoomsController],
   providers: [
     GamesService,

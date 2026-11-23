@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LearningProvider } from './contexts/LearningContext';
+import { FocusProvider } from './contexts/FocusContext';
 import { PerformanceProvider } from './contexts/PerformanceContext';
 import { I18nProvider } from './i18n';
 import { AppShell } from './components/layout/AppShell';
@@ -53,6 +54,8 @@ const SavedPostsPage = React.lazy(() => import('./pages/community/SavedPostsPage
 // Games
 const GameLobbyPage = React.lazy(() => import('./pages/games/GameLobbyPage').then((m) => ({ default: m.GameLobbyPage })));
 const RealtimeGameRoomPage = React.lazy(() => import('./pages/games/RealtimeGameRoomPage').then((m) => ({ default: m.RealtimeGameRoomPage })));
+const LearningJourneyPage = React.lazy(() => import('./pages/LearningJourneyPage').then((m) => ({ default: m.LearningJourneyPage })));
+const ListeningLabPage = React.lazy(() => import('./pages/ListeningLabPage').then((m) => ({ default: m.ListeningLabPage })));
 
 // Mandatory E-Commerce Legal Policy Pages (Ministry of Industry and Trade Compliance)
 import { PrivacyPolicyPage } from './pages/policies/PrivacyPolicyPage';
@@ -127,7 +130,8 @@ export const App: React.FC = () => {
       <AuthProvider>
         <PerformanceProvider>
           <LearningProvider>
-          <BrowserRouter>
+            <FocusProvider>
+              <BrowserRouter>
             <ScrollToTop />
             <ContextualLoginModal />
             <GlobalConfirmDialog />
@@ -166,6 +170,10 @@ export const App: React.FC = () => {
                   }
                 >
                   <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/journey" element={<LearningJourneyPage />} />
+                  <Route path="/learning-journey" element={<Navigate to="/journey" replace />} />
+                  <Route path="/listening" element={<ListeningLabPage />} />
+                  <Route path="/listening-lab" element={<Navigate to="/listening" replace />} />
                   <Route path="/languages" element={<MyLanguagesPage />} />
                   <Route path="/review" element={<ReviewSessionPage />} />
                   <Route path="/handwriting" element={<Navigate to="/review?mode=handwriting" replace />} />
@@ -307,6 +315,7 @@ export const App: React.FC = () => {
               </Routes>
             </Suspense>
           </BrowserRouter>
+            </FocusProvider>
           </LearningProvider>
         </PerformanceProvider>
       </AuthProvider>

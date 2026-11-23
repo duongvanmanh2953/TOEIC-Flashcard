@@ -3722,7 +3722,7 @@ export const AICoachStudioPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] md:hidden animate-fade-in">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-950/45 backdrop-blur-md transition-opacity"
             onClick={() => setMobileDrawerOpen(false)}
           />
 
@@ -4045,8 +4045,7 @@ export const AICoachStudioPage: React.FC = () => {
       {/* MODAL: CHỢ TRỢ LÝ GIA SƯ AI VOCABFLOW (TUTOR MARKETPLACE) */}
       {/* ======================================================== */}
       {tutorMarketModalOpen && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+        <ModalPortal isOpen={tutorMarketModalOpen} onClose={() => setTutorMarketModalOpen(false)}>
             {/* Modal Container — Bottom Sheet on Mobile, Centered Dialog on Tablet/Desktop */}
             <div
               className="w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-up sm:animate-scale-up"
@@ -4194,7 +4193,6 @@ export const AICoachStudioPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
         </ModalPortal>
       )}
     </div>

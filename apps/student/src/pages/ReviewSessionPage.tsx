@@ -1794,7 +1794,7 @@ export const ReviewSessionPage: React.FC = () => {
           {/* Voice Practice & Recording Modal */}
           {showVoicePractice && (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in"
               onClick={() => setShowVoicePractice(false)}
             >
               <div className="relative w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
@@ -2317,7 +2317,7 @@ export const ReviewSessionPage: React.FC = () => {
       {/* Exit Confirmation Modal */}
       {showExitConfirmModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in"
           onClick={() => setShowExitConfirmModal(false)}
         >
           <div

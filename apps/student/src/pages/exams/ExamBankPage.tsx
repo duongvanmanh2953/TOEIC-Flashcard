@@ -39,6 +39,9 @@ import {
   User as UserIcon,
   ChevronDown,
   MoreVertical,
+  FileCode,
+  PlusCircle,
+  Edit3,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -47,13 +50,18 @@ import { ModalPortal } from '../../components/common/ModalPortal';
 import { CustomDropdown } from '../../components/common/CustomDropdown';
 import { CommunityCommentSection } from '../../components/community/CommunityCommentSection';
 import { ExamImportPreviewModal } from '../../components/exams/ExamImportPreviewModal';
+import { ExamSmartPasteModal } from '../../components/exams/ExamSmartPasteModal';
 import { AccessKeyManagementModal } from '../../components/community/AccessKeyManagementModal';
 import { VerifyAccessKeyModal } from '../../components/community/VerifyAccessKeyModal';
 import { confirmModal } from '../../components/common/ConfirmDialog';
 import {
   downloadExamExcelTemplate,
   downloadExamCsvTemplate,
+  downloadExamWordTemplate,
+  downloadExamJsonTemplate,
   parseAndValidateExamExcel,
+  parseAndValidateExamWord,
+  parseAndValidateExamJson,
   exportExamToExcel,
   ParsedExamQuestion,
   InvalidExamQuestionRow,
@@ -72,6 +80,7 @@ export const ExamBankPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isGuest, promptLogin } = useAuth();
   const { activeLanguage } = useLearningContext();
+
 
   const [activeTab, setActiveTab] = useState<'explore' | 'my-exams' | 'saved' | 'history' | 'wrong-answers'>('explore');
   const [myExamStatusFilter, setMyExamStatusFilter] = useState<'ALL' | 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED'>('ALL');
@@ -107,8 +116,9 @@ export const ExamBankPage: React.FC = () => {
 
   // Import Parser & Preview State
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [smartPasteOpen, setSmartPasteOpen] = useState(false);
   const [importFileName, setImportFileName] = useState('');
-  const [importFileType, setImportFileType] = useState<'excel' | 'pptx' | 'csv'>('excel');
+  const [importFileType, setImportFileType] = useState<'excel' | 'pptx' | 'csv' | 'word' | 'json' | 'text'>('excel');
   const [validImportQuestions, setValidImportQuestions] = useState<ParsedExamQuestion[]>([]);
   const [invalidImportQuestions, setInvalidImportQuestions] = useState<InvalidExamQuestionRow[]>([]);
   const [parsingFile, setParsingFile] = useState(false);
@@ -492,12 +502,29 @@ export const ExamBankPage: React.FC = () => {
     setParsingFile(true);
     setImportFileName(file.name);
     const ext = file.name.split('.').pop()?.toLowerCase();
-    const fileType: 'excel' | 'pptx' | 'csv' = ext === 'pptx' ? 'pptx' : ext === 'csv' ? 'csv' : 'excel';
+    const fileType: 'excel' | 'pptx' | 'csv' | 'word' | 'json' =
+      ext === 'pptx'
+        ? 'pptx'
+        : ext === 'csv'
+        ? 'csv'
+        : ext === 'docx' || ext === 'doc'
+        ? 'word'
+        : ext === 'json'
+        ? 'json'
+        : 'excel';
     setImportFileType(fileType);
 
     try {
       if (fileType === 'pptx') {
         const result = await parseAndValidateExamPptx(file);
+        setValidImportQuestions(result.validQuestions);
+        setInvalidImportQuestions(result.invalidQuestions);
+      } else if (fileType === 'word') {
+        const result = await parseAndValidateExamWord(file);
+        setValidImportQuestions(result.validQuestions);
+        setInvalidImportQuestions(result.invalidQuestions);
+      } else if (fileType === 'json') {
+        const result = await parseAndValidateExamJson(file);
         setValidImportQuestions(result.validQuestions);
         setInvalidImportQuestions(result.invalidQuestions);
       } else {
@@ -513,6 +540,19 @@ export const ExamBankPage: React.FC = () => {
     } finally {
       setParsingFile(false);
     }
+  };
+
+  const handleSmartPasteSuccess = (result: {
+    validQuestions: ParsedExamQuestion[];
+    invalidQuestions: InvalidExamQuestionRow[];
+    sourceText: string;
+  }) => {
+    setImportFileName('Văn bản dán nhanh (Smart Paste)');
+    setImportFileType('text');
+    setValidImportQuestions(result.validQuestions);
+    setInvalidImportQuestions(result.invalidQuestions);
+    setUploadModalOpen(false);
+    setImportModalOpen(true);
   };
 
   const handleConfirmImport = async (finalQuestions: ParsedExamQuestion[]) => {
@@ -540,6 +580,8 @@ export const ExamBankPage: React.FC = () => {
         skill: q.skill || 'Reading',
         difficulty: q.difficulty || 'MEDIUM',
         points: q.points || 1.0,
+        imageUrl: q.imageUrl?.trim() || undefined,
+        audioUrl: q.audioUrl?.trim() || undefined,
         tags: Array.isArray(q.tags) ? q.tags : [],
       }));
 
@@ -569,7 +611,7 @@ export const ExamBankPage: React.FC = () => {
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-16">
       {/* Top Banner / Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 p-6 sm:p-8 text-white shadow-xl border border-indigo-500/20">
+      <div className="relative rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 p-6 sm:p-8 text-white shadow-xl border border-indigo-500/20">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
@@ -585,8 +627,125 @@ export const ExamBankPage: React.FC = () => {
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Unified Add Exam Button with More Dropdown (Portal-based, collision protected) */}
+            <div className="inline-flex items-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-600/30 transition">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!user || isGuest) {
+                    promptLogin('Đăng nhập để tạo bộ đề mới');
+                    return;
+                  }
+                  navigate('/exams/editor');
+                }}
+                className="h-10 px-4 rounded-l-xl text-xs flex items-center gap-2 font-bold cursor-pointer hover:bg-emerald-700/80 transition"
+                title="Soạn thảo từng câu hỏi thủ công trực tiếp trên trình soạn thảo trực quan"
+              >
+                <PlusCircle className="w-4 h-4 text-emerald-200" />
+                <span>Thêm bộ đề</span>
+              </button>
+
+              <CustomDropdown
+                align="right"
+                trigger={
+                  <button
+                    type="button"
+                    className="h-10 px-2.5 rounded-r-xl border-l border-emerald-500/50 hover:bg-emerald-700/80 text-white cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                    title="Tùy chọn các hình thức thêm bộ đề & tải mẫu (More)"
+                  >
+                    <span>More</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                }
+                options={[
+                  {
+                    value: 'manual',
+                    label: 'Soạn đề thủ công',
+                    description: 'Trình soạn thảo trực quan',
+                    icon: Edit3,
+                  },
+                  {
+                    value: 'upload',
+                    label: 'Nhập từ file',
+                    description: 'Word, Excel, PowerPoint, JSON, CSV',
+                    icon: Upload,
+                  },
+                  {
+                    value: 'smart_paste',
+                    label: 'Cào / Dán đề thông minh',
+                    description: 'Dán thô văn bản đề thi & đáp án',
+                    icon: Sparkles,
+                  },
+                  {
+                    value: 'download_word',
+                    label: 'Mẫu Word (.docx)',
+                    description: 'File mẫu đề thi định dạng Word',
+                    icon: FileText,
+                  },
+                  {
+                    value: 'download_excel',
+                    label: 'Mẫu Excel (.xlsx)',
+                    description: 'File mẫu đề thi định dạng Excel',
+                    icon: FileSpreadsheet,
+                  },
+                  {
+                    value: 'download_pptx',
+                    label: 'Mẫu PowerPoint (.pptx)',
+                    description: 'File mẫu đề thi slide PPTX',
+                    icon: Presentation,
+                  },
+                  {
+                    value: 'download_json',
+                    label: 'Mẫu JSON (.json)',
+                    description: 'File mẫu cấu trúc JSON',
+                    icon: FileCode,
+                  },
+                  {
+                    value: 'download_csv',
+                    label: 'Mẫu CSV (.csv)',
+                    description: 'File mẫu bảng tính CSV',
+                    icon: FileText,
+                  },
+                ]}
+                onSelect={(val) => {
+                  if (val === 'manual') {
+                    if (!user || isGuest) {
+                      promptLogin('Đăng nhập để tạo bộ đề mới');
+                      return;
+                    }
+                    navigate('/exams/editor');
+                  } else if (val === 'upload') {
+                    if (!user || isGuest) {
+                      promptLogin('Đăng nhập để tạo bộ đề mới');
+                      return;
+                    }
+                    setCreateExamMode('upload');
+                    setUploadModalOpen(true);
+                  } else if (val === 'smart_paste') {
+                    if (!user || isGuest) {
+                      promptLogin('Đăng nhập để tạo bộ đề mới');
+                      return;
+                    }
+                    setSmartPasteOpen(true);
+                  } else if (val === 'download_word') {
+                    downloadExamWordTemplate();
+                  } else if (val === 'download_excel') {
+                    downloadExamExcelTemplate();
+                  } else if (val === 'download_pptx') {
+                    downloadExamPptxTemplate();
+                  } else if (val === 'download_json') {
+                    downloadExamJsonTemplate();
+                  } else if (val === 'download_csv') {
+                    downloadExamCsvTemplate();
+                  }
+                }}
+              />
+            </div>
+
+            {/* Quick Upload Button */}
             <button
+              type="button"
               onClick={() => {
                 if (!user || isGuest) {
                   promptLogin('Đăng nhập để tạo bộ đề mới');
@@ -595,45 +754,12 @@ export const ExamBankPage: React.FC = () => {
                 setCreateExamMode('upload');
                 setUploadModalOpen(true);
               }}
-              className="h-10 px-4 rounded-xl btn-solid-primary text-xs flex items-center gap-2 font-bold cursor-pointer"
+              className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs flex items-center gap-2 font-bold cursor-pointer hover:border-indigo-500/50"
+              title="Nhập bộ đề từ file Word, Excel, PPT, JSON, CSV"
             >
-              <Plus className="w-4 h-4" />
-              <span>Tạo bộ đề mới</span>
+              <Upload className="w-4 h-4 text-indigo-400" />
+              <span>Nhập file</span>
             </button>
-
-            {/* Tải mẫu bộ đề Dropdown */}
-            <CustomDropdown
-              trigger={
-                <button className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs flex items-center gap-2 font-semibold cursor-pointer">
-                  <Download className="w-4 h-4 text-emerald-400" />
-                  <span>Tải mẫu bộ đề</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-                </button>
-              }
-              options={[
-                {
-                  value: 'download_excel',
-                  label: 'Mẫu Excel (.xlsx)',
-                  icon: FileSpreadsheet,
-                },
-                {
-                  value: 'download_csv',
-                  label: 'Mẫu CSV (.csv)',
-                  icon: FileText,
-                },
-                {
-                  value: 'download_pptx',
-                  label: 'Mẫu PowerPoint (.pptx)',
-                  icon: Presentation,
-                },
-              ]}
-              onSelect={(val) => {
-                if (val === 'download_excel') downloadExamExcelTemplate();
-                else if (val === 'download_csv') downloadExamCsvTemplate();
-                else if (val === 'download_pptx') downloadExamPptxTemplate();
-              }}
-              align="right"
-            />
           </div>
         </div>
       </div>
@@ -801,9 +927,9 @@ export const ExamBankPage: React.FC = () => {
                               setCreateExamMode('upload');
                               setUploadModalOpen(true);
                             }}
-                            className="btn-glass-primary text-xs !py-2 !px-4 inline-flex items-center gap-1.5 font-bold shadow-sm"
+                            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs inline-flex items-center gap-1.5 font-bold shadow-md shadow-emerald-600/25 cursor-pointer transition hover:scale-[1.02]"
                           >
-                            <Plus className="w-3.5 h-3.5" />
+                            <PlusCircle className="w-4 h-4" />
                             <span>Tạo & Nhập bộ đề</span>
                           </button>
                         </div>
@@ -1730,9 +1856,48 @@ export const ExamBankPage: React.FC = () => {
                   setUploadModalOpen(false);
                   setSelectedUploadFile(null);
                 }}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className="flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 text-xs font-bold gap-1">
+              <button
+                type="button"
+                onClick={() => setCreateExamMode('manual')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  createExamMode === 'manual'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Soạn thủ công</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateExamMode('upload')}
+                className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  createExamMode === 'upload'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Tải tệp lên</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUploadModalOpen(false);
+                  setSmartPasteOpen(true);
+                }}
+                className="flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Cào / Dán đề</span>
               </button>
             </div>
 
@@ -1785,7 +1950,7 @@ export const ExamBankPage: React.FC = () => {
               <input
                 id="dropzone-file-input"
                 type="file"
-                accept=".xlsx,.xls,.csv,.pptx"
+                accept=".xlsx,.xls,.csv,.pptx,.docx,.doc,.json"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -1800,21 +1965,37 @@ export const ExamBankPage: React.FC = () => {
 
               <div>
                 <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
-                  Upload exam file
+                  Tải lên tệp bộ đề thi
                 </h4>
                 <p className="text-xs text-slate-500 mt-1">
-                  Excel · CSV · PowerPoint
+                  Hỗ trợ Word (.docx) · Excel (.xlsx) · CSV · PowerPoint (.pptx) · JSON
                 </p>
               </div>
 
-              <div className="pt-1">
+              <div className="pt-1 flex items-center justify-center gap-2">
                 <button
                   type="button"
                   className="btn-glass-primary text-xs !py-2 !px-4 inline-flex items-center gap-1.5 font-bold pointer-events-none"
                 >
-                  <span>Chọn tệp</span>
+                  <span>Chọn tệp tải lên</span>
                 </button>
-                <p className="text-[11px] text-slate-400 mt-2">hoặc kéo thả file vào đây</p>
+                <p className="text-[11px] text-slate-400">hoặc kéo thả file vào đây</p>
+              </div>
+
+              {/* Smart Paste Alternative Button */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setUploadModalOpen(false);
+                    setSmartPasteOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition flex items-center gap-1.5 mx-auto border border-indigo-200 dark:border-indigo-800"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Hoặc Cào / Dán đề thô trực tiếp (Smart Paste)</span>
+                </button>
               </div>
             </div>
 
@@ -1881,14 +2062,23 @@ export const ExamBankPage: React.FC = () => {
             {/* Quick Template Download Section */}
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center space-y-1.5">
               <p className="text-[11px] font-semibold text-slate-400">Bạn chưa có file chuẩn? Tải mẫu:</p>
-              <div className="flex items-center justify-center gap-4 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-bold text-indigo-600 dark:text-indigo-400">
                 <button
                   type="button"
                   onClick={() => downloadExamExcelTemplate()}
                   className="hover:underline flex items-center gap-1"
                 >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
                   Excel (.xlsx)
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => downloadExamWordTemplate()}
+                  className="hover:underline flex items-center gap-1"
+                >
+                  <FileText className="w-3.5 h-3.5 text-blue-500" />
+                  Word (.docx)
                 </button>
                 <span>•</span>
                 <button
@@ -1896,8 +2086,17 @@ export const ExamBankPage: React.FC = () => {
                   onClick={() => downloadExamCsvTemplate()}
                   className="hover:underline flex items-center gap-1"
                 >
-                  <FileText className="w-3.5 h-3.5" />
+                  <FileText className="w-3.5 h-3.5 text-sky-500" />
                   CSV (.csv)
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => downloadExamJsonTemplate()}
+                  className="hover:underline flex items-center gap-1"
+                >
+                  <FileCode className="w-3.5 h-3.5 text-violet-500" />
+                  JSON (.json)
                 </button>
                 <span>•</span>
                 <button
@@ -1905,7 +2104,7 @@ export const ExamBankPage: React.FC = () => {
                   onClick={downloadExamPptxTemplate}
                   className="hover:underline flex items-center gap-1"
                 >
-                  <Presentation className="w-3.5 h-3.5" />
+                  <Presentation className="w-3.5 h-3.5 text-amber-500" />
                   PowerPoint (.pptx)
                 </button>
               </div>
@@ -1975,6 +2174,13 @@ export const ExamBankPage: React.FC = () => {
         validQuestions={validImportQuestions}
         invalidQuestions={invalidImportQuestions}
         onConfirmImport={handleConfirmImport}
+      />
+
+      {/* SMART PASTE MODAL */}
+      <ExamSmartPasteModal
+        isOpen={smartPasteOpen}
+        onClose={() => setSmartPasteOpen(false)}
+        onSuccess={handleSmartPasteSuccess}
       />
 
       {/* Exam Access Key Management Modal (Owner View) */}

@@ -152,7 +152,7 @@ export const QuestionAnalyticsPanel: React.FC<QuestionAnalyticsPanelProps> = ({
             <span className="text-[#929CB4] text-[11px] font-medium">Nhấn vào đáp án để xem danh sách người chọn</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="flex flex-col gap-2.5">
             {optionsAnalytics.map((opt) => {
               const letter = opt.optionLetter.toUpperCase();
               const style = optionColorStyles[letter] || optionColorStyles.A;

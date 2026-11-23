@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -10,7 +12,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { CustomRoomsService } from './custom-rooms.service';
-import { CreateCustomRoomDto, VerifyRoomPasswordDto, InviteRoomPlayerDto } from './dto/custom-room.dto';
+import { CreateCustomRoomDto, VerifyRoomPasswordDto, InviteRoomPlayerDto, UpdateCustomRoomDto } from './dto/custom-room.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 
@@ -48,6 +50,30 @@ export class CustomRoomsController {
       success: true,
       data: room,
     };
+  }
+
+  @Patch(':roomCode')
+  @UseGuards(JwtAuthGuard)
+  async updateRoom(
+    @Request() req: any,
+    @Param('roomCode') roomCode: string,
+    @Body() dto: UpdateCustomRoomDto,
+  ) {
+    const hostUserId = req.user?.id || req.user?.sub;
+    const room = await this.customRoomsService.updateRoom(hostUserId, roomCode, dto);
+    return {
+      success: true,
+      data: room,
+      message: 'Cập nhật phòng đấu thành công!',
+    };
+  }
+
+  @Delete(':roomCode')
+  @UseGuards(JwtAuthGuard)
+  async deleteRoom(@Request() req: any, @Param('roomCode') roomCode: string) {
+    const hostUserId = req.user?.id || req.user?.sub;
+    const result = await this.customRoomsService.deleteRoom(hostUserId, roomCode);
+    return result;
   }
 
   @Public()
@@ -104,12 +130,14 @@ export class CustomRoomsController {
     };
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
   @Post(':roomCode/live/connect')
   async connectLive(
+    @Request() req: any,
     @Param('roomCode') roomCode: string,
     @Body() body: { provider?: 'MOCK' | 'TIKTOK_LIVE'; channelName?: string },
   ) {
+    await this.customRoomsService.assertLiveHost(roomCode, req.user?.id);
     const result = await this.customRoomsService.connectLive(
       roomCode,
       body.provider || 'MOCK',
@@ -122,9 +150,10 @@ export class CustomRoomsController {
     };
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
   @Post(':roomCode/live/disconnect')
-  async disconnectLive(@Param('roomCode') roomCode: string) {
+  async disconnectLive(@Request() req: any, @Param('roomCode') roomCode: string) {
+    await this.customRoomsService.assertLiveHost(roomCode, req.user?.id);
     await this.customRoomsService.disconnectLive(roomCode);
     return {
       success: true,
@@ -132,12 +161,14 @@ export class CustomRoomsController {
     };
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
   @Post(':roomCode/live/mock-comment')
-  sendMockComment(
+  async sendMockComment(
+    @Request() req: any,
     @Param('roomCode') roomCode: string,
     @Body() body: { username?: string; displayName?: string; commentText: string },
   ) {
+    await this.customRoomsService.assertLiveHost(roomCode, req.user?.id);
     const event = this.customRoomsService.sendMockComment(roomCode, body);
     return {
       success: true,
@@ -146,12 +177,14 @@ export class CustomRoomsController {
     };
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard)
   @Post(':roomCode/live/simulate-batch')
-  simulateBatch(
+  async simulateBatch(
+    @Request() req: any,
     @Param('roomCode') roomCode: string,
     @Body('count') count?: number,
   ) {
+    await this.customRoomsService.assertLiveHost(roomCode, req.user?.id);
     const events = this.customRoomsService.simulateBatch(roomCode, count || 8);
     return {
       success: true,

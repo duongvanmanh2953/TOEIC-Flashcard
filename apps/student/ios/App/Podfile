@@ -17,7 +17,9 @@ end
 
 target 'App' do
   capacitor_pods
-  # Add your Pods here
+  # Firebase dependencies
+  pod 'FirebaseCore'
+  pod 'FirebaseAnalytics'
 end
 
 post_install do |installer|

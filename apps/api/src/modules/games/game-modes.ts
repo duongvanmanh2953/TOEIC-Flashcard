@@ -1,6 +1,16 @@
 import { GameModeType } from '@prisma/client';
 import { IGameMode, AnswerEvaluation, GameQuestionPayload } from './game-mode.interface';
 
+export function scoreBattleAnswer(isCorrect: boolean, responseTimeMs: number): number {
+  return isCorrect ? Math.max(0, 100 - Math.floor(responseTimeMs / 1000)) : 0;
+}
+
+const LIVE_FAST_RESPONSE_POINTS: readonly number[] = [30, 20, 15];
+
+export function scoreLiveResponse(previousCorrectCount: number): number {
+  return LIVE_FAST_RESPONSE_POINTS[previousCorrectCount] ?? 0;
+}
+
 /**
  * Text normalizer helper for English and Vietnamese
  */

@@ -3,6 +3,10 @@ import {
   FileSpreadsheet,
   FileText,
   Presentation,
+  FileCode,
+  Sparkles,
+  Image as ImageIcon,
+  Headphones,
   CheckCircle2,
   AlertTriangle,
   X,
@@ -19,7 +23,7 @@ export interface ExamImportPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   fileName: string;
-  fileType: 'excel' | 'pptx' | 'csv';
+  fileType: 'excel' | 'pptx' | 'csv' | 'word' | 'json' | 'text';
   validQuestions: ParsedExamQuestion[];
   invalidQuestions: InvalidExamQuestionRow[];
   onConfirmImport: (finalQuestions: ParsedExamQuestion[]) => void;
@@ -55,6 +59,8 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
   const [draftAnswer, setDraftAnswer] = useState('');
   const [draftExplanation, setDraftExplanation] = useState('');
   const [draftGrammar, setDraftGrammar] = useState('');
+  const [draftImageUrl, setDraftImageUrl] = useState('');
+  const [draftAudioUrl, setDraftAudioUrl] = useState('');
 
   const [selectedPartFilter, setSelectedPartFilter] = useState<string>('ALL');
 
@@ -82,6 +88,8 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
     setDraftAnswer(inv.rawRow?.dap_an_dung || inv.rawRow?.correct_answer || '');
     setDraftExplanation(inv.rawRow?.giai_thich_chi_tiet || inv.rawRow?.explanation || '');
     setDraftGrammar(inv.rawRow?.chu_diem_ngu_phap || inv.rawRow?.grammar_type || '');
+    setDraftImageUrl(inv.rawRow?.link_anh || inv.rawRow?.image_url || inv.rawRow?.imageUrl || '');
+    setDraftAudioUrl(inv.rawRow?.link_audio || inv.rawRow?.audio_url || inv.rawRow?.audioUrl || '');
   };
 
   const handleStartEditValid = (val: ParsedExamQuestion, idx: number) => {
@@ -95,6 +103,8 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
     setDraftAnswer(Array.isArray(val.correctAnswer) ? val.correctAnswer[0] : (val.correctAnswer || 'A'));
     setDraftExplanation(val.explanation || '');
     setDraftGrammar(val.grammarType || '');
+    setDraftImageUrl(val.imageUrl || '');
+    setDraftAudioUrl(val.audioUrl || '');
   };
 
   const handleSaveFixedQuestion = (rowNumber: number) => {
@@ -131,6 +141,8 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
               correctAnswer: draftAnswer.trim().toUpperCase(),
               explanation: draftExplanation.trim() || undefined,
               grammarType: draftGrammar.trim() || undefined,
+              imageUrl: draftImageUrl.trim() || undefined,
+              audioUrl: draftAudioUrl.trim() || undefined,
               warnings: [],
             };
           }
@@ -148,6 +160,8 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
         acceptedAnswers: [],
         explanation: draftExplanation.trim() || undefined,
         grammarType: draftGrammar.trim() || undefined,
+        imageUrl: draftImageUrl.trim() || undefined,
+        audioUrl: draftAudioUrl.trim() || undefined,
         category: 'Grammar',
         skill: 'Reading',
         difficulty: 'MEDIUM',
@@ -191,9 +205,8 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
   };
 
   return (
-    <ModalPortal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+    <ModalPortal isOpen={isOpen} onClose={onClose}>
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0 bg-slate-50/50 dark:bg-slate-800/20">
             <div className="flex items-center gap-3 min-w-0">
@@ -202,6 +215,12 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
                   <FileSpreadsheet className="w-5 h-5 text-emerald-500" />
                 ) : fileType === 'csv' ? (
                   <FileText className="w-5 h-5 text-sky-500" />
+                ) : fileType === 'word' ? (
+                  <FileText className="w-5 h-5 text-blue-500" />
+                ) : fileType === 'json' ? (
+                  <FileCode className="w-5 h-5 text-amber-500" />
+                ) : fileType === 'text' ? (
+                  <Sparkles className="w-5 h-5 text-indigo-500" />
                 ) : (
                   <Presentation className="w-5 h-5 text-amber-500" />
                 )}
@@ -388,6 +407,37 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
                           <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white leading-relaxed">
                             {q.questionText}
                           </h4>
+
+                          {/* Media Preview (Image & Audio) */}
+                          {(q.imageUrl || q.audioUrl) && (
+                            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-800 space-y-2">
+                              {q.imageUrl && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <ImageIcon className="w-3 h-3 text-sky-500" /> Hình ảnh minh họa (Link trực tuyến)
+                                  </span>
+                                  <div className="flex justify-center bg-white dark:bg-slate-900 rounded-xl p-2 border border-slate-200/60 dark:border-slate-700/60">
+                                    <img
+                                      src={q.imageUrl}
+                                      alt="Minh họa câu hỏi"
+                                      className="max-h-52 object-contain rounded-lg"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              {q.audioUrl && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                    <Headphones className="w-3 h-3 text-violet-500" /> Tệp âm thanh nghe (Audio URL)
+                                  </span>
+                                  <audio controls src={q.audioUrl} className="w-full h-8" preload="none" />
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {/* Options grid */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
@@ -586,6 +636,29 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
                               </div>
                             </div>
 
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[10px] font-semibold text-slate-500">Link Ảnh trực tuyến (URL):</label>
+                                <input
+                                  type="text"
+                                  value={draftImageUrl}
+                                  onChange={(e) => setDraftImageUrl(e.target.value)}
+                                  placeholder="https://..."
+                                  className="w-full text-xs px-2.5 py-1 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-semibold text-slate-500">Link Audio trực tuyến (URL):</label>
+                                <input
+                                  type="text"
+                                  value={draftAudioUrl}
+                                  onChange={(e) => setDraftAudioUrl(e.target.value)}
+                                  placeholder="https://..."
+                                  className="w-full text-xs px-2.5 py-1 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                />
+                              </div>
+                            </div>
+
                             <div className="flex items-center justify-end gap-2 pt-1">
                               <button
                                 type="button"
@@ -688,7 +761,19 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
                                         {val.questionNumber || idx + 1}
                                       </td>
                                       <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-white">
-                                        <div className="line-clamp-2">{val.questionText}</div>
+                                        <div className="line-clamp-2 flex items-center gap-1.5 flex-wrap">
+                                          <span>{val.questionText}</span>
+                                          {val.imageUrl && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                                              <ImageIcon className="w-3 h-3" /> Ảnh
+                                            </span>
+                                          )}
+                                          {val.audioUrl && (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                                              <Headphones className="w-3 h-3" /> Audio
+                                            </span>
+                                          )}
+                                        </div>
                                         {val.explanation && (
                                           <div className="text-[10px] text-slate-500 italic line-clamp-1 mt-0.5">
                                             {val.explanation}
@@ -839,6 +924,29 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
                                               </div>
                                             </div>
 
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                              <div>
+                                                <label className="text-[10px] font-semibold text-slate-500">Link Ảnh trực tuyến (URL):</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftImageUrl}
+                                                  onChange={(e) => setDraftImageUrl(e.target.value)}
+                                                  placeholder="https://..."
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                              <div>
+                                                <label className="text-[10px] font-semibold text-slate-500">Link Âm thanh Audio (URL):</label>
+                                                <input
+                                                  type="text"
+                                                  value={draftAudioUrl}
+                                                  onChange={(e) => setDraftAudioUrl(e.target.value)}
+                                                  placeholder="https://..."
+                                                  className="w-full text-xs px-2.5 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800"
+                                                />
+                                              </div>
+                                            </div>
+
                                             <div className="flex items-center justify-end gap-2 pt-1">
                                               <button
                                                 type="button"
@@ -914,7 +1022,6 @@ export const ExamImportPreviewModal: React.FC<ExamImportPreviewModalProps> = ({
             </div>
           </div>
         </div>
-      </div>
     </ModalPortal>
   );
 };

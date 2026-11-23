@@ -29,7 +29,7 @@ export class GamesController {
   async getLobby() {
     const hoursStatus = this.gamesService.getOperatingHoursStatus();
     const schedule = await this.gamesService.getGameSchedule();
-    const activeRooms = this.gamesService.roomManager.getActiveRooms().map((r) => ({
+    const activeRooms = this.gamesService.roomManager.getActiveRooms().filter((room) => room.scheduled).map((r) => ({
       roomCode: r.roomCode,
       gameMode: r.gameMode,
       title: r.title,
@@ -64,6 +64,21 @@ export class GamesController {
   }
 
   @Public()
+  @Get('user-overview')
+  @ApiOperation({ summary: 'Get user Arena overview: rank, lifetime points, streak, badges, match history' })
+  async getUserOverview(@Query('userId') userId: string) {
+    if (!userId) return null;
+    return this.gamesService.getUserArenaOverview(userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my-overview')
+  @ApiOperation({ summary: 'Get authenticated user Arena overview' })
+  async getMyOverview(@Req() req: any) {
+    return this.gamesService.getUserArenaOverview(req.user?.id);
+  }
+
+  @Public()
   @Get('configs')
   @ApiOperation({ summary: 'Get public game mode configs' })
   async getConfigs() {
@@ -74,13 +89,17 @@ export class GamesController {
   // ADMIN GAME & QUESTION BANK MANAGEMENT
   // =========================================================================
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Post('admin/toggle-test-mode')
-  @ApiOperation({ summary: 'Toggle game test mode (bypass 20:00-22:00 restriction for QA)' })
+  @ApiOperation({ summary: 'Toggle game test mode (bypass 19:00-22:00 restriction for QA)' })
   toggleTestMode(@Body('enabled') enabled: boolean) {
     const status = this.gamesService.setTestMode(Boolean(enabled));
     return { testMode: status, message: `Test mode is now ${status ? 'ENABLED' : 'DISABLED'}` };
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Get('admin/questions')
   @ApiOperation({ summary: 'Admin: Get game questions pool' })
   getAdminQuestions(
@@ -91,30 +110,40 @@ export class GamesController {
     return this.gamesService.getAdminQuestions({ gameMode, cefrLevel, search });
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Post('admin/questions')
   @ApiOperation({ summary: 'Admin: Add question to question bank' })
   createQuestion(@Body() body: any) {
     return this.gamesService.createQuestion(body);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Put('admin/questions/:id')
   @ApiOperation({ summary: 'Admin: Edit question' })
   updateQuestion(@Param('id') id: string, @Body() body: any) {
     return this.gamesService.updateQuestion(id, body);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Delete('admin/questions/:id')
   @ApiOperation({ summary: 'Admin: Delete question' })
   deleteQuestion(@Param('id') id: string) {
     return this.gamesService.deleteQuestion(id);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Get('admin/configs')
   @ApiOperation({ summary: 'Admin: Get game schedules and configs' })
   getAdminConfigs() {
     return this.gamesService.getGameConfigs();
   }
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   @Put('admin/configs/:id')
   @ApiOperation({ summary: 'Admin: Update game schedule and configuration' })
   updateAdminConfig(@Param('id') id: string, @Body() body: any) {

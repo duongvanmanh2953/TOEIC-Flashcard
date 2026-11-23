@@ -7,7 +7,7 @@ interface EnterRoomPasswordModalProps {
   roomCode: string;
   roomTitle: string;
   onClose: () => void;
-  onSuccess: (roomCode: string) => void;
+  onSuccess: (roomCode: string, password: string) => void;
 }
 
 export const EnterRoomPasswordModal: React.FC<EnterRoomPasswordModalProps> = ({
@@ -34,7 +34,7 @@ export const EnterRoomPasswordModal: React.FC<EnterRoomPasswordModalProps> = ({
       setLoading(true);
       setError(null);
       await api.post(`/games/rooms/${roomCode}/verify-password`, { password });
-      onSuccess(roomCode);
+      onSuccess(roomCode, password);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Mật khẩu không chính xác. Vui lòng thử lại!');
     } finally {
@@ -43,7 +43,7 @@ export const EnterRoomPasswordModal: React.FC<EnterRoomPasswordModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-md bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl text-white overflow-hidden p-6 space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

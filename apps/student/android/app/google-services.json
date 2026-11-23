@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "558974914414",
+    "project_id": "vocalflow-e04ca",
+    "storage_bucket": "vocalflow-e04ca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:558974914414:android:d89f4b9a3602a9bd047b7f",
+        "android_client_info": {
+          "package_name": "vn.vocabflow.student"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "558974914414-o6rog5j0rs86a79e8vl7gp19hjm0d4e8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKL9brwAOmAIZV3wfR9o1dwTw9J2CpRek"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "558974914414-o6rog5j0rs86a79e8vl7gp19hjm0d4e8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

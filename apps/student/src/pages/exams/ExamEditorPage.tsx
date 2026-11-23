@@ -24,6 +24,10 @@ import {
   Image as ImageIcon,
   Headphones,
   CheckCircle2,
+  CheckSquare,
+  ToggleRight,
+  PenLine,
+  PlusCircle,
   Eye,
   EyeOff,
   Filter,
@@ -31,6 +35,9 @@ import {
   X,
   Lightbulb,
   Globe,
+  Download,
+  FileCode,
+  Link2,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -39,12 +46,19 @@ import { CustomDropdown } from '../../components/common/CustomDropdown';
 import { ToggleSwitch } from '../../components/common/ToggleSwitch';
 import { CountryFlag } from '../../components/language/CountryFlag';
 import { ExamImportPreviewModal } from '../../components/exams/ExamImportPreviewModal';
+import { ExamSmartPasteModal } from '../../components/exams/ExamSmartPasteModal';
 import {
   parseAndValidateExamExcel,
+  parseAndValidateExamWord,
+  parseAndValidateExamJson,
+  downloadExamExcelTemplate,
+  downloadExamCsvTemplate,
+  downloadExamWordTemplate,
+  downloadExamJsonTemplate,
   ParsedExamQuestion,
   InvalidExamQuestionRow,
 } from '../../utils/examTemplate';
-import { parseAndValidateExamPptx } from '../../utils/examPptxTemplate';
+import { parseAndValidateExamPptx, downloadExamPptxTemplate } from '../../utils/examPptxTemplate';
 import { useLearningContext } from '../../contexts/LearningContext';
 
 export const ExamEditorPage: React.FC = () => {
@@ -125,11 +139,13 @@ export const ExamEditorPage: React.FC = () => {
   // Per-question toggle states for advanced options
   const [showWhyWrongMap, setShowWhyWrongMap] = useState<Record<number, boolean>>({});
   const [showMediaMap, setShowMediaMap] = useState<Record<number, boolean>>({});
+  const [mediaSourceTabMap, setMediaSourceTabMap] = useState<Record<number, 'link' | 'upload'>>({});
 
-  // Import Modal State
+  // Import & Smart Paste Modal State
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [smartPasteModalOpen, setSmartPasteModalOpen] = useState(false);
   const [importFileName, setImportFileName] = useState('');
-  const [importFileType, setImportFileType] = useState<'excel' | 'pptx' | 'csv'>('excel');
+  const [importFileType, setImportFileType] = useState<'excel' | 'pptx' | 'csv' | 'word' | 'json' | 'text'>('excel');
   const [validImportQuestions, setValidImportQuestions] = useState<ParsedExamQuestion[]>([]);
   const [invalidImportQuestions, setInvalidImportQuestions] = useState<InvalidExamQuestionRow[]>([]);
 
@@ -420,7 +436,10 @@ export const ExamEditorPage: React.FC = () => {
   };
 
   // Import handler for file button inside editor (mix multiple sources)
-  const handleEditorFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'excel' | 'pptx' | 'csv') => {
+  const handleEditorFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'excel' | 'pptx' | 'csv' | 'word' | 'json'
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -428,7 +447,17 @@ export const ExamEditorPage: React.FC = () => {
     setImportFileType(type);
 
     try {
-      if (type === 'excel' || type === 'csv') {
+      if (type === 'word') {
+        const result = await parseAndValidateExamWord(file);
+        setValidImportQuestions(result.validQuestions);
+        setInvalidImportQuestions(result.invalidQuestions);
+        setImportModalOpen(true);
+      } else if (type === 'json') {
+        const result = await parseAndValidateExamJson(file);
+        setValidImportQuestions(result.validQuestions);
+        setInvalidImportQuestions(result.invalidQuestions);
+        setImportModalOpen(true);
+      } else if (type === 'excel' || type === 'csv') {
         const result = await parseAndValidateExamExcel(file);
         setValidImportQuestions(result.validQuestions);
         setInvalidImportQuestions(result.invalidQuestions);
@@ -444,6 +473,179 @@ export const ExamEditorPage: React.FC = () => {
     } finally {
       e.target.value = '';
     }
+  };
+
+  const handleSmartPasteSuccess = (result: {
+    validQuestions: ParsedExamQuestion[];
+    invalidQuestions: InvalidExamQuestionRow[];
+    sourceText: string;
+  }) => {
+    if (result.invalidQuestions.length > 0) {
+      setImportFileName('Văn bản dán nhanh (Smart Paste)');
+      setImportFileType('text');
+      setValidImportQuestions(result.validQuestions);
+      setInvalidImportQuestions(result.invalidQuestions);
+      setImportModalOpen(true);
+    } else {
+      handleAppendImportedQuestions(result.validQuestions);
+    }
+  };
+
+  // Add Option to a question (flexible options: A, B, C, D, E, F...)
+  const handleAddOptionToQuestion = (qIdx: number) => {
+    const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    setQuestions((prev) => {
+      const next = [...prev];
+      const curOptions = next[qIdx].options || [];
+      const nextKey = LETTERS[curOptions.length] || `Opt${curOptions.length + 1}`;
+      next[qIdx] = {
+        ...next[qIdx],
+        options: [...curOptions, { key: nextKey, text: '' }],
+      };
+      return next;
+    });
+  };
+
+  // Remove option from question (minimum 2 options)
+  const handleRemoveOptionFromQuestion = (qIdx: number, optKey: string) => {
+    setQuestions((prev) => {
+      const next = [...prev];
+      const curOptions = next[qIdx].options || [];
+      if (curOptions.length <= 2) {
+        alert('Mỗi câu hỏi cần tối thiểu 2 phương án lựa chọn.');
+        return prev;
+      }
+      const filtered = curOptions.filter((o: any) => o.key !== optKey);
+      next[qIdx] = {
+        ...next[qIdx],
+        options: filtered,
+        correctAnswer: next[qIdx].correctAnswer === optKey ? (filtered[0]?.key || 'A') : next[qIdx].correctAnswer,
+      };
+      return next;
+    });
+  };
+
+  // Batch add questions with specific template (MULTIPLE_CHOICE, TRUE_FALSE, etc.)
+  const handleBatchAddCustom = (count: number, qType: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'FILL_IN_BLANK' = 'MULTIPLE_CHOICE') => {
+    const startNum = questions.length;
+    const newBatch = Array.from({ length: count }, (_, i) => {
+      const num = startNum + i + 1;
+      if (qType === 'TRUE_FALSE') {
+        return {
+          questionNumber: num,
+          questionText: '',
+          questionType: 'TRUE_FALSE',
+          options: [
+            { key: 'A', text: 'Đúng (True)' },
+            { key: 'B', text: 'Sai (False)' },
+          ],
+          correctAnswer: 'A',
+          explanation: '',
+          sourceExplanation: '',
+          optionExplanations: { A: '', B: '' },
+          grammarType: '',
+          category: selectedPartFilter !== 'ALL' ? selectedPartFilter : 'Part 5',
+          skill: 'Reading',
+          difficulty: 'MEDIUM',
+          points: 1.0,
+          tags: [],
+        };
+      }
+      return {
+        questionNumber: num,
+        questionText: '',
+        questionType: qType,
+        options: [
+          { key: 'A', text: '' },
+          { key: 'B', text: '' },
+          { key: 'C', text: '' },
+          { key: 'D', text: '' },
+        ],
+        correctAnswer: 'A',
+        explanation: '',
+        sourceExplanation: '',
+        optionExplanations: { A: '', B: '', C: '', D: '' },
+        grammarType: '',
+        category: selectedPartFilter !== 'ALL' ? selectedPartFilter : 'Part 5',
+        skill: 'Reading',
+        difficulty: 'MEDIUM',
+        points: 1.0,
+        tags: [],
+      };
+    });
+    setQuestions((prev) => [...prev, ...newBatch]);
+  };
+
+  const handleMoreAction = (val: string) => {
+    if (val === 'smart_paste') {
+      setSmartPasteModalOpen(true);
+    } else if (val === 'upload_word') {
+      document.getElementById('editor-word-upload')?.click();
+    } else if (val === 'upload_excel') {
+      document.getElementById('editor-excel-upload')?.click();
+    } else if (val === 'upload_pptx') {
+      document.getElementById('editor-pptx-upload')?.click();
+    } else if (val === 'upload_json') {
+      document.getElementById('editor-json-upload')?.click();
+    } else if (val === 'upload_csv') {
+      document.getElementById('editor-csv-upload')?.click();
+    } else if (val === 'add_mc_1') {
+      handleBatchAddCustom(1, 'MULTIPLE_CHOICE');
+    } else if (val === 'add_tf_1') {
+      handleBatchAddCustom(1, 'TRUE_FALSE');
+    } else if (val === 'add_fill_1') {
+      handleBatchAddCustom(1, 'FILL_IN_BLANK');
+    } else if (val === 'add_mc_5') {
+      handleBatchAddCustom(5, 'MULTIPLE_CHOICE');
+    } else if (val === 'add_mc_10') {
+      handleBatchAddCustom(10, 'MULTIPLE_CHOICE');
+    } else if (val === 'tmpl_word') {
+      downloadExamWordTemplate();
+    } else if (val === 'tmpl_excel') {
+      downloadExamExcelTemplate('xlsx');
+    } else if (val === 'tmpl_csv') {
+      downloadExamCsvTemplate();
+    } else if (val === 'tmpl_json') {
+      downloadExamJsonTemplate();
+    } else if (val === 'tmpl_pptx') {
+      downloadExamPptxTemplate();
+    }
+  };
+
+  const handleUpdateQuestionType = (qIdx: number, newType: string) => {
+    setQuestions((prev) => {
+      const next = [...prev];
+      const target = next[qIdx];
+      if (newType === 'TRUE_FALSE') {
+        next[qIdx] = {
+          ...target,
+          questionType: 'TRUE_FALSE',
+          options: [
+            { key: 'A', text: target.options?.[0]?.text || 'Đúng (True)' },
+            { key: 'B', text: target.options?.[1]?.text || 'Sai (False)' },
+          ],
+          correctAnswer: target.correctAnswer === 'B' ? 'B' : 'A',
+        };
+      } else if (newType === 'MULTIPLE_CHOICE') {
+        const curOpts = target.options || [];
+        const baseOpts = ['A', 'B', 'C', 'D'].map((k, i) => ({
+          key: k,
+          text: curOpts[i]?.text || '',
+        }));
+        next[qIdx] = {
+          ...target,
+          questionType: 'MULTIPLE_CHOICE',
+          options: baseOpts,
+          correctAnswer: ['A', 'B', 'C', 'D'].includes(target.correctAnswer) ? target.correctAnswer : 'A',
+        };
+      } else {
+        next[qIdx] = {
+          ...target,
+          questionType: newType,
+        };
+      }
+      return next;
+    });
   };
 
   const handleAppendImportedQuestions = (imported: ParsedExamQuestion[]) => {
@@ -495,34 +697,163 @@ export const ExamEditorPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Action Controls: File Upload Buttons with descriptive labels and specific tool icons */}
+        {/* Action Controls: Unified Add Question with Comprehensive More Dropdown */}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => document.getElementById('editor-excel-upload')?.click()}
-            className="btn-glass-secondary text-xs !py-2.5 !px-3.5 flex items-center gap-2 font-semibold shadow-xs hover:border-emerald-500/50 cursor-pointer"
-            title="Tải lên và trộn câu hỏi từ file Excel (.xlsx)"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-            <span>Nhập từ file Excel (.xlsx)</span>
-          </button>
+          {/* UNIFIED QUESTION CREATION WITH 'MORE' OPTIONS */}
+          <div className="inline-flex items-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md shadow-emerald-600/25 transition">
+            <button
+              type="button"
+              onClick={handleAddQuestion}
+              className="text-xs h-10 px-3.5 flex items-center gap-2 font-bold cursor-pointer rounded-l-xl transition hover:bg-emerald-700/80"
+              title="Thêm một câu hỏi trắc nghiệm mới để nhập đề thủ công"
+            >
+              <PlusCircle className="w-4 h-4 text-emerald-200" />
+              <span>Thêm câu hỏi</span>
+            </button>
+
+            <CustomDropdown
+              align="right"
+              trigger={
+                <button
+                  type="button"
+                  className="h-10 px-2.5 hover:bg-emerald-700 rounded-r-xl border-l border-emerald-500/50 text-white cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                  title="Tùy chọn cào dán đề, nhập file & tải mẫu (More)"
+                >
+                  <span>More</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              }
+              options={[
+                {
+                  value: 'smart_paste',
+                  label: 'Cào / Dán đề nhanh (Smart Paste)',
+                  description: 'Dán thô văn bản từ Word, PDF, Web để tự động bóc tách',
+                  icon: Sparkles,
+                },
+                {
+                  value: 'upload_word',
+                  label: 'Nhập từ file Word (.docx)',
+                  description: 'Trích xuất câu hỏi từ tài liệu Word',
+                  icon: FileText,
+                },
+                {
+                  value: 'upload_excel',
+                  label: 'Nhập từ file Excel (.xlsx)',
+                  description: 'Nạp hàng loạt câu hỏi từ bảng tính Excel',
+                  icon: FileSpreadsheet,
+                },
+                {
+                  value: 'upload_pptx',
+                  label: 'Nhập từ PowerPoint (.pptx)',
+                  description: 'Trích xuất câu hỏi từ slide trình chiếu',
+                  icon: Presentation,
+                },
+                {
+                  value: 'upload_json',
+                  label: 'Nhập từ file JSON (.json)',
+                  description: 'Nạp dữ liệu cấu trúc đề thi JSON',
+                  icon: FileCode,
+                },
+                {
+                  value: 'upload_csv',
+                  label: 'Nhập từ file CSV (.csv)',
+                  description: 'Nạp danh sách câu hỏi định dạng CSV',
+                  icon: FileText,
+                },
+                {
+                  value: 'add_mc_1',
+                  label: '+1 câu trắc nghiệm (A-D)',
+                  description: 'Tạo nhanh 1 câu hỏi 4 lựa chọn',
+                  icon: CheckSquare,
+                },
+                {
+                  value: 'add_tf_1',
+                  label: '+1 câu Đúng / Sai (True / False)',
+                  description: 'Tạo nhanh câu hỏi 2 phương án',
+                  icon: ToggleRight,
+                },
+                {
+                  value: 'add_fill_1',
+                  label: '+1 câu Điền vào chỗ trống',
+                  description: 'Câu hỏi điền khuyết từ vựng / ngữ pháp',
+                  icon: PenLine,
+                },
+                {
+                  value: 'add_mc_5',
+                  label: '+5 câu trắc nghiệm liên tiếp',
+                  description: 'Tạo hàng loạt 5 câu hỏi nhanh',
+                  icon: Layers,
+                },
+                {
+                  value: 'add_mc_10',
+                  label: '+10 câu trắc nghiệm liên tiếp',
+                  description: 'Tạo hàng loạt 10 câu hỏi nhanh',
+                  icon: Layers,
+                },
+                {
+                  value: 'tmpl_word',
+                  label: 'Tải mẫu Word (.docx)',
+                  description: 'Mẫu đề chuẩn định dạng Microsoft Word',
+                  icon: Download,
+                },
+                {
+                  value: 'tmpl_excel',
+                  label: 'Tải mẫu Excel (.xlsx)',
+                  description: 'Mẫu đề chuẩn định dạng Excel',
+                  icon: Download,
+                },
+                {
+                  value: 'tmpl_csv',
+                  label: 'Tải mẫu CSV (.csv)',
+                  description: 'Mẫu đề chuẩn định dạng CSV',
+                  icon: Download,
+                },
+                {
+                  value: 'tmpl_json',
+                  label: 'Tải mẫu JSON (.json)',
+                  description: 'Mẫu đề chuẩn định dạng JSON',
+                  icon: Download,
+                },
+                {
+                  value: 'tmpl_pptx',
+                  label: 'Tải mẫu PowerPoint (.pptx)',
+                  description: 'Mẫu đề chuẩn định dạng PowerPoint',
+                  icon: Download,
+                },
+              ]}
+              onSelect={handleMoreAction}
+            />
+          </div>
+
+          {/* Hidden File Inputs for Import Triggers */}
+          <input
+            id="editor-word-upload"
+            type="file"
+            accept=".docx,.doc"
+            className="hidden"
+            onChange={(e) => handleEditorFileUpload(e, 'word')}
+          />
           <input
             id="editor-excel-upload"
             type="file"
-            accept=".xlsx"
+            accept=".xlsx,.xls"
             className="hidden"
             onChange={(e) => handleEditorFileUpload(e, 'excel')}
           />
-
-          <button
-            type="button"
-            onClick={() => document.getElementById('editor-csv-upload')?.click()}
-            className="btn-glass-secondary text-xs !py-2.5 !px-3.5 flex items-center gap-2 font-semibold shadow-xs hover:border-sky-500/50 cursor-pointer"
-            title="Tải lên và trộn câu hỏi từ file CSV (.csv)"
-          >
-            <FileText className="w-4 h-4 text-sky-500" />
-            <span>Nhập từ file CSV (.csv)</span>
-          </button>
+          <input
+            id="editor-pptx-upload"
+            type="file"
+            accept=".pptx"
+            className="hidden"
+            onChange={(e) => handleEditorFileUpload(e, 'pptx')}
+          />
+          <input
+            id="editor-json-upload"
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={(e) => handleEditorFileUpload(e, 'json')}
+          />
           <input
             id="editor-csv-upload"
             type="file"
@@ -531,40 +862,14 @@ export const ExamEditorPage: React.FC = () => {
             onChange={(e) => handleEditorFileUpload(e, 'csv')}
           />
 
-          <button
-            type="button"
-            onClick={() => document.getElementById('editor-pptx-upload')?.click()}
-            className="btn-glass-secondary text-xs !py-2.5 !px-3.5 flex items-center gap-2 font-semibold shadow-xs hover:border-amber-500/50 cursor-pointer"
-            title="Tải lên và trích xuất câu hỏi từ bài giảng PowerPoint (.pptx)"
-          >
-            <Presentation className="w-4 h-4 text-amber-500" />
-            <span>Nhập từ PowerPoint (.pptx)</span>
-          </button>
-          <input
-            id="editor-pptx-upload"
-            type="file"
-            accept=".pptx"
-            className="hidden"
-            onChange={(e) => handleEditorFileUpload(e, 'pptx')}
-          />
-
+          {/* Guidance Help Button */}
           <button
             type="button"
             onClick={() => setShowHelpModal(true)}
-            className="btn-glass-secondary text-xs !py-2.5 !px-4 font-bold shadow-sm flex items-center gap-1.5 cursor-pointer text-indigo-600 dark:text-indigo-400"
+            className="h-10 px-3.5 rounded-xl btn-glass-secondary text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer text-indigo-600 dark:text-indigo-400"
           >
             <HelpCircle className="w-4 h-4" />
             <span className="hidden sm:inline">Hướng Dẫn</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => handleSaveExam('PUBLISHED')}
-            className="btn-glass-primary text-xs !py-2.5 !px-5 font-bold shadow-md flex items-center gap-2 cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>{saving ? 'Đang lưu đề thi...' : 'Lưu & Xuất bản đề thi'}</span>
           </button>
         </div>
       </div>
@@ -835,9 +1140,10 @@ export const ExamEditorPage: React.FC = () => {
             <button
               type="button"
               onClick={handleAddQuestion}
-              className="btn-glass-primary text-xs !py-2 !px-4 flex items-center gap-1.5 font-bold shadow-xs cursor-pointer"
+              className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs flex items-center gap-1.5 font-bold shadow-md shadow-emerald-600/25 cursor-pointer transition hover:scale-[1.02]"
             >
-              <span>Thêm câu hỏi mới</span>
+              <Plus className="w-4 h-4" />
+              <span>Thêm câu hỏi</span>
             </button>
           </div>
         </div>
@@ -854,11 +1160,35 @@ export const ExamEditorPage: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleBatchAddQuestions(5)}
+                onClick={() => handleBatchAddCustom(1, 'MULTIPLE_CHOICE')}
                 className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-bold text-[11px] transition cursor-pointer"
-                title="Tạo nhanh 5 khung câu hỏi để soạn"
+                title="Tạo thêm 1 câu hỏi trắc nghiệm mới"
               >
-                Thêm nhanh 5 câu
+                + 1 câu
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBatchAddCustom(5, 'MULTIPLE_CHOICE')}
+                className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-bold text-[11px] transition cursor-pointer"
+                title="Tạo nhanh 5 khung câu hỏi trắc nghiệm A-D để soạn"
+              >
+                + 5 câu trắc nghiệm
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBatchAddCustom(5, 'TRUE_FALSE')}
+                className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 font-bold text-[11px] transition cursor-pointer"
+                title="Tạo nhanh 5 câu Đúng/Sai"
+              >
+                + 5 câu Đúng/Sai
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBatchAddCustom(10, 'MULTIPLE_CHOICE')}
+                className="px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 hover:bg-purple-100 font-bold text-[11px] transition cursor-pointer"
+                title="Tạo nhanh 10 khung câu hỏi để soạn"
+              >
+                + 10 câu
               </button>
               <button
                 type="button"
@@ -981,16 +1311,38 @@ export const ExamEditorPage: React.FC = () => {
               >
                 {/* Header Row */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`w-7 h-7 rounded-xl font-black text-xs flex items-center justify-center shrink-0 shadow-xs ${
+                      isFilled
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
+                        : 'bg-gradient-to-br from-amber-500 to-orange-500 text-white'
+                    }`}>
                       {idx + 1}
                     </span>
                     <span className="font-extrabold text-xs text-slate-900 dark:text-white">
                       Câu hỏi #{idx + 1}
                     </span>
 
+                    {/* Question type badge with distinct colorful icon */}
+                    {q.questionType === 'TRUE_FALSE' ? (
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800/60 flex items-center gap-1 shadow-2xs">
+                        <ToggleRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Đúng / Sai</span>
+                      </span>
+                    ) : q.questionType === 'FILL_IN_BLANK' ? (
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300/60 dark:border-amber-800/60 flex items-center gap-1 shadow-2xs">
+                        <PenLine className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>Điền từ</span>
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300/60 dark:border-indigo-800/60 flex items-center gap-1 shadow-2xs">
+                        <CheckSquare className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <span>Trắc nghiệm (A-D)</span>
+                      </span>
+                    )}
+
                     {/* Part badge */}
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
                       {q.section || q.skill || q.category || 'Part 5'}
                     </span>
 
@@ -1018,7 +1370,7 @@ export const ExamEditorPage: React.FC = () => {
                       type="button"
                       disabled={idx === 0}
                       onClick={() => handleMoveQuestion(idx, 'up')}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer transition"
                       title="Di chuyển câu hỏi lên trên"
                     >
                       <ArrowUp className="w-3.5 h-3.5" />
@@ -1027,7 +1379,7 @@ export const ExamEditorPage: React.FC = () => {
                       type="button"
                       disabled={idx === questions.length - 1}
                       onClick={() => handleMoveQuestion(idx, 'down')}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer transition"
                       title="Di chuyển câu hỏi xuống dưới"
                     >
                       <ArrowDown className="w-3.5 h-3.5" />
@@ -1036,7 +1388,7 @@ export const ExamEditorPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDuplicateQuestion(idx)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                      className="p-1.5 rounded-lg text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 cursor-pointer transition"
                       title="Nhân bản câu hỏi này"
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -1045,7 +1397,7 @@ export const ExamEditorPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleDeleteQuestion(idx)}
-                      className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                      className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer transition"
                       title="Xóa câu hỏi này"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1054,10 +1406,14 @@ export const ExamEditorPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => toggleExpand(idx)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition cursor-pointer ml-1"
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer ml-1 shadow-xs ${
+                        isExpanded
+                          ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100'
+                          : 'bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
+                      }`}
                     >
-                      <Edit2 className="w-3 h-3 text-indigo-500" />
-                      <span>{isExpanded ? 'Thu gọn' : 'Sửa câu này'}</span>
+                      <Edit2 className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{isExpanded ? 'Thu gọn' : 'Soạn câu này'}</span>
                     </button>
                   </div>
                 </div>
@@ -1109,6 +1465,49 @@ export const ExamEditorPage: React.FC = () => {
                 {/* EXPANDED VIEW (Full intuitive editor) */}
                 {isExpanded && (
                   <div className="space-y-4 pt-1 animate-fade-in">
+                    {/* Manual Question Format Selector Bar */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 p-2.5 rounded-xl bg-indigo-50/50 dark:bg-slate-800/50 border border-indigo-100/80 dark:border-slate-700/60 text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+                        <Edit2 className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Dạng câu hỏi thủ công:</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 font-semibold text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateQuestionType(idx, 'MULTIPLE_CHOICE')}
+                          className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                            (q.questionType || 'MULTIPLE_CHOICE') === 'MULTIPLE_CHOICE'
+                              ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          <span>Trắc nghiệm (A, B, C, D)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateQuestionType(idx, 'TRUE_FALSE')}
+                          className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                            q.questionType === 'TRUE_FALSE'
+                              ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          <span>Đúng / Sai (True / False)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateQuestionType(idx, 'FILL_IN_BLANK')}
+                          className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                            q.questionType === 'FILL_IN_BLANK'
+                              ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          <span>Điền từ vào chỗ trống</span>
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Prompt */}
                     <div>
                       <div className="flex items-center justify-between">
@@ -1137,33 +1536,194 @@ export const ExamEditorPage: React.FC = () => {
 
                     {/* Media Attachments (Optional, revealed by toggle) */}
                     {(showMediaMap[idx] || q.imageUrl || q.audioUrl) && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 animate-fade-in">
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                            <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-                            <span>URL Hình ảnh câu hỏi (Part 1, Biểu đồ...)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={q.imageUrl || ''}
-                            onChange={(e) => handleUpdateQuestion(idx, 'imageUrl', e.target.value)}
-                            placeholder="https://example.com/photo.jpg"
-                            className="w-full text-xs px-3 py-1.5 rounded-lg border mt-1 bg-white dark:bg-slate-900"
-                          />
+                      <div className="p-3.5 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 space-y-3 animate-fade-in">
+                        {/* Tab Switcher: Link vs Direct Upload */}
+                        <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-indigo-100/60 dark:border-indigo-900/40">
+                          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs font-bold">
+                            <button
+                              type="button"
+                              onClick={() => setMediaSourceTabMap((p) => ({ ...p, [idx]: 'link' }))}
+                              className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                                (mediaSourceTabMap[idx] || 'link') === 'link'
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                              }`}
+                            >
+                              <Link2 className="w-3.5 h-3.5" />
+                              <span>🔗 Dán Link trực tuyến (Khuyến nghị)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMediaSourceTabMap((p) => ({ ...p, [idx]: 'upload' }))}
+                              className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                                mediaSourceTabMap[idx] === 'upload'
+                                  ? 'bg-amber-600 text-white shadow-xs'
+                                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                              }`}
+                            >
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>📁 Tải tệp trực tiếp</span>
+                            </button>
+                          </div>
+
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            {(mediaSourceTabMap[idx] || 'link') === 'link'
+                              ? '✨ Không tốn dung lượng máy chủ'
+                              : '⚠️ Tối đa 01 bộ đề tải tệp trực tiếp'}
+                          </span>
                         </div>
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                            <Headphones className="w-3.5 h-3.5 text-indigo-500" />
-                            <span>URL File Audio nghe (Listening Part 1-4)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={q.audioUrl || ''}
-                            onChange={(e) => handleUpdateQuestion(idx, 'audioUrl', e.target.value)}
-                            placeholder="https://example.com/audio.mp3"
-                            className="w-full text-xs px-3 py-1.5 rounded-lg border mt-1 bg-white dark:bg-slate-900"
-                          />
-                        </div>
+
+                        {/* TAB 1: Online Link (Default & Recommended) */}
+                        {(mediaSourceTabMap[idx] || 'link') === 'link' && (
+                          <div className="space-y-3">
+                            <div className="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/40 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                              <span>
+                                <strong>Khuyến nghị tiết kiệm dung lượng:</strong> Nhập URL ảnh/âm thanh từ Google Drive, Imgur, Cloudinary, Firebase, hoặc CDN công khai để học viên nghe & xem mượt mà nhất.
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {/* Image Link Input + Live Thumbnail Preview */}
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <ImageIcon className="w-3.5 h-3.5 text-sky-500" />
+                                    <span>Link Hình ảnh (URL):</span>
+                                  </span>
+                                  {q.imageUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuestion(idx, 'imageUrl', '')}
+                                      className="text-rose-500 hover:underline text-[10px] font-bold cursor-pointer"
+                                    >
+                                      ✕ Gỡ ảnh
+                                    </button>
+                                  )}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={q.imageUrl || ''}
+                                  onChange={(e) => handleUpdateQuestion(idx, 'imageUrl', e.target.value)}
+                                  placeholder="https://example.com/photo.jpg"
+                                  className="w-full text-xs px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-900 font-mono"
+                                />
+
+                                {q.imageUrl && (
+                                  <div className="mt-1 p-2 rounded-xl border bg-white dark:bg-slate-900 flex flex-col items-center">
+                                    <img
+                                      src={q.imageUrl}
+                                      alt="Preview"
+                                      className="max-h-36 rounded-lg object-contain"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = 'none';
+                                      }}
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 truncate max-w-full">
+                                      Xem trước ảnh: {q.imageUrl}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Audio Link Input + Live Player */}
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Headphones className="w-3.5 h-3.5 text-violet-500" />
+                                    <span>Link Âm thanh Audio (URL):</span>
+                                  </span>
+                                  {q.audioUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuestion(idx, 'audioUrl', '')}
+                                      className="text-rose-500 hover:underline text-[10px] font-bold cursor-pointer"
+                                    >
+                                      ✕ Gỡ audio
+                                    </button>
+                                  )}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={q.audioUrl || ''}
+                                  onChange={(e) => handleUpdateQuestion(idx, 'audioUrl', e.target.value)}
+                                  placeholder="https://example.com/audio.mp3"
+                                  className="w-full text-xs px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-900 font-mono"
+                                />
+
+                                {q.audioUrl && (
+                                  <div className="mt-1 p-2 rounded-xl border bg-white dark:bg-slate-900 space-y-1">
+                                    <span className="text-[10px] font-bold text-slate-500 block">
+                                      Thử nghe file âm thanh:
+                                    </span>
+                                    <audio controls src={q.audioUrl} className="w-full h-8" preload="none" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* TAB 2: Direct File Upload (Warn 1-exam limit) */}
+                        {mediaSourceTabMap[idx] === 'upload' && (
+                          <div className="space-y-3">
+                            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                              <div className="space-y-0.5">
+                                <strong className="font-extrabold text-rose-600 dark:text-rose-400">
+                                  Giới hạn tài nguyên máy chủ:
+                                </strong>
+                                <p className="text-[11px] leading-relaxed">
+                                  Hệ thống <strong>chỉ cho phép đăng tải file trực tiếp cho tối đa 01 bộ đề</strong> duy nhất. Để tạo nhiều đề hơn, bạn hãy chuyển sang tab <em>"Dán Link trực tuyến"</em> ở trên.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                                  Chọn file ảnh từ máy tính (PNG/JPG):
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        handleUpdateQuestion(idx, 'imageUrl', reader.result as string);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                                  Chọn file âm thanh từ máy (MP3/WAV/OGG):
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="audio/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        handleUpdateQuestion(idx, 'audioUrl', reader.result as string);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1215,24 +1775,37 @@ export const ExamEditorPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Options A, B, C, D */}
+                    {/* Flexible Options Management */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                          Các phương án lựa chọn:
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <span>Các phương án lựa chọn ({q.options?.length || 0} phương án):</span>
+                          <span className="text-[11px] font-normal text-slate-400">
+                            (Chọn nút tròn để chỉ định đáp án đúng)
+                          </span>
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowWhyWrongMap((p) => ({ ...p, [idx]: !p[idx] }))}
-                          className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
-                        >
-                          {showWhyWrongMap[idx] ? 'Ẩn lý do vì sao chọn/sai' : <span className="flex items-center gap-1"><Plus className="w-3 h-3" /> Thêm giải thích chi tiết cho từng lựa chọn</span>}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleAddOptionToQuestion(idx)}
+                            className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Thêm lựa chọn ({String.fromCharCode(65 + (q.options?.length || 0))})</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowWhyWrongMap((p) => ({ ...p, [idx]: !p[idx] }))}
+                            className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+                          >
+                            {showWhyWrongMap[idx] ? 'Ẩn lý do vì sao chọn/sai' : 'Thêm giải thích từng lựa chọn'}
+                          </button>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {['A', 'B', 'C', 'D'].map((key) => {
-                          const opt = (q.options || []).find((o: any) => o.key === key);
+                        {(q.options || []).map((opt: any) => {
+                          const key = opt.key;
                           const isCorrect = q.correctAnswer === key;
 
                           return (
@@ -1254,16 +1827,28 @@ export const ExamEditorPage: React.FC = () => {
                                   <span>Lựa chọn {key}</span>
                                 </span>
 
-                                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-emerald-600">
-                                  <input
-                                    type="radio"
-                                    name={`correct-${idx}`}
-                                    checked={isCorrect}
-                                    onChange={() => handleUpdateQuestion(idx, 'correctAnswer', key)}
-                                    className="text-emerald-600 cursor-pointer"
-                                  />
-                                  <span>{isCorrect ? '✓ Đáp án đúng' : 'Chọn đúng'}</span>
-                                </label>
+                                <div className="flex items-center gap-2">
+                                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-emerald-600">
+                                    <input
+                                      type="radio"
+                                      name={`correct-${idx}`}
+                                      checked={isCorrect}
+                                      onChange={() => handleUpdateQuestion(idx, 'correctAnswer', key)}
+                                      className="text-emerald-600 cursor-pointer"
+                                    />
+                                    <span>{isCorrect ? '✓ Đúng' : 'Chọn đúng'}</span>
+                                  </label>
+                                  {(q.options?.length || 0) > 2 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveOptionFromQuestion(idx, key)}
+                                      className="text-slate-400 hover:text-rose-500 p-0.5 rounded cursor-pointer"
+                                      title={`Xóa phương án ${key}`}
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
                               <input
@@ -1318,7 +1903,19 @@ export const ExamEditorPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end pt-2">
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toggleExpand(idx);
+                          handleAddQuestion();
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-950 text-xs font-bold cursor-pointer transition flex items-center gap-1.5 shadow-sm ring-1 ring-white/10"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
+                        <span>Lưu & Thêm câu tiếp theo</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => toggleExpand(idx)}
@@ -1366,18 +1963,18 @@ export const ExamEditorPage: React.FC = () => {
           <button
             type="button"
             onClick={handleAddQuestion}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold transition cursor-pointer h-10"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-600/30 cursor-pointer h-10 hover:scale-[1.02]"
           >
             <Plus className="w-4 h-4" />
-            <span>Thêm câu</span>
+            <span>Thêm câu hỏi</span>
           </button>
           <button
             type="button"
             disabled={saving}
             onClick={() => handleSaveExam('PUBLISHED')}
-            className="btn-glass-primary text-xs !py-2 !px-4 font-black shadow-md flex items-center gap-1.5 cursor-pointer"
+            className="h-10 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-black text-xs shadow-md border border-slate-600 ring-2 ring-slate-500/20 flex items-center gap-1.5 cursor-pointer transition hover:scale-[1.02]"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>{saving ? 'Đang lưu...' : 'Lưu & Xuất bản'}</span>
           </button>
         </div>
@@ -1394,10 +1991,17 @@ export const ExamEditorPage: React.FC = () => {
         onConfirmImport={handleAppendImportedQuestions}
       />
 
+      {/* Smart Paste / Raw Text Crawler Modal */}
+      <ExamSmartPasteModal
+        isOpen={smartPasteModalOpen}
+        onClose={() => setSmartPasteModalOpen(false)}
+        onSuccess={handleSmartPasteSuccess}
+      />
+
       {/* Help / Guidance Modal */}
       {showHelpModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowHelpModal(false)} />
+          <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-md" onClick={() => setShowHelpModal(false)} />
           <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-fade-in max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
               <div className="flex items-center gap-3">

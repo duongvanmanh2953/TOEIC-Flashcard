@@ -1,0 +1,533 @@
+/* ==========================================================================
+   VOCALFLOW ASTRAL ARENA — DESIGN SYSTEM & FRAME ARCHITECTURE
+   Premium Futuristic Esports + Sci-Fi Knowledge Arena
+   ========================================================================== */
+
+:root, .arena-shell {
+  /* --- Visual Palette Tokens --- */
+  --ground: #070B18;
+  --stage: #0B1228;
+  --panel: #101A35;
+  --raised: #172345;
+  --brand: #2041F6;
+  --electric: #4778FF;
+  --violet: #8B68E8;
+  --purple: #B69AFF;
+  --cyan: #43D9ED;
+  --gold: #F4C76A;
+  --success: #34D399;
+  --error: #FB7185;
+  --text: #F4F6FF;
+  --muted: #A5B1CD;
+
+  /* --- Geometry & HUD Tokens --- */
+  --cut: 14px;
+  --cut-sm: 8px;
+  --stroke: 1px;
+  --unit: 6px;
+  --motion: 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  --signal: var(--electric);
+  --edge: color-mix(in srgb, var(--signal) 55%, #24304c);
+  --shape: polygon(0 var(--cut), var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%);
+  --shape-sm: polygon(0 var(--cut-sm), var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%);
+
+  /* --- Viewport & Layout --- */
+  --gap: clamp(10px, 1.3vw, 22px);
+  --pad: clamp(12px, 2vw, 32px);
+  --header-height: 64px;
+  --footer-height: 40px;
+
+  isolation: isolate;
+  position: relative;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+  font-variant-numeric: tabular-nums;
+  background-color: var(--ground);
+  color: var(--text);
+}
+
+.arena-live {
+  --signal: var(--cyan);
+}
+
+.arena-live-final {
+  --signal: var(--gold);
+}
+
+/* Mode & Theme Dynamic Color Invariants */
+.arena-shell[data-mode="SURVIVAL"] { --signal: #F43F5E; }
+.arena-shell[data-mode="DUEL"] { --signal: #F59E0B; }
+.arena-shell[data-mode="TEAM_BATTLE"] { --signal: #3B82F6; }
+.arena-shell[data-mode="WORD_RUSH"] { --signal: #10B981; }
+.arena-shell[data-mode="BOSS_ROUND"] { --signal: #A855F7; }
+.arena-shell[data-mode="FINAL_SHOWDOWN"] { --signal: #F59E0B; }
+.arena-shell[data-mode="TRANSLATION_RUSH"] { --signal: #6366F1; }
+.arena-shell[data-mode="LISTENING_RUSH"] { --signal: #06B6D4; }
+
+.arena-shell[data-theme-color="cyan"] { --signal: #06B6D4; }
+.arena-shell[data-theme-color="indigo"] { --signal: #6366F1; }
+.arena-shell[data-theme-color="rose"] { --signal: #F43F5E; }
+.arena-shell[data-theme-color="amber"] { --signal: #F59E0B; }
+.arena-shell[data-theme-color="emerald"] { --signal: #10B981; }
+.arena-shell[data-theme-color="violet"] { --signal: #8B5CF6; }
+
+/* ==========================================================================
+   BACKGROUND ENVIRONMENT & ATMOSPHERIC LAYERING (8 Layers)
+   ========================================================================== */
+
+.astral-environment,
+.astral-environment > div {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.astral-environment {
+  z-index: -2;
+  overflow: hidden;
+}
+
+/* Layer 1: Base artwork with rich depth */
+.astral-art {
+  inset: -12px !important;
+  translate: var(--look-x, 0px) var(--look-y, 0px);
+  transition: translate 180ms ease-out;
+  background-size: cover;
+  background-position: center 50%;
+  animation: astral-art-fade 700ms ease-out both;
+  filter: saturate(1.25) contrast(1.12) brightness(1.05);
+}
+
+/* Layer 2: Deep navy tint (translucent for atmosphere) */
+.astral-tint {
+  background: #070f2240;
+}
+
+/* Layer 3: Atmospheric gradient overlay */
+.astral-haze {
+  background: linear-gradient(180deg, #070b18b3 0%, transparent 28%, #070b1870 70%, #070b18f0 100%);
+}
+
+/* Layer 4: Distant light particles */
+.astral-particles {
+  background-image:
+    radial-gradient(circle, #43d9ed55 1px, transparent 1.6px),
+    radial-gradient(circle, #8b68e844 1.2px, transparent 1.8px);
+  background-size: 240px 160px, 180px 190px;
+  background-position: 24px 36px, 72px 88px;
+  animation: astral-particles-drift 32s ease-in-out alternate infinite;
+}
+
+/* Layer 5: Central arena illumination */
+.astral-core-light {
+  background: radial-gradient(ellipse at 46% 36%, #2041f640 0%, #43d9ed1e 40%, transparent 72%);
+}
+
+/* Layer 6: Peripheral vignette */
+.astral-vignette {
+  background: radial-gradient(ellipse at 50% 50%, transparent 45%, #050814bb 100%);
+}
+
+/* Layer 7: Foreground decorative details */
+.astral-foreground {
+  inset: 0 !important;
+  background: radial-gradient(circle at 50% 100%, #2041f622 0%, transparent 60%);
+  animation: astral-foreground-in 600ms ease-out both;
+}
+
+.arena-battle .astral-foreground,
+.arena-live .astral-foreground {
+  background-image: url('/game-assets/arena/arena-round-transition.webp');
+  background-position: center;
+  background-size: cover;
+  animation: astral-round-transition 500ms ease-out forwards;
+}
+
+@keyframes astral-art-fade {
+  from { opacity: 0.3; transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes astral-particles-drift {
+  from { transform: translate(0, 0); }
+  to { transform: translate(14px, -18px); }
+}
+
+@keyframes astral-round-transition {
+  0% { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+
+@keyframes astral-foreground-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   FRAME SYSTEM & HUD ARCHITECTURE
+   ========================================================================== */
+
+.astral-frame {
+  position: relative;
+  isolation: isolate;
+  --frame-fill: #0c142cee;
+  background: transparent;
+  clip-path: var(--shape);
+  outline: none;
+  border-radius: 0;
+}
+
+/* Dual-layer outer border */
+.astral-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: var(--stroke);
+  background: var(--edge);
+  clip-path: var(--shape);
+  mask: linear-gradient(#fff 0 0) content-box exclude, linear-gradient(#fff 0 0);
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* Inner inset background surface */
+.astral-frame::after {
+  content: "";
+  position: absolute;
+  inset: var(--stroke);
+  background: var(--frame-fill);
+  clip-path: var(--shape);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Precision 4-Corner HUD Brackets */
+.astral-corners {
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.astral-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+}
+
+.astral-corner.tl {
+  top: 0;
+  left: 0;
+  border-top-color: var(--signal);
+  border-left-color: var(--signal);
+}
+
+.astral-corner.tr {
+  top: 0;
+  right: 0;
+  border-top-color: var(--signal);
+  border-right-color: var(--signal);
+}
+
+.astral-corner.bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-color: var(--signal);
+  border-left-color: var(--signal);
+  opacity: 0.75;
+}
+
+.astral-corner.br {
+  bottom: 0;
+  right: 0;
+  border-bottom-color: var(--signal);
+  border-right-color: var(--signal);
+  opacity: 0.75;
+}
+
+/* Laser Energy Divider */
+.astral-divider {
+  position: relative;
+  display: block;
+  height: 1px;
+  margin: 6px 0;
+  background: linear-gradient(90deg, transparent 0%, var(--signal) 50%, transparent 100%);
+  opacity: 0.45;
+}
+
+.astral-divider-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: var(--signal);
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 0 6px var(--signal);
+}
+
+/* Technical HUD identification tag */
+.astral-tech-tag {
+  position: absolute;
+  top: 8px;
+  right: 18px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--signal) 45%, var(--muted));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ==========================================================================
+   FRAME VARIANTS
+   ========================================================================== */
+
+/* Header Frame */
+.astral-header {
+  --cut: 10px;
+  --frame-fill: #091024f6;
+  min-height: var(--header-height);
+  padding: 0 var(--pad);
+  margin: 6px var(--pad) 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+
+/* Main Question Stage Frame */
+.astral-question {
+  --cut: 16px;
+  --frame-fill: #0a1329dd;
+  padding: clamp(14px, 2.2vh, 28px) clamp(16px, 2.4vw, 36px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 20px);
+  animation: astral-frame-reveal var(--motion) ease-out both;
+}
+
+/* Leaderboard Frame */
+.astral-leaderboard {
+  --cut: 12px;
+  --frame-fill: #0e1732f2;
+}
+
+/* Analytics Frame */
+.astral-analytics {
+  --cut: 12px;
+  --frame-fill: #0e1732f2;
+}
+
+/* Champion Frame */
+.astral-champion {
+  --cut: 18px;
+  --signal: var(--gold);
+  --frame-fill: #141624f4;
+  border-top: 1px solid #f4c76a55;
+}
+
+/* ==========================================================================
+   ANSWER CARDS — GAME CONTROLS
+   ========================================================================== */
+
+.arena-option.astral-answer {
+  --cut: 10px;
+  --answer-bg: #101c38;
+  --answer-border: #42588b;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 16px;
+  background: transparent;
+  clip-path: var(--shape-sm);
+  color: var(--text);
+  font-size: clamp(14px, 1.1vw, 17px);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+
+.astral-answer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: var(--answer-border);
+  clip-path: var(--shape-sm);
+  mask: linear-gradient(#fff 0 0) content-box exclude, linear-gradient(#fff 0 0);
+  z-index: -2;
+  transition: background 140ms ease;
+}
+
+.astral-answer::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background: var(--answer-bg);
+  clip-path: var(--shape-sm);
+  z-index: -1;
+  transition: background 140ms ease;
+}
+
+.astral-answer-notch {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 3px;
+  background: #6a8ef588;
+  transition: background 140ms ease, width 140ms ease;
+}
+
+/* Letter badge */
+.astral-answer .arena-key {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  clip-path: polygon(0 6px, 6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  background: #1e2c4f;
+  color: #dbe4ff;
+  font-weight: 800;
+  font-size: 13px;
+  border: 1px solid #4865a8;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.astral-answer .arena-option-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.astral-answer .arena-option-icon {
+  flex: none;
+  margin-left: auto;
+}
+
+.astral-answer .arena-option-icon.correct {
+  color: var(--success);
+}
+
+.astral-answer .arena-option-icon.wrong {
+  color: var(--error);
+}
+
+/* Hover State */
+button.astral-answer:not(:disabled):hover,
+button.astral-answer:focus-visible {
+  --answer-bg: #18284e;
+  --answer-border: var(--electric);
+  transform: translateY(-2px);
+}
+
+button.astral-answer:not(:disabled):hover .astral-answer-notch {
+  background: var(--electric);
+  width: 34px;
+}
+
+/* Selected State */
+.astral-answer[data-state="selected"] {
+  --answer-bg: #1e356c;
+  --answer-border: var(--electric);
+}
+
+.astral-answer[data-state="selected"] .arena-key {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--electric);
+}
+
+/* Correct Answer State */
+.astral-answer[data-state="correct"] {
+  --answer-bg: #0f382d;
+  --answer-border: var(--success);
+  color: #e6fff6;
+}
+
+.astral-answer[data-state="correct"] .arena-key {
+  background: var(--success);
+  color: #07251e;
+  border-color: var(--success);
+}
+
+.astral-answer[data-state="correct"] .astral-answer-notch {
+  width: 100%;
+  background: var(--success);
+  animation: astral-correct-sweep 420ms ease-out both;
+}
+
+/* Wrong Answer State */
+.astral-answer[data-state="wrong"] {
+  --answer-bg: #3c1c2b;
+  --answer-border: var(--error);
+  color: #ffe6ec;
+}
+
+.astral-answer[data-state="wrong"] .arena-key {
+  background: var(--error);
+  color: #2b0814;
+  border-color: var(--error);
+}
+
+/* Disabled State */
+button.astral-answer:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes astral-correct-sweep {
+  from { transform: scaleX(0.05); transform-origin: right; }
+  to { transform: scaleX(1); transform-origin: right; }
+}
+
+@keyframes astral-frame-reveal {
+  from { opacity: 0.5; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   PODIUM & RANK FRAMES
+   ========================================================================== */
+
+.astral-rank-frame {
+  position: relative;
+  border-inline-start: 3px solid #4a5c88;
+}
+
+.astral-rank-frame[data-medal="1"] {
+  border-inline-start-color: var(--gold);
+}
+
+.astral-rank-frame[data-medal="2"] {
+  border-inline-start-color: #d4e2fb;
+}
+
+.astral-rank-frame[data-medal="3"] {
+  border-inline-start-color: #e8a37d;
+}
+
+/* ==========================================================================
+   REDUCED MOTION SUPPORT
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .astral-art,
+  .astral-particles,
+  .astral-question,
+  .astral-answer[data-state="correct"] .astral-answer-notch,
+  .arena-ranking .arena-list li[data-moved="true"] {
+    animation: none !important;
+    transition: none !important;
+  }
+}

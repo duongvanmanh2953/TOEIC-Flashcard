@@ -388,9 +388,8 @@ export const ExamSessionPage: React.FC = () => {
 
       {/* CONFIRMATION SUBMIT MODAL */}
       {showConfirmModal && (
-        <ModalPortal>
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 space-y-5">
+        <ModalPortal isOpen={showConfirmModal} onClose={() => setShowConfirmModal(false)}>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 space-y-5 animate-fade-in">
               <div className="text-center space-y-2">
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto ${
@@ -433,7 +432,6 @@ export const ExamSessionPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
         </ModalPortal>
       )}
     </div>

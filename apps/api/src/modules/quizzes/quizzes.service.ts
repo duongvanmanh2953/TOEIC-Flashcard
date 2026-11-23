@@ -244,10 +244,17 @@ export class QuizzesService {
 
     const questions = quiz.questions as any[];
     let correctCount = 0;
+    
+    // Logic cho Analytics đáp án
+    const answerStats: Record<string, number> = {};
 
     for (const q of questions) {
       const userAns = (answers[q.id] || '').trim().toLowerCase();
       const correctAns = (q.correctAnswer || '').trim().toLowerCase();
+      
+      // Thống kê cho analytics
+      answerStats[userAns] = (answerStats[userAns] || 0) + 1;
+
       if (userAns === correctAns || (correctAns.includes(userAns) && userAns.length > 2)) {
         correctCount++;
       }
@@ -280,6 +287,7 @@ export class QuizzesService {
       correctCount,
       totalCount: questions.length,
       xpEarned: score,
+      answerStats, // Trả về số liệu cho Frontend
     };
   }
 }

@@ -204,6 +204,15 @@ model User {
   interviewCategoryProposals InterviewCategoryProposal[]
   interviewLearningProfile   InterviewLearningProfile?
 
+  // Module H: Personalized Learning Journey & Interactive Roadmap
+  learningProfiles           LearningProfile[]
+  roadmapInstances           RoadmapInstance[]
+  lessonProgress             UserLessonProgress[]
+
+  // Module I: Active Listening, Passive Immersion & Deep Focus
+  listeningSessions          UserListeningSession[]
+  focusSessions              UserFocusSession[]
+
   @@index([email])
   @@index([role])
 }
@@ -2333,5 +2342,127 @@ model InterviewLearningProfile {
   updatedAt              DateTime  @updatedAt
 
   @@index([userId])
+}
+
+// =============================================================================
+// MODULE H: PERSONALIZED LEARNING JOURNEY & ROADMAP (MASTER PROMPT)
+// =============================================================================
+
+model LearningProfile {
+  id                    String    @id @default(uuid())
+  userId                String
+  languageId            String
+  targetLevel           String    @default("B1")
+  currentEstimatedLevel String    @default("A2")
+  learningGoal          String    @default("COMMUNICATION") // COMMUNICATION, CAREER, EXAM, TRAVEL, DAILY
+  dailyStudyMinutes     Int       @default(20)
+  preferredLearningDays Json?     // e.g. ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+  skillAssessments      Json?     // { vocabulary: { status: "ASSESSED", score: 85, confidence: 0.9 }, ... }
+  strengths             Json?     // ["Vocabulary Recall", "Basic Grammar"]
+  weaknesses            Json?     // ["Listening Comprehension", "Phrasal Verbs"]
+  recommendedFocus      Json?     // ["Active Listening", "Contextual Grammar"]
+  roadmapVersion        Int       @default(1)
+  assessmentCompletedAt DateTime?
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([userId, languageId])
+  @@index([userId, languageId])
+}
+
+model RoadmapInstance {
+  id                  String               @id @default(uuid())
+  userId              String
+  languageId          String
+  title               String
+  targetLevel         String               @default("B1")
+  version             Int                  @default(1)
+  status              String               @default("ACTIVE") // ACTIVE, COMPLETED, ARCHIVED
+  totalNodes          Int                  @default(0)
+  completedNodes      Int                  @default(0)
+  masteredNodes       Int                  @default(0)
+  currentStageIndex   Int                  @default(0)
+  currentChapterIndex Int                  @default(0)
+  currentNodeId       String?
+  stagesJson          Json                 // Complete tree of stages, chapters, units, lessons with prerequisites
+  adaptationLog       Json?                // History of roadmap adaptations
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progressList        UserLessonProgress[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([userId, languageId])
+  @@index([userId, status])
+}
+
+model UserLessonProgress {
+  id               String          @id @default(uuid())
+  userId           String
+  roadmapId        String
+  nodeId           String          // Lesson or Checkpoint node id
+  nodeType         String          @default("LESSON") // LESSON, CHECKPOINT, MILESTONE, REVIEW
+  status           String          @default("LOCKED") // LOCKED, AVAILABLE, IN_PROGRESS, COMPLETED, MASTERED, REVIEW_NEEDED, RETAKE_REQUIRED
+  score            Float           @default(0.0)
+  attemptCount     Int             @default(0)
+  activitiesResult Json?           // Details of Learn, Practice, Apply, Challenge, Review
+  skillBreakdown   Json?           // { vocabulary: 85, grammar: 70, listening: 90 }
+  remediationPath  Json?           // Targeted remedial suggestions on failure
+  lastAttemptAt    DateTime?
+  completedAt      DateTime?
+  masteredAt       DateTime?
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roadmap          RoadmapInstance @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([userId, roadmapId, nodeId])
+  @@index([userId, status])
+  @@index([roadmapId, nodeId])
+}
+
+// =============================================================================
+// MODULE I: ACTIVE LISTENING, PASSIVE IMMERSION & DEEP FOCUS (MASTER PROMPT)
+// =============================================================================
+
+model UserListeningSession {
+  id                 String   @id @default(uuid())
+  userId             String
+  languageId         String   @default("en")
+  mode               String   // ACTIVE or PASSIVE
+  audioId            String?
+  audioTitle         String
+  audioCategory      String   @default("CONVERSATION") // CONVERSATION, MINI_STORY, VOCABULARY, PODCAST, SLEEP, TRAVEL, IMMERSION
+  audioUrl           String?
+  durationSeconds    Int      @default(0)
+  playedSeconds      Int      @default(0)
+  comprehensionScore Float?
+  dictationAccuracy  Float?
+  shadowingScore     Float?
+  isCompleted        Boolean  @default(false)
+  exposureOnly       Boolean  @default(false)
+  transcriptRevealed Boolean  @default(false)
+  capturedWords      Json?    // Array of words saved to notebook during session
+  weakPoints         Json?    // Missed phrases / error diffs
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+
+  @@index([userId, languageId, mode])
+  @@index([userId, createdAt])
+}
+
+model UserFocusSession {
+  id             String   @id @default(uuid())
+  userId         String
+  targetMinutes  Int      @default(25)
+  actualMinutes  Float    @default(0.0)
+  selectedTasks  Json?    // ["10_VOCAB", "ACTIVE_LISTENING", "GRAMMAR"]
+  completedTasks Json?
+  status         String   @default("COMPLETED") // COMPLETED, EARLY_EXIT, PAUSED
+  notes          String?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 

@@ -29,9 +29,8 @@ import api from '../../lib/api';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import { CustomSelect, SelectOption } from '../ui/CustomSelect';
 import { useLearning } from '../../contexts/LearningContext';
-import { SUPPORTED_LANGUAGES } from '../../config/languages';
 import { CountryFlag } from '../language/CountryFlag';
-import { TikTokLogo, TikTokColorLogo } from '@vocabflow/shared';
+import { TikTokLogo } from '@vocabflow/shared';
 
 interface CreateCustomRoomModalProps {
   isOpen: boolean;
@@ -140,62 +139,46 @@ const QUESTION_SOURCES = [
 ];
 
 const DIFFICULTY_OPTIONS: SelectOption<string>[] = [
-  {
-    value: 'BEGINNER',
-    label: 'Cơ bản (A1-A2)',
-    badge: 'A1-A2',
-    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  },
-  {
-    value: 'INTERMEDIATE',
-    label: 'Trung cấp (B1-B2)',
-    badge: 'B1-B2',
-    badgeColor: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30',
-  },
-  {
-    value: 'ADVANCED',
-    label: 'Nâng cao (C1)',
-    badge: 'C1',
-    badgeColor: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
-  },
+  { value: 'BEGINNER', label: 'Cơ bản (A1-A2)' },
+  { value: 'INTERMEDIATE', label: 'Trung cấp (B1-B2)' },
+  { value: 'ADVANCED', label: 'Nâng cao (C1)' },
 ];
 
 const QUESTION_COUNT_OPTIONS: SelectOption<number>[] = [
-  { value: 5, label: '5 câu hỏi' },
-  { value: 10, label: '10 câu hỏi' },
-  { value: 15, label: '15 câu hỏi' },
-  { value: 20, label: '20 câu hỏi' },
-  { value: 25, label: '25 câu hỏi' },
-  { value: 30, label: '30 câu hỏi' },
+  { value: 5, label: '5 câu' },
+  { value: 10, label: '10 câu' },
+  { value: 15, label: '15 câu' },
+  { value: 20, label: '20 câu' },
+  { value: 25, label: '25 câu' },
+  { value: 30, label: '30 câu' },
 ];
 
 const ROUND_DURATION_OPTIONS: SelectOption<number>[] = [
-  { value: 5, label: '5 giây (Phản xạ chớp nhoáng)' },
-  { value: 8, label: '8 giây (Tốc độ cao)' },
-  { value: 10, label: '10 giây (Chuẩn thi đấu)' },
-  { value: 12, label: '12 giây (Cân bằng)' },
-  { value: 15, label: '15 giây (Tối đa quy định)' },
+  { value: 5, label: '5s (Chớp nhoáng)' },
+  { value: 8, label: '8s (Tốc độ cao)' },
+  { value: 10, label: '10s (Chuẩn thi đấu)' },
+  { value: 12, label: '12s (Cân bằng)' },
+  { value: 15, label: '15s (Tối đa)' },
 ];
 
 const MAX_PLAYERS_OPTIONS: SelectOption<number>[] = [
-  {
-    value: 1,
-    label: '1 người (Solo / Luyện Tập)',
-    badge: 'Solo',
-    badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  },
-  {
-    value: 2,
-    label: '2 người (1v1 Solo Đấu)',
-    badge: '1v1',
-    badgeColor: 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
-  },
+  { value: 1, label: '1 người (Solo)' },
+  { value: 2, label: '2 người (1v1)' },
   { value: 4, label: '4 người (Nhóm nhỏ)' },
-  { value: 8, label: '8 người (Phòng tiêu chuẩn)' },
-  { value: 16, label: '16 người (Đại tiệc đấu trí)' },
-  { value: 32, label: '32 người (Giải đấu mở rộng)' },
-  { value: 50, label: '50 người (Sự kiện lớp học)' },
-  { value: 100, label: '100 người (Đại hội so tài)' },
+  { value: 8, label: '8 người (Tiêu chuẩn)' },
+  { value: 16, label: '16 người (Đại tiệc)' },
+  { value: 32, label: '32 người (Giải đấu)' },
+  { value: 50, label: '50 người (Sự kiện)' },
+  { value: 100, label: '100 người (Đại hội)' },
+];
+
+const THEME_OPTIONS = [
+  { id: 'cyan', name: 'Electric Cyan', hex: '#06B6D4', border: 'border-cyan-400', badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40' },
+  { id: 'indigo', name: 'Astral Indigo', hex: '#6366F1', border: 'border-indigo-400', badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40' },
+  { id: 'rose', name: 'Crimson Survival', hex: '#F43F5E', border: 'border-rose-400', badge: 'bg-rose-500/20 text-rose-300 border-rose-400/40' },
+  { id: 'amber', name: 'Golden Champion', hex: '#F59E0B', border: 'border-amber-400', badge: 'bg-amber-500/20 text-amber-300 border-amber-400/40' },
+  { id: 'emerald', name: 'Cyber Emerald', hex: '#10B981', border: 'border-emerald-400', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' },
+  { id: 'violet', name: 'Galactic Violet', hex: '#8B5CF6', border: 'border-purple-400', badge: 'bg-purple-500/20 text-purple-300 border-purple-400/40' },
 ];
 
 export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
@@ -205,8 +188,10 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
   initialRoomType = 'PVP',
 }) => {
   const { activeLanguage } = useLearning();
-  const [roomType, setRoomType] = useState<'PVP' | 'TIKTOK_LIVE'>(initialRoomType);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>(activeLanguage?.id || 'ja');
+  const languageId = activeLanguage.id;
+  const roomType = initialRoomType;
+  const [activeTab, setActiveTab] = useState<'mode' | 'questions' | 'rules'>('mode');
+  const [themeColor, setThemeColor] = useState<string>('cyan');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [gameMode, setGameMode] = useState('TRANSLATION_RUSH');
@@ -224,11 +209,8 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
   const [shuffleOptions, setShuffleOptions] = useState(true);
   const [showAnswerAfterEach, setShowAnswerAfterEach] = useState(true);
 
-  // Sync selected language & load initial room type / saved live config
+  // Load saved room config
   useEffect(() => {
-    if (initialRoomType) {
-      setRoomType(initialRoomType);
-    }
     try {
       const saved = localStorage.getItem('vocabflow_live_config');
       if (saved) {
@@ -242,12 +224,6 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
     } catch (_) {}
   }, [initialRoomType, isOpen]);
 
-  useEffect(() => {
-    if (activeLanguage?.id) {
-      setSelectedLanguage(activeLanguage.id);
-    }
-  }, [activeLanguage]);
-
   const [topics, setTopics] = useState<Array<{ id: string; name: string }>>([]);
   const [exams, setExams] = useState<Array<{ id: string; title: string }>>([]);
   const [myDecks, setMyDecks] = useState<Array<any>>([]);
@@ -259,15 +235,25 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    const controller = new AbortController();
+    setSourceId('');
+    setTopics([]);
+    setExams([]);
+    setMyDecks([]);
+    setPublicDecks([]);
     const fetchSourceData = async () => {
       try {
         setLoadingSources(true);
+        const query = new URLSearchParams({ languageId });
+        const options = { signal: controller.signal };
         const [topicsRes, examsRes, myDecksRes, publicDecksRes] = await Promise.allSettled([
-          api.get('/vocabulary/topics'),
-          api.get('/exams'),
-          api.get('/community/my-decks'),
-          api.get('/community/decks'),
+          api.get(`/vocabulary/topics?${query}`, options),
+          api.get(`/exams?${query}`, options),
+          api.get(`/community/my-decks?${query}`, options),
+          api.get('/community/decks', options),
         ]);
+
+        if (controller.signal.aborted) return;
 
         if (topicsRes.status === 'fulfilled') {
           const list = (topicsRes.value as any)?.data?.data || (topicsRes.value as any)?.data || topicsRes.value;
@@ -286,17 +272,18 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
 
         if (publicDecksRes.status === 'fulfilled') {
           const list = (publicDecksRes.value as any)?.data?.data || (publicDecksRes.value as any)?.data || publicDecksRes.value;
-          if (Array.isArray(list)) setPublicDecks(list);
+          if (Array.isArray(list)) setPublicDecks(list.filter((deck) => deck.languageId === languageId));
         }
       } catch (e) {
         console.warn('Failed to prefetch room sources:', e);
       } finally {
-        setLoadingSources(false);
+        if (!controller.signal.aborted) setLoadingSources(false);
       }
     };
 
     fetchSourceData();
-  }, [isOpen]);
+    return () => controller.abort();
+  }, [isOpen, languageId]);
 
   if (!isOpen) return null;
 
@@ -324,7 +311,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
       const payload = {
         title: title.trim(),
         description: description.trim() || undefined,
-        languageId: selectedLanguage,
+        languageId,
         isLiveMode: isLive,
         gameMode,
         sourceType: effectiveSourceType,
@@ -357,7 +344,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
 
       const res: any = await api.post('/games/rooms', payload);
       const room = res?.data?.data || res?.data || res;
-      onRoomCreated(room);
+      onRoomCreated({ ...room, themeColor, gameMode });
     } catch (err: any) {
       console.error('Error creating room:', err);
       setError(
@@ -369,16 +356,16 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
   };
 
   return (
-    <div className="dark fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl text-white my-8 overflow-hidden">
+    <div className="dark fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in overscroll-contain">
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl text-white my-auto max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900">
+        <div className="flex items-center justify-between p-6 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
               <PlusCircle className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-white">Tạo Phòng Đấu Bạn Bè</h2>
+              <h2 className="text-xl font-black text-white">{roomType === 'TIKTOK_LIVE' ? 'Tạo phòng Live' : 'Tạo Phòng Đấu Bạn Bè'}</h2>
               <p className="text-xs text-slate-400">
                 Tùy chỉnh chế độ, ngân hàng đề thi và quy tắc đối kháng riêng
               </p>
@@ -392,113 +379,65 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
           </button>
         </div>
 
+        {/* Step / Category Tabs */}
+        <div className="grid grid-cols-3 gap-1.5 p-3 border-b border-slate-800 bg-slate-950/60 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab('mode')}
+            className={`py-2 px-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'mode'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white bg-slate-800/40'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span className="truncate">1. Chế Độ & Màu Sắc</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('questions')}
+            className={`py-2 px-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'questions'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white bg-slate-800/40'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="truncate">2. Đề Thi & Độ Khó</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('rules')}
+            className={`py-2 px-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'rules'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white bg-slate-800/40'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span className="truncate">3. Quy Tắc & Bảo Mật</span>
+          </button>
+        </div>
+
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto overscroll-contain flex-1 custom-scrollbar">
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold">
               {error}
             </div>
           )}
 
-          {/* 0. Room Type Selection */}
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Loại Phòng Thi Đấu *
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setRoomType('PVP')}
-                className={`p-3.5 rounded-2xl text-left border transition flex items-start gap-3 cursor-pointer ${
-                  roomType === 'PVP'
-                    ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-lg shadow-indigo-600/20 ring-1 ring-indigo-500'
-                    : 'bg-slate-800/50 border-slate-700/60 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black text-white flex items-center gap-1.5">
-                    <span>Đấu Trí Nhóm Bạn Bè</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed break-words whitespace-normal">
-                    Phòng đấu riêng tư hoặc công khai (1 - 100 người chơi cùng lúc).
-                  </p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setRoomType('TIKTOK_LIVE');
-                  if (!title || title.includes('Đại Chiến TOEIC')) {
-                    const langObj = SUPPORTED_LANGUAGES.find((l) => l.id === selectedLanguage);
-                    setTitle(`TikTok Live: Đấu Trí Từ Vựng ${langObj?.name || 'Đa Ngôn Ngữ'}`);
-                  }
-                }}
-                className={`p-3.5 rounded-2xl text-left border transition flex items-start gap-3 cursor-pointer ${
-                  roomType === 'TIKTOK_LIVE'
-                    ? 'bg-rose-600/20 border-rose-500 text-white shadow-lg shadow-rose-600/20 ring-1 ring-rose-500'
-                    : 'bg-slate-800/50 border-slate-700/60 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 border border-rose-500/40 text-white flex items-center justify-center shrink-0 shadow-md">
-                  <TikTokColorLogo className="w-6 h-6" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-black text-white flex items-center gap-1.5">
-                    <TikTokLogo className="w-3.5 h-3.5 text-rose-400" />
-                    <span>TikTok Live Multiplayer</span>
-                    <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-rose-500 text-white">HOT</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed break-words whitespace-normal">
-                    Không giới hạn khán giả! Người xem comment trực tiếp trên TikTok để ghi điểm.
-                  </p>
-                </div>
-              </button>
-            </div>
+          {/* Language inherited from the current learning space */}
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-300">
+            <span>Ngôn ngữ câu hỏi</span>
+            <CountryFlag languageId={activeLanguage.id} countryCode={activeLanguage.countryCode} size="xs" />
+            <strong className="text-white">{activeLanguage.name}</strong>
           </div>
 
-          {/* 0.1 Language Space Selector */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Ngôn Ngữ Câu Hỏi (Language Space) *
-              </label>
-              <span className="text-[11px] text-indigo-400 font-semibold">
-                Tự động lọc từ vựng & câu hỏi theo ngôn ngữ
-              </span>
-            </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {SUPPORTED_LANGUAGES.map((lang) => {
-                const isSelected = selectedLanguage === lang.id;
-                return (
-                  <button
-                    key={lang.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedLanguage(lang.id);
-                      if (roomType === 'TIKTOK_LIVE') {
-                        setTitle(`TikTok Live: Đấu Trí Từ Vựng ${lang.name}`);
-                      }
-                    }}
-                    className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1.5 cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-600/30'
-                        : 'bg-slate-800/60 border-slate-700/70 text-slate-300 hover:bg-slate-700/70 hover:text-white'
-                    }`}
-                  >
-                    <CountryFlag languageId={lang.id} countryCode={lang.countryCode} size="md" />
-                    <span className="text-xs font-bold truncate max-w-full">{lang.name}</span>
-                    <span className="text-[10px] text-slate-400 opacity-80">{lang.nativeName}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 1. Basic Info */}
+          {/* TAB 1: MODE & THEME */}
+          {activeTab === 'mode' && (
+            <div className="space-y-5 animate-fade-in">
+              {/* 1. Basic Info */}
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
@@ -565,6 +504,89 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
             </div>
           </div>
 
+          {/* Arena Theme Color Swatches */}
+          <div className="space-y-2.5 pt-1">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Màu Sắc Viền & Đấu Trường (Theme Color)
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {THEME_OPTIONS.map((th) => {
+                const isSelected = themeColor === th.id;
+                return (
+                  <button
+                    key={th.id}
+                    type="button"
+                    onClick={() => setThemeColor(th.id)}
+                    className={`p-2.5 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
+                      isSelected
+                        ? `border-white ring-2 ring-white/30 bg-slate-800 shadow-md`
+                        : 'border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 text-slate-300'
+                    }`}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full shrink-0 shadow-sm"
+                      style={{ backgroundColor: th.hex }}
+                    />
+                    <span className="text-xs font-bold text-white truncate">{th.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Chamfered Cut-Edge Arena HUD Live Preview */}
+          <div className="space-y-2 pt-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              Xem Trước Viền Đấu Trường & Màu Sắc (Chamfered HUD)
+            </span>
+            <div
+              className="p-4 rounded-2xl bg-[#0B1228] border-2 relative overflow-hidden transition-all duration-300 shadow-xl"
+              style={{
+                borderColor: THEME_OPTIONS.find((t) => t.id === themeColor)?.hex || '#06B6D4',
+                boxShadow: `0 0 24px ${THEME_OPTIONS.find((t) => t.id === themeColor)?.hex}33`,
+              }}
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full animate-ping"
+                    style={{ backgroundColor: THEME_OPTIONS.find((t) => t.id === themeColor)?.hex || '#06B6D4' }}
+                  />
+                  <strong className="text-white font-black">{title || 'Đại Chiến Từ Vựng VocabFlow'}</strong>
+                </div>
+                <span
+                  className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider"
+                  style={{
+                    color: THEME_OPTIONS.find((t) => t.id === themeColor)?.hex || '#06B6D4',
+                    border: `1px solid ${THEME_OPTIONS.find((t) => t.id === themeColor)?.hex}66`,
+                  }}
+                >
+                  {gameMode}
+                </span>
+              </div>
+
+              <div className="pt-3 flex items-center justify-between gap-3 text-xs">
+                <div
+                  className="p-2 rounded-xl flex items-center gap-1.5 font-mono font-bold"
+                  style={{
+                    color: THEME_OPTIONS.find((t) => t.id === themeColor)?.hex || '#06B6D4',
+                    background: `${THEME_OPTIONS.find((t) => t.id === themeColor)?.hex}15`,
+                  }}
+                >
+                  <span>⏱️ {roundDurationSec}s / câu</span>
+                </div>
+                <span className="text-[11px] text-slate-400">
+                  Các viền cắt vát góc và đồng hồ sẽ hiển thị chuẩn tone màu này
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: QUESTIONS & DIFFICULTY */}
+      {activeTab === 'questions' && (
+        <div className="space-y-5 animate-fade-in">
           {/* 3. Question Source */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -696,7 +718,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
             {sourceType === 'VOCABULARY_DECK' && (
               <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1.5 animate-fade-in">
                 <CustomSelect
-                  label="Chọn Bộ Thẻ Từ Vựng / Chủ Đề TOEIC"
+                  label="Bộ từ, tiến độ hoặc chủ đề"
                   value={sourceId}
                   onChange={(val) => setSourceId(String(val))}
                   placeholder={loadingSources ? 'Đang tải chủ đề...' : 'Tất cả chủ đề từ vựng (Ngẫu nhiên)'}
@@ -705,7 +727,13 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                   size="sm"
                   disabled={loadingSources}
                   options={[
-                    { value: '', label: 'Tất cả chủ đề từ vựng (Ngẫu nhiên)', icon: BookOpen },
+                    { value: '', label: 'Tất cả chủ đề từ vựng', icon: BookOpen },
+                    { value: 'progress:learned', label: 'Từ đã học' },
+                    { value: 'progress:favorites', label: 'Từ yêu thích' },
+                    { value: 'progress:flagged', label: 'Từ đánh dấu khó' },
+                    { value: 'progress:mistakes', label: 'Từ có lỗi đã ôn trong 30 ngày qua' },
+                    { value: 'progress:weak', label: 'Từ chưa thành thạo' },
+                    { value: 'progress:due', label: 'Từ đến hạn ôn' },
                     ...topics.map((t) => ({
                       value: t.id,
                       label: t.name,
@@ -749,7 +777,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
             <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
               Thông Số Trận Đấu
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Difficulty */}
               <CustomSelect
                 label="Cấp độ"
@@ -807,7 +835,12 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
               )}
             </div>
           </div>
+        </div>
+      )}
 
+      {/* TAB 3: RULES & SECURITY */}
+      {activeTab === 'rules' && (
+        <div className="space-y-5 animate-fade-in">
           {/* 5. Privacy & Security */}
           <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-4">
             <div className="flex items-center justify-between">
@@ -926,21 +959,44 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Footer Submit */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+      {/* Footer Navigation & Submit */}
+      <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={loading}
+          className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+        >
+          Hủy
+        </button>
+
+        <div className="flex items-center gap-2">
+          {activeTab !== 'mode' && (
             <button
               type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+              onClick={() => setActiveTab(activeTab === 'rules' ? 'questions' : 'mode')}
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
             >
-              Hủy
+              Quay lại
             </button>
+          )}
+
+          {activeTab !== 'rules' ? (
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'mode' ? 'questions' : 'rules')}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-md shadow-indigo-600/30 transition cursor-pointer"
+            >
+              Tiếp theo
+            </button>
+          ) : (
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -954,7 +1010,9 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                 </>
               )}
             </button>
-          </div>
+          )}
+        </div>
+      </div>
         </form>
       </div>
     </div>

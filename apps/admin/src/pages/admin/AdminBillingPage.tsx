@@ -834,7 +834,7 @@ export const AdminBillingPage: React.FC = () => {
       {gatewayModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
+            className="fixed inset-0 bg-slate-950/45 backdrop-blur-md transition-opacity"
             onClick={() => !togglingGateway && setGatewayModalOpen(false)}
           />
           <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">

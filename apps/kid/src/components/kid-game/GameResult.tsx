@@ -44,7 +44,7 @@ export const GameResult: React.FC<GameResultProps> = memo(({
   const starCount = Math.min(3, Math.max(1, starsEarned));
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-fadeIn select-none">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fadeIn select-none">
       <div className="relative w-full max-w-md rounded-[32px] bg-gradient-to-b from-white via-[#FFFDF7] to-[#F7F3EA] p-6 sm:p-8 text-center shadow-2xl border-4 border-amber-300 animate-scaleUp">
         {/* Top Floating Trophy / Mascot */}
         <div className="relative w-28 h-28 mx-auto -mt-16 sm:-mt-20 mb-3 flex items-center justify-center filter drop-shadow-[0_12px_24px_rgba(245,158,11,0.4)]">

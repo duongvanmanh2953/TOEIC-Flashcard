@@ -5,9 +5,17 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut as firebaseSignOut,
+  updateProfile,
   signInAnonymously as firebaseSignInAnonymously,
   User as FirebaseUser,
 } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 import api from './api';
 
 /**
@@ -63,9 +71,9 @@ export function getActiveFirebaseConfig(): FirebaseClientConfig {
 
   return {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoVocabFlowAuthProjectKey2026',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vocabflow-learning.firebaseapp.com',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vocabflow-learning',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vocabflow-learning.appspot.com',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vocalflow-e04ca.firebaseapp.com',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vocalflow-e04ca',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vocalflow-e04ca.firebasestorage.app',
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '103948572019',
     appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:103948572019:web:9c8d7e6f5a4b3c2d',
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
@@ -265,11 +273,12 @@ export async function testFirebaseConnection(config: {
   }
 }
 
-// App and Auth instances
+// App, Auth and Firestore instances
 let appInstance: FirebaseApp | null = null;
 let authInstance: Auth | null = null;
+let firestoreInstance: Firestore | null = null;
 
-export function getFirebaseAuth(): Auth {
+export function getFirebaseApp(): FirebaseApp {
   const cfg = getActiveFirebaseConfig();
   if (!appInstance) {
     const existingApps = getApps();
@@ -279,12 +288,23 @@ export function getFirebaseAuth(): Auth {
       appInstance = initializeApp(cfg);
     }
   }
+  return appInstance;
+}
 
-  if (!authInstance && appInstance) {
-    authInstance = getAuth(appInstance);
+export function getFirebaseAuth(): Auth {
+  const app = getFirebaseApp();
+  if (!authInstance && app) {
+    authInstance = getAuth(app);
   }
-
   return authInstance!;
+}
+
+export function getFirebaseFirestore(): Firestore {
+  const app = getFirebaseApp();
+  if (!firestoreInstance && app) {
+    firestoreInstance = getFirestore(app);
+  }
+  return firestoreInstance!;
 }
 
 /**
@@ -300,11 +320,13 @@ export async function saveFirebaseConfig(config: FirebaseClientConfig): Promise<
     } catch {}
     appInstance = null;
     authInstance = null;
+    firestoreInstance = null;
   }
 
   // Initialize with new config
   appInstance = initializeApp(config);
   authInstance = getAuth(appInstance);
+  firestoreInstance = getFirestore(appInstance);
 }
 
 /**
@@ -318,6 +340,7 @@ export async function clearFirebaseConfig(): Promise<void> {
     } catch {}
     appInstance = null;
     authInstance = null;
+    firestoreInstance = null;
   }
 }
 
@@ -424,11 +447,25 @@ export async function signInAnonymously(): Promise<FirebaseUserToken> {
   };
 }
 
+export function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.innerWidth <= 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0))
+  );
+}
+
+export function isInAppBrowser(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+  return /FBAN|FBAV|Instagram|Line|Twitter|MicroMessenger|musical_ly|ByteLocale|TikTok|Zalo|Snapchat/i.test(ua);
+}
+
 /**
- * Sign in with Google (REAL Firebase SDK with GoogleAuthProvider & signInWithPopup)
- * Throws error if Firebase has not been configured so caller can show configuration modal.
+ * Sign in with Google (REAL Firebase SDK with GoogleAuthProvider)
+ * Supports desktop popup and automatic mobile fallback to signInWithRedirect.
  */
-export async function signInWithGoogle(): Promise<FirebaseUserToken> {
+export async function signInWithGoogle(forceRedirect = false): Promise<FirebaseUserToken | null> {
   if (!isFirebaseConfigured()) {
     await fetchRemoteFirebaseConfig().catch(() => null);
   }
@@ -439,17 +476,26 @@ export async function signInWithGoogle(): Promise<FirebaseUserToken> {
   }
 
   const firebaseAuth = getFirebaseAuth();
+  const provider = new GoogleAuthProvider();
+  provider.addScope('profile');
+  provider.addScope('email');
+  provider.setCustomParameters({ prompt: 'select_account' });
+
+  // Mobile browsers restrict popups and cross-tab window.opener postMessage.
+  // Using signInWithRedirect provides seamless authentication without popup blocker errors.
+  if (forceRedirect || isMobileDevice()) {
+    try {
+      sessionStorage.setItem('vocabflow_pending_oauth', 'google');
+    } catch {}
+    await signInWithRedirect(firebaseAuth, provider);
+    return null;
+  }
 
   try {
-    const provider = new GoogleAuthProvider();
-    provider.addScope('profile');
-    provider.addScope('email');
-    provider.setCustomParameters({ prompt: 'select_account' });
-
     const userCredential = await withTimeout(
       signInWithPopup(firebaseAuth, provider),
       35000,
-      `Quá thời gian chờ xác thực Google (35 giây). Cửa sổ Popup có thể đã bị trình duyệt chặn hoặc tên miền (${typeof window !== 'undefined' ? window.location.hostname : ''}) chưa được cấp phép trong Firebase. Vui lòng cho phép Pop-up hoặc sử dụng form đăng ký Email bên trên.`,
+      `Quá thời gian chờ xác thực Google (35 giây). Cửa sổ Popup có thể đã bị trình duyệt chặn hoặc tên miền (${typeof window !== 'undefined' ? window.location.hostname : ''}) chưa được cấp phép trong Firebase.`
     );
     const user: FirebaseUser = userCredential.user;
     const token = await user.getIdToken();
@@ -464,6 +510,19 @@ export async function signInWithGoogle(): Promise<FirebaseUserToken> {
       accessToken: token,
     };
   } catch (err: any) {
+    if (
+      err?.code === 'auth/popup-blocked' ||
+      err?.code === 'auth/cancelled-popup-request' ||
+      err?.code === 'auth/operation-not-supported-in-this-environment'
+    ) {
+      console.warn('Popup blocked or unsupported, falling back to signInWithRedirect:', err?.code);
+      try {
+        sessionStorage.setItem('vocabflow_pending_oauth', 'google');
+      } catch {}
+      await signInWithRedirect(firebaseAuth, provider);
+      return null;
+    }
+
     if (err?.code) {
       throw new Error(formatFirebaseAuthError(err.code));
     }
@@ -472,9 +531,10 @@ export async function signInWithGoogle(): Promise<FirebaseUserToken> {
 }
 
 /**
- * Sign in with Facebook (REAL Firebase SDK with FacebookAuthProvider & signInWithPopup)
+ * Sign in with Facebook (REAL Firebase SDK with FacebookAuthProvider)
+ * Supports desktop popup and automatic mobile fallback to signInWithRedirect.
  */
-export async function signInWithFacebook(): Promise<FirebaseUserToken> {
+export async function signInWithFacebook(forceRedirect = false): Promise<FirebaseUserToken | null> {
   if (!isFirebaseConfigured()) {
     await fetchRemoteFirebaseConfig().catch(() => null);
   }
@@ -485,16 +545,23 @@ export async function signInWithFacebook(): Promise<FirebaseUserToken> {
   }
 
   const firebaseAuth = getFirebaseAuth();
+  const provider = new FacebookAuthProvider();
+  provider.addScope('email');
+  provider.addScope('public_profile');
+
+  if (forceRedirect || isMobileDevice()) {
+    try {
+      sessionStorage.setItem('vocabflow_pending_oauth', 'facebook');
+    } catch {}
+    await signInWithRedirect(firebaseAuth, provider);
+    return null;
+  }
 
   try {
-    const provider = new FacebookAuthProvider();
-    provider.addScope('email');
-    provider.addScope('public_profile');
-
     const userCredential = await withTimeout(
       signInWithPopup(firebaseAuth, provider),
       35000,
-      `Quá thời gian chờ xác thực Facebook (35 giây). Cửa sổ Popup có thể đã bị trình duyệt chặn hoặc nhà cung cấp Facebook chưa được thiết lập trên Firebase. Vui lòng cho phép Pop-up hoặc sử dụng form đăng ký Email bên trên.`,
+      `Quá thời gian chờ xác thực Facebook (35 giây). Cửa sổ Popup có thể đã bị trình duyệt chặn hoặc nhà cung cấp Facebook chưa được thiết lập trên Firebase.`
     );
     const user: FirebaseUser = userCredential.user;
     const token = await user.getIdToken();
@@ -509,9 +576,143 @@ export async function signInWithFacebook(): Promise<FirebaseUserToken> {
       accessToken: token,
     };
   } catch (err: any) {
+    if (
+      err?.code === 'auth/popup-blocked' ||
+      err?.code === 'auth/cancelled-popup-request' ||
+      err?.code === 'auth/operation-not-supported-in-this-environment'
+    ) {
+      console.warn('Popup blocked or unsupported, falling back to signInWithRedirect:', err?.code);
+      try {
+        sessionStorage.setItem('vocabflow_pending_oauth', 'facebook');
+      } catch {}
+      await signInWithRedirect(firebaseAuth, provider);
+      return null;
+    }
+
     if (err?.code) {
       throw new Error(formatFirebaseAuthError(err.code));
     }
     throw err;
+  }
+}
+
+/**
+ * Check if the user is returning from a redirect authentication flow (Google/Facebook OAuth on mobile).
+ * Returns the FirebaseUserToken if a valid redirect result is present, or null.
+ */
+export async function getRedirectAuthResult(): Promise<FirebaseUserToken | null> {
+  try {
+    const firebaseAuth = getFirebaseAuth();
+    const userCredential = await getRedirectResult(firebaseAuth);
+    if (!userCredential || !userCredential.user) {
+      return null;
+    }
+    const user = userCredential.user;
+    const token = await user.getIdToken();
+    const providerId = userCredential.providerId || user.providerData?.[0]?.providerId || 'google.com';
+
+    try {
+      sessionStorage.removeItem('vocabflow_pending_oauth');
+    } catch {}
+
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || (providerId.includes('facebook') ? 'Facebook Learner' : 'Google Learner'),
+      photoURL: user.photoURL,
+      isAnonymous: false,
+      providerId: providerId,
+      accessToken: token,
+    };
+  } catch (err: any) {
+    try {
+      sessionStorage.removeItem('vocabflow_pending_oauth');
+    } catch {}
+    if (err?.code) {
+      throw new Error(formatFirebaseAuthError(err.code));
+    }
+    throw err;
+  }
+}
+
+/**
+ * Sign in using Email and Password via Firebase Auth
+ */
+export async function signInWithEmail(email: string, pass: string): Promise<FirebaseUserToken> {
+  const firebaseAuth = getFirebaseAuth();
+  try {
+    const userCredential = await signInWithEmailAndPassword(firebaseAuth, email.trim(), pass);
+    const user = userCredential.user;
+    const token = await user.getIdToken();
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || user.email?.split('@')[0] || 'Learner',
+      photoURL: user.photoURL,
+      isAnonymous: false,
+      providerId: 'password',
+      accessToken: token,
+    };
+  } catch (err: any) {
+    if (err?.code) {
+      throw new Error(formatFirebaseAuthError(err.code));
+    }
+    throw err;
+  }
+}
+
+/**
+ * Register a new user with Email and Password via Firebase Auth
+ */
+export async function registerWithEmail(email: string, pass: string, displayName?: string): Promise<FirebaseUserToken> {
+  const firebaseAuth = getFirebaseAuth();
+  try {
+    const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email.trim(), pass);
+    const user = userCredential.user;
+    if (displayName?.trim()) {
+      await updateProfile(user, { displayName: displayName.trim() });
+    }
+    const token = await user.getIdToken();
+    return {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || displayName || user.email?.split('@')[0] || 'Learner',
+      photoURL: user.photoURL,
+      isAnonymous: false,
+      providerId: 'password',
+      accessToken: token,
+    };
+  } catch (err: any) {
+    if (err?.code) {
+      throw new Error(formatFirebaseAuthError(err.code));
+    }
+    throw err;
+  }
+}
+
+/**
+ * Send password reset email
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  const firebaseAuth = getFirebaseAuth();
+  try {
+    await sendPasswordResetEmail(firebaseAuth, email.trim());
+  } catch (err: any) {
+    if (err?.code) {
+      throw new Error(formatFirebaseAuthError(err.code));
+    }
+    throw err;
+  }
+}
+
+/**
+ * Sign out from Firebase Auth
+ */
+export async function signOutFirebase(): Promise<void> {
+  const firebaseAuth = getFirebaseAuth();
+  try {
+    await firebaseSignOut(firebaseAuth);
+  } catch (err: any) {
+    console.error('Firebase sign-out error:', err);
   }
 }

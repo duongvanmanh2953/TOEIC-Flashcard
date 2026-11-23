@@ -341,7 +341,7 @@ export const NotesPage: React.FC = () => {
         )}
 
         <aside
-          className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-200 ${
+          className={`fixed lg:static top-0 bottom-[calc(3.75rem+env(safe-area-inset-bottom,0px))] lg:bottom-auto left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-200 ${
             mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
         >

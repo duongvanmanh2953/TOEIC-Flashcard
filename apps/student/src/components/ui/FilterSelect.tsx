@@ -110,8 +110,8 @@ export function FilterSelect<T extends string | number>({
 
   const sizeClasses = {
     xs: 'py-1 px-2 text-[11px] rounded-lg min-h-[28px]',
-    sm: 'py-2 px-3 text-xs rounded-xl min-h-[38px]',
-    md: 'py-2.5 px-3.5 text-xs sm:text-sm rounded-xl min-h-[42px]',
+    sm: 'h-10 px-3 text-xs rounded-xl',
+    md: 'h-11 px-3.5 text-xs sm:text-sm rounded-xl',
   }[size];
 
   const renderIcon = (
@@ -139,24 +139,24 @@ export function FilterSelect<T extends string | number>({
         onClick={() => setIsOpen(!isOpen)}
         className={`${
           isFullWidth ? 'w-full justify-between' : ''
-        } flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer ${sizeClasses}`}
+        } h-full flex items-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white transition font-medium shadow-xs select-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40 cursor-pointer ${sizeClasses}`}
       >
         <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
           {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 shrink-0')}
           {!LeftIcon && renderIcon(selectedOption?.icon, 'w-3.5 h-3.5 text-slate-400 shrink-0')}
           {label && <span className="text-slate-500 font-normal shrink-0">{label}:</span>}
-          <span className={`font-semibold text-slate-200 truncate ${isFullWidth ? 'flex-1 text-left' : 'max-w-[140px]'}`}>
+          <span className={`font-semibold text-slate-800 dark:text-slate-200 truncate ${isFullWidth ? 'flex-1 text-left' : 'max-w-[140px]'}`}>
             {selectedOption ? selectedOption.label : String(value)}
           </span>
           {selectedOption?.badge !== undefined && (
-            <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-bold shrink-0">
+            <span className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-[9px] font-bold shrink-0">
               {selectedOption.badge}
             </span>
           )}
         </div>
         <ChevronDown
           className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-1 ${
-            isOpen ? 'rotate-180 text-indigo-400' : ''
+            isOpen ? 'rotate-180 text-indigo-500 dark:text-indigo-400' : ''
           }`}
         />
       </button>
@@ -180,7 +180,7 @@ export function FilterSelect<T extends string | number>({
               maxWidth: isFullWidth ? 'min(calc(100vw - 24px), 480px)' : 'min(calc(100vw - 24px), 320px)',
               zIndex: 99999,
             }}
-            className="bg-slate-900/98 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-1 text-xs animate-in fade-in zoom-in-95 duration-100"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-1 text-xs animate-in fade-in zoom-in-95 duration-100"
           >
             <div className="overflow-y-auto max-h-56 p-0.5 space-y-0.5 chat-scrollbar">
               {options.map((opt) => {
@@ -197,8 +197,8 @@ export function FilterSelect<T extends string | number>({
                     }}
                     className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-left transition select-none ${
                       isSelected
-                        ? 'bg-indigo-600/25 text-indigo-200 font-bold border border-indigo-500/30'
-                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        ? 'bg-indigo-50 dark:bg-indigo-600/25 text-indigo-700 dark:text-indigo-200 font-bold border border-indigo-200 dark:border-indigo-500/30'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 truncate">
@@ -207,11 +207,11 @@ export function FilterSelect<T extends string | number>({
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {opt.badge !== undefined && (
-                        <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 text-[9px] font-bold">
+                        <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[9px] font-bold">
                           {opt.badge}
                         </span>
                       )}
-                      {isSelected && <Check className="w-3 h-3 text-indigo-400" />}
+                      {isSelected && <Check className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />}
                     </div>
                   </button>
                 );

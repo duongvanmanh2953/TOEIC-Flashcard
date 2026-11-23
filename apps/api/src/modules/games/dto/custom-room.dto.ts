@@ -96,3 +96,63 @@ export class InviteRoomPlayerDto {
   inviteeUserId: string;
 }
 
+export class UpdateCustomRoomDto {
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsEnum(GameModeType)
+  @IsOptional()
+  gameMode?: GameModeType;
+
+  @IsEnum(RoomVisibility)
+  @IsOptional()
+  visibility?: RoomVisibility;
+
+  @IsString()
+  @IsOptional()
+  password?: string;
+
+  @IsString()
+  @IsOptional()
+  difficulty?: string;
+
+  @IsInt()
+  @Min(5)
+  @Max(50)
+  @IsOptional()
+  questionCount?: number;
+
+  @IsInt()
+  @Min(2)
+  @IsOptional()
+  maxPlayers?: number;
+
+  @IsInt()
+  @Min(5)
+  @Max(60)
+  @IsOptional()
+  roundDurationSec?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  penaltyForWrong?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  shuffleQuestions?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  shuffleOptions?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  showAnswerAfterEach?: boolean;
+}
+
+

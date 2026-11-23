@@ -31,7 +31,7 @@ export const GameModal: React.FC<GameModalProps> = memo(({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn select-none">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fadeIn select-none">
       <div className="relative w-full max-w-sm rounded-[28px] bg-white p-6 text-center shadow-2xl border-4 border-amber-200 animate-scaleUp">
         {/* Close Button */}
         <button

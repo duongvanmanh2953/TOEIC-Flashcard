@@ -179,14 +179,16 @@ export class AuthController {
     @Body()
     body: {
       provider: 'google' | 'facebook';
+      idToken?: string;
       providerId: string;
       email: string;
       displayName: string;
       avatar?: string;
     },
+    @Headers('x-device-id') deviceId: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result: any = await this.oauthService.handleOAuthUser(body);
+    const result: any = await this.oauthService.handleOAuthUser(body, deviceId);
     this.setAuthCookies(res, result?.accessToken, result?.refreshToken);
     return result;
   }

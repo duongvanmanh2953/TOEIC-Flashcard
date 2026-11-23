@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { ARENA_THEME } from '../../arena/arenaTheme';
 import { LeaderboardPlayer, ArenaPodium } from './ArenaPodium';
+import { PlayerAvatar } from './PlayerAvatar';
 import { ArenaTrophyArtwork } from './ArenaTrophyArtwork';
 import {
   ArenaIconTrophy,
@@ -401,10 +402,10 @@ export const WinnerCelebration: React.FC<WinnerCelebrationProps> = ({
                         {rankNum}
                       </span>
 
-                      <img
-                        src={player.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${player.id}`}
-                        alt=""
-                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-cover border border-white/10 shrink-0 bg-slate-800"
+                      <PlayerAvatar
+                        avatarUrl={player.avatar}
+                        displayName={player.name}
+                        size="sm"
                       />
 
                       <div className="min-w-0">

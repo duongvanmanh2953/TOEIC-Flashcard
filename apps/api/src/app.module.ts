@@ -25,6 +25,8 @@ import { GrammarModule } from './modules/grammar/grammar.module';
 import { ScriptsModule } from './modules/scripts/scripts.module';
 import { ProgressModule } from './modules/progress/progress.module';
 import { InterviewModule } from './modules/interview/interview.module';
+import { LearningJourneyModule } from './modules/learning-journey/learning-journey.module';
+import { ListeningLabModule } from './modules/listening-lab/listening-lab.module';
 import { RedisCacheModule } from './common/cache/redis-cache.module';
 import { RabbitMQModule } from './common/rabbitmq/rabbitmq.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -61,6 +63,8 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     ScriptsModule,
     ProgressModule,
     InterviewModule,
+    LearningJourneyModule,
+    ListeningLabModule,
   ],
   providers: [
     {

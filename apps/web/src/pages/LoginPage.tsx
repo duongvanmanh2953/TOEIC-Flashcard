@@ -6,6 +6,7 @@ import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
 import { VocabFlowLogo } from '@vocabflow/shared';
 
 export const LoginPage: React.FC = () => {
+  const [appCallback, setAppCallback] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgot, setShowForgot] = useState(false);
@@ -20,12 +21,23 @@ export const LoginPage: React.FC = () => {
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
   const { login, loginWithGoogle, loginWithFacebook } = useAuth();
   const navigate = useNavigate();
+  const params = new URLSearchParams(window.location.search);
+  const mobileProvider = params.get('mobile_auth') === 'true' ? params.get('provider') : null;
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('expired') === '1') {
       setError('Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục học tập.');
     }
+
+    const onOAuthError = (event: Event) => setError((event as CustomEvent<string>).detail);
+    const onOAuthReturn = (event: Event) => setAppCallback((event as CustomEvent<string>).detail);
+    window.addEventListener('vocabflow:oauth-error', onOAuthError);
+    window.addEventListener('vocabflow:oauth-return', onOAuthReturn);
+    return () => {
+      window.removeEventListener('vocabflow:oauth-error', onOAuthError);
+      window.removeEventListener('vocabflow:oauth-return', onOAuthReturn);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,6 +100,12 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
+        {appCallback && (
+          <a href={appCallback} className="mb-4 flex min-h-11 items-center justify-center rounded-lg bg-slate-900 px-4 text-white">
+            Quay lại ứng dụng LetStuN
+          </a>
+        )}
+
         {error && (
           <div className="mb-6 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -95,7 +113,7 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form hidden={Boolean(mobileProvider)} onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
               Email
@@ -172,6 +190,7 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('google');
               try {
                 await loginWithGoogle();
+                if (mobileProvider) return;
                 navigate('/dashboard');
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Google.');
@@ -179,8 +198,8 @@ export const LoginPage: React.FC = () => {
                 setSocialLoading(null);
               }
             }}
-            disabled={socialLoading !== null || loading}
-            className="w-full py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
+            disabled={socialLoading !== null || loading || (Boolean(mobileProvider) && mobileProvider !== 'google')}
+            className="w-full min-h-11 py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200 dark:border-slate-700 shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
           >
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
               <path
@@ -210,6 +229,7 @@ export const LoginPage: React.FC = () => {
               setSocialLoading('facebook');
               try {
                 await loginWithFacebook();
+                if (mobileProvider) return;
                 navigate('/dashboard');
               } catch (err: any) {
                 setError(err?.message || 'Không thể đăng nhập bằng Facebook.');
@@ -217,8 +237,8 @@ export const LoginPage: React.FC = () => {
                 setSocialLoading(null);
               }
             }}
-            disabled={socialLoading !== null || loading}
-            className="w-full py-2.5 px-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
+            disabled={socialLoading !== null || loading || (Boolean(mobileProvider) && mobileProvider !== 'facebook')}
+            className="w-full min-h-11 py-2.5 px-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition disabled:opacity-50"
           >
             <img src="/facebook-logo.png" alt="Facebook" className="w-4 h-4 object-contain shrink-0" />
             <span>{socialLoading === 'facebook' ? 'Đang vào...' : 'Facebook'}</span>

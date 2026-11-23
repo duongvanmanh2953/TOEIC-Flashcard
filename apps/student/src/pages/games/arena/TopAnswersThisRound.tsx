@@ -1,5 +1,6 @@
 import React from 'react';
 import { Flame, CheckCircle2, XCircle, Zap, ShieldCheck, Timer } from 'lucide-react';
+import { PlayerAvatar } from '@vocabflow/shared';
 
 export interface RoundSubmissionItem {
   userId: string;
@@ -107,10 +108,10 @@ export const TopAnswersThisRound: React.FC<TopAnswersThisRoundProps> = ({
                     #{idx + 1}
                   </span>
 
-                  <img
-                    src={item.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${item.displayName}`}
-                    alt={item.displayName}
-                    className="w-8 h-8 rounded-xl bg-slate-800 border border-white/10 shrink-0 object-cover"
+                  <PlayerAvatar
+                    avatarUrl={item.avatarUrl}
+                    displayName={item.displayName}
+                    size="sm"
                   />
 
                   <div className="min-w-0 flex-1">

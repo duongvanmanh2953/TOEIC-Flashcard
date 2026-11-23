@@ -23,6 +23,8 @@ export interface ParsedExamQuestion {
   points: number;
   tags: string[];
   vocabularyIds?: string[];
+  imageUrl?: string;
+  audioUrl?: string;
   rowNumber?: number;
   warnings?: string[];
 }
@@ -44,7 +46,7 @@ export interface ExcelExamParseResult {
   warningCount: number;
 }
 
-const SAMPLE_EXAM_DATA = [
+export const SAMPLE_EXAM_DATA = [
   {
     cau_so: 1,
     noi_dung_cau_hoi: 'The manager _____ the annual financial report yesterday.',
@@ -56,6 +58,8 @@ const SAMPLE_EXAM_DATA = [
     dap_an_dung: 'B',
     giai_thich_chi_tiet: '"Yesterday" là trạng từ chỉ thời gian quá khứ đơn, vì vậy động từ phải chia thì quá khứ đơn "completed".',
     nguon_giai_thich: 'ETS TOEIC Official Test 2024 - Part 5',
+    link_anh: '',
+    link_audio: '',
     tai_sao_a_sai: 'complete là động từ nguyên mẫu, không phù hợp với ngữ cảnh quá khứ.',
     tai_sao_b_sai: 'Đáp án chính xác.',
     tai_sao_c_sai: 'completing là dạng V-ing/hiện tại phân từ, cần có trợ động từ to be.',
@@ -71,27 +75,29 @@ const SAMPLE_EXAM_DATA = [
   },
   {
     cau_so: 2,
-    noi_dung_cau_hoi: 'All participants must register _____ Friday to receive the early-bird discount.',
+    noi_dung_cau_hoi: 'Look at the picture. Where is the briefcase placed?',
     loai_cau_hoi: 'multiple_choice',
-    lua_chon_a: 'before',
-    lua_chon_b: 'between',
-    lua_chon_c: 'during',
-    lua_chon_d: 'under',
-    dap_an_dung: 'A',
-    giai_thich_chi_tiet: 'Cần giới từ chỉ mốc thời gian hạn chót "trước thứ Sáu" -> "before Friday".',
-    nguon_giai_thich: 'ETS TOEIC Practice Vol 1',
-    tai_sao_a_sai: 'Đáp án chính xác.',
-    tai_sao_b_sai: 'between cần đi với cấu trúc "between A and B".',
-    tai_sao_c_sai: 'during đi với khoảng thời gian (khoảng sự kiện) chứ không đi với mốc ngày đơn lẻ.',
-    tai_sao_d_sai: 'under nghĩa là dưới, không dùng chỉ mốc thời gian hạn chót.',
-    chu_diem_ngu_phap: 'Prepositions',
+    lua_chon_a: 'Under the wooden desk',
+    lua_chon_b: 'On top of the conference table',
+    lua_chon_c: 'Next to the office window',
+    lua_chon_d: 'Behind the swivel chair',
+    dap_an_dung: 'B',
+    giai_thich_chi_tiet: 'Bức ảnh hiển thị chiếc cặp được đặt ngay trên mặt bàn họp.',
+    nguon_giai_thich: 'ETS TOEIC Part 1 Photo Analysis',
+    link_anh: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800',
+    link_audio: 'https://actions.google.com/sounds/v1/ambiences/office_cubicle_large.ogg',
+    tai_sao_a_sai: 'Không có vật nào dưới gầm bàn.',
+    tai_sao_b_sai: 'Đáp án chính xác.',
+    tai_sao_c_sai: 'Chiếc bàn ở trung tâm phòng, không sát cửa sổ.',
+    tai_sao_d_sai: 'Không nằm phía sau ghế.',
+    chu_diem_ngu_phap: 'Prepositions of Place',
     tu_loai: 'Preposition',
-    danh_muc: 'Grammar',
-    ky_nang: 'Time Prepositions',
+    danh_muc: 'Listening',
+    ky_nang: 'Photographs Part 1',
     do_kho: 'easy',
     diem_so: 1.0,
-    the_tags: 'preposition, toeic, discount',
-    tu_vung_lien_quan: 'register, participant, discount',
+    the_tags: 'part-1, photo, listening, office',
+    tu_vung_lien_quan: 'briefcase, conference table',
   },
   {
     cau_so: 3,
@@ -104,6 +110,8 @@ const SAMPLE_EXAM_DATA = [
     dap_an_dung: 'True',
     giai_thich_chi_tiet: 'Thông tin trong bài xác nhận hội nghị diễn ra tại Grand Convention Center.',
     nguon_giai_thich: 'IELTS Reading Section 1',
+    link_anh: '',
+    link_audio: '',
     tai_sao_a_sai: 'Đáp án đúng.',
     tai_sao_b_sai: 'Sai vì thông tin đúng với thực tế bài đọc.',
     tai_sao_c_sai: '',
@@ -128,6 +136,8 @@ const SAMPLE_EXAM_DATA = [
     dap_an_dung: 'allows',
     giai_thich_chi_tiet: 'Chủ ngữ số ít "The new mobile application" đi với động từ thêm "s/es" ở thì hiện tại đơn.',
     nguon_giai_thich: 'Business English Grammar Test',
+    link_anh: '',
+    link_audio: '',
     tai_sao_a_sai: '',
     tai_sao_b_sai: '',
     tai_sao_c_sai: '',
@@ -144,7 +154,7 @@ const SAMPLE_EXAM_DATA = [
 ];
 
 const INSTRUCTIONS_DATA = [
-  { Cột: 'cau_so', Ý_Nghĩa: 'Số thứ tự câu hỏi (Bắt buộc, số nguyên dương: 1, 2, 3...)', Ví_Dụ: '1' },
+  { Cột: 'cau_so', Ý_Nghĩa: 'Số thứ tự câu hỏi (Bắt buộc, số nguyên: 1, 2, 3...)', Ví_Dụ: '1' },
   { Cột: 'noi_dung_cau_hoi', Ý_Nghĩa: 'Nội dung đề bài câu hỏi (Bắt buộc)', Ví_Dụ: 'The manager _____ the report yesterday.' },
   { Cột: 'loai_cau_hoi', Ý_Nghĩa: 'multiple_choice | multiple_select | true_false | fill_in_blank | short_answer', Ví_Dụ: 'multiple_choice' },
   { Cột: 'lua_chon_a', Ý_Nghĩa: 'Lựa chọn phương án A (Bắt buộc với trắc nghiệm)', Ví_Dụ: 'complete' },
@@ -152,6 +162,8 @@ const INSTRUCTIONS_DATA = [
   { Cột: 'lua_chon_c', Ý_Nghĩa: 'Lựa chọn phương án C (Tùy chọn)', Ví_Dụ: 'completing' },
   { Cột: 'lua_chon_d', Ý_Nghĩa: 'Lựa chọn phương án D (Tùy chọn)', Ví_Dụ: 'completion' },
   { Cột: 'dap_an_dung', Ý_Nghĩa: 'Ký tự đáp án đúng (A, B, C, D hoặc nội dung với điền từ)', Ví_Dụ: 'B' },
+  { Cột: 'link_anh', Ý_Nghĩa: 'Link URL hình ảnh trực tiếp (Khuyên dùng link online để không tốn dung lượng)', Ví_Dụ: 'https://example.com/photo.jpg' },
+  { Cột: 'link_audio', Ý_Nghĩa: 'Link URL âm thanh trực tiếp (Khuyên dùng link MP3 online)', Ví_Dụ: 'https://example.com/audio.mp3' },
   { Cột: 'giai_thich_chi_tiet', Ý_Nghĩa: 'Lời giải thích vì sao đáp án đúng (Khuyến khích)', Ví_Dụ: 'Yesterday là dấu hiệu thì quá khứ đơn...' },
   { Cột: 'nguon_giai_thich', Ý_Nghĩa: 'Tên tài liệu / Giáo trình nguồn của câu hỏi', Ví_Dụ: 'ETS TOEIC Official Test' },
   { Cột: 'tai_sao_a_sai', Ý_Nghĩa: 'Giải thích lý do phương án A sai (Tùy chọn)', Ví_Dụ: 'Sai vì là động từ nguyên mẫu' },
@@ -197,6 +209,411 @@ export const downloadExamCsvTemplate = () => {
   URL.revokeObjectURL(url);
 };
 
+export const downloadExamJsonTemplate = () => {
+  const jsonContent = JSON.stringify(
+    {
+      title: 'Bộ Đề Thi Mẫu Chuẩn VocabFlow AI',
+      description: 'Mẫu đề thi định dạng JSON chuẩn quốc tế hỗ trợ link ảnh & link audio trực tiếp',
+      examType: 'TOEIC',
+      durationMinutes: 60,
+      passingScore: 50,
+      questions: SAMPLE_EXAM_DATA.map((q) => ({
+        questionNumber: q.cau_so,
+        questionText: q.noi_dung_cau_hoi,
+        questionType: q.loai_cau_hoi === 'multiple_choice' ? 'MULTIPLE_CHOICE' : q.loai_cau_hoi.toUpperCase(),
+        options: [
+          q.lua_chon_a ? { key: 'A', text: q.lua_chon_a } : null,
+          q.lua_chon_b ? { key: 'B', text: q.lua_chon_b } : null,
+          q.lua_chon_c ? { key: 'C', text: q.lua_chon_c } : null,
+          q.lua_chon_d ? { key: 'D', text: q.lua_chon_d } : null,
+        ].filter(Boolean),
+        correctAnswer: q.dap_an_dung,
+        explanation: q.giai_thich_chi_tiet,
+        imageUrl: q.link_anh || undefined,
+        audioUrl: q.link_audio || undefined,
+        difficulty: q.do_kho.toUpperCase(),
+        points: q.diem_so,
+        tags: q.the_tags.split(',').map((t) => t.trim()),
+      })),
+    },
+    null,
+    2
+  );
+
+  const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vocabflow_mau_nhap_bo_de_thi.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+export const downloadExamWordTemplate = () => {
+  const sampleDocText = `=== HƯỚNG DẪN CÀO ĐỀ THI TỰ ĐỘNG VOCABFLOW AI ===
+Bạn có thể soạn đề thi tự do trên Word hoặc văn bản thô theo cấu trúc dưới đây.
+Hệ thống tự động nhận diện câu hỏi, các phương án A/B/C/D, đáp án đúng, giải thích và link ảnh/âm thanh.
+
+Câu 1: The manager _____ the annual financial report yesterday.
+A. complete
+B. completed
+C. completing
+D. completion
+Đáp án: B
+Giải thích: "Yesterday" là trạng từ chỉ thời gian quá khứ đơn, vì vậy động từ phải chia thì quá khứ đơn "completed".
+[Ảnh: https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800]
+[Audio: https://actions.google.com/sounds/v1/office/typing_on_keyboard.ogg]
+
+Câu 2: All participants must register _____ Friday to receive the early-bird discount.
+A) before
+B) between
+C) during
+D) under
+Đáp án: A
+Giải thích: Cần giới từ chỉ mốc thời gian hạn chót "trước thứ Sáu" -> "before Friday".
+
+Câu 3: The conference will take place at the Grand Convention Center.
+A. True
+B. False
+Đáp án: A
+Giải thích: Thông tin trong bài xác nhận hội nghị diễn ra tại Grand Convention Center.
+
+Câu 4: What is the primary purpose of the memo?
+(A) To announce a new corporate policy
+*(B) To schedule an executive board meeting
+(C) To introduce a newly hired marketing director
+(D) To request financial approval for equipment
+Giải thích: Dấu sao (*) ở đầu phương án B tự động được hiểu là đáp án đúng!
+`;
+
+  const blob = new Blob([sampleDocText], { type: 'text/plain;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vocabflow_mau_de_thi_word.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Super Flexible Raw Text Exam Parser ("Cào Đề Thi Tự Động")
+ * Parses plain text copied from Word, Web, PDF, Telegram, etc.
+ */
+export const parseAndValidateRawText = (rawText: string): ExcelExamParseResult => {
+  if (!rawText || !rawText.trim()) {
+    return {
+      validQuestions: [],
+      invalidQuestions: [
+        {
+          rowNumber: 1,
+          errors: ['Văn bản trống. Vui lòng dán nội dung đề thi cần cào.'],
+          rawRow: {},
+        },
+      ],
+      totalRows: 0,
+      validCount: 0,
+      invalidCount: 1,
+      warningCount: 0,
+    };
+  }
+
+  // Split into question blocks: match lines starting with "Câu X", "Question X", "Q X", or numbers like "1."
+  const splitRegex = /(?=(?:^|\n)\s*(?:(?:Câu|Question|Q|Bài)\s*\d+[\.\:\-\/\)]|\b\d+[\.\:\-\/\)]\s+))/i;
+  let rawBlocks = rawText.split(splitRegex).map((b) => b.trim()).filter(Boolean);
+
+  // Fallback: If no "Câu X" prefix detected, try splitting by double newline
+  if (rawBlocks.length <= 1 && rawText.includes('\n\n')) {
+    rawBlocks = rawText.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  }
+
+  const validQuestions: ParsedExamQuestion[] = [];
+  const invalidQuestions: InvalidExamQuestionRow[] = [];
+
+  rawBlocks.forEach((block, idx) => {
+    const rowNumber = idx + 1;
+    const errors: string[] = [];
+    let text = block;
+
+    // Detect question number if present
+    const qNumMatch = text.match(/^(?:(?:Câu|Question|Q|Bài)\s*(\d+)[\.\:\-\/\)]|(\d+)[\.\:\-\/\)])\s*/i);
+    const questionNumber = qNumMatch ? parseInt(qNumMatch[1] || qNumMatch[2], 10) : idx + 1;
+
+    // Strip question number header from prompt text
+    if (qNumMatch) {
+      text = text.replace(qNumMatch[0], '');
+    }
+
+    // 1. Extract Image URL: [Ảnh: https://...] or Ảnh: https://...
+    const imgMatch = text.match(/(?:\[?(?:Ảnh|Image|Hình|img|Picture)\s*[\:\=]?\s*(https?:\/\/[^\s\]\)\"\'\>]+)\]?)/i);
+    const imageUrl = imgMatch ? imgMatch[1] : undefined;
+    if (imgMatch) {
+      text = text.replace(imgMatch[0], '');
+    }
+
+    // 2. Extract Audio URL: [Audio: https://...] or Audio: https://...
+    const audMatch = text.match(/(?:\[?(?:Audio|Âm\s*thanh|Nghe|Sound|Listening)\s*[\:\=]?\s*(https?:\/\/[^\s\]\)\"\'\>]+)\]?)/i);
+    const audioUrl = audMatch ? audMatch[1] : undefined;
+    if (audMatch) {
+      text = text.replace(audMatch[0], '');
+    }
+
+    // 3. Extract Explanation: "Giải thích: ..." or "Explanation: ..."
+    const expMatch = text.match(/(?:Giải\s*thích|Explanation|Hướng\s*dẫn|Lý\s*do|Ghi\s*chú)\s*[\:\=\-]?\s*([\s\S]+?)(?=(?:\[?(?:Ảnh|Audio|Câu|Question|\d+[\.\:])|$))/i);
+    const explanation = expMatch ? expMatch[1].trim() : undefined;
+    if (expMatch) {
+      text = text.replace(expMatch[0], '');
+    }
+
+    // 4. Extract Answer: "Đáp án: B" or "Key: A"
+    const ansMatch = text.match(/(?:Đáp\s*án|Đ\/a|Answer|Key|ĐA|Correct)\s*[\:\=\-]?\s*([A-Fa-f]|True|False|[^\n\r]+)/i);
+    let correctAnswer = ansMatch ? ansMatch[1].trim() : undefined;
+    if (ansMatch) {
+      text = text.replace(ansMatch[0], '');
+    }
+
+    // 5. Extract Options: A. / A) / [A] / (A) or with asterisk *A.
+    const options: ParsedExamOption[] = [];
+    const optRegex = /(?:^|\n)\s*(?:\(?\*?([A-Fa-f])[\.\)\:\-\]]|\(([A-Fa-f])\))\s*([^\n\r]+)/g;
+    let m;
+    while ((m = optRegex.exec(text)) !== null) {
+      const key = (m[1] || m[2]).toUpperCase();
+      const isAsterisk = m[0].includes('*');
+      if (isAsterisk && !correctAnswer) {
+        correctAnswer = key;
+      }
+      options.push({ key, text: m[3].trim() });
+    }
+
+    // 6. Question Prompt is the text before the first option starts
+    const firstOptIdx = text.search(/(?:^|\n)\s*(?:\(?\*?[A-Fa-f][\.\)\:\-\]]|\([A-Fa-f]\))/);
+    let questionText = (firstOptIdx !== -1 ? text.substring(0, firstOptIdx) : text).trim();
+
+    // Clean remaining markup or tags
+    questionText = questionText.replace(/\s+/g, ' ').trim();
+
+    if (!questionText) {
+      errors.push('Không nhận diện được nội dung đề bài câu hỏi.');
+    }
+
+    // Determine Question Type
+    let questionType: ParsedExamQuestion['questionType'] = 'MULTIPLE_CHOICE';
+    if (options.length === 2 && options.some((o) => o.text.toLowerCase() === 'true' || o.text.toLowerCase() === 'false')) {
+      questionType = 'TRUE_FALSE';
+    } else if (options.length === 0) {
+      questionType = 'FILL_IN_BLANK';
+    }
+
+    // Default correct answer fallback
+    if (!correctAnswer) {
+      if (options.length > 0) {
+        correctAnswer = 'A'; // fallback with warning
+      } else {
+        correctAnswer = '';
+      }
+    }
+
+    if (errors.length > 0) {
+      invalidQuestions.push({
+        rowNumber,
+        questionNumber,
+        questionText: questionText || block.slice(0, 50),
+        errors,
+        rawRow: { text: block },
+      });
+    } else {
+      const warnings: string[] = [];
+      if (!explanation) warnings.push('Chưa có lời giải thích chi tiết.');
+      if (!ansMatch && !block.includes('*')) warnings.push('Tự động gán đáp án mặc định (chưa phát hiện dòng Đáp án).');
+
+      validQuestions.push({
+        rowNumber,
+        questionNumber,
+        questionText,
+        questionType,
+        options,
+        correctAnswer: correctAnswer.toUpperCase(),
+        acceptedAnswers: [correctAnswer],
+        explanation,
+        imageUrl,
+        audioUrl,
+        difficulty: 'MEDIUM',
+        points: 1.0,
+        tags: ['imported', 'text-crawl'],
+        warnings,
+      });
+    }
+  });
+
+  const warningCount = validQuestions.filter((q) => q.warnings && q.warnings.length > 0).length;
+
+  return {
+    validQuestions,
+    invalidQuestions,
+    totalRows: rawBlocks.length,
+    validCount: validQuestions.length,
+    invalidCount: invalidQuestions.length,
+    warningCount,
+  };
+};
+
+/**
+ * Word (.docx) Exam Parser using dynamic mammoth import
+ */
+export const parseAndValidateExamWord = async (file: File): Promise<ExcelExamParseResult> => {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    // Dynamic import to comply with bundle size standards (AGENTS.md)
+    const mammothModule = (await import('mammoth')).default || (await import('mammoth'));
+    const result = await mammothModule.extractRawText({ arrayBuffer });
+    const rawText = result?.value || '';
+
+    if (!rawText.trim()) {
+      return {
+        validQuestions: [],
+        invalidQuestions: [
+          {
+            rowNumber: 1,
+            errors: ['Tệp Word (.docx) trống hoặc không chứa văn bản.'],
+            rawRow: {},
+          },
+        ],
+        totalRows: 0,
+        validCount: 0,
+        invalidCount: 1,
+        warningCount: 0,
+      };
+    }
+
+    return parseAndValidateRawText(rawText);
+  } catch (err: any) {
+    throw new Error(`Lỗi đọc tệp Word (.docx): ${err?.message || 'Định dạng tài liệu không hợp lệ.'}`);
+  }
+};
+
+/**
+ * JSON Exam Parser
+ */
+export const parseAndValidateExamJson = async (file: File): Promise<ExcelExamParseResult> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsed = JSON.parse(text);
+
+        // Normalize data: supports array of questions, or { questions: [...] }, or { data: [...] }
+        const rawList: any[] = Array.isArray(parsed)
+          ? parsed
+          : Array.isArray(parsed.questions)
+          ? parsed.questions
+          : Array.isArray(parsed.data)
+          ? parsed.data
+          : [];
+
+        if (!rawList || rawList.length === 0) {
+          resolve({
+            validQuestions: [],
+            invalidQuestions: [
+              {
+                rowNumber: 1,
+                errors: ['File JSON không chứa danh sách câu hỏi hợp lệ (cần mảng questions hoặc [ ... ]).'],
+                rawRow: parsed,
+              },
+            ],
+            totalRows: 0,
+            validCount: 0,
+            invalidCount: 1,
+            warningCount: 0,
+          });
+          return;
+        }
+
+        const validQuestions: ParsedExamQuestion[] = [];
+        const invalidQuestions: InvalidExamQuestionRow[] = [];
+
+        rawList.forEach((item, idx) => {
+          const rowNumber = idx + 1;
+          const errors: string[] = [];
+
+          const qNum = Number(item.questionNumber || item.cau_so || item.number || idx + 1);
+          const qText = String(item.questionText || item.noi_dung_cau_hoi || item.prompt || '').trim();
+
+          if (!qText) {
+            errors.push('Nội dung câu hỏi (questionText) không được để trống.');
+          }
+
+          // Options normalization
+          let options: ParsedExamOption[] = [];
+          if (Array.isArray(item.options)) {
+            options = item.options.map((o: any, oIdx: number) => {
+              if (typeof o === 'string') {
+                return { key: String.fromCharCode(65 + oIdx), text: o };
+              }
+              return { key: o.key || String.fromCharCode(65 + oIdx), text: o.text || '' };
+            });
+          } else if (item.lua_chon_a || item.option_a) {
+            if (item.lua_chon_a || item.option_a) options.push({ key: 'A', text: item.lua_chon_a || item.option_a });
+            if (item.lua_chon_b || item.option_b) options.push({ key: 'B', text: item.lua_chon_b || item.option_b });
+            if (item.lua_chon_c || item.option_c) options.push({ key: 'C', text: item.lua_chon_c || item.option_c });
+            if (item.lua_chon_d || item.option_d) options.push({ key: 'D', text: item.lua_chon_d || item.option_d });
+          }
+
+          const correctAnswer = String(item.correctAnswer || item.dap_an_dung || item.answer || 'A').trim();
+          const imageUrl = item.imageUrl || item.link_anh || item.image || undefined;
+          const audioUrl = item.audioUrl || item.link_audio || item.audio || undefined;
+
+          if (errors.length > 0) {
+            invalidQuestions.push({
+              rowNumber,
+              questionNumber: qNum,
+              questionText: qText || `Câu ${rowNumber}`,
+              errors,
+              rawRow: item,
+            });
+          } else {
+            validQuestions.push({
+              rowNumber,
+              questionNumber: qNum,
+              questionText: qText,
+              questionType: item.questionType || 'MULTIPLE_CHOICE',
+              options,
+              correctAnswer: correctAnswer.toUpperCase(),
+              acceptedAnswers: [correctAnswer],
+              explanation: item.explanation || item.giai_thich_chi_tiet || undefined,
+              imageUrl,
+              audioUrl,
+              difficulty: (item.difficulty || 'MEDIUM').toUpperCase(),
+              points: Number(item.points) || 1.0,
+              tags: Array.isArray(item.tags) ? item.tags : ['json-import'],
+              warnings: [],
+            });
+          }
+        });
+
+        resolve({
+          validQuestions,
+          invalidQuestions,
+          totalRows: rawList.length,
+          validCount: validQuestions.length,
+          invalidCount: invalidQuestions.length,
+          warningCount: 0,
+        });
+      } catch (err: any) {
+        reject(new Error(`Lỗi cú pháp file JSON: ${err?.message || 'Không thể phân tích JSON'}`));
+      }
+    };
+    reader.onerror = () => reject(new Error('Không thể đọc file JSON.'));
+    reader.readAsText(file);
+  });
+};
+
+/**
+ * Excel & CSV Exam Parser (Enhanced with image and audio link detection)
+ */
 export const parseAndValidateExamExcel = async (file: File): Promise<ExcelExamParseResult> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -207,14 +624,19 @@ export const parseAndValidateExamExcel = async (file: File): Promise<ExcelExamPa
         const workbook = XLSX.read(buffer, { type: 'array' });
 
         // Find sheet with exam data
-        const sheetName = workbook.SheetNames.find((s) => s.toLowerCase().includes('de_thi') || s.toLowerCase().includes('exam')) || workbook.SheetNames[0];
+        const sheetName =
+          workbook.SheetNames.find(
+            (s) => s.toLowerCase().includes('de_thi') || s.toLowerCase().includes('exam')
+          ) || workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const rawData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
         if (!rawData || rawData.length === 0) {
           resolve({
             validQuestions: [],
-            invalidQuestions: [{ rowNumber: 1, errors: ['File Excel trống hoặc không có dòng dữ liệu hợp lệ.'], rawRow: {} }],
+            invalidQuestions: [
+              { rowNumber: 1, errors: ['File Excel trống hoặc không có dòng dữ liệu hợp lệ.'], rawRow: {} },
+            ],
             totalRows: 0,
             validCount: 0,
             invalidCount: 1,
@@ -301,6 +723,10 @@ export const parseAndValidateExamExcel = async (file: File): Promise<ExcelExamPa
             ? String(cleanRow.tu_vung_lien_quan || cleanRow.vocabulary).split(',').map((v: string) => v.trim()).filter(Boolean)
             : [];
 
+          // Image & Audio link detection
+          const imageUrl = cleanRow.link_anh || cleanRow.image_url || cleanRow.hinh_anh || cleanRow.image || cleanRow.img || undefined;
+          const audioUrl = cleanRow.link_audio || cleanRow.audio_url || cleanRow.am_thanh || cleanRow.audio || cleanRow.sound || undefined;
+
           // Option explanations
           const optionExplanations: Record<string, string> = {};
           if (cleanRow.tai_sao_a_sai) optionExplanations['A'] = String(cleanRow.tai_sao_a_sai);
@@ -348,6 +774,8 @@ export const parseAndValidateExamExcel = async (file: File): Promise<ExcelExamPa
               points,
               tags,
               vocabularyIds: vocabTerms,
+              imageUrl,
+              audioUrl,
               warnings,
             });
           }
@@ -364,7 +792,7 @@ export const parseAndValidateExamExcel = async (file: File): Promise<ExcelExamPa
           warningCount,
         });
       } catch (err: any) {
-        reject(new Error(`Lỗi xử lý file Excel: ${err?.message || 'Định dạng file không hợp lệ'}`));
+        reject(new Error(`Lỗi xử lý file: ${err?.message || 'Định dạng file không hợp lệ'}`));
       }
     };
 
@@ -391,6 +819,8 @@ export const exportExamToExcel = (exam: any, customFilename?: string) => {
       lua_chon_c: optMap['C'] || '',
       lua_chon_d: optMap['D'] || '',
       dap_an_dung: Array.isArray(q.correctAnswer) ? q.correctAnswer.join(', ') : String(q.correctAnswer || ''),
+      link_anh: q.imageUrl || '',
+      link_audio: q.audioUrl || '',
       giai_thich_chi_tiet: q.explanation || '',
       nguon_giai_thich: q.sourceExplanation || '',
       tai_sao_a_sai: optExp['A'] || '',

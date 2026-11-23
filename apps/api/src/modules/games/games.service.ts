@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GameModeType, CefrLevel } from '@prisma/client';
@@ -19,14 +20,15 @@ export interface GameScheduleItem {
 
 import { QuestionProviderService } from './question-provider.service';
 import { QuestionSourceType } from '@prisma/client';
+import { getSystemPresetRooms } from './custom-rooms.service';
 
 @Injectable()
 export class GamesService implements OnModuleInit {
   private readonly logger = new Logger(GamesService.name);
   readonly roomManager = new GameRoomManager();
 
-  // Test mode allows running and playing games outside 20:00-22:00 for QA & Admin testing
-  private testModeEnabled: boolean = true;
+  // Test mode allows running and playing games outside 19:00-22:00 for QA & Admin testing
+  private testModeEnabled = false;
 
   constructor(
     public readonly prisma: PrismaService,
@@ -71,7 +73,7 @@ export class GamesService implements OnModuleInit {
   }
 
   /**
-   * Check whether daily game hours are open (20:00 to 22:00 VN time)
+   * Check whether daily game hours are open (19:00 to 22:00 VN time)
    */
   getOperatingHoursStatus(): {
     isOpen: boolean;
@@ -90,7 +92,7 @@ export class GamesService implements OnModuleInit {
       hour: 'numeric',
       minute: 'numeric',
       second: 'numeric',
-      hour12: false,
+      hourCycle: 'h23',
     });
 
     const parts = formatter.formatToParts(now);
@@ -99,7 +101,7 @@ export class GamesService implements OnModuleInit {
     const second = parseInt(parts.find((p) => p.type === 'second')?.value || '0', 10);
 
     const currentSeconds = hour * 3600 + minute * 60 + second;
-    const openSeconds = 20 * 3600; // 20:00:00
+    const openSeconds = 19 * 3600; // 19:00:00
     const closeSeconds = 22 * 3600; // 22:00:00
 
     let isOpen = currentSeconds >= openSeconds && currentSeconds < closeSeconds;
@@ -121,7 +123,7 @@ export class GamesService implements OnModuleInit {
     return {
       isOpen,
       serverTime: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`,
-      nextGameTime: '20:00',
+      nextGameTime: '19:00',
       countdownSeconds,
       testMode: this.testModeEnabled,
       timezone: tz,
@@ -148,7 +150,7 @@ export class GamesService implements OnModuleInit {
     return configs.map((c) => ({
       gameMode: c.gameMode,
       title: c.title,
-      scheduleTime: c.scheduleTime,
+      scheduleTime: opStatus.nextGameTime,
       durationMinutes: c.durationMinutes,
       questionCount: c.questionCount,
       difficulty: c.difficulty,
@@ -168,53 +170,69 @@ export class GamesService implements OnModuleInit {
     socketId: string,
     languageId: string = 'en',
   ): Promise<{ room: GameRoom; player: RoomPlayer }> {
+    if (!this.getOperatingHoursStatus().isOpen) throw new Error('Sự kiện mở lúc 19:00 (GMT+7).');
     const targetLang = (languageId || 'en').toLowerCase().trim();
-    // Find active open waiting room with matching game mode and language
-    let room = this.roomManager
-      .getActiveRooms()
-      .find((r) => r.gameMode === gameMode && r.languageId === targetLang && (r.status === 'WAITING' || r.status === 'STARTING') && r.players.size < 500);
+    const room = this.roomManager.getAllRooms().filter((candidate) =>
+      candidate.scheduled && candidate.gameMode === gameMode && candidate.languageId === targetLang &&
+      Date.now() - candidate.createdAt < 3 * 60 * 60 * 1000
+    ).sort((a, b) => b.createdAt - a.createdAt)[0] ||
+      (this.testModeEnabled ? await this.createScheduledRoom(gameMode, targetLang) : undefined);
 
-    if (!room) {
-      // Fetch authentic questions directly from QuestionProviderService matching the chosen language
-      const questions = await this.questionProvider.getQuestionsForRoom(
-        QuestionSourceType.SYSTEM_PRESET,
-        undefined,
-        15,
-        gameMode,
-        targetLang,
-      );
-
-      // Shuffle questions
-      const shuffled = [...questions].sort(() => Math.random() - 0.5).slice(0, 15);
-      const roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-      const config = await this.prisma.gameConfig.findUnique({ where: { gameMode } });
-      const title = config?.title || `${gameMode.replace('_', ' ')}`;
-
-      // Enforce <= 15s for choice / quiz games as requested by user
-      const rawDuration = config?.durationMinutes
-        ? Math.round((config.durationMinutes * 60) / (shuffled.length || 10))
-        : 12;
-      const roundDurationSec = Math.min(15, Math.max(5, rawDuration));
-
-      room = this.roomManager.createRoom(
-        roomCode,
-        gameMode,
-        title,
-        shuffled,
-        roundDurationSec,
-        targetLang,
-        false,
-        true,
-      );
-    }
-
+    if (!room) throw new Error('Trận định kỳ chưa sẵn sàng hoặc đã kết thúc.');
+    if (room.status === 'FINISHED' && !room.players.has(userId)) throw new Error('Trận định kỳ đã kết thúc.');
     const player = this.roomManager.addPlayer(room.roomCode, userId, displayName, avatar, socketId);
-    if (!player) {
-      throw new Error('Failed to join game room');
-    }
-
+    if (!player) throw new Error('Không thể vào phòng.');
     return { room, player };
+  }
+
+  async createScheduledRoom(gameMode: GameModeType, targetLang: string): Promise<GameRoom> {
+    const config = await this.prisma.gameConfig.findUnique({ where: { gameMode } });
+    // Fetch authentic questions directly from QuestionProviderService matching the chosen language
+    const questions = await this.questionProvider.getQuestionsForRoom(
+      QuestionSourceType.SYSTEM_PRESET,
+      undefined,
+      config?.questionCount || 15,
+      gameMode,
+      targetLang,
+    );
+
+    if (!questions.length) throw new Error('Không có câu hỏi cho trận định kỳ.');
+    let roomCode: string;
+    do {
+      roomCode = `A-${randomUUID().slice(0, 8).toUpperCase()}`;
+    } while (this.roomManager.getRoom(roomCode));
+
+    const friendlyTitles: Record<string, string> = {
+      TRANSLATION_RUSH: 'Đấu Trường Dịch Nhanh',
+      WORD_BLITZ: 'Đấu Trường Phản Xạ Từ Vựng',
+      SENTENCE_SPRINT: 'Đấu Trường Tốc Độ Đặt Câu',
+      MISSING_WORD: 'Đấu Trường Điền Từ Khuyết',
+      LISTENING_RUSH: 'Đấu Trường Nghe Hiểu Cấp Tốc',
+      SYNONYM_BATTLE: 'Đấu Trí Từ Đồng Nghĩa',
+      FIX_SENTENCE: 'Đấu Trường Sửa Lỗi Câu',
+      GUESS_WORD: 'Đấu Trường Đoán Từ Bí Ẩn',
+      FOUR_SKILLS_ARENA: 'Đại Chiến 4 Kỹ Năng',
+    };
+    const title = config?.title || friendlyTitles[gameMode] || `${gameMode.replace(/_/g, ' ')}`;
+
+    // Enforce <= 15s for choice / quiz games as requested by user
+    const rawDuration = config?.durationMinutes
+      ? Math.round((config.durationMinutes * 60) / questions.length)
+      : 12;
+    const roundDurationSec = Math.min(15, Math.max(5, rawDuration));
+
+    const room = this.roomManager.createRoom(
+      roomCode,
+      gameMode,
+      title,
+      questions,
+      roundDurationSec,
+      targetLang,
+      false,
+      true,
+    );
+    room.scheduled = true;
+    return room;
   }
 
   /**
@@ -231,7 +249,10 @@ export class GamesService implements OnModuleInit {
     }
     (room as any).isResultsQueued = true;
 
-    const ranking = this.roomManager.getLeaderboard(roomCode);
+    // Audience identities are scoped to Live and have no User foreign key.
+    const ranking = this.roomManager.getLeaderboard(roomCode)
+      .filter((player) => !player.isCommenter)
+      .map((player, index) => ({ ...player, rank: index + 1 }));
     const today = new Date().toISOString().slice(0, 10);
     const topPlayers = ranking.slice(0, 20); // Top 20 players
 
@@ -340,6 +361,52 @@ export class GamesService implements OnModuleInit {
               update: { totalXP: { increment: player.score } },
               create: { userId: player.userId, totalXP: player.score, currentLevel: 1 },
             });
+          }
+
+          // Atomically update participation streak (calendar-day based, at most 1 increment per day)
+          if (player.score > 0 || player.correctCount > 0) {
+            const now = new Date();
+            const todayDateStr = now.toISOString().slice(0, 10);
+
+            const userStreak = await tx.userStreak.findUnique({
+              where: { userId: player.userId },
+            });
+
+            if (!userStreak) {
+              await tx.userStreak.create({
+                data: {
+                  userId: player.userId,
+                  currentStreak: 1,
+                  longestStreak: 1,
+                  lastStudyDate: now,
+                },
+              });
+            } else {
+              const lastDateStr = userStreak.lastStudyDate
+                ? new Date(userStreak.lastStudyDate).toISOString().slice(0, 10)
+                : null;
+
+              if (lastDateStr !== todayDateStr) {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+                let nextCurrent = 1;
+                if (lastDateStr === yesterdayStr) {
+                  nextCurrent = (userStreak.currentStreak || 0) + 1;
+                }
+                const nextLongest = Math.max(userStreak.longestStreak || 0, nextCurrent);
+
+                await tx.userStreak.update({
+                  where: { userId: player.userId },
+                  data: {
+                    currentStreak: nextCurrent,
+                    longestStreak: nextLongest,
+                    lastStudyDate: now,
+                  },
+                });
+              }
+            }
           }
         }
       });
@@ -523,5 +590,189 @@ export class GamesService implements OnModuleInit {
       where: { id },
       data,
     });
+  }
+
+  /**
+   * Find next eligible public room for auto-continuous livestream rotation.
+   * Excludes currentRoomCode, prioritizing other public rooms or cyclic system presets.
+   */
+  async findNextPublicGame(
+    currentRoomCode: string,
+    languageId: string = 'en',
+  ): Promise<{ roomCode: string; title: string; gameMode: GameModeType; languageId: string } | null> {
+    const curCode = currentRoomCode.toUpperCase();
+    const effectiveLang = (languageId || 'en').toLowerCase().trim();
+
+    // 1. Check database for other public rooms in WAITING status
+    try {
+      const dbRooms = await this.prisma.customGameRoom.findMany({
+        where: {
+          visibility: 'PUBLIC',
+          status: 'WAITING',
+          roomCode: { not: curCode },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+
+      if (dbRooms.length > 0) {
+        const nextDbRoom = dbRooms[0];
+        return {
+          roomCode: nextDbRoom.roomCode,
+          title: nextDbRoom.title,
+          gameMode: nextDbRoom.gameMode,
+          languageId: nextDbRoom.languageId,
+        };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Could not query custom public rooms for rotation: ${err?.message}`);
+    }
+
+    // 2. Fallback to System Preset Rooms rotation for continuous live
+    try {
+      const presets = getSystemPresetRooms(effectiveLang);
+      if (presets && presets.length > 0) {
+        const otherPresets = presets.filter((p) => p.roomCode.toUpperCase() !== curCode);
+        const chosen = otherPresets.length > 0 ? otherPresets[0] : presets[0];
+
+        return {
+          roomCode: chosen.roomCode,
+          title: chosen.title,
+          gameMode: chosen.gameMode,
+          languageId: chosen.languageId,
+        };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Could not load preset rooms for rotation: ${err?.message}`);
+    }
+
+    return null;
+  }
+
+  /**
+   * Comprehensive User Overview: Rank, Lifetime Arena Points, Streak, Matches, Badges, History
+   */
+  async getUserArenaOverview(userId: string) {
+    const [user, userStreak, userXP, gameResults] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          profile: { select: { englishLevel: true, targetLevel: true, primaryGoal: true } },
+        },
+      }),
+      this.prisma.userStreak.findUnique({ where: { userId } }),
+      this.prisma.userXP.findUnique({ where: { userId } }),
+      this.prisma.gameResult.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+      }),
+    ]);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const matchesPlayed = gameResults.length;
+    const lifetimePoints = gameResults.reduce((acc, r) => acc + (r.score || 0), 0);
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const weeklyPoints = gameResults
+      .filter((r) => new Date(r.createdAt) >= sevenDaysAgo)
+      .reduce((acc, r) => acc + (r.score || 0), 0);
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const seasonPoints = gameResults
+      .filter((r) => new Date(r.createdAt) >= thirtyDaysAgo)
+      .reduce((acc, r) => acc + (r.score || 0), 0);
+
+    const bestScore = gameResults.reduce((max, r) => Math.max(max, r.score || 0), 0);
+    const bestRank = gameResults.reduce((best, r) => Math.min(best, r.rank || 999), matchesPlayed > 0 ? 999 : 0);
+
+    // Compute rank amongst all players by lifetime points
+    const higherCount = await this.prisma.gameResult.groupBy({
+      by: ['userId'],
+      _sum: { score: true },
+      having: {
+        score: {
+          _sum: {
+            gt: lifetimePoints,
+          },
+        },
+      },
+    });
+    const arenaRank = higherCount.length + 1;
+
+    // Badges computation
+    const badges: Array<{ id: string; name: string; description: string; icon: string; unlocked: boolean }> = [
+      {
+        id: 'CHAMPION_TOP_1',
+        name: 'Vô Địch Đấu Trường',
+        description: 'Đạt Top #1 trong ít nhất một trận đấu live',
+        icon: 'Crown',
+        unlocked: bestRank === 1,
+      },
+      {
+        id: 'STREAK_WARRIOR_3',
+        name: 'Chiến Binh Bền Bỉ',
+        description: 'Duy trì chuỗi tham gia 3 ngày liên tiếp',
+        icon: 'Flame',
+        unlocked: (userStreak?.currentStreak || 0) >= 3 || (userStreak?.longestStreak || 0) >= 3,
+      },
+      {
+        id: 'STREAK_MASTER_7',
+        name: 'Bậc Thầy Kỷ Luật',
+        description: 'Duy trì chuỗi tham gia 7 ngày liên tiếp',
+        icon: 'Award',
+        unlocked: (userStreak?.currentStreak || 0) >= 7 || (userStreak?.longestStreak || 0) >= 7,
+      },
+      {
+        id: 'VETERAN_10_MATCHES',
+        name: 'Đấu Sĩ Kỳ Cựu',
+        description: 'Tham gia thi đấu 10 trận đấu trường trở lên',
+        icon: 'ShieldCheck',
+        unlocked: matchesPlayed >= 10,
+      },
+      {
+        id: 'ACCURACY_SNIPER',
+        name: 'Xạ Thủ Phản Xạ',
+        description: 'Đạt độ chính xác 100% trong một trận đấu hoàn chỉnh',
+        icon: 'Zap',
+        unlocked: gameResults.some((r) => r.accuracy >= 100 && r.totalRounds >= 5),
+      },
+    ];
+
+    return {
+      userId: user.id,
+      displayName: user.displayName || user.email.split('@')[0],
+      avatar: user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`,
+      englishLevel: user.profile?.englishLevel || 'B1',
+      arenaRank,
+      lifetimePoints,
+      weeklyPoints,
+      seasonPoints,
+      currentStreak: userStreak?.currentStreak || 0,
+      bestStreak: userStreak?.longestStreak || 0,
+      matchesPlayed,
+      bestRank: bestRank === 999 ? 0 : bestRank,
+      bestScore,
+      totalXP: userXP?.totalXP || 0,
+      badges,
+      recentMatches: gameResults.slice(0, 10).map((r) => ({
+        id: r.id,
+        roomCode: r.roomCode,
+        gameMode: r.gameMode,
+        rank: r.rank,
+        score: r.score,
+        correctCount: r.correctCount,
+        totalRounds: r.totalRounds,
+        accuracy: r.accuracy,
+        durationSec: r.durationSec,
+        date: r.date,
+        createdAt: r.createdAt,
+      })),
+    };
   }
 }

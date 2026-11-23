@@ -127,16 +127,76 @@ export const PlacementTestPage: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-400/30 text-amber-800 dark:text-amber-300 backdrop-blur-md">
               <strong>Vùng cần cải thiện:</strong> {result.weakAreas?.join(', ') || 'Collocations & Phrasal Verbs'}
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-500/[0.06] dark:bg-slate-500/[0.1] border border-slate-400/30 text-slate-700 dark:text-slate-300 backdrop-blur-md">
-              <strong>Chiến lược tiếp theo:</strong> Bắt đầu các bài học SRS thích ứng hàng ngày để củng cố các từ vựng chưa vững.
+          </div>
+
+          {/* Goal & Daily Time Selection before Launching Journey */}
+          <div className="text-left space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1.5">
+                1. Chọn mục tiêu học tập chính của bạn
+              </label>
+              <select
+                id="learningGoalSelect"
+                defaultValue="COMMUNICATION"
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold"
+              >
+                <option value="COMMUNICATION">Giao tiếp đời sống thực tế & Phản xạ tự nhiên</option>
+                <option value="CAREER">Tiếng Anh công sở, đàm phán & Thăng tiến sự nghiệp</option>
+                <option value="EXAM">Luyện thi chứng chỉ quốc tế (TOEIC / IELTS / HSK / JLPT)</option>
+                <option value="TRAVEL">Du lịch & Giao lưu văn hóa toàn cầu</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block mb-1.5">
+                2. Ngân sách học tập mỗi ngày
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[15, 20, 30, 45].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => {
+                      (window as any)._selectedDailyMins = mins;
+                      document.querySelectorAll('.daily-btn').forEach((b) => b.classList.remove('bg-[#2041F6]', 'text-white'));
+                      const btn = document.getElementById(`daily-btn-${mins}`);
+                      if (btn) btn.classList.add('bg-[#2041F6]', 'text-white');
+                    }}
+                    id={`daily-btn-${mins}`}
+                    className={`daily-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-black transition ${
+                      mins === 20 ? 'bg-[#2041F6] text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {mins}m
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           <button
-            onClick={() => navigate('/dashboard')}
-            className="btn-glass-primary w-full !py-3.5 !rounded-2xl text-white font-extrabold text-sm shadow-xl shadow-brand-500/25 transition flex items-center justify-center gap-2"
+            onClick={async () => {
+              const selectEl = document.getElementById('learningGoalSelect') as HTMLSelectElement;
+              const goal = selectEl?.value || 'COMMUNICATION';
+              const dailyMins = (window as any)._selectedDailyMins || 20;
+
+              try {
+                await api.post('/learning-journey/profile', {
+                  languageId: activeLanguage?.id || 'en',
+                  targetLevel: result.estimatedLevel === 'C1' ? 'C2' : result.estimatedLevel === 'B2' ? 'C1' : 'B1',
+                  learningGoal: goal,
+                  dailyStudyMinutes: dailyMins,
+                  strengths: result.strongAreas,
+                  weaknesses: result.weakAreas,
+                });
+              } catch (err) {
+                console.error(err);
+              }
+              navigate('/journey');
+            }}
+            className="w-full py-4 rounded-2xl bg-[#2041F6] hover:bg-[#1a35cc] text-white font-black text-sm shadow-xl shadow-[#2041F6]/30 transition flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Bắt Đầu Hành Trình Học Cá Nhân Hóa</span>
+            <span>Tạo & Khám Phá Lộ Trình (My Learning Journey)</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

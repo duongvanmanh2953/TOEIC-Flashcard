@@ -4,6 +4,8 @@ import {
   signInAnonymously,
   signInWithGoogle,
   signInWithFacebook,
+  getRedirectAuthResult,
+  FirebaseUserToken,
   getOrCreateAnonymousUid,
   isFirebaseConfigured as checkFirebaseConfigured,
   fetchRemoteFirebaseConfig,
@@ -291,9 +293,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Restore session on app load (supports cross-app SSO handoff, localStorage, and cookie SSO)
   useEffect(() => {
     // 0. Pre-fetch remote Firebase configuration from backend
-    fetchRemoteFirebaseConfig().then((cfg) => {
+    const firebaseConfigReady = fetchRemoteFirebaseConfig().then((cfg) => {
       if (cfg) setIsConfigured(true);
     }).catch(() => {});
+
+    // 0.1 Check for pending redirect sign-in result (mobile Google/Facebook OAuth)
+    void firebaseConfigReady.then(() => getRedirectAuthResult()).then((redirectUser) => {
+      if (redirectUser) {
+        return handleOAuthUserSuccess(redirectUser);
+      }
+    }).catch((err) => {
+      window.dispatchEvent(new CustomEvent('vocabflow:oauth-error', { detail: err?.message || 'Không thể hoàn tất đăng nhập.' }));
+    });
 
     // 1. Ingest SSO tokens from URL if arriving from another sub-app (Admin/Kid)
     ingestSsoTokens();
@@ -315,6 +326,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => unsubscribe();
   }, []);
+
+  const handleOAuthUserSuccess = async (firebaseUser: FirebaseUserToken) => {
+    const providerName = firebaseUser.providerId?.includes('facebook') ? 'facebook' : 'google';
+    const params = new URLSearchParams(window.location.search);
+    const state = params.get('state');
+    if (window.location.pathname === '/login' && params.get('mobile_auth') === 'true' && state) {
+      if (!/^[a-f0-9]{64}$/.test(state) || providerName !== params.get('provider') || !firebaseUser.accessToken) {
+        throw new Error('Phiên đăng nhập di động không hợp lệ. Hãy thử lại từ ứng dụng.');
+      }
+      const fragment = new URLSearchParams({ state, idToken: firebaseUser.accessToken });
+      const callback = `vn.vocabflow.student://auth-callback#${fragment}`;
+      window.dispatchEvent(new CustomEvent('vocabflow:oauth-return', { detail: callback }));
+      window.location.assign(callback);
+      return;
+    }
+    const res: any = await api.post('/auth/oauth', {
+      provider: providerName,
+      providerId: firebaseUser.uid,
+      idToken: firebaseUser.accessToken,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      avatar: firebaseUser.photoURL,
+    });
+
+    if (res?.data || res?.user) {
+      const payload = res.data || res;
+      if (!payload.accessToken || !payload.refreshToken || !payload.user) throw new Error('Máy chủ chưa xác nhận phiên đăng nhập.');
+      localStorage.setItem('vocabflow_access_token', payload.accessToken);
+      localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
+      setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
+      setAuthState('AUTHENTICATED');
+      await migrateGuestData(payload.user.id);
+      refreshProfile().catch(() => {});
+    } else {
+      throw new Error('Máy chủ chưa xác nhận phiên đăng nhập.');
+    }
+  };
 
   const login = async (credentials: { email: string; password: string }) => {
     const res: any = await api.post('/auth/login', credentials);
@@ -342,72 +390,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
-    const firebaseUser = await signInWithGoogle();
-    try {
-      const res: any = await api.post('/auth/oauth', {
-        provider: 'google',
-        providerId: firebaseUser.uid,
-        idToken: firebaseUser.accessToken,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        avatar: firebaseUser.photoURL,
-      });
-
-      if (res?.data || res?.user) {
-        const payload = res.data || res;
-        localStorage.setItem('vocabflow_access_token', payload.accessToken);
-        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
-        setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
-        setAuthState('AUTHENTICATED');
-        await migrateGuestData(payload.user.id);
-        refreshProfile().catch(() => {});
-      }
-    } catch {
-      // Local graceful fallback if API is in offline mode
-      setUser(normalizeUser({
-        id: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName || 'Google Learner',
-        avatar: firebaseUser.photoURL || undefined,
-        role: 'USER',
-        isAnonymous: false,
-      }));
-      setAuthState('AUTHENTICATED');
-    }
+    const firebaseUser = await signInWithGoogle(new URLSearchParams(window.location.search).get('mobile_auth') === 'true');
+    if (!firebaseUser) return; // signInWithRedirect initiated on mobile
+    await handleOAuthUserSuccess(firebaseUser);
   };
 
   const loginWithFacebook = async () => {
-    const firebaseUser = await signInWithFacebook();
-    try {
-      const res: any = await api.post('/auth/oauth', {
-        provider: 'facebook',
-        providerId: firebaseUser.uid,
-        idToken: firebaseUser.accessToken,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        avatar: firebaseUser.photoURL,
-      });
-
-      if (res?.data || res?.user) {
-        const payload = res.data || res;
-        localStorage.setItem('vocabflow_access_token', payload.accessToken);
-        localStorage.setItem('vocabflow_refresh_token', payload.refreshToken);
-        setUser(normalizeUser({ ...payload.user, isAnonymous: false }));
-        setAuthState('AUTHENTICATED');
-        await migrateGuestData(payload.user.id);
-        refreshProfile().catch(() => {});
-      }
-    } catch {
-      setUser(normalizeUser({
-        id: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName || 'Facebook Learner',
-        avatar: firebaseUser.photoURL || undefined,
-        role: 'USER',
-        isAnonymous: false,
-      }));
-      setAuthState('AUTHENTICATED');
-    }
+    const firebaseUser = await signInWithFacebook(new URLSearchParams(window.location.search).get('mobile_auth') === 'true');
+    if (!firebaseUser) return; // signInWithRedirect initiated on mobile
+    await handleOAuthUserSuccess(firebaseUser);
   };
 
   const logout = async () => {

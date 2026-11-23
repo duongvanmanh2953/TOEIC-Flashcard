@@ -2,6 +2,7 @@ import React, { useEffect, useRef, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LearningProvider } from './contexts/LearningContext';
+import { FocusProvider } from './contexts/FocusContext';
 import { I18nProvider } from './i18n';
 import { AppShell } from './components/layout/AppShell';
 
@@ -95,6 +96,8 @@ const RealtimeGameRoomPage = lazy(() => import('./pages/games/RealtimeGameRoomPa
 const NotAuthorizedPage = lazy(() => import('./pages/NotAuthorizedPage').then(m => ({ default: m.NotAuthorizedPage })));
 const AdminFirebasePage = lazy(() => import('./pages/admin/AdminFirebasePage').then(m => ({ default: m.AdminFirebasePage })));
 const AdminLanguagePage = lazy(() => import('./pages/admin/AdminLanguagePage').then(m => ({ default: m.AdminLanguagePage })));
+const LearningJourneyPage = lazy(() => import('./pages/LearningJourneyPage').then(m => ({ default: m.LearningJourneyPage })));
+const ListeningLabPage = lazy(() => import('./pages/ListeningLabPage').then(m => ({ default: m.ListeningLabPage })));
 
 // Kids English Learning System
 const KidsLayout = lazy(() => import('./kids/components/KidsLayout').then(m => ({ default: m.KidsLayout })));
@@ -186,7 +189,8 @@ export const App: React.FC = () => {
       <AuthProvider>
         <PerformanceProvider>
           <LearningProvider>
-            <BrowserRouter>
+            <FocusProvider>
+              <BrowserRouter>
               <RouteAudioWatcher />
               <ScrollToTop />
               <ContextualLoginModal />
@@ -228,6 +232,10 @@ export const App: React.FC = () => {
                 }
               >
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/journey" element={<LearningJourneyPage />} />
+                <Route path="/learning-journey" element={<Navigate to="/journey" replace />} />
+                <Route path="/listening" element={<ListeningLabPage />} />
+                <Route path="/listening-lab" element={<Navigate to="/listening" replace />} />
                 <Route path="/languages" element={<MyLanguagesPage />} />
                 <Route path="/review" element={<ReviewSessionPage />} />
                 <Route path="/practice" element={<ReviewSessionPage />} />
@@ -442,7 +450,8 @@ export const App: React.FC = () => {
           </Routes>
         </Suspense>
         </BrowserRouter>
-        </LearningProvider>
+            </FocusProvider>
+          </LearningProvider>
       </PerformanceProvider>
     </AuthProvider>
   </I18nProvider>
