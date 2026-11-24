@@ -153,6 +153,19 @@ describe('Arena server scoring and live round analytics', () => {
     expect(manager.getInAppLeaderboard(room.roomCode)).toHaveLength(0);
   });
 
+  it('keeps unverified answers out of the connected TikTok speed awards', () => {
+    const { manager, room, comment } = prepareLive();
+    room.liveProvider = 'TIKTOK_LIVE';
+    expect(comment('local-fixture', 'A')).toBeNull();
+    const verified = manager.submitLiveComment(room.roomCode, {
+      eventId: 'native-chat', username: 'verified-account', displayName: 'Viewer', commentText: 'A',
+      timestamp: Date.now(), roomCode: room.roomCode, provider: 'TIKTOK_LIVE', verifiedTikTok: true,
+    });
+    expect(verified).toMatchObject({ score: 30 });
+    expect(room.hadUnverifiedLiveAnswers).toBeUndefined();
+    expect(manager.getCommenterLeaderboard(room.roomCode)).toHaveLength(1);
+  });
+
   it('freezes counts at the cutoff and rejects a replay from a past round', () => {
     const { manager, room, comment } = prepareLive([question, { ...question, id: 'q2' }]);
     expect(comment('Mai', 'A', 'old')?.status).toBe('accepted');

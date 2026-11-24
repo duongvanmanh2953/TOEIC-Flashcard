@@ -16,7 +16,7 @@ export const ROUTE_TITLE_MAP: Record<string, { vi: string; en: string }> = {
   '/ai-coach': { vi: 'AI Coach Studio', en: 'AI Coach Studio' },
   '/subscription': { vi: 'Nâng Cấp Gói VIP Pro', en: 'Upgrade Pro VIP' },
   '/pricing': { vi: 'Bảng Giá & Gói Hội Viên', en: 'Pricing & Plans' },
-  '/leaderboard': { vi: 'Bảng Xếp Hạng Đua Top', en: 'Leaderboard' },
+  '/leaderboard': { vi: 'Bảng Vàng', en: 'Hall of Fame' },
   '/games': { vi: 'Đấu Trường Game Từ Vựng', en: 'Word Arena Games' },
   '/exams': { vi: 'Khảo Thí & Luyện Đề TOEIC', en: 'TOEIC Exam Bank' },
   '/progress': { vi: 'Phân Tích Tiến Độ Học Tập', en: 'Progress Analytics' },

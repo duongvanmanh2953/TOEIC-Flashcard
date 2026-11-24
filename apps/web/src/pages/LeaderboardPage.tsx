@@ -10,22 +10,19 @@ import {
   Crown,
   Sparkles,
   Zap,
-  TrendingUp,
   Gamepad2,
   Medal,
   Star,
-  CheckCircle2,
-  Calendar,
-  Filter,
-  ArrowUp,
-  History,
   ChevronDown,
   ChevronUp,
+  History,
+  ArrowUp,
+  Users,
+  Compass,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { CustomDropdown } from '../components/common/CustomDropdown';
-import { ArenaBangVangCeremony, BangVangPlayer } from './games/arena/ArenaBangVangCeremony';
 import { CountryFlag } from '../components/language/CountryFlag';
 
 interface LeaderboardItem {
@@ -86,10 +83,10 @@ export const LeaderboardPage: React.FC = () => {
   const [selectedMode, setSelectedMode] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<LeaderboardItem[]>([]);
-  const [dailyChampion, setDailyChampion] = useState<LeaderboardItem | null>(null);
   const [myRank, setMyRank] = useState<any>(null);
   const [userOverview, setUserOverview] = useState<any>(null);
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [mobileViewTab, setMobileViewTab] = useState<'podium' | 'table'>('table');
 
   useEffect(() => {
     if (user?.id) {
@@ -116,7 +113,6 @@ export const LeaderboardPage: React.FC = () => {
         const data = res.data?.data || res.data || {};
         let list = data.items || [];
         if (activeTab === 'tiktok') {
-          // Commenters with speed award points (30, 20, 15...)
           const commentersOnly = list.filter((i: any) => i.isCommenter || i.userId?.startsWith('tt_'));
           list = commentersOnly.length > 0 ? commentersOnly : list.slice(0, 10).map((it: any, idx: number) => ({
             ...it,
@@ -125,7 +121,6 @@ export const LeaderboardPage: React.FC = () => {
           }));
         }
         setItems(list);
-        setDailyChampion(list[0] || null);
         setMyRank(data.currentUserRank || null);
       } else {
         let endpoint = `/leaderboard/${activeTab}`;
@@ -135,7 +130,6 @@ export const LeaderboardPage: React.FC = () => {
         const res = await api.get(endpoint);
         const list = res.data?.data || [];
         setItems(list);
-        setDailyChampion(list[0] || null);
 
         if (user?.id) {
           try {
@@ -158,442 +152,570 @@ export const LeaderboardPage: React.FC = () => {
     return val.toLocaleString('en-US');
   };
 
+  const top1 = items[0];
+  const top2 = items[1];
+  const top3 = items[2];
+
   return (
-    <div className="space-y-8 pb-16 animate-fade-in">
-      {/* 1. Header Title & Hero */}
-      <div className="text-center space-y-3 relative pt-2">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-          <Crown className="w-4 h-4 text-amber-500 animate-pulse" />
-          <span>{t('leaderboardSection.title', 'Bảng Xếp Hạng & Bục Vinh Danh')}</span>
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-        </div>
-        <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
-          Đấu Trường Vinh Danh Bảng Vàng
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto font-medium">
-          {t(
-            'leaderboardSection.subtitle',
-            'Vinh danh các bậc thầy ngôn ngữ dẫn đầu bảng xếp hạng mỗi ngày, tuần và tháng.',
-          )}
-        </p>
-
-        {/* Quick CTA to join live games */}
-        <div className="pt-2">
-          <Link
-            to="/games"
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition transform hover:-translate-y-0.5"
-          >
-            <Gamepad2 className="w-4 h-4" />
-            <span>Tham Gia Đấu Trường Trực Tiếp Tối Nay</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* 2. User Overview Showcase Banner (Real Personal Stats & Badges) */}
-      {userOverview && (
-        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-indigo-500/30 text-white backdrop-blur-xl shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-indigo-500/15 via-amber-500/10 to-transparent rounded-full blur-2xl pointer-events-none" />
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
-            {/* User Profile Info */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <img
-                  src={userOverview.avatar || user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120'}
-                  alt={userOverview.displayName}
-                  className="w-16 h-16 rounded-2xl border-2 border-indigo-400/60 object-cover shadow-lg bg-slate-800"
-                />
-                <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black text-[10px] shadow">
-                  #{userOverview.arenaRank}
-                </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-black text-lg text-white">{userOverview.displayName}</h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">
-                    CEFR {userOverview.englishLevel || 'B1'}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  Thành tích đấu trường cá nhân & Huy hiệu tích lũy
-                </p>
+    <div className="w-full h-full lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)] flex flex-col p-2.5 sm:p-4 lg:p-5 overflow-x-hidden lg:overflow-hidden select-none animate-fade-in text-slate-100">
+      {/* ======================================================== */}
+      {/* 1. TOP HEADER & FILTER TOOLBAR (Compact 1-Screen)        */}
+      {/* ======================================================== */}
+      <header className="flex-none mb-3 sm:mb-4 space-y-2.5">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
+          {/* Branding title & Quick CTA */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 p-0.5 shadow-lg shadow-amber-500/20 shrink-0">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <Crown className="w-5 h-5 text-amber-400" />
               </div>
             </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                  <span>BẢNG VÀNG ĐẤU TRƯỜNG</span>
+                </h1>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>Esports Ranking</span>
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium">
+                Vinh danh cao thủ dẫn đầu bảng xếp hạng thời gian thực.
+              </p>
+            </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full lg:w-auto">
-              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Điểm Tích Lũy</span>
-                <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums">
-                  {formatScore(userOverview.lifetimePoints)} XP
-                </span>
+            <Link
+              to="/games"
+              className="ml-auto xl:ml-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition transform hover:-translate-y-0.5"
+            >
+              <Gamepad2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Vào Đấu Trường</span>
+            </Link>
+          </div>
+
+          {/* Timeframe & Mode Selector */}
+          <div className="flex flex-wrap items-center gap-2 justify-start xl:justify-end">
+            {activeTab === 'games' && (
+              <CustomDropdown
+                value={selectedMode}
+                onChange={(val) => setSelectedMode(val)}
+                options={[
+                  { value: 'ALL', label: 'Tất Cả Game Mode' },
+                  { value: 'TRANSLATION_RUSH', label: 'Translation Rush' },
+                  { value: 'WORD_BLITZ', label: 'Word Blitz' },
+                  { value: 'SENTENCE_SPRINT', label: 'Sentence Sprint' },
+                  { value: 'MISSING_WORD', label: 'Missing Word' },
+                  { value: 'LISTENING_RUSH', label: 'Listening Rush' },
+                  { value: 'SYNONYM_BATTLE', label: 'Synonym Battle' },
+                ]}
+                size="sm"
+                className="w-40 sm:w-48 h-8 text-xs"
+              />
+            )}
+
+            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold">
+              <button
+                onClick={() => setTimeframe('daily')}
+                className={`px-2.5 py-1 rounded-lg transition text-[11px] sm:text-xs ${
+                  timeframe === 'daily'
+                    ? 'bg-indigo-600 text-white shadow-sm font-black'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Hôm Nay
+              </button>
+              <button
+                onClick={() => setTimeframe('weekly')}
+                className={`px-2.5 py-1 rounded-lg transition text-[11px] sm:text-xs ${
+                  timeframe === 'weekly'
+                    ? 'bg-indigo-600 text-white shadow-sm font-black'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Tuần Này
+              </button>
+              <button
+                onClick={() => setTimeframe('all-time')}
+                className={`px-2.5 py-1 rounded-lg transition text-[11px] sm:text-xs ${
+                  timeframe === 'all-time'
+                    ? 'bg-indigo-600 text-white shadow-sm font-black'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Mọi Lúc
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Navigation Tabs */}
+        <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+          <div className="tab-pill-container overflow-x-auto flex-nowrap scrollbar-none py-0.5 w-full">
+            <button
+              onClick={() => setActiveTab('games')}
+              className={`tab-pill text-xs py-1.5 px-3 shrink-0 ${activeTab === 'games' ? 'tab-pill-active' : ''}`}
+            >
+              <Gamepad2 className="w-3.5 h-3.5" />
+              <span>Đấu Trường PvP</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('tiktok')}
+              className={`tab-pill text-xs py-1.5 px-3 shrink-0 ${activeTab === 'tiktok' ? 'tab-pill-active' : ''}`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+              <span>Top Comment TikTok</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('xp')}
+              className={`tab-pill text-xs py-1.5 px-3 shrink-0 ${activeTab === 'xp' ? 'tab-pill-active' : ''}`}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>Kinh Nghiệm (XP)</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('flashcards')}
+              className={`tab-pill text-xs py-1.5 px-3 shrink-0 ${activeTab === 'flashcards' ? 'tab-pill-active' : ''}`}
+            >
+              <Layers className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Thành Thạo Từ</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('streak')}
+              className={`tab-pill text-xs py-1.5 px-3 shrink-0 ${activeTab === 'streak' ? 'tab-pill-active' : ''}`}
+            >
+              <Flame className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+              <span>Chuỗi Học</span>
+            </button>
+          </div>
+
+          {/* Mobile switcher (Top 3 vs Danh sách) */}
+          <div className="lg:hidden shrink-0 flex items-center p-0.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-bold">
+            <button
+              onClick={() => setMobileViewTab('podium')}
+              className={`px-2 py-1 rounded transition ${
+                mobileViewTab === 'podium' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400'
+              }`}
+            >
+              Top 3
+            </button>
+            <button
+              onClick={() => setMobileViewTab('table')}
+              className={`px-2 py-1 rounded transition ${
+                mobileViewTab === 'table' ? 'bg-indigo-600 text-white font-black' : 'text-slate-400'
+              }`}
+            >
+              Bảng Đấu
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ======================================================== */}
+      {/* 2. MAIN 2-COLUMN ESPORTS DASHBOARD (1-SCREEN FIT ON PC)  */}
+      {/* ======================================================== */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-4 overflow-hidden">
+        {/* ==================================================== */}
+        {/* LEFT PANE: PODIUM TOP 3 + YOUR PROFILE CARD          */}
+        {/* ==================================================== */}
+        <aside
+          className={`lg:col-span-5 xl:col-span-4 flex flex-col min-h-0 gap-3.5 overflow-y-auto pr-1 ${
+            mobileViewTab === 'table' ? 'hidden lg:flex' : 'flex'
+          }`}
+        >
+          {/* 2.1 TOP 3 OLYMPIC PODIUM */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-amber-500/30 shadow-xl backdrop-blur-xl relative overflow-hidden flex-none">
+            {/* Ambient gold glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-20 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="flex items-center justify-between pb-3 border-b border-white/5 relative z-10">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                <span>Bục Vinh Danh Top 3</span>
+              </span>
+              <span className="text-[10px] font-bold text-slate-400">
+                {activeTab === 'tiktok' ? 'Speed Reflex' : 'Realtime Arena'}
+              </span>
+            </div>
+
+            {/* Podium Columns */}
+            <div className="grid grid-cols-3 gap-2 items-end pt-3 text-center relative z-10">
+              {/* #2 Á QUÂN 1 (SILVER) */}
+              <div className="flex flex-col items-center">
+                {top2 ? (
+                  <>
+                    <div className="relative mb-1.5">
+                      <img
+                        src={top2.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96'}
+                        alt={top2.displayName}
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-slate-300 shadow-md bg-slate-800"
+                      />
+                      {top2.countryCode && (
+                        <span className="absolute -bottom-1 -right-1 overflow-hidden rounded shadow-sm">
+                          <CountryFlag countryCode={top2.countryCode} size="xs" />
+                        </span>
+                      )}
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-slate-300 text-slate-950 text-[9px] font-black shadow">
+                        #2
+                      </span>
+                    </div>
+                    <span className="font-bold text-[11px] text-slate-200 truncate max-w-[80px]" title={top2.displayName}>
+                      {top2.displayName}
+                    </span>
+                    <span className="text-[11px] font-black text-slate-300 tabular-nums">
+                      {formatScore(top2.score)}
+                    </span>
+                  </>
+                ) : (
+                  <div className="h-20 flex items-center justify-center text-[10px] text-slate-500">Chờ đấu sĩ</div>
+                )}
+                {/* Silver Pedestal */}
+                <div className="w-full h-12 mt-1 rounded-t-xl bg-gradient-to-b from-slate-400/20 to-slate-800/40 border-t border-slate-400/40 flex items-center justify-center font-black text-slate-300 text-sm">
+                  2
+                </div>
               </div>
-              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Điểm Tuần / Mùa</span>
-                <span className="text-base sm:text-lg font-black text-indigo-400 tabular-nums">
-                  {formatScore(userOverview.weeklyPoints)} / {formatScore(userOverview.seasonPoints)}
-                </span>
+
+              {/* #1 QUÁN QUÂN (GOLD) */}
+              <div className="flex flex-col items-center -mt-2">
+                {top1 ? (
+                  <>
+                    <div className="relative mb-1.5">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 animate-bounce">
+                        <Crown className="w-5 h-5 text-amber-400 fill-amber-400 drop-shadow-[0_2px_8px_rgba(251,191,36,0.6)]" />
+                      </div>
+                      <img
+                        src={top1.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96'}
+                        alt={top1.displayName}
+                        className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-400 shadow-xl shadow-amber-500/30 bg-slate-800"
+                      />
+                      {top1.countryCode && (
+                        <span className="absolute -bottom-1 -right-1 overflow-hidden rounded shadow-sm">
+                          <CountryFlag countryCode={top1.countryCode} size="xs" />
+                        </span>
+                      )}
+                      <span className="absolute -top-1 left-1/2 -translate-x-1/2 px-2 py-0.2 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 text-[10px] font-black shadow">
+                        #1
+                      </span>
+                    </div>
+                    <span className="font-black text-xs text-amber-300 truncate max-w-[95px]" title={top1.displayName}>
+                      {top1.displayName}
+                    </span>
+                    <span className="text-xs font-black text-amber-400 tabular-nums">
+                      {formatScore(top1.score)} đ
+                    </span>
+                  </>
+                ) : (
+                  <div className="h-24 flex items-center justify-center text-[10px] text-slate-500">Chờ đấu sĩ</div>
+                )}
+                {/* Gold Pedestal */}
+                <div className="w-full h-18 mt-1 rounded-t-xl bg-gradient-to-b from-amber-500/30 via-amber-500/20 to-slate-900 border-t-2 border-amber-400 flex items-center justify-center font-black text-amber-400 text-base shadow-lg shadow-amber-500/10">
+                  1
+                </div>
               </div>
-              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Chuỗi Ngày Học</span>
-                <span className="text-base sm:text-lg font-black text-rose-400 flex items-center justify-center gap-1">
-                  <Flame className="w-4 h-4 fill-rose-400" />
-                  {userOverview.currentStreak}d ({userOverview.bestStreak} max)
-                </span>
-              </div>
-              <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3 text-center">
-                <span className="text-[10px] font-bold text-slate-400 block uppercase">Trận Đã Đấu</span>
-                <span className="text-base sm:text-lg font-black text-emerald-400 tabular-nums">
-                  {userOverview.matchesPlayed} trận
-                </span>
+
+              {/* #3 Á QUÂN 2 (BRONZE) */}
+              <div className="flex flex-col items-center">
+                {top3 ? (
+                  <>
+                    <div className="relative mb-1.5">
+                      <img
+                        src={top3.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96'}
+                        alt={top3.displayName}
+                        className="w-11 h-11 rounded-2xl object-cover border-2 border-amber-700 shadow-md bg-slate-800"
+                      />
+                      {top3.countryCode && (
+                        <span className="absolute -bottom-1 -right-1 overflow-hidden rounded shadow-sm">
+                          <CountryFlag countryCode={top3.countryCode} size="xs" />
+                        </span>
+                      )}
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-amber-700 text-white text-[9px] font-black shadow">
+                        #3
+                      </span>
+                    </div>
+                    <span className="font-bold text-[11px] text-slate-200 truncate max-w-[80px]" title={top3.displayName}>
+                      {top3.displayName}
+                    </span>
+                    <span className="text-[11px] font-black text-amber-600 tabular-nums">
+                      {formatScore(top3.score)}
+                    </span>
+                  </>
+                ) : (
+                  <div className="h-16 flex items-center justify-center text-[10px] text-slate-500">Chờ đấu sĩ</div>
+                )}
+                {/* Bronze Pedestal */}
+                <div className="w-full h-8 mt-1 rounded-t-xl bg-gradient-to-b from-amber-700/20 to-slate-800/40 border-t border-amber-700/40 flex items-center justify-center font-black text-amber-600 text-sm">
+                  3
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Badges List */}
-          {userOverview.badges && userOverview.badges.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-800 flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-2 flex items-center gap-1">
-                <Medal className="w-3.5 h-3.5 text-amber-400" />
-                Huy hiệu:
-              </span>
-              {userOverview.badges.map((badgeKey: string) => {
-                const badgeInfo = BADGE_MAP[badgeKey] || {
-                  label: badgeKey,
-                  icon: Award,
-                  color: 'bg-slate-800 text-slate-300 border-slate-700',
-                };
-                const IconComp = badgeInfo.icon;
-                return (
-                  <span
-                    key={badgeKey}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${badgeInfo.color}`}
-                  >
-                    <IconComp className="w-3 h-3" />
-                    <span>{badgeInfo.label}</span>
+          {/* 2.2 PERSONAL COMBATANT CARD (VỊ TRÍ CỦA BẠN) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 border border-indigo-500/25 shadow-xl backdrop-blur-xl flex-1 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
+                <span className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Thành Tích Cá Nhân</span>
+                </span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {userOverview ? `CEFR ${userOverview.englishLevel || 'B1'}` : 'Học Viên'}
+                </span>
+              </div>
+
+              {/* Profile summary row */}
+              <div className="flex items-center gap-3 py-3">
+                <div className="relative shrink-0">
+                  <img
+                    src={user?.avatar || userOverview?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96'}
+                    alt={user?.displayName || 'Learner'}
+                    className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-500/50 shadow bg-slate-800"
+                  />
+                  <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black text-[9px] shadow">
+                    #{myRank?.rank || userOverview?.arenaRank || '–'}
                   </span>
-                );
-              })}
-            </div>
-          )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-black text-sm text-white truncate">
+                    {user?.displayName || 'Đấu Sĩ Khách'}
+                  </h3>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                    <span>Thứ hạng: <b className="text-amber-400 font-black">#{myRank?.rank || userOverview?.arenaRank || 'Chưa xếp'}</b></span>
+                    <span>·</span>
+                    <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+                      <ArrowUp className="w-3 h-3" />
+                      <span>{myRank ? `${formatScore(myRank.score)} XP` : '0 XP'}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-          {/* History Collapsible Toggle */}
-          {userOverview.recentMatches && userOverview.recentMatches.length > 0 && (
-            <div className="mt-4">
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition"
-              >
-                <History className="w-3.5 h-3.5" />
-                <span>{showHistory ? 'Thu gọn lịch sử đấu' : `Xem 10 trận đấu trường gần nhất (${userOverview.recentMatches.length})`}</span>
-                {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
+              {/* 4-Stat Grid */}
+              <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                <div className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/40">
+                  <span className="text-[10px] font-bold text-slate-400 block">Tích Lũy</span>
+                  <span className="font-black text-amber-400 text-sm tabular-nums">
+                    {formatScore(userOverview?.lifetimePoints ?? myRank?.score ?? 0)} XP
+                  </span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/40">
+                  <span className="text-[10px] font-bold text-slate-400 block">Điểm Tuần</span>
+                  <span className="font-black text-indigo-400 text-sm tabular-nums">
+                    {formatScore(userOverview?.weeklyPoints ?? 0)} XP
+                  </span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/40">
+                  <span className="text-[10px] font-bold text-slate-400 block">Chuỗi Học</span>
+                  <span className="font-black text-rose-400 text-sm flex items-center justify-center gap-1">
+                    <Flame className="w-3.5 h-3.5 fill-rose-400" />
+                    <span>{userOverview?.currentStreak ?? 0} ngày</span>
+                  </span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/40">
+                  <span className="text-[10px] font-bold text-slate-400 block">Trận Đã Đấu</span>
+                  <span className="font-black text-emerald-400 text-sm tabular-nums">
+                    {userOverview?.matchesPlayed ?? 0} trận
+                  </span>
+                </div>
+              </div>
 
-              {showHistory && (
-                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
-                  {userOverview.recentMatches.map((m: any, idx: number) => (
-                    <div
-                      key={m.id || idx}
-                      className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-center justify-between text-xs"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <span className="font-bold text-slate-200 block truncate">{m.gameMode}</span>
-                        <span className="text-[10px] text-slate-400">
-                          {new Date(m.playedAt).toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')} • Hạng #{m.rank || '-'}
-                        </span>
-                      </div>
-                      <span className="font-black text-amber-400 tabular-nums shrink-0">
-                        +{m.score} XP
+              {/* Badges preview */}
+              {userOverview?.badges && userOverview.badges.length > 0 && (
+                <div className="pt-2.5 flex flex-wrap items-center gap-1.5">
+                  {userOverview.badges.slice(0, 3).map((bKey: string) => {
+                    const badge = BADGE_MAP[bKey] || { label: bKey, icon: Star, color: 'bg-slate-800 text-slate-300' };
+                    const IconC = badge.icon;
+                    return (
+                      <span
+                        key={bKey}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.color}`}
+                      >
+                        <IconC className="w-2.5 h-2.5" />
+                        <span>{badge.label}</span>
                       </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
-          )}
-        </div>
-      )}
 
-      {/* 4. Navigation Tabs & Filters */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Main Category Tabs */}
-        <div className="tab-pill-container w-full sm:w-auto overflow-x-auto flex-nowrap scrollbar-none">
-          <button
-            onClick={() => setActiveTab('games')}
-            className={`tab-pill shrink-0 ${activeTab === 'games' ? 'tab-pill-active' : ''}`}
-          >
-            <Gamepad2 className="w-4 h-4" />
-            <span>{t('leaderboardSection.tabGames', 'Đấu Trường Realtime')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('tiktok')}
-            className={`tab-pill shrink-0 ${activeTab === 'tiktok' ? 'tab-pill-active' : ''}`}
-          >
-            <Sparkles className="w-4 h-4 text-pink-400" />
-            <span>Top Comment TikTok</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('xp')}
-            className={`tab-pill shrink-0 ${activeTab === 'xp' ? 'tab-pill-active' : ''}`}
-          >
-            <Zap className="w-4 h-4" />
-            <span>Điểm Kinh Nghiệm (XP)</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('flashcards')}
-            className={`tab-pill shrink-0 ${activeTab === 'flashcards' ? 'tab-pill-active' : ''}`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>{t('leaderboardSection.tabFlashcards', 'Thành Thạo Từ Vựng')}</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('streak')}
-            className={`tab-pill shrink-0 ${activeTab === 'streak' ? 'tab-pill-active' : ''}`}
-          >
-            <Flame className="w-4 h-4" />
-            <span>{t('leaderboardSection.tabStreak', 'Chuỗi Học')}</span>
-          </button>
-        </div>
-
-        {/* Timeframe & Mode Selector */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
-          {activeTab === 'games' && (
-            <CustomDropdown
-              value={selectedMode}
-              onChange={(val) => setSelectedMode(val)}
-              options={[
-                { value: 'ALL', label: 'Tất Cả Game Mode' },
-                { value: 'TRANSLATION_RUSH', label: 'Translation Rush' },
-                { value: 'WORD_BLITZ', label: 'Word Blitz' },
-                { value: 'SENTENCE_SPRINT', label: 'Sentence Sprint' },
-                { value: 'MISSING_WORD', label: 'Missing Word' },
-                { value: 'LISTENING_RUSH', label: 'Listening Rush' },
-                { value: 'SYNONYM_BATTLE', label: 'Synonym Battle' },
-              ]}
-              size="sm"
-              className="w-full sm:w-52 h-9"
-            />
-          )}
-
-          <div className="grid grid-cols-3 sm:flex items-center w-full sm:w-auto p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 border border-slate-300/50 dark:border-slate-700/50 text-xs font-bold">
-            <button
-              onClick={() => setTimeframe('daily')}
-              className={`flex-1 text-center whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-lg transition ${
-                timeframe === 'daily'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              {t('leaderboardSection.tabDaily', 'Hôm Nay')}
-            </button>
-            <button
-              onClick={() => setTimeframe('weekly')}
-              className={`flex-1 text-center whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-lg transition ${
-                timeframe === 'weekly'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              {t('leaderboardSection.tabWeekly', 'Tuần Này')}
-            </button>
-            <button
-              onClick={() => setTimeframe('all-time')}
-              className={`flex-1 text-center whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-lg transition ${
-                timeframe === 'all-time'
-                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              {t('leaderboardSection.tabAllTime', 'Mọi Thời Điểm')}
-            </button>
+            {/* Recent Match Collapsible */}
+            {userOverview?.recentMatches && userOverview.recentMatches.length > 0 && (
+              <div className="pt-2 mt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="w-full flex items-center justify-between text-[11px] font-bold text-slate-400 hover:text-white transition"
+                >
+                  <span className="flex items-center gap-1">
+                    <History className="w-3 h-3 text-indigo-400" />
+                    <span>Lịch sử 5 trận gần nhất</span>
+                  </span>
+                  {showHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+                {showHistory && (
+                  <div className="mt-2 space-y-1.5 max-h-28 overflow-y-auto pr-1">
+                    {userOverview.recentMatches.slice(0, 5).map((m: any, idx: number) => (
+                      <div
+                        key={m.id || idx}
+                        className="p-1.5 rounded-lg bg-slate-800/40 border border-slate-700/30 flex items-center justify-between text-[10px]"
+                      >
+                        <span className="font-semibold text-slate-300 truncate">{m.gameMode}</span>
+                        <span className="font-black text-amber-400 tabular-nums">+{m.score} XP</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+        </aside>
 
-      {/* 5. Official 3D Championship BẢNG VÀNG Ceremony */}
-      {items.length > 0 && (
-        <div className="relative py-2 my-2">
-          <ArenaBangVangCeremony
-            headerTitle={
-              activeTab === 'games'
-                ? 'BẢNG VÀNG ĐẤU TRƯỜNG'
-                : activeTab === 'tiktok'
-                ? 'BẢNG VÀNG TIKTOK SPEED'
-                : activeTab === 'xp'
-                ? 'BẢNG VÀNG ĐIỂM KINH NGHIỆM'
-                : activeTab === 'flashcards'
-                ? 'BẢNG VÀNG THÀNH THẠO'
-                : 'BẢNG VÀNG CHUỖI HỌC'
-            }
-            topPlayers={items.slice(0, 3).map((item) => ({
-              rank: item.rank,
-              displayName: item.displayName,
-              avatar: item.avatar,
-              score: item.score,
-              isCurrentUser: item.userId === user?.id,
-              countryCode: item.countryCode,
-            }))}
-            topCommenters={activeTab === 'tiktok' ? items.slice(0, 3).map((item) => ({
-              rank: item.rank,
-              displayName: item.displayName,
-              avatar: item.avatar,
-              score: item.score,
-              isCurrentUser: item.userId === user?.id,
-              countryCode: item.countryCode,
-            })) : undefined}
-            customStats={[
-              {
-                label: 'Tổng người học',
-                value: `${items.length}`,
-                color: 'border-indigo-500/30 text-indigo-300',
-              },
-              {
-                label: 'Điểm cao nhất',
-                value: `${formatScore(items[0]?.score || 0)} XP`,
-                color: 'border-amber-500/30 text-amber-300',
-              },
-              ...(items[0]?.accuracy
-                ? [
-                    {
-                      label: 'Tỷ lệ chính xác',
-                      value: `${Math.round(items[0].accuracy)}%`,
-                      color: 'border-emerald-500/30 text-emerald-300',
-                    },
-                  ]
-                : []),
-            ]}
-            showTable4To10={false}
-          />
-        </div>
-      )}
-
-      {/* 6. Sticky Current User Rank Bar (if user has rank) */}
-      {myRank && (
-        <div className="p-4 rounded-2xl bg-indigo-600 text-white shadow-lg flex items-center justify-between gap-4 sticky bottom-4 z-20 border border-indigo-400">
-          <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black text-sm">
-              #{myRank.rank || myRank.xpRank || '27'}
-            </span>
-            <div>
-              <span className="text-xs text-indigo-200 block font-bold uppercase">
-                {t('leaderboardSection.myPosition', 'Vị trí hiện tại của bạn')}
-              </span>
-              <h4 className="font-black text-sm text-white">
-                {user?.displayName || 'Learner'}
-              </h4>
+        {/* ==================================================== */}
+        {/* RIGHT PANE: FULL ESPORTS TABLE (SCROLLABLE INSIDE)   */}
+        {/* ==================================================== */}
+        <main
+          className={`lg:col-span-7 xl:col-span-8 flex flex-col min-h-0 bg-slate-900/80 rounded-2xl sm:rounded-3xl border border-indigo-500/20 backdrop-blur-xl shadow-2xl overflow-hidden ${
+            mobileViewTab === 'podium' ? 'hidden lg:flex' : 'flex'
+          }`}
+        >
+          {/* Table Header Row */}
+          <div className="flex-none px-3 sm:px-5 py-3 border-b border-slate-800/80 bg-slate-950/60 flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="w-7 text-center">Hạng</span>
+              <span>Đấu Sĩ / Người Học</span>
+            </div>
+            <div className="flex items-center gap-3 sm:gap-6">
+              <span className="hidden sm:inline">Cấp độ</span>
+              <span className="hidden sm:inline">Chuỗi</span>
+              <span className="text-right">Điểm số</span>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-right">
-            <div>
-              <span className="text-xs text-indigo-200 block font-medium">Điểm số</span>
-              <span className="text-base font-black text-white">
-                {formatScore(myRank.score || 0)} XP
-              </span>
-            </div>
-            <div className="hidden sm:flex items-center gap-1 text-emerald-300 text-xs font-black bg-white/10 px-2.5 py-1 rounded-lg">
-              <ArrowUp className="w-3.5 h-3.5" />
-              <span>Đang thăng hạng</span>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* 7. Ranks 4-100 Table */}
-      <div className="bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
-          <div className="flex items-center gap-4">
-            <span className="w-8 text-center">{t('leaderboardSection.rankHeader', 'Hạng')}</span>
-            <span>{t('leaderboardSection.playerHeader', 'Người học')}</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <span className="hidden sm:inline">{t('leaderboardSection.streakHeader', 'Chuỗi')}</span>
-            <span>{t('leaderboardSection.scoreHeader', 'Điểm số')}</span>
-          </div>
-        </div>
-
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {items.length > 0 ? (
-            items.map((item) => (
-              <div
-                key={item.userId + item.rank}
-                className={`p-4 flex items-center justify-between transition ${
-                  item.userId === user?.id
-                    ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-l-4 border-indigo-600'
-                    : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/40'
-                }`}
-              >
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 pr-2">
-                  <span
-                    className={`w-7 sm:w-8 text-center font-black text-xs sm:text-sm shrink-0 ${
-                      item.rank === 1
-                        ? 'text-amber-500'
-                        : item.rank === 2
-                        ? 'text-slate-400'
-                        : item.rank === 3
-                        ? 'text-amber-700'
-                        : 'text-slate-500'
+          {/* Table Body - Dedicated Smooth Scroll Container */}
+          <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-800/40 custom-scrollbar pr-0.5">
+            {loading ? (
+              <div className="p-8 space-y-3">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="h-12 rounded-xl bg-slate-800/50 animate-pulse" />
+                ))}
+              </div>
+            ) : items.length > 0 ? (
+              items.map((item) => {
+                const isMe = item.userId === user?.id;
+                return (
+                  <div
+                    key={item.userId + item.rank}
+                    className={`px-3 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between transition-colors ${
+                      isMe
+                        ? 'bg-indigo-950/40 border-l-4 border-indigo-500 shadow-sm'
+                        : 'hover:bg-slate-800/40'
                     }`}
                   >
-                    #{item.rank}
-                  </span>
-
-                  <div className="relative shrink-0">
-                    <img
-                      src={item.avatar}
-                      alt={item.displayName}
-                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover bg-slate-800 border border-slate-200 dark:border-slate-700"
-                    />
-                    {item.countryCode && (
-                      <span className="absolute -bottom-1 -right-1 overflow-hidden rounded shadow-sm">
-                        <CountryFlag countryCode={item.countryCode} size="xs" />
+                    {/* Left: Rank + Avatar + Name */}
+                    <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1 pr-2">
+                      <span
+                        className={`w-7 text-center font-black text-xs sm:text-sm shrink-0 ${
+                          item.rank === 1
+                            ? 'text-amber-400'
+                            : item.rank === 2
+                            ? 'text-slate-300'
+                            : item.rank === 3
+                            ? 'text-amber-600'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        #{item.rank}
                       </span>
-                    )}
-                  </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[110px] sm:max-w-xs">
-                        {item.displayName}
-                      </h4>
-                      {item.userId === user?.id && (
-                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-indigo-500 text-white shrink-0">
-                          BẠN
+                      <div className="relative shrink-0">
+                        <img
+                          src={item.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96'}
+                          alt={item.displayName}
+                          className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover bg-slate-800 border border-slate-700"
+                        />
+                        {item.countryCode && (
+                          <span className="absolute -bottom-1 -right-1 overflow-hidden rounded shadow-sm">
+                            <CountryFlag countryCode={item.countryCode} size="xs" />
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h4 className="font-bold text-xs sm:text-sm text-white truncate max-w-[120px] sm:max-w-xs">
+                            {item.displayName}
+                          </h4>
+                          {isMe && (
+                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-indigo-500 text-white shrink-0">
+                              BẠN
+                            </span>
+                          )}
+                          {item.isFairPlayVerified && (
+                            <span title="Fair-Play Verified" className="inline-flex items-center">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-medium truncate block">
+                          CEFR {item.englishLevel || 'B1'} {item.gameMode ? `• ${item.gameMode}` : ''}
                         </span>
-                      )}
-                      {item.isFairPlayVerified && (
-                        <span title="Fair-Play Verified" className="inline-flex items-center">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                        </span>
-                      )}
+                      </div>
                     </div>
-                    <span className="text-[11px] sm:text-xs text-slate-500 font-medium truncate block">
-                      CEFR {item.englishLevel || 'B1'} {item.gameMode ? `• ${item.gameMode}` : ''}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-3 sm:gap-6 shrink-0 text-right">
-                  {(item.bestStreak !== undefined || item.currentStreak !== undefined) && (
-                    <span className="hidden sm:flex items-center gap-1 text-xs font-bold text-rose-500">
-                      <Flame className="w-4 h-4 fill-rose-500" />
-                      {item.bestStreak ?? item.currentStreak}
-                    </span>
-                  )}
-                  <span className="font-black text-xs sm:text-base text-slate-900 dark:text-white tabular-nums whitespace-nowrap">
-                    {formatScore(item.score)} XP
-                  </span>
-                </div>
+                    {/* Right: Streak + Score */}
+                    <div className="flex items-center gap-3 sm:gap-6 shrink-0 text-right">
+                      <span className="hidden sm:inline-block text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
+                        {item.englishLevel || 'B1'}
+                      </span>
+
+                      {(item.bestStreak !== undefined || item.currentStreak !== undefined) && (
+                        <span className="hidden sm:flex items-center gap-1 text-xs font-bold text-rose-400 tabular-nums">
+                          <Flame className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                          <span>{item.bestStreak ?? item.currentStreak}d</span>
+                        </span>
+                      )}
+
+                      <span className="font-black text-xs sm:text-base text-amber-400 tabular-nums whitespace-nowrap">
+                        {formatScore(item.score)} <small className="text-[10px] text-slate-400">XP</small>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="p-12 text-center text-sm text-slate-400 space-y-2">
+                <Trophy className="w-8 h-8 mx-auto text-slate-500 opacity-50" />
+                <p>Chưa có dữ liệu thi đấu trong khung thời gian này.</p>
+                <Link to="/games" className="text-indigo-400 font-bold hover:underline inline-block pt-1">
+                  Hãy là người đầu tiên tham gia đấu trường!
+                </Link>
               </div>
-            ))
-          ) : (
-            <div className="p-12 text-center text-sm text-slate-500 space-y-2">
-              <Trophy className="w-8 h-8 mx-auto text-slate-400 opacity-50" />
-              <p>Chưa có dữ liệu thi đấu trong khung thời gian này.</p>
-              <Link to="/games" className="text-indigo-600 font-bold hover:underline">
-                Hãy là người đầu tiên tham gia đấu trường!
-              </Link>
+            )}
+          </div>
+
+          {/* Sticky Rank Footer if current user is not in top visible rows */}
+          {myRank && (
+            <div className="flex-none p-2.5 px-4 bg-indigo-950/80 border-t border-indigo-500/30 flex items-center justify-between text-xs backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black text-xs">
+                  #{myRank.rank || '–'}
+                </span>
+                <span className="font-bold text-slate-200">
+                  {user?.displayName || 'Bạn'}
+                </span>
+                <span className="text-slate-400 hidden sm:inline">· Thứ hạng hiện tại</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-amber-400">{formatScore(myRank.score)} XP</span>
+                <span className="text-emerald-400 font-bold flex items-center gap-0.5 text-[11px]">
+                  <ArrowUp className="w-3 h-3" />
+                  <span className="hidden sm:inline">Đang thăng hạng</span>
+                </span>
+              </div>
             </div>
           )}
-        </div>
+        </main>
       </div>
     </div>
   );

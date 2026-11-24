@@ -1,5 +1,7 @@
 import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
+import { HallOfFameController } from './hall-of-fame.controller';
+import { HallOfFameService } from './hall-of-fame.service';
 import { GamesController } from './games.controller';
 import { GameAssetsController } from './game-assets.controller';
 import { CustomRoomsController } from './custom-rooms.controller';
@@ -14,8 +16,9 @@ import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule, JwtModule.register({})],
-  controllers: [GamesController, GameAssetsController, CustomRoomsController],
+  controllers: [HallOfFameController, GamesController, GameAssetsController, CustomRoomsController],
   providers: [
+    HallOfFameService,
     GamesService,
     GamesGateway,
     CustomRoomsService,

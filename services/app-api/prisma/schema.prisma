@@ -144,6 +144,7 @@ model User {
   feedbacks        Feedback[]
   feedbackVotes    FeedbackVote[]
   gameResults      GameResult[]
+  hallOfFameRewards HallOfFameReward[]
   deckLikes        DeckLike[]
   deckDislikes     DeckDislike[]
   deckComments     DeckComment[]
@@ -1253,6 +1254,7 @@ model GameResult {
   gameId       String
   gameMode     GameModeType @default(TRANSLATION_RUSH)
   roomCode     String
+  isBattle     Boolean?
   date         String
   userId       String
   rank         Int
@@ -1270,6 +1272,48 @@ model GameResult {
   @@index([date])
   @@index([gameMode])
   @@index([rank])
+  @@index([isBattle, createdAt])
+}
+
+model TikTokMatchResult {
+  roomCode        String
+  finishedAt      DateTime
+  username        String
+  displayName     String
+  avatar          String?
+  score           Int
+  correctCount    Int
+  speedPlacements Int
+
+  @@id([roomCode, finishedAt, username])
+  @@index([finishedAt, username])
+  @@index([username, finishedAt])
+}
+
+enum HallOfFameCategory {
+  LIVE
+  BATTLE
+}
+
+model HallOfFameReward {
+  id          String             @id @default(uuid())
+  userId      String
+  awardKey    String
+  category    HallOfFameCategory
+  title       String
+  eventName   String
+  description String
+  details     String
+  conditions  String
+  availableAt DateTime?
+  expiresAt   DateTime?
+  claimedAt   DateTime?
+  createdAt   DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, awardKey])
+  @@index([userId, createdAt])
 }
 
 // =============================================================================

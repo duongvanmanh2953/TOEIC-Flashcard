@@ -16,6 +16,7 @@ export interface LiveCommentEvent {
   commentText: string;
   timestamp: number;
   provider: LiveProviderType;
+  verifiedTikTok?: boolean;
   parsedOption?: string; // 'A' | 'B' | 'C' | 'D' if detected
 }
 

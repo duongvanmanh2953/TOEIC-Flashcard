@@ -24,8 +24,12 @@ export class LiveIntegrationService {
     this.mockAdapter.onComment((event) => this.handleIncomingComment(event));
     this.tiktokAdapter.onComment((event) => this.handleIncomingComment(event));
 
-    // Clear event deduplication set every 2 minutes
+    // Remove stale per-room cooldowns and clear the event deduplication set when large.
     setInterval(() => {
+      const cutoff = Date.now() - 120000;
+      for (const [key, lastSeen] of this.userLastCommentTime) {
+        if (lastSeen < cutoff) this.userLastCommentTime.delete(key);
+      }
       if (this.processedEventIds.size > 5000) {
         this.processedEventIds.clear();
       }
@@ -118,12 +122,13 @@ export class LiveIntegrationService {
 
     // 2. Anti-spam Rate Limiting per user: max 1 comment per 350ms
     const now = Date.now();
-    const lastTime = this.userLastCommentTime.get(event.username) || 0;
+    const rateKey = `${event.verifiedTikTok ? 'native' : event.provider}:${event.roomCode}:${String(event.username).toLowerCase()}`;
+    const lastTime = this.userLastCommentTime.get(rateKey) || 0;
     if (now - lastTime < 350) {
       this.logger.debug(`[Anti-Spam] Suppressed burst comment from @${event.username}`);
       return;
     }
-    this.userLastCommentTime.set(event.username, now);
+    this.userLastCommentTime.set(rateKey, now);
 
     // 3. Option detection helper (A, B, C, D)
     const upperText = (event.commentText || '').toUpperCase().trim();

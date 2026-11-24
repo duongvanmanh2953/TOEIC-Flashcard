@@ -364,14 +364,7 @@ export const App: React.FC = () => {
                   </OnlineOnlyFeatureGate>
                 }
               />
-              <Route
-                path="/leaderboard"
-                element={
-                  <OnlineOnlyFeatureGate featureName="Bảng xếp hạng">
-                    <LeaderboardPage />
-                  </OnlineOnlyFeatureGate>
-                }
-              />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/progress" element={<ProgressAnalyticsPage />} />
               <Route
                 path="/upgrade"

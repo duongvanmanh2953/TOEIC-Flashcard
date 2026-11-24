@@ -743,7 +743,7 @@ export const AppShell: React.FC = () => {
       items: [
         { to: '/community-knowledge', label: 'Bảng tin cộng đồng', icon: Sparkles, badge: 'HOT' },
         { to: '/games', label: 'Đấu trường phản xạ 24/7', icon: Gamepad2, badge: 'LIVE', isLive: isArenaLive },
-        { to: '/leaderboard', label: 'Bảng xếp hạng Fair-Play', icon: Trophy },
+        { to: '/leaderboard', label: 'Bảng Vàng', icon: Trophy },
         { to: '/community', label: t('nav.community', 'Cộng đồng chia sẻ kho từ'), icon: Share2 },
         { to: '/languages', label: 'Không gian đa ngữ', icon: Globe },
       ],
@@ -776,6 +776,8 @@ export const AppShell: React.FC = () => {
   ];
 
   const isArenaRoom = location.pathname.startsWith('/games/room');
+  const isHallOfFame = location.pathname === '/leaderboard';
+  const wrapDesktopHeader = location.pathname === '/games' || isHallOfFame;
 
   if (isArenaRoom) {
     return (
@@ -1088,7 +1090,7 @@ export const AppShell: React.FC = () => {
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col min-w-0 relative z-20 ${isFullHeightPage ? 'h-screen max-h-screen overflow-hidden' : 'pb-20 lg:pb-0'}`}>
         {/* Mobile Header — Clean, compact, never overflows or stretches */}
-        <header className="lg:hidden flex items-center justify-between px-3.5 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs">
+        <header className={`lg:hidden flex items-center justify-between px-3.5 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs ${isHallOfFame ? 'max-[360px]:flex-wrap' : ''}`}>
           <div className="flex items-center gap-2 shrink-0 min-w-max">
             <div
               onClick={() => navigate('/dashboard')}
@@ -1405,7 +1407,7 @@ export const AppShell: React.FC = () => {
         )}
 
         {/* Desktop Top Header Bar — Sticky fixed at top, balanced & polished */}
-        <header className={`hidden lg:flex items-center justify-between gap-2 px-4 lg:px-6 xl:px-8 ${location.pathname === '/games' ? 'min-h-14 py-2 flex-wrap' : 'h-14'} bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs`}>
+        <header className={`hidden lg:flex items-center justify-between gap-2 px-4 lg:px-6 xl:px-8 ${wrapDesktopHeader ? 'min-h-14 py-2 flex-wrap' : 'h-14'} bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-40 transition-colors shrink-0 shadow-xs`}>
           <div className="flex items-center gap-3 shrink-0">
             {/* Multi-Language Switcher */}
             <LanguageSwitcher variant="header" />
@@ -1417,7 +1419,7 @@ export const AppShell: React.FC = () => {
             </span>
           </div>
 
-          <div className={`flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 ${location.pathname === '/games' ? 'min-w-0 flex-1 flex-wrap justify-end' : 'shrink-0'}`}>
+          <div className={`flex items-center gap-1.5 sm:gap-2 xl:gap-2.5 ${wrapDesktopHeader ? 'min-w-0 flex-1 flex-wrap justify-end' : 'shrink-0'}`}>
             {renderStreakXpBadge(false)}
             <MiniFocusWidget />
             <NavLink
@@ -1431,11 +1433,11 @@ export const AppShell: React.FC = () => {
 
             <NavLink
               to="/leaderboard"
-              title="Bảng Xếp Hạng"
+              title="Bảng Vàng"
               className="h-8 px-2.5 xl:px-3 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 flex items-center gap-1.5 transition shadow-xs"
             >
               <Trophy className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">Bảng Xếp Hạng</span>
+              <span className="hidden xl:inline">Bảng Vàng</span>
             </NavLink>
 
             <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5 xl:mx-1" />

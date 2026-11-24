@@ -86,6 +86,7 @@ export interface GameRoom {
   matchStartedAt?: number;
   createdAt: number;
   finishedAt?: number;
+  hadUnverifiedLiveAnswers?: boolean;
   roundAnswerCount: number;
   liveOptionVotes?: Record<string, number>;
   liveAcceptedEvents?: Set<string>;
@@ -403,7 +404,8 @@ export class GameRoomManager {
     const room = this.rooms.get(roomCode.toUpperCase());
     const question = room?.currentQuestion;
     const receivedAt = Date.now();
-    if (!room?.isLiveMode || !question || room.status !== 'IN_ROUND' ||
+    if (!room?.isLiveMode || (room.liveProvider === 'TIKTOK_LIVE' && !event.verifiedTikTok) ||
+        !question || room.status !== 'IN_ROUND' ||
         receivedAt < room.roundStartedAt || receivedAt >= room.roundStartedAt + room.roundDurationSec * 1000) return null;
 
     const username = event.username.trim().toLowerCase();
@@ -459,6 +461,7 @@ export class GameRoomManager {
       username,
       speedPlacements: 0,
     };
+    if (!event.verifiedTikTok) room.hadUnverifiedLiveAnswers = true;
     room.players.set(commenterId, player);
     (room.liveAcceptedEvents ??= new Set()).add(event.eventId);
     player.lastAnsweredRound = room.currentRound;

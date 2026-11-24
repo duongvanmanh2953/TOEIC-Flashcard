@@ -7,6 +7,15 @@ import {
   LiveProviderType,
 } from './live-adapter.interface';
 
+interface TikTokCommentPayload {
+  uniqueId: string;
+  eventId?: string;
+  timestamp?: number;
+  nickname: string;
+  comment: string;
+  profilePictureUrl?: string;
+}
+
 @Injectable()
 export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
   readonly providerType: LiveProviderType = 'TIKTOK_LIVE';
@@ -60,14 +69,14 @@ export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
       conn.on('chat', (data: any) => {
         try {
           this.logger.debug(`[TikTokLive] Chat from @${data.uniqueId}: ${data.comment}`);
-          this.ingestExternalComment(code, {
-            uniqueId: data.uniqueId || data.userId || 'viewer',
+          this.emitComment(code, {
+            uniqueId: data.uniqueId || '',
             nickname: data.nickname || data.uniqueId || 'Khán giả',
             comment: data.comment || '',
             profilePictureUrl: data.profilePictureUrl || data.userDetails?.profilePictureUrls?.[0],
             timestamp: data.createTime ? Number(data.createTime) : Date.now(),
             eventId: data.msgId ? String(data.msgId) : undefined,
-          });
+          }, true);
         } catch (e: any) {
           this.logger.error(`Error processing TikTok chat event: ${e?.message}`);
         }
@@ -147,17 +156,11 @@ export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
    * Safe comment ingestion: collects only public username, display name, text, and avatar.
    * Strips out any private personal identifiable information (PII).
    */
-  ingestExternalComment(
-    roomCode: string,
-    rawPayload: {
-      uniqueId: string;
-      eventId?: string;
-      timestamp?: number;
-      nickname: string;
-      comment: string;
-      profilePictureUrl?: string;
-    },
-  ): void {
+  ingestExternalComment(roomCode: string, payload: TikTokCommentPayload): void {
+    this.emitComment(roomCode, payload, false);
+  }
+
+  private emitComment(roomCode: string, rawPayload: TikTokCommentPayload, verifiedTikTok: boolean): void {
     const code = roomCode.toUpperCase();
     if (!this.roomStatuses.has(code)) {
       this.roomStatuses.set(code, 'CONNECTED');
@@ -175,7 +178,7 @@ export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
     }
 
     const event: LiveCommentEvent = {
-      eventId: `tt_${code}_${rawPayload.eventId || `${Date.now()}_${cleanUsername}`}`,
+      eventId: `tt_${verifiedTikTok ? 'native' : 'external'}_${code}_${rawPayload.eventId || `${Date.now()}_${cleanUsername}`}`,
       roomCode: code,
       username: cleanUsername,
       displayName: cleanDisplayName,
@@ -183,6 +186,7 @@ export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
       commentText: cleanComment,
       timestamp,
       provider: 'TIKTOK_LIVE',
+      verifiedTikTok,
     };
 
     for (const listener of this.listeners) {

@@ -240,7 +240,7 @@ export class GamesService implements OnModuleInit {
    */
   async queueGameResults(roomCode: string): Promise<boolean> {
     const room = this.roomManager.getRoom(roomCode);
-    if (!room || room.players.size === 0) return false;
+    if (!room || room.isLiveMode || room.players.size === 0) return false;
 
     // Chống dispatch trùng lặp cho cùng một phòng
     if ((room as any).isResultsQueued) {
@@ -259,6 +259,7 @@ export class GamesService implements OnModuleInit {
     const payload = {
       roomCode,
       gameMode: room.gameMode,
+      isBattle: true,
       totalRounds: room.totalRounds,
       createdAt: room.createdAt,
       date: today,
@@ -278,10 +279,29 @@ export class GamesService implements OnModuleInit {
   }
 
   /**
-   * Backwards-compatible wrapper calling queueGameResults
+   * Persist finalized TikTok standings or queue the existing Battle settlement.
    */
   async persistGameResults(roomCode: string): Promise<void> {
-    await this.queueGameResults(roomCode);
+    const room = this.roomManager.getRoom(roomCode);
+    if (!room?.isLiveMode) {
+      await this.queueGameResults(roomCode);
+      return;
+    }
+    if (!room.finishedAt || room.hadUnverifiedLiveAnswers) return;
+    const finishedAt = new Date(room.finishedAt);
+    const results = this.roomManager.getCommenterLeaderboard(roomCode).flatMap((player) =>
+      player.username ? [{
+        roomCode: room.roomCode,
+        finishedAt,
+        username: player.username,
+        displayName: player.displayName,
+        avatar: player.avatar || null,
+        score: player.score,
+        correctCount: player.correctCount,
+        speedPlacements: player.speedPlacements ?? 0,
+      }] : [],
+    );
+    if (results.length) await this.prisma.tikTokMatchResult.createMany({ data: results, skipDuplicates: true });
   }
 
   /**
@@ -291,6 +311,7 @@ export class GamesService implements OnModuleInit {
   async processGameResultsJob(data: {
     roomCode: string;
     gameMode: GameModeType;
+    isBattle?: boolean;
     totalRounds: number;
     date: string;
     durationSec: number;
@@ -341,6 +362,7 @@ export class GamesService implements OnModuleInit {
             data: {
               gameId: data.roomCode,
               gameMode: data.gameMode,
+              isBattle: data.isBattle,
               roomCode: data.roomCode,
               date: data.date,
               userId: player.userId,
