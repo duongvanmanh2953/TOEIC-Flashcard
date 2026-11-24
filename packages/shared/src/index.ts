@@ -73,3 +73,27 @@ export * from './components/arena';
 export * from './config/curriculumData';
 
 
+export { HallOfFame } from './components/arena/HallOfFame';
+
+export interface ChampionshipPlayer {
+  userId: string;
+  displayName: string;
+  avatar?: string;
+  rank: number;
+  score: number;
+  correctCount?: number;
+  answeredCount?: number;
+  username?: string;
+  speedPlacements?: number;
+}
+
+export interface ChampionshipResult {
+  roomCode: string;
+  ranking: ChampionshipPlayer[];
+  inAppRanking?: ChampionshipPlayer[];
+  commenterRanking?: ChampionshipPlayer[];
+  playedRounds?: number;
+  totalParticipants?: number;
+  durationMs?: number;
+  celebrationDurationSec?: number;
+}

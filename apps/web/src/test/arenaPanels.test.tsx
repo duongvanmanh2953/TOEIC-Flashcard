@@ -16,6 +16,8 @@ import { ArenaPillOptionButton } from '../pages/games/arena/ArenaPillOptionButto
 import { ArenaExplanationCard } from '../pages/games/arena/ArenaExplanationCard';
 import { ArenaInGameHeader } from '../pages/games/arena/ArenaInGameHeader';
 import { ArenaPodium, WinnerCelebration, ArenaTrophyArtwork, RoundResultModal } from '@vocabflow/shared';
+import { ArenaRanking, ArenaHeader } from '../pages/games/arena/ArenaStage';
+import { HallOfFame } from '@vocabflow/shared';
 
 describe('VocabFlow Arena - 3 Independent Areas & Dynamic Backgrounds', () => {
   afterEach(() => {
@@ -706,5 +708,68 @@ describe('VocabFlow Arena - 3 Independent Areas & Dynamic Backgrounds', () => {
     expect(screen.getByText('90đ')).toBeDefined();
     expect(screen.getByText('Lan Ngọc')).toBeDefined();
     expect(screen.getByText('45đ')).toBeDefined();
+  });
+
+  it('shows an honest empty state in the compact ranking', () => {
+    render(<ArenaRanking title="TikTok Live Top 3" players={[]} />);
+    expect(screen.getByText('TikTok Live Top 3')).toBeDefined();
+    expect(screen.getByText('Chưa có điểm')).toBeDefined();
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+  });
+
+  it('shows separate final standings, pages beyond the top ten, and highlights the current user by ID', () => {
+    const arena = Array.from({ length: 12 }, (_, index) => ({
+      userId: `arena-${index}`, displayName: index < 2 ? 'Minh' : `Player ${index + 1}`,
+      score: 910 - index * 23, rank: index + 1, correctCount: 8, answeredCount: 10,
+    }));
+    const tiktok = [{ userId: 'tt_minh', displayName: 'Minh', username: 'minh',
+      score: 65, rank: 1, correctCount: 4, speedPlacements: 3 }];
+    render(<HallOfFame result={{ roomCode: 'FINAL', ranking: arena, commenterRanking: tiktok, playedRounds: 10 }}
+      roomCode="FINAL" matchName="Office Vocabulary" currentUserId="arena-1" onLeave={() => {}} onPlayAgain={() => {}} />);
+    expect(screen.getByRole('heading', { name: 'The Champions' })).toBeDefined();
+    const battle = screen.getByRole('table', { name: 'Arena Battle' });
+    const live = screen.getByRole('table', { name: 'TikTok Live Champions' });
+    expect(battle.querySelectorAll('tbody tr')).toHaveLength(10);
+    expect(battle.querySelector('tr[data-current="true"]')?.textContent).toContain('Minh · Bạn');
+    expect(battle.textContent).toContain('80%');
+    expect(live.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(live.textContent).toContain('@minh');
+    fireEvent.click(screen.getByRole('button', { name: 'Trang sau' }));
+    expect(battle.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(battle.textContent).toContain('Player 12');
+  });
+
+  it('renders pending, error, and empty final results without placeholder players', () => {
+    const props = { roomCode: 'FINAL', matchName: 'Office Vocabulary', onLeave: () => {}, onPlayAgain: () => {} };
+    const { rerender } = render(<HallOfFame {...props} result={null} />);
+    expect(screen.getByRole('status').textContent).toContain('Đang tải kết quả');
+    rerender(<HallOfFame {...props} result={null} error="Mất kết nối" />);
+    expect(screen.getByRole('alert').textContent).toBe('Mất kết nối');
+    rerender(<HallOfFame {...props} result={{ roomCode: 'FINAL', ranking: [] }} />);
+    expect(screen.getByText('Chưa có người chơi được xếp hạng.')).toBeDefined();
+    expect(screen.queryAllByRole('table')).toHaveLength(0);
+  });
+
+  it('ArenaHeader renders clean action buttons without obsolete mobile toggle button', () => {
+    let exited = false;
+    render(
+      <ArenaHeader
+        live
+        round={1}
+        total={10}
+        onExit={() => {
+          exited = true;
+        }}
+      />
+    );
+    // Mobile toggle button has been removed per UX redesign
+    expect(screen.queryByLabelText('Chuyển sang màn mobile TikTok Live')).toBeNull();
+    expect(screen.queryByLabelText('Chuyển về màn hình PC')).toBeNull();
+
+    // Standard exit button remains functional
+    const exitBtn = screen.getByLabelText('Rời phòng');
+    expect(exitBtn).toBeDefined();
+    fireEvent.click(exitBtn);
+    expect(exited).toBe(true);
   });
 });

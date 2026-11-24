@@ -200,10 +200,6 @@ export const GameLobbyPage: React.FC = () => {
   };
 
   const handleJoinCustomRoom = (room: any) => {
-    if (isGuest || !user) {
-      promptLogin('Đăng nhập để tham gia thi đấu cùng bạn bè');
-      return;
-    }
     if (room.hasPassword) {
       setPasswordModalData({
         isOpen: true,
@@ -220,10 +216,6 @@ export const GameLobbyPage: React.FC = () => {
   const handleQuickJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickJoinCode.trim()) return;
-    if (isGuest || !user) {
-      promptLogin('Đăng nhập để tham gia phòng đấu');
-      return;
-    }
     const cleanCode = quickJoinCode.replace(/\s/g, '').toUpperCase();
     navigate(`/games/room/${encodeURIComponent(cleanCode)}`);
   };
@@ -344,8 +336,8 @@ export const GameLobbyPage: React.FC = () => {
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Tạo phòng hoặc tham gia bằng mã mời.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <form onSubmit={handleQuickJoin} className="flex w-full items-center gap-2 sm:w-auto">
-              <div className="relative min-w-0 flex-1 sm:w-44">
+            <form onSubmit={handleQuickJoin} className="flex w-fit max-w-full items-center gap-2">
+              <div className="relative w-36 min-w-0">
                 <Hash className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -490,10 +482,6 @@ export const GameLobbyPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                if (isGuest || !user) {
-                  promptLogin('Đăng nhập để tạo phòng Live');
-                  return;
-                }
                 setCreateModalInitialType('TIKTOK_LIVE');
                 setIsCreateModalOpen(true);
               }}
@@ -710,7 +698,7 @@ export const GameLobbyPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    if (isGuest || !user) {
+                    if (roomCategoryTab !== 'LIVE' && (isGuest || !user)) {
                       promptLogin('Đăng nhập để tạo phòng');
                       return;
                     }

@@ -28,10 +28,21 @@ export interface RoomPlayer {
   fairPlayScore: number;
   rank: number;
   isHost?: boolean;
-  isCommenter?: boolean;
   lives?: number;
   isEliminated?: boolean;
   team?: 'RED' | 'BLUE';
+  isCommenter?: boolean;
+  commentScore?: number;
+  username?: string;
+  speedPlacements?: number;
+  scoredRounds?: Set<number>;
+}
+
+function compareTiedPlayers(a: RoomPlayer, b: RoomPlayer): number {
+  const responseTimeDifference = a.lastResponseTimeMs - b.lastResponseTimeMs;
+  if (responseTimeDifference) return responseTimeDifference;
+  if (a.userId === b.userId) return 0;
+  return a.userId < b.userId ? -1 : 1;
 }
 
 export type RoomStatus =
@@ -72,16 +83,17 @@ export interface GameRoom {
   roundDurationSec: number;
   baseRoundDurationSec: number;
   roundStartedAt: number;
+  matchStartedAt?: number;
   createdAt: number;
   finishedAt?: number;
   roundAnswerCount: number;
   liveOptionVotes?: Record<string, number>;
-  correctCommentersCount?: number;
-  roundCommentCount?: number;
-  questionCommentAwards?: Map<number, QuestionCommentAward[]>;
   liveAcceptedEvents?: Set<string>;
   summaryEndsAt?: number;
+  correctCommentersCount?: number;
+  roundCommentCount?: number;
   remainingOnPause?: number;
+  questionCommentAwards?: Map<number, QuestionCommentAward[]>;
 }
 
 export class GameRoomManager {
@@ -228,11 +240,16 @@ export class GameRoomManager {
     room.currentQuestion = question;
     room.roundDurationSec = room.isLiveMode ? 20 : room.baseRoundDurationSec;
     room.roundStartedAt = Date.now();
+    room.matchStartedAt ??= room.roundStartedAt;
     room.roundAnswerCount = 0;
     room.liveOptionVotes = Object.create(null);
     room.summaryEndsAt = undefined;
     room.correctCommentersCount = 0;
     room.roundCommentCount = 0;
+    if (!room.questionCommentAwards) {
+      room.questionCommentAwards = new Map();
+    }
+    room.questionCommentAwards.set(room.currentRound, []);
 
     // Reset last round evaluations & round-specific scores
     for (const player of room.players.values()) {
@@ -379,13 +396,15 @@ export class GameRoomManager {
 
   /**
    * Live Comment integration ingestor: binds TikTok viewer to room & evaluates answer
+   * Speed awards: 1st = 30 pts, 2nd = 20 pts, 3rd = 15 pts, 4th+ = 0 pts, wrong = 0 pts.
+   * Strictly idempotent per round: each user receives at most 1 speed award per question.
    */
   submitLiveComment(roomCode: string, event: LiveCommentEvent) {
     const room = this.rooms.get(roomCode.toUpperCase());
     const question = room?.currentQuestion;
     const receivedAt = Date.now();
     if (!room?.isLiveMode || !question || room.status !== 'IN_ROUND' ||
-        event.timestamp < room.roundStartedAt || receivedAt >= room.roundStartedAt + room.roundDurationSec * 1000) return null;
+        receivedAt < room.roundStartedAt || receivedAt >= room.roundStartedAt + room.roundDurationSec * 1000) return null;
 
     const username = event.username.trim().toLowerCase();
     if (!username) return null;
@@ -437,6 +456,8 @@ export class GameRoomManager {
       fairPlayScore: 100,
       rank: 0,
       isCommenter: true,
+      username,
+      speedPlacements: 0,
     };
     room.players.set(commenterId, player);
     (room.liveAcceptedEvents ??= new Set()).add(event.eventId);
@@ -451,6 +472,7 @@ export class GameRoomManager {
       const awards = allAwards.get(room.currentRound) ?? [];
       score = scoreLiveResponse(awards.length);
       if (score > 0) {
+        player.speedPlacements = (player.speedPlacements ?? 0) + 1;
         awards.push({
           commenterId,
           username,
@@ -479,7 +501,7 @@ export class GameRoomManager {
   updateRankings(room: GameRoom): void {
     const sorted = Array.from(room.players.values()).sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      return a.lastResponseTimeMs - b.lastResponseTimeMs;
+      return compareTiedPlayers(a, b);
     });
 
     sorted.forEach((p, idx) => {
@@ -493,18 +515,38 @@ export class GameRoomManager {
     return Array.from(room.players.values()).sort((a, b) => a.rank - b.rank);
   }
 
+  /**
+   * Authoritative In-App Players Leaderboard
+   * Filtered to in-app players, ordered by game score desc
+   */
+  getInAppLeaderboard(roomCode: string): RoomPlayer[] {
+    const room = this.rooms.get(roomCode.toUpperCase());
+    if (!room) return [];
+    return Array.from(room.players.values())
+      .filter((p) => !p.isCommenter)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return compareTiedPlayers(a, b);
+      })
+      .map((p, idx) => ({ ...p, rank: idx + 1 }));
+  }
+
+  /**
+   * Authoritative TikTok Commenters Leaderboard
+   * Filtered to live commenters, ordered by accumulated speed points (30, 20, 15...) desc
+   */
   getCommenterLeaderboard(roomCode: string): RoomPlayer[] {
     const room = this.rooms.get(roomCode.toUpperCase());
     if (!room) return [];
     return Array.from(room.players.values())
       .filter((p) => Boolean(p.isCommenter))
       .sort((a, b) => {
-        const scoreA = a.score ?? 0;
-        const scoreB = b.score ?? 0;
+        const scoreA = a.commentScore ?? a.score ?? 0;
+        const scoreB = b.commentScore ?? b.score ?? 0;
         if (scoreB !== scoreA) return scoreB - scoreA;
-        return a.lastResponseTimeMs - b.lastResponseTimeMs;
+        return compareTiedPlayers(a, b);
       })
-      .map((p, idx) => ({ ...p, rank: idx + 1, score: p.score ?? 0 }));
+      .map((p, idx) => ({ ...p, rank: idx + 1, score: p.commentScore ?? p.score ?? 0 }));
   }
 
   removeRoom(roomCode: string): void {

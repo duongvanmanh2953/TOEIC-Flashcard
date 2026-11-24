@@ -88,6 +88,10 @@ export class LiveIntegrationService {
     this.listeners.push(callback);
   }
 
+  ingestExternalComment(roomCode: string, payload: any): void {
+    this.tiktokAdapter.ingestExternalComment(roomCode, payload);
+  }
+
   /**
    * Simulate a single mock comment for host testing
    */

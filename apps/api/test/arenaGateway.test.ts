@@ -35,10 +35,18 @@ describe('Arena gateway clocks', () => {
     const socket = { id: 'host-socket', data: { roomCode: room.roomCode, userId: host.userId } } as Parameters<typeof gateway.handleHostStartGame>[0];
     const events = (name: string) => emit.mock.calls.filter(([event]) => event === name);
 
+    const comment = (username: string, id: string) => roomManager.submitLiveComment(room.roomCode, {
+      username, displayName: 'Minh', eventId: id, timestamp: Date.now(),
+      commentText: 'A', provider: 'MOCK', roomCode: room.roomCode,
+    });
+
     try {
       expect(gateway.handleHostStartGame(socket, { roomCode: room.roomCode })).toMatchObject({ status: 'starting' });
-      await vi.advanceTimersByTimeAsync(4000);
+      await vi.advanceTimersByTimeAsync(6000);
       expect(events('round_started')).toHaveLength(1);
+      for (const [index, name] of ['bob', 'alice', 'chi', 'duy'].entries()) {
+        expect(comment(name, `r1-${name}`)).toMatchObject({ score: [30, 20, 15, 0][index] });
+      }
       await vi.advanceTimersByTimeAsync(19999);
       expect(events('round_ended')).toHaveLength(0);
       await vi.advanceTimersByTimeAsync(1);
@@ -51,12 +59,32 @@ describe('Arena gateway clocks', () => {
       expect(events('round_started')).toHaveLength(2);
       expect(persistGameResults).not.toHaveBeenCalled();
 
+      expect(comment('bob', 'r1-bob')).toEqual({ status: 'duplicate' });
+      expect(comment('alice', 'r2-alice')).toMatchObject({ score: 30 });
+      expect(comment('bob', 'r2-bob')).toMatchObject({ score: 20 });
+      roomManager.removePlayer(room.roomCode, host.userId);
+
       await vi.advanceTimersByTimeAsync(30000);
       expect(events('game_finished')).toHaveLength(1);
       gateway.handleHostEndGame(socket, { roomCode: room.roomCode });
       expect(events('game_finished')).toHaveLength(1);
       expect(persistGameResults).toHaveBeenCalledExactlyOnceWith(room.roomCode);
       expect(updateMany).toHaveBeenCalledTimes(1);
+
+      const result = events('game_finished')[0][1];
+      expect(result).toMatchObject({
+        durationMs: 60000, playedRounds: 2, totalParticipants: 5,
+        inAppRanking: [{ userId: host.userId, score: 0, isConnected: false, rank: 1 }],
+        commenterRanking: [
+          { userId: 'tt_alice', rank: 1, score: 50, correctCount: 2, speedPlacements: 2 },
+          { userId: 'tt_bob', rank: 2, score: 50, correctCount: 2, speedPlacements: 2 },
+          { userId: 'tt_chi', rank: 3, score: 15, correctCount: 1, speedPlacements: 1 },
+          { userId: 'tt_duy', rank: 4, score: 0, correctCount: 1, speedPlacements: 0 },
+        ],
+      });
+      expect(comment('late', 'late')).toBeNull();
+      roomManager.addPlayer(room.roomCode, 'late', 'Late join', '', 'late-socket');
+      expect(gateway['getFinalResult'](room)).toEqual(result);
     } finally {
       gateway.onModuleDestroy();
       vi.useRealTimers();

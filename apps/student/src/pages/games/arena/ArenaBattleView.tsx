@@ -26,6 +26,8 @@ interface ArenaBattleViewProps {
   uptimeSec?: number;
   latencyMs?: number;
   themeColor?: string;
+  isMobile?: boolean;
+  onToggleMobile?: () => void;
   onResume?: () => void;
   disabled: boolean;
   selectedOption: number | null;
@@ -35,6 +37,7 @@ interface ArenaBattleViewProps {
   correctAnswer?: string;
   explanation?: string;
   players: ArenaPlayer[];
+  commenters?: ArenaPlayer[];
   myPlayer: ArenaPlayer | null;
   onSelectOption: (optionIndex: number) => void;
   onSubmitText: (text: string) => void;
@@ -60,6 +63,7 @@ export function ArenaBattleView({
   correctAnswer,
   explanation,
   players,
+  commenters = [],
   myPlayer,
   onSelectOption,
   onSubmitText,
@@ -72,6 +76,8 @@ export function ArenaBattleView({
   uptimeSec,
   latencyMs,
   themeColor,
+  isMobile,
+  onToggleMobile,
 }: ArenaBattleViewProps) {
   const [draft, setDraft] = useState('');
   const textInput = useRef<HTMLInputElement>(null);
@@ -152,6 +158,7 @@ export function ArenaBattleView({
       className="arena-shell arena-battle"
       data-mode={gameMode}
       data-theme-color={themeColor}
+      data-mobile={isMobile ? 'true' : undefined}
     >
       <ArenaEnvironment scene={scene} />
       <ArenaHeader
@@ -161,6 +168,8 @@ export function ArenaBattleView({
         latencyMs={latencyMs}
         onExit={onLeaveRoom}
         onEnd={onEnd}
+        isMobile={isMobile}
+        onToggleMobile={onToggleMobile}
       />
 
       <main className="arena-grid">
@@ -317,7 +326,8 @@ export function ArenaBattleView({
 
         {/* Right leaderboard rail (~300px on desktop) */}
         <aside className="arena-battle-rail arena-right-rail">
-          <ArenaRanking title="Arena Top 5" players={players.slice(0, 5)} />
+          <ArenaRanking title="Arena Battle Top 3" players={players} />
+          <ArenaRanking title="TikTok Live Top 3" players={commenters} />
         </aside>
       </main>
 

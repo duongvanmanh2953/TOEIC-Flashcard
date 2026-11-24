@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { App } from '@capacitor/app';
@@ -156,10 +156,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.documentElement.classList.toggle('dark', nextTheme === 'dark');
   };
 
-  const promptLogin = (reason = 'Lưu tiến trình học của bạn') => {
+  const promptLogin = useCallback((reason = 'Lưu tiến trình học của bạn') => {
     setLoginPromptReason(reason);
     setLoginPromptOpen(true);
-  };
+  }, []);
 
   const closeLoginPrompt = () => {
     setLoginPromptOpen(false);

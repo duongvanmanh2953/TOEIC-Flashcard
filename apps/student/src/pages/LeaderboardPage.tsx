@@ -313,63 +313,6 @@ export const LeaderboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Today's Champion Showcase (if on Daily tab) */}
-      {timeframe === 'daily' && dailyChampion && (
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/15 via-indigo-500/10 to-rose-500/15 border-2 border-amber-500/30 backdrop-blur-xl relative overflow-hidden shadow-lg flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="relative">
-              <img
-                src={dailyChampion.avatar}
-                alt={dailyChampion.displayName}
-                className="w-20 h-20 rounded-2xl border-2 border-amber-400 object-cover shadow-md shadow-amber-500/30 bg-slate-800"
-              />
-              <span className="absolute -top-2.5 -right-2.5 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-xs shadow flex items-center gap-1">
-                <Crown className="w-3.5 h-3.5 fill-slate-950 shrink-0" />
-                <span>#1</span>
-              </span>
-            </div>
-            <div className="space-y-1 text-left">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-black uppercase tracking-wider">
-                  {t('leaderboardSection.dailyChampion', "TODAY'S CHAMPION")}
-                </span>
-                <span className="text-xs text-slate-500 tabular-nums">
-                  {new Date().toLocaleDateString(locale === 'vi' ? 'vi-VN' : 'en-US')}
-                </span>
-              </div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                {dailyChampion.displayName}
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                {t('leaderboardSection.championSub', 'Nhà vô địch phản xạ từ vựng')} • Cấp độ {dailyChampion.englishLevel || 'B1'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6 self-stretch md:self-auto justify-between md:justify-end border-t md:border-t-0 border-amber-500/20 pt-4 md:pt-0">
-            <div className="text-center">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase">
-                Điểm Trận
-              </span>
-              <span className="text-2xl font-black text-amber-600 dark:text-amber-400">
-                {formatScore(dailyChampion.score)} XP
-              </span>
-            </div>
-            {dailyChampion.bestStreak !== undefined && (
-              <div className="text-center">
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block uppercase">
-                  Chuỗi Đúng
-                </span>
-                <span className="text-2xl font-black text-rose-500 flex items-center justify-center gap-1">
-                  <Flame className="w-5 h-5 fill-rose-500" />
-                  {dailyChampion.bestStreak}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* 4. Navigation Tabs & Filters */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Main Category Tabs */}
@@ -467,15 +410,27 @@ export const LeaderboardPage: React.FC = () => {
       </div>
 
       {/* 5. Official 3D Championship BẢNG VÀNG Ceremony */}
-      {items.length >= 3 && (
-        <div className="relative py-4 my-2">
+      {items.length > 0 && (
+        <div className="relative py-2 my-2">
           <ArenaBangVangCeremony
+            headerTitle={
+              activeTab === 'games'
+                ? 'BẢNG VÀNG ĐẤU TRƯỜNG'
+                : activeTab === 'tiktok'
+                ? 'BẢNG VÀNG TIKTOK SPEED'
+                : activeTab === 'xp'
+                ? 'BẢNG VÀNG ĐIỂM KINH NGHIỆM'
+                : activeTab === 'flashcards'
+                ? 'BẢNG VÀNG THÀNH THẠO'
+                : 'BẢNG VÀNG CHUỖI HỌC'
+            }
             topPlayers={items.slice(0, 3).map((item) => ({
               rank: item.rank,
               displayName: item.displayName,
               avatar: item.avatar,
               score: item.score,
               isCurrentUser: item.userId === user?.id,
+              countryCode: item.countryCode,
             }))}
             topCommenters={activeTab === 'tiktok' ? items.slice(0, 3).map((item) => ({
               rank: item.rank,
@@ -483,6 +438,7 @@ export const LeaderboardPage: React.FC = () => {
               avatar: item.avatar,
               score: item.score,
               isCurrentUser: item.userId === user?.id,
+              countryCode: item.countryCode,
             })) : undefined}
             customStats={[
               {

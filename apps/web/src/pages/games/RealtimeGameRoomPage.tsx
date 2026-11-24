@@ -16,7 +16,12 @@ import {
   XCircle,
   Trophy,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
+  ShieldAlert,
+  Lock,
+  AlertCircle,
+  LogIn,
   RotateCcw,
   Sparkles,
   Award,
@@ -43,6 +48,8 @@ import {
   SkipForward,
   Maximize2,
   Minimize2,
+  Smartphone,
+  Monitor,
   CheckCircle,
   BarChart3,
   HelpCircle,
@@ -69,6 +76,8 @@ import {
   playWarningTickSound,
   playRoundEndSound,
   playVictoryFanfare,
+  HallOfFame,
+  type ChampionshipResult,
   liveBgmEngine,
   TikTokLogo,
   ArenaHeader,
@@ -106,7 +115,8 @@ import { ArenaInGameHeader } from './arena/ArenaInGameHeader';
 import { ArenaExplanationCard } from './arena/ArenaExplanationCard';
 import { ArenaPillOptionButton } from './arena/ArenaPillOptionButton';
 import { ArenaBattleView } from './arena/ArenaBattleView';
-import { LiveFinalResults, TikTokLiveView, type LiveWinner } from './arena/TikTokLiveView';
+import '@vocabflow/shared/src/components/arena/hall-of-fame.css';
+import { TikTokLiveView, type LiveWinner } from './arena/TikTokLiveView';
 
 const INTERACTIVE_STAGE_STYLE = {
   backgroundImage: 'url(/game-assets/arena/arena-main-background.webp)',
@@ -142,6 +152,7 @@ interface RoomPlayer {
   isReady?: boolean;
   isHost?: boolean;
   isCommenter?: boolean;
+  username?: string;
 }
 
 interface QuestionData {
@@ -204,6 +215,9 @@ export const GAME_MODE_TITLES: Record<string, string> = {
   FINAL_SHOWDOWN: 'Trận Chiến Quyết Định',
 };
 
+const ROOM_LOGIN_ERROR = 'Vui lòng đăng nhập lại để tham gia.';
+const ROOM_LOGIN_REASON = 'Đăng nhập hoặc đăng ký để tiếp tục';
+
 export const RealtimeGameRoomPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [searchParams] = useSearchParams();
@@ -219,10 +233,15 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [nextRoomCode, setNextRoomCode] = useState('');
   const navigate = useNavigate();
-  const { user, isGuest } = useAuth();
+  const { user, loginPromptOpen, promptLogin } = useAuth();
   const { activeLanguage } = useLearning();
   const { t } = useTranslation();
 
+  const [guestKey] = useState(() =>
+    Array.from(crypto.getRandomValues(new Uint8Array(32)), (value) =>
+      value.toString(16).padStart(2, '0'),
+    ).join(''),
+  );
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomCode, setRoomCode] = useState<string>(roomId || '');
   const [roomTitle, setRoomTitle] = useState<string>(
@@ -258,6 +277,26 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [isAudienceRankingOpen, setIsAudienceRankingOpen] = useState(false);
 
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  const [isMobileMode, setIsMobileMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('arena_mobile_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleMobileMode = () => {
+    setIsMobileMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('arena_mobile_mode', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   // Top Container ref for fullscreen handling
   const roundDeadline = useRef(0);
@@ -319,7 +358,13 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [isLiveModalOpen, setIsLiveModalOpen] = useState<boolean>(false);
   const [targetChannelInput, setTargetChannelInput] = useState<string>('');
   const [liveRoomIdInput, setLiveRoomIdInput] = useState<string>('');
+  const [liveConnectionMessage, setLiveConnectionMessage] = useState('');
+  const [isSubmittingLive, setIsSubmittingLive] = useState(false);
   const [sessionTokenInput, setSessionTokenInput] = useState<string>('');
+  const [liveProviderChoice, setLiveProviderChoice] = useState<'TIKTOK_LIVE' | 'MOCK'>('TIKTOK_LIVE');
+  const [liveConnectionSuccess, setLiveConnectionSuccess] = useState<boolean>(false);
+  const [liveValidationWarning, setLiveValidationWarning] = useState<string | null>(null);
+  const [testCommentSent, setTestCommentSent] = useState<boolean>(false);
   const [isBgmActive, setIsBgmActive] = useState<boolean>(false);
   const [bgmVolume, setBgmVolume] = useState<number>(0.15);
 
@@ -333,11 +378,8 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
 
   // Final Results
-  const [finalResult, setFinalResult] = useState<{
-    ranking: RoomPlayer[];
-    playedRounds?: number;
-    top3: { first: RoomPlayer | null; second: RoomPlayer | null; third: RoomPlayer | null };
-  } | null>(null);
+  const [finalResult, setFinalResult] = useState<ChampionshipResult | null>(null);
+  const completedRoom = useRef<string | null>(null);
 
   // Connection State
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -358,10 +400,8 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const [mobileLikeCount, setMobileLikeCount] = useState<number>(1280);
 
   // Auto-Continuous Rotation & Match Celebration States
-  const [celebrationCountdown, setCelebrationCountdown] = useState<number>(20);
   const [nextRotationData, setNextRotationData] = useState<any>(null);
   const [isWaitingForPublicGame, setIsWaitingForPublicGame] = useState<boolean>(false);
-  const [inAppRanking, setInAppRanking] = useState<RoomPlayer[]>([]);
   const [commenterRanking, setCommenterRanking] = useState<RoomPlayer[]>([]);
   // Sound popover
   const [showSoundPopover, setShowSoundPopover] = useState<boolean>(false);
@@ -602,47 +642,6 @@ export const RealtimeGameRoomPage: React.FC = () => {
     return arenaRankCommenters[0]?.avatar || arenaRankPlayers[0]?.avatar;
   }, [arenaRankCommenters, arenaRankPlayers]);
 
-  // Danh sách Top BXH tổng hợp dạng LIST cho TikTok Live mobile (kết hợp cả người chơi và khán giả cmt)
-  const combinedLiveRanking = useMemo(() => {
-    const map = new Map<string, { displayName: string; avatar?: string; score: number; correctCount: number; isCommenter: boolean; userId: string }>();
-
-    arenaRankCommenters.forEach((c) => {
-      map.set(c.displayName, {
-        displayName: c.displayName,
-        avatar: c.avatar,
-        score: c.score,
-        correctCount: c.correctCount || 0,
-        isCommenter: true,
-        userId: c.userId,
-      });
-    });
-
-    arenaRankPlayers.forEach((p) => {
-      const existing = map.get(p.displayName);
-      if (existing) {
-        existing.score = Math.max(existing.score, p.score);
-        existing.correctCount = Math.max(existing.correctCount, p.correctCount || 0);
-        if (!existing.avatar && p.avatar) existing.avatar = p.avatar;
-      } else {
-        map.set(p.displayName, {
-          displayName: p.displayName,
-          avatar: p.avatar,
-          score: p.score,
-          correctCount: p.correctCount || 0,
-          isCommenter: false,
-          userId: p.userId,
-        });
-      }
-    });
-
-    return Array.from(map.values())
-      .sort((a, b) => b.score - a.score || b.correctCount - a.correctCount)
-      .map((item, idx) => ({
-        ...item,
-        rank: idx + 1,
-      }));
-  }, [arenaRankCommenters, arenaRankPlayers]);
-
   const sortedBattlePlayers = useMemo(() => {
     return players
       .filter((p) => !p.isCommenter)
@@ -653,9 +652,10 @@ export const RealtimeGameRoomPage: React.FC = () => {
         score: p.score || 0,
         rank: p.rank || idx + 1,
         streak: p.streak || 0,
-        isCurrentUser: p.userId === (user?.id || myPlayer?.userId),
+        isCurrentUser: p.userId === (myPlayer?.userId ?? user?.id),
       }))
-      .sort((a, b) => b.score - a.score);
+      .sort((a, b) => b.score - a.score || a.rank - b.rank)
+      .map((player, index) => ({ ...player, rank: index + 1 }));
   }, [players, user?.id, myPlayer?.userId]);
 
   const myBattlePlayer = useMemo(() => {
@@ -733,6 +733,10 @@ export const RealtimeGameRoomPage: React.FC = () => {
   };
 
   useEffect(() => {
+    completedRoom.current = null;
+    setFinalResult(null);
+    setNextRotationData(null);
+    setRoomStatus('WAITING');
     setLiveComments([]);
     setCommenterRanking([]);
   }, [roomId]);
@@ -751,7 +755,13 @@ export const RealtimeGameRoomPage: React.FC = () => {
     });
 
     const handleJoin = (result: { status?: string; message?: string } | undefined) => {
-      if (result?.status === 'error') setJoinError(result.message || 'Không thể vào phòng.');
+      if (result?.status !== 'error') return;
+      if (result.message === ROOM_LOGIN_ERROR && isInitiallyLive) {
+        setJoinError('Chưa thể vào phòng Live với tư cách khách. Vui lòng thử lại sau.');
+        return;
+      }
+      setJoinError(result.message || 'Không thể vào phòng.');
+      if (result.message === ROOM_LOGIN_ERROR) promptLogin(ROOM_LOGIN_REASON);
     };
     s.on('connect_error', () => setJoinError('Mất kết nối với máy chủ. Đang thử kết nối lại.'));
     s.on('connect', () => {
@@ -765,7 +775,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
       if (isCustomRoom) {
         s.emit('room:join_custom', {
           roomCode: roomId,
-          userId: user?.id || `anon_${Math.random().toString(36).slice(2, 7)}`,
+          guestKey,
           displayName: user?.displayName || 'Learner',
           avatar: cleanAvatar,
           languageId: targetLang,
@@ -790,6 +800,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
     // Custom Room Joined
     s.on('room:joined_success', (data: any) => {
+      if (completedRoom.current === data.roomCode) return;
       setJoinError('');
       setRoomCode(data.roomCode);
       const cleanTitle =
@@ -828,6 +839,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
     });
 
     s.on('room:starting_countdown', (data: { countdownSec: number }) => {
+      if (completedRoom.current) return;
       setRoomStatus('STARTING');
       setCountdown(data.countdownSec);
     });
@@ -842,6 +854,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
     });
 
     s.on('joined_game_room', (data: any) => {
+      if (completedRoom.current === data.roomCode) return;
       setRoomCode(data.roomCode);
       const cleanTitle =
         data.title?.startsWith('auto_') ||
@@ -864,12 +877,14 @@ export const RealtimeGameRoomPage: React.FC = () => {
     });
 
     s.on('game_starting_countdown', (data: { secondsRemaining: number }) => {
+      if (completedRoom.current) return;
       setRoomStatus('STARTING');
       setCountdown(data.secondsRemaining);
     });
 
     // Round Started
     s.on('round_started', (data: any) => {
+      if (completedRoom.current) return;
       activeRound.current = data.round;
       activeQuestionId.current = data.question?.id;
       submittedRound.current = data.alreadyAnswered ? data.round : null;
@@ -953,7 +968,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
     // Only round-scoped, server-validated responses feed the live panels.
     s.on('live_comment_received', (comment: LiveCommentItem) => {
-      if (comment.round !== activeRound.current) return;
+      if (completedRoom.current || comment.round !== activeRound.current) return;
       setLiveComments((prev) => prev.some((entry) => entry.eventId === comment.eventId ||
         (entry.accepted === false && comment.accepted === false && entry.username === comment.username))
         ? prev : [comment, ...prev.slice(0, 49)]);
@@ -996,20 +1011,24 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
     // Round Ended Summary
     s.on('room:game_paused', ({ remainingSec }: { remainingSec: number }) => {
+      if (completedRoom.current) return;
       setTimerRemaining(remainingSec);
       setRoomStatus('PAUSED');
     });
     s.on('room:game_resumed', ({ remainingSec }: { remainingSec: number }) => {
+      if (completedRoom.current) return;
       roundDeadline.current = Date.now() + remainingSec * 1000;
       setTimerRemaining(remainingSec);
       setRoomStatus('IN_ROUND');
     });
     s.on('room:time_extended', ({ newRemainingSec: remainingSec }: { newRemainingSec: number }) => {
+      if (completedRoom.current) return;
       roundDeadline.current = Date.now() + remainingSec * 1000;
       setTimerRemaining(remainingSec);
     });
 
     s.on('round_ended', (data: any) => {
+      if (completedRoom.current) return;
       if (data.round !== activeRound.current) return;
       const remaining = typeof data.summaryEndsAt === 'number' && typeof data.serverTime === 'number'
         ? Math.max(0, data.summaryEndsAt - data.serverTime) : 5000;
@@ -1020,16 +1039,17 @@ export const RealtimeGameRoomPage: React.FC = () => {
       if (data.liveTop3) setLiveTop3(data.liveTop3);
       setRoomStatus('ROUND_END');
       setRoundSummary(data);
-      if (data.ranking) setPlayers(data.ranking);
-      if (data.inAppRanking) setInAppRanking(data.inAppRanking);
+      const arena = data.inAppRanking ?? data.ranking;
+      if (arena) setPlayers(arena);
       if (data.commenterRanking) setCommenterRanking(data.commenterRanking);
       playRoundEndSound();
     });
 
     // Ranking Update
     s.on('live_ranking_update', (data: any) => {
-      if (data.ranking) setPlayers(data.ranking);
-      if (data.inAppRanking) setInAppRanking(data.inAppRanking);
+      if (completedRoom.current) return;
+      const arena = data.inAppRanking ?? data.ranking;
+      if (arena) setPlayers(arena);
       if (data.commenterRanking) setCommenterRanking(data.commenterRanking);
       if (data.roundAnswerCount !== undefined) setRoundAnswerCount(data.roundAnswerCount);
       if (data.lastAnsweredBy && data.lastAnsweredBy.displayName) {
@@ -1059,25 +1079,24 @@ export const RealtimeGameRoomPage: React.FC = () => {
     });
 
     // Game Finished & Match Celebration
-    s.on('game_finished', (data: any) => {
+    s.on('game_finished', (data: ChampionshipResult) => {
+      if (completedRoom.current === data.roomCode) return;
+      completedRoom.current = data.roomCode;
       setJoinError('');
-      setRoomStatus('FINISHED');
       setFinalResult(data);
-      if (data.inAppRanking) setInAppRanking(data.inAppRanking);
-      if (data.commenterRanking) setCommenterRanking(data.commenterRanking);
-      setCelebrationCountdown(data.celebrationDurationSec ?? 0);
+      setRoomStatus('FINISHED');
+      liveBgmEngine.stop();
+      setIsBgmActive(false);
       playVictoryFanfare();
-      if (isBgmActive) {
-        liveBgmEngine.stop();
-        setIsBgmActive(false);
-      }
     });
 
     // Auto-Continuous Rotation from server
+    let rotationTimer: ReturnType<typeof setTimeout> | undefined;
     s.on('match_rotation_started', (data: any) => {
       setNextRotationData(data);
       if (data?.nextRoomCode) {
-        setTimeout(() => {
+        clearTimeout(rotationTimer);
+        rotationTimer = setTimeout(() => {
           navigate(`/games/room/${data.nextRoomCode}?mode=${gameMode}&lang=${roomLanguageId}`);
         }, (data.countdownSec || 3) * 1000);
       }
@@ -1090,21 +1109,13 @@ export const RealtimeGameRoomPage: React.FC = () => {
     setSocket(s);
 
     return () => {
+      clearTimeout(rotationTimer);
       s.disconnect();
       try {
         liveBgmEngine.stop();
       } catch (_) {}
     };
-  }, [roomId, gameMode, urlLang, activeLanguage?.id, user?.id, isSpectator, roomPassword]);
-
-  // Celebration 20-second countdown before auto-rotation
-  useEffect(() => {
-    if (roomStatus !== 'FINISHED' || celebrationCountdown <= 0) return;
-    const t = setInterval(() => {
-      setCelebrationCountdown((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [roomStatus, celebrationCountdown]);
+  }, [roomId, gameMode, urlLang, activeLanguage?.id, user?.id, isSpectator, roomPassword, promptLogin, guestKey, isInitiallyLive]);
 
   // Round Timer countdown with dynamic urgent BGM pacing
   useEffect(() => {
@@ -1225,15 +1236,107 @@ export const RealtimeGameRoomPage: React.FC = () => {
   // Live Integration Actions
   const handleConnectLive = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!socket) return;
-    socket.emit('room:connect_live', {
+    setLiveValidationWarning(null);
+    setLiveConnectionMessage('');
+
+    let channelName = targetChannelInput.trim();
+    const liveRoomId = liveRoomIdInput.trim();
+
+    if (liveProviderChoice === 'MOCK') {
+      const mockChannel = channelName || 'demo_stream';
+      setIsSubmittingLive(true);
+      socket?.timeout(10000).emit('room:connect_live', {
+        roomCode,
+        provider: 'MOCK',
+        channelName: mockChannel,
+      }, (error: Error | null, result?: any) => {
+        setIsSubmittingLive(false);
+        const isOk = !error && (result?.success || result?.status === 'MOCK_ACTIVE' || result?.status === 'CONNECTED');
+        if (isOk) {
+          setLiveConnectionSuccess(true);
+          setTimeout(() => {
+            setIsLiveModalOpen(false);
+            setLiveConnectionSuccess(false);
+          }, 900);
+          return;
+        }
+        setLiveConnectionMessage(error ? 'Máy chủ đấu trường chưa phản hồi sau 10s.' : result?.message || 'Không thể kích hoạt chế độ Giả Lập.');
+      });
+      return;
+    }
+
+    // Normal TIKTOK_LIVE flow
+    // 1. URL extraction: if user entered a full tiktok URL
+    if (channelName.includes('tiktok.com/')) {
+      const match = channelName.match(/@([a-zA-Z0-9_\.]+)/);
+      if (match && match[1]) {
+        channelName = `@${match[1]}`;
+        setTargetChannelInput(channelName);
+      }
+    }
+
+    // 2. Validate empty
+    if (!channelName && !liveRoomId) {
+      setLiveValidationWarning('Vui lòng nhập TikTok username (@ten_kenh), Room ID hoặc đường link livestream.');
+      return;
+    }
+
+    // 3. Validate TikTok username format
+    const rawUsername = channelName.replace(/^@/, '').trim();
+    if (rawUsername) {
+      if (rawUsername.length < 2) {
+        setLiveValidationWarning('Tên tài khoản TikTok quá ngắn (tối thiểu 2 ký tự).');
+        return;
+      }
+      if (rawUsername.length > 32) {
+        setLiveValidationWarning('Tên tài khoản TikTok quá dài (tối đa 32 ký tự).');
+        return;
+      }
+      if (!/^[a-zA-Z0-9_\.]+$/.test(rawUsername)) {
+        setLiveValidationWarning('Tên kênh TikTok chỉ được chứa chữ cái, chữ số, dấu gạch dưới (_) hoặc dấu chấm (.).');
+        return;
+      }
+    }
+
+    if (!socket?.connected) {
+      setLiveConnectionMessage('Chưa kết nối với máy chủ đấu trường. Vui lòng kiểm tra lại mạng.');
+      return;
+    }
+
+    setIsSubmittingLive(true);
+    socket.timeout(10000).emit('room:connect_live', {
       roomCode,
       provider: 'TIKTOK_LIVE',
-      channelName: targetChannelInput.trim(),
-      roomId: liveRoomIdInput.trim() || undefined,
+      channelName: rawUsername ? `@${rawUsername}` : channelName,
+      roomId: liveRoomId || undefined,
       sessionToken: sessionTokenInput.trim() || undefined,
+    }, (error: Error | null, result?: { success?: boolean; status?: string; message?: string }) => {
+      setIsSubmittingLive(false);
+      const isSuccess = !error && (result?.success || result?.status === 'CONNECTED' || result?.status === 'CONNECTING');
+      if (isSuccess) {
+        setLiveConnectionSuccess(true);
+        setTimeout(() => {
+          setIsLiveModalOpen(false);
+          setLiveConnectionSuccess(false);
+        }, 1000);
+        return;
+      }
+      setLiveConnectionMessage(error
+        ? 'Máy chủ đấu trường chưa phản hồi sau 10s. Vui lòng thử lại.'
+        : result?.message || 'Không thể kết nối phiên Live. Vui lòng kiểm tra lại TikTok Username.');
     });
-    setIsLiveModalOpen(false);
+  };
+
+  const handleSendTestComment = () => {
+    if (!socket || !isHost) return;
+    const testOptions = ['A', 'B', 'C', 'D'];
+    const randomOption = testOptions[Math.floor(Math.random() * testOptions.length)];
+    socket.emit('room:send_mock_comment', {
+      roomCode,
+      commentText: `Đáp án ${randomOption} nhé host ơi! 🔥`,
+    });
+    setTestCommentSent(true);
+    setTimeout(() => setTestCommentSent(false), 2000);
   };
 
   const handleDisconnectLive = () => {
@@ -1327,8 +1430,6 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const matchPanel = preferredMatchPanel === 'distribution' && !hasVoteChoices ? 'comments' : preferredMatchPanel;
 
   const activeMatch = !joinError && Boolean(question) && ['IN_ROUND', 'PAUSED', 'ROUND_END'].includes(roomStatus);
-  const liveFinished = roomMode === 'LIVE' && roomStatus === 'FINISHED';
-  const finalPlayer = finalResult?.ranking?.find((entry) => entry.userId === (user?.id || myPlayer?.userId));
   const usesArenaShell = activeMatch || roomStatus === 'FINISHED';
   const leaveArena = () => navigate('/games');
   const playCurrentQuestionAudio = () => playQuestionAudio();
@@ -1336,7 +1437,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
   return (
     <div
       ref={roomPageRef}
-      className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-slate-100 flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white bg-[#110f25]"
+      className="fixed inset-0 w-full h-[100dvh] max-h-[100dvh] overflow-x-hidden overflow-y-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-slate-100 flex flex-col transition-colors selection:bg-rose-500/30 selection:text-white bg-[#110f25]"
     >
       {/* ======================================================== */}
       {/* DYNAMIC PROCEDURAL ARENA BACKGROUND                      */}
@@ -1352,7 +1453,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
       {/* Correct Answer Celebration Confetti & Hero Banner */}
       <ArenaCelebrationOverlay
-        show={!activeMatch && celebrationData.show}
+        show={!usesArenaShell && celebrationData.show}
         score={celebrationData.score}
         streak={celebrationData.streak}
         speedMs={celebrationData.speedMs}
@@ -1588,31 +1689,149 @@ export const RealtimeGameRoomPage: React.FC = () => {
       {/* ======================================================== */}
       {/* 3. MAIN ARENA LAYOUT (STUDY VS LIVE BROADCAST)           */}
       {/* ======================================================== */}
-      <div className={`relative z-10 flex-1 min-h-0 w-full flex flex-col ${usesArenaShell ? "overflow-hidden" : "overflow-y-auto p-3 sm:p-5"}`}>
-        {joinError && (
-          <section className="mx-auto my-4 w-full max-w-lg space-y-3 rounded-xl bg-neutral-900 p-4" aria-label="Kết nối phòng">
-            <p role="alert">{joinError}</p>
+      <div className={`relative z-10 flex-1 w-full flex flex-col ${usesArenaShell ? "min-h-0" : "min-h-min p-3 sm:p-5"} ${isMobileMode && activeMatch ? "arena-mobile-wrapper" : ""}`}>
+        {joinError === ROOM_LOGIN_ERROR && !loginPromptOpen && (
+          <div className="mx-auto my-auto w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-indigo-500/30 text-center shadow-2xl space-y-6 relative overflow-hidden backdrop-blur-xl animate-fade-in">
+            {/* Ambient glow */}
+            <div className="absolute -top-20 -left-20 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Badge Icon */}
+            <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <ShieldCheck className="w-8 h-8 text-indigo-400" />
+            </div>
+
+            <div className="space-y-2 relative z-10">
+              <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 inline-block">
+                Xác thực đấu sĩ
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Đăng Nhập Để Vào Đấu Trường
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-sm mx-auto">
+                Tham gia thi đấu đối kháng, tích lũy điểm xếp hạng Elo, ghi danh Bảng Vàng và bảo vệ tiến độ học tập.
+              </p>
+            </div>
+
+            {/* Perks grid */}
+            <div className="grid grid-cols-3 gap-2 py-1 text-left relative z-10">
+              <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-1">
+                <Zap className="w-4 h-4 text-amber-400" />
+                <div className="text-[11px] font-bold text-white">Điểm Elo</div>
+                <div className="text-[10px] text-slate-400">Xếp hạng realtime</div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-1">
+                <Trophy className="w-4 h-4 text-indigo-400" />
+                <div className="text-[11px] font-bold text-white">Bảng Vàng</div>
+                <div className="text-[10px] text-slate-400">Vinh danh cao thủ</div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 space-y-1">
+                <Flame className="w-4 h-4 text-rose-400" />
+                <div className="text-[11px] font-bold text-white">Chuỗi Thắng</div>
+                <div className="text-[10px] text-slate-400">Huy hiệu độc quyền</div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="space-y-2.5 pt-1 relative z-10">
+              <button
+                type="button"
+                onClick={() => promptLogin(ROOM_LOGIN_REASON)}
+                className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white font-black text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 group cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <span>Đăng Nhập / Đăng Ký Ngay</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/games')}
+                className="w-full py-2.5 px-4 rounded-xl text-slate-400 hover:text-slate-200 text-xs font-semibold hover:bg-slate-800/60 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Quay về Sảnh Đấu Trường</span>
+              </button>
+            </div>
+          </div>
+        )}
+        {roomStatus !== 'FINISHED' && joinError && joinError !== ROOM_LOGIN_ERROR && (
+          <div className="mx-auto my-auto w-full max-w-md p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-slate-700/80 text-center shadow-2xl space-y-5 relative overflow-hidden backdrop-blur-xl animate-fade-in">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-md">
+              {joinError === 'Cần mật khẩu phòng.' ? (
+                <Lock className="w-7 h-7 text-amber-400" />
+              ) : (
+                <AlertCircle className="w-7 h-7 text-rose-400" />
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-white">
+                {joinError === 'Cần mật khẩu phòng.'
+                  ? 'Phòng Đấu Yêu Cầu Mật Khẩu'
+                  : joinError.startsWith('Trận đã bắt đầu')
+                  ? 'Trận Đấu Đang Diễn Ra'
+                  : 'Không Thể Tham Gia Phòng'}
+              </h3>
+              <p role="alert" className="text-xs text-slate-300 leading-relaxed">
+                {joinError}
+              </p>
+            </div>
+
             {joinError === 'Cần mật khẩu phòng.' && (
-              <form className="flex flex-wrap gap-2" onSubmit={(event) => {
-                event.preventDefault();
-                if (passwordAttempt && passwordAttempt === roomPassword) socket?.disconnect().connect();
-                else setRoomPassword(passwordAttempt);
-              }}>
-                <input type="password" required aria-label="Mật khẩu phòng" value={passwordAttempt}
-                  onChange={(event) => setPasswordAttempt(event.target.value)}
-                  className="min-h-11 min-w-0 flex-1 rounded-md bg-neutral-800 px-3" />
-                <button className="min-h-11 rounded-md bg-white px-4 font-semibold text-black">Vào phòng</button>
+              <form
+                className="space-y-3 pt-1"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (passwordAttempt && passwordAttempt === roomPassword) socket?.disconnect().connect();
+                  else setRoomPassword(passwordAttempt);
+                }}
+              >
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="password"
+                    required
+                    aria-label="Mật khẩu phòng"
+                    placeholder="Nhập mật khẩu phòng đấu..."
+                    value={passwordAttempt}
+                    onChange={(event) => setPasswordAttempt(event.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                >
+                  Xác Nhận & Vào Phòng
+                </button>
               </form>
             )}
-            {!isSpectator && joinError.startsWith('Trận đã bắt đầu') && (
-              <button className="min-h-11 underline" onClick={() => navigate(`/games/room/${roomId}?view=spectator`, { state: { roomPassword } })}>Vào xem trực tiếp</button>
-            )}
-            <button className="min-h-11 underline" onClick={() => navigate('/games')}>Về sảnh đấu trường</button>
-          </section>
+
+            <div className="flex flex-col gap-2 pt-2">
+              {!isSpectator && joinError.startsWith('Trận đã bắt đầu') && (
+                <button
+                  type="button"
+                  className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  onClick={() => navigate(`/games/room/${roomId}?view=spectator`, { state: { roomPassword } })}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Vào Xem Trực Tiếp (Khán Giả)</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="w-full py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold hover:bg-slate-800/50 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                onClick={() => navigate('/games')}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Về Sảnh Đấu Trường</span>
+              </button>
+            </div>
+          </div>
         )}
         {/* VIEW A: WAITING / STARTING COUNTDOWN */}
         {!joinError && (roomStatus === 'WAITING' || roomStatus === 'STARTING') && (
-          <div className="my-auto max-w-3xl mx-auto w-full p-4 sm:p-8 rounded-2xl border border-indigo-400/30 bg-indigo-950 bg-cover bg-center text-center space-y-5 relative overflow-hidden" style={INTERACTIVE_STAGE_STYLE}>
+          <div className={`my-auto mx-auto w-full shrink-0 p-4 sm:p-6 rounded-2xl border border-indigo-400/30 bg-indigo-950 bg-cover bg-center text-center space-y-5 relative overflow-hidden ${isMobileMode ? "max-w-[420px]" : "max-w-3xl"}`} style={INTERACTIVE_STAGE_STYLE}>
 
             {countdown !== null && countdown > 0 ? (
               <div className="space-y-4 py-8 animate-fade-in relative z-10">
@@ -1640,18 +1859,18 @@ export const RealtimeGameRoomPage: React.FC = () => {
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black text-white">{roomTitle}</h2>
 
-                  {/* Huge Prominent Room Code Box - only shown once roomCode is loaded and ready */}
+                  {/* Room code is shown once it is loaded and ready. */}
                   {roomCode && !roomCode.startsWith('auto_') ? (
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-400/50 max-w-sm mx-auto flex items-center justify-between gap-3 shadow-inner my-2">
-                      <div className="text-left">
-                        <span className="text-[10px] font-semibold text-amber-300 block">
+                    <div className="mx-auto flex w-fit max-w-full items-center gap-2 rounded-xl border border-amber-400/50 bg-amber-500/10 py-1 pl-3 pr-1">
+                      <div className="min-w-0 text-left">
+                        <span className="block text-xs font-semibold text-amber-300">
                           Mã PIN vào phòng
                         </span>
-                        <span className="break-all tabular-nums text-xl sm:text-3xl font-black text-white tracking-wide">{displayRoomCode}</span>
+                        <span className="break-all text-base font-bold tracking-wide text-white tabular-nums">{displayRoomCode}</span>
                       </div>
                       <button
                         onClick={copyRoomCode}
-                        className="shrink-0 min-h-11 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md"
+                        className="flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 text-xs font-bold text-slate-950 transition hover:bg-amber-400 focus-visible:ring-2 focus-visible:ring-white"
                         title="Sao chép mã PIN vào phòng"
                       >
                         {isCopiedCode ? <Check className="w-4 h-4 text-slate-950" /> : <Copy className="w-4 h-4" />}
@@ -1659,7 +1878,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-indigo-500/10 border border-indigo-400/30 max-w-sm mx-auto flex items-center justify-center gap-2.5 my-2">
+                    <div className="mx-auto flex min-h-11 w-fit max-w-full items-center justify-center gap-2 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-3 py-1">
                       <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
                       <span className="text-xs font-bold text-indigo-200">Đang kết nối & nạp mã phòng đấu...</span>
                     </div>
@@ -1721,7 +1940,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                             {liveStatus.status === 'CONNECTED'
                               ? `Đã quét luồng: ${liveStatus.channelName || (liveStatus as any).targetChannel || '@tiktok'}`
                               : liveStatus.status === 'CONNECTING'
-                              ? 'Đang quét luồng Live...'
+                              ? 'Đang chờ nguồn bình luận TikTok'
                               : 'Chưa quét kết nối luồng Live'}
                           </span>
                         </div>
@@ -1790,7 +2009,10 @@ export const RealtimeGameRoomPage: React.FC = () => {
               uptimeSec={roomUptime}
               latencyMs={networkLatency}
               themeColor={themeColor}
+              isMobile={isMobileMode}
+              onToggleMobile={toggleMobileMode}
               participants={commenterRanking}
+              arenaPlayers={sortedBattlePlayers}
               comments={liveComments}
               votes={optionVotes}
               winners={liveTop3}
@@ -1816,6 +2038,8 @@ export const RealtimeGameRoomPage: React.FC = () => {
               uptimeSec={roomUptime}
               latencyMs={networkLatency}
               themeColor={themeColor}
+              isMobile={isMobileMode}
+              onToggleMobile={toggleMobileMode}
               onResume={isHost && roomStatus === 'PAUSED' ? handleHostPauseGame : undefined}
               disabled={isSpectator || !isConnected || hasSubmitted || timerRemaining <= 0 || roomStatus !== 'IN_ROUND'}
               selectedOption={selectedOptionIndex}
@@ -1825,6 +2049,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
               correctAnswer={roundSummary?.correctAnswer}
               explanation={roundSummary?.explanation || (roundSummary as any)?.summary?.explanation || (question as any)?.explanation}
               players={sortedBattlePlayers}
+              commenters={commenterRanking}
               myPlayer={myBattlePlayer}
               onSelectOption={(index) => submitBattleAnswer(['A', 'B', 'C', 'D'][index], index)}
               onSubmitText={submitBattleAnswer}
@@ -1836,38 +2061,18 @@ export const RealtimeGameRoomPage: React.FC = () => {
           )
         )}
 
-        {/* VIEW C: FINISHED / FINAL VICTORY PODIUM */}
-        {liveFinished && (
-          <LiveFinalResults
-            playedRounds={finalResult?.playedRounds ?? currentRound}
-            totalRounds={totalRounds}
-            participants={commenterRanking}
-            uptimeSec={roomUptime}
-            latencyMs={networkLatency}
-            themeColor={themeColor}
-            onLeaveRoom={leaveArena}
+        {/* VIEW C: HALL OF FAME */}
+        {roomStatus === 'FINISHED' && (
+          <HallOfFame
+            key={roomCode}
+            result={finalResult}
+            roomCode={roomCode}
+            matchName={roomTitle}
+            live={roomMode === 'LIVE'}
+            currentUserId={myPlayer?.userId ?? user?.id}
+            error={joinError}
+            onLeave={leaveArena}
             onPlayAgain={() => setShowCreateRoom(true)}
-            onNextMatch={nextRotationData?.nextRoomCode ? () => navigate(`/games/room/${nextRotationData.nextRoomCode}?mode=${gameMode}&lang=${roomLanguageId}`) : undefined}
-          />
-        )}
-        {roomMode === 'STUDY' && roomStatus === 'FINISHED' && (
-          <LiveFinalResults
-            live={false}
-            playedRounds={finalResult?.playedRounds ?? currentRound}
-            totalRounds={totalRounds}
-            participants={(inAppRanking.length > 0 ? inAppRanking : finalResult?.ranking ?? arenaRankPlayers).map((player, index) => ({
-              ...player,
-              rank: player.rank || index + 1,
-              isCurrentUser: player.userId === (user?.id || myPlayer?.userId),
-            }))}
-            personalResult={finalPlayer}
-            countdown={celebrationCountdown}
-            nextMatchTitle={nextRotationData?.nextRoomTitle}
-            uptimeSec={roomUptime}
-            latencyMs={networkLatency}
-            themeColor={themeColor}
-            onPlayAgain={() => setShowCreateRoom(true)}
-            onLeaveRoom={leaveArena}
             onNextMatch={nextRotationData?.nextRoomCode ? () => navigate(`/games/room/${nextRotationData.nextRoomCode}?mode=${gameMode}&lang=${roomLanguageId}`) : undefined}
           />
         )}
@@ -1884,65 +2089,262 @@ export const RealtimeGameRoomPage: React.FC = () => {
       {/* 4. TIKTOK LIVE CONFIGURATION MODAL                       */}
       {/* ======================================================== */}
       {isLiveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg bg-slate-900 border border-rose-500/30 rounded-3xl p-6 space-y-5 text-white shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="font-black text-base flex items-center gap-2">
-                <span>Kết nối TikTok Live</span>
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-lg bg-slate-900 border border-rose-500/30 rounded-3xl p-6 sm:p-7 space-y-5 text-white shadow-2xl max-h-[90vh] overflow-y-auto relative">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500/20 to-indigo-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shadow-md">
+                  <TikTokLogo className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-white flex items-center gap-2">
+                    <span>Kết Nối TikTok Livestream</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      Live Hub
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Đồng bộ luồng phát trực tiếp để tự động nhận bình luận A, B, C, D từ người xem
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setIsLiveModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setIsLiveModalOpen(false);
+                  setLiveValidationWarning(null);
+                  setLiveConnectionMessage('');
+                }}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {/* Provider Tabs: Live Stream Thật vs Giả Lập Test */}
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-950 border border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setLiveProviderChoice('TIKTOK_LIVE');
+                  setLiveValidationWarning(null);
+                  setLiveConnectionMessage('');
+                }}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  liveProviderChoice === 'TIKTOK_LIVE'
+                    ? 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <TikTokLogo className="w-3.5 h-3.5" />
+                <span>Kênh TikTok Thật</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLiveProviderChoice('MOCK');
+                  setLiveValidationWarning(null);
+                  setLiveConnectionMessage('');
+                }}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  liveProviderChoice === 'MOCK'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Giả Lập Test (Mock)</span>
+              </button>
+            </div>
+
+            {/* Current Connection Status Box */}
+            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                    liveStatus.status === 'CONNECTED'
+                      ? 'bg-emerald-400 animate-pulse'
+                      : liveStatus.status === 'CONNECTING'
+                      ? 'bg-amber-400 animate-ping'
+                      : 'bg-slate-600'
+                  }`}
+                />
+                <div className="min-w-0">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Trạng Thái Kết Nối
+                  </div>
+                  <div className="text-xs font-bold text-white truncate">
+                    {liveStatus.status === 'CONNECTED'
+                      ? `Đã kết nối: ${liveStatus.channelName || '@tiktok'}`
+                      : liveStatus.status === 'CONNECTING'
+                      ? 'Đang kiểm tra tín hiệu luồng live...'
+                      : 'Chưa liên kết luồng livestream'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {liveStatus.status === 'CONNECTED' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleSendTestComment}
+                      className="px-2.5 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                      title="Gửi thử bình luận trắc nghiệm A/B/C/D để kiểm tra luồng"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>{testCommentSent ? 'Đã gửi ✓' : 'Thử comment'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDisconnectLive}
+                      className="px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-[11px] font-bold transition cursor-pointer"
+                    >
+                      Ngắt kết nối
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* TikTok Live Connection Form */}
             <form onSubmit={handleConnectLive} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">
-                  TikTok Username hoặc URL Livestream:
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={targetChannelInput}
-                  onChange={(e) => setTargetChannelInput(e.target.value)}
-                  placeholder="Ví dụ: @tienganhmoingay hoặc https://www.tiktok.com/@user/live"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500 font-medium"
-                />
+              {liveProviderChoice === 'TIKTOK_LIVE' ? (
+                <>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-200">
+                        TikTok Username hoặc Link Livestream:
+                      </label>
+                      <span className="text-[11px] text-slate-400 font-medium">Bắt buộc</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={targetChannelInput}
+                        onChange={(e) => {
+                          setTargetChannelInput(e.target.value);
+                          if (liveValidationWarning) setLiveValidationWarning(null);
+                        }}
+                        onBlur={() => {
+                          const val = targetChannelInput.trim();
+                          if (val.includes('tiktok.com/')) {
+                            const match = val.match(/@([a-zA-Z0-9_\.]+)/);
+                            if (match && match[1]) {
+                              setTargetChannelInput(`@${match[1]}`);
+                            }
+                          }
+                        }}
+                        placeholder="Ví dụ: @tienganhmoingay hoặc https://www.tiktok.com/@user/live"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500 font-medium transition"
+                      />
+                    </div>
+                    {/* Real-time detected handle helper */}
+                    {targetChannelInput.trim() && (
+                      <div className="text-[11px] text-emerald-400 flex items-center gap-1 pt-0.5">
+                        <Check className="w-3 h-3" />
+                        <span>
+                          Kênh nhận diện: <strong>{targetChannelInput.trim().startsWith('@') ? targetChannelInput.trim() : `@${targetChannelInput.trim().replace(/^.*@/, '')}`}</strong>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-300">
+                        TikTok Room ID (Tùy chọn):
+                      </label>
+                      <span className="text-[10px] text-slate-500">Dành cho OBS / TikTok Studio</span>
+                    </div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={liveRoomIdInput}
+                      onChange={(e) => setLiveRoomIdInput(e.target.value)}
+                      placeholder="Ví dụ: 743892184910283921 (để trống nếu không rõ)"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500 font-mono transition"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-2 text-xs">
+                  <div className="font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Chế Độ Khán Giả Mô Phỏng (Mock Audience)</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed text-[11px]">
+                    Hệ thống sẽ tự động mô phỏng các khán giả ảo (Linh Tokyo, Hoàng 990 TOEIC, Đức Phản Xạ Nhanh...) gửi bình luận A, B, C, D theo thời gian thực để Host kiểm tra hiệu ứng và Bảng Vàng trước khi live thật.
+                  </p>
+                  <div className="pt-1">
+                    <label className="text-[11px] font-bold text-slate-400 block mb-1">
+                      Tên Kênh Demo:
+                    </label>
+                    <input
+                      type="text"
+                      value={targetChannelInput || 'demo_stream'}
+                      onChange={(e) => setTargetChannelInput(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white outline-none focus:border-indigo-500 font-medium"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Feedback Banners */}
+              {liveConnectionSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Kết nối thành công! Đang lưu cấu hình phòng đấu...</span>
+                </div>
+              )}
+
+              {liveValidationWarning && (
+                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-medium flex items-center gap-2 animate-fade-in">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{liveValidationWarning}</span>
+                </div>
+              )}
+
+              {liveConnectionMessage && !liveConnectionSuccess && (
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-medium flex items-center gap-2 animate-fade-in">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{liveConnectionMessage}</span>
+                </div>
+              )}
+
+              {/* Quick instructions box */}
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-1.5 text-[11px] text-slate-400">
+                <div className="font-bold text-slate-300">💡 Hướng dẫn tổ chức Game Show TikTok:</div>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-400 leading-relaxed">
+                  <li>Bật livestream trên app TikTok hoặc TikTok Live Studio.</li>
+                  <li>Điền username kênh vào form và bấm <strong>Kết nối TikTok Live</strong>.</li>
+                  <li>Khán giả chỉ cần gõ <strong>A, B, C hoặc D</strong> trong phần bình luận TikTok để trả lời!</li>
+                </ul>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">
-                  TikTok Room ID (Tùy chọn - nếu có):
-                </label>
-                <input
-                  type="text"
-                  value={liveRoomIdInput}
-                  onChange={(e) => setLiveRoomIdInput(e.target.value)}
-                  placeholder="Ví dụ: 743892184910283921"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500 font-mono"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                {liveStatus.status !== 'DISCONNECTED' && (
-                  <button
-                    type="button"
-                    onClick={handleDisconnectLive}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer"
-                  >
-                    Ngắt kết nối
-                  </button>
-                )}
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsLiveModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+                >
+                  Đóng
+                </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-black shadow-md shadow-rose-600/30 transition cursor-pointer flex items-center gap-1.5"
+                  disabled={isSubmittingLive}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-black shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
                 >
                   <TikTokLogo className="w-3.5 h-3.5" />
-                  <span>Lưu & Bắt Đầu Nhận Comment</span>
+                  <span>
+                    {isSubmittingLive
+                      ? 'Đang kết nối luồng...'
+                      : liveProviderChoice === 'MOCK'
+                      ? 'Kích Hoạt Chế Độ Giả Lập'
+                      : 'Kết Nối TikTok Live'}
+                  </span>
                 </button>
               </div>
             </form>

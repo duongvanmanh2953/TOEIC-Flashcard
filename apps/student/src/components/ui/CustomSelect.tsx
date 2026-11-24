@@ -26,6 +26,7 @@ export interface CustomSelectProps<T = string | number> {
   clearable?: boolean;
   size?: 'sm' | 'md' | 'lg';
   align?: 'auto' | 'left' | 'right';
+  wrapText?: boolean;
   className?: string;
   menuClassName?: string;
   buttonClassName?: string;
@@ -45,6 +46,7 @@ export function CustomSelect<T extends string | number>({
   clearable = false,
   size = 'md',
   align = 'auto',
+  wrapText = true,
   className = '',
   menuClassName = '',
   buttonClassName = '',
@@ -272,11 +274,15 @@ export function CustomSelect<T extends string | number>({
                 }`
           } transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed select-none ${sizeClasses}`}
         >
-          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden py-0.5">
             {renderIcon(LeftIcon, 'w-3.5 h-3.5 text-slate-400 dark:text-slate-400 shrink-0')}
             {renderIcon(SelectedIcon, 'w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0')}
             <span
-              className={`truncate font-medium ${
+              className={`font-medium ${
+                wrapText
+                  ? 'break-words whitespace-normal line-clamp-2 text-left leading-snug'
+                  : 'truncate'
+              } ${
                 selectedOption
                   ? buttonClassName
                     ? 'text-inherit'
@@ -288,7 +294,9 @@ export function CustomSelect<T extends string | number>({
             </span>
             {selectedOption?.badge !== undefined && (
               <span
-                className={`hidden lg:inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 truncate max-w-[65px] ${
+                className={`hidden lg:inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 ${
+                  wrapText ? 'whitespace-nowrap' : 'truncate max-w-[65px]'
+                } ${
                   selectedOption.badgeColor || 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30'
                 }`}
               >

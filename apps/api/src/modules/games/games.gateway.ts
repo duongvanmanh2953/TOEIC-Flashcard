@@ -11,14 +11,15 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { createHash } from 'node:crypto';
 import { normalizeLiveAnswer, type GameRoom } from './game-room.manager';
-import { CustomRoomsService } from './custom-rooms.service';
+import { CustomRoomsService, getSystemPresetRooms } from './custom-rooms.service';
 import { GamesService } from './games.service';
 import { QuestionProviderService } from './question-provider.service';
 import { LiveIntegrationService } from './live-integration/live-integration.service';
+import { TikTokLiveAdapter } from './live-integration/tiktok-live.adapter';
 import { LiveProviderType } from './live-integration/live-adapter.interface';
 import { DeviceStatus, GameModeType } from '@prisma/client';
-import { SYSTEM_PRESET_ROOMS, getSystemPresetRooms } from './custom-rooms.service';
 
 interface JoinRoomRequest {
   roomCode: string;
@@ -27,6 +28,7 @@ interface JoinRoomRequest {
   spectator?: boolean;
   password?: string;
   languageId?: string;
+  guestKey?: string;
 }
 
 @WebSocketGateway({
@@ -44,12 +46,14 @@ export class GamesGateway
   private readonly logger = new Logger(GamesGateway.name);
   private scheduleTimer?: NodeJS.Timeout;
   private lastScheduledDay?: string;
+  private finalResults = new WeakMap<GameRoom, ReturnType<GamesGateway['buildFinalResult']>>();
   private roomTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     private readonly gamesService: GamesService,
     private readonly questionProvider: QuestionProviderService,
     private readonly liveIntegration: LiveIntegrationService,
+    private readonly tiktokAdapter: TikTokLiveAdapter,
     private readonly jwt: JwtService,
     private readonly customRooms: CustomRoomsService,
   ) {}
@@ -67,12 +71,12 @@ export class GamesGateway
       const room = this.gamesService.roomManager.getRoom(code);
       if (!room) return;
 
-      if (!room.isLiveMode || room.liveProvider !== event.provider || room.status !== 'IN_ROUND' ||
-          Date.now() >= room.roundStartedAt + room.roundDurationSec * 1000) return;
-      const result = this.gamesService.roomManager.submitLiveComment(code, event);
-      if (!result) return;
+      if (!room.isLiveMode || (room.liveProvider && room.liveProvider !== event.provider)) return;
 
-      const accepted = result.status === 'accepted';
+      const inRound = room.status === 'IN_ROUND' && Date.now() < room.roundStartedAt + room.roundDurationSec * 1000 + 2000;
+      const result = inRound ? this.gamesService.roomManager.submitLiveComment(code, event) : { status: 'chat_only' as const };
+
+      const accepted = (result as any)?.status === 'accepted';
       const commenterRanking = accepted ? this.gamesService.roomManager.getCommenterLeaderboard(code) : undefined;
       this.server.to(`game_room_${code}`).emit('live_comment_received', {
         eventId: event.eventId,
@@ -80,11 +84,11 @@ export class GamesGateway
         displayName: event.displayName,
         avatarUrl: event.avatarUrl,
         commentText: event.commentText,
-        timestamp: event.timestamp,
+        timestamp: event.timestamp || Date.now(),
         round: room.currentRound,
         accepted,
-        answer: accepted ? result.answer : undefined,
-        scoreAdded: accepted ? result.score : undefined,
+        answer: accepted ? (result as any).answer : (event.parsedOption || undefined),
+        scoreAdded: accepted ? (result as any).score : undefined,
         liveOptionVotes: accepted ? room.liveOptionVotes : undefined,
         liveTop3: accepted ? room.questionCommentAwards?.get(room.currentRound) : undefined,
         commenterRanking,
@@ -338,11 +342,28 @@ export class GamesGateway
     try {
       const code = data.roomCode.toUpperCase();
       let room = this.gamesService.roomManager.getRoom(code);
-      const userId = await this.authenticate(client);
-      if (!userId) return { status: 'error', message: 'Vui lòng đăng nhập lại để tham gia.' };
-      const dbRoom = await this.gamesService.prisma.customGameRoom.findUnique({ where: { roomCode: code } });
-      const isOwner = dbRoom?.hostUserId === userId;
+      const [authenticatedUserId, dbRoom] = await Promise.all([
+        this.authenticate(client),
+        this.gamesService.prisma.customGameRoom.findUnique({ where: { roomCode: code } }),
+      ]);
+      const targetLang = (data.languageId || 'en').toLowerCase().trim();
+      const codeLanguage = code.split('-', 1)[0].toLowerCase();
+      const supportedLanguages = ['zh', 'ja', 'ko', 'en', 'de', 'fr', 'es', 'th', 'vi'];
+      const presetLanguage = supportedLanguages.includes(codeLanguage) ? codeLanguage : targetLang;
+      const preset = getSystemPresetRooms(presetLanguage).find((candidate) => candidate.roomCode === code);
+      const isGuestLiveRoom = !preset && !dbRoom && /^LIVE-[23456789A-HJ-NP-Z]{4,10}$/.test(code);
+      const isLiveRoom = room?.isLiveMode ?? preset?.isLiveMode
+        ?? (dbRoom ? dbRoom.maxPlayers > 50 && dbRoom.allowLateJoin : isGuestLiveRoom);
       const spectator = data.spectator === true;
+      if (!authenticatedUserId && !isLiveRoom && !spectator) {
+        return { status: 'error', message: 'Vui lòng đăng nhập lại để tham gia.' };
+      }
+
+      const guestIdentity = typeof data.guestKey === 'string' && /^[0-9a-f]{64}$/.test(data.guestKey)
+        ? createHash('sha256').update(code).update(data.guestKey).digest('hex')
+        : client.id;
+      const userId = authenticatedUserId ?? `anon_${guestIdentity}`;
+      const isOwner = dbRoom?.hostUserId === userId;
       if (dbRoom && ['COMPLETED', 'EXPIRED', 'CANCELLED'].includes(dbRoom.status) && !room) {
         return { status: 'error', message: 'Phòng đã đóng.' };
       }
@@ -352,18 +373,6 @@ export class GamesGateway
       }
 
       if (!room) {
-        // 1. Check if it's a predefined system preset room across all supported languages
-        const targetLang = (data.languageId || 'en').toLowerCase().trim();
-        const langList = [targetLang, 'zh', 'ja', 'ko', 'en', 'de', 'fr', 'es', 'th', 'vi'];
-        let preset: any = null;
-        for (const l of langList) {
-          const match = getSystemPresetRooms(l).find((p) => p.roomCode === code);
-          if (match) {
-            preset = match;
-            break;
-          }
-        }
-
         if (preset) {
           const effectiveLang = preset.languageId || targetLang;
           const questions = await this.questionProvider.getQuestionsForRoom(
@@ -385,6 +394,25 @@ export class GamesGateway
             preset.allowLateJoin,
           );
           // The first participating player hosts a preset room.
+        } else if (isGuestLiveRoom) {
+          const effectiveLang = targetLang || 'en';
+          const questions = await this.questionProvider.getQuestionsForRoom(
+            'SYSTEM_PRESET',
+            undefined,
+            10,
+            GameModeType.CLASSIC_QUIZ,
+            effectiveLang,
+          );
+          room = this.gamesService.roomManager.createRoom(
+            code,
+            GameModeType.CLASSIC_QUIZ,
+            'Phòng Đấu Trường TikTok Live',
+            questions,
+            15,
+            effectiveLang,
+            true,
+            true,
+          );
         } else {
           // 2. Fallback: load room from DB if not yet in memory
           if (!dbRoom) {
@@ -400,7 +428,6 @@ export class GamesGateway
             effectiveDbLang,
             dbRoom.hostUserId,
           );
-          const isLive = Boolean((dbRoom as any).isLiveMode || (dbRoom.maxPlayers && dbRoom.maxPlayers > 50));
           const dbDuration = Math.min(15, dbRoom.roundDurationSec || 12);
           room = this.gamesService.roomManager.createRoom(
             dbRoom.roomCode,
@@ -409,7 +436,7 @@ export class GamesGateway
             questions,
             dbDuration,
             effectiveDbLang,
-            isLive,
+            isLiveRoom,
             dbRoom.allowLateJoin,
           );
         }
@@ -734,6 +761,32 @@ export class GamesGateway
     };
     this.server.to(`game_room_${code}`).emit('live_status_changed', res);
     return res;
+  }
+
+  @SubscribeMessage('room:ingest_live_comment')
+  handleIngestLiveComment(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      roomCode: string;
+      uniqueId: string;
+      nickname?: string;
+      comment: string;
+      profilePictureUrl?: string;
+      timestamp?: number;
+      eventId?: string;
+    },
+  ) {
+    if (!data?.roomCode || !data?.comment) return { status: 'error', message: 'Missing roomCode or comment' };
+    this.tiktokAdapter.ingestExternalComment(data.roomCode, {
+      uniqueId: data.uniqueId || 'viewer',
+      nickname: data.nickname || data.uniqueId || 'Khán giả',
+      comment: data.comment,
+      profilePictureUrl: data.profilePictureUrl,
+      timestamp: data.timestamp,
+      eventId: data.eventId,
+    });
+    return { status: 'ok' };
   }
 
   /**
@@ -1112,6 +1165,14 @@ export class GamesGateway
   }
 
   private getFinalResult(room: GameRoom) {
+    const existing = this.finalResults.get(room);
+    if (existing) return existing;
+    const result = this.buildFinalResult(room);
+    this.finalResults.set(room, result);
+    return result;
+  }
+
+  private buildFinalResult(room: GameRoom) {
     const code = room.roomCode;
     const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(code);
     const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(code);
@@ -1122,7 +1183,9 @@ export class GamesGateway
       languageId: room.languageId,
       totalRounds: room.totalRounds,
       playedRounds: room.currentRound,
-      totalParticipants: room.players.size,
+      durationMs: room.matchStartedAt !== undefined && room.finishedAt !== undefined
+        ? room.finishedAt - room.matchStartedAt : undefined,
+      totalParticipants: inAppRanking.length + commenterRanking.length,
       ranking: inAppRanking,
       inAppRanking,
       commenterRanking,

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import {
   signInAnonymously,
@@ -152,10 +152,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.documentElement.classList.toggle('dark', nextTheme === 'dark');
   };
 
-  const promptLogin = (reason = 'Lưu tiến trình học của bạn') => {
+  const promptLogin = useCallback((reason = 'Lưu tiến trình học của bạn') => {
     setLoginPromptReason(reason);
     setLoginPromptOpen(true);
-  };
+  }, []);
 
   const closeLoginPrompt = () => {
     setLoginPromptOpen(false);

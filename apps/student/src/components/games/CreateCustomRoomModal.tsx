@@ -26,6 +26,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import { CustomSelect, SelectOption } from '../ui/CustomSelect';
 import { useLearning } from '../../contexts/LearningContext';
@@ -187,6 +188,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
   onRoomCreated,
   initialRoomType = 'PVP',
 }) => {
+  const { user, isGuest } = useAuth();
   const { activeLanguage } = useLearning();
   const languageId = activeLanguage.id;
   const roomType = initialRoomType;
@@ -342,6 +344,24 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
         );
       }
 
+      if (isLive && (!user || isGuest)) {
+        const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const codeSuffix = Array.from(
+          crypto.getRandomValues(new Uint8Array(10)),
+          (value) => chars[value % chars.length],
+        ).join('');
+        const liveRoomCode = `LIVE-${codeSuffix}`;
+        onRoomCreated({
+          roomCode: liveRoomCode,
+          title: payload.title,
+          gameMode,
+          languageId: payload.languageId,
+          isLiveMode: true,
+          themeColor,
+        });
+        return;
+      }
+
       const res: any = await api.post('/games/rooms', payload);
       const room = res?.data?.data || res?.data || res;
       onRoomCreated({ ...room, themeColor, gameMode });
@@ -494,9 +514,9 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                     >
                       <Icon className="w-4 h-4" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-black text-white">{mode.name}</div>
-                      <div className="text-[11px] text-slate-400 line-clamp-1">{mode.desc}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-black text-white leading-snug break-words whitespace-normal">{mode.name}</div>
+                      <div className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed break-words whitespace-normal mt-0.5">{mode.desc}</div>
                     </div>
                   </button>
                 );
@@ -629,9 +649,9 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                     <div className="w-8 h-8 rounded-xl bg-slate-700/60 text-purple-300 flex items-center justify-center shrink-0 border border-slate-600/40">
                       <Icon className="w-4 h-4" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-white">{src.title}</div>
-                      <div className="text-[11px] text-slate-400 line-clamp-1">{src.desc}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white leading-snug break-words whitespace-normal">{src.title}</div>
+                      <div className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed break-words whitespace-normal mt-0.5">{src.desc}</div>
                     </div>
                   </button>
                 );
@@ -665,7 +685,8 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                       })),
                     ]}
                     menuClassName="dark"
-                    buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs"
+                    wrapText
+                    buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs min-h-[44px] py-2 px-3"
                   />
                 ) : (
                   <div className="text-center py-3 space-y-2">
@@ -697,6 +718,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                   searchable
                   searchPlaceholder="Tìm kiếm đề cộng đồng..."
                   size="sm"
+                  wrapText
                   disabled={loadingSources}
                   options={[
                     { value: '', label: 'Bộ đề cộng đồng nổi bật nhất', icon: Globe },
@@ -709,7 +731,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                     })),
                   ]}
                   menuClassName="dark"
-                  buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs"
+                  buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs min-h-[44px] py-2 px-3"
                 />
               </div>
             )}
@@ -725,6 +747,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                   searchable
                   searchPlaceholder="Tìm kiếm chủ đề từ vựng..."
                   size="sm"
+                  wrapText
                   disabled={loadingSources}
                   options={[
                     { value: '', label: 'Tất cả chủ đề từ vựng', icon: BookOpen },
@@ -741,7 +764,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                     })),
                   ]}
                   menuClassName="dark"
-                  buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs"
+                  buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs min-h-[44px] py-2 px-3"
                 />
               </div>
             )}
@@ -756,6 +779,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                   searchable
                   searchPlaceholder="Tìm kiếm đề thi..."
                   size="sm"
+                  wrapText
                   disabled={loadingSources}
                   options={[
                     { value: '', label: 'Tất cả bộ đề thi (Ngẫu nhiên)', icon: GraduationCap },
@@ -766,7 +790,7 @@ export const CreateCustomRoomModal: React.FC<CreateCustomRoomModalProps> = ({
                     })),
                   ]}
                   menuClassName="dark"
-                  buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs"
+                  buttonClassName="bg-slate-800/95 hover:bg-slate-800 border-slate-700 text-white font-medium text-xs min-h-[44px] py-2 px-3"
                 />
               </div>
             )}

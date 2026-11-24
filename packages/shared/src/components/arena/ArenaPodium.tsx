@@ -18,6 +18,114 @@ export interface ArenaPodiumProps {
   className?: string;
 }
 
+/**
+ * Tier-specific mini championship cups for the podium steps
+ */
+export const PodiumTrophyCup: React.FC<{
+  tier: 'gold' | 'silver' | 'bronze';
+  className?: string;
+  size?: number;
+}> = ({ tier, className = '', size = 24 }) => {
+  const config = {
+    gold: {
+      id: 'sharedPodiumGold',
+      stop1: '#FFFDE7',
+      stop2: '#FDE047',
+      stop3: '#EAB308',
+      stop4: '#A16207',
+      rim: '#FEF08A',
+      star: '#FFFBEB',
+      glow: 'rgba(250, 204, 21, 0.85)',
+      num: '1',
+    },
+    silver: {
+      id: 'sharedPodiumSilver',
+      stop1: '#FFFFFF',
+      stop2: '#E2E8F0',
+      stop3: '#94A3B8',
+      stop4: '#475569',
+      rim: '#F8FAFC',
+      star: '#FFFFFF',
+      glow: 'rgba(226, 232, 240, 0.75)',
+      num: '2',
+    },
+    bronze: {
+      id: 'sharedPodiumBronze',
+      stop1: '#FFEDD5',
+      stop2: '#FB923C',
+      stop3: '#D97706',
+      stop4: '#7C2D12',
+      rim: '#FED7AA',
+      star: '#FFF7ED',
+      glow: 'rgba(217, 119, 6, 0.7)',
+      num: '3',
+    },
+  }[tier];
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`shrink-0 drop-shadow-[0_4px_10px_${config.glow}] ${className}`}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={`${config.id}_body`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={config.stop1} />
+          <stop offset="30%" stopColor={config.stop2} />
+          <stop offset="70%" stopColor={config.stop3} />
+          <stop offset="100%" stopColor={config.stop4} />
+        </linearGradient>
+        <linearGradient id={`${config.id}_handle`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={config.stop1} />
+          <stop offset="100%" stopColor={config.stop4} />
+        </linearGradient>
+      </defs>
+
+      <path
+        d="M20 18 C11 18 9 32 19 35 C19.5 35 20 33.5 19.5 32 C13 30 14 21 21 21 Z"
+        fill={`url(#${config.id}_handle)`}
+      />
+      <path
+        d="M44 18 C53 18 55 32 45 35 C44.5 35 44 33.5 44.5 32 C51 30 50 21 43 21 Z"
+        fill={`url(#${config.id}_handle)`}
+      />
+
+      <path
+        d="M18 14 H46 C46 14 47 30 32 38 C17 30 18 14 18 14 Z"
+        fill={`url(#${config.id}_body)`}
+        stroke={config.rim}
+        strokeWidth="1"
+      />
+
+      <ellipse cx="32" cy="14" rx="14" ry="3.5" fill={config.rim} />
+      <ellipse cx="32" cy="14" rx="11" ry="2" fill={config.stop4} opacity="0.6" />
+
+      <path d="M29 37 H35 L34 46 H30 Z" fill={`url(#${config.id}_body)`} />
+
+      <ellipse cx="32" cy="46" rx="8" ry="2.5" fill={config.rim} />
+      <path d="M25 47 L39 47 L41 54 L23 54 Z" fill={`url(#${config.id}_body)`} stroke={config.rim} strokeWidth="0.8" />
+      <rect x="21" y="54" width="22" height="3" rx="1.5" fill="#1E293B" stroke={config.stop3} strokeWidth="0.8" />
+
+      <circle cx="32" cy="24" r="5" fill="#0F172A" opacity="0.45" />
+      <text
+        x="32"
+        y="27"
+        textAnchor="middle"
+        fontSize="8"
+        fontWeight="900"
+        fill={config.star}
+        fontFamily="sans-serif"
+      >
+        {config.num}
+      </text>
+    </svg>
+  );
+};
+
 export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className = '' }) => {
   const validPlayers = (topPlayers || []).filter(Boolean);
   const p1 = validPlayers[0] || null;
@@ -53,7 +161,10 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
                 level={p2.level}
                 className="w-11 h-11 sm:w-16 sm:h-16"
               />
-              <span className="absolute -top-2 -left-1.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 text-slate-950 font-black text-[10px] sm:text-xs flex items-center justify-center border-2 border-slate-900 shadow-md">
+              <span className="absolute -top-1.5 -right-2 z-20">
+                <PodiumTrophyCup tier="silver" size={20} className="sm:w-6 sm:h-6" />
+              </span>
+              <span className="absolute -bottom-1 -left-1 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 text-slate-950 font-black text-[10px] sm:text-xs flex items-center justify-center border-2 border-slate-900 shadow-md z-20">
                 🥈 2
               </span>
             </div>
@@ -94,7 +205,10 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
                 level={p1.level}
                 className="w-14 h-14 sm:w-20 sm:h-20"
               />
-              <span className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center border-2 border-slate-900 shadow-xl z-20">
+              <span className="absolute -top-2 -right-2.5 z-20">
+                <PodiumTrophyCup tier="gold" size={24} className="sm:w-8 sm:h-8" />
+              </span>
+              <span className="absolute -bottom-1 -left-1 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center border-2 border-slate-900 shadow-xl z-20">
                 👑 1
               </span>
             </div>
@@ -135,7 +249,10 @@ export const ArenaPodium: React.FC<ArenaPodiumProps> = ({ topPlayers, className 
                 level={p3.level}
                 className="w-11 h-11 sm:w-16 sm:h-16"
               />
-              <span className="absolute -top-2 -right-1.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 text-white font-black text-[10px] sm:text-xs flex items-center justify-center border-2 border-slate-900 shadow-md">
+              <span className="absolute -top-1.5 -right-2 z-20">
+                <PodiumTrophyCup tier="bronze" size={20} className="sm:w-6 sm:h-6" />
+              </span>
+              <span className="absolute -bottom-1 -left-1 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 text-white font-black text-[10px] sm:text-xs flex items-center justify-center border-2 border-slate-900 shadow-md z-20">
                 🥉 3
               </span>
             </div>

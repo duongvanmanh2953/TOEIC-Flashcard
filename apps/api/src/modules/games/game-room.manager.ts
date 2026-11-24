@@ -33,7 +33,16 @@ export interface RoomPlayer {
   team?: 'RED' | 'BLUE';
   isCommenter?: boolean;
   commentScore?: number;
+  username?: string;
+  speedPlacements?: number;
   scoredRounds?: Set<number>;
+}
+
+function compareTiedPlayers(a: RoomPlayer, b: RoomPlayer): number {
+  const responseTimeDifference = a.lastResponseTimeMs - b.lastResponseTimeMs;
+  if (responseTimeDifference) return responseTimeDifference;
+  if (a.userId === b.userId) return 0;
+  return a.userId < b.userId ? -1 : 1;
 }
 
 export type RoomStatus =
@@ -74,6 +83,7 @@ export interface GameRoom {
   roundDurationSec: number;
   baseRoundDurationSec: number;
   roundStartedAt: number;
+  matchStartedAt?: number;
   createdAt: number;
   finishedAt?: number;
   roundAnswerCount: number;
@@ -230,6 +240,7 @@ export class GameRoomManager {
     room.currentQuestion = question;
     room.roundDurationSec = room.isLiveMode ? 20 : room.baseRoundDurationSec;
     room.roundStartedAt = Date.now();
+    room.matchStartedAt ??= room.roundStartedAt;
     room.roundAnswerCount = 0;
     room.liveOptionVotes = Object.create(null);
     room.summaryEndsAt = undefined;
@@ -393,7 +404,7 @@ export class GameRoomManager {
     const question = room?.currentQuestion;
     const receivedAt = Date.now();
     if (!room?.isLiveMode || !question || room.status !== 'IN_ROUND' ||
-        event.timestamp < room.roundStartedAt || receivedAt >= room.roundStartedAt + room.roundDurationSec * 1000) return null;
+        receivedAt < room.roundStartedAt || receivedAt >= room.roundStartedAt + room.roundDurationSec * 1000) return null;
 
     const username = event.username.trim().toLowerCase();
     if (!username) return null;
@@ -445,6 +456,8 @@ export class GameRoomManager {
       fairPlayScore: 100,
       rank: 0,
       isCommenter: true,
+      username,
+      speedPlacements: 0,
     };
     room.players.set(commenterId, player);
     (room.liveAcceptedEvents ??= new Set()).add(event.eventId);
@@ -459,6 +472,7 @@ export class GameRoomManager {
       const awards = allAwards.get(room.currentRound) ?? [];
       score = scoreLiveResponse(awards.length);
       if (score > 0) {
+        player.speedPlacements = (player.speedPlacements ?? 0) + 1;
         awards.push({
           commenterId,
           username,
@@ -487,7 +501,7 @@ export class GameRoomManager {
   updateRankings(room: GameRoom): void {
     const sorted = Array.from(room.players.values()).sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      return a.lastResponseTimeMs - b.lastResponseTimeMs;
+      return compareTiedPlayers(a, b);
     });
 
     sorted.forEach((p, idx) => {
@@ -512,7 +526,7 @@ export class GameRoomManager {
       .filter((p) => !p.isCommenter)
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
-        return a.lastResponseTimeMs - b.lastResponseTimeMs;
+        return compareTiedPlayers(a, b);
       })
       .map((p, idx) => ({ ...p, rank: idx + 1 }));
   }
@@ -530,7 +544,7 @@ export class GameRoomManager {
         const scoreA = a.commentScore ?? a.score ?? 0;
         const scoreB = b.commentScore ?? b.score ?? 0;
         if (scoreB !== scoreA) return scoreB - scoreA;
-        return a.lastResponseTimeMs - b.lastResponseTimeMs;
+        return compareTiedPlayers(a, b);
       })
       .map((p, idx) => ({ ...p, rank: idx + 1, score: p.commentScore ?? p.score ?? 0 }));
   }

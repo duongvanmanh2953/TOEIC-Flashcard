@@ -192,5 +192,27 @@ export class CustomRoomsController {
       message: `Đã kích hoạt mô phỏng ${events.length} comment khán giả.`,
     };
   }
+
+  @Public()
+  @Post(':roomCode/live/comments')
+  ingestComments(
+    @Param('roomCode') roomCode: string,
+    @Body() body: any,
+  ) {
+    const list = Array.isArray(body) ? body : [body];
+    for (const item of list) {
+      if (item && (item.comment || item.commentText)) {
+        this.customRoomsService.ingestLiveComment(roomCode, {
+          uniqueId: item.uniqueId || item.username || 'viewer',
+          nickname: item.nickname || item.displayName || item.uniqueId || 'Khán giả',
+          comment: item.comment || item.commentText,
+          profilePictureUrl: item.profilePictureUrl || item.avatarUrl,
+          timestamp: item.timestamp,
+          eventId: item.eventId,
+        });
+      }
+    }
+    return { success: true, count: list.length };
+  }
 }
 

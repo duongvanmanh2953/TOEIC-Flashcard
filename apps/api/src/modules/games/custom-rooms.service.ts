@@ -352,6 +352,8 @@ export class CustomRoomsService {
     const { passwordHash: _, ...safeRoom } = room;
     return {
       ...safeRoom,
+      isLiveMode: this.gamesService.roomManager.getRoom(room.roomCode)?.isLiveMode
+        ?? (room.maxPlayers > 50 && room.allowLateJoin),
       hasPassword: !!passwordHash,
     };
   }
@@ -406,6 +408,8 @@ export class CustomRoomsService {
       const { passwordHash, ...rest } = r;
       return {
         ...rest,
+        isLiveMode: this.gamesService.roomManager.getRoom(r.roomCode)?.isLiveMode
+          ?? (r.maxPlayers > 50 && r.allowLateJoin),
         hasPassword: !!passwordHash,
         playerCount: Array.from(this.gamesService.roomManager.getRoom(r.roomCode)?.players.values() ?? [])
           .filter((player) => player.isConnected && !player.userId.startsWith('tt_')).length,
@@ -448,6 +452,8 @@ export class CustomRoomsService {
     const { passwordHash, ...safeRoom } = room;
     return {
       ...safeRoom,
+      isLiveMode: this.gamesService.roomManager.getRoom(room.roomCode)?.isLiveMode
+        ?? (room.maxPlayers > 50 && room.allowLateJoin),
       hasPassword: !!passwordHash,
     };
   }
@@ -563,6 +569,10 @@ export class CustomRoomsService {
 
   simulateBatch(roomCode: string, count?: number) {
     return this.liveIntegration.simulateAudienceBatch(roomCode, count);
+  }
+
+  ingestLiveComment(roomCode: string, payload: any) {
+    return this.liveIntegration.ingestExternalComment(roomCode, payload);
   }
 
   /**

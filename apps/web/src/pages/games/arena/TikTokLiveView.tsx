@@ -4,12 +4,11 @@ import {
   ArenaEnvironment,
   ArenaPanel,
   AnswerFrame,
-  ChampionFrame,
   QuestionStageFrame,
   RankFrame,
 } from './AstralFrames';
 import { ArenaExplanationCard } from './ArenaExplanationCard';
-import { Check, Flame, MessageSquare, Trophy, Zap, ArrowRight, LogOut, PlusCircle } from 'lucide-react';
+import { Check, MessageSquare, Zap } from 'lucide-react';
 import {
   ArenaClock,
   ArenaHeader,
@@ -38,6 +37,7 @@ interface LiveComment {
   commentText: string;
   answer?: string;
   accepted?: boolean;
+  scoreAdded?: number;
   timestamp?: number;
 }
 
@@ -50,6 +50,7 @@ interface TikTokLiveViewProps {
   duration: number;
   resultSeconds: number | null;
   participants: ArenaPlayer[];
+  arenaPlayers?: ArenaPlayer[];
   comments: LiveComment[];
   votes: Record<string, number>;
   winners: LiveWinner[];
@@ -61,6 +62,8 @@ interface TikTokLiveViewProps {
   uptimeSec?: number;
   latencyMs?: number;
   themeColor?: string;
+  isMobile?: boolean;
+  onToggleMobile?: () => void;
   onLeaveRoom: () => void;
   onEnd?: () => void;
   onAudio?: () => void;
@@ -90,6 +93,7 @@ export function TikTokLiveView({
   duration,
   resultSeconds,
   participants,
+  arenaPlayers = [],
   comments,
   votes,
   winners,
@@ -101,6 +105,8 @@ export function TikTokLiveView({
   uptimeSec,
   latencyMs,
   themeColor,
+  isMobile,
+  onToggleMobile,
   onLeaveRoom,
   onEnd,
   onAudio,
@@ -122,7 +128,8 @@ export function TikTokLiveView({
     return () => clearTimeout(timer);
   }, [isRevealed, currentRound]);
 
-  const acceptedComments = comments.filter((comment) => comment.accepted).slice(0, 12);
+  // Show recent comments (including answers and live chat)
+  const displayComments = comments.slice(0, 20);
   const rankById = new Map(participants.map((player) => [player.userId, player.rank]));
   const choices = question.options ?? [];
   const chartProps = {
@@ -140,6 +147,7 @@ export function TikTokLiveView({
       data-phase={phase}
       data-mode={gameMode}
       data-theme-color={themeColor}
+      data-mobile={isMobile ? 'true' : undefined}
     >
       <ArenaEnvironment
         scene={
@@ -154,6 +162,8 @@ export function TikTokLiveView({
         latencyMs={latencyMs}
         onExit={onLeaveRoom}
         onEnd={onEnd}
+        isMobile={isMobile}
+        onToggleMobile={onToggleMobile}
       />
 
       <main className="arena-grid">
@@ -245,25 +255,52 @@ export function TikTokLiveView({
               {Object.values(votes).reduce((total, count) => total + count, 0)} hợp lệ
             </span>
           </div>
-          {acceptedComments.length ? (
+          {displayComments.length ? (
             <ul className="arena-list arena-comment-feed">
-              {acceptedComments.map((comment) => (
+              {displayComments.map((comment) => (
                 <li key={comment.eventId} className="arena-feed-entry">
                   <b className="arena-comment-user">{comment.displayName}</b>
                   <span className="arena-comment-text" title={comment.commentText}>
-                    {comment.answer ?? comment.commentText}
+                    {comment.commentText}
                   </span>
-                  <small data-accepted="true" className="arena-comment-time">
-                    Hợp lệ
-                    {comment.timestamp ? (
-                      <>
-                        {' · '}
-                        <time dateTime={new Date(comment.timestamp).toISOString()}>
-                          {timeFormat.format(comment.timestamp)}
-                        </time>
-                      </>
-                    ) : null}
-                  </small>
+                  {comment.accepted ? (
+                    <small data-accepted="true" className="arena-comment-time text-emerald-400 font-bold">
+                      ✓ Đáp án {comment.answer}
+                      {comment.scoreAdded ? ` (+${comment.scoreAdded}đ)` : ''}
+                      {comment.timestamp ? (
+                        <>
+                          {' · '}
+                          <time dateTime={new Date(comment.timestamp).toISOString()}>
+                            {timeFormat.format(comment.timestamp)}
+                          </time>
+                        </>
+                      ) : null}
+                    </small>
+                  ) : comment.answer ? (
+                    <small className="arena-comment-time text-indigo-300 font-semibold">
+                      Chọn {comment.answer}
+                      {comment.timestamp ? (
+                        <>
+                          {' · '}
+                          <time dateTime={new Date(comment.timestamp).toISOString()}>
+                            {timeFormat.format(comment.timestamp)}
+                          </time>
+                        </>
+                      ) : null}
+                    </small>
+                  ) : (
+                    <small className="arena-comment-time text-slate-400">
+                      Chat
+                      {comment.timestamp ? (
+                        <>
+                          {' · '}
+                          <time dateTime={new Date(comment.timestamp).toISOString()}>
+                            {timeFormat.format(comment.timestamp)}
+                          </time>
+                        </>
+                      ) : null}
+                    </small>
+                  )}
                 </li>
               ))}
             </ul>
@@ -291,7 +328,7 @@ export function TikTokLiveView({
         <ArenaPanel className="arena-panel arena-winners">
           <div className="arena-panel-heading">
             <h2>
-              <Zap size={16} aria-hidden="true" /> Top 3 phản xạ
+              <Zap size={16} aria-hidden="true" /> Phản xạ câu này
             </h2>
             <span className="astral-speed-badge">TỐC ĐỘ</span>
           </div>
@@ -312,9 +349,9 @@ export function TikTokLiveView({
                     </b>
                     <span
                       className="arena-podium-answer"
-                      title={locked ? winner.answer : undefined}
+                      title={locked && winner.answer !== '-' ? winner.answer : undefined}
                     >
-                      {locked ? `Đáp án: ${winner.answer}` : null}
+                      {locked && winner.answer !== '-' ? `Đáp án: ${winner.answer}` : null}
                     </span>
                     <strong className="arena-delta arena-winner-score">+{winner.points} đ</strong>
                     {overallRank !== undefined && <small>Hạng {overallRank}</small>}
@@ -327,176 +364,16 @@ export function TikTokLiveView({
           )}
         </ArenaPanel>
 
-        {/* Live Overall Leaderboard (Top 10) */}
-        <ArenaRanking title="Xếp hạng Live" players={participants.slice(0, 10)} />
+        <aside className="arena-live-rankings">
+          <ArenaRanking title="TikTok Live Top 3" players={participants} />
+          <ArenaRanking title="Arena Battle Top 3" players={arenaPlayers} />
+        </aside>
       </main>
 
       <footer className="arena-footer">
         <span className="arena-live-note">
           <span className="astral-live-dot" /> LIVE STREAM VẬN HÀNH BỞI VOCALFLOW
         </span>
-        <span className="arena-brand-tag">vocalflow.site</span>
-      </footer>
-    </div>
-  );
-}
-
-export function LiveFinalResults({
-  live = true,
-  playedRounds,
-  totalRounds,
-  participants,
-  onLeaveRoom,
-  onPlayAgain,
-  onNextMatch,
-  countdown,
-  nextMatchTitle,
-  personalResult,
-  uptimeSec,
-  latencyMs,
-  themeColor,
-}: {
-  live?: boolean;
-  countdown?: number;
-  nextMatchTitle?: string;
-  personalResult?: { correctCount: number; answeredCount?: number; bestStreak?: number };
-  playedRounds: number;
-  totalRounds: number;
-  participants: ArenaPlayer[];
-  onLeaveRoom: () => void;
-  onPlayAgain: () => void;
-  onNextMatch?: () => void;
-  uptimeSec?: number;
-  latencyMs?: number;
-  themeColor?: string;
-}) {
-  const leaders = participants.filter((player) => player.score > 0).slice(0, 3);
-
-  return (
-    <div
-      className="arena-shell arena-live-final"
-      data-theme-color={themeColor}
-    >
-      <ArenaEnvironment scene="champion" />
-      <ArenaHeader
-        live={live}
-        round={playedRounds}
-        total={totalRounds}
-        uptimeSec={uptimeSec}
-        latencyMs={latencyMs}
-        onExit={onLeaveRoom}
-      />
-
-      <main className="arena-grid">
-        <ChampionFrame className="arena-stage astral-champion-stage">
-          <div className="arena-prompt astral-champion-banner">
-            <h2>
-              <Trophy size={32} className="astral-gold-trophy" />{' '}
-              {live ? 'Kết quả VocalFlow Live' : 'Bảng vàng Astral Arena'}
-            </h2>
-            <p className="astral-champion-tagline">VINH DANH NHỮNG CHIẾN BINH XUẤT SẮC NHẤT</p>
-          </div>
-
-          {leaders.length ? (
-            <ol className="arena-podium astral-victory-podium" data-reveal="true">
-              {leaders.map((player, index) => {
-                const rank = player.rank ?? index + 1;
-                return (
-                  <RankFrame key={player.userId} rank={rank}>
-                    <div className="astral-podium-pedestal">
-                      <ArenaPlace rank={rank} />
-                      <PlayerAvatar
-                        avatarUrl={player.avatar}
-                        displayName={player.displayName}
-                        size="sm"
-                      />
-                      <b title={player.displayName} className="astral-podium-name">
-                        {player.displayName}
-                      </b>
-                      <strong className="astral-podium-score">{player.score} đ</strong>
-                    </div>
-                  </RankFrame>
-                );
-              })}
-            </ol>
-          ) : (
-            <div className="astral-empty-card">
-              <div className="astral-empty-card-icon">
-                <Trophy size={22} />
-              </div>
-              <h3 className="astral-empty-card-title">Chưa có người ghi điểm</h3>
-              <p className="astral-empty-card-desc">
-                Chưa có đấu thủ nào hoàn thành câu trả lời ghi điểm trong trận đấu này. Hãy chuẩn bị sẵn sàng cho trận chiến tiếp theo!
-              </p>
-            </div>
-          )}
-
-          {personalResult && (
-            <div className="astral-result-strip">
-              <span>
-                Đúng{' '}
-                <b>
-                  {personalResult.correctCount}/
-                  {personalResult.answeredCount ?? personalResult.correctCount}
-                </b>
-              </span>
-              <span>
-                Chuỗi tốt nhất <b>{personalResult.bestStreak ?? 0}</b>
-              </span>
-            </div>
-          )}
-
-          <div className="arena-actions astral-final-actions">
-            {nextMatchTitle && Boolean(countdown) && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-400/40 text-xs font-bold text-amber-300">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                <span>{nextMatchTitle} · {countdown}s</span>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center justify-center gap-2.5 w-full pt-1">
-              <button
-                type="button"
-                className="arena-button arena-primary astral-play-again"
-                onClick={onPlayAgain}
-                title="Tạo phòng thi đấu mới"
-              >
-                <PlusCircle size={15} />
-                <span>Tạo phòng mới</span>
-              </button>
-
-              {onNextMatch && (
-                <button
-                  type="button"
-                  className="arena-button bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
-                  onClick={onNextMatch}
-                  title="Chuyển sang trận đấu tiếp theo"
-                >
-                  <ArrowRight size={15} />
-                  <span>Trận kế tiếp</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                className="arena-button arena-exit-btn text-slate-300 hover:text-white"
-                onClick={onLeaveRoom}
-                title="Rời khỏi phòng thi đấu và trở về sảnh"
-              >
-                <LogOut size={15} />
-                <span>Rời phòng / Về sảnh</span>
-              </button>
-            </div>
-          </div>
-        </ChampionFrame>
-
-        <ArenaRanking
-          title={live ? 'Xếp hạng Live' : 'Xếp hạng Battle'}
-          players={participants.slice(0, 10)}
-        />
-      </main>
-
-      <footer className="arena-footer">
         <span className="arena-brand-tag">vocalflow.site</span>
       </footer>
     </div>

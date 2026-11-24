@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Crown, LogOut, Medal, Square, Trophy, Volume2, Clock, Activity } from 'lucide-react';
+import { Crown, LogOut, Medal, Square, Trophy, Volume2, Clock, Activity, Smartphone, Monitor } from 'lucide-react';
 import { PlayerAvatar } from '@vocabflow/shared';
 import { ArenaHeaderFrame, EnergyDivider, LeaderboardFrame } from './AstralFrames';
 import './arena-stage.css';
@@ -35,6 +35,7 @@ export interface ArenaPlayer {
   avatar?: string;
   rank?: number;
   isCurrentUser?: boolean;
+  username?: string;
 }
 
 export function choiceText(value: string) {
@@ -49,14 +50,18 @@ export function ArenaHeader({
   latencyMs,
   onExit,
   onEnd,
+  isMobile,
+  onToggleMobile,
 }: {
   live?: boolean;
   round: number;
   total: number;
   uptimeSec?: number;
   latencyMs?: number;
-  onExit: () => void;
+  onExit?: () => void;
   onEnd?: () => void;
+  isMobile?: boolean;
+  onToggleMobile?: () => void;
 }) {
   const percent = Math.round((Math.min(round, total) / Math.max(1, total)) * 100);
 
@@ -121,9 +126,11 @@ export function ArenaHeader({
             <span className="arena-end-text">Kết thúc</span>
           </button>
         )}
-        <button className="arena-button arena-icon-button arena-exit-btn" aria-label="Rời phòng" onClick={onExit} title="Rời phòng">
-          <LogOut size={16} />
-        </button>
+        {onExit && (
+          <button className="arena-button arena-icon-button arena-exit-btn" aria-label="Rời phòng" onClick={onExit} title="Rời phòng">
+            <LogOut size={16} />
+          </button>
+        )}
       </div>
     </ArenaHeaderFrame>
   );
@@ -224,27 +231,23 @@ export function ArenaRanking({
         <h2>
           <Trophy size={16} aria-hidden="true" /> {title}
         </h2>
-        <span className="astral-live-tag">LIVE</span>
       </div>
       <EnergyDivider />
-      {players.length ? (
-        <ol className="arena-list">
-          {players.map((player, index) => (
-            <RankingRow key={player.userId} player={player} rank={player.rank ?? index + 1}>
-              <ArenaPlace rank={player.rank ?? index + 1} />
-              <PlayerAvatar avatarUrl={player.avatar} displayName={player.displayName} size="xs" />
-              <b className="arena-player-name" title={player.displayName}>
-                {player.displayName}
-              </b>
-              <strong className="arena-player-score">
-                <AnimatedScore value={player.score} /> đ
-              </strong>
-            </RankingRow>
-          ))}
-        </ol>
-      ) : (
-        <p className="arena-empty">Chưa có điểm</p>
-      )}
+      {!players.length && <p className="arena-empty">Chưa có điểm</p>}
+      <ol className="arena-list">
+        {players.slice(0, 3).map((player, index) => (
+          <RankingRow key={player.userId} player={player} rank={player.rank ?? index + 1}>
+            <ArenaPlace rank={player.rank ?? index + 1} />
+            <PlayerAvatar avatarUrl={player.avatar} displayName={player.displayName} size="xs" />
+            <b className="arena-player-name" title={player.displayName}>
+              {player.username ? `@${player.username}` : player.displayName}
+            </b>
+            <strong className="arena-player-score">
+              <AnimatedScore value={player.score} /> đ
+            </strong>
+          </RankingRow>
+        ))}
+      </ol>
     </LeaderboardFrame>
   );
 }
