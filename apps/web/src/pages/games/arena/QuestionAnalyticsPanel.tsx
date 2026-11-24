@@ -86,7 +86,7 @@ export const QuestionAnalyticsPanel: React.FC<QuestionAnalyticsPanelProps> = ({
       {/* 1. Header with title & High-level KPIs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#2041F6] to-[#947AFF] flex items-center justify-center shadow-md">
+          <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md">
             <BarChart3 className="w-4 h-4 text-white" />
           </div>
           <div>

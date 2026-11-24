@@ -21,6 +21,7 @@ interface ArenaBattleViewProps {
   question: ArenaQuestion;
   roundDurationSec: number;
   seconds: number;
+  resultSeconds?: number;
   closed: boolean;
   paused: boolean;
   uptimeSec?: number;
@@ -37,7 +38,6 @@ interface ArenaBattleViewProps {
   correctAnswer?: string;
   explanation?: string;
   players: ArenaPlayer[];
-  commenters?: ArenaPlayer[];
   myPlayer: ArenaPlayer | null;
   onSelectOption: (optionIndex: number) => void;
   onSubmitText: (text: string) => void;
@@ -54,6 +54,7 @@ export function ArenaBattleView({
   question,
   roundDurationSec,
   seconds,
+  resultSeconds,
   closed,
   disabled,
   selectedOption,
@@ -63,7 +64,6 @@ export function ArenaBattleView({
   correctAnswer,
   explanation,
   players,
-  commenters = [],
   myPlayer,
   onSelectOption,
   onSubmitText,
@@ -83,19 +83,8 @@ export function ArenaBattleView({
   const textInput = useRef<HTMLInputElement>(null);
   const choices = question.options ?? [];
 
-  const isRevealed = Boolean(evaluation || closed || correctOptionIndex !== undefined || correctAnswer);
-  const [showExplanation, setShowExplanation] = useState(false);
-
-  useEffect(() => {
-    if (!isRevealed) {
-      setShowExplanation(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setShowExplanation(true);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [isRevealed, currentRound]);
+  const isChecking = closed && (resultSeconds === undefined || resultSeconds > 5);
+  const isRevealed = closed && !isChecking;
 
   useEffect(() => {
     textInput.current?.focus({ preventScroll: true });
@@ -173,7 +162,7 @@ export function ArenaBattleView({
       />
 
       <main className="arena-grid">
-        {/* Left contextual rail (~220px on desktop) */}
+        {/* Personal score rail */}
         <aside className="arena-battle-rail arena-left-rail">
           {myPlayer && (
             <ArenaPanel className="arena-personal" aria-label="Kết quả của bạn">
@@ -215,39 +204,20 @@ export function ArenaBattleView({
         {/* Center Main Question Stage (flexible 1fr) */}
         <QuestionStageFrame className="arena-stage" aria-label="Câu hỏi">
           <ArenaClock
-            seconds={seconds}
-            duration={roundDurationSec}
+            seconds={closed ? isChecking ? (resultSeconds ?? 7) - 5 : resultSeconds ?? 5 : seconds}
+            duration={closed ? isChecking ? 2 : 5 : roundDurationSec}
             label={
-              closed ? 'Đã khóa đáp án' : paused ? 'Tạm dừng' : 'Thời gian trả lời'
+              paused ? 'Tạm dừng' : isChecking ? 'Đang kiểm tra kết quả' : closed ? 'Đáp án chính xác' : 'Đang nhận đáp án'
             }
           />
 
           <ArenaPrompt question={question} onAudio={onAudio} />
 
-          {showExplanation ? (
-            <div className="w-full my-2 animate-fade-in">
-              <ArenaExplanationCard
-                correctLetter={
-                  correctOptionIndex !== undefined
-                    ? OPTION_KEYS[correctOptionIndex]
-                    : correctAnswer
-                    ? String(correctAnswer).slice(0, 1).toUpperCase()
-                    : undefined
-                }
-                correctText={
-                  correctOptionIndex !== undefined && choices[correctOptionIndex]
-                    ? choiceText(choices[correctOptionIndex])
-                    : correctAnswer
-                }
-                explanation={
-                  explanation ||
-                  (question as any).explanation ||
-                  (question.targetWord
-                    ? `${question.targetWord}: Đáp án chính xác của vòng đấu.`
-                    : 'Ghi nhớ đáp án chuẩn để đạt thứ hạng cao hơn trong các câu tiếp theo!')
-                }
-                className="w-full"
-              />
+          {isChecking ? (
+            <div className="arena-checking" role="status" aria-live="polite">
+              <span className="arena-checking-scan" aria-hidden="true" />
+              <strong>ĐANG KIỂM TRA KẾT QUẢ...</strong>
+              <span>Đối chiếu câu trả lời của các đấu thủ</span>
             </div>
           ) : choices.length ? (
             <div className="arena-choices">
@@ -297,6 +267,33 @@ export function ArenaBattleView({
             </form>
           )}
 
+          {isRevealed && (correctOptionIndex !== undefined || correctAnswer || explanation) && (
+            <div className="w-full my-2 animate-fade-in">
+              <ArenaExplanationCard
+                correctLetter={
+                  correctOptionIndex !== undefined
+                    ? OPTION_KEYS[correctOptionIndex]
+                    : correctAnswer
+                    ? String(correctAnswer).slice(0, 1).toUpperCase()
+                    : undefined
+                }
+                correctText={
+                  correctOptionIndex !== undefined && choices[correctOptionIndex]
+                    ? choiceText(choices[correctOptionIndex])
+                    : correctAnswer
+                }
+                explanation={
+                  explanation ||
+                  (question as any).explanation ||
+                  (question.targetWord
+                    ? `${question.targetWord}: Đáp án chính xác của vòng đấu.`
+                    : 'Ghi nhớ đáp án chuẩn để đạt thứ hạng cao hơn trong các câu tiếp theo!')
+                }
+                className="arena-explanation-compact w-full"
+              />
+            </div>
+          )}
+
           <div className="arena-actions">
             <div
               role="status"
@@ -304,7 +301,6 @@ export function ArenaBattleView({
               data-correct={evaluation?.isCorrect}
             >
               {feedback && <strong key={feedback} className="arena-delta">{feedback}</strong>}
-              {!choices.length && correctAnswer && <span>Đáp án: {correctAnswer}</span>}
             </div>
 
             {onResume ? (
@@ -326,8 +322,7 @@ export function ArenaBattleView({
 
         {/* Right leaderboard rail (~300px on desktop) */}
         <aside className="arena-battle-rail arena-right-rail">
-          <ArenaRanking title="Arena Battle Top 3" players={players} />
-          <ArenaRanking title="TikTok Live Top 3" players={commenters} />
+          <ArenaRanking title="Bảng xếp hạng Đấu trường" players={players} limit={isMobile ? 5 : 10} />
         </aside>
       </main>
 

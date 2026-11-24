@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { PlayerAvatar } from '@vocabflow/shared';
 import {
   ArenaEnvironment,
@@ -79,8 +79,12 @@ export function livePhase(
   duration: number,
   seconds: number,
   resultSeconds: number | null
-): 'comments' | 'activity' | 'chart' | 'podium' {
-  if (resultSeconds !== null) return resultSeconds > 5 ? 'chart' : 'podium';
+): 'comments' | 'activity' | 'chart' | 'checking' | 'reveal' {
+  if (resultSeconds !== null) {
+    if (resultSeconds > 7) return 'chart';
+    if (resultSeconds > 5) return 'checking';
+    return 'reveal';
+  }
   return duration - seconds < 10 ? 'comments' : 'activity';
 }
 
@@ -114,19 +118,8 @@ export function TikTokLiveView({
   const phase = livePhase(duration, seconds, resultSeconds);
   const locked = resultSeconds !== null;
 
-  const isRevealed = Boolean(locked || correctOptionIndex !== undefined || correctAnswer);
-  const [showExplanation, setShowExplanation] = useState(false);
-
-  useEffect(() => {
-    if (!isRevealed) {
-      setShowExplanation(false);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setShowExplanation(true);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [isRevealed, currentRound]);
+  const isRevealed = phase === 'reveal';
+  const showExplanation = isRevealed;
 
   // Show recent comments (including answers and live chat)
   const displayComments = comments.slice(0, 20);
@@ -135,7 +128,7 @@ export function TikTokLiveView({
   const chartProps = {
     options: choices,
     votes,
-    revealed: locked,
+    revealed: isRevealed,
     correctOptionIndex,
     acceptedAnswers,
     responses: comments.filter((comment) => comment.accepted),
@@ -172,17 +165,21 @@ export function TikTokLiveView({
           <ArenaClock
             seconds={
               locked
-                ? resultSeconds > 5
-                  ? resultSeconds - 5
-                  : resultSeconds
+                ? phase === 'chart'
+                  ? resultSeconds - 7
+                  : phase === 'checking'
+                    ? resultSeconds - 5
+                    : resultSeconds
                 : seconds
             }
-            duration={locked ? 5 : duration}
+            duration={locked ? phase === 'checking' ? 2 : 5 : duration}
             label={
               paused
                 ? 'Tạm dừng'
-                : phase === 'podium'
-                ? 'Câu tiếp theo'
+                : phase === 'checking'
+                ? 'Đang kiểm tra kết quả'
+                : phase === 'reveal'
+                ? 'Công bố đáp án'
                 : locked
                 ? 'Đã khóa đáp án'
                 : 'Đang nhận đáp án'
@@ -191,7 +188,31 @@ export function TikTokLiveView({
 
           <ArenaPrompt question={question} onAudio={onAudio} />
 
-          {showExplanation ? (
+          {phase === 'checking' ? (
+            <div className="arena-checking" role="status" aria-live="polite">
+              <span className="arena-checking-scan" aria-hidden="true" />
+              <strong>ĐANG KIỂM TRA KẾT QUẢ...</strong>
+              <span>Đối chiếu câu trả lời của người chơi</span>
+            </div>
+          ) : choices.length > 0 ? (
+            <ol className="arena-choices">
+              {choices.map((option, index) => (
+                <AnswerFrame
+                  passive
+                  key={index}
+                  state={isRevealed && correctOptionIndex === index ? 'correct' : undefined}
+                >
+                  <span className="arena-key">{OPTION_KEYS[index]}</span>
+                  <span className="arena-option-text">{choiceText(option)}</span>
+                  {isRevealed && correctOptionIndex === index && (
+                    <Check className="arena-option-icon correct" size={20} aria-label="Đúng" />
+                  )}
+                </AnswerFrame>
+              ))}
+            </ol>
+          ) : null}
+
+          {showExplanation && (correctOptionIndex !== undefined || correctAnswer || explanation) && (
             <div className="w-full my-2 animate-fade-in">
               <ArenaExplanationCard
                 correctLetter={
@@ -213,31 +234,9 @@ export function TikTokLiveView({
                     ? `${question.targetWord}: Đáp án chính xác của buổi Live.`
                     : 'Ghi nhớ đáp án chuẩn để tiếp tục bình luận chính xác trong câu tiếp theo!')
                 }
-                className="w-full"
+                className="arena-explanation-compact w-full"
               />
             </div>
-          ) : choices.length > 0 ? (
-            <ol className="arena-choices">
-              {choices.map((option, index) => (
-                <AnswerFrame
-                  passive
-                  key={index}
-                  state={locked && correctOptionIndex === index ? 'correct' : undefined}
-                >
-                  <span className="arena-key">{OPTION_KEYS[index]}</span>
-                  <span className="arena-option-text">{choiceText(option)}</span>
-                  {locked && correctOptionIndex === index && (
-                    <Check className="arena-option-icon correct" size={20} aria-label="Đúng" />
-                  )}
-                </AnswerFrame>
-              ))}
-            </ol>
-          ) : null}
-
-          {locked && !showExplanation && !choices.length && correctAnswer && (
-            <p className="arena-feedback" data-correct="true">
-              Đáp án: {correctAnswer}
-            </p>
           )}
 
           {!locked && !choices.length && (
@@ -310,11 +309,24 @@ export function TikTokLiveView({
         </ArenaPanel>
 
         {/* Answer Distribution Chart */}
-        <AnswerDistributionChart
-          {...chartProps}
-          questionId={question.id}
-          className="arena-wide-chart"
-        />
+        {phase === 'chart' ? (
+          <AnswerDistributionChart
+            {...chartProps}
+            questionId={question.id}
+            animate
+            className="arena-wide-chart"
+          />
+        ) : (
+          <ArenaPanel className="arena-panel arena-chart arena-wide-chart arena-chart-placeholder">
+            <div className="arena-panel-heading">
+              <h2>Tỷ lệ đáp án</h2>
+              <span className="astral-valid-badge">
+                {phase === 'checking' ? 'ĐANG KIỂM TRA' : phase === 'reveal' ? 'ĐÃ CÔNG BỐ' : 'CHỜ KHÓA ĐÁP ÁN'}
+              </span>
+            </div>
+            <p>{phase === 'reveal' ? 'Kết quả câu hỏi đã được công bố.' : 'Thống kê sẽ xuất hiện sau khi hết giờ trả lời.'}</p>
+          </ArenaPanel>
+        )}
         {phase === 'chart' && (
           <AnswerDistributionChart
             {...chartProps}
@@ -333,7 +345,7 @@ export function TikTokLiveView({
             <span className="astral-speed-badge">TỐC ĐỘ</span>
           </div>
           {winners.length ? (
-            <ol className="arena-podium" data-reveal={locked}>
+            <ol className="arena-podium" data-reveal={isRevealed}>
               {winners.map((winner) => {
                 const overallRank = rankById.get(winner.commenterId);
                 return (
@@ -351,7 +363,7 @@ export function TikTokLiveView({
                       className="arena-podium-answer"
                       title={locked && winner.answer !== '-' ? winner.answer : undefined}
                     >
-                      {locked && winner.answer !== '-' ? `Đáp án: ${winner.answer}` : null}
+                      {isRevealed && winner.answer !== '-' ? `Đáp án: ${winner.answer}` : null}
                     </span>
                     <strong className="arena-delta arena-winner-score">+{winner.points} đ</strong>
                     {overallRank !== undefined && <small>Hạng {overallRank}</small>}

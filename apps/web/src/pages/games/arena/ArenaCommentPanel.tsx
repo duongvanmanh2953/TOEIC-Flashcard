@@ -143,7 +143,7 @@ export const ArenaCommentPanel: React.FC<ArenaCommentPanelProps> = ({
                 key={item.eventId || idx}
                 className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
                   idx === 0
-                    ? 'bg-gradient-to-r from-amber-500/20 via-purple-900/20 to-slate-900/80 border-amber-400/70 shadow-lg shadow-amber-500/10'
+                    ? 'bg-amber-500/15 border-amber-400/70 shadow-lg shadow-amber-500/10'
                     : idx === 1
                     ? 'bg-slate-900/90 border-slate-400/50'
                     : idx === 2

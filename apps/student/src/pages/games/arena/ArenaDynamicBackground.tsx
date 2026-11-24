@@ -43,6 +43,7 @@ export const ArenaDynamicBackground: React.FC<ArenaDynamicBackgroundProps> = ({
     <div
       aria-hidden="true"
       className={`fixed inset-0 pointer-events-none overflow-hidden select-none z-0 bg-[#060918] ${className}`}
+      data-theme={resolvedTheme}
     >
       {/* ======================================================== */}
       {/* 0. PURE GENERATIVE CYBER STADIUM BACKDROP (CSS/SVG)      */}
@@ -57,8 +58,8 @@ export const ArenaDynamicBackground: React.FC<ArenaDynamicBackgroundProps> = ({
         }}
       />
 
-      {/* Dark stadium dome gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#17204d] via-[#0b1029] to-[#040612]" />
+      {/* Flat system-colored stadium backdrop */}
+      <div className="absolute inset-0 bg-[#0b1029]" />
 
       {/* Overhead Arena Trusses & Light Rigs */}
       <svg
@@ -67,14 +68,10 @@ export const ArenaDynamicBackground: React.FC<ArenaDynamicBackgroundProps> = ({
         viewBox="0 0 1200 200"
       >
         <defs>
-          <linearGradient id="trussGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#818CF8" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.0" />
-          </linearGradient>
         </defs>
         {/* Overhead scaffolding beams */}
-        <line x1="0" y1="20" x2="1200" y2="20" stroke="url(#trussGrad)" strokeWidth="3" />
-        <line x1="0" y1="50" x2="1200" y2="50" stroke="url(#trussGrad)" strokeWidth="2" />
+        <line x1="0" y1="20" x2="1200" y2="20" stroke="#818CF8" strokeOpacity="0.8" strokeWidth="3" />
+        <line x1="0" y1="50" x2="1200" y2="50" stroke="#4F46E5" strokeOpacity="0.55" strokeWidth="2" />
         {/* Diagonal struts */}
         {Array.from({ length: 24 }).map((_, i) => (
           <line
@@ -83,7 +80,8 @@ export const ArenaDynamicBackground: React.FC<ArenaDynamicBackgroundProps> = ({
             y1="20"
             x2={(i + 1) * 50}
             y2="50"
-            stroke="url(#trussGrad)"
+            stroke="#6366F1"
+            strokeOpacity="0.5"
             strokeWidth="1.5"
           />
         ))}
@@ -94,14 +92,15 @@ export const ArenaDynamicBackground: React.FC<ArenaDynamicBackgroundProps> = ({
             y1="20"
             x2={i * 50}
             y2="50"
-            stroke="url(#trussGrad)"
+            stroke="#6366F1"
+            strokeOpacity="0.5"
             strokeWidth="1.5"
           />
         ))}
       </svg>
 
       {/* 1. Volumetric Overhead Spotlights & Atmospheric Glow */}
-      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[80vw] max-w-4xl h-72 bg-gradient-to-b from-indigo-500/25 via-cyan-500/10 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[80vw] max-w-4xl h-72 bg-indigo-500/10 blur-3xl pointer-events-none" />
       <div className="absolute -top-10 left-10 w-80 h-80 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute -top-10 right-10 w-80 h-80 bg-cyan-500/20 rounded-full blur-[120px] pointer-events-none" />
 
@@ -117,25 +116,16 @@ export const ArenaDynamicBackground: React.FC<ArenaDynamicBackgroundProps> = ({
       )}
 
       {/* 3. Theme Specific Ambient Accents */}
-      {resolvedTheme === 'business' && (
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#2041F610_1px,transparent_1px),linear-gradient(to_bottom,#2041F610_1px,transparent_1px)] bg-[size:48px_48px] opacity-60" />
-      )}
-
-      {resolvedTheme === 'science' && (
-        <div className="absolute inset-0 bg-[radial-gradient(#25C98A20_1px,transparent_1px)] bg-[size:32px_32px] opacity-60" />
-      )}
-
-      {/* 4. Glowing Perspective Arena Grid Floor */}
-      <div className="absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(to_right,rgba(99,102,241,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(99,102,241,0.08)_1px,transparent_1px)] bg-[size:36px_36px] [mask-image:radial-gradient(ellipse_at_bottom,black_40%,transparent_90%)]" />
+      {/* Flat background accents use the selected theme's base colors. */}
 
       {/* 5. Glowing Floor Arena Ring (Concentric Stage Floor) */}
-      <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[120vw] max-w-5xl h-64 rounded-[100%] border-4 border-cyan-400/40 shadow-[0_0_60px_rgba(6,182,212,0.5),inset_0_0_60px_rgba(6,182,212,0.3)] bg-gradient-to-t from-indigo-950/60 via-purple-900/20 to-transparent pointer-events-none">
+      <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[120vw] max-w-5xl h-64 rounded-[100%] border-4 border-cyan-400/40 shadow-[0_0_60px_rgba(6,182,212,0.5),inset_0_0_60px_rgba(6,182,212,0.3)] bg-indigo-950/40 pointer-events-none">
         <div className="absolute inset-4 rounded-[100%] border-2 border-indigo-500/50" />
         <div className="absolute inset-10 rounded-[100%] border border-cyan-300/30" />
       </div>
 
       {/* 6. Crowd Silhouette along bottom edge */}
-      <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-[#060812] via-[#060812]/90 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 inset-x-0 h-24 bg-[#060812]/90 pointer-events-none" />
 
       {/* 7. Dynamic flash feedback on round evaluation */}
       {gameState === 'ROUND_OVER' && (

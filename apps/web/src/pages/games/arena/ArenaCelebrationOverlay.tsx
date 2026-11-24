@@ -113,7 +113,7 @@ export const ArenaCelebrationOverlay: React.FC<ArenaCelebrationProps> = ({
 
       {/* 3. Hero Floating Badge */}
       <div className="relative flex flex-col items-center gap-2 animate-bounce-short drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]">
-        <div className="flex items-center gap-2.5 px-6 py-3 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 border-2 border-emerald-200 text-white font-black shadow-2xl shadow-emerald-500/50">
+        <div className="flex items-center gap-2.5 px-6 py-3 rounded-3xl bg-emerald-600 border-2 border-emerald-200 text-white font-black shadow-2xl shadow-emerald-500/50">
           <Sparkles className="w-6 h-6 text-yellow-300 animate-spin" />
           <span className="text-xl sm:text-2xl tracking-wider">CHÍNH XÁC!</span>
           <span className="text-2xl sm:text-3xl font-mono text-amber-300 drop-shadow">
@@ -123,7 +123,7 @@ export const ArenaCelebrationOverlay: React.FC<ArenaCelebrationProps> = ({
 
         {/* Combo Streak Pill */}
         {streak > 1 && (
-          <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-2xl bg-gradient-to-r from-amber-600 via-rose-600 to-orange-600 border border-amber-300 text-white text-xs sm:text-sm font-black shadow-lg animate-pulse">
+          <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-2xl bg-amber-600 border border-amber-300 text-white text-xs sm:text-sm font-black shadow-lg animate-pulse">
             <Flame className="w-4 h-4 text-amber-200 fill-amber-300 animate-bounce" />
             <span>CHUỖI ĐÚNG X{streak}! COMBO RỰC LỬA!</span>
           </div>

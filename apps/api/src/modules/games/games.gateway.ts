@@ -1024,7 +1024,9 @@ export class GamesGateway
     this.clearTimer(`round_${roomCode}`);
 
     room.status = 'ROUND_SUMMARY';
-    const summaryDurationMs = room.isLiveMode ? 10000 : 5000;
+    // Live quiz phases: stats 5s + checking 2s + reveal 5s. Arena rounds use
+    // checking 2s + reveal 5s.
+    const summaryDurationMs = room.isLiveMode ? 12000 : 7000;
     room.summaryEndsAt = Date.now() + summaryDurationMs;
     const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(roomCode);
     const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(roomCode);

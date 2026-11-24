@@ -86,7 +86,7 @@ export const TopAnswersThisRound: React.FC<TopAnswersThisRoundProps> = ({
                 key={`${item.userId}_${idx}`}
                 className={`p-2.5 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
                   isMe
-                    ? 'bg-gradient-to-r from-[#2041F6]/25 to-[#947AFF]/20 border-[#947AFF] ring-1 ring-[#947AFF]/40'
+                    ? 'bg-indigo-600/20 border-indigo-400 ring-1 ring-indigo-400/40'
                     : item.isCorrect
                     ? 'bg-[#1B2440]/80 border-white/5 hover:border-emerald-500/30'
                     : 'bg-[#1B2440]/50 border-white/5 opacity-75'

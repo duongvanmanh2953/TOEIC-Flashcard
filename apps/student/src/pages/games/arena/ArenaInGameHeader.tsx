@@ -53,7 +53,7 @@ export const ArenaInGameHeader: React.FC<ArenaInGameHeaderProps> = ({
           </>
         ) : (
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-xs sm:text-sm font-black shadow-lg backdrop-blur-md border border-indigo-400/40">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600 text-white text-xs sm:text-sm font-black shadow-lg backdrop-blur-md border border-indigo-400/40">
               <span>⚔️</span>
               <span>PHÒNG ĐẤU</span>
             </div>

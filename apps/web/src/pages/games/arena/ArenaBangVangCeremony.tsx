@@ -48,14 +48,14 @@ export const CeremonyAvatar: React.FC<{
 }> = ({ avatar, displayName, className = 'w-full h-full' }) => {
   const hasRealAvatar = Boolean(avatar && avatar.trim().length > 0);
   const initial = (displayName || 'P').trim().charAt(0).toUpperCase();
-  const getGradient = (name: string) => {
+  const getColor = (name: string) => {
     const list = [
-      'from-indigo-600 to-violet-600',
-      'from-emerald-500 to-teal-600',
-      'from-amber-500 to-orange-600',
-      'from-rose-500 to-pink-600',
-      'from-sky-500 to-blue-600',
-      'from-purple-600 to-fuchsia-600',
+      '#4F46E5',
+      '#059669',
+      '#D97706',
+      '#E11D48',
+      '#0284C7',
+      '#9333EA',
     ];
     let h = 0;
     for (let i = 0; i < name.length; i++) h = (h << 5) - h + name.charCodeAt(i);
@@ -77,9 +77,10 @@ export const CeremonyAvatar: React.FC<{
         />
       ) : null}
       <span
-        className={`ceremony-avatar-fallback w-full h-full flex items-center justify-center font-black text-white bg-gradient-to-br ${getGradient(displayName)} ${
+        className={`ceremony-avatar-fallback w-full h-full flex items-center justify-center font-black text-white ${
           hasRealAvatar ? 'hidden' : ''
         }`}
+        style={{ backgroundColor: getColor(displayName) }}
       >
         {initial}
       </span>
@@ -141,33 +142,20 @@ export const PodiumTrophyCup: React.FC<{
       className={`shrink-0 drop-shadow-[0_4px_10px_${config.glow}] ${className}`}
       aria-hidden="true"
     >
-      <defs>
-        <linearGradient id={`${config.id}_body`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={config.stop1} />
-          <stop offset="30%" stopColor={config.stop2} />
-          <stop offset="70%" stopColor={config.stop3} />
-          <stop offset="100%" stopColor={config.stop4} />
-        </linearGradient>
-        <linearGradient id={`${config.id}_handle`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={config.stop1} />
-          <stop offset="100%" stopColor={config.stop4} />
-        </linearGradient>
-      </defs>
-
       {/* Handles */}
       <path
         d="M20 18 C11 18 9 32 19 35 C19.5 35 20 33.5 19.5 32 C13 30 14 21 21 21 Z"
-        fill={`url(#${config.id}_handle)`}
+        fill={config.stop4}
       />
       <path
         d="M44 18 C53 18 55 32 45 35 C44.5 35 44 33.5 44.5 32 C51 30 50 21 43 21 Z"
-        fill={`url(#${config.id}_handle)`}
+        fill={config.stop4}
       />
 
       {/* Cup Body */}
       <path
         d="M18 14 H46 C46 14 47 30 32 38 C17 30 18 14 18 14 Z"
-        fill={`url(#${config.id}_body)`}
+        fill={config.stop3}
         stroke={config.rim}
         strokeWidth="1"
       />
@@ -177,11 +165,11 @@ export const PodiumTrophyCup: React.FC<{
       <ellipse cx="32" cy="14" rx="11" ry="2" fill={config.stop4} opacity="0.6" />
 
       {/* Stem */}
-      <path d="M29 37 H35 L34 46 H30 Z" fill={`url(#${config.id}_body)`} />
+      <path d="M29 37 H35 L34 46 H30 Z" fill={config.stop3} />
 
       {/* Base */}
       <ellipse cx="32" cy="46" rx="8" ry="2.5" fill={config.rim} />
-      <path d="M25 47 L39 47 L41 54 L23 54 Z" fill={`url(#${config.id}_body)`} stroke={config.rim} strokeWidth="0.8" />
+      <path d="M25 47 L39 47 L41 54 L23 54 Z" fill={config.stop3} stroke={config.rim} strokeWidth="0.8" />
       <rect x="21" y="54" width="22" height="3" rx="1.5" fill="#1E293B" stroke={config.stop3} strokeWidth="0.8" />
 
       {/* Star / Number badge on cup */}
@@ -213,59 +201,33 @@ export const GoldenTrophyArtwork: React.FC<{ className?: string }> = ({ classNam
     aria-hidden="true"
   >
     <defs>
-      <linearGradient id="goldCupBody" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FFFBEB" />
-        <stop offset="25%" stopColor="#FDE68A" />
-        <stop offset="50%" stopColor="#F59E0B" />
-        <stop offset="80%" stopColor="#D97706" />
-        <stop offset="100%" stopColor="#78350F" />
-      </linearGradient>
-      <linearGradient id="goldCupRim" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#FEF3C7" />
-        <stop offset="50%" stopColor="#F59E0B" />
-        <stop offset="100%" stopColor="#B45309" />
-      </linearGradient>
-      <linearGradient id="goldHandle" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FDE68A" />
-        <stop offset="50%" stopColor="#D97706" />
-        <stop offset="100%" stopColor="#78350F" />
-      </linearGradient>
-      <radialGradient id="trophyGodRay" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="rgba(251,191,36,0.45)" />
-        <stop offset="65%" stopColor="rgba(245,158,11,0.12)" />
-        <stop offset="100%" stopColor="transparent" />
-      </radialGradient>
-      <linearGradient id="laurelLeafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FEF08A" />
-        <stop offset="100%" stopColor="#D97706" />
-      </linearGradient>
     </defs>
 
     {/* God-ray aura behind cup */}
-    <circle cx="80" cy="70" r="70" fill="url(#trophyGodRay)" />
+    <circle cx="80" cy="70" r="70" fill="#F59E0B" opacity="0.14" />
 
     {/* Laurel Wreath Leaves (Left) */}
-    <g stroke="url(#laurelLeafGrad)" strokeWidth="2" strokeLinecap="round" opacity="0.9">
+    <g stroke="#D97706" strokeWidth="2" strokeLinecap="round" opacity="0.9">
       <path d="M 40,110 C 24,90 26,58 42,38" fill="none" />
-      <ellipse cx="32" cy="94" rx="4" ry="7" transform="rotate(-30 32 94)" fill="url(#laurelLeafGrad)" />
-      <ellipse cx="27" cy="74" rx="4" ry="7" transform="rotate(-15 27 74)" fill="url(#laurelLeafGrad)" />
-      <ellipse cx="32" cy="54" rx="4" ry="7" transform="rotate(15 32 54)" fill="url(#laurelLeafGrad)" />
-      <ellipse cx="42" cy="38" rx="4" ry="6" transform="rotate(35 42 38)" fill="url(#laurelLeafGrad)" />
+      <ellipse cx="32" cy="94" rx="4" ry="7" transform="rotate(-30 32 94)" fill="#D97706" />
+      <ellipse cx="27" cy="74" rx="4" ry="7" transform="rotate(-15 27 74)" fill="#D97706" />
+      <ellipse cx="32" cy="54" rx="4" ry="7" transform="rotate(15 32 54)" fill="#D97706" />
+      <ellipse cx="42" cy="38" rx="4" ry="6" transform="rotate(35 42 38)" fill="#D97706" />
     </g>
 
     {/* Laurel Wreath Leaves (Right) */}
-    <g stroke="url(#laurelLeafGrad)" strokeWidth="2" strokeLinecap="round" opacity="0.9">
+    <g stroke="#D97706" strokeWidth="2" strokeLinecap="round" opacity="0.9">
       <path d="M 120,110 C 136,90 134,58 118,38" fill="none" />
-      <ellipse cx="128" cy="94" rx="4" ry="7" transform="rotate(30 128 94)" fill="url(#laurelLeafGrad)" />
-      <ellipse cx="133" cy="74" rx="4" ry="7" transform="rotate(15 133 74)" fill="url(#laurelLeafGrad)" />
-      <ellipse cx="128" cy="54" rx="4" ry="7" transform="rotate(-15 128 54)" fill="url(#laurelLeafGrad)" />
-      <ellipse cx="118" cy="38" rx="4" ry="6" transform="rotate(-35 118 38)" fill="url(#laurelLeafGrad)" />
+      <ellipse cx="128" cy="94" rx="4" ry="7" transform="rotate(30 128 94)" fill="#D97706" />
+      <ellipse cx="133" cy="74" rx="4" ry="7" transform="rotate(15 133 74)" fill="#D97706" />
+      <ellipse cx="128" cy="54" rx="4" ry="7" transform="rotate(-15 128 54)" fill="#D97706" />
+      <ellipse cx="118" cy="38" rx="4" ry="6" transform="rotate(-35 118 38)" fill="#D97706" />
     </g>
 
     {/* Left Handle */}
     <path
       d="M50 48 C28 48 24 78 46 84 C48 84.5 49 81 48 78 C32 74 34 54 50 54 Z"
-      fill="url(#goldHandle)"
+      fill="#D97706"
       stroke="#FDE68A"
       strokeWidth="1.2"
     />
@@ -273,7 +235,7 @@ export const GoldenTrophyArtwork: React.FC<{ className?: string }> = ({ classNam
     {/* Right Handle */}
     <path
       d="M110 48 C132 48 136 78 114 84 C112 84.5 111 81 112 78 C128 74 126 54 110 54 Z"
-      fill="url(#goldHandle)"
+      fill="#D97706"
       stroke="#FDE68A"
       strokeWidth="1.2"
     />
@@ -281,21 +243,21 @@ export const GoldenTrophyArtwork: React.FC<{ className?: string }> = ({ classNam
     {/* Trophy Cup Body */}
     <path
       d="M48 40 L112 40 C112 40 114 74 80 92 C46 74 48 40 48 40 Z"
-      fill="url(#goldCupBody)"
+      fill="#F59E0B"
       stroke="#FDE68A"
       strokeWidth="1.5"
     />
 
     {/* Top Rim */}
-    <ellipse cx="80" cy="40" rx="32" ry="7" fill="url(#goldCupRim)" stroke="#FFFBEB" strokeWidth="1.5" />
+    <ellipse cx="80" cy="40" rx="32" ry="7" fill="#FBBF24" stroke="#FFFBEB" strokeWidth="1.5" />
     <ellipse cx="80" cy="40" rx="26" ry="4.5" fill="#78350F" opacity="0.6" />
 
     {/* Stem */}
-    <path d="M74 91 L86 91 L84 108 L76 108 Z" fill="url(#goldCupBody)" stroke="#FDE68A" strokeWidth="1" />
-    <ellipse cx="80" cy="108" rx="12" ry="3" fill="url(#goldCupRim)" />
+    <path d="M74 91 L86 91 L84 108 L76 108 Z" fill="#D97706" stroke="#FDE68A" strokeWidth="1" />
+    <ellipse cx="80" cy="108" rx="12" ry="3" fill="#FBBF24" />
 
     {/* Pedestal Base */}
-    <path d="M66 110 L94 110 L98 126 L62 126 Z" fill="url(#goldCupBody)" stroke="#FDE68A" strokeWidth="1" />
+    <path d="M66 110 L94 110 L98 126 L62 126 Z" fill="#D97706" stroke="#FDE68A" strokeWidth="1" />
     <rect x="58" y="126" width="44" height="6" rx="2" fill="#451A03" stroke="#F59E0B" strokeWidth="1.2" />
 
     {/* Embossed Gold Star on Body */}
@@ -471,7 +433,7 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
 
   return (
     <div
-      className={`relative w-full rounded-3xl flex flex-col items-center justify-start text-white select-none bg-gradient-to-b from-[#070b1e] via-[#0d1433] to-[#050713] border-2 border-amber-500/40 shadow-[0_0_60px_rgba(245,158,11,0.28)] p-2.5 sm:p-5 overflow-hidden ${className}`}
+      className={`relative w-full rounded-3xl flex flex-col items-center justify-start text-white select-none bg-[#0b1029] border-2 border-amber-500/40 shadow-[0_0_60px_rgba(245,158,11,0.28)] p-2.5 sm:p-5 overflow-hidden ${className}`}
     >
       {/* ======================================================== */}
       {/* 0. FIREWORKS CANVAS OVERLAY & DYNAMIC SPOTLIGHTS         */}
@@ -484,7 +446,6 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute -top-12 left-1/4 w-80 h-80 bg-amber-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -top-12 right-1/4 w-80 h-80 bg-indigo-500/25 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 inset-x-0 h-44 bg-[linear-gradient(to_right,rgba(245,158,11,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(245,158,11,0.08)_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_at_bottom,black_50%,transparent_90%)]" />
       </div>
 
       {/* ======================================================== */}
@@ -497,7 +458,7 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
           <Sparkles className="w-3 h-3 text-amber-400" />
         </div>
 
-        <div className="relative inline-flex items-center justify-center max-w-full px-4 sm:px-10 py-1.5 sm:py-2.5 bg-gradient-to-r from-purple-950 via-indigo-900 to-purple-950 border-2 border-amber-400 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.5)]">
+        <div className="relative inline-flex items-center justify-center max-w-full px-4 sm:px-10 py-1.5 sm:py-2.5 bg-indigo-950 border-2 border-amber-400 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.5)]">
           <Star className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 fill-amber-400 mr-1.5 sm:mr-2 drop-shadow-[0_0_8px_rgba(255,215,0,0.8)] shrink-0" />
 
           {/* Guaranteed high-contrast metallic gold text */}
@@ -550,7 +511,7 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
                 </span>
 
                 {/* Rank Badge */}
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-r from-slate-200 to-slate-400 text-slate-950 font-black text-[9px] sm:text-xs flex items-center justify-center shadow z-20 border border-slate-900">
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-slate-300 text-slate-950 font-black text-[9px] sm:text-xs flex items-center justify-center shadow z-20 border border-slate-900">
                   2
                 </span>
               </div>
@@ -576,10 +537,8 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
           )}
 
           {/* Silver Pedestal - Taller than Bronze */}
-          <div className="w-full h-20 sm:h-28 mt-1 rounded-t-2xl bg-gradient-to-t from-slate-950 via-slate-900/95 to-slate-800/80 border-t-3 sm:border-t-4 border-x border-slate-300/80 shadow-[0_0_20px_rgba(226,232,240,0.35)] flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-radial-gradient from-slate-200/10 to-transparent pointer-events-none" />
-            <span className="font-black font-mono text-lg sm:text-2xl text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 drop-shadow-[0_2px_8px_rgba(255,255,255,0.5)]">
+          <div className="w-full h-20 sm:h-28 mt-1 rounded-t-2xl bg-slate-800 border-t-3 sm:border-t-4 border-x border-slate-300/80 shadow-[0_0_20px_rgba(226,232,240,0.35)] flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
+            <span className="font-black font-mono text-lg sm:text-2xl text-slate-200 drop-shadow-[0_2px_8px_rgba(255,255,255,0.5)]">
               2ND
             </span>
             <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-300 mt-0.5">
@@ -614,7 +573,7 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
                 </span>
 
                 {/* Rank #1 Badge */}
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-[10px] sm:text-sm flex items-center justify-center shadow-lg shadow-amber-500/50 ring-2 ring-yellow-300 z-20 border border-slate-900">
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] sm:text-sm flex items-center justify-center shadow-lg shadow-amber-500/50 ring-2 ring-yellow-300 z-20 border border-slate-900">
                   1
                 </span>
               </div>
@@ -641,10 +600,8 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
           )}
 
           {/* Luxurious Gold Pedestal - Tallest Dais */}
-          <div className="w-full h-30 sm:h-42 mt-1 rounded-t-2xl bg-gradient-to-t from-slate-950 via-amber-950/80 to-amber-900/50 border-t-4 border-x border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.65)] flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-yellow-200 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-radial-gradient from-amber-400/25 to-transparent pointer-events-none" />
-            <span className="font-black font-mono text-2xl sm:text-4xl text-transparent bg-clip-text bg-gradient-to-b from-yellow-100 via-amber-300 to-amber-500 drop-shadow-[0_2px_14px_rgba(245,158,11,0.9)]">
+          <div className="w-full h-30 sm:h-42 mt-1 rounded-t-2xl bg-amber-950 border-t-4 border-x border-amber-400 shadow-[0_0_35px_rgba(245,158,11,0.65)] flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
+            <span className="font-black font-mono text-2xl sm:text-4xl text-amber-300 drop-shadow-[0_2px_14px_rgba(245,158,11,0.9)]">
               1ST
             </span>
             <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-amber-300 mt-0.5 drop-shadow">
@@ -679,7 +636,7 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
                 </span>
 
                 {/* Rank Badge */}
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-r from-amber-700 to-amber-900 text-white font-black text-[9px] sm:text-xs flex items-center justify-center shadow z-20 border border-slate-900">
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-800 text-white font-black text-[9px] sm:text-xs flex items-center justify-center shadow z-20 border border-slate-900">
                   3
                 </span>
               </div>
@@ -705,10 +662,8 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
           )}
 
           {/* Bronze Pedestal - Shortest Dais */}
-          <div className="w-full h-14 sm:h-20 mt-1 rounded-t-2xl bg-gradient-to-t from-slate-950 via-[#271207]/90 to-amber-900/50 border-t-3 sm:border-t-4 border-x border-amber-600/80 shadow-[0_0_20px_rgba(217,119,6,0.4)] flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
-            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300/60 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-radial-gradient from-amber-600/15 to-transparent pointer-events-none" />
-            <span className="font-black font-mono text-lg sm:text-2xl text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-400 to-amber-600 drop-shadow-[0_2px_8px_rgba(217,119,6,0.7)]">
+          <div className="w-full h-14 sm:h-20 mt-1 rounded-t-2xl bg-[#271207] border-t-3 sm:border-t-4 border-x border-amber-600/80 shadow-[0_0_20px_rgba(217,119,6,0.4)] flex flex-col items-center justify-center relative overflow-hidden py-1.5 sm:py-2">
+            <span className="font-black font-mono text-lg sm:text-2xl text-amber-400 drop-shadow-[0_2px_8px_rgba(217,119,6,0.7)]">
               3RD
             </span>
             <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-amber-400 mt-0.5">
@@ -908,7 +863,7 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
       {/* ======================================================== */}
       <div className="relative z-10 w-full max-w-lg mx-auto px-1 sm:px-2 mt-2.5 space-y-2">
         {nextMatchTitle && (
-          <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-purple-950/90 border border-amber-400/50 shadow-lg text-[11px]">
+          <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-indigo-950/90 border border-amber-400/50 shadow-lg text-[11px]">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
               <span className="font-bold text-amber-200 truncate">
@@ -928,7 +883,7 @@ export const ArenaBangVangCeremony: React.FC<ArenaBangVangCeremonyProps> = ({
             <button
               type="button"
               onClick={onPlayAgain}
-              className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-95"
+              className="btn-glass-primary flex-1 !py-2.5 !px-3 !rounded-xl !text-xs !font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-95"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Đấu Ván Mới</span>

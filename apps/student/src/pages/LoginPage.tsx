@@ -36,7 +36,14 @@ export const LoginPage: React.FC = () => {
     return () => window.removeEventListener('vocabflow:oauth-return', onOAuthReturn);
   }, []);
 
-  const handlePostAuthRedirect = () => navigate('/dashboard');
+  const handlePostAuthRedirect = () => {
+    const redirect = new URLSearchParams(window.location.search).get('redirect');
+    if (redirect?.startsWith('/games/room/') && !redirect.startsWith('//')) {
+      navigate(redirect);
+      return;
+    }
+    navigate('/dashboard');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

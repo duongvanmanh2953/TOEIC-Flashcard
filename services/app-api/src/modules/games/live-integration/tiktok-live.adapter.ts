@@ -108,23 +108,25 @@ export class TikTokLiveAdapter implements ILiveIntegrationAdapter {
           channelOrUsername: channelDisplay,
         };
       } catch (connErr: any) {
-        this.logger.warn(`TikTok Live direct connect warning for #${code}: ${connErr?.message}. Fallback to webhook/external ingest listener.`);
-        this.roomStatuses.set(code, 'CONNECTED');
+        this.logger.warn(`TikTok Live connection failed for #${code}: ${connErr?.message || 'unknown error'}`);
+        this.roomStatuses.set(code, 'ERROR');
+        this.activeConnections.delete(code);
         return {
-          success: true,
-          status: 'CONNECTED',
-          message: `Đã mở cổng cào bình luận cho ${channelDisplay}. Hệ thống sẵn sàng nhận bình luận.`,
+          success: false,
+          status: 'ERROR',
+          message: `Không thể kết nối TikTok Live ${channelDisplay}: ${connErr?.message || 'hãy kiểm tra username và trạng thái livestream.'}`,
           provider: 'TIKTOK_LIVE',
           channelOrUsername: channelDisplay,
         };
       }
     } catch (err: any) {
       this.logger.error(`Failed to initialize TikTok Live for Room #${code}: ${err?.message}`);
-      this.roomStatuses.set(code, 'CONNECTED');
+      this.roomStatuses.set(code, 'ERROR');
+      this.activeConnections.delete(code);
       return {
-        success: true,
-        status: 'CONNECTED',
-        message: `Đã kích hoạt chế độ lắng nghe bình luận ${channelDisplay}.`,
+        success: false,
+        status: 'ERROR',
+        message: `Không khởi tạo được kết nối TikTok Live ${channelDisplay}. Kiểm tra kết nối máy chủ và thử lại.`,
         provider: 'TIKTOK_LIVE',
         channelOrUsername: cleanUsername,
       };

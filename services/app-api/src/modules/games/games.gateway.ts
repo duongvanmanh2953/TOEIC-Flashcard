@@ -354,8 +354,11 @@ export class GamesGateway
       const isGuestLiveRoom = !preset && !dbRoom && /^LIVE-[23456789A-HJ-NP-Z]{4,10}$/.test(code);
       const isLiveRoom = room?.isLiveMode ?? preset?.isLiveMode
         ?? (dbRoom ? dbRoom.maxPlayers > 50 && dbRoom.allowLateJoin : isGuestLiveRoom);
-      const spectator = data.spectator === true;
-      if (!authenticatedUserId && !isLiveRoom && !spectator) {
+      const requestedSpectator = data.spectator === true;
+      if (!authenticatedUserId && isLiveRoom) {
+        return { status: 'error', message: 'Vui lòng đăng nhập lại để tham gia.' };
+      }
+      if (!authenticatedUserId && !isLiveRoom && !requestedSpectator) {
         return { status: 'error', message: 'Vui lòng đăng nhập lại để tham gia.' };
       }
 
@@ -363,7 +366,13 @@ export class GamesGateway
         ? createHash('sha256').update(code).update(data.guestKey).digest('hex')
         : client.id;
       const userId = authenticatedUserId ?? `anon_${guestIdentity}`;
+      const knownHostId = room?.hostUserId ?? dbRoom?.hostUserId;
       const isOwner = dbRoom?.hostUserId === userId;
+      // In Live rooms, only the room owner/first authenticated entrant is a player.
+      // Every other authenticated visitor is attached as a read-only spectator.
+      const spectator = requestedSpectator || Boolean(
+        isLiveRoom && knownHostId && knownHostId !== authenticatedUserId,
+      );
       if (dbRoom && ['COMPLETED', 'EXPIRED', 'CANCELLED'].includes(dbRoom.status) && !room) {
         return { status: 'error', message: 'Phòng đã đóng.' };
       }
@@ -485,6 +494,7 @@ export class GamesGateway
         currentRound: room.currentRound,
         languageId: room.languageId,
         isLiveMode: room.isLiveMode,
+        isSpectator: spectator,
         liveStatus,
         player,
         players: Array.from(room.players.values()),
@@ -777,7 +787,9 @@ export class GamesGateway
       eventId?: string;
     },
   ) {
-    if (!data?.roomCode || !data?.comment) return { status: 'error', message: 'Missing roomCode or comment' };
+    const code = typeof data?.roomCode === 'string' ? data.roomCode.toUpperCase() : '';
+    if (!code || !this.isHost(client, code)) return this.hostDenied();
+    if (!data?.comment) return { status: 'error', message: 'Missing comment' };
     this.tiktokAdapter.ingestExternalComment(data.roomCode, {
       uniqueId: data.uniqueId || 'viewer',
       nickname: data.nickname || data.uniqueId || 'Khán giả',
@@ -1024,7 +1036,9 @@ export class GamesGateway
     this.clearTimer(`round_${roomCode}`);
 
     room.status = 'ROUND_SUMMARY';
-    const summaryDurationMs = room.isLiveMode ? 10000 : 5000;
+    // Live quiz phases: stats 5s + checking 2s + reveal 5s. Arena rounds use
+    // checking 2s + reveal 5s.
+    const summaryDurationMs = room.isLiveMode ? 12000 : 7000;
     room.summaryEndsAt = Date.now() + summaryDurationMs;
     const inAppRanking = this.gamesService.roomManager.getInAppLeaderboard(roomCode);
     const commenterRanking = this.gamesService.roomManager.getCommenterLeaderboard(roomCode);

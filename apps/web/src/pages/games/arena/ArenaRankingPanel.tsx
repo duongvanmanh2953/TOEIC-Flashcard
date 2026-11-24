@@ -66,7 +66,7 @@ export const ArenaRankingPanel: React.FC<ArenaRankingPanelProps> = ({
       {/* 1. Header with Tabs & View Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3 mb-3 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-500 flex items-center justify-center shadow-md">
+          <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center shadow-md">
             <Trophy className="w-4 h-4 text-slate-950" />
           </div>
           <div>

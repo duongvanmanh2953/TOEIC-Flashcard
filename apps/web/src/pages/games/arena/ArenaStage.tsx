@@ -36,6 +36,9 @@ export interface ArenaPlayer {
   rank?: number;
   isCurrentUser?: boolean;
   username?: string;
+  correctCount?: number;
+  answeredCount?: number;
+  totalResponseTimeMs?: number;
 }
 
 export function choiceText(value: string) {
@@ -221,9 +224,11 @@ export function ArenaPlace({ rank }: { rank: number }) {
 export function ArenaRanking({
   players,
   title,
+  limit = 3,
 }: {
   players: ArenaPlayer[];
   title: string;
+  limit?: number;
 }) {
   return (
     <LeaderboardFrame className="arena-panel arena-ranking">
@@ -235,13 +240,22 @@ export function ArenaRanking({
       <EnergyDivider />
       {!players.length && <p className="arena-empty">Chưa có điểm</p>}
       <ol className="arena-list">
-        {players.slice(0, 3).map((player, index) => (
+        {players.slice(0, limit).map((player, index) => (
           <RankingRow key={player.userId} player={player} rank={player.rank ?? index + 1}>
             <ArenaPlace rank={player.rank ?? index + 1} />
             <PlayerAvatar avatarUrl={player.avatar} displayName={player.displayName} size="xs" />
-            <b className="arena-player-name" title={player.displayName}>
-              {player.username ? `@${player.username}` : player.displayName}
-            </b>
+            <span className="arena-player-details">
+              <b className="arena-player-name" title={player.displayName}>
+                {player.username ? `@${player.username}` : player.displayName}
+              </b>
+              {typeof player.answeredCount === 'number' && (
+                <small className="arena-player-stats">
+                  {player.correctCount ?? 0}/{player.answeredCount} đúng
+                  {player.answeredCount > 0 && ` · ${Math.round(((player.correctCount ?? 0) / player.answeredCount) * 100)}%`}
+                  {player.answeredCount > 0 && typeof player.totalResponseTimeMs === 'number' && ` · ${(player.totalResponseTimeMs / player.answeredCount / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}s`}
+                </small>
+              )}
+            </span>
             <strong className="arena-player-score">
               <AnimatedScore value={player.score} /> đ
             </strong>

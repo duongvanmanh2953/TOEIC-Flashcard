@@ -1520,3 +1520,145 @@
 .arena-shell[data-mobile="true"].arena-live-final .arena-grid {
   grid-template: minmax(auto, 1fr) minmax(100px, 0.43fr) / minmax(0, 1fr);
 }
+
+/* The deployed Student app uses this Live layout. Keep answers inside the stage. */
+.arena-shell .arena-button {
+  background-color: var(--raised);
+  background-image: none;
+  color: var(--text);
+  outline-color: var(--edge);
+}
+
+.arena-shell .arena-button:not(:disabled):hover,
+.arena-shell .arena-button:focus-visible {
+  background-color: var(--brand);
+  background-image: none;
+  outline-color: var(--signal);
+}
+
+.arena-shell .arena-button.arena-primary {
+  background-color: var(--brand);
+  background-image: none;
+  box-shadow: none;
+}
+
+.arena-shell.arena-live .arena-grid {
+  grid-template:
+    'stage comments' minmax(0, 1.15fr)
+    'stage chart' minmax(0, 0.85fr)
+    'stage winners' minmax(0, 0.9fr)
+    'stage ranking' minmax(0, 1.3fr)
+    / minmax(0, 1.5fr) minmax(280px, 1fr);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.arena-shell.arena-live .arena-stage {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.arena-shell.arena-live .arena-choices {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: none;
+  overflow: visible;
+}
+
+.arena-shell.arena-live .arena-option.astral-answer {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.arena-shell.arena-live :is(.arena-comments, .arena-chart, .arena-winners, .arena-live-rankings) {
+  min-width: 0;
+  min-height: 0;
+}
+
+.arena-shell.arena-live .arena-checking {
+  position: relative;
+  display: flex;
+  min-height: 92px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid #47556966;
+  border-radius: 14px;
+  background: #111827;
+  color: #e2e8f0;
+  text-align: center;
+}
+
+.arena-shell.arena-live .arena-checking > strong { color: #fbbf24; font-size: 13px; }
+.arena-shell.arena-live .arena-checking > span:last-child { color: #a7b1c5; font-size: 12px; }
+.arena-shell.arena-live .arena-checking-scan { display: none; }
+.arena-shell.arena-live .arena-explanation-compact { min-height: 0 !important; padding: 10px !important; }
+
+@media (min-width: 701px) and (max-width: 1050px) {
+  .arena-shell.arena-live { overflow-y: auto; }
+
+  .arena-shell.arena-live .arena-grid {
+    grid-template:
+      'stage stage' minmax(420px, auto)
+      'comments chart' minmax(180px, auto)
+      'winners ranking' minmax(220px, auto)
+      / minmax(0, 1fr) minmax(0, 1fr);
+    height: auto;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 700px) {
+  .arena-shell.arena-live,
+  .arena-shell[data-mobile="true"].arena-live {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .arena-shell.arena-live .arena-grid,
+  .arena-shell[data-mobile="true"].arena-live .arena-grid {
+    grid-template: 'stage' minmax(0, 1fr) / minmax(0, 1fr);
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+    padding: 0 6px 6px;
+  }
+
+  .arena-shell.arena-live .arena-stage,
+  .arena-shell[data-mobile="true"].arena-live .arena-stage {
+    min-height: 0;
+    height: 100%;
+    padding: 8px;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  .arena-shell.arena-live .arena-clock { gap: 4px; padding: 5px 9px; }
+  .arena-shell.arena-live .arena-clock-value { font-size: clamp(22px, 5.8vh, 30px); }
+  .arena-shell.arena-live .arena-prompt { min-height: 0; padding: 8px 10px; gap: 6px; }
+  .arena-shell.arena-live .arena-prompt-body { gap: 8px; }
+  .arena-shell.arena-live .arena-question-text { font-size: clamp(16px, 4.7vw, 22px); line-height: 1.15; }
+  .arena-shell.arena-live .arena-choices { gap: 6px; padding: 0; }
+  .arena-shell.arena-live .arena-choices > * { min-height: 48px; padding: 7px; gap: 7px; font-size: 12px; }
+  .arena-shell.arena-live .arena-choices .arena-key { width: 26px; height: 26px; }
+  .arena-shell.arena-live .arena-checking { min-height: 72px; }
+  .arena-shell.arena-live .arena-explanation-compact { max-height: 72px; overflow: hidden; }
+
+  .arena-shell.arena-live :is(.arena-comments, .arena-chart, .arena-winners, .arena-live-rankings) {
+    display: none !important;
+  }
+
+  .arena-shell.arena-live .arena-footer { min-height: 24px; flex: none; }
+}
+
+@media (max-width: 700px) and (max-height: 700px) {
+  .arena-shell.arena-live .arena-footer { display: none; }
+  .arena-shell.arena-live .arena-stage,
+  .arena-shell[data-mobile="true"].arena-live .arena-stage { padding: 6px; gap: 6px; }
+  .arena-shell.arena-live .arena-choices > * { min-height: 42px; padding: 5px; }
+}

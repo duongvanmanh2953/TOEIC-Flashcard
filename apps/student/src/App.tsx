@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LearningProvider } from './contexts/LearningContext';
 import { FocusProvider } from './contexts/FocusContext';
@@ -103,6 +103,21 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requireAuth?: boolea
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
+};
+
+const GameRoomRoute: React.FC = () => {
+  const { user, loading } = useAuth();
+  const { roomId = '' } = useParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const isLiveRoom = searchParams.get('type') === 'live' || searchParams.get('live') === '1' || /live|tiktok/i.test(roomId);
+
+  if (isLiveRoom && loading) return <AppLoadingScreen message="Đang xác thực thông tin học viên..." />;
+  if (isLiveRoom && (!user || user.isAnonymous)) {
+    const returnTo = `${location.pathname}${location.search}`;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(returnTo)}`} replace />;
+  }
+  return <RealtimeGameRoomPage />;
 };
 
 const RootRedirect: React.FC = () => {
@@ -291,7 +306,7 @@ export const App: React.FC = () => {
                   <Route path="/interview" element={<AIInterviewStudioPage />} />
                   <Route path="/interview-studio" element={<Navigate to="/interview" replace />} />
                   <Route path="/games" element={<GameLobbyPage />} />
-                  <Route path="/games/room/:roomId" element={<RealtimeGameRoomPage />} />
+                  <Route path="/games/room/:roomId" element={<GameRoomRoute />} />
                   <Route path="/leaderboard" element={<LeaderboardPage />} />
                   <Route path="/progress" element={<ProgressAnalyticsPage />} />
                   <Route path="/upgrade" element={<SubscriptionUpgradePage />} />

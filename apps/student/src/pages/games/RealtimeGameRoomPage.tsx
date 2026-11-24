@@ -226,6 +226,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
   const viewParam = searchParams.get('view');
   const isBroadcastView = viewParam === 'stream';
   const isSpectator = isBroadcastView || viewParam === 'spectator';
+  const [isReadOnly, setIsReadOnly] = useState(isSpectator);
   const savedRoomPassword = (useLocation().state as { roomPassword?: string } | null)?.roomPassword;
   const [roomPassword, setRoomPassword] = useState(savedRoomPassword || '');
   const [passwordAttempt, setPasswordAttempt] = useState('');
@@ -278,25 +279,15 @@ export const RealtimeGameRoomPage: React.FC = () => {
 
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-  const [isMobileMode, setIsMobileMode] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('arena_mobile_mode') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isMobileMode, setIsMobileMode] = useState<boolean>(() => window.innerWidth <= 700);
 
-  const toggleMobileMode = () => {
-    setIsMobileMode((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('arena_mobile_mode', String(next));
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  };
+  useEffect(() => {
+    const syncViewportMode = () => setIsMobileMode(window.innerWidth <= 700);
+    window.addEventListener('resize', syncViewportMode);
+    return () => window.removeEventListener('resize', syncViewportMode);
+  }, []);
+
+  const toggleMobileMode = () => setIsMobileMode((prev) => !prev);
 
   // Top Container ref for fullscreen handling
   const roundDeadline = useRef(0);
@@ -652,6 +643,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
         score: p.score || 0,
         rank: p.rank || idx + 1,
         streak: p.streak || 0,
+        correctCount: p.correctCount,
+        answeredCount: p.answeredCount,
+        totalResponseTimeMs: p.totalResponseTimeMs,
         isCurrentUser: p.userId === (myPlayer?.userId ?? user?.id),
       }))
       .sort((a, b) => b.score - a.score || a.rank - b.rank)
@@ -667,6 +661,9 @@ export const RealtimeGameRoomPage: React.FC = () => {
       score: myPlayer.score || 0,
       rank: sortedBattlePlayers.find((player) => player.userId === myPlayer.userId)?.rank ?? myPlayer.rank,
       streak: myPlayer.streak || 0,
+      correctCount: myPlayer.correctCount,
+      answeredCount: myPlayer.answeredCount,
+      totalResponseTimeMs: myPlayer.totalResponseTimeMs,
       isCurrentUser: true,
     };
   }, [myPlayer, sortedBattlePlayers]);
@@ -758,6 +755,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
       if (result?.status !== 'error') return;
       if (result.message === ROOM_LOGIN_ERROR && isInitiallyLive) {
         setJoinError('Chưa thể vào phòng Live với tư cách khách. Vui lòng thử lại sau.');
+        promptLogin(ROOM_LOGIN_REASON);
         return;
       }
       setJoinError(result.message || 'Không thể vào phòng.');
@@ -815,6 +813,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
       setMyPlayer(data.player);
       if (data.languageId) setRoomLanguageId(data.languageId);
       setRoomMode(data.isLiveMode ? 'LIVE' : 'STUDY');
+      setIsReadOnly(Boolean(data.isSpectator));
       if (data.liveStatus) setLiveStatus(data.liveStatus);
       if (data.players) setPlayers(data.players);
       setCommenterRanking(data.commenterRanking ?? []);
@@ -1179,7 +1178,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
   };
 
   const submitBattleAnswer = (answer: string, index: number | null = null, skip = false) => {
-    if (isSpectator || !isConnected || Date.now() >= roundDeadline.current ||
+    if (isReadOnly || !isConnected || Date.now() >= roundDeadline.current ||
         submittedRound.current === currentRound || !socket || roomStatus !== 'IN_ROUND' || roomMode !== 'STUDY') return;
     const round = currentRound;
     submittedRound.current = round;
@@ -1501,7 +1500,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Left: Branding & Room Info */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-rose-500 to-amber-400 p-0.5 shadow-lg shadow-indigo-500/25 shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-600 p-0.5 shadow-lg shadow-indigo-500/25 shrink-0">
               <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
                 <Gamepad2 className="w-5 h-5 text-indigo-400" />
               </div>
@@ -1561,7 +1560,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
           {/* Right: Studio Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Live Config Modal Button (In Live Mode) */}
-            {roomMode === 'LIVE' && (
+            {isHost && roomMode === 'LIVE' && (
               <button
                 onClick={() => setIsLiveModalOpen(true)}
                 className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 cursor-pointer ${
@@ -1697,7 +1696,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
             <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
 
             {/* Badge Icon */}
-            <div className="relative mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <div className="relative mx-auto w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <ShieldCheck className="w-8 h-8 text-indigo-400" />
             </div>
 
@@ -1737,7 +1736,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => promptLogin(ROOM_LOGIN_REASON)}
-                className="w-full py-3 px-5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-rose-600 hover:from-indigo-500 hover:to-rose-500 text-white font-black text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 group cursor-pointer"
+                className="btn-glass-primary w-full !py-3 !px-5 !rounded-2xl text-sm !font-black transition flex items-center justify-center gap-2 group cursor-pointer"
               >
                 <LogIn className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 <span>Đăng Nhập / Đăng Ký Ngay</span>
@@ -1838,7 +1837,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 <span className="text-xs font-black tracking-widest text-indigo-400 uppercase">
                   TRẬN ĐẤU CHUẨN BỊ BẮT ĐẦU
                 </span>
-                <div className="text-8xl sm:text-9xl font-mono font-black tabular-nums text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-rose-400 to-amber-400 animate-pulse">
+                <div className="text-8xl sm:text-9xl font-mono font-black tabular-nums text-indigo-400 animate-pulse">
                   {countdown}
                 </div>
                 <p className="text-sm text-slate-300 font-medium">
@@ -1947,7 +1946,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <button
+                    {isHost && <button
                       type="button"
                       onClick={() => setIsLiveModalOpen(true)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer shrink-0 ${
@@ -1957,7 +1956,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                       }`}
                     >
                       {liveStatus.status === 'CONNECTED' ? 'Cấu Hình Lại' : 'Quét Luồng Ngay'}
-                    </button>
+                    </button>}
                   </div>
                 )}
 
@@ -1967,11 +1966,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                     <div className="flex flex-wrap items-center justify-center gap-2.5">
                       <button
                         onClick={handleHostStartGame}
-                        className={`btn-glass-primary flex min-h-11 items-center gap-2 ${
-                          roomMode === 'LIVE' && liveStatus.status !== 'CONNECTED'
-                            ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-rose-600/30'
-                            : ''
-                        }`}
+                        className="btn-glass-primary flex min-h-11 items-center gap-2"
                       >
                         <Play className="w-4 h-4 fill-white" />
                         <span>
@@ -2033,6 +2028,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
               question={question}
               roundDurationSec={roundDuration}
               seconds={timerRemaining}
+              resultSeconds={roomStatus === 'ROUND_END' ? resultSeconds : undefined}
               closed={roomStatus === 'ROUND_END'}
               paused={roomStatus === 'PAUSED'}
               uptimeSec={roomUptime}
@@ -2041,7 +2037,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
               isMobile={isMobileMode}
               onToggleMobile={toggleMobileMode}
               onResume={isHost && roomStatus === 'PAUSED' ? handleHostPauseGame : undefined}
-              disabled={isSpectator || !isConnected || hasSubmitted || timerRemaining <= 0 || roomStatus !== 'IN_ROUND'}
+              disabled={isReadOnly || !isConnected || hasSubmitted || timerRemaining <= 0 || roomStatus !== 'IN_ROUND'}
               selectedOption={selectedOptionIndex}
               evaluation={evaluation}
               skipped={skipped}
@@ -2049,7 +2045,6 @@ export const RealtimeGameRoomPage: React.FC = () => {
               correctAnswer={roundSummary?.correctAnswer}
               explanation={roundSummary?.explanation || (roundSummary as any)?.summary?.explanation || (question as any)?.explanation}
               players={sortedBattlePlayers}
-              commenters={commenterRanking}
               myPlayer={myBattlePlayer}
               onSelectOption={(index) => submitBattleAnswer(['A', 'B', 'C', 'D'][index], index)}
               onSubmitText={submitBattleAnswer}
@@ -2094,7 +2089,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500/20 to-indigo-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shadow-md">
                   <TikTokLogo className="w-5 h-5" />
                 </div>
                 <div>
@@ -2133,7 +2128,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
                   liveProviderChoice === 'TIKTOK_LIVE'
-                    ? 'bg-gradient-to-r from-rose-600 to-indigo-600 text-white shadow-md'
+                    ? 'bg-indigo-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -2335,7 +2330,7 @@ export const RealtimeGameRoomPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmittingLive}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-black shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  className="btn-glass-primary !px-5 !py-2.5 !rounded-xl !text-xs !font-black transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
                 >
                   <TikTokLogo className="w-3.5 h-3.5" />
                   <span>

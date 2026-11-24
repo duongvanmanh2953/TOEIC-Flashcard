@@ -105,33 +105,28 @@
 
 /* Layer 3: Atmospheric gradient overlay */
 .astral-haze {
-  background: linear-gradient(180deg, #070b18b3 0%, transparent 28%, #070b1870 70%, #070b18f0 100%);
+  background: #070b1870;
 }
 
 /* Layer 4: Distant light particles */
 .astral-particles {
-  background-image:
-    radial-gradient(circle, #43d9ed55 1px, transparent 1.6px),
-    radial-gradient(circle, #8b68e844 1.2px, transparent 1.8px);
-  background-size: 240px 160px, 180px 190px;
-  background-position: 24px 36px, 72px 88px;
-  animation: astral-particles-drift 32s ease-in-out alternate infinite;
+  display: none;
 }
 
 /* Layer 5: Central arena illumination */
 .astral-core-light {
-  background: radial-gradient(ellipse at 46% 36%, #2041f640 0%, #43d9ed1e 40%, transparent 72%);
+  background: transparent;
 }
 
 /* Layer 6: Peripheral vignette */
 .astral-vignette {
-  background: radial-gradient(ellipse at 50% 50%, transparent 45%, #050814bb 100%);
+  background: #05081444;
 }
 
 /* Layer 7: Foreground decorative details */
 .astral-foreground {
   inset: 0 !important;
-  background: radial-gradient(circle at 50% 100%, #2041f622 0%, transparent 60%);
+  background: transparent;
   animation: astral-foreground-in 600ms ease-out both;
 }
 
@@ -252,7 +247,7 @@
   display: block;
   height: 1px;
   margin: 6px 0;
-  background: linear-gradient(90deg, transparent 0%, var(--signal) 50%, transparent 100%);
+  background: var(--edge);
   opacity: 0.45;
 }
 

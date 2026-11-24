@@ -12,7 +12,6 @@ import {
   sendPasswordResetEmail,
   signOut as firebaseSignOut,
   updateProfile,
-  signInAnonymously as firebaseSignInAnonymously,
   User as FirebaseUser,
 } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
@@ -413,29 +412,9 @@ export function getOrCreateAnonymousUid(): string {
 }
 
 /**
- * Sign in as Anonymous Guest (Real Firebase or Local session)
+ * Create a local guest identity. Guests do not require a Firebase account.
  */
 export async function signInAnonymously(): Promise<FirebaseUserToken> {
-  const firebaseAuth = getFirebaseAuth();
-  if (firebaseAuth) {
-    try {
-      const userCredential = await firebaseSignInAnonymously(firebaseAuth);
-      const user: FirebaseUser = userCredential.user;
-      const token = await user.getIdToken();
-      return {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || 'Khách Học Thử',
-        photoURL: user.photoURL,
-        isAnonymous: true,
-        providerId: 'anonymous',
-        accessToken: token,
-      };
-    } catch (err) {
-      console.warn('Firebase anonymous sign-in notice, using local guest session:', err);
-    }
-  }
-
   const uid = getOrCreateAnonymousUid();
   return {
     uid,
